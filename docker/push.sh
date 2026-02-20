@@ -15,6 +15,7 @@ set -euo pipefail
 # ── Configurações — PREENCHA AQUI ─────────────────────────
 DOCKERHUB_USER="matolado"
 IMAGE_NAME="crm"
+GIT_REMOTE="https://github.com/matheusrossidev/crmlaravel.git"
 GIT_BRANCH="main"
 # ──────────────────────────────────────────────────────────
 
