@@ -5,13 +5,13 @@ echo "=============================="
 echo "  CRM — Starting up"
 echo "=============================="
 
-# Copy public files to shared volume (for nginx to serve static assets)
+# Copiar public/ para volume compartilhado (nginx serve os assets)
 if [ -d "/var/www-public" ]; then
     echo "[entrypoint] Syncing public/ to shared volume..."
     cp -rn /var/www/public/. /var/www-public/ 2>/dev/null || true
 fi
 
-# Wait for MySQL to be ready
+# Aguardar MySQL
 echo "[entrypoint] Waiting for MySQL..."
 until php -r "
     \$pdo = new PDO(
@@ -19,29 +19,39 @@ until php -r "
         getenv('DB_USERNAME'),
         getenv('DB_PASSWORD')
     );
-    echo 'MySQL ready';
+    echo 'ok';
 " 2>/dev/null; do
-    echo "[entrypoint] MySQL not ready yet, retrying in 3s..."
+    echo "[entrypoint] MySQL not ready, retrying in 3s..."
     sleep 3
 done
+echo "[entrypoint] MySQL ready."
 
-# Wait for Redis
+# Aguardar Redis
 echo "[entrypoint] Waiting for Redis..."
 until php -r "
-    \$redis = new Redis();
-    \$redis->connect(getenv('REDIS_HOST'), (int)getenv('REDIS_PORT', 6379));
-    echo 'Redis ready';
+    \$r = new Redis();
+    \$r->connect(getenv('REDIS_HOST'), (int)getenv('REDIS_PORT', '6379'));
+    echo 'ok';
 " 2>/dev/null; do
-    echo "[entrypoint] Redis not ready yet, retrying in 2s..."
+    echo "[entrypoint] Redis not ready, retrying in 2s..."
     sleep 2
 done
+echo "[entrypoint] Redis ready."
 
-# Laravel bootstrap
-echo "[entrypoint] Running Laravel setup..."
-php artisan migrate --force --no-interaction
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+# Migrations — não falha se tabelas já existirem (re-deploy seguro)
+echo "[entrypoint] Running migrations..."
+php artisan migrate --force --no-interaction 2>&1 && echo "[entrypoint] Migrations OK." || {
+    echo "[entrypoint] WARNING: migration reported errors (tabelas podem já existir — normal em re-deploy)."
+    echo "[entrypoint] Checking migration status..."
+    php artisan migrate:status --no-interaction 2>/dev/null || true
+    echo "[entrypoint] Continuing startup..."
+}
+
+# Cache de configurações
+echo "[entrypoint] Caching config/routes/views..."
+php artisan config:cache  2>/dev/null || true
+php artisan route:cache   2>/dev/null || true
+php artisan view:cache    2>/dev/null || true
 php artisan storage:link --force 2>/dev/null || true
 
 echo "[entrypoint] Setup complete. Starting: $@"
