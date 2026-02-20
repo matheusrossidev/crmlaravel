@@ -26,8 +26,11 @@ class WhatsappMessageController extends Controller
         }
 
         $waha = new WahaService($instance->session_name);
-        // Remove + prefix e espaços — chatId WAHA: 5511999999999@c.us
-        $chatId = ltrim(preg_replace('/\s+/', '', $conversation->phone), '+') . '@c.us';
+        // Build chatId: @lid JIDs (GOWS engine) are stored as-is; regular phones get @c.us appended.
+        $rawPhone = $conversation->phone;
+        $chatId   = str_contains($rawPhone, '@')
+            ? $rawPhone
+            : ltrim(preg_replace('/\s+/', '', $rawPhone), '+') . '@c.us';
 
         $wahaMessageId = null;
         $mediaUrl      = null;

@@ -918,8 +918,53 @@ document.addEventListener('DOMContentLoaded', () => {
 @endif
 
 // ── WebSocket via Laravel Echo + Reverb ───────────────────────────────────────
+let pollInterval   = null;
+let lastPollAt     = new Date().toISOString();
+let echoConnected  = false;
+
+function startFallbackPolling() {
+    if (pollInterval) return; // already running
+    pollInterval = setInterval(runPoll, 5000);
+}
+
+function stopFallbackPolling() {
+    if (!pollInterval) return;
+    clearInterval(pollInterval);
+    pollInterval = null;
+}
+
+function runPoll() {
+    const params = new URLSearchParams({ since: lastPollAt });
+    if (activeConvId) params.append('conversation_id', activeConvId);
+
+    fetch(`/whatsapp/poll?${params}`, { headers: { 'Accept': 'application/json' } })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+            if (!data) return;
+            lastPollAt = data.now;
+
+            if (data.new_messages?.length) {
+                appendMessages(data.new_messages);
+                if (activeConvId) {
+                    fetch(`/whatsapp/conversations/${activeConvId}/read`, {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
+                    });
+                }
+            }
+
+            data.conversations_updated?.forEach(c => updateConvInSidebar(c));
+        })
+        .catch(() => {}); // silent fail — will retry on next interval
+}
+
 function setupEcho() {
-    if (!window.Echo || !TENANT_ID) return;
+    // If Echo is not available, fall back to polling immediately
+    if (!window.Echo || !TENANT_ID) {
+        startFallbackPolling();
+        showWsStatus('error', 'Tempo real indisponível — atualizando a cada 5s');
+        return;
+    }
 
     const channel = window.Echo.private(`tenant.${TENANT_ID}`);
 
@@ -934,16 +979,35 @@ function setupEcho() {
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
             });
         }
+        // Keep lastPollAt in sync so fallback doesn't re-deliver
+        lastPollAt = data.sent_at ?? new Date().toISOString();
     });
 
     channel.listen('.whatsapp.conversation', data => {
         updateConvInSidebar(data);
     });
 
-    window.Echo.connector.pusher.connection.bind('connecting', () => showWsStatus('connecting', 'Conectando...'));
-    window.Echo.connector.pusher.connection.bind('connected',  () => hideWsStatus());
-    window.Echo.connector.pusher.connection.bind('unavailable', () => showWsStatus('error', 'Sem conexão em tempo real'));
-    window.Echo.connector.pusher.connection.bind('disconnected', () => showWsStatus('connecting', 'Reconectando...'));
+    const conn = window.Echo.connector.pusher.connection;
+
+    conn.bind('connecting',   () => showWsStatus('connecting', 'Conectando...'));
+    conn.bind('connected',    () => {
+        echoConnected = true;
+        stopFallbackPolling();
+        hideWsStatus();
+    });
+    conn.bind('unavailable',  () => {
+        echoConnected = false;
+        startFallbackPolling();
+        showWsStatus('error', 'Sem conexão em tempo real — atualizando a cada 5s');
+    });
+    conn.bind('disconnected', () => {
+        echoConnected = false;
+        startFallbackPolling();
+        showWsStatus('connecting', 'Reconectando...');
+    });
+
+    // If connection doesn't succeed within 8s, start polling proactively
+    setTimeout(() => { if (!echoConnected) startFallbackPolling(); }, 8000);
 }
 
 function showWsStatus(type, text) {

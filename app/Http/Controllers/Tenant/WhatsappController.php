@@ -11,6 +11,7 @@ use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class WhatsappController extends Controller
@@ -112,7 +113,7 @@ class WhatsappController extends Controller
             'direction'       => $m->direction,
             'type'            => $m->type,
             'body'            => $m->body,
-            'media_url'       => $m->media_url,
+            'media_url'       => $this->resolveMediaUrl($m->media_url),
             'media_mime'      => $m->media_mime,
             'media_filename'  => $m->media_filename,
             'reaction_data'   => $m->reaction_data,
@@ -121,6 +122,25 @@ class WhatsappController extends Controller
             'sent_at'         => $m->sent_at?->toISOString(),
             'user_name'       => $m->user?->name,
         ];
+    }
+
+    /**
+     * Convert a relative storage path (e.g. "whatsapp/image/foo.jpg") stored by
+     * older messages to a full public URL. S3/external URLs are returned as-is.
+     */
+    private function resolveMediaUrl(?string $url): ?string
+    {
+        if ($url === null) {
+            return null;
+        }
+
+        // Already an absolute URL (S3, WAHA proxy, http/https external)
+        if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
+            return $url;
+        }
+
+        // Relative storage path — convert to public URL
+        return Storage::disk('public')->url($url);
     }
 
     private function formatConversation(WhatsappConversation $c): array

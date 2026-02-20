@@ -109,7 +109,7 @@ class ProcessWahaWebhook implements ShouldQueue
             'media_filename'  => $mediaFilename,
             'ack'             => 'delivered',
             'sent_at'         => isset($msg['timestamp'])
-                ? \Carbon\Carbon::createFromTimestamp($msg['timestamp'])
+                ? \Carbon\Carbon::createFromTimestamp((int) $msg['timestamp'], config('app.timezone'))
                 : now(),
         ]);
 
@@ -232,6 +232,13 @@ class ProcessWahaWebhook implements ShouldQueue
 
     private function normalizePhone(string $from): string
     {
+        // Preserve @lid JIDs as-is (GOWS engine uses them for some contacts).
+        // Only strip the common numeric-only suffixes so the phone stored in DB
+        // can be used later to reconstruct the chatId for outbound messages.
+        if (str_ends_with($from, '@lid')) {
+            return $from; // store full JID, e.g. "63454534750435@lid"
+        }
+
         return str_replace(['@c.us', '@s.whatsapp.net'], '', $from);
     }
 
