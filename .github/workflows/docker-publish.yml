@@ -31,3 +31,13 @@ jobs:
           tags: matolado/crm:latest
           cache-from: type=registry,ref=matolado/crm:buildcache
           cache-to:   type=registry,ref=matolado/crm:buildcache,mode=max
+
+      - name: Build and push nginx image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.nginx
+          push: true
+          tags: matolado/crm-nginx:latest
+          cache-from: type=registry,ref=matolado/crm-nginx:buildcache
+          cache-to:   type=registry,ref=matolado/crm-nginx:buildcache,mode=max
