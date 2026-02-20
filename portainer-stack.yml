@@ -29,7 +29,7 @@ services:
         - "traefik.http.routers.crm.rule=Host(`syncro.matheusrossi.com.br`)"
         - "traefik.http.routers.crm.entrypoints=websecure"
         - "traefik.http.routers.crm.tls=true"
-        - "traefik.http.routers.crm.tls.certresolver=letsencrypt"
+        - "traefik.http.routers.crm.tls.certresolver=letsencryptresolver"
         - "traefik.http.services.crm.loadbalancer.server.port=80"
         - "traefik.http.routers.crm-http.rule=Host(`syncro.matheusrossi.com.br`)"
         - "traefik.http.routers.crm-http.entrypoints=web"
