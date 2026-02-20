@@ -135,13 +135,17 @@ services:
   queue:
     image: matolado/crm:latest
     command: >
-      php artisan queue:work redis
-        --queue=whatsapp,default
-        --tries=3
-        --backoff=5
-        --sleep=3
-        --timeout=60
-        --memory=256
+      bash -c "
+        rm -f /var/www/bootstrap/cache/packages.php &&
+        php artisan package:discover --ansi 2>/dev/null || true &&
+        php artisan queue:work redis
+          --queue=whatsapp,default
+          --tries=3
+          --backoff=5
+          --sleep=3
+          --timeout=60
+          --memory=256
+      "
     environment:
       <<: *app-env
     volumes:
@@ -161,7 +165,12 @@ services:
   # ────────────────────────────────────────────────────────
   reverb:
     image: matolado/crm:latest
-    command: php artisan reverb:start --host=0.0.0.0 --port=8080 --no-interaction
+    command: >
+      bash -c "
+        rm -f /var/www/bootstrap/cache/packages.php &&
+        php artisan package:discover --ansi 2>/dev/null || true &&
+        php artisan reverb:start --host=0.0.0.0 --port=8080 --no-interaction
+      "
     environment:
       <<: *app-env
     volumes:

@@ -804,6 +804,10 @@
                     <i class="bi bi-check-circle"></i>
                 </button>
             </div>
+            <button class="wa-action-btn" title="Deletar conversa" onclick="deleteConversation()"
+                    style="color:#ef4444;" id="btnDeleteConv">
+                <i class="bi bi-trash3"></i>
+            </button>
         </div>
     </div>
 
@@ -1381,6 +1385,34 @@ async function toggleConvStatus() {
         document.getElementById('btnCloseConv').querySelector('i').className = newStatus === 'open'
             ? 'bi bi-check-circle' : 'bi bi-arrow-counterclockwise';
         toastr.success(newStatus === 'closed' ? 'Conversa fechada.' : 'Conversa reaberta.');
+    }
+}
+
+// ── Deletar conversa ──────────────────────────────────────────────────────────
+async function deleteConversation() {
+    if (!activeConvId) return;
+    if (!confirm('Tem certeza que deseja deletar esta conversa e todas as suas mensagens? Esta ação não pode ser desfeita.')) return;
+
+    const res  = await fetch(`/whatsapp/conversations/${activeConvId}`, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (data.success) {
+        // Remove da lista lateral
+        const convEl = document.querySelector(`[data-conv-id="${activeConvId}"]`);
+        if (convEl) convEl.remove();
+
+        // Limpa área de chat
+        activeConvId = null;
+        document.getElementById('chatHeader').style.display      = 'none';
+        document.getElementById('messagesContainer').style.display = 'none';
+        document.getElementById('composeArea').style.display     = 'none';
+        document.getElementById('messagesContainer').innerHTML   = '';
+        updateTotalUnread();
+    } else {
+        alert('Erro ao deletar conversa.');
     }
 }
 

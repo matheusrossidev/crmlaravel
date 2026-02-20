@@ -103,6 +103,14 @@ class WhatsappController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function destroy(WhatsappConversation $conversation): JsonResponse
+    {
+        // Cascade delete via FK — messages are deleted with the conversation
+        $conversation->delete();
+
+        return response()->json(['success' => true]);
+    }
+
     // ── Formatters ────────────────────────────────────────────────────────────
 
     private function formatMessage(WhatsappMessage $m): array
