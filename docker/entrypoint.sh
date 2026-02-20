@@ -47,6 +47,16 @@ php artisan migrate --force --no-interaction 2>&1 && echo "[entrypoint] Migratio
     echo "[entrypoint] Continuing startup..."
 }
 
+# Seed inicial — só roda se não existe nenhum usuário (seguro para re-deploy)
+USER_COUNT=$(php artisan tinker --no-interaction --execute="echo \App\Models\User::count();" 2>/dev/null | tail -1)
+if [ "${USER_COUNT}" = "0" ] || [ -z "${USER_COUNT}" ]; then
+    echo "[entrypoint] No users found — running seeders..."
+    php artisan db:seed --force --no-interaction 2>&1 && echo "[entrypoint] Seeding OK." || \
+        echo "[entrypoint] WARNING: seeding failed (ignorando)."
+else
+    echo "[entrypoint] Users already exist (${USER_COUNT}) — skipping seed."
+fi
+
 # Cache de configurações
 echo "[entrypoint] Caching config/routes/views..."
 php artisan config:cache  2>/dev/null || true
