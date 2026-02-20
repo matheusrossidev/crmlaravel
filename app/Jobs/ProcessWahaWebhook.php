@@ -55,17 +55,25 @@ class ProcessWahaWebhook implements ShouldQueue
         $msg   = $this->payload['payload'] ?? [];
         $event = $this->payload['event'] ?? '';
 
-        // Ignorar mensagens enviadas por nós (fromMe)
-        if (! empty($msg['fromMe'])) {
-            Log::channel('whatsapp')->debug('Ignorado: fromMe', ['id' => $msg['id'] ?? null, 'event' => $event]);
-            return;
-        }
-
         // Ignorar tipos que não são mensagens reais (grupos por enquanto)
         $from = $msg['from'] ?? '';
         if (str_contains($from, '@g.us')) {
             Log::channel('whatsapp')->debug('Ignorado: grupo', ['from' => $from, 'event' => $event]);
             return;
+        }
+
+        $isFromMe = ! empty($msg['fromMe']);
+
+        // Mensagens fromMe: podem ser (a) enviadas pelo CRM — já no banco, ignorar;
+        // ou (b) enviadas diretamente do celular — salvar como outbound.
+        // Verificamos pelo waha_message_id antes de continuar.
+        if ($isFromMe) {
+            $wahaIdCheck = $msg['id'] ?? null;
+            if ($wahaIdCheck && WhatsappMessage::withoutGlobalScope('tenant')->where('waha_message_id', $wahaIdCheck)->exists()) {
+                Log::channel('whatsapp')->debug('fromMe já salvo (enviado pelo CRM) — ignorando', ['id' => $wahaIdCheck]);
+                return;
+            }
+            Log::channel('whatsapp')->info('fromMe não encontrado no banco — salvando (enviado direto do celular)', ['id' => $wahaIdCheck]);
         }
 
         $phone = $this->normalizePhone($from, $msg);
