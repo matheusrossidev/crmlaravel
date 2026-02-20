@@ -863,6 +863,39 @@
         <div class="wa-details-value" id="detailsName" style="font-weight:600;margin-bottom:4px;"></div>
         <div class="wa-details-value" id="detailsPhone" style="color:#9ca3af;font-size:12px;"></div>
     </div>
+
+    {{-- Seção Lead / CRM --}}
+    <div class="wa-details-section" id="leadSection" style="display:none;">
+        <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
+            Lead
+            <a id="leadProfileLink" href="#" target="_blank"
+               style="font-size:11px;color:#3b82f6;font-weight:600;text-decoration:none;">
+                Ver perfil →
+            </a>
+        </div>
+        <div id="leadNameDisplay" style="font-size:13px;font-weight:600;color:#1a1d23;margin-bottom:6px;"></div>
+        <div class="wa-details-label" style="margin-top:8px;">Pipeline</div>
+        <select class="wa-textarea" style="min-height:unset;height:34px;padding:5px 8px;font-size:12px;margin-bottom:6px;"
+                id="pipelineSelect" onchange="onPipelineChange()">
+            <option value="">Selecionar pipeline...</option>
+            @foreach($pipelines as $pipeline)
+            <option value="{{ $pipeline->id }}" data-stages="{{ $pipeline->stages->toJson() }}">
+                {{ $pipeline->name }}
+            </option>
+            @endforeach
+        </select>
+        <div class="wa-details-label">Estágio</div>
+        <select class="wa-textarea" style="min-height:unset;height:34px;padding:5px 8px;font-size:12px;"
+                id="stageSelect" onchange="saveLeadCrm()">
+            <option value="">Selecionar estágio...</option>
+        </select>
+    </div>
+
+    <div class="wa-details-section" id="noLeadSection" style="display:none;">
+        <div class="wa-details-label">Lead</div>
+        <div style="font-size:12px;color:#9ca3af;">Sem lead vinculado</div>
+    </div>
+
     <div class="wa-details-section">
         <div class="wa-details-label">Atribuído a</div>
         <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="assignSelect" onchange="assignUser()">
@@ -893,6 +926,7 @@
 // ── Estado global ─────────────────────────────────────────────────────────────
 let activeConvId      = null;
 let activeConvStatus  = 'open';
+let activeLeadId      = null;  // lead vinculado à conversa ativa
 let composeMode       = 'reply';
 let mediaRecorder     = null;
 let audioChunks       = [];
@@ -904,6 +938,7 @@ const renderedMsgIds  = new Set(); // evita duplicatas quando polling e históri
 
 const CSRF      = document.querySelector('meta[name="csrf-token"]')?.content;
 const TENANT_ID = {{ auth()->user()->tenant_id ?? 'null' }};
+const PIPELINES = @json($pipelines ?? []);
 
 // ── Inicialização ─────────────────────────────────────────────────────────────
 @if($connected)
@@ -1102,6 +1137,17 @@ async function openConversation(convId, el) {
     const res  = await fetch(`/whatsapp/conversations/${convId}`, { headers: { 'Accept': 'application/json' } });
     const data = await res.json();
     renderMessages(data.messages, true);
+
+    // Atualiza select de atribuição
+    const assignSel = document.getElementById('assignSelect');
+    if (assignSel && data.assigned_user_id) {
+        assignSel.value = data.assigned_user_id;
+    } else if (assignSel) {
+        assignSel.value = '';
+    }
+
+    // Renderiza painel de lead
+    renderLeadPanel(data.lead);
 
     // Avança o anchor do poll para agora, evitando que o próximo poll re-entregue
     // mensagens do histórico já renderizadas pelo openConversation.
@@ -1425,6 +1471,71 @@ async function deleteConversation() {
     } else {
         alert('Erro ao deletar conversa.');
     }
+}
+
+// ── Lead / CRM ────────────────────────────────────────────────────────────────
+function renderLeadPanel(lead) {
+    const leadSection   = document.getElementById('leadSection');
+    const noLeadSection = document.getElementById('noLeadSection');
+
+    if (!lead) {
+        activeLeadId = null;
+        leadSection.style.display   = 'none';
+        noLeadSection.style.display = '';
+        return;
+    }
+
+    activeLeadId = lead.id;
+    leadSection.style.display   = '';
+    noLeadSection.style.display = 'none';
+
+    document.getElementById('leadNameDisplay').textContent = lead.name || '';
+    const link = document.getElementById('leadProfileLink');
+    link.href = `/crm/leads/${lead.id}`;
+
+    // Popula pipeline select
+    const pipelineSel = document.getElementById('pipelineSelect');
+    pipelineSel.value = lead.pipeline_id || '';
+
+    // Popula stages do pipeline selecionado
+    populateStages(lead.pipeline_id, lead.stage_id);
+}
+
+function populateStages(pipelineId, selectedStageId = null) {
+    const stageSel = document.getElementById('stageSelect');
+    const pipeline = PIPELINES.find(p => p.id == pipelineId);
+
+    stageSel.innerHTML = '<option value="">Selecionar estágio...</option>';
+
+    if (pipeline?.stages) {
+        pipeline.stages.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.name;
+            if (s.id == selectedStageId) opt.selected = true;
+            stageSel.appendChild(opt);
+        });
+    }
+}
+
+function onPipelineChange() {
+    const pipelineId = document.getElementById('pipelineSelect').value;
+    populateStages(pipelineId);
+    saveLeadCrm();
+}
+
+async function saveLeadCrm() {
+    if (!activeConvId || !activeLeadId) return;
+    const pipelineId = document.getElementById('pipelineSelect').value;
+    const stageId    = document.getElementById('stageSelect').value;
+
+    if (!pipelineId || !stageId) return;
+
+    await fetch(`/whatsapp/conversations/${activeConvId}/lead`, {
+        method: 'PUT',
+        headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pipeline_id: parseInt(pipelineId), stage_id: parseInt(stageId) }),
+    });
 }
 
 // ── Atribuição ────────────────────────────────────────────────────────────────

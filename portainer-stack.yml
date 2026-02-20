@@ -52,9 +52,14 @@ x-app-env: &app-env
   REVERB_APP_ID: "crm-app"
   REVERB_APP_KEY: "crm-reverb-key"
   REVERB_APP_SECRET: "crm-reverb-secret"
+  # Endereço PÚBLICO (browser → nginx /app/ → reverb:8080)
   REVERB_HOST: "syncro.matheusrossi.com.br"
   REVERB_PORT: "443"
   REVERB_SCHEME: "https"
+  # Endereço INTERNO Docker (PHP app→reverb via crm_private, sem TLS)
+  REVERB_SERVER_HOST: "reverb"
+  REVERB_SERVER_PORT: "8080"
+  REVERB_SERVER_SCHEME: "http"
   # Vite Reverb (para build do frontend)
   VITE_REVERB_APP_KEY: "crm-reverb-key"
   VITE_REVERB_HOST: "syncro.matheusrossi.com.br"

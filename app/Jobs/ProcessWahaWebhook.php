@@ -6,6 +6,8 @@ namespace App\Jobs;
 
 use App\Events\WhatsappConversationUpdated;
 use App\Events\WhatsappMessageCreated;
+use App\Models\Lead;
+use App\Models\Pipeline;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
@@ -90,14 +92,14 @@ class ProcessWahaWebhook implements ShouldQueue
             }
         }
 
-        if (! $conversation) {
-            // GOWS engine: nome vem em _data.Info.PushName
-            // Fallback para engines antigas: _data.notifyName ou notifyName
-            $contactName = $msg['_data']['Info']['PushName']
-                ?? $msg['_data']['notifyName']
-                ?? $msg['notifyName']
-                ?? null;
+        // GOWS engine: nome vem em _data.Info.PushName
+        // Fallback para engines antigas: _data.notifyName ou notifyName
+        $contactName = $msg['_data']['Info']['PushName']
+            ?? $msg['_data']['notifyName']
+            ?? $msg['notifyName']
+            ?? null;
 
+        if (! $conversation) {
             $conversation = WhatsappConversation::withoutGlobalScope('tenant')->create([
                 'tenant_id'       => $instance->tenant_id,
                 'instance_id'     => $instance->id,
@@ -108,6 +110,17 @@ class ProcessWahaWebhook implements ShouldQueue
                 'last_message_at' => now(),
                 'unread_count'    => 0,
             ]);
+        }
+
+        // Vincular a conversa a um Lead — cria automaticamente se não existir
+        if (! $conversation->lead_id) {
+            $lead = $this->findOrCreateLead($instance->tenant_id, $phone, $contactName);
+            if ($lead) {
+                WhatsappConversation::withoutGlobalScope('tenant')
+                    ->where('id', $conversation->id)
+                    ->update(['lead_id' => $lead->id]);
+                $conversation->lead_id = $lead->id;
+            }
         }
 
         [$type, $mediaUrl, $mediaMime, $mediaFilename] = $this->extractMedia($msg);
@@ -257,6 +270,51 @@ class ProcessWahaWebhook implements ShouldQueue
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Encontra um Lead pelo telefone ou cria um novo vinculado ao pipeline padrão.
+     * Retorna null se não houver pipeline configurado para o tenant.
+     */
+    private function findOrCreateLead(int $tenantId, string $phone, ?string $contactName): ?Lead
+    {
+        // Tenta encontrar lead existente com o mesmo telefone
+        $lead = Lead::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('phone', $phone)
+            ->first();
+
+        if ($lead) {
+            return $lead;
+        }
+
+        // Busca o pipeline padrão do tenant para criar o lead automaticamente
+        $pipeline = Pipeline::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('is_default', true)
+            ->first()
+            ?? Pipeline::withoutGlobalScope('tenant')
+                ->where('tenant_id', $tenantId)
+                ->first();
+
+        if (! $pipeline) {
+            return null; // Tenant sem pipeline configurado — não cria lead
+        }
+
+        $stage = $pipeline->stages()->orderBy('position')->first();
+
+        if (! $stage) {
+            return null; // Pipeline sem estágios — não cria lead
+        }
+
+        return Lead::withoutGlobalScope('tenant')->create([
+            'tenant_id'   => $tenantId,
+            'name'        => $contactName ?? $phone,
+            'phone'       => $phone,
+            'source'      => 'whatsapp',
+            'pipeline_id' => $pipeline->id,
+            'stage_id'    => $stage->id,
+        ]);
+    }
 
     private function normalizePhone(string $from, array $msg = []): string
     {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pipeline;
 use App\Models\User;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
@@ -18,11 +19,12 @@ class WhatsappController extends Controller
 {
     public function index(): View
     {
-        $instance = WhatsappInstance::first();
+        $instance  = WhatsappInstance::first();
         $connected = $instance && $instance->status === 'connected';
 
         $conversations = [];
         $users         = [];
+        $pipelines     = [];
 
         if ($connected) {
             $conversations = WhatsappConversation::with(['latestMessage', 'assignedUser'])
@@ -32,9 +34,13 @@ class WhatsappController extends Controller
             $users = User::where('tenant_id', auth()->user()->tenant_id)
                 ->orderBy('name')
                 ->get(['id', 'name']);
+
+            $pipelines = Pipeline::with('stages:id,pipeline_id,name,position')
+                ->orderBy('sort_order')
+                ->get(['id', 'name', 'is_default']);
         }
 
-        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'users'));
+        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'users', 'pipelines'));
     }
 
     public function poll(Request $request): JsonResponse
@@ -77,12 +83,35 @@ class WhatsappController extends Controller
 
     public function show(WhatsappConversation $conversation): JsonResponse
     {
+        $conversation->load(['lead.pipeline', 'lead.stage']);
+
         $messages = WhatsappMessage::where('conversation_id', $conversation->id)
             ->orderBy('sent_at')
             ->get()
             ->map(fn ($m) => $this->formatMessage($m));
 
-        return response()->json(['messages' => $messages]);
+        $lead = null;
+        if ($conversation->lead) {
+            $l    = $conversation->lead;
+            $lead = [
+                'id'            => $l->id,
+                'name'          => $l->name,
+                'phone'         => $l->phone,
+                'email'         => $l->email,
+                'value'         => $l->value,
+                'pipeline_id'   => $l->pipeline_id,
+                'pipeline_name' => $l->pipeline?->name,
+                'stage_id'      => $l->stage_id,
+                'stage_name'    => $l->stage?->name,
+                'source'        => $l->source,
+            ];
+        }
+
+        return response()->json([
+            'messages'        => $messages,
+            'lead'            => $lead,
+            'assigned_user_id' => $conversation->assigned_user_id,
+        ]);
     }
 
     public function markRead(WhatsappConversation $conversation): JsonResponse
@@ -110,6 +139,26 @@ class WhatsappController extends Controller
             'status'    => $status,
             'closed_at' => $status === 'closed' ? now() : null,
         ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function updateLead(WhatsappConversation $conversation, Request $request): JsonResponse
+    {
+        $conversation->load('lead');
+
+        if (! $conversation->lead) {
+            return response()->json(['error' => 'Conversa sem lead vinculado'], 422);
+        }
+
+        $data = array_filter([
+            'pipeline_id' => $request->input('pipeline_id'),
+            'stage_id'    => $request->input('stage_id'),
+            'value'       => $request->input('value'),
+            'email'       => $request->input('email'),
+        ], fn ($v) => $v !== null);
+
+        $conversation->lead->update($data);
 
         return response()->json(['success' => true]);
     }
