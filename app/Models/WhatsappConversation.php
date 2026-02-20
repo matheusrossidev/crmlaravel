@@ -18,13 +18,14 @@ class WhatsappConversation extends Model
 
     protected $fillable = [
         'tenant_id', 'instance_id', 'lead_id', 'phone',
-        'contact_name', 'contact_picture_url',
+        'contact_name', 'contact_picture_url', 'tags',
         'whatsapp_message_id', 'referral_source', 'referral_campaign_id',
         'status', 'assigned_user_id', 'unread_count',
         'started_at', 'last_message_at', 'closed_at',
     ];
 
     protected $casts = [
+        'tags'            => 'array',
         'started_at'      => 'datetime',
         'last_message_at' => 'datetime',
         'closed_at'       => 'datetime',

@@ -128,6 +128,48 @@ class ProcessWahaWebhook implements ShouldQueue
             }
         }
 
+        // Fallback SenderAlt: mensagem chega com from real (@c.us / @s.whatsapp.net)
+        // mas a conversa antiga foi gravada com o telefone LID (antes da correção).
+        // SenderAlt contém o LID alternativo: "36576092528787:22@lid".
+        if (! $conversation) {
+            $senderAlt = $msg['_data']['Info']['SenderAlt'] ?? '';
+            if ($senderAlt && str_ends_with($senderAlt, '@lid')) {
+                $lidNumeric = (string) preg_replace('/[:@].+$/', '', $senderAlt);
+
+                // Tenta por phone LIKE 'lidNumeric%'
+                $conv = WhatsappConversation::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $instance->tenant_id)
+                    ->where('phone', 'LIKE', $lidNumeric . '%')
+                    ->first();
+
+                // Tenta por waha_message_id de mensagem inbound com este LID
+                if (! $conv) {
+                    $existingMsg = WhatsappMessage::withoutGlobalScope('tenant')
+                        ->where('waha_message_id', 'LIKE', "false_{$lidNumeric}@%")
+                        ->latest('sent_at')
+                        ->first();
+                    if ($existingMsg) {
+                        $conv = WhatsappConversation::withoutGlobalScope('tenant')
+                            ->where('tenant_id', $instance->tenant_id)
+                            ->find($existingMsg->conversation_id);
+                    }
+                }
+
+                if ($conv) {
+                    $conversation = $conv;
+                    Log::channel('whatsapp')->info('Conversa LID migrada via SenderAlt', [
+                        'conversation_id' => $conv->id,
+                        'old_phone'       => $conv->phone,
+                        'new_phone'       => $phone,
+                        'lid'             => $lidNumeric,
+                    ]);
+                    WhatsappConversation::withoutGlobalScope('tenant')
+                        ->where('id', $conv->id)
+                        ->update(['phone' => $phone]);
+                }
+            }
+        }
+
         // Fallback extra para fromMe com @lid: o normalizePhone não consegue resolver
         // o telefone real do contato (Sender = nosso telefone, não o do contato).
         // Busca conversa via waha_message_id de mensagens inbound deste mesmo LID.

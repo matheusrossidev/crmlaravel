@@ -108,9 +108,12 @@ class WhatsappController extends Controller
         }
 
         return response()->json([
-            'messages'        => $messages,
-            'lead'            => $lead,
+            'messages'         => $messages,
+            'lead'             => $lead,
             'assigned_user_id' => $conversation->assigned_user_id,
+            'tags'             => $conversation->tags ?? [],
+            'contact_name'     => $conversation->contact_name,
+            'phone'            => $conversation->phone,
         ]);
     }
 
@@ -161,6 +164,42 @@ class WhatsappController extends Controller
         $conversation->lead->update($data);
 
         return response()->json(['success' => true]);
+    }
+
+    public function updateContact(WhatsappConversation $conversation, Request $request): JsonResponse
+    {
+        $data = [];
+
+        if ($request->has('contact_name')) {
+            $data['contact_name'] = $request->input('contact_name') ?: null;
+        }
+        if ($request->has('phone')) {
+            $phone = trim((string) $request->input('phone'));
+            if ($phone) {
+                $data['phone'] = preg_replace('/\D/', '', $phone); // só dígitos
+            }
+        }
+        if ($request->has('tags')) {
+            $tags = array_values(array_filter(array_map('trim', (array) $request->input('tags'))));
+            $data['tags'] = $tags ?: null;
+        }
+
+        if ($data) {
+            $conversation->update($data);
+            // Sincroniza o lead vinculado com o mesmo nome/telefone
+            if ($conversation->lead && isset($data['contact_name'])) {
+                $conversation->lead->update(['name' => $data['contact_name']]);
+            }
+            if ($conversation->lead && isset($data['phone'])) {
+                $conversation->lead->update(['phone' => $data['phone']]);
+            }
+        }
+
+        return response()->json(['success' => true, 'conversation' => [
+            'contact_name' => $conversation->contact_name,
+            'phone'        => $conversation->phone,
+            'tags'         => $conversation->tags ?? [],
+        ]]);
     }
 
     public function destroy(WhatsappConversation $conversation): JsonResponse
@@ -219,6 +258,7 @@ class WhatsappController extends Controller
             'phone'             => $c->phone,
             'contact_name'      => $c->contact_name,
             'contact_picture'   => $c->contact_picture_url,
+            'tags'              => $c->tags ?? [],
             'status'            => $c->status,
             'unread_count'      => $c->unread_count,
             'last_message_at'   => $c->last_message_at?->toISOString(),

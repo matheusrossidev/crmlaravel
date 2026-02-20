@@ -277,6 +277,35 @@
         flex-shrink: 0;
     }
 
+    .wa-conv-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+        margin-top: 4px;
+    }
+
+    .wa-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 1px 7px;
+        background: #eff6ff;
+        color: #2563eb;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .wa-tag .wa-tag-remove {
+        cursor: pointer;
+        font-size: 11px;
+        line-height: 1;
+        color: #93c5fd;
+    }
+
+    .wa-tag .wa-tag-remove:hover { color: #1d4ed8; }
+
     /* ── Área principal de chat ── */
     .wa-chat-area {
         flex: 1;
@@ -733,6 +762,7 @@
              data-phone="{{ $conv->phone }}"
              data-status="{{ $conv->status }}"
              data-channel="whatsapp"
+             data-tags="{{ json_encode($conv->tags ?? []) }}"
              onclick="openConversation({{ $conv->id }}, this)">
             <div class="wa-conv-avatar-wrap">
                 <div class="wa-conv-avatar">
@@ -765,6 +795,13 @@
                     <span class="wa-unread-dot">{{ $conv->unread_count }}</span>
                     @endif
                 </div>
+                @if(!empty($conv->tags))
+                <div class="wa-conv-tags">
+                    @foreach($conv->tags as $tag)
+                    <span class="wa-tag">{{ $tag }}</span>
+                    @endforeach
+                </div>
+                @endif
             </div>
         </div>
         @empty
@@ -859,9 +896,54 @@
 {{-- Painel de detalhes --}}
 <div class="wa-details" id="detailsPanel">
     <div class="wa-details-section">
-        <div class="wa-details-label">Contato</div>
-        <div class="wa-details-value" id="detailsName" style="font-weight:600;margin-bottom:4px;"></div>
-        <div class="wa-details-value" id="detailsPhone" style="color:#9ca3af;font-size:12px;"></div>
+        <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
+            Contato
+            <button onclick="toggleContactEdit()" id="btnEditContact"
+                    style="background:none;border:none;cursor:pointer;color:#6b7280;padding:2px 4px;font-size:13px;"
+                    title="Editar contato">
+                <i class="bi bi-pencil"></i>
+            </button>
+        </div>
+        {{-- modo visualização --}}
+        <div id="contactViewMode">
+            <div class="wa-details-value" id="detailsName" style="font-weight:600;margin-bottom:4px;"></div>
+            <div class="wa-details-value" id="detailsPhone" style="color:#9ca3af;font-size:12px;"></div>
+        </div>
+        {{-- modo edição --}}
+        <div id="contactEditMode" style="display:none;">
+            <input id="editContactName" class="wa-textarea"
+                   style="min-height:unset;height:34px;padding:5px 8px;font-size:13px;margin-bottom:6px;"
+                   placeholder="Nome do contato">
+            <input id="editContactPhone" class="wa-textarea"
+                   style="min-height:unset;height:34px;padding:5px 8px;font-size:13px;margin-bottom:6px;"
+                   placeholder="Telefone (só dígitos)">
+            <div style="display:flex;gap:6px;">
+                <button onclick="saveContact()"
+                        style="flex:1;padding:5px 10px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">
+                    Salvar
+                </button>
+                <button onclick="toggleContactEdit()"
+                        style="flex:1;padding:5px 10px;background:#f1f5f9;color:#374151;border:none;border-radius:6px;font-size:12px;cursor:pointer;">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Tags --}}
+    <div class="wa-details-section">
+        <div class="wa-details-label">Tags</div>
+        <div id="tagsList" style="display:flex;flex-wrap:wrap;gap:4px;min-height:22px;margin-bottom:8px;"></div>
+        <div style="display:flex;gap:6px;">
+            <input id="tagInput" class="wa-textarea"
+                   style="min-height:unset;height:30px;padding:4px 8px;font-size:12px;"
+                   placeholder="Nova tag..."
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();addTag();}">
+            <button onclick="addTag()"
+                    style="padding:4px 10px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;white-space:nowrap;">
+                +
+            </button>
+        </div>
     </div>
 
     {{-- Seção Lead / CRM --}}
@@ -1113,6 +1195,11 @@ async function openConversation(convId, el) {
     document.getElementById('chatAvatar').textContent = name.charAt(0).toUpperCase();
     document.getElementById('detailsName').textContent  = name;
     document.getElementById('detailsPhone').textContent = phone;
+    // Reset tags e contact edit ao trocar conversa
+    const tagsRaw = el.dataset.tags ? JSON.parse(el.dataset.tags) : [];
+    renderTags(tagsRaw);
+    document.getElementById('contactViewMode').style.display = '';
+    document.getElementById('contactEditMode').style.display = 'none';
     document.getElementById('detailsStatus').textContent = activeConvStatus === 'open' ? '🟢 Aberta' : '⚫ Fechada';
     document.getElementById('btnCloseConv').title = activeConvStatus === 'open' ? 'Fechar conversa' : 'Reabrir conversa';
     document.getElementById('btnCloseConv').querySelector('i').className = activeConvStatus === 'open'
@@ -1137,6 +1224,29 @@ async function openConversation(convId, el) {
     const res  = await fetch(`/whatsapp/conversations/${convId}`, { headers: { 'Accept': 'application/json' } });
     const data = await res.json();
     renderMessages(data.messages, true);
+
+    // Atualiza nome/telefone com dados frescos do servidor (pode ter migrado de LID)
+    if (data.contact_name || data.phone) {
+        const freshName  = data.contact_name || data.phone;
+        const freshPhone = data.phone;
+        document.getElementById('chatContactName').textContent = freshName;
+        document.getElementById('chatContactPhone').textContent = freshPhone;
+        document.getElementById('chatAvatar').textContent = freshName.charAt(0).toUpperCase();
+        document.getElementById('detailsName').textContent  = freshName;
+        document.getElementById('detailsPhone').textContent = freshPhone;
+        // Atualiza card na sidebar
+        const cardEl = document.querySelector(`[data-conv-id="${convId}"]`);
+        if (cardEl) {
+            cardEl.dataset.phone = freshPhone;
+            const nameEl = cardEl.querySelector('.wa-conv-name');
+            if (nameEl) nameEl.textContent = freshName;
+        }
+    }
+
+    // Tags frescas do servidor
+    renderTags(data.tags || []);
+    const cardEl = document.querySelector(`[data-conv-id="${convId}"]`);
+    if (cardEl) cardEl.dataset.tags = JSON.stringify(data.tags || []);
 
     // Atualiza select de atribuição
     const assignSel = document.getElementById('assignSelect');
@@ -1555,6 +1665,108 @@ function toggleDetails() {
     document.getElementById('detailsPanel').classList.toggle('open');
 }
 
+// ── Edição de contato ─────────────────────────────────────────────────────────
+let _convTags = [];
+
+function toggleContactEdit() {
+    const view = document.getElementById('contactViewMode');
+    const edit = document.getElementById('contactEditMode');
+    const editing = edit.style.display !== 'none';
+    if (editing) {
+        // cancelar — restaura view
+        view.style.display = '';
+        edit.style.display = 'none';
+    } else {
+        document.getElementById('editContactName').value  = document.getElementById('detailsName').textContent;
+        document.getElementById('editContactPhone').value = document.getElementById('detailsPhone').textContent;
+        view.style.display = 'none';
+        edit.style.display = '';
+        document.getElementById('editContactName').focus();
+    }
+}
+
+async function saveContact() {
+    if (!activeConvId) return;
+    const name  = document.getElementById('editContactName').value.trim();
+    const phone = document.getElementById('editContactPhone').value.trim().replace(/\D/g, '');
+    if (!name && !phone) return;
+
+    const res = await fetch(`/whatsapp/conversations/${activeConvId}/contact`, {
+        method: 'PUT',
+        headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact_name: name, phone }),
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const c = data.conversation;
+
+    // Actualiza header e detalhes
+    document.getElementById('detailsName').textContent       = c.contact_name || c.phone;
+    document.getElementById('detailsPhone').textContent      = c.phone;
+    document.getElementById('chatContactName').textContent   = c.contact_name || c.phone;
+    document.getElementById('chatContactPhone').textContent  = c.phone;
+    document.getElementById('chatAvatar').textContent        = (c.contact_name || c.phone || '?').charAt(0).toUpperCase();
+
+    // Actualiza card na sidebar
+    const el = document.querySelector(`[data-conv-id="${activeConvId}"]`);
+    if (el) {
+        el.dataset.phone = c.phone;
+        const nameEl = el.querySelector('.wa-conv-name');
+        if (nameEl) nameEl.textContent = c.contact_name || c.phone;
+    }
+
+    toggleContactEdit();
+}
+
+// ── Tags ──────────────────────────────────────────────────────────────────────
+function renderTags(tags) {
+    _convTags = tags || [];
+    const container = document.getElementById('tagsList');
+    container.innerHTML = '';
+    _convTags.forEach((tag, i) => {
+        const span = document.createElement('span');
+        span.className = 'wa-tag';
+        span.innerHTML = `${escHtml(tag)} <span class="wa-tag-remove" onclick="removeTag(${i})" title="Remover">×</span>`;
+        container.appendChild(span);
+    });
+}
+
+async function addTag() {
+    const input = document.getElementById('tagInput');
+    const tag   = input.value.trim();
+    if (!tag || !activeConvId) return;
+    input.value = '';
+    if (_convTags.includes(tag)) return;
+    _convTags = [..._convTags, tag];
+    await saveTags();
+}
+
+async function removeTag(index) {
+    if (!activeConvId) return;
+    _convTags = _convTags.filter((_, i) => i !== index);
+    await saveTags();
+}
+
+async function saveTags() {
+    await fetch(`/whatsapp/conversations/${activeConvId}/contact`, {
+        method: 'PUT',
+        headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tags: _convTags }),
+    });
+    renderTags(_convTags);
+    // Actualiza card na sidebar
+    const el = document.querySelector(`[data-conv-id="${activeConvId}"]`);
+    if (el) {
+        let tagsEl = el.querySelector('.wa-conv-tags');
+        if (_convTags.length > 0) {
+            if (!tagsEl) { tagsEl = document.createElement('div'); tagsEl.className = 'wa-conv-tags'; el.querySelector('.wa-conv-info').appendChild(tagsEl); }
+            tagsEl.innerHTML = _convTags.map(t => `<span class="wa-tag">${escHtml(t)}</span>`).join('');
+        } else if (tagsEl) {
+            tagsEl.remove();
+        }
+    }
+}
+
 // ── Atualizar conversa na sidebar ─────────────────────────────────────────────
 function updateConvInSidebar(conv) {
     let el = document.querySelector(`[data-conv-id="${conv.id}"]`);
@@ -1581,6 +1793,8 @@ function updateConvInSidebar(conv) {
     const chanIcon = channel === 'instagram' ? '<i class="bi bi-instagram"></i>' : '<i class="bi bi-whatsapp"></i>';
     const unread   = conv.unread_count > 0 && conv.id !== activeConvId
         ? `<span class="wa-unread-dot">${conv.unread_count}</span>` : '';
+    const tags     = (conv.tags || []).map(t => `<span class="wa-tag">${escHtml(t)}</span>`).join('');
+    const tagsRow  = tags ? `<div class="wa-conv-tags">${tags}</div>` : '';
 
     el.innerHTML = `
         <div class="wa-conv-avatar-wrap">
@@ -1596,7 +1810,10 @@ function updateConvInSidebar(conv) {
                 <span class="wa-conv-preview">${escHtml(preview)}</span>
                 ${unread}
             </div>
+            ${tagsRow}
         </div>`;
+
+    el.dataset.tags = JSON.stringify(conv.tags || []);
 
     el.dataset.status = conv.status;
     document.getElementById('convList').prepend(el);
