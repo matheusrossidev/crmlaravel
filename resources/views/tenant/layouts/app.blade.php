@@ -656,20 +656,6 @@
             <span class="nav-label">Relatórios</span>
         </a>
 
-        <a href="{{ route('settings.integrations.index') }}"
-           class="nav-item {{ request()->routeIs('settings.integrations*') ? 'active' : '' }}"
-           title="Integrações">
-            <i class="bi bi-plugin nav-icon"></i>
-            <span class="nav-label">Integrações</span>
-        </a>
-
-        <a href="{{ route('settings.api-keys') }}"
-           class="nav-item {{ request()->routeIs('settings.api-keys*') ? 'active' : '' }}"
-           title="API / Webhooks">
-            <i class="bi bi-key nav-icon"></i>
-            <span class="nav-label">API / Webhooks</span>
-        </a>
-
         @php
             $settingsOpen = request()->routeIs('settings.*');
         @endphp
@@ -707,6 +693,16 @@
                     <span class="nav-label">Campos extras</span>
                 </a>
                 @endif
+                <a href="{{ route('settings.integrations.index') }}"
+                   class="nav-subitem {{ request()->routeIs('settings.integrations*') ? 'active' : '' }}">
+                    <i class="bi bi-plugin nav-icon" style="font-size:14px;"></i>
+                    <span class="nav-label">Integrações</span>
+                </a>
+                <a href="{{ route('settings.api-keys') }}"
+                   class="nav-subitem {{ request()->routeIs('settings.api-keys*') ? 'active' : '' }}">
+                    <i class="bi bi-key nav-icon" style="font-size:14px;"></i>
+                    <span class="nav-label">API / Webhooks</span>
+                </a>
             </div>
         </div>
     </nav>
