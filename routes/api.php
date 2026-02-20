@@ -2,7 +2,12 @@
 
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\PipelineController;
+use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
+
+// ── Webhook WAHA (público, sem autenticação) ──────────────────────────────
+Route::post('/webhook/waha', [WhatsappWebhookController::class, 'handle'])
+    ->name('waha.webhook');
 
 /*
 |--------------------------------------------------------------------------
