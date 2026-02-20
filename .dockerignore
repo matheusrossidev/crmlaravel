@@ -18,10 +18,12 @@ bootstrap/cache/*.php
 .env.*
 !.env.example
 
-# Docker files (evitar recursão)
+# Docker files (evitar recursão no build context)
 docker-compose*.yml
-Dockerfile*
-docker/
+portainer-stack.yml
+# Apenas scripts de deploy — configs (php.ini, nginx, entrypoint) SÃO necessários no build
+docker/deploy.sh
+docker/push.sh
 
 # IDE / OS
 .idea
