@@ -55,14 +55,26 @@ class ProcessWahaWebhook implements ShouldQueue
         $msg   = $this->payload['payload'] ?? [];
         $event = $this->payload['event'] ?? '';
 
-        // Ignorar tipos que não são mensagens reais (grupos por enquanto)
-        $from = $msg['from'] ?? '';
+        $from     = $msg['from'] ?? '';
+        $isFromMe = ! empty($msg['fromMe']);
+
+        // Para mensagens fromMe, 'from' é o JID do nosso celular conectado.
+        // O parceiro da conversa está no campo 'to' ou embutido no message ID:
+        // formato "true_{contactJID}_{msgId}" — extraímos o contactJID.
+        if ($isFromMe) {
+            $recipientFrom = null;
+            $msgId         = $msg['id'] ?? '';
+            if (preg_match('/^true_(.+@[\w.]+)_/', $msgId, $m)) {
+                $recipientFrom = $m[1]; // ex: "36576092528787@lid" ou "556192008997@c.us"
+            }
+            $from = $recipientFrom ?? $msg['to'] ?? $msg['chatId'] ?? $from;
+        }
+
+        // Ignorar grupos
         if (str_contains($from, '@g.us')) {
             Log::channel('whatsapp')->debug('Ignorado: grupo', ['from' => $from, 'event' => $event]);
             return;
         }
-
-        $isFromMe = ! empty($msg['fromMe']);
 
         // Mensagens fromMe: podem ser (a) enviadas pelo CRM — já no banco, ignorar;
         // ou (b) enviadas diretamente do celular — salvar como outbound.
@@ -76,7 +88,7 @@ class ProcessWahaWebhook implements ShouldQueue
             Log::channel('whatsapp')->info('fromMe não encontrado no banco — salvando (enviado direto do celular)', ['id' => $wahaIdCheck]);
         }
 
-        $phone = $this->normalizePhone($from, $msg);
+        $phone = $this->normalizePhone($from, $msg, $isFromMe);
 
         Log::channel('whatsapp')->info('Processando mensagem', [
             'event'  => $event,
@@ -113,6 +125,31 @@ class ProcessWahaWebhook implements ShouldQueue
                 WhatsappConversation::withoutGlobalScope('tenant')
                     ->where('id', $conversation->id)
                     ->update(['phone' => $phone]);
+            }
+        }
+
+        // Fallback extra para fromMe com @lid: o normalizePhone não consegue resolver
+        // o telefone real do contato (Sender = nosso telefone, não o do contato).
+        // Busca conversa via waha_message_id de mensagens inbound deste mesmo LID.
+        if (! $conversation && $isFromMe && str_ends_with($from, '@lid')) {
+            $lidNumeric = (string) preg_replace('/[:@].+$/', '', $from);
+            $existingMsg = WhatsappMessage::withoutGlobalScope('tenant')
+                ->where('waha_message_id', 'LIKE', "false_{$lidNumeric}@%")
+                ->latest('sent_at')
+                ->first();
+            if ($existingMsg) {
+                $conv = WhatsappConversation::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $instance->tenant_id)
+                    ->find($existingMsg->conversation_id);
+                if ($conv) {
+                    $conversation = $conv;
+                    $phone        = $conv->phone;
+                    Log::channel('whatsapp')->info('fromMe @lid: conversa encontrada via waha_message_id', [
+                        'conversation_id' => $conv->id,
+                        'lid'             => $lidNumeric,
+                        'phone'           => $phone,
+                    ]);
+                }
             }
         }
 
@@ -369,7 +406,7 @@ class ProcessWahaWebhook implements ShouldQueue
         ]);
     }
 
-    private function normalizePhone(string $from, array $msg = []): string
+    private function normalizePhone(string $from, array $msg = [], bool $isFromMe = false): string
     {
         // GOWS engine may use @lid JIDs in the "from" field.
         // Real phone is in _data.Info.Chat or _data.Info.Sender (@s.whatsapp.net format).
@@ -381,9 +418,12 @@ class ProcessWahaWebhook implements ShouldQueue
             }
 
             // 2nd try: Sender JID — "556192008997:22@s.whatsapp.net"
-            $sender = $msg['_data']['Info']['Sender'] ?? '';
-            if ($sender && ! str_ends_with($sender, '@lid')) {
-                return (string) preg_replace('/[:@].+$/', '', $sender);
+            // Apenas para inbound: em fromMe, Sender = nosso próprio telefone, não o do contato.
+            if (! $isFromMe) {
+                $sender = $msg['_data']['Info']['Sender'] ?? '';
+                if ($sender && ! str_ends_with($sender, '@lid')) {
+                    return (string) preg_replace('/[:@].+$/', '', $sender);
+                }
             }
 
             // Last resort: strip @lid and device suffix
