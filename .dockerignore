@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Node
+node_modules
+
+# Laravel development files
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+bootstrap/cache/*.php
+
+# Development config
+.env
+.env.*
+!.env.example
+
+# Docker files (evitar recursão)
+docker-compose*.yml
+Dockerfile*
+docker/
+
+# IDE / OS
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Tests
+tests/
+phpunit.xml
+.phpunit.cache
+
+# Documentation
+*.md
+docs/
+
+# Sail / Laravel-specific dev
+docker-compose.sail.yml

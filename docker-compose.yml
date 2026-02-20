@@ -1,0 +1,177 @@
+# ============================================================
+# CRM — Plataforma 360
+# Stack para Portainer com Traefik
+# Domínio: syncro.matheusrossi.com.br
+#
+# Pré-requisitos no Portainer:
+#  1. Traefik já rodando com a rede "traefik_public" e
+#     certresolver "letsencrypt" configurado
+#  2. Rede "shared_network" criada (compartilhada com WAHA)
+#     → docker network create shared_network
+#  3. Container WAHA adicionado à rede shared_network
+#     → docker network connect shared_network <container_waha>
+#  4. Arquivo .env configurado na raiz do projeto
+# ============================================================
+services:
+
+  # ── Nginx (servidor web) ──────────────────────────────────
+  # Traefik faz o roteamento externo; nginx serve internamente
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: crm_nginx
+    restart: unless-stopped
+    # Sem 'ports' — Traefik assume o 80/443
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - public_shared:/var/www/public:ro
+      - storage_data:/var/www/storage/app/public:ro
+    networks:
+      - crm_internal
+      - traefik_public          # Traefik precisa alcançar o nginx
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+
+      # ── Rota HTTPS (principal) ────────────────────────────
+      - "traefik.http.routers.crm.rule=Host(`syncro.matheusrossi.com.br`)"
+      - "traefik.http.routers.crm.entrypoints=websecure"
+      - "traefik.http.routers.crm.tls=true"
+      - "traefik.http.routers.crm.tls.certresolver=letsencrypt"
+      - "traefik.http.services.crm.loadbalancer.server.port=80"
+
+      # ── Rota HTTP → redireciona para HTTPS ───────────────
+      - "traefik.http.routers.crm-http.rule=Host(`syncro.matheusrossi.com.br`)"
+      - "traefik.http.routers.crm-http.entrypoints=web"
+      - "traefik.http.routers.crm-http.middlewares=https-redirect@docker"
+    depends_on:
+      - app
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── PHP-FPM (aplicação Laravel) ──────────────────────────
+  app:
+    image: ${APP_IMAGE:-crm-app:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: crm_app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=https://syncro.matheusrossi.com.br
+    volumes:
+      - public_shared:/var/www-public
+      - storage_data:/var/www/storage/app
+      - logs_data:/var/www/storage/logs
+      - cache_data:/var/www/bootstrap/cache
+    networks:
+      - crm_internal
+      - shared_network          # comunica com WAHA e redis
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ── Queue Worker ─────────────────────────────────────────
+  queue:
+    image: ${APP_IMAGE:-crm-app:latest}
+    container_name: crm_queue
+    restart: unless-stopped
+    command: >
+      php artisan queue:work redis
+        --queue=whatsapp,default
+        --tries=3
+        --backoff=5
+        --sleep=3
+        --timeout=60
+        --memory=256
+    env_file:
+      - .env
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+    volumes:
+      - storage_data:/var/www/storage/app
+      - logs_data:/var/www/storage/logs
+      - cache_data:/var/www/bootstrap/cache
+    networks:
+      - crm_internal
+      - shared_network
+    depends_on:
+      - app
+      - redis
+
+  # ── MySQL 8.0 ────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: crm_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
+      MYSQL_DATABASE: ${DB_DATABASE:-plataforma360}
+      MYSQL_USER: ${DB_USERNAME:-crm}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - crm_internal            # só interno; nunca exposto ao Traefik
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${DB_ROOT_PASSWORD:-rootsecret}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Redis ────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: crm_redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    networks:
+      - crm_internal
+      - shared_network          # WAHA pode usar este Redis se necessário
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+# ── Volumes ───────────────────────────────────────────────
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  storage_data:
+    driver: local
+  logs_data:
+    driver: local
+  cache_data:
+    driver: local
+  public_shared:
+    driver: local
+
+# ── Redes ─────────────────────────────────────────────────
+networks:
+  crm_internal:
+    driver: bridge
+    internal: true              # MySQL/Redis nunca expostos externamente
+
+  shared_network:
+    external: true              # rede compartilhada com WAHA
+    name: shared_network
+
+  traefik_public:
+    external: true              # rede do Traefik (já existe na VPS)
+    name: traefik_public

@@ -1,0 +1,266 @@
+# ============================================================
+# STACK COMPLETA — Plataforma 360 CRM
+# Cole no Portainer → Stacks → Add Stack → Web Editor
+# ============================================================
+services:
+
+  # ────────────────────────────────────────────────────────
+  # NGINX — Servidor web (roteado pelo Traefik)
+  # ────────────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: crm_nginx
+    restart: unless-stopped
+    configs:
+      - source: nginx_config
+        target: /etc/nginx/conf.d/default.conf
+    volumes:
+      - public_shared:/var/www/public:ro
+      - storage_data:/var/www/storage/app/public:ro
+    networks:
+      - crm_internal
+      - traefik_public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_public"
+      - "traefik.http.routers.crm.rule=Host(`syncro.matheusrossi.com.br`)"
+      - "traefik.http.routers.crm.entrypoints=websecure"
+      - "traefik.http.routers.crm.tls=true"
+      - "traefik.http.routers.crm.tls.certresolver=letsencrypt"
+      - "traefik.http.services.crm.loadbalancer.server.port=80"
+      - "traefik.http.routers.crm-http.rule=Host(`syncro.matheusrossi.com.br`)"
+      - "traefik.http.routers.crm-http.entrypoints=web"
+      - "traefik.http.routers.crm-http.middlewares=https-redirect@docker"
+    depends_on:
+      - app
+
+  # ────────────────────────────────────────────────────────
+  # APP — PHP-FPM Laravel
+  # As migrations rodam automaticamente no entrypoint ao subir
+  # ────────────────────────────────────────────────────────
+  app:
+    image: matolado/crm:latest
+    container_name: crm_app
+    restart: unless-stopped
+    environment:
+      APP_NAME: "Plataforma 360"
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_TIMEZONE: America/Sao_Paulo
+      APP_URL: https://syncro.matheusrossi.com.br
+      APP_KEY: "base64:yyrXOSQTQq6MYA7fk0+1YHOUkslOvswrHifAomKMGGU="
+      APP_LOCALE: pt_BR
+      APP_FALLBACK_LOCALE: pt_BR
+      APP_FAKER_LOCALE: pt_BR
+      APP_MAINTENANCE_DRIVER: file
+      BCRYPT_ROUNDS: "12"
+      LOG_CHANNEL: stack
+      LOG_STACK: single
+      LOG_LEVEL: warning
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_DATABASE: plataforma360
+      DB_USERNAME: crm
+      DB_PASSWORD: "60588c0273caac3cc637a65b6af4dc60"
+      SESSION_DRIVER: redis
+      SESSION_LIFETIME: "120"
+      SESSION_ENCRYPT: "false"
+      SESSION_PATH: /
+      SESSION_DOMAIN: "null"
+      SESSION_SECURE_COOKIE: "true"
+      SESSION_HTTP_ONLY: "true"
+      SESSION_SAME_SITE: lax
+      BROADCAST_CONNECTION: log
+      FILESYSTEM_DISK: local
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      CACHE_PREFIX: crm_
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PASSWORD: "null"
+      REDIS_PORT: "6379"
+      MAIL_MAILER: log
+      MAIL_FROM_ADDRESS: noreply@plataforma360.com.br
+      MAIL_FROM_NAME: "Plataforma 360"
+      WAHA_BASE_URL: https://waha.matheusrossi.com.br
+      WAHA_API_KEY: "faf5b83c9d4a9b913c9f7ecbf3da2b50"
+      WAHA_WEBHOOK_SECRET: "KFq4eBE7EJ2aDRneKtm0ke7jg2GDFMOU"
+      FACEBOOK_CLIENT_ID: ""
+      FACEBOOK_CLIENT_SECRET: ""
+      FACEBOOK_REDIRECT_URI: https://syncro.matheusrossi.com.br/oauth/facebook/callback
+      FACEBOOK_API_VERSION: v19.0
+      GOOGLE_CLIENT_ID: ""
+      GOOGLE_CLIENT_SECRET: ""
+      GOOGLE_REDIRECT_URI: https://syncro.matheusrossi.com.br/oauth/google/callback
+      GOOGLE_DEVELOPER_TOKEN: ""
+      GOOGLE_ADS_API_VERSION: v16
+      WHATSAPP_VERIFY_TOKEN: plataforma360_whatsapp_verify
+      WHATSAPP_PHONE_NUMBER_ID: ""
+      WHATSAPP_BUSINESS_ACCOUNT_ID: ""
+      WHATSAPP_ACCESS_TOKEN: ""
+    volumes:
+      - public_shared:/var/www-public
+      - storage_data:/var/www/storage/app
+      - logs_data:/var/www/storage/logs
+      - cache_data:/var/www/bootstrap/cache
+    networks:
+      - crm_internal
+    depends_on:
+      - mysql
+      - redis
+
+  # ────────────────────────────────────────────────────────
+  # QUEUE — Worker (filas whatsapp + default)
+  # ────────────────────────────────────────────────────────
+  queue:
+    image: matolado/crm:latest
+    container_name: crm_queue
+    restart: unless-stopped
+    command: >
+      php artisan queue:work redis
+        --queue=whatsapp,default
+        --tries=3
+        --backoff=5
+        --sleep=3
+        --timeout=60
+        --memory=256
+    environment:
+      APP_NAME: "Plataforma 360"
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: "base64:yyrXOSQTQq6MYA7fk0+1YHOUkslOvswrHifAomKMGGU="
+      APP_URL: https://syncro.matheusrossi.com.br
+      APP_TIMEZONE: America/Sao_Paulo
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_DATABASE: plataforma360
+      DB_USERNAME: crm
+      DB_PASSWORD: "60588c0273caac3cc637a65b6af4dc60"
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      CACHE_PREFIX: crm_
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PASSWORD: "null"
+      REDIS_PORT: "6379"
+      FILESYSTEM_DISK: local
+      LOG_LEVEL: warning
+      WAHA_BASE_URL: https://waha.matheusrossi.com.br
+      WAHA_API_KEY: "faf5b83c9d4a9b913c9f7ecbf3da2b50"
+      WAHA_WEBHOOK_SECRET: "KFq4eBE7EJ2aDRneKtm0ke7jg2GDFMOU"
+    volumes:
+      - storage_data:/var/www/storage/app
+      - logs_data:/var/www/storage/logs
+      - cache_data:/var/www/bootstrap/cache
+    networks:
+      - crm_internal
+    depends_on:
+      - app
+      - redis
+
+  # ────────────────────────────────────────────────────────
+  # MYSQL 8.0 — Banco de dados (migrations rodam automaticamente)
+  # ────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: crm_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "0f6e6767fff792721c91f8e0c783b082"
+      MYSQL_DATABASE: plataforma360
+      MYSQL_USER: crm
+      MYSQL_PASSWORD: "60588c0273caac3cc637a65b6af4dc60"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - crm_internal
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p0f6e6767fff792721c91f8e0c783b082"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ────────────────────────────────────────────────────────
+  # REDIS 7 — Cache e filas
+  # ────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: crm_redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    networks:
+      - crm_internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+# ── Config nginx inline ───────────────────────────────────
+configs:
+  nginx_config:
+    content: |
+      server {
+          listen 80;
+          server_name _;
+          root /var/www/public;
+          index index.php;
+
+          location /storage/ {
+              alias /var/www/storage/app/public/;
+              expires 7d;
+              add_header Cache-Control "public";
+              try_files $$uri =404;
+          }
+
+          add_header X-Content-Type-Options nosniff;
+          add_header X-Frame-Options SAMEORIGIN;
+          client_max_body_size 52M;
+          gzip on;
+          gzip_types text/plain text/css application/json application/javascript;
+
+          location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|webp)$$ {
+              expires 30d;
+              add_header Cache-Control "public, immutable";
+              try_files $$uri =404;
+          }
+
+          location / {
+              try_files $$uri $$uri/ /index.php?$$query_string;
+          }
+
+          location ~ \.php$$ {
+              fastcgi_pass app:9000;
+              fastcgi_index index.php;
+              include fastcgi_params;
+              fastcgi_param SCRIPT_FILENAME $$realpath_root$$fastcgi_script_name;
+              fastcgi_param DOCUMENT_ROOT $$realpath_root;
+              fastcgi_read_timeout 120;
+          }
+
+          location ~ /\.(?!well-known).* { deny all; }
+          location ~ \.(env|log|md)$$ { deny all; }
+      }
+
+# ── Volumes ───────────────────────────────────────────────
+volumes:
+  mysql_data:
+  redis_data:
+  storage_data:
+  logs_data:
+  cache_data:
+  public_shared:
+
+# ── Redes ─────────────────────────────────────────────────
+networks:
+  crm_internal:
+    driver: bridge
+    internal: true
+  traefik_public:
+    external: true
+    name: traefik_public
