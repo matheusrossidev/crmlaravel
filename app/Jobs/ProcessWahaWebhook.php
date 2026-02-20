@@ -66,15 +66,22 @@ class ProcessWahaWebhook implements ShouldQueue
             ->first();
 
         if (! $conversation) {
+            // GOWS engine: nome vem em _data.Info.PushName
+            // Fallback para engines antigas: _data.notifyName ou notifyName
+            $contactName = $msg['_data']['Info']['PushName']
+                ?? $msg['_data']['notifyName']
+                ?? $msg['notifyName']
+                ?? null;
+
             $conversation = WhatsappConversation::withoutGlobalScope('tenant')->create([
-                'tenant_id'    => $instance->tenant_id,
-                'instance_id'  => $instance->id,
-                'phone'        => $phone,
-                'contact_name' => $msg['_data']['notifyName'] ?? $msg['notifyName'] ?? null,
-                'status'       => 'open',
-                'started_at'   => now(),
+                'tenant_id'       => $instance->tenant_id,
+                'instance_id'     => $instance->id,
+                'phone'           => $phone,
+                'contact_name'    => $contactName,
+                'status'          => 'open',
+                'started_at'      => now(),
                 'last_message_at' => now(),
-                'unread_count' => 0,
+                'unread_count'    => 0,
             ]);
         }
 
@@ -109,7 +116,7 @@ class ProcessWahaWebhook implements ShouldQueue
             ->where('id', $conversation->id)
             ->update([
                 'last_message_at' => now(),
-                'unread_count'    => \DB::raw('unread_count + 1'),
+                'unread_count'    => \Illuminate\Support\Facades\DB::raw('unread_count + 1'),
                 'instance_id'     => $instance->id,
                 'status'          => 'open',
                 'closed_at'       => null,
@@ -192,11 +199,24 @@ class ProcessWahaWebhook implements ShouldQueue
             'FAILED'       => 'disconnected',
         ];
 
-        if ($status && isset($map[$status])) {
-            WhatsappInstance::withoutGlobalScope('tenant')
-                ->where('id', $instance->id)
-                ->update(['status' => $map[$status]]);
+        if (! $status || ! isset($map[$status])) {
+            return;
         }
+
+        $update = ['status' => $map[$status]];
+
+        // Salva o número conectado quando a sessão ativa (facilita lookup futuro por telefone)
+        if ($status === 'WORKING') {
+            $meId = $this->payload['me']['id'] ?? '';
+            $phone = str_replace(['@c.us', '@s.whatsapp.net', '@lid'], '', $meId);
+            if ($phone) {
+                $update['phone_number'] = $phone;
+            }
+        }
+
+        WhatsappInstance::withoutGlobalScope('tenant')
+            ->where('id', $instance->id)
+            ->update($update);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
