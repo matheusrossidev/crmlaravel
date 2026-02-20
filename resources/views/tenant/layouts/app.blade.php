@@ -657,6 +657,34 @@
         </a>
 
         @php
+            $aiOpen = request()->routeIs('ai.*') || request()->routeIs('settings.ai*');
+        @endphp
+        <div class="nav-submenu-wrap {{ $aiOpen ? 'open' : '' }}" id="aiSubmenuWrap">
+            <button type="button"
+                    class="nav-item nav-submenu-toggle w-100"
+                    onclick="toggleSubmenu('aiSubmenu')"
+                    title="Inteligência Artificial"
+                    style="background:none;border:none;cursor:pointer;text-align:left;{{ $aiOpen ? 'color:#3B82F6;background:#eff6ff;font-weight:600;' : '' }}">
+                <i class="bi bi-robot nav-icon"></i>
+                <span class="nav-label">Inteligência Artificial</span>
+                <i class="bi bi-chevron-down nav-chevron nav-label" id="aiChevron"
+                   style="margin-left:auto;font-size:11px;transition:transform .2s;{{ $aiOpen ? 'transform:rotate(180deg);' : '' }}"></i>
+            </button>
+            <div class="nav-submenu" id="aiSubmenu" style="{{ $aiOpen ? '' : 'display:none;' }}">
+                <a href="{{ route('settings.ai.config') }}"
+                   class="nav-subitem {{ request()->routeIs('settings.ai.config*') ? 'active' : '' }}">
+                    <i class="bi bi-gear nav-icon" style="font-size:14px;"></i>
+                    <span class="nav-label">Configuração</span>
+                </a>
+                <a href="{{ route('ai.agents.index') }}"
+                   class="nav-subitem {{ request()->routeIs('ai.agents.*') ? 'active' : '' }}">
+                    <i class="bi bi-cpu nav-icon" style="font-size:14px;"></i>
+                    <span class="nav-label">Agentes</span>
+                </a>
+            </div>
+        </div>
+
+        @php
             $settingsOpen = request()->routeIs('settings.*');
         @endphp
         <div class="nav-submenu-wrap {{ $settingsOpen ? 'open' : '' }}" id="settingsSubmenuWrap">
@@ -697,6 +725,11 @@
                    class="nav-subitem {{ request()->routeIs('settings.integrations*') ? 'active' : '' }}">
                     <i class="bi bi-plugin nav-icon" style="font-size:14px;"></i>
                     <span class="nav-label">Integrações</span>
+                </a>
+                <a href="{{ route('settings.whatsapp-tags') }}"
+                   class="nav-subitem {{ request()->routeIs('settings.whatsapp-tags*') ? 'active' : '' }}">
+                    <i class="bi bi-tag nav-icon" style="font-size:14px;"></i>
+                    <span class="nav-label">Tags WhatsApp</span>
                 </a>
                 <a href="{{ route('settings.api-keys') }}"
                    class="nav-subitem {{ request()->routeIs('settings.api-keys*') ? 'active' : '' }}">

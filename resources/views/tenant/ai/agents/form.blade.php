@@ -1,0 +1,558 @@
+@extends('tenant.layouts.app')
+
+@php
+    $title    = 'Inteligência Artificial';
+    $pageIcon = 'robot';
+    $isEdit   = $agent->exists;
+@endphp
+
+@push('styles')
+<style>
+    .ai-form-wrap { max-width: 780px; }
+
+    .section-card {
+        background: #fff; border: 1px solid #e8eaf0;
+        border-radius: 14px; margin-bottom: 18px; overflow: hidden;
+    }
+    .section-card-header {
+        display: flex; align-items: center; gap: 10px;
+        padding: 16px 20px; border-bottom: 1px solid #f0f2f7;
+        cursor: pointer; user-select: none; background: #fafafa;
+        transition: background .1s;
+    }
+    .section-card-header:hover { background: #f5f7fb; }
+    .section-card-header .section-icon {
+        width: 32px; height: 32px; border-radius: 8px;
+        background: #eff6ff; color: #3B82F6;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 15px;
+    }
+    .section-card-title { font-size: 13.5px; font-weight: 700; color: #1a1d23; flex: 1; }
+    .section-card-body { padding: 20px; display: block; }
+    .section-card-body.collapsed { display: none; }
+    .chevron { transition: transform .2s; color: #9ca3af; }
+    .chevron.open { transform: rotate(180deg); }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+    .form-group { margin-bottom: 14px; }
+    .form-label {
+        display: block; font-size: 11.5px; font-weight: 700;
+        color: #6b7280; margin-bottom: 5px;
+        text-transform: uppercase; letter-spacing: .05em;
+    }
+    .form-control {
+        width: 100%; padding: 9px 12px;
+        border: 1.5px solid #e8eaf0; border-radius: 9px;
+        font-size: 13.5px; outline: none; font-family: inherit;
+        transition: border-color .15s; box-sizing: border-box;
+    }
+    .form-control:focus { border-color: #3B82F6; }
+    textarea.form-control { resize: vertical; min-height: 90px; }
+    select.form-control { background: #fff; }
+
+    /* Etapas dinâmicas */
+    .stages-list { display: flex; flex-direction: column; gap: 8px; }
+    .stage-item {
+        display: flex; gap: 8px; align-items: flex-start;
+        padding: 10px; background: #f8fafc;
+        border: 1px solid #e8eaf0; border-radius: 9px;
+    }
+    .stage-num {
+        width: 24px; height: 24px; border-radius: 6px;
+        background: #eff6ff; color: #3B82F6;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 8px;
+    }
+    .stage-inputs { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .stage-del {
+        width: 28px; height: 28px; border-radius: 7px;
+        border: 1px solid #e8eaf0; background: #fff; color: #9ca3af;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        font-size: 13px; flex-shrink: 0; margin-top: 5px; transition: all .15s;
+    }
+    .stage-del:hover { background: #fee2e2; color: #ef4444; border-color: #fca5a5; }
+    .btn-add-stage {
+        padding: 8px 16px; border-radius: 8px;
+        border: 1.5px dashed #d1d5db; background: transparent;
+        font-size: 12.5px; font-weight: 600; color: #6b7280;
+        cursor: pointer; transition: all .15s; margin-top: 8px;
+    }
+    .btn-add-stage:hover { border-color: #3B82F6; color: #3B82F6; background: #f0f8ff; }
+
+    /* Toggle ativo */
+    .toggle-wrap {
+        display: flex; align-items: center; gap: 10px;
+        padding: 12px 16px; background: #f8fafc;
+        border: 1px solid #e8eaf0; border-radius: 10px;
+        margin-bottom: 18px;
+    }
+    .toggle-switch {
+        width: 44px; height: 24px; border-radius: 12px;
+        background: #e5e7eb; position: relative; cursor: pointer;
+        transition: background .2s; flex-shrink: 0;
+    }
+    .toggle-switch.on { background: #3B82F6; }
+    .toggle-switch::after {
+        content: ''; position: absolute; top: 3px; left: 3px;
+        width: 18px; height: 18px; border-radius: 50%; background: #fff;
+        transition: left .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .toggle-switch.on::after { left: 23px; }
+
+    .form-footer {
+        display: flex; gap: 10px; align-items: center;
+        padding: 20px 0;
+    }
+    .btn-primary {
+        padding: 10px 28px; border-radius: 9px; border: none;
+        background: #3B82F6; color: #fff;
+        font-size: 13.5px; font-weight: 600; cursor: pointer;
+        transition: background .15s;
+    }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-cancel {
+        padding: 10px 20px; border-radius: 9px;
+        border: 1.5px solid #e8eaf0; background: #fff;
+        font-size: 13.5px; font-weight: 600; color: #6b7280;
+        cursor: pointer; transition: all .15s; text-decoration: none;
+        display: inline-flex; align-items: center;
+    }
+    .btn-cancel:hover { background: #f0f2f7; }
+
+    /* Widget de chat de teste */
+    .test-chat-panel {
+        position: fixed; bottom: 24px; right: 24px;
+        width: 360px; border-radius: 16px;
+        background: #fff; border: 1px solid #e8eaf0;
+        box-shadow: 0 12px 48px rgba(0,0,0,.15);
+        z-index: 500; display: flex; flex-direction: column;
+        overflow: hidden;
+        @if(!$isEdit) display: none; @endif
+    }
+    .test-chat-header {
+        padding: 13px 16px; background: #3B82F6;
+        display: flex; align-items: center; justify-content: space-between;
+        cursor: pointer;
+    }
+    .test-chat-title { color: #fff; font-size: 13.5px; font-weight: 700; }
+    .test-chat-toggle { color: rgba(255,255,255,.8); font-size: 16px; }
+    .test-chat-body { height: 320px; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+    .test-chat-body.collapsed { display: none; }
+    .test-chat-input-wrap {
+        padding: 10px 12px; border-top: 1px solid #f0f2f7;
+        display: flex; gap: 7px;
+    }
+    .test-chat-input-wrap.collapsed { display: none; }
+    .test-chat-input {
+        flex: 1; padding: 8px 10px; border: 1.5px solid #e8eaf0;
+        border-radius: 9px; font-size: 13px; outline: none; font-family: inherit;
+    }
+    .test-chat-input:focus { border-color: #3B82F6; }
+    .test-send-btn {
+        width: 36px; height: 36px; border-radius: 9px;
+        background: #3B82F6; border: none; color: #fff;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        font-size: 15px; flex-shrink: 0; transition: background .15s;
+    }
+    .test-send-btn:hover { background: #2563eb; }
+    .test-send-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+    .chat-bubble {
+        max-width: 80%; padding: 8px 12px;
+        border-radius: 12px; font-size: 13px; line-height: 1.45;
+        white-space: pre-wrap; word-break: break-word;
+    }
+    .chat-bubble.user {
+        align-self: flex-end; background: #3B82F6; color: #fff;
+        border-bottom-right-radius: 4px;
+    }
+    .chat-bubble.agent {
+        align-self: flex-start; background: #f0f2f7; color: #1a1d23;
+        border-bottom-left-radius: 4px;
+    }
+    .chat-bubble.typing { color: #9ca3af; font-style: italic; }
+
+    @if(!$isEdit)
+    .test-chat-panel { display: none; }
+    @endif
+</style>
+@endpush
+
+@section('content')
+<div class="page-container">
+
+    <div style="margin-bottom:22px;display:flex;align-items:center;gap:10px;">
+        <a href="{{ route('ai.agents.index') }}" style="color:#9ca3af;font-size:14px;text-decoration:none;">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <div style="font-size:15px;font-weight:700;color:#1a1d23;">
+                {{ $isEdit ? 'Editar Agente' : 'Novo Agente' }}
+            </div>
+        </div>
+    </div>
+
+    <form method="POST"
+          action="{{ $isEdit ? route('ai.agents.update', $agent) : route('ai.agents.store') }}"
+          id="agentForm"
+          class="ai-form-wrap">
+        @csrf
+        @if($isEdit) @method('PUT') @endif
+
+        {{-- Toggle ativo --}}
+        <div class="toggle-wrap" onclick="toggleActive()">
+            <div class="toggle-switch {{ $agent->is_active ? 'on' : '' }}" id="toggleSwitch"></div>
+            <div>
+                <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="toggleLabel">
+                    {{ $agent->is_active ? 'Agente Ativo' : 'Agente Inativo' }}
+                </div>
+                <div style="font-size:11.5px;color:#9ca3af;">Ativar para que responda automaticamente</div>
+            </div>
+        </div>
+        <input type="hidden" name="is_active" id="isActiveInput" value="{{ $agent->is_active ? '1' : '0' }}">
+
+        {{-- 1. Identidade --}}
+        <div class="section-card">
+            <div class="section-card-header" onclick="toggleSection('identity')">
+                <div class="section-icon"><i class="bi bi-person-badge"></i></div>
+                <div class="section-card-title">1. Identidade</div>
+                <i class="bi bi-chevron-down chevron open" id="chevron-identity"></i>
+            </div>
+            <div class="section-card-body" id="body-identity">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Nome do Agente *</label>
+                        <input type="text" name="name" class="form-control" required
+                               value="{{ old('name', $agent->name) }}" placeholder="Ex: Assistente de Vendas">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nome da Empresa</label>
+                        <input type="text" name="company_name" class="form-control"
+                               value="{{ old('company_name', $agent->company_name) }}" placeholder="Sua Empresa Ltda.">
+                    </div>
+                </div>
+                <div class="form-row three">
+                    <div class="form-group">
+                        <label class="form-label">Objetivo *</label>
+                        <select name="objective" class="form-control">
+                            @foreach(['sales' => 'Vendas', 'support' => 'Suporte', 'general' => 'Geral'] as $v => $l)
+                            <option value="{{ $v }}" {{ old('objective', $agent->objective) === $v ? 'selected' : '' }}>{{ $l }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Comunicação *</label>
+                        <select name="communication_style" class="form-control">
+                            @foreach(['formal' => 'Formal', 'normal' => 'Normal', 'casual' => 'Descontraído'] as $v => $l)
+                            <option value="{{ $v }}" {{ old('communication_style', $agent->communication_style) === $v ? 'selected' : '' }}>{{ $l }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Idioma *</label>
+                        <select name="language" class="form-control">
+                            @foreach(['pt-BR' => 'Português (BR)', 'en-US' => 'English', 'es-ES' => 'Español'] as $v => $l)
+                            <option value="{{ $v }}" {{ old('language', $agent->language ?? 'pt-BR') === $v ? 'selected' : '' }}>{{ $l }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Setor / Indústria</label>
+                    <input type="text" name="industry" class="form-control"
+                           value="{{ old('industry', $agent->industry) }}" placeholder="Ex: E-commerce, SaaS, Saúde...">
+                </div>
+            </div>
+        </div>
+
+        {{-- 2. Persona e Comportamento --}}
+        <div class="section-card">
+            <div class="section-card-header" onclick="toggleSection('persona')">
+                <div class="section-icon"><i class="bi bi-chat-quote"></i></div>
+                <div class="section-card-title">2. Persona e Comportamento</div>
+                <i class="bi bi-chevron-down chevron open" id="chevron-persona"></i>
+            </div>
+            <div class="section-card-body" id="body-persona">
+                <div class="form-group">
+                    <label class="form-label">Descrição da Persona</label>
+                    <textarea name="persona_description" class="form-control" rows="4"
+                              placeholder="Ex: Você é Maria, uma consultora de vendas simpática e proativa que adora ajudar clientes a encontrar a solução certa...">{{ old('persona_description', $agent->persona_description) }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Comportamento</label>
+                    <textarea name="behavior" class="form-control" rows="4"
+                              placeholder="Ex: Sempre pergunte o nome do cliente. Nunca ofereça descontos sem consultar primeiro. Priorize resolver o problema antes de vender...">{{ old('behavior', $agent->behavior) }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        {{-- 3. Fluxo --}}
+        <div class="section-card">
+            <div class="section-card-header" onclick="toggleSection('flow')">
+                <div class="section-icon"><i class="bi bi-signpost-split"></i></div>
+                <div class="section-card-title">3. Fluxo do Atendimento</div>
+                <i class="bi bi-chevron-down chevron open" id="chevron-flow"></i>
+            </div>
+            <div class="section-card-body" id="body-flow">
+                <div class="form-group">
+                    <label class="form-label">Ao Finalizar o Atendimento</label>
+                    <textarea name="on_finish_action" class="form-control" rows="3"
+                              placeholder="Ex: Agradeça o contato, ofereça avaliação de 1-5 estrelas e encerre com uma mensagem positiva.">{{ old('on_finish_action', $agent->on_finish_action) }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Quando Transferir para Humano</label>
+                    <textarea name="on_transfer_message" class="form-control" rows="3"
+                              placeholder="Ex: Se o cliente solicitar falar com atendente, peça desculpas pela demora e informe que um humano vai assumir em breve.">{{ old('on_transfer_message', $agent->on_transfer_message) }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ao Receber Mensagem Inválida / Tentativa de Jailbreak</label>
+                    <textarea name="on_invalid_response" class="form-control" rows="3"
+                              placeholder="Ex: Informe que só pode ajudar com assuntos relacionados ao nosso serviço e ofereça opções válidas.">{{ old('on_invalid_response', $agent->on_invalid_response) }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        {{-- 4. Etapas da Conversa --}}
+        <div class="section-card">
+            <div class="section-card-header" onclick="toggleSection('stages')">
+                <div class="section-icon"><i class="bi bi-list-ol"></i></div>
+                <div class="section-card-title">4. Etapas da Conversa</div>
+                <i class="bi bi-chevron-down chevron" id="chevron-stages"></i>
+            </div>
+            <div class="section-card-body collapsed" id="body-stages">
+                <div style="font-size:12.5px;color:#9ca3af;margin-bottom:12px;">
+                    Defina as etapas que o agente deve seguir durante a conversa (opcional).
+                </div>
+                <div class="stages-list" id="stagesList">
+                    @foreach(old('conversation_stages', $agent->conversation_stages ?? []) as $i => $stage)
+                    <div class="stage-item" data-index="{{ $i }}">
+                        <div class="stage-num">{{ $i + 1 }}</div>
+                        <div class="stage-inputs">
+                            <input type="text" name="conversation_stages[{{ $i }}][name]"
+                                   class="form-control" style="min-height:unset;"
+                                   value="{{ $stage['name'] ?? '' }}"
+                                   placeholder="Nome da etapa">
+                            <input type="text" name="conversation_stages[{{ $i }}][description]"
+                                   class="form-control" style="min-height:unset;"
+                                   value="{{ $stage['description'] ?? '' }}"
+                                   placeholder="Descrição (opcional)">
+                        </div>
+                        <button type="button" class="stage-del" onclick="removeStage(this)">×</button>
+                    </div>
+                    @endforeach
+                </div>
+                <button type="button" class="btn-add-stage" onclick="addStage()">
+                    <i class="bi bi-plus"></i> Adicionar etapa
+                </button>
+            </div>
+        </div>
+
+        {{-- 5. Base de Conhecimento --}}
+        <div class="section-card">
+            <div class="section-card-header" onclick="toggleSection('kb')">
+                <div class="section-icon"><i class="bi bi-database"></i></div>
+                <div class="section-card-title">5. Base de Conhecimento</div>
+                <i class="bi bi-chevron-down chevron" id="chevron-kb"></i>
+            </div>
+            <div class="section-card-body collapsed" id="body-kb">
+                <div style="font-size:12.5px;color:#9ca3af;margin-bottom:10px;">
+                    Inclua informações sobre sua empresa, produtos, preços, FAQs, políticas, etc.
+                    O agente usará estas informações para responder.
+                </div>
+                <textarea name="knowledge_base" class="form-control" rows="10"
+                          placeholder="Empresa: XYZ Tecnologia&#10;Produtos: Plano Básico R$49/mês, Plano Pro R$99/mês&#10;Horário: seg-sex 9h-18h&#10;Telefone: (11) 1234-5678&#10;...">{{ old('knowledge_base', $agent->knowledge_base) }}</textarea>
+            </div>
+        </div>
+
+        {{-- 6. Configurações Avançadas --}}
+        <div class="section-card">
+            <div class="section-card-header" onclick="toggleSection('advanced')">
+                <div class="section-icon"><i class="bi bi-sliders"></i></div>
+                <div class="section-card-title">6. Configurações Avançadas</div>
+                <i class="bi bi-chevron-down chevron" id="chevron-advanced"></i>
+            </div>
+            <div class="section-card-body collapsed" id="body-advanced">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Tamanho Máx. de Mensagem (caracteres)</label>
+                        <input type="number" name="max_message_length" class="form-control"
+                               value="{{ old('max_message_length', $agent->max_message_length ?? 500) }}"
+                               min="50" max="4000" step="50">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tempo de Resposta (segundos)</label>
+                        <input type="number" name="response_delay_seconds" class="form-control"
+                               value="{{ old('response_delay_seconds', $agent->response_delay_seconds ?? 2) }}"
+                               min="0" max="30">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Canal</label>
+                    <select name="channel" class="form-control">
+                        <option value="whatsapp" {{ old('channel', $agent->channel) === 'whatsapp' ? 'selected' : '' }}>WhatsApp</option>
+                        <option value="web_chat" {{ old('channel', $agent->channel) === 'web_chat' ? 'selected' : '' }}>Web Chat</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-footer">
+            <button type="submit" class="btn-primary">
+                <i class="bi bi-floppy"></i> {{ $isEdit ? 'Salvar alterações' : 'Criar Agente' }}
+            </button>
+            <a href="{{ route('ai.agents.index') }}" class="btn-cancel">Cancelar</a>
+            @if($isEdit)
+            <button type="button" class="btn-cancel" style="margin-left:auto;" onclick="toggleTestChat()">
+                <i class="bi bi-chat-dots"></i> Testar Agente
+            </button>
+            @endif
+        </div>
+
+    </form>
+
+    @if($isEdit)
+    {{-- Widget de teste --}}
+    <div class="test-chat-panel" id="testChatPanel" style="display:none;">
+        <div class="test-chat-header" onclick="toggleTestChat()">
+            <span class="test-chat-title"><i class="bi bi-robot"></i> Testar: {{ $agent->name }}</span>
+            <i class="bi bi-chevron-down test-chat-toggle" id="testChatChevron"></i>
+        </div>
+        <div class="test-chat-body" id="testChatBody">
+            <div class="chat-bubble agent">Olá! Sou {{ $agent->name }}. Como posso ajudar?</div>
+        </div>
+        <div class="test-chat-input-wrap" id="testInputWrap">
+            <input type="text" class="test-chat-input" id="testInput"
+                   placeholder="Digite uma mensagem..."
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();sendTest();}">
+            <button class="test-send-btn" id="testSendBtn" onclick="sendTest()">
+                <i class="bi bi-send"></i>
+            </button>
+        </div>
+    </div>
+    @endif
+
+</div>
+@endsection
+
+@push('scripts')
+<script>
+const AGENT_ID = {{ $agent->id ?? 'null' }};
+const CSRF     = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+let testHistory = [];
+let testChatOpen = false;
+
+/* ── Toggle ativo ── */
+function toggleActive() {
+    const sw    = document.getElementById('toggleSwitch');
+    const input = document.getElementById('isActiveInput');
+    const label = document.getElementById('toggleLabel');
+    const isOn  = input.value === '1';
+    input.value = isOn ? '0' : '1';
+    sw.classList.toggle('on', !isOn);
+    label.textContent = isOn ? 'Agente Inativo' : 'Agente Ativo';
+}
+
+/* ── Sections ── */
+function toggleSection(id) {
+    const body    = document.getElementById('body-' + id);
+    const chevron = document.getElementById('chevron-' + id);
+    const isOpen  = !body.classList.contains('collapsed');
+    body.classList.toggle('collapsed', isOpen);
+    chevron.classList.toggle('open', !isOpen);
+}
+
+/* ── Etapas dinâmicas ── */
+let stageCount = {{ count(old('conversation_stages', $agent->conversation_stages ?? [])) }};
+
+function addStage() {
+    const i    = stageCount++;
+    const list = document.getElementById('stagesList');
+    list.insertAdjacentHTML('beforeend', `
+        <div class="stage-item" data-index="${i}">
+            <div class="stage-num">${list.children.length + 1}</div>
+            <div class="stage-inputs">
+                <input type="text" name="conversation_stages[${i}][name]"
+                       class="form-control" style="min-height:unset;"
+                       placeholder="Nome da etapa">
+                <input type="text" name="conversation_stages[${i}][description]"
+                       class="form-control" style="min-height:unset;"
+                       placeholder="Descrição (opcional)">
+            </div>
+            <button type="button" class="stage-del" onclick="removeStage(this)">×</button>
+        </div>
+    `);
+    renumberStages();
+}
+
+function removeStage(btn) {
+    btn.closest('.stage-item').remove();
+    renumberStages();
+}
+
+function renumberStages() {
+    document.querySelectorAll('#stagesList .stage-item').forEach((el, i) => {
+        el.querySelector('.stage-num').textContent = i + 1;
+    });
+}
+
+/* ── Chat de Teste ── */
+function toggleTestChat() {
+    const panel = document.getElementById('testChatPanel');
+    testChatOpen = !testChatOpen;
+    panel.style.display = testChatOpen ? 'flex' : 'none';
+    if (testChatOpen) {
+        setTimeout(() => document.getElementById('testInput').focus(), 100);
+    }
+}
+
+function appendBubble(role, text) {
+    const body   = document.getElementById('testChatBody');
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble ' + role;
+    bubble.textContent = text;
+    body.appendChild(bubble);
+    body.scrollTop = body.scrollHeight;
+    return bubble;
+}
+
+async function sendTest() {
+    const input = document.getElementById('testInput');
+    const msg   = input.value.trim();
+    if (!msg || !AGENT_ID) return;
+    input.value = '';
+
+    appendBubble('user', msg);
+    const typingBubble = appendBubble('agent typing', '…');
+
+    document.getElementById('testSendBtn').disabled = true;
+
+    try {
+        const res  = await fetch(`/ia/agentes/${AGENT_ID}/test-chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+            body: JSON.stringify({ message: msg, history: testHistory }),
+        });
+        const data = await res.json();
+
+        typingBubble.remove();
+
+        if (data.success) {
+            appendBubble('agent', data.reply);
+            testHistory.push({ role: 'user',  content: msg });
+            testHistory.push({ role: 'agent', content: data.reply });
+            // Mantém histórico máximo de 20 trocas
+            if (testHistory.length > 40) testHistory = testHistory.slice(-40);
+        } else {
+            appendBubble('agent', '⚠️ Erro: ' + (data.message || 'Falha ao obter resposta.'));
+        }
+    } catch (e) {
+        typingBubble.remove();
+        appendBubble('agent', '⚠️ Erro de conexão.');
+    } finally {
+        document.getElementById('testSendBtn').disabled = false;
+        input.focus();
+    }
+}
+</script>
+@endpush

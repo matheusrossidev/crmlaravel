@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
+use App\Models\WhatsappTag;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -25,6 +26,7 @@ class WhatsappController extends Controller
         $conversations = [];
         $users         = [];
         $pipelines     = [];
+        $whatsappTags  = collect();
 
         if ($connected) {
             $conversations = WhatsappConversation::with(['latestMessage', 'assignedUser'])
@@ -38,9 +40,13 @@ class WhatsappController extends Controller
             $pipelines = Pipeline::with('stages:id,pipeline_id,name,position')
                 ->orderBy('sort_order')
                 ->get(['id', 'name', 'is_default']);
+
+            $whatsappTags = WhatsappTag::orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['id', 'name', 'color']);
         }
 
-        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'users', 'pipelines'));
+        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'users', 'pipelines', 'whatsappTags'));
     }
 
     public function poll(Request $request): JsonResponse

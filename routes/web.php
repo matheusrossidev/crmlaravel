@@ -14,8 +14,11 @@ use App\Http\Controllers\Tenant\CustomFieldController;
 use App\Http\Controllers\Tenant\ProfileController;
 use App\Http\Controllers\Tenant\ReportController;
 use App\Http\Controllers\Tenant\UserController;
+use App\Http\Controllers\Tenant\AiAgentController;
+use App\Http\Controllers\Tenant\AiConfigurationController;
 use App\Http\Controllers\Tenant\WhatsappController;
 use App\Http\Controllers\Tenant\WhatsappMessageController;
+use App\Http\Controllers\Tenant\WhatsappTagController;
 use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -140,6 +143,29 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::post('campos-extras',              [CustomFieldController::class, 'store'])->name('custom-fields.store');
         Route::put('campos-extras/{field}',       [CustomFieldController::class, 'update'])->name('custom-fields.update');
         Route::delete('campos-extras/{field}',    [CustomFieldController::class, 'destroy'])->name('custom-fields.destroy');
+
+        // Tags de WhatsApp
+        Route::get('whatsapp-tags',              [WhatsappTagController::class, 'index'])->name('whatsapp-tags');
+        Route::post('whatsapp-tags',             [WhatsappTagController::class, 'store'])->name('whatsapp-tags.store');
+        Route::put('whatsapp-tags/{tag}',        [WhatsappTagController::class, 'update'])->name('whatsapp-tags.update');
+        Route::delete('whatsapp-tags/{tag}',     [WhatsappTagController::class, 'destroy'])->name('whatsapp-tags.destroy');
+
+        // Configuração de IA
+        Route::get('ia',     [AiConfigurationController::class, 'show'])->name('ai.config');
+        Route::put('ia',     [AiConfigurationController::class, 'update'])->name('ai.config.update');
+        Route::post('ia/test', [AiConfigurationController::class, 'testConnection'])->name('ai.test');
+    });
+
+    // Agentes de IA
+    Route::prefix('ia/agentes')->name('ai.agents.')->group(function () {
+        Route::get('',                           [AiAgentController::class, 'index'])->name('index');
+        Route::get('criar',                      [AiAgentController::class, 'create'])->name('create');
+        Route::post('',                          [AiAgentController::class, 'store'])->name('store');
+        Route::get('{agent}/editar',             [AiAgentController::class, 'edit'])->name('edit');
+        Route::put('{agent}',                    [AiAgentController::class, 'update'])->name('update');
+        Route::delete('{agent}',                 [AiAgentController::class, 'destroy'])->name('destroy');
+        Route::post('{agent}/toggle',            [AiAgentController::class, 'toggleActive'])->name('toggle');
+        Route::post('{agent}/test-chat',         [AiAgentController::class, 'testChat'])->name('test-chat');
     });
 });
 

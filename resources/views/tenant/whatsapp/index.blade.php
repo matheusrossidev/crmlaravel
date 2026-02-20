@@ -798,7 +798,12 @@
                 @if(!empty($conv->tags))
                 <div class="wa-conv-tags">
                     @foreach($conv->tags as $tag)
+                    @php $tagDef = $whatsappTags->firstWhere('name', $tag); $tagColor = $tagDef?->color ?? null; @endphp
+                    @if($tagColor)
+                    <span class="wa-tag" style="background:{{ $tagColor }}1a;color:{{ $tagColor }};border:1px solid {{ $tagColor }}40;">{{ $tag }}</span>
+                    @else
                     <span class="wa-tag">{{ $tag }}</span>
+                    @endif
                     @endforeach
                 </div>
                 @endif
@@ -932,12 +937,40 @@
 
     {{-- Tags --}}
     <div class="wa-details-section">
-        <div class="wa-details-label">Tags</div>
+        <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
+            Tags
+            <a href="{{ route('settings.whatsapp-tags') }}" target="_blank"
+               style="font-size:11px;color:#9ca3af;text-decoration:none;" title="Gerenciar tags">
+                <i class="bi bi-gear" style="font-size:12px;"></i>
+            </a>
+        </div>
+
+        {{-- Tags aplicadas --}}
         <div id="tagsList" style="display:flex;flex-wrap:wrap;gap:4px;min-height:22px;margin-bottom:8px;"></div>
+
+        {{-- Chips predefinidos --}}
+        @if(isset($whatsappTags) && $whatsappTags->isNotEmpty())
+        <div style="margin-bottom:8px;">
+            <div style="font-size:10px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">Selecionar tag</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                @foreach($whatsappTags as $wTag)
+                <button type="button"
+                        class="predefined-tag-chip"
+                        data-tag-name="{{ $wTag->name }}"
+                        onclick="togglePredefinedTag('{{ addslashes($wTag->name) }}')"
+                        style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid {{ $wTag->color }}40;background:{{ $wTag->color }}1a;color:{{ $wTag->color }};transition:opacity .15s;white-space:nowrap;">
+                    {{ $wTag->name }}
+                </button>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
+        {{-- Input tag livre --}}
         <div style="display:flex;gap:6px;">
             <input id="tagInput" class="wa-textarea"
                    style="min-height:unset;height:30px;padding:4px 8px;font-size:12px;"
-                   placeholder="Nova tag..."
+                   placeholder="Digitar tag..."
                    onkeydown="if(event.key==='Enter'){event.preventDefault();addTag();}">
             <button onclick="addTag()"
                     style="padding:4px 10px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;white-space:nowrap;">
@@ -1021,6 +1054,16 @@ const renderedMsgIds  = new Set(); // evita duplicatas quando polling e históri
 const CSRF      = document.querySelector('meta[name="csrf-token"]')?.content;
 const TENANT_ID = {{ auth()->user()->tenant_id ?? 'null' }};
 const PIPELINES = @json($pipelines ?? []);
+
+// Tags predefinidas e mapa de cores { 'VIP': '#F59E0B', ... }
+const _whatsappTagsDefs = @json($whatsappTags ?? []);
+const tagColorMap = {};
+_whatsappTagsDefs.forEach(t => { tagColorMap[t.name] = t.color; });
+
+function hexToRgba(hex, alpha) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${alpha})`;
+}
 
 // ── Inicialização ─────────────────────────────────────────────────────────────
 @if($connected)
@@ -1601,7 +1644,7 @@ function renderLeadPanel(lead) {
 
     document.getElementById('leadNameDisplay').textContent = lead.name || '';
     const link = document.getElementById('leadProfileLink');
-    link.href = `/crm/leads/${lead.id}`;
+    link.href = `/contatos/${lead.id}`;
 
     // Popula pipeline select
     const pipelineSel = document.getElementById('pipelineSelect');
@@ -1724,11 +1767,18 @@ function renderTags(tags) {
     const container = document.getElementById('tagsList');
     container.innerHTML = '';
     _convTags.forEach((tag, i) => {
-        const span = document.createElement('span');
+        const color = tagColorMap[tag] || null;
+        const span  = document.createElement('span');
         span.className = 'wa-tag';
-        span.innerHTML = `${escHtml(tag)} <span class="wa-tag-remove" onclick="removeTag(${i})" title="Remover">×</span>`;
+        if (color) {
+            span.style.background = hexToRgba(color, .12);
+            span.style.color      = color;
+            span.style.border     = `1px solid ${hexToRgba(color, .3)}`;
+        }
+        span.innerHTML = `${escHtml(tag)} <span class="wa-tag-remove" onclick="removeTag(${i})" title="Remover" style="color:inherit;opacity:.6;">×</span>`;
         container.appendChild(span);
     });
+    updatePredefinedChipsState();
 }
 
 async function addTag() {
@@ -1747,6 +1797,24 @@ async function removeTag(index) {
     await saveTags();
 }
 
+async function togglePredefinedTag(tagName) {
+    if (!activeConvId) return;
+    if (_convTags.includes(tagName)) {
+        _convTags = _convTags.filter(t => t !== tagName);
+    } else {
+        _convTags = [..._convTags, tagName];
+    }
+    await saveTags();
+}
+
+function updatePredefinedChipsState() {
+    document.querySelectorAll('.predefined-tag-chip').forEach(btn => {
+        const active = _convTags.includes(btn.dataset.tagName);
+        btn.style.opacity    = active ? '1' : '0.45';
+        btn.style.fontWeight = active ? '700' : '600';
+    });
+}
+
 async function saveTags() {
     await fetch(`/whatsapp/conversations/${activeConvId}/contact`, {
         method: 'PUT',
@@ -1760,7 +1828,11 @@ async function saveTags() {
         let tagsEl = el.querySelector('.wa-conv-tags');
         if (_convTags.length > 0) {
             if (!tagsEl) { tagsEl = document.createElement('div'); tagsEl.className = 'wa-conv-tags'; el.querySelector('.wa-conv-info').appendChild(tagsEl); }
-            tagsEl.innerHTML = _convTags.map(t => `<span class="wa-tag">${escHtml(t)}</span>`).join('');
+            tagsEl.innerHTML = _convTags.map(t => {
+                const c = tagColorMap[t] || null;
+                const s = c ? `style="background:${hexToRgba(c,.12)};color:${c};border:1px solid ${hexToRgba(c,.3)};"` : '';
+                return `<span class="wa-tag" ${s}>${escHtml(t)}</span>`;
+            }).join('');
         } else if (tagsEl) {
             tagsEl.remove();
         }
@@ -1793,7 +1865,11 @@ function updateConvInSidebar(conv) {
     const chanIcon = channel === 'instagram' ? '<i class="bi bi-instagram"></i>' : '<i class="bi bi-whatsapp"></i>';
     const unread   = conv.unread_count > 0 && conv.id !== activeConvId
         ? `<span class="wa-unread-dot">${conv.unread_count}</span>` : '';
-    const tags     = (conv.tags || []).map(t => `<span class="wa-tag">${escHtml(t)}</span>`).join('');
+    const tags     = (conv.tags || []).map(t => {
+        const c = tagColorMap[t] || null;
+        const s = c ? `style="background:${hexToRgba(c,.12)};color:${c};border:1px solid ${hexToRgba(c,.3)};"` : '';
+        return `<span class="wa-tag" ${s}>${escHtml(t)}</span>`;
+    }).join('');
     const tagsRow  = tags ? `<div class="wa-conv-tags">${tags}</div>` : '';
 
     el.innerHTML = `
