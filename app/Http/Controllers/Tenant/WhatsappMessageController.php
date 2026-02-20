@@ -26,16 +26,33 @@ class WhatsappMessageController extends Controller
         }
 
         $waha = new WahaService($instance->session_name);
-        // Build chatId: strip @lid (GOWS internal JID) to get the numeric phone, then append @c.us.
-        // @lid JIDs cannot be used for outbound API calls — only real phone numbers work.
-        $rawPhone = $conversation->phone;
-        if (str_contains($rawPhone, '@lid')) {
-            // "36576092528787:22@lid" or "36576092528787@lid" → "36576092528787"
-            $rawPhone = (string) preg_replace('/[:@].+$/', '', $rawPhone);
+
+        // Derive chatId from the original JID stored in waha_message_id history.
+        // Format: "{true|false}_{jid}_{messageId}" — e.g. "false_36576092528787@lid_3EB0xxx"
+        // Using the original JID avoids @lid vs @c.us confusion for GOWS engine.
+        $chatId    = null;
+        $sampleId  = WhatsappMessage::where('conversation_id', $conversation->id)
+            ->whereNotNull('waha_message_id')
+            ->where('direction', 'inbound')
+            ->latest('sent_at')
+            ->value('waha_message_id');
+
+        if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
+            $jid = $m[1]; // "36576092528787@lid" or "556192008997@c.us"
+            // @lid contacts: keep @lid so GOWS can route correctly
+            // @c.us / @s.whatsapp.net: normalize to phone@c.us
+            if (str_ends_with($jid, '@lid')) {
+                $chatId = preg_replace('/[:@].+$/', '', $jid) . '@lid';
+            } else {
+                $chatId = preg_replace('/[:@].+$/', '', $jid) . '@c.us';
+            }
         }
-        $chatId = str_contains($rawPhone, '@')
-            ? $rawPhone
-            : ltrim(preg_replace('/\s+/', '', $rawPhone), '+') . '@c.us';
+
+        // Fallback: build from stored phone (works for correctly normalised phones)
+        if (! $chatId) {
+            $rawPhone = ltrim((string) preg_replace('/[:@\s].+$/', '', $conversation->phone), '+');
+            $chatId   = $rawPhone . '@c.us';
+        }
 
         $wahaMessageId = null;
         $mediaUrl      = null;

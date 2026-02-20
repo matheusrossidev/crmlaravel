@@ -368,20 +368,29 @@ class ProcessWahaWebhook implements ShouldQueue
 
     private function normalizePhone(string $from, array $msg = []): string
     {
-        // GOWS engine sometimes uses @lid JIDs as the "from" field.
-        // Extract the real phone from _data.Info.Chat which always has the @s.whatsapp.net JID.
+        // GOWS engine may use @lid JIDs in the "from" field.
+        // Real phone is in _data.Info.Chat or _data.Info.Sender (@s.whatsapp.net format).
         if (str_ends_with($from, '@lid')) {
+            // 1st try: Chat JID — "556192008997@s.whatsapp.net"
             $chat = $msg['_data']['Info']['Chat'] ?? '';
-            if ($chat) {
-                // "556192008997@s.whatsapp.net" → "556192008997"
-                return (string) preg_replace('/@.+$/', '', $chat);
+            if ($chat && ! str_ends_with($chat, '@lid')) {
+                return (string) preg_replace('/[:@].+$/', '', $chat);
             }
+
+            // 2nd try: Sender JID — "556192008997:22@s.whatsapp.net"
+            $sender = $msg['_data']['Info']['Sender'] ?? '';
+            if ($sender && ! str_ends_with($sender, '@lid')) {
+                return (string) preg_replace('/[:@].+$/', '', $sender);
+            }
+
             // Last resort: strip @lid and device suffix
             // "36576092528787:22@lid" → "36576092528787"
             return (string) preg_replace('/[:@].+$/', '', $from);
         }
 
-        return str_replace(['@c.us', '@s.whatsapp.net'], '', $from);
+        // Standard JID: strip server suffix and optional device id
+        // "556192008997@c.us" | "556192008997:22@s.whatsapp.net" → "556192008997"
+        return (string) preg_replace('/[:@].+$/', '', $from);
     }
 
     private function extractMedia(array $msg): array
