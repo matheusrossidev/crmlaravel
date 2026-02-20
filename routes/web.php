@@ -144,16 +144,11 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::put('campos-extras/{field}',       [CustomFieldController::class, 'update'])->name('custom-fields.update');
         Route::delete('campos-extras/{field}',    [CustomFieldController::class, 'destroy'])->name('custom-fields.destroy');
 
-        // Tags de WhatsApp
-        Route::get('whatsapp-tags',              [WhatsappTagController::class, 'index'])->name('whatsapp-tags');
-        Route::post('whatsapp-tags',             [WhatsappTagController::class, 'store'])->name('whatsapp-tags.store');
-        Route::put('whatsapp-tags/{tag}',        [WhatsappTagController::class, 'update'])->name('whatsapp-tags.update');
-        Route::delete('whatsapp-tags/{tag}',     [WhatsappTagController::class, 'destroy'])->name('whatsapp-tags.destroy');
-
-        // Configuração de IA
-        Route::get('ia',     [AiConfigurationController::class, 'show'])->name('ai.config');
-        Route::put('ia',     [AiConfigurationController::class, 'update'])->name('ai.config.update');
-        Route::post('ia/test', [AiConfigurationController::class, 'testConnection'])->name('ai.test');
+        // Tags
+        Route::get('tags',              [WhatsappTagController::class, 'index'])->name('tags');
+        Route::post('tags',             [WhatsappTagController::class, 'store'])->name('tags.store');
+        Route::put('tags/{tag}',        [WhatsappTagController::class, 'update'])->name('tags.update');
+        Route::delete('tags/{tag}',     [WhatsappTagController::class, 'destroy'])->name('tags.destroy');
     });
 
     // Agentes de IA
@@ -176,6 +171,11 @@ Route::middleware(['auth', 'super_admin'])->prefix('master')->name('master.')->g
     Route::get('empresas/{tenant}',    [MasterTenantController::class, 'show'])->name('tenants.show');
     Route::put('empresas/{tenant}',    [MasterTenantController::class, 'update'])->name('tenants.update');
     Route::delete('empresas/{tenant}', [MasterTenantController::class, 'destroy'])->name('tenants.destroy');
+
+    // Configuração global de IA (provedor LLM + API key)
+    Route::get('ia',         [AiConfigurationController::class, 'show'])->name('ai.config');
+    Route::put('ia',         [AiConfigurationController::class, 'update'])->name('ai.config.update');
+    Route::post('ia/test',   [AiConfigurationController::class, 'testConnection'])->name('ai.test');
 });
 
 // ── Webhook público WAHA (sem autenticação) ───────────────────────────────────

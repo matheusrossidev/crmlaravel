@@ -408,5 +408,19 @@ async function doImport() {
         btn.textContent = 'Importar';
     }
 }
+
+// Auto-open drawer se URL contém ?lead=X (ex: redirect de /contatos/{id})
+(function () {
+    const params = new URLSearchParams(window.location.search);
+    const leadId = params.get('lead');
+    if (leadId) {
+        // Limpa o param da URL sem reload
+        const url = new URL(window.location.href);
+        url.searchParams.delete('lead');
+        history.replaceState(null, '', url.toString());
+        // Espera o drawer estar pronto (scripts carregados)
+        setTimeout(() => { if (typeof openLeadDrawer === 'function') openLeadDrawer(leadId); }, 200);
+    }
+}());
 </script>
 @endpush

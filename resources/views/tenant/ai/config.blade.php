@@ -180,8 +180,8 @@
 @push('scripts')
 <script>
 const CSRF       = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
-const URL_SAVE   = '{{ route('settings.ai.config.update') }}';
-const URL_TEST   = '{{ route('settings.ai.test') }}';
+const URL_SAVE   = '{{ route('master.ai.config.update') }}';
+const URL_TEST   = '{{ route('master.ai.test') }}';
 const MODEL_OPTS = @json($modelOptions);
 
 let keyChanged = false;

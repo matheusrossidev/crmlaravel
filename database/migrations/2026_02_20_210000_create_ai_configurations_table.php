@@ -10,13 +10,11 @@ return new class extends Migration
     {
         Schema::create('ai_configurations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            // Configuração global da plataforma — sem tenant_id (super admin configura uma vez)
             $table->string('llm_provider', 30)->default('openai'); // openai | anthropic | google
-            $table->string('llm_api_key')->nullable();             // encrypted at application level
-            $table->string('llm_model', 80)->nullable();           // e.g. gpt-4o, claude-3-5-sonnet
+            $table->text('llm_api_key')->nullable();               // chave API
+            $table->string('llm_model', 80)->nullable();           // e.g. gpt-4o-mini
             $table->timestamps();
-
-            $table->unique('tenant_id');
         });
     }
 

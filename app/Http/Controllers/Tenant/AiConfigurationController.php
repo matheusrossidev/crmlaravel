@@ -42,10 +42,9 @@ class AiConfigurationController extends Controller
             unset($data['llm_api_key']);
         }
 
-        AiConfiguration::updateOrCreate(
-            ['tenant_id' => auth()->user()->tenant_id],
-            $data
-        );
+        // Tabela global (singleton) — atualiza o único registro ou cria
+        $config = AiConfiguration::first() ?? new AiConfiguration();
+        $config->fill($data)->save();
 
         return response()->json(['success' => true, 'message' => 'Configuração salva.']);
     }

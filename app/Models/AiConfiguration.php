@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Models\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 
 class AiConfiguration extends Model
 {
-    use BelongsToTenant;
+    // Configuração global da plataforma — sem BelongsToTenant
 
     protected $fillable = [
-        'tenant_id', 'llm_provider', 'llm_api_key', 'llm_model',
+        'llm_provider', 'llm_api_key', 'llm_model',
     ];
 
     protected $hidden = [

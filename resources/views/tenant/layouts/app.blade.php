@@ -657,25 +657,27 @@
         </a>
 
         @php
-            $aiOpen = request()->routeIs('ai.*') || request()->routeIs('settings.ai*');
+            $aiOpen = request()->routeIs('ai.*') || request()->routeIs('master.ai*');
         @endphp
         <div class="nav-submenu-wrap {{ $aiOpen ? 'open' : '' }}" id="aiSubmenuWrap">
             <button type="button"
                     class="nav-item nav-submenu-toggle w-100"
                     onclick="toggleSubmenu('aiSubmenu')"
-                    title="Inteligência Artificial"
+                    title="Agente de IA"
                     style="background:none;border:none;cursor:pointer;text-align:left;{{ $aiOpen ? 'color:#3B82F6;background:#eff6ff;font-weight:600;' : '' }}">
                 <i class="bi bi-robot nav-icon"></i>
-                <span class="nav-label">Inteligência Artificial</span>
+                <span class="nav-label">Agente de IA</span>
                 <i class="bi bi-chevron-down nav-chevron nav-label" id="aiChevron"
                    style="margin-left:auto;font-size:11px;transition:transform .2s;{{ $aiOpen ? 'transform:rotate(180deg);' : '' }}"></i>
             </button>
             <div class="nav-submenu" id="aiSubmenu" style="{{ $aiOpen ? '' : 'display:none;' }}">
-                <a href="{{ route('settings.ai.config') }}"
-                   class="nav-subitem {{ request()->routeIs('settings.ai.config*') ? 'active' : '' }}">
+                @if(auth()->user()->isSuperAdmin())
+                <a href="{{ route('master.ai.config') }}"
+                   class="nav-subitem {{ request()->routeIs('master.ai*') ? 'active' : '' }}">
                     <i class="bi bi-gear nav-icon" style="font-size:14px;"></i>
                     <span class="nav-label">Configuração</span>
                 </a>
+                @endif
                 <a href="{{ route('ai.agents.index') }}"
                    class="nav-subitem {{ request()->routeIs('ai.agents.*') ? 'active' : '' }}">
                     <i class="bi bi-cpu nav-icon" style="font-size:14px;"></i>
@@ -726,10 +728,10 @@
                     <i class="bi bi-plugin nav-icon" style="font-size:14px;"></i>
                     <span class="nav-label">Integrações</span>
                 </a>
-                <a href="{{ route('settings.whatsapp-tags') }}"
-                   class="nav-subitem {{ request()->routeIs('settings.whatsapp-tags*') ? 'active' : '' }}">
+                <a href="{{ route('settings.tags') }}"
+                   class="nav-subitem {{ request()->routeIs('settings.tags*') ? 'active' : '' }}">
                     <i class="bi bi-tag nav-icon" style="font-size:14px;"></i>
-                    <span class="nav-label">Tags WhatsApp</span>
+                    <span class="nav-label">Tags</span>
                 </a>
                 <a href="{{ route('settings.api-keys') }}"
                    class="nav-subitem {{ request()->routeIs('settings.api-keys*') ? 'active' : '' }}">

@@ -160,7 +160,7 @@
 
     <div class="section-header">
         <div>
-            <div class="section-title">Tags do WhatsApp</div>
+            <div class="section-title">Tags</div>
             <div class="section-subtitle">Crie tags com cores para categorizar conversas.</div>
         </div>
         <button class="btn-primary-sm" id="btnNewTag">
@@ -270,9 +270,9 @@
 @push('scripts')
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
-const URL_STORE   = '{{ route('settings.whatsapp-tags.store') }}';
-const URL_UPDATE  = '{{ route('settings.whatsapp-tags.update', ['tag' => '__ID__']) }}';
-const URL_DESTROY = '{{ route('settings.whatsapp-tags.destroy', ['tag' => '__ID__']) }}';
+const URL_STORE   = '{{ route('settings.tags.store') }}';
+const URL_UPDATE  = '{{ route('settings.tags.update', ['tag' => '__ID__']) }}';
+const URL_DESTROY = '{{ route('settings.tags.destroy', ['tag' => '__ID__']) }}';
 
 /* ── Helpers ── */
 function esc(s) {

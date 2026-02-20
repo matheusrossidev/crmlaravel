@@ -107,8 +107,13 @@ class LeadController extends Controller
         return response()->json(['success' => true, 'lead' => $this->formatLead($lead)]);
     }
 
-    public function show(Lead $lead): JsonResponse
+    public function show(Request $request, Lead $lead): JsonResponse|\Illuminate\Http\RedirectResponse
     {
+        // Browser navigation → redirect to index with ?lead=X so the drawer opens
+        if (! $request->expectsJson()) {
+            return redirect()->route('leads.index', ['lead' => $lead->id]);
+        }
+
         $lead->load(['stage', 'pipeline', 'campaign', 'assignedTo', 'events.performedBy', 'customFieldValues.fieldDefinition']);
 
         $pipelines = Pipeline::with('stages')->orderBy('sort_order')->get();
