@@ -637,8 +637,8 @@
             <span class="nav-label">Campanhas</span>
         </a>
 
-        <a href="{{ route('whatsapp.index') }}"
-           class="nav-item {{ request()->routeIs('whatsapp.*') ? 'active' : '' }}"
+        <a href="{{ route('chats.index') }}"
+           class="nav-item {{ request()->routeIs('chats.*') ? 'active' : '' }}"
            title="Chats">
             <i class="bi bi-chat-dots nav-icon"></i>
             <span class="nav-label">Chats</span>

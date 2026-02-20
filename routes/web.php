@@ -89,8 +89,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::post('{platform}/sync',  [IntegrationController::class, 'syncNow'])->name('sync');
     });
 
-    // WhatsApp Inbox
-    Route::prefix('whatsapp')->name('whatsapp.')->group(function () {
+    // Chat Inbox (WhatsApp e outros canais)
+    Route::prefix('chats')->name('chats.')->group(function () {
         Route::get('/',                                       [WhatsappController::class, 'index'])->name('index');
         Route::get('/poll',                                   [WhatsappController::class, 'poll'])->name('poll');
         Route::get('/conversations/{conversation}',           [WhatsappController::class, 'show'])->name('conversations.show');

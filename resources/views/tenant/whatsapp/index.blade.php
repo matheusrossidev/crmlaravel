@@ -939,7 +939,7 @@
     <div class="wa-details-section">
         <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
             Tags
-            <a href="{{ route('settings.whatsapp-tags') }}" target="_blank"
+            <a href="{{ route('settings.tags') }}" target="_blank"
                style="font-size:11px;color:#9ca3af;text-decoration:none;" title="Gerenciar tags">
                 <i class="bi bi-gear" style="font-size:12px;"></i>
             </a>
@@ -1102,7 +1102,7 @@ function runPoll() {
     const params = new URLSearchParams({ since: lastPollAt });
     if (activeConvId) params.append('conversation_id', activeConvId);
 
-    fetch(`/whatsapp/poll?${params}`, { headers: { 'Accept': 'application/json' } })
+    fetch(`/chats/poll?${params}`, { headers: { 'Accept': 'application/json' } })
         .then(r => r.ok ? r.json() : null)
         .then(data => {
             if (!data) return;
@@ -1111,7 +1111,7 @@ function runPoll() {
             if (data.new_messages?.length) {
                 appendMessages(data.new_messages);
                 if (activeConvId) {
-                    fetch(`/whatsapp/conversations/${activeConvId}/read`, {
+                    fetch(`/chats/conversations/${activeConvId}/read`, {
                         method: 'POST',
                         headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
                     });
@@ -1139,7 +1139,7 @@ function setupEcho() {
         channel.listen('.whatsapp.message', data => {
             if (data.conversation_id == activeConvId) {
                 appendMessages([data]);
-                fetch(`/whatsapp/conversations/${activeConvId}/read`, {
+                fetch(`/chats/conversations/${activeConvId}/read`, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
                 });
@@ -1258,13 +1258,13 @@ async function openConversation(convId, el) {
         channelIcon.title = channel === 'instagram' ? 'Instagram' : 'WhatsApp';
     }
 
-    await fetch(`/whatsapp/conversations/${convId}/read`, {
+    await fetch(`/chats/conversations/${convId}/read`, {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
     });
     updateTotalUnread();
 
-    const res  = await fetch(`/whatsapp/conversations/${convId}`, { headers: { 'Accept': 'application/json' } });
+    const res  = await fetch(`/chats/conversations/${convId}`, { headers: { 'Accept': 'application/json' } });
     const data = await res.json();
     renderMessages(data.messages, true);
 
@@ -1445,7 +1445,7 @@ async function sendMessage() {
     formData.append('type', type);
     formData.append('body', body);
 
-    const res  = await fetch(`/whatsapp/conversations/${activeConvId}/messages`, {
+    const res  = await fetch(`/chats/conversations/${activeConvId}/messages`, {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
         body: formData,
@@ -1466,7 +1466,7 @@ async function sendImage(input) {
     formData.append('type', 'image');
     formData.append('file', input.files[0]);
 
-    const res  = await fetch(`/whatsapp/conversations/${activeConvId}/messages`, {
+    const res  = await fetch(`/chats/conversations/${activeConvId}/messages`, {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
         body: formData,
@@ -1490,7 +1490,7 @@ async function sendReaction(wahaId, emoji) {
     formData.append('waha_message_id', wahaId);
     formData.append('emoji', emoji);
 
-    await fetch(`/whatsapp/conversations/${activeConvId}/react`, {
+    await fetch(`/chats/conversations/${activeConvId}/react`, {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
         body: formData,
@@ -1542,7 +1542,7 @@ async function stopAndSendRecording() {
 
         cancelRecording();
 
-        const res  = await fetch(`/whatsapp/conversations/${activeConvId}/messages`, {
+        const res  = await fetch(`/chats/conversations/${activeConvId}/messages`, {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
             body: formData,
@@ -1579,7 +1579,7 @@ async function toggleConvStatus() {
     if (!activeConvId) return;
     const newStatus = activeConvStatus === 'open' ? 'closed' : 'open';
 
-    const res  = await fetch(`/whatsapp/conversations/${activeConvId}/status`, {
+    const res  = await fetch(`/chats/conversations/${activeConvId}/status`, {
         method: 'PUT',
         headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -1603,7 +1603,7 @@ async function deleteConversation() {
     if (!activeConvId) return;
     if (!confirm('Tem certeza que deseja deletar esta conversa e todas as suas mensagens? Esta ação não pode ser desfeita.')) return;
 
-    const res  = await fetch(`/whatsapp/conversations/${activeConvId}`, {
+    const res  = await fetch(`/chats/conversations/${activeConvId}`, {
         method: 'DELETE',
         headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
     });
@@ -1684,7 +1684,7 @@ async function saveLeadCrm() {
 
     if (!pipelineId || !stageId) return;
 
-    await fetch(`/whatsapp/conversations/${activeConvId}/lead`, {
+    await fetch(`/chats/conversations/${activeConvId}/lead`, {
         method: 'PUT',
         headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ pipeline_id: parseInt(pipelineId), stage_id: parseInt(stageId) }),
@@ -1696,7 +1696,7 @@ async function assignUser() {
     if (!activeConvId) return;
     const userId = document.getElementById('assignSelect').value;
 
-    await fetch(`/whatsapp/conversations/${activeConvId}/assign`, {
+    await fetch(`/chats/conversations/${activeConvId}/assign`, {
         method: 'PUT',
         headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId }),
@@ -1734,7 +1734,7 @@ async function saveContact() {
     const phone = document.getElementById('editContactPhone').value.trim().replace(/\D/g, '');
     if (!name && !phone) return;
 
-    const res = await fetch(`/whatsapp/conversations/${activeConvId}/contact`, {
+    const res = await fetch(`/chats/conversations/${activeConvId}/contact`, {
         method: 'PUT',
         headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ contact_name: name, phone }),
@@ -1816,7 +1816,7 @@ function updatePredefinedChipsState() {
 }
 
 async function saveTags() {
-    await fetch(`/whatsapp/conversations/${activeConvId}/contact`, {
+    await fetch(`/chats/conversations/${activeConvId}/contact`, {
         method: 'PUT',
         headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ tags: _convTags }),
