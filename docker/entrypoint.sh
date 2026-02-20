@@ -47,6 +47,10 @@ until php -r "
 done
 echo "[entrypoint] Redis ready."
 
+# ── Redescobrir pacotes (garante que bootstrap/cache/packages.php tem Reverb) ──
+# Necessário porque o volume cache_data pode ter cache antigo (sem laravel/reverb)
+php artisan package:discover --ansi 2>/dev/null || true
+
 # ── Migrations + Seed + Cache (apenas container app) ─────────────────────────
 if [ "${IS_APP}" = "true" ]; then
     echo "[entrypoint] Running migrations..."
