@@ -22,14 +22,44 @@ class WahaService
 
     // ── Sessions ──────────────────────────────────────────────────────────────
 
-    public function createSession(): array
+    public function createSession(string $webhookUrl = '', string $webhookSecret = ''): array
     {
+        $webhooks = [];
+        if ($webhookUrl) {
+            $webhook = [
+                'url'    => $webhookUrl,
+                'events' => ['message', 'message.any', 'message.reaction', 'message.ack', 'message.revoked', 'session.status'],
+            ];
+            if ($webhookSecret) {
+                $webhook['hmac'] = ['key' => $webhookSecret];
+            }
+            $webhooks[] = $webhook;
+        }
+
         return $this->post('/api/sessions', [
-            'name'    => $this->session,
-            'config' => [
-                'webhooks' => [],
-            ],
+            'name'   => $this->session,
+            'config' => ['webhooks' => $webhooks],
         ]);
+    }
+
+    /**
+     * Atualiza configuração de uma sessão existente (inclui webhook).
+     * WAHA Plus: PATCH /api/sessions/{session}
+     */
+    public function patchSession(string $webhookUrl, string $webhookSecret = ''): array
+    {
+        $webhook = [
+            'url'    => $webhookUrl,
+            'events' => ['message', 'message.any', 'message.reaction', 'message.ack', 'message.revoked', 'session.status'],
+        ];
+        if ($webhookSecret) {
+            $webhook['hmac'] = ['key' => $webhookSecret];
+        }
+
+        $response = $this->client()->patch("/api/sessions/{$this->session}", [
+            'config' => ['webhooks' => [$webhook]],
+        ]);
+        return $this->parse($response);
     }
 
     public function getSession(): array
@@ -158,6 +188,12 @@ class WahaService
     private function put(string $path, array $data): array
     {
         $response = $this->client()->put($path, $data);
+        return $this->parse($response);
+    }
+
+    private function patch(string $path, array $data): array
+    {
+        $response = $this->client()->patch($path, $data);
         return $this->parse($response);
     }
 

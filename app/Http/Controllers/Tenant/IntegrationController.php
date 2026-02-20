@@ -158,19 +158,30 @@ class IntegrationController extends Controller
             ['session_name' => $session, 'status' => 'disconnected']
         );
 
-        $waha   = new WahaService($instance->session_name);
-        $result = $waha->createSession();
+        // Monta webhook URL usando APP_URL para garantir https://
+        $webhookUrl    = rtrim(config('app.url'), '/') . '/webhook/whatsapp';
+        $webhookSecret = (string) config('services.waha.webhook_secret', '');
 
-        // Se já existe a sessão no WAHA, tenta iniciar
-        if (isset($result['error']) && $result['status'] === 422) {
+        $waha   = new WahaService($instance->session_name);
+        $result = $waha->createSession($webhookUrl, $webhookSecret);
+
+        if (isset($result['error'])) {
+            if (($result['status'] ?? 0) === 422) {
+                // Sessão já existe no WAHA — atualiza webhook e (re)inicia
+                $waha->patchSession($webhookUrl, $webhookSecret);
+                $waha->startSession();
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Falha ao criar sessão no WAHA: ' . ($result['body'] ?? 'erro desconhecido'),
+                ], 500);
+            }
+        } else {
+            // Sessão criada com sucesso — precisa iniciar (WAHA cria em estado STOPPED)
             $waha->startSession();
         }
 
         $instance->update(['status' => 'qr']);
-
-        // Configurar webhook
-        $webhookUrl = route('whatsapp.webhook');
-        $waha->setWebhook($webhookUrl);
 
         return response()->json(['success' => true, 'session_name' => $instance->session_name]);
     }
