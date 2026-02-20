@@ -93,7 +93,7 @@ services:
     image: matolado/crm-nginx:latest
     volumes:
       - public_shared:/var/www/public:ro
-      - storage_data:/var/www/storage/app/public:ro
+      - storage_data:/var/www/storage/app:ro
     networks:
       - crm_private
       - serverossi

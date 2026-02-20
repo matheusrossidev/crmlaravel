@@ -178,7 +178,7 @@ class ProcessWahaWebhook implements ShouldQueue
             'tenant_id'       => $instance->tenant_id,
             'conversation_id' => $conversation->id,
             'waha_message_id' => $wahaId,
-            'direction'       => 'inbound',
+            'direction'       => $isFromMe ? 'outbound' : 'inbound',
             'type'            => $type,
             'body'            => $body,
             'media_url'       => $mediaUrl,
@@ -199,15 +199,18 @@ class ProcessWahaWebhook implements ShouldQueue
 
         // Atualizar conversa ANTES do broadcast — garante que last_message_at e
         // unread_count sejam salvos mesmo se o broadcaster estiver indisponível.
+        $convUpdate = [
+            'last_message_at' => now(),
+            'instance_id'     => $instance->id,
+            'status'          => 'open',
+            'closed_at'       => null,
+        ];
+        if (! $isFromMe) {
+            $convUpdate['unread_count'] = \Illuminate\Support\Facades\DB::raw('unread_count + 1');
+        }
         WhatsappConversation::withoutGlobalScope('tenant')
             ->where('id', $conversation->id)
-            ->update([
-                'last_message_at' => now(),
-                'unread_count'    => \Illuminate\Support\Facades\DB::raw('unread_count + 1'),
-                'instance_id'     => $instance->id,
-                'status'          => 'open',
-                'closed_at'       => null,
-            ]);
+            ->update($convUpdate);
 
         // Broadcast via WebSocket — envolvido em try/catch para que uma falha
         // no broadcaster (Reverb OOM, Pusher indisponível, etc.) não impeça
