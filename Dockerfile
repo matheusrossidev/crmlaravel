@@ -71,6 +71,10 @@ RUN composer install \
 # Copy full application code
 COPY . .
 
+# Run package discovery so Reverb (and all other packages) commands are registered
+# Must run AFTER copying the app code (needs config/app.php etc.)
+RUN php artisan package:discover --ansi 2>/dev/null || true
+
 # Copy pre-built frontend assets from node stage
 COPY --from=assets /app/public/build ./public/build
 
