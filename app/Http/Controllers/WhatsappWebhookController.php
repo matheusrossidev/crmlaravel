@@ -8,6 +8,7 @@ use App\Jobs\ProcessWahaWebhook;
 use App\Models\WhatsappInstance;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 
 class WhatsappWebhookController extends Controller
 {
@@ -15,6 +16,16 @@ class WhatsappWebhookController extends Controller
     {
         $payload = $request->json()->all();
         $session = $payload['session'] ?? null;
+        $event   = $payload['event'] ?? 'unknown';
+        $from    = $payload['payload']['from'] ?? 'n/a';
+        $msgId   = $payload['payload']['id'] ?? 'n/a';
+
+        Log::channel('whatsapp')->info('Webhook recebido', [
+            'event'   => $event,
+            'session' => $session,
+            'from'    => $from,
+            'msg_id'  => $msgId,
+        ]);
 
         if (! $session) {
             return response('', 200);

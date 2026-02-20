@@ -17,6 +17,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class ProcessWahaWebhook implements ShouldQueue
@@ -51,20 +52,30 @@ class ProcessWahaWebhook implements ShouldQueue
 
     private function handleInbound(WhatsappInstance $instance): void
     {
-        $msg = $this->payload['payload'] ?? [];
+        $msg   = $this->payload['payload'] ?? [];
+        $event = $this->payload['event'] ?? '';
 
         // Ignorar mensagens enviadas por nós (fromMe)
         if (! empty($msg['fromMe'])) {
+            Log::channel('whatsapp')->debug('Ignorado: fromMe', ['id' => $msg['id'] ?? null, 'event' => $event]);
             return;
         }
 
         // Ignorar tipos que não são mensagens reais (grupos por enquanto)
         $from = $msg['from'] ?? '';
         if (str_contains($from, '@g.us')) {
+            Log::channel('whatsapp')->debug('Ignorado: grupo', ['from' => $from, 'event' => $event]);
             return;
         }
 
         $phone = $this->normalizePhone($from, $msg);
+
+        Log::channel('whatsapp')->info('Processando mensagem', [
+            'event'  => $event,
+            'from'   => $from,
+            'phone'  => $phone,
+            'msg_id' => $msg['id'] ?? null,
+        ]);
 
         $conversation = WhatsappConversation::withoutGlobalScope('tenant')
             ->where('tenant_id', $instance->tenant_id)
@@ -85,6 +96,11 @@ class ProcessWahaWebhook implements ShouldQueue
                 ->first();
 
             if ($conversation) {
+                Log::channel('whatsapp')->info('Conversa @lid migrada para telefone real', [
+                    'conversation_id' => $conversation->id,
+                    'old_phone'       => $conversation->phone,
+                    'new_phone'       => $phone,
+                ]);
                 // Migra o telefone armazenado para o número real normalizado
                 WhatsappConversation::withoutGlobalScope('tenant')
                     ->where('id', $conversation->id)
@@ -110,6 +126,16 @@ class ProcessWahaWebhook implements ShouldQueue
                 'last_message_at' => now(),
                 'unread_count'    => 0,
             ]);
+            Log::channel('whatsapp')->info('Conversa CRIADA', [
+                'conversation_id' => $conversation->id,
+                'phone'           => $phone,
+                'contact_name'    => $contactName,
+            ]);
+        } else {
+            Log::channel('whatsapp')->info('Conversa encontrada', [
+                'conversation_id' => $conversation->id,
+                'phone'           => $phone,
+            ]);
         }
 
         // Vincular a conversa a um Lead — cria automaticamente se não existir
@@ -120,6 +146,9 @@ class ProcessWahaWebhook implements ShouldQueue
                     ->where('id', $conversation->id)
                     ->update(['lead_id' => $lead->id]);
                 $conversation->lead_id = $lead->id;
+                Log::channel('whatsapp')->info('Lead vinculado', ['lead_id' => $lead->id, 'phone' => $phone]);
+            } else {
+                Log::channel('whatsapp')->warning('Lead não criado — tenant sem pipeline configurado', ['phone' => $phone]);
             }
         }
 
@@ -130,6 +159,10 @@ class ProcessWahaWebhook implements ShouldQueue
         // Evitar duplicatas pelo waha_message_id
         $wahaId = $msg['id'] ?? null;
         if ($wahaId && WhatsappMessage::withoutGlobalScope('tenant')->where('waha_message_id', $wahaId)->exists()) {
+            Log::channel('whatsapp')->warning('DUPLICATA detectada — abortando', [
+                'waha_message_id' => $wahaId,
+                'event'           => $event,
+            ]);
             return;
         }
 
@@ -147,6 +180,13 @@ class ProcessWahaWebhook implements ShouldQueue
             'sent_at'         => isset($msg['timestamp'])
                 ? \Carbon\Carbon::createFromTimestamp((int) $msg['timestamp'], config('app.timezone'))
                 : now(),
+        ]);
+
+        Log::channel('whatsapp')->info('Mensagem salva', [
+            'message_id'      => $message->id,
+            'waha_message_id' => $wahaId,
+            'type'            => $type,
+            'has_media'       => $mediaUrl !== null,
         ]);
 
         // Atualizar conversa ANTES do broadcast — garante que last_message_at e
@@ -168,8 +208,10 @@ class ProcessWahaWebhook implements ShouldQueue
             WhatsappMessageCreated::dispatch($message, $instance->tenant_id);
             $conversation->refresh();
             WhatsappConversationUpdated::dispatch($conversation, $instance->tenant_id);
-        } catch (\Throwable) {
+            Log::channel('whatsapp')->info('Broadcast enviado', ['tenant_id' => $instance->tenant_id]);
+        } catch (\Throwable $e) {
             // Broadcaster indisponível — o polling de 5s do frontend supre o real-time.
+            Log::channel('whatsapp')->error('Broadcast FALHOU', ['error' => $e->getMessage()]);
         }
     }
 
