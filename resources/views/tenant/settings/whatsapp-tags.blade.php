@@ -1,7 +1,9 @@
 @extends('tenant.layouts.app')
 
-@php($title = 'Configurações')
-@php($pageIcon = 'gear')
+@php
+    $title    = 'Configurações';
+    $pageIcon = 'gear';
+@endphp
 
 @push('styles')
 <style>

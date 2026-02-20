@@ -1,7 +1,9 @@
 @extends('tenant.layouts.app')
 
-@php($title = 'Inteligência Artificial')
-@php($pageIcon = 'robot')
+@php
+    $title    = 'Agente de IA';
+    $pageIcon = 'robot';
+@endphp
 
 @push('styles')
 <style>
