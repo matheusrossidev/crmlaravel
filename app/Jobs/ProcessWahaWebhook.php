@@ -14,6 +14,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class ProcessWahaWebhook implements ShouldQueue
 {
@@ -66,6 +68,27 @@ class ProcessWahaWebhook implements ShouldQueue
             ->where('tenant_id', $instance->tenant_id)
             ->where('phone', $phone)
             ->first();
+
+        // Fallback: procurar conversa que tenha o telefone armazenado no formato @lid
+        // (dados antigos antes da correção de normalização).
+        // Se encontrada, migra o telefone para o formato normalizado.
+        if (! $conversation && str_ends_with($from, '@lid')) {
+            $lidNumeric = (string) preg_replace('/[:@].+$/', '', $from); // "36576092528787:22@lid" → "36576092528787"
+            $conversation = WhatsappConversation::withoutGlobalScope('tenant')
+                ->where('tenant_id', $instance->tenant_id)
+                ->where(function ($q) use ($from, $lidNumeric) {
+                    $q->where('phone', $from)                     // JID exato armazenado
+                      ->orWhere('phone', 'LIKE', $lidNumeric . '%'); // prefixo numérico (qualquer variante @lid)
+                })
+                ->first();
+
+            if ($conversation) {
+                // Migra o telefone armazenado para o número real normalizado
+                WhatsappConversation::withoutGlobalScope('tenant')
+                    ->where('id', $conversation->id)
+                    ->update(['phone' => $phone]);
+            }
+        }
 
         if (! $conversation) {
             // GOWS engine: nome vem em _data.Info.PushName
@@ -262,8 +285,7 @@ class ProcessWahaWebhook implements ShouldQueue
             return ['text', null, null, null];
         }
 
-        $mime     = $media['mimetype'] ?? '';
-        $url      = $media['url'] ?? null;
+        $mime     = $media['mimetype'] ?? $media['mime'] ?? '';
         $filename = $media['filename'] ?? null;
 
         $type = match (true) {
@@ -274,6 +296,71 @@ class ProcessWahaWebhook implements ShouldQueue
             default                                => 'document',
         };
 
-        return [$type, $url, $mime, $filename];
+        // 1. GOWS engine embute mídia como base64 no payload do webhook (media.data)
+        $b64 = $media['data'] ?? null;
+        if ($b64) {
+            // Remove prefixo data URI se presente: "data:image/jpeg;base64,..." → base64 puro
+            $b64  = (string) preg_replace('/^data:[^;]+;base64,/', '', $b64);
+            $ext  = $this->mimeToExt($mime);
+            $sub  = match ($type) { 'audio' => 'audio', 'video' => 'video', 'image' => 'image', default => 'docs' };
+            $path = "whatsapp/{$sub}/" . uniqid('media_', true) . ".{$ext}";
+
+            Storage::disk('public')->put($path, base64_decode($b64));
+            $url = Storage::disk('public')->url($path);
+
+            return [$type, $url, $mime, $filename ?? basename($path)];
+        }
+
+        // 2. URL externa (WAHA) — tenta fazer download com autenticação e armazenar localmente.
+        // Sem isso, o browser não consegue exibir a mídia (requer X-Api-Key).
+        $wahaUrl = $media['url'] ?? null;
+        if ($wahaUrl) {
+            $localUrl = $this->downloadWahaMedia($wahaUrl, $type, $mime);
+            return [$type, $localUrl ?? $wahaUrl, $mime, $filename];
+        }
+
+        return [$type, null, $mime, $filename];
+    }
+
+    private function mimeToExt(string $mime): string
+    {
+        return match ($mime) {
+            'image/jpeg'                => 'jpg',
+            'image/png'                 => 'png',
+            'image/gif'                 => 'gif',
+            'image/webp'                => 'webp',
+            'audio/ogg'                 => 'ogg',
+            'audio/mpeg'                => 'mp3',
+            'audio/webm'                => 'webm',
+            'audio/mp4'                 => 'm4a',
+            'video/mp4'                 => 'mp4',
+            'application/pdf'           => 'pdf',
+            'application/octet-stream'  => 'bin',
+            default                     => explode('/', $mime)[1] ?? 'bin',
+        };
+    }
+
+    private function downloadWahaMedia(string $url, string $type, string $mime): ?string
+    {
+        try {
+            $apiKey   = config('services.waha.api_key');
+            $response = Http::withHeader('X-Api-Key', $apiKey)
+                ->timeout(15)
+                ->get($url);
+
+            if ($response->failed()) {
+                return null;
+            }
+
+            $ext  = $this->mimeToExt($mime);
+            $sub  = match ($type) { 'audio' => 'audio', 'video' => 'video', 'image' => 'image', default => 'docs' };
+            $path = "whatsapp/{$sub}/" . uniqid('media_', true) . ".{$ext}";
+
+            Storage::disk('public')->put($path, $response->body());
+
+            return Storage::disk('public')->url($path);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

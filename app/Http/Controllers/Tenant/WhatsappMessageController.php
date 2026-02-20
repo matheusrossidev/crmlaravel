@@ -26,9 +26,14 @@ class WhatsappMessageController extends Controller
         }
 
         $waha = new WahaService($instance->session_name);
-        // Build chatId: @lid JIDs (GOWS engine) are stored as-is; regular phones get @c.us appended.
+        // Build chatId: strip @lid (GOWS internal JID) to get the numeric phone, then append @c.us.
+        // @lid JIDs cannot be used for outbound API calls — only real phone numbers work.
         $rawPhone = $conversation->phone;
-        $chatId   = str_contains($rawPhone, '@')
+        if (str_contains($rawPhone, '@lid')) {
+            // "36576092528787:22@lid" or "36576092528787@lid" → "36576092528787"
+            $rawPhone = (string) preg_replace('/[:@].+$/', '', $rawPhone);
+        }
+        $chatId = str_contains($rawPhone, '@')
             ? $rawPhone
             : ltrim(preg_replace('/\s+/', '', $rawPhone), '+') . '@c.us';
 

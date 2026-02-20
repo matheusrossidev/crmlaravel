@@ -46,19 +46,24 @@ class WhatsappController extends Controller
             ? \Carbon\Carbon::parse($sinceRaw)->utc()
             : now()->utc()->subMinutes(1);
 
+        // Recua 2 segundos para cobrir possível divergência de relógio entre browser e servidor,
+        // e também a perda de precisão sub-segundo (MySQL TIMESTAMP armazena só segundos).
+        // O frontend usa renderedMsgIds (Set) para evitar duplicatas.
+        $since = $since->subSeconds(2);
+
         $convId = $request->input('conversation_id');
 
         $newMessages = [];
         if ($convId) {
             $newMessages = WhatsappMessage::where('conversation_id', $convId)
-                ->where('created_at', '>', $since)
+                ->where('created_at', '>=', $since)
                 ->orderBy('sent_at')
                 ->get()
                 ->map(fn ($m) => $this->formatMessage($m));
         }
 
         $updatedConvs = WhatsappConversation::with(['latestMessage', 'assignedUser'])
-            ->where('last_message_at', '>', $since)
+            ->where('last_message_at', '>=', $since)
             ->orderByDesc('last_message_at')
             ->get()
             ->map(fn ($c) => $this->formatConversation($c));

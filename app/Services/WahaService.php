@@ -133,6 +133,7 @@ class WahaService
 
     /**
      * Send voice note via URL (WAHA fetches it).
+     * convert: true asks WAHA to convert WebM/Opus to OGG/Opus (WhatsApp format).
      */
     public function sendVoice(string $chatId, string $url): array
     {
@@ -140,12 +141,14 @@ class WahaService
             'session' => $this->session,
             'chatId'  => $chatId,
             'file'    => ['url' => $url],
+            'convert' => true,
         ]);
     }
 
     /**
      * Send voice note by uploading file content directly to WAHA (base64).
      * Use this when the public URL may not be reachable from the WAHA container.
+     * convert: true asks WAHA to convert WebM/Opus (browser recording) to OGG/Opus (WhatsApp format).
      */
     public function sendVoiceBase64(string $chatId, string $filePath, string $mimeType): array
     {
@@ -154,6 +157,7 @@ class WahaService
             'session' => $this->session,
             'chatId'  => $chatId,
             'file'    => ['data' => "data:{$mimeType};base64,{$base64}", 'mimetype' => $mimeType],
+            'convert' => true,
         ]);
     }
 
