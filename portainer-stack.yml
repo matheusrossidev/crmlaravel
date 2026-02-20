@@ -16,7 +16,7 @@ services:
       - public_shared:/var/www/public:ro
       - storage_data:/var/www/storage/app/public:ro
     networks:
-      - crm_internal
+      - crm_private
       - serverossi
     deploy:
       replicas: 1
@@ -103,7 +103,7 @@ services:
       - logs_data:/var/www/storage/logs
       - cache_data:/var/www/bootstrap/cache
     networks:
-      - crm_internal
+      - crm_private
     deploy:
       replicas: 1
       restart_policy:
@@ -153,7 +153,7 @@ services:
       - logs_data:/var/www/storage/logs
       - cache_data:/var/www/bootstrap/cache
     networks:
-      - crm_internal
+      - crm_private
     deploy:
       replicas: 1
       restart_policy:
@@ -173,7 +173,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - crm_internal
+      - crm_private
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p0f6e6767fff792721c91f8e0c783b082"]
       interval: 10s
@@ -197,7 +197,7 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - crm_internal
+      - crm_private
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -222,7 +222,7 @@ volumes:
 
 # ── Redes ─────────────────────────────────────────────────
 networks:
-  crm_internal:
+  crm_private:
     driver: overlay      # overlay obrigatório no Swarm
     attachable: true
   serverossi:
