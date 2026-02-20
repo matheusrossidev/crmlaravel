@@ -39,7 +39,13 @@ class WhatsappController extends Controller
 
     public function poll(Request $request): JsonResponse
     {
-        $since  = $request->input('since', now()->subMinutes(1)->toISOString());
+        // Parse $since with timezone awareness (browser sends UTC ISO, e.g. "2026-02-20T03:31:31.000Z").
+        // Carbon::parse handles any ISO 8601 format and utc() normalises to UTC for MySQL TIMESTAMP comparison.
+        $sinceRaw = $request->input('since');
+        $since    = $sinceRaw
+            ? \Carbon\Carbon::parse($sinceRaw)->utc()
+            : now()->utc()->subMinutes(1);
+
         $convId = $request->input('conversation_id');
 
         $newMessages = [];
@@ -60,7 +66,7 @@ class WhatsappController extends Controller
         return response()->json([
             'new_messages'          => $newMessages,
             'conversations_updated' => $updatedConvs,
-            'now'                   => now()->toISOString(),
+            'now'                   => now()->utc()->toISOString(), // always UTC so browser comparison is unambiguous
         ]);
     }
 

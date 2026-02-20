@@ -60,7 +60,7 @@ class ProcessWahaWebhook implements ShouldQueue
             return;
         }
 
-        $phone = $this->normalizePhone($from);
+        $phone = $this->normalizePhone($from, $msg);
 
         $conversation = WhatsappConversation::withoutGlobalScope('tenant')
             ->where('tenant_id', $instance->tenant_id)
@@ -235,13 +235,19 @@ class ProcessWahaWebhook implements ShouldQueue
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private function normalizePhone(string $from): string
+    private function normalizePhone(string $from, array $msg = []): string
     {
-        // Preserve @lid JIDs as-is (GOWS engine uses them for some contacts).
-        // Only strip the common numeric-only suffixes so the phone stored in DB
-        // can be used later to reconstruct the chatId for outbound messages.
+        // GOWS engine sometimes uses @lid JIDs as the "from" field.
+        // Extract the real phone from _data.Info.Chat which always has the @s.whatsapp.net JID.
         if (str_ends_with($from, '@lid')) {
-            return $from; // store full JID, e.g. "63454534750435@lid"
+            $chat = $msg['_data']['Info']['Chat'] ?? '';
+            if ($chat) {
+                // "556192008997@s.whatsapp.net" → "556192008997"
+                return (string) preg_replace('/@.+$/', '', $chat);
+            }
+            // Last resort: strip @lid and device suffix
+            // "36576092528787:22@lid" → "36576092528787"
+            return (string) preg_replace('/[:@].+$/', '', $from);
         }
 
         return str_replace(['@c.us', '@s.whatsapp.net'], '', $from);

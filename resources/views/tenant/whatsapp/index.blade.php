@@ -900,6 +900,7 @@ let recordingSeconds  = 0;
 let recordingTimerInt = null;
 let reactionTargetId  = null;
 let lastRenderedDate  = null; // persiste entre chamadas a renderMessages/appendMessages
+const renderedMsgIds  = new Set(); // evita duplicatas quando polling e histórico coexistem
 
 const CSRF      = document.querySelector('meta[name="csrf-token"]')?.content;
 const TENANT_ID = {{ auth()->user()->tenant_id ?? 'null' }};
@@ -963,55 +964,56 @@ function runPoll() {
 }
 
 function setupEcho() {
-    // If Echo is not available, fall back to polling immediately
+    // Always start polling immediately — if Echo connects successfully it will be stopped below.
+    // This guarantees updates even if Echo setup throws or takes too long.
+    startFallbackPolling();
+
     if (!window.Echo || !TENANT_ID) {
-        startFallbackPolling();
         showWsStatus('error', 'Tempo real indisponível — atualizando a cada 5s');
         return;
     }
 
-    const channel = window.Echo.private(`tenant.${TENANT_ID}`);
+    try {
+        const channel = window.Echo.private(`tenant.${TENANT_ID}`);
 
-    channel.listen('.whatsapp.message', data => {
-        // Só renderiza se a conversa está aberta
-        if (data.conversation_id == activeConvId) {
-            appendMessages([data]);
+        channel.listen('.whatsapp.message', data => {
+            if (data.conversation_id == activeConvId) {
+                appendMessages([data]);
+                fetch(`/whatsapp/conversations/${activeConvId}/read`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
+                });
+            }
+            // Keep lastPollAt in sync so fallback doesn't re-deliver
+            lastPollAt = data.sent_at ?? new Date().toISOString();
+        });
 
-            // Marcar como lida automaticamente
-            fetch(`/whatsapp/conversations/${activeConvId}/read`, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
-            });
-        }
-        // Keep lastPollAt in sync so fallback doesn't re-deliver
-        lastPollAt = data.sent_at ?? new Date().toISOString();
-    });
+        channel.listen('.whatsapp.conversation', data => {
+            updateConvInSidebar(data);
+        });
 
-    channel.listen('.whatsapp.conversation', data => {
-        updateConvInSidebar(data);
-    });
+        // Use optional chaining — connector.pusher might not exist for all Echo drivers
+        const conn = window.Echo.connector?.pusher?.connection;
+        if (!conn) return; // No pusher connector — keep polling
 
-    const conn = window.Echo.connector.pusher.connection;
-
-    conn.bind('connecting',   () => showWsStatus('connecting', 'Conectando...'));
-    conn.bind('connected',    () => {
-        echoConnected = true;
-        stopFallbackPolling();
-        hideWsStatus();
-    });
-    conn.bind('unavailable',  () => {
-        echoConnected = false;
-        startFallbackPolling();
-        showWsStatus('error', 'Sem conexão em tempo real — atualizando a cada 5s');
-    });
-    conn.bind('disconnected', () => {
-        echoConnected = false;
-        startFallbackPolling();
-        showWsStatus('connecting', 'Reconectando...');
-    });
-
-    // If connection doesn't succeed within 8s, start polling proactively
-    setTimeout(() => { if (!echoConnected) startFallbackPolling(); }, 8000);
+        conn.bind('connected', () => {
+            echoConnected = true;
+            stopFallbackPolling();
+            hideWsStatus();
+        });
+        conn.bind('unavailable', () => {
+            echoConnected = false;
+            startFallbackPolling();
+            showWsStatus('error', 'Sem conexão em tempo real — atualizando a cada 5s');
+        });
+        conn.bind('disconnected', () => {
+            echoConnected = false;
+            startFallbackPolling();
+        });
+    } catch (e) {
+        // Echo setup failed — polling already running, no action needed
+        showWsStatus('error', 'Tempo real indisponível — atualizando a cada 5s');
+    }
 }
 
 function showWsStatus(type, text) {
@@ -1100,6 +1102,10 @@ async function openConversation(convId, el) {
     const res  = await fetch(`/whatsapp/conversations/${convId}`, { headers: { 'Accept': 'application/json' } });
     const data = await res.json();
     renderMessages(data.messages, true);
+
+    // Avança o anchor do poll para agora, evitando que o próximo poll re-entregue
+    // mensagens do histórico já renderizadas pelo openConversation.
+    lastPollAt = new Date().toISOString();
 }
 
 // ── Renderizar mensagens ──────────────────────────────────────────────────────
@@ -1108,9 +1114,14 @@ function renderMessages(messages, clear = false) {
     if (clear) {
         container.innerHTML = '';
         lastRenderedDate = null; // reset ao abrir nova conversa
+        renderedMsgIds.clear();  // reset deduplicação ao trocar de conversa
     }
 
     messages.forEach(msg => {
+        // Evitar duplicatas: skip se este ID já foi renderizado (ex: poll re-entrega histórico)
+        if (msg.id && renderedMsgIds.has(msg.id)) return;
+        if (msg.id) renderedMsgIds.add(msg.id);
+
         const msgDate = msg.sent_at ? new Date(msg.sent_at).toLocaleDateString('pt-BR') : null;
 
         if (msgDate && msgDate !== lastRenderedDate) {

@@ -36,7 +36,7 @@ x-app-env: &app-env
   SESSION_SECURE_COOKIE: "true"
   SESSION_HTTP_ONLY: "true"
   SESSION_SAME_SITE: lax
-  BROADCAST_CONNECTION: log
+  BROADCAST_CONNECTION: reverb
   FILESYSTEM_DISK: local
   QUEUE_CONNECTION: redis
   CACHE_STORE: redis
@@ -161,11 +161,37 @@ services:
         delay: 15s
 
   # ────────────────────────────────────────────────────────
-  # REVERB removido — OOM-killed em produção (código 137).
-  # Real-time futuro: adicionar Pusher.com (só vars de env,
-  # sem processo server-side). Por enquanto o polling de 5s
-  # em index.blade.php garante a atualização do inbox.
+  # REVERB — WebSocket server
+  # O nginx já tem /app/ e /apps/ fazendo proxy para reverb:8080.
+  # memory: 256M evita que o OS OOM Killer mate o processo —
+  # Docker gerencia o restart limpo ao invés do OOM Killer.
   # ────────────────────────────────────────────────────────
+  reverb:
+    image: matolado/crm:latest
+    command: >
+      bash -c "
+        rm -f /var/www/bootstrap/cache/packages.php &&
+        php artisan package:discover --ansi 2>/dev/null || true &&
+        php artisan reverb:start --host=0.0.0.0 --port=8080
+      "
+    environment:
+      <<: *app-env
+    volumes:
+      - storage_data:/var/www/storage/app
+      - logs_data:/var/www/storage/logs
+      - cache_data:/var/www/bootstrap/cache
+    networks:
+      - crm_private
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
 
   # ────────────────────────────────────────────────────────
   # MYSQL 8.0
