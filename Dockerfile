@@ -28,7 +28,6 @@ RUN apt-get update && apt-get install -y \
     libicu-dev \
     libonig-dev \
     libexif-dev \
-    libuv1-dev \
     zip \
     unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -44,8 +43,7 @@ RUN apt-get update && apt-get install -y \
         intl \
         opcache \
     && pecl install redis \
-    && pecl install uv \
-    && docker-php-ext-enable redis uv \
+    && docker-php-ext-enable redis \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
