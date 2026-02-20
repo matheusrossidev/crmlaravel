@@ -113,10 +113,8 @@ class ProcessWahaWebhook implements ShouldQueue
                 : now(),
         ]);
 
-        // Broadcast new message via WebSocket
-        WhatsappMessageCreated::dispatch($message, $instance->tenant_id);
-
-        // Atualizar conversa
+        // Atualizar conversa ANTES do broadcast — garante que last_message_at e
+        // unread_count sejam salvos mesmo se o broadcaster estiver indisponível.
         WhatsappConversation::withoutGlobalScope('tenant')
             ->where('id', $conversation->id)
             ->update([
@@ -127,9 +125,16 @@ class ProcessWahaWebhook implements ShouldQueue
                 'closed_at'       => null,
             ]);
 
-        // Broadcast conversation update via WebSocket
-        $conversation->refresh();
-        WhatsappConversationUpdated::dispatch($conversation, $instance->tenant_id);
+        // Broadcast via WebSocket — envolvido em try/catch para que uma falha
+        // no broadcaster (Reverb OOM, Pusher indisponível, etc.) não impeça
+        // que a mensagem e a conversa sejam salvas no banco.
+        try {
+            WhatsappMessageCreated::dispatch($message, $instance->tenant_id);
+            $conversation->refresh();
+            WhatsappConversationUpdated::dispatch($conversation, $instance->tenant_id);
+        } catch (\Throwable) {
+            // Broadcaster indisponível — o polling de 5s do frontend supre o real-time.
+        }
     }
 
     private function handleReaction(WhatsappInstance $instance): void

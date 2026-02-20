@@ -50,7 +50,9 @@ class WhatsappWebhookController extends Controller
             $instance->updateQuietly(['session_name' => $session]);
         }
 
-        ProcessWahaWebhook::dispatch($payload)->onQueue('whatsapp');
+        // dispatchSync: processa imediatamente, sem depender do queue worker.
+        // WAHA tem timeout de 5-10s; o processamento leva ~100-200ms — seguro.
+        ProcessWahaWebhook::dispatchSync($payload);
 
         return response('', 200);
     }
