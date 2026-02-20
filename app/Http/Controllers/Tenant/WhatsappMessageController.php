@@ -25,8 +25,9 @@ class WhatsappMessageController extends Controller
             return response()->json(['error' => 'WhatsApp não conectado'], 422);
         }
 
-        $waha   = new WahaService($instance->session_name);
-        $chatId = $conversation->phone . '@c.us';
+        $waha = new WahaService($instance->session_name);
+        // Remove + prefix e espaços — chatId WAHA: 5511999999999@c.us
+        $chatId = ltrim(preg_replace('/\s+/', '', $conversation->phone), '+') . '@c.us';
 
         $wahaMessageId = null;
         $mediaUrl      = null;
@@ -36,15 +37,29 @@ class WhatsappMessageController extends Controller
         if ($type === 'note') {
             // Nota privada: não envia ao WAHA
         } elseif ($type === 'text') {
-            $result        = $waha->sendText($chatId, $body);
+            $result = $waha->sendText($chatId, $body);
+            if (isset($result['error'])) {
+                return response()->json(['error' => 'Falha ao enviar mensagem no WhatsApp: ' . ($result['body'] ?? 'erro desconhecido')], 422);
+            }
             $wahaMessageId = $result['id'] ?? null;
         } elseif ($type === 'image' && $request->hasFile('file')) {
-            [$mediaUrl, $mediaMime, $mediaFilename, $publicUrl] = $this->handleUpload($request, 'image');
-            $result        = $waha->sendImage($chatId, $publicUrl, $body);
+            // handleUpload retorna [storagePath, mime, filename, publicUrl]
+            [$storagePath, $mediaMime, $mediaFilename, $mediaUrl] = $this->handleUpload($request, 'image');
+            // Envia via base64 direto ao WAHA (evita que WAHA precise alcançar URL interna do Docker)
+            $absolutePath = storage_path('app/public/' . $storagePath);
+            $result       = $waha->sendImageBase64($chatId, $absolutePath, $mediaMime, $body);
+            if (isset($result['error'])) {
+                return response()->json(['error' => 'Falha ao enviar imagem no WhatsApp: ' . ($result['body'] ?? 'erro desconhecido')], 422);
+            }
             $wahaMessageId = $result['id'] ?? null;
         } elseif ($type === 'audio' && $request->hasFile('file')) {
-            [$mediaUrl, $mediaMime, $mediaFilename, $publicUrl] = $this->handleUpload($request, 'audio');
-            $result        = $waha->sendVoice($chatId, $publicUrl);
+            [$storagePath, $mediaMime, $mediaFilename, $mediaUrl] = $this->handleUpload($request, 'audio');
+            // Envia via base64 direto ao WAHA
+            $absolutePath = storage_path('app/public/' . $storagePath);
+            $result       = $waha->sendVoiceBase64($chatId, $absolutePath, $mediaMime);
+            if (isset($result['error'])) {
+                return response()->json(['error' => 'Falha ao enviar áudio no WhatsApp: ' . ($result['body'] ?? 'erro desconhecido')], 422);
+            }
             $wahaMessageId = $result['id'] ?? null;
         } else {
             return response()->json(['error' => 'Tipo inválido ou arquivo ausente'], 422);
@@ -98,8 +113,8 @@ class WhatsappMessageController extends Controller
             return response()->json(['error' => 'WhatsApp não conectado'], 422);
         }
 
-        $waha   = new WahaService($instance->session_name);
-        $result = $waha->sendReaction($wahaMessageId, $emoji);
+        $waha = new WahaService($instance->session_name);
+        $waha->sendReaction($wahaMessageId, $emoji);
 
         WhatsappMessage::create([
             'tenant_id'       => auth()->user()->tenant_id,

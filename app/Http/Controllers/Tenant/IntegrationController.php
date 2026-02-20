@@ -194,12 +194,12 @@ class IntegrationController extends Controller
             return response()->json(['error' => 'Instância não encontrada.'], 404);
         }
 
-        $waha   = new WahaService($instance->session_name);
-        $result = $waha->getQr();
+        $waha     = new WahaService($instance->session_name);
+        $response = $waha->getQrResponse();
 
-        if (isset($result['error'])) {
-            // Pode ser que já conectou — verificar status da sessão
-            $session = $waha->getSession();
+        if ($response->failed()) {
+            // QR indisponível — verificar se a sessão já está conectada
+            $session    = $waha->getSession();
             $wahaStatus = $session['status'] ?? null;
 
             if ($wahaStatus === 'WORKING') {
@@ -210,14 +210,25 @@ class IntegrationController extends Controller
             return response()->json(['status' => $instance->status, 'qr_base64' => null]);
         }
 
-        // Atualizar status se mudou
+        // Atualizar status se necessário
         if ($instance->status !== 'qr') {
             $instance->update(['status' => 'qr']);
         }
 
+        // WAHA retorna PNG binário quando format=image
+        $contentType = $response->header('Content-Type') ?? '';
+        if (str_contains($contentType, 'image/')) {
+            return response()->json([
+                'status'    => 'qr',
+                'qr_base64' => base64_encode($response->body()),
+            ]);
+        }
+
+        // Fallback: JSON com campo "value" (formato raw do WAHA)
+        $json = $response->json() ?? [];
         return response()->json([
-            'status'     => 'qr',
-            'qr_base64'  => $result['value'] ?? null,
+            'status'    => 'qr',
+            'qr_base64' => $json['value'] ?? null,
         ]);
     }
 

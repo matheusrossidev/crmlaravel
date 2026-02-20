@@ -56,10 +56,9 @@ class WahaService
             $webhook['hmac'] = ['key' => $webhookSecret];
         }
 
-        $response = $this->client()->patch("/api/sessions/{$this->session}", [
+        return $this->patch("/api/sessions/{$this->session}", [
             'config' => ['webhooks' => [$webhook]],
         ]);
-        return $this->parse($response);
     }
 
     public function getSession(): array
@@ -85,11 +84,12 @@ class WahaService
     // ── QR ────────────────────────────────────────────────────────────────────
 
     /**
-     * Returns { value: 'base64...', format: 'image' } or error.
+     * Returns the raw HTTP response for the QR endpoint.
+     * WAHA with format=image returns PNG binary; we base64-encode it in the controller.
      */
-    public function getQr(): array
+    public function getQrResponse(): \Illuminate\Http\Client\Response
     {
-        return $this->get("/api/{$this->session}/auth/qr", ['format' => 'image']);
+        return $this->client()->get("/api/{$this->session}/auth/qr", ['format' => 'image']);
     }
 
     // ── Send Messages ─────────────────────────────────────────────────────────
@@ -103,6 +103,9 @@ class WahaService
         ]);
     }
 
+    /**
+     * Send image via URL (WAHA fetches it). URL must be publicly reachable from the WAHA container.
+     */
     public function sendImage(string $chatId, string $url, string $caption = ''): array
     {
         return $this->post('/api/sendImage', [
@@ -113,12 +116,44 @@ class WahaService
         ]);
     }
 
+    /**
+     * Send image by uploading file content directly to WAHA (base64).
+     * Use this when the public URL may not be reachable from the WAHA container.
+     */
+    public function sendImageBase64(string $chatId, string $filePath, string $mimeType, string $caption = ''): array
+    {
+        $base64 = base64_encode(file_get_contents($filePath));
+        return $this->post('/api/sendImage', [
+            'session' => $this->session,
+            'chatId'  => $chatId,
+            'file'    => ['data' => "data:{$mimeType};base64,{$base64}", 'mimetype' => $mimeType],
+            'caption' => $caption,
+        ]);
+    }
+
+    /**
+     * Send voice note via URL (WAHA fetches it).
+     */
     public function sendVoice(string $chatId, string $url): array
     {
         return $this->post('/api/sendVoice', [
             'session' => $this->session,
             'chatId'  => $chatId,
             'file'    => ['url' => $url],
+        ]);
+    }
+
+    /**
+     * Send voice note by uploading file content directly to WAHA (base64).
+     * Use this when the public URL may not be reachable from the WAHA container.
+     */
+    public function sendVoiceBase64(string $chatId, string $filePath, string $mimeType): array
+    {
+        $base64 = base64_encode(file_get_contents($filePath));
+        return $this->post('/api/sendVoice', [
+            'session' => $this->session,
+            'chatId'  => $chatId,
+            'file'    => ['data' => "data:{$mimeType};base64,{$base64}", 'mimetype' => $mimeType],
         ]);
     }
 

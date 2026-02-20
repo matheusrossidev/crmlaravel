@@ -895,6 +895,7 @@ let audioChunks       = [];
 let recordingSeconds  = 0;
 let recordingTimerInt = null;
 let reactionTargetId  = null;
+let lastRenderedDate  = null; // persiste entre chamadas a renderMessages/appendMessages
 
 const CSRF      = document.querySelector('meta[name="csrf-token"]')?.content;
 const TENANT_ID = {{ auth()->user()->tenant_id ?? 'null' }};
@@ -1036,15 +1037,16 @@ async function openConversation(convId, el) {
 // ── Renderizar mensagens ──────────────────────────────────────────────────────
 function renderMessages(messages, clear = false) {
     const container = document.getElementById('messagesContainer');
-    if (clear) container.innerHTML = '';
-
-    let lastDate = null;
+    if (clear) {
+        container.innerHTML = '';
+        lastRenderedDate = null; // reset ao abrir nova conversa
+    }
 
     messages.forEach(msg => {
         const msgDate = msg.sent_at ? new Date(msg.sent_at).toLocaleDateString('pt-BR') : null;
 
-        if (msgDate && msgDate !== lastDate) {
-            lastDate = msgDate;
+        if (msgDate && msgDate !== lastRenderedDate) {
+            lastRenderedDate = msgDate;
             const sep  = document.createElement('div');
             sep.className = 'wa-date-sep';
             const today     = new Date().toLocaleDateString('pt-BR');

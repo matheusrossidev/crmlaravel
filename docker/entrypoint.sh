@@ -48,7 +48,9 @@ done
 echo "[entrypoint] Redis ready."
 
 # ── Redescobrir pacotes (garante que bootstrap/cache/packages.php tem Reverb) ──
-# Necessário porque o volume cache_data pode ter cache antigo (sem laravel/reverb)
+# Força remoção do cache antigo ANTES de redescobrir — sem isso, o artisan boota
+# usando o packages.php obsoleto do volume e ignora o laravel/reverb instalado.
+rm -f /var/www/bootstrap/cache/packages.php
 php artisan package:discover --ansi 2>/dev/null || true
 
 # ── Migrations + Seed + Cache (apenas container app) ─────────────────────────
