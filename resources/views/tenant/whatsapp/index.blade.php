@@ -31,12 +31,12 @@
         width: 80px;
         height: 80px;
         border-radius: 50%;
-        background: #dcfce7;
+        background: #eff6ff;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 36px;
-        color: #25D366;
+        color: #3b82f6;
     }
 
     .wa-empty-state h3 {
@@ -58,7 +58,7 @@
         align-items: center;
         gap: 6px;
         padding: 10px 22px;
-        background: #25D366;
+        background: #3b82f6;
         color: #fff;
         border: none;
         border-radius: 10px;
@@ -69,7 +69,7 @@
         cursor: pointer;
     }
 
-    .btn-go-integrations:hover { background: #1ebe5a; color: #fff; }
+    .btn-go-integrations:hover { background: #2563eb; color: #fff; }
 
     /* ── Sidebar de conversas ── */
     .wa-sidebar {
@@ -133,7 +133,7 @@
     }
 
     .wa-search input:focus {
-        border-color: #25D366;
+        border-color: #3b82f6;
         background: #fff;
     }
 
@@ -157,8 +157,8 @@
     }
 
     .wa-filter-btn.active {
-        background: #25D366;
-        border-color: #25D366;
+        background: #3b82f6;
+        border-color: #3b82f6;
         color: #fff;
     }
 
@@ -179,24 +179,48 @@
     }
 
     .wa-conv-item:hover { background: #f8fafc; }
-    .wa-conv-item.active { background: #f0fdf4; border-left: 3px solid #25D366; }
+    .wa-conv-item.active { background: #eff6ff; border-left: 3px solid #3b82f6; }
+
+    /* Avatar com indicador de canal */
+    .wa-conv-avatar-wrap {
+        position: relative;
+        flex-shrink: 0;
+    }
 
     .wa-conv-avatar {
         width: 42px;
         height: 42px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #25D366, #128C7E);
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
         display: flex;
         align-items: center;
         justify-content: center;
         color: #fff;
         font-size: 16px;
         font-weight: 700;
-        flex-shrink: 0;
         overflow: hidden;
     }
 
     .wa-conv-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Ícone de canal no canto do avatar */
+    .wa-channel-icon {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        border: 1.5px solid #fff;
+        color: #fff;
+    }
+
+    .wa-channel-icon.whatsapp { background: #25D366; }
+    .wa-channel-icon.instagram { background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
 
     .wa-conv-info { flex: 1; min-width: 0; }
 
@@ -243,7 +267,7 @@
         width: 18px;
         height: 18px;
         border-radius: 50%;
-        background: #25D366;
+        background: #3b82f6;
         color: #fff;
         font-size: 10px;
         font-weight: 700;
@@ -272,7 +296,7 @@
         color: #9ca3af;
     }
 
-    .wa-no-conv i { font-size: 56px; opacity: .3; color: #25D366; }
+    .wa-no-conv i { font-size: 56px; opacity: .3; color: #3b82f6; }
     .wa-no-conv p { font-size: 14px; }
 
     /* ── Chat Header ── */
@@ -295,13 +319,30 @@
     .wa-chat-contact-phone {
         font-size: 12px;
         color: #9ca3af;
+        display: flex;
+        align-items: center;
+        gap: 4px;
     }
+
+    /* Canal no header */
+    .wa-header-channel {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 99px;
+        color: #fff;
+    }
+    .wa-header-channel.whatsapp { background: #25D366; }
+    .wa-header-channel.instagram { background: linear-gradient(135deg, #f09433, #dc2743); }
 
     .wa-status-dot {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: #25D366;
+        background: #3b82f6;
         flex-shrink: 0;
     }
 
@@ -382,7 +423,7 @@
     }
 
     .wa-msg.inbound  .wa-bubble { background: #fff; border-radius: 2px 12px 12px 12px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
-    .wa-msg.outbound .wa-bubble { background: #dcfce7; border-radius: 12px 2px 12px 12px; }
+    .wa-msg.outbound .wa-bubble { background: #dbeafe; border-radius: 12px 2px 12px 12px; }
     .wa-msg.note     .wa-bubble { background: #fef9c3; border-radius: 10px; width: 100%; border-left: 3px solid #F59E0B; }
 
     .wa-bubble.deleted { font-style: italic; color: #9ca3af; font-size: 12.5px; }
@@ -399,7 +440,7 @@
     }
 
     .wa-ack i { font-size: 12px; }
-    .wa-ack.read i { color: #25D366; }
+    .wa-ack.read i { color: #3b82f6; }
 
     /* Nota privada label */
     .wa-note-label {
@@ -477,7 +518,7 @@
         transition: all .15s;
     }
 
-    .wa-tab-btn.active { background: #25D366; color: #fff; }
+    .wa-tab-btn.active { background: #3b82f6; color: #fff; }
     .wa-tab-btn:not(.active):hover { background: #f4f6fb; }
 
     .wa-compose-row {
@@ -506,7 +547,7 @@
         transition: border-color .15s;
     }
 
-    .wa-textarea:focus { border-color: #25D366; background: #fff; }
+    .wa-textarea:focus { border-color: #3b82f6; background: #fff; }
     .wa-textarea.note-mode { border-color: #F59E0B; background: #fffbeb; }
 
     .wa-btn-icon {
@@ -532,7 +573,7 @@
         height: 38px;
         border: none;
         border-radius: 9px;
-        background: #25D366;
+        background: #3b82f6;
         color: #fff;
         display: flex;
         align-items: center;
@@ -543,8 +584,8 @@
         flex-shrink: 0;
     }
 
-    .wa-btn-send:hover { background: #1ebe5a; }
-    .wa-btn-send:disabled { background: #d1fae5; cursor: not-allowed; }
+    .wa-btn-send:hover { background: #2563eb; }
+    .wa-btn-send:disabled { background: #bfdbfe; cursor: not-allowed; }
 
     /* Gravação de áudio */
     .wa-recording-indicator {
@@ -623,6 +664,26 @@
     .wa-emoji-picker.open { display: flex; }
     .wa-emoji-opt { font-size: 20px; cursor: pointer; padding: 2px; border-radius: 4px; }
     .wa-emoji-opt:hover { background: #f4f6fb; }
+
+    /* WebSocket status indicator */
+    .ws-status {
+        position: fixed;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 6px 16px;
+        border-radius: 99px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #fff;
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,.15);
+    }
+    .ws-status.connecting { background: #f59e0b; display: flex; }
+    .ws-status.error { background: #ef4444; display: flex; }
 </style>
 @endpush
 
@@ -633,7 +694,7 @@
 {{-- ── Empty State: não conectado ───────────────────────────────────────────── --}}
 <div class="wa-empty-state">
     <div class="wa-icon-circle">
-        <i class="bi bi-whatsapp"></i>
+        <i class="bi bi-chat-dots-fill"></i>
     </div>
     <h3>WhatsApp não conectado</h3>
     <p>Para usar o chat, você precisa conectar seu número de WhatsApp em Integrações.</p>
@@ -649,7 +710,7 @@
 <div class="wa-sidebar">
     <div class="wa-sidebar-header">
         <div class="wa-sidebar-title">
-            <i class="bi bi-whatsapp" style="color:#25D366;"></i>
+            <i class="bi bi-chat-dots-fill" style="color:#3b82f6;"></i>
             Conversas
             <span class="wa-badge" id="totalUnreadBadge" style="display:none;"></span>
         </div>
@@ -671,13 +732,19 @@
              data-conv-id="{{ $conv->id }}"
              data-phone="{{ $conv->phone }}"
              data-status="{{ $conv->status }}"
+             data-channel="whatsapp"
              onclick="openConversation({{ $conv->id }}, this)">
-            <div class="wa-conv-avatar">
-                @if($conv->contact_picture_url)
-                    <img src="{{ $conv->contact_picture_url }}" alt="">
-                @else
-                    {{ strtoupper(substr($conv->contact_name ?? $conv->phone, 0, 1)) }}
-                @endif
+            <div class="wa-conv-avatar-wrap">
+                <div class="wa-conv-avatar">
+                    @if($conv->contact_picture_url)
+                        <img src="{{ $conv->contact_picture_url }}" alt="">
+                    @else
+                        {{ strtoupper(substr($conv->contact_name ?? $conv->phone, 0, 1)) }}
+                    @endif
+                </div>
+                <span class="wa-channel-icon whatsapp" title="WhatsApp">
+                    <i class="bi bi-whatsapp"></i>
+                </span>
             </div>
             <div class="wa-conv-info">
                 <div class="wa-conv-top">
@@ -718,7 +785,12 @@
 
     {{-- Header do chat (oculto até abrir conversa) --}}
     <div class="wa-chat-header" id="chatHeader" style="display:none;">
-        <div class="wa-conv-avatar" id="chatAvatar" style="width:38px;height:38px;font-size:14px;"></div>
+        <div class="wa-conv-avatar-wrap">
+            <div class="wa-conv-avatar" id="chatAvatar" style="width:38px;height:38px;font-size:14px;"></div>
+            <span class="wa-channel-icon whatsapp" id="chatChannelIcon" title="WhatsApp">
+                <i class="bi bi-whatsapp"></i>
+            </span>
+        </div>
         <div>
             <div class="wa-chat-contact-name" id="chatContactName"></div>
             <div class="wa-chat-contact-phone" id="chatContactPhone"></div>
@@ -802,6 +874,12 @@
     </div>
 </div>
 
+{{-- WebSocket status toast --}}
+<div class="ws-status" id="wsStatus">
+    <i class="bi bi-wifi-off"></i>
+    <span id="wsStatusText">Reconectando...</span>
+</div>
+
 @endif
 </div>
 @endsection
@@ -812,15 +890,14 @@
 let activeConvId      = null;
 let activeConvStatus  = 'open';
 let composeMode       = 'reply';
-let lastPollAt        = new Date().toISOString();
-let pollTimer         = null;
 let mediaRecorder     = null;
 let audioChunks       = [];
 let recordingSeconds  = 0;
-let recordingTimer    = null;
+let recordingTimerInt = null;
 let reactionTargetId  = null;
 
-const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
+const CSRF      = document.querySelector('meta[name="csrf-token"]')?.content;
+const TENANT_ID = {{ auth()->user()->tenant_id ?? 'null' }};
 
 // ── Inicialização ─────────────────────────────────────────────────────────────
 @if($connected)
@@ -828,9 +905,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSearch();
     setupFilters();
     updateTotalUnread();
-    startPolling();
+    setupEcho();
 
-    // Enter para enviar
     document.getElementById('messageInput')?.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -839,6 +915,47 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 @endif
+
+// ── WebSocket via Laravel Echo + Reverb ───────────────────────────────────────
+function setupEcho() {
+    if (!window.Echo || !TENANT_ID) return;
+
+    const channel = window.Echo.private(`tenant.${TENANT_ID}`);
+
+    channel.listen('.whatsapp.message', data => {
+        // Só renderiza se a conversa está aberta
+        if (data.conversation_id == activeConvId) {
+            appendMessages([data]);
+
+            // Marcar como lida automaticamente
+            fetch(`/whatsapp/conversations/${activeConvId}/read`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
+            });
+        }
+    });
+
+    channel.listen('.whatsapp.conversation', data => {
+        updateConvInSidebar(data);
+    });
+
+    window.Echo.connector.pusher.connection.bind('connecting', () => showWsStatus('connecting', 'Conectando...'));
+    window.Echo.connector.pusher.connection.bind('connected',  () => hideWsStatus());
+    window.Echo.connector.pusher.connection.bind('unavailable', () => showWsStatus('error', 'Sem conexão em tempo real'));
+    window.Echo.connector.pusher.connection.bind('disconnected', () => showWsStatus('connecting', 'Reconectando...'));
+}
+
+function showWsStatus(type, text) {
+    const el = document.getElementById('wsStatus');
+    if (!el) return;
+    el.className = `ws-status ${type}`;
+    document.getElementById('wsStatusText').textContent = text;
+}
+
+function hideWsStatus() {
+    const el = document.getElementById('wsStatus');
+    if (el) el.className = 'ws-status';
+}
 
 // ── Filtros e pesquisa ────────────────────────────────────────────────────────
 function setupSearch() {
@@ -872,38 +989,45 @@ async function openConversation(convId, el) {
     document.querySelectorAll('.wa-conv-item').forEach(i => i.classList.remove('active'));
     el.classList.add('active');
 
-    // Remover unread badge do item
     const dot = el.querySelector('.wa-unread-dot');
     if (dot) dot.remove();
 
-    // Atualizar header
-    const name  = el.querySelector('.wa-conv-name').textContent;
-    const phone = el.dataset.phone;
+    const name    = el.querySelector('.wa-conv-name').textContent;
+    const phone   = el.dataset.phone;
+    const channel = el.dataset.channel || 'whatsapp';
     activeConvStatus = el.dataset.status;
 
-    document.getElementById('chatHeader').style.display = 'flex';
+    document.getElementById('chatHeader').style.display     = 'flex';
     document.getElementById('messagesContainer').style.display = 'flex';
-    document.getElementById('composeArea').style.display = 'block';
+    document.getElementById('composeArea').style.display    = 'block';
     document.getElementById('noConvPlaceholder').style.display = 'none';
 
     document.getElementById('chatContactName').textContent = name;
     document.getElementById('chatContactPhone').textContent = phone;
     document.getElementById('chatAvatar').textContent = name.charAt(0).toUpperCase();
-    document.getElementById('detailsName').textContent = name;
+    document.getElementById('detailsName').textContent  = name;
     document.getElementById('detailsPhone').textContent = phone;
     document.getElementById('detailsStatus').textContent = activeConvStatus === 'open' ? '🟢 Aberta' : '⚫ Fechada';
     document.getElementById('btnCloseConv').title = activeConvStatus === 'open' ? 'Fechar conversa' : 'Reabrir conversa';
     document.getElementById('btnCloseConv').querySelector('i').className = activeConvStatus === 'open'
         ? 'bi bi-check-circle' : 'bi bi-arrow-counterclockwise';
 
-    // Marcar como lida
+    // Atualizar ícone de canal no header
+    const channelIcon = document.getElementById('chatChannelIcon');
+    if (channelIcon) {
+        channelIcon.className = `wa-channel-icon ${channel}`;
+        channelIcon.innerHTML = channel === 'instagram'
+            ? '<i class="bi bi-instagram"></i>'
+            : '<i class="bi bi-whatsapp"></i>';
+        channelIcon.title = channel === 'instagram' ? 'Instagram' : 'WhatsApp';
+    }
+
     await fetch(`/whatsapp/conversations/${convId}/read`, {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
     });
     updateTotalUnread();
 
-    // Carregar mensagens
     const res  = await fetch(`/whatsapp/conversations/${convId}`, { headers: { 'Accept': 'application/json' } });
     const data = await res.json();
     renderMessages(data.messages, true);
@@ -921,9 +1045,9 @@ function renderMessages(messages, clear = false) {
 
         if (msgDate && msgDate !== lastDate) {
             lastDate = msgDate;
-            const sep = document.createElement('div');
+            const sep  = document.createElement('div');
             sep.className = 'wa-date-sep';
-            const today = new Date().toLocaleDateString('pt-BR');
+            const today     = new Date().toLocaleDateString('pt-BR');
             const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('pt-BR');
             sep.textContent = msgDate === today ? 'Hoje' : msgDate === yesterday ? 'Ontem' : msgDate;
             container.appendChild(sep);
@@ -936,18 +1060,17 @@ function renderMessages(messages, clear = false) {
 }
 
 function buildMessageEl(msg) {
-    const isNote = msg.type === 'note';
+    const isNote     = msg.type === 'note';
     const isReaction = msg.type === 'reaction';
 
     if (isReaction) {
-        // Reações são exibidas junto à mensagem original — skip aqui
         return document.createComment('reaction');
     }
 
     const dir  = msg.direction;
     const wrap = document.createElement('div');
     wrap.className = `wa-msg ${isNote ? 'note' : dir}`;
-    wrap.dataset.id = msg.id;
+    wrap.dataset.id     = msg.id;
     wrap.dataset.wahaId = msg.waha_message_id || '';
 
     if (isNote) {
@@ -966,28 +1089,26 @@ function buildMessageEl(msg) {
         bubble.innerHTML = `<img src="${msg.media_url}" class="wa-img-thumb" onclick="window.open('${msg.media_url}','_blank')" alt="Imagem">`;
         if (msg.body) bubble.innerHTML += `<div style="margin-top:6px;font-size:13px;">${escHtml(msg.body)}</div>`;
     } else if (msg.type === 'audio' && msg.media_url) {
-        bubble.innerHTML = `<div class="wa-audio"><i class="bi bi-mic-fill" style="color:#25D366;margin-right:4px;"></i>Áudio<audio controls src="${msg.media_url}"></audio></div>`;
+        bubble.innerHTML = `<div class="wa-audio"><i class="bi bi-mic-fill" style="color:#3b82f6;margin-right:4px;"></i>Áudio<audio controls src="${msg.media_url}"></audio></div>`;
     } else {
         bubble.textContent = msg.body || '';
     }
 
     wrap.appendChild(bubble);
 
-    // Meta (hora + ack)
     if (!isNote) {
         const meta = document.createElement('div');
         meta.className = 'wa-msg-meta';
         const time = msg.sent_at ? new Date(msg.sent_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
         meta.innerHTML = `<span>${time}</span>`;
-        if (dir === 'outbound' && !isNote) {
-            const ackIcon = { pending: '🕐', sent: '✓', delivered: '✓✓', read: '✓✓' };
-            const ackColor = msg.ack === 'read' ? 'color:#25D366;' : '';
+        if (dir === 'outbound') {
+            const ackIcon  = { pending: '🕐', sent: '✓', delivered: '✓✓', read: '✓✓' };
+            const ackColor = msg.ack === 'read' ? 'color:#3b82f6;' : '';
             meta.innerHTML += `<span style="${ackColor}">${ackIcon[msg.ack] || '✓'}</span>`;
         }
         wrap.appendChild(meta);
     }
 
-    // Double-click para reagir (só mensagens recebidas com ID WAHA)
     if (dir === 'inbound' && msg.waha_message_id) {
         bubble.addEventListener('dblclick', () => showEmojiPicker(msg.waha_message_id, wrap));
     }
@@ -1004,7 +1125,6 @@ function appendMessages(messages) {
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
 function showEmojiPicker(wahaId, wrap) {
-    // Remover picker existente
     document.querySelectorAll('.wa-emoji-picker').forEach(e => e.remove());
 
     reactionTargetId = wahaId;
@@ -1012,7 +1132,7 @@ function showEmojiPicker(wahaId, wrap) {
     picker.className = 'wa-emoji-picker open';
 
     QUICK_EMOJIS.forEach(emoji => {
-        const btn = document.createElement('span');
+        const btn   = document.createElement('span');
         btn.className = 'wa-emoji-opt';
         btn.textContent = emoji;
         btn.onclick = () => sendReaction(wahaId, emoji);
@@ -1100,18 +1220,18 @@ async function sendReaction(wahaId, emoji) {
 // ── Gravação de áudio ─────────────────────────────────────────────────────────
 async function startRecording() {
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream  = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
         audioChunks   = [];
 
         mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
         mediaRecorder.start();
 
-        document.getElementById('normalRow').style.display = 'none';
+        document.getElementById('normalRow').style.display    = 'none';
         document.getElementById('recordingRow').style.display = 'flex';
 
         recordingSeconds = 0;
-        recordingTimer = setInterval(() => {
+        recordingTimerInt = setInterval(() => {
             recordingSeconds++;
             const m = Math.floor(recordingSeconds / 60);
             const s = recordingSeconds % 60;
@@ -1124,9 +1244,9 @@ async function startRecording() {
 
 function cancelRecording() {
     if (mediaRecorder) { mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t => t.stop()); }
-    clearInterval(recordingTimer);
+    clearInterval(recordingTimerInt);
     document.getElementById('recordingRow').style.display = 'none';
-    document.getElementById('normalRow').style.display = 'flex';
+    document.getElementById('normalRow').style.display    = 'flex';
 }
 
 async function stopAndSendRecording() {
@@ -1158,7 +1278,7 @@ async function stopAndSendRecording() {
 
     mediaRecorder.stop();
     mediaRecorder.stream.getTracks().forEach(t => t.stop());
-    clearInterval(recordingTimer);
+    clearInterval(recordingTimerInt);
 }
 
 // ── Compose mode (reply / note) ───────────────────────────────────────────────
@@ -1169,8 +1289,7 @@ function setComposeMode(mode) {
     document.getElementById('tabNote').classList.toggle('active', mode === 'note');
     textarea.classList.toggle('note-mode', mode === 'note');
     textarea.placeholder = mode === 'note' ? 'Adicionar nota interna...' : 'Digite uma mensagem...';
-    // Ocultar botões de mídia na nota
-    document.getElementById('fileInput').closest('button')?.parentElement?.querySelectorAll('.wa-btn-icon').forEach(b => {
+    document.getElementById('normalRow').querySelectorAll('.wa-btn-icon').forEach(b => {
         b.style.display = mode === 'note' ? 'none' : '';
     });
 }
@@ -1216,37 +1335,17 @@ function toggleDetails() {
     document.getElementById('detailsPanel').classList.toggle('open');
 }
 
-// ── Polling ───────────────────────────────────────────────────────────────────
-function startPolling() {
-    pollTimer = setInterval(async () => {
-        try {
-            const url = `/whatsapp/poll?since=${encodeURIComponent(lastPollAt)}${activeConvId ? '&conversation_id=' + activeConvId : ''}`;
-            const res  = await fetch(url, { headers: { 'Accept': 'application/json' } });
-            const data = await res.json();
-
-            if (data.new_messages?.length) {
-                appendMessages(data.new_messages);
-            }
-
-            if (data.conversations_updated?.length) {
-                data.conversations_updated.forEach(c => updateConvInSidebar(c));
-            }
-
-            lastPollAt = data.now;
-        } catch (_) {}
-    }, 5000);
-}
-
+// ── Atualizar conversa na sidebar ─────────────────────────────────────────────
 function updateConvInSidebar(conv) {
     let el = document.querySelector(`[data-conv-id="${conv.id}"]`);
 
-    if (! el) {
-        // Nova conversa: criar elemento e inserir no topo
+    if (!el) {
         el = document.createElement('div');
-        el.className = 'wa-conv-item';
+        el.className      = 'wa-conv-item';
         el.dataset.convId = conv.id;
         el.dataset.phone  = conv.phone;
         el.dataset.status = conv.status;
+        el.dataset.channel = 'whatsapp';
         el.onclick        = function() { openConversation(conv.id, this); };
         document.getElementById('convList').prepend(el);
     }
@@ -1256,13 +1355,18 @@ function updateConvInSidebar(conv) {
                     conv.last_message_type === 'note'   ? '🔒 Nota'    :
                     (conv.last_message_body || '').substring(0, 40);
 
-    const initial = (conv.contact_name || conv.phone || '?').charAt(0).toUpperCase();
-    const timeAgo = conv.last_message_at ? timeRelative(conv.last_message_at) : '';
-    const unread  = conv.unread_count > 0 && conv.id !== activeConvId
+    const initial  = (conv.contact_name || conv.phone || '?').charAt(0).toUpperCase();
+    const timeAgo  = conv.last_message_at ? timeRelative(conv.last_message_at) : '';
+    const channel  = el.dataset.channel || 'whatsapp';
+    const chanIcon = channel === 'instagram' ? '<i class="bi bi-instagram"></i>' : '<i class="bi bi-whatsapp"></i>';
+    const unread   = conv.unread_count > 0 && conv.id !== activeConvId
         ? `<span class="wa-unread-dot">${conv.unread_count}</span>` : '';
 
     el.innerHTML = `
-        <div class="wa-conv-avatar">${initial}</div>
+        <div class="wa-conv-avatar-wrap">
+            <div class="wa-conv-avatar">${initial}</div>
+            <span class="wa-channel-icon ${channel}" title="${channel === 'instagram' ? 'Instagram' : 'WhatsApp'}">${chanIcon}</span>
+        </div>
         <div class="wa-conv-info">
             <div class="wa-conv-top">
                 <span class="wa-conv-name">${escHtml(conv.contact_name || conv.phone)}</span>
@@ -1275,10 +1379,7 @@ function updateConvInSidebar(conv) {
         </div>`;
 
     el.dataset.status = conv.status;
-
-    // Mover para o topo da lista
     document.getElementById('convList').prepend(el);
-
     updateTotalUnread();
 }
 

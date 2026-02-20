@@ -1,5 +1,23 @@
 import './bootstrap';
 
+// Laravel Echo + Reverb WebSocket
+// Config is injected server-side via window.reverbConfig in the Blade layout
+import Echo from 'laravel-echo';
+import Pusher from 'pusher-js';
+
+window.Pusher = Pusher;
+
+const _rcfg = window.reverbConfig ?? {};
+window.Echo = new Echo({
+    broadcaster: 'reverb',
+    key: _rcfg.key,
+    wsHost: _rcfg.wsHost,
+    wsPort: _rcfg.wsPort ?? 443,
+    wssPort: _rcfg.wssPort ?? 443,
+    forceTLS: _rcfg.forceTLS ?? true,
+    enabledTransports: ['ws', 'wss'],
+});
+
 // jQuery global
 import $ from 'jquery';
 window.$ = window.jQuery = $;

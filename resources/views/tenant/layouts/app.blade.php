@@ -17,6 +17,17 @@
     {{-- Toastr --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 
+    {{-- Reverb config (injected server-side so Echo can connect without baked-in env vars) --}}
+    <script>
+        window.reverbConfig = {
+            key:      '{{ config('reverb.apps.apps.0.key', 'crm-reverb-key') }}',
+            wsHost:   '{{ config('reverb.apps.apps.0.options.host', request()->getHost()) }}',
+            wsPort:   {{ (int) config('reverb.apps.apps.0.options.port', 443) }},
+            wssPort:  {{ (int) config('reverb.apps.apps.0.options.port', 443) }},
+            forceTLS: {{ config('reverb.apps.apps.0.options.scheme', 'https') === 'https' ? 'true' : 'false' }},
+        };
+    </script>
+
     {{-- Vite Assets --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 

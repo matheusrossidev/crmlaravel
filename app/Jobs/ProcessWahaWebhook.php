@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Events\WhatsappConversationUpdated;
+use App\Events\WhatsappMessageCreated;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
@@ -95,7 +97,7 @@ class ProcessWahaWebhook implements ShouldQueue
             return;
         }
 
-        WhatsappMessage::withoutGlobalScope('tenant')->create([
+        $message = WhatsappMessage::withoutGlobalScope('tenant')->create([
             'tenant_id'       => $instance->tenant_id,
             'conversation_id' => $conversation->id,
             'waha_message_id' => $wahaId,
@@ -111,6 +113,9 @@ class ProcessWahaWebhook implements ShouldQueue
                 : now(),
         ]);
 
+        // Broadcast new message via WebSocket
+        WhatsappMessageCreated::dispatch($message, $instance->tenant_id);
+
         // Atualizar conversa
         WhatsappConversation::withoutGlobalScope('tenant')
             ->where('id', $conversation->id)
@@ -121,6 +126,10 @@ class ProcessWahaWebhook implements ShouldQueue
                 'status'          => 'open',
                 'closed_at'       => null,
             ]);
+
+        // Broadcast conversation update via WebSocket
+        $conversation->refresh();
+        WhatsappConversationUpdated::dispatch($conversation, $instance->tenant_id);
     }
 
     private function handleReaction(WhatsappInstance $instance): void
