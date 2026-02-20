@@ -1,43 +1,45 @@
 # ============================================================
-# STACK COMPLETA — Plataforma 360 CRM
+# STACK SWARM — Plataforma 360 CRM
 # Cole no Portainer → Stacks → Add Stack → Web Editor
+# Compatível com Docker Swarm Mode
 # ============================================================
+version: "3.8"
+
 services:
 
   # ────────────────────────────────────────────────────────
-  # NGINX — config já embutida na imagem matolado/crm-nginx
+  # NGINX — roteado pelo Traefik via serverossi
   # ────────────────────────────────────────────────────────
   nginx:
     image: matolado/crm-nginx:latest
-    container_name: crm_nginx
-    restart: unless-stopped
     volumes:
       - public_shared:/var/www/public:ro
       - storage_data:/var/www/storage/app/public:ro
     networks:
       - crm_internal
       - serverossi
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=serverossi"
-      - "traefik.http.routers.crm.rule=Host(`syncro.matheusrossi.com.br`)"
-      - "traefik.http.routers.crm.entrypoints=websecure"
-      - "traefik.http.routers.crm.tls=true"
-      - "traefik.http.routers.crm.tls.certresolver=letsencrypt"
-      - "traefik.http.services.crm.loadbalancer.server.port=80"
-      - "traefik.http.routers.crm-http.rule=Host(`syncro.matheusrossi.com.br`)"
-      - "traefik.http.routers.crm-http.entrypoints=web"
-      - "traefik.http.routers.crm-http.middlewares=https-redirect@docker"
-    depends_on:
-      - app
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=serverossi"
+        - "traefik.http.routers.crm.rule=Host(`syncro.matheusrossi.com.br`)"
+        - "traefik.http.routers.crm.entrypoints=websecure"
+        - "traefik.http.routers.crm.tls=true"
+        - "traefik.http.routers.crm.tls.certresolver=letsencrypt"
+        - "traefik.http.services.crm.loadbalancer.server.port=80"
+        - "traefik.http.routers.crm-http.rule=Host(`syncro.matheusrossi.com.br`)"
+        - "traefik.http.routers.crm-http.entrypoints=web"
+        - "traefik.http.routers.crm-http.middlewares=https-redirect@docker"
 
   # ────────────────────────────────────────────────────────
   # APP — PHP-FPM Laravel
   # ────────────────────────────────────────────────────────
   app:
     image: matolado/crm:latest
-    container_name: crm_app
-    restart: unless-stopped
     environment:
       APP_NAME: "Plataforma 360"
       APP_ENV: production
@@ -102,17 +104,17 @@ services:
       - cache_data:/var/www/bootstrap/cache
     networks:
       - crm_internal
-    depends_on:
-      - mysql
-      - redis
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 10s
 
   # ────────────────────────────────────────────────────────
-  # QUEUE — Worker (filas whatsapp + default)
+  # QUEUE — Worker Laravel
   # ────────────────────────────────────────────────────────
   queue:
     image: matolado/crm:latest
-    container_name: crm_queue
-    restart: unless-stopped
     command: >
       php artisan queue:work redis
         --queue=whatsapp,default
@@ -152,17 +154,17 @@ services:
       - cache_data:/var/www/bootstrap/cache
     networks:
       - crm_internal
-    depends_on:
-      - app
-      - redis
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 15s
 
   # ────────────────────────────────────────────────────────
   # MYSQL 8.0
   # ────────────────────────────────────────────────────────
   mysql:
     image: mysql:8.0
-    container_name: crm_mysql
-    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: "0f6e6767fff792721c91f8e0c783b082"
       MYSQL_DATABASE: plataforma360
@@ -178,14 +180,19 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      placement:
+        constraints:
+          - node.role == manager   # garante que MySQL sempre rode no mesmo nó (dados persistentes)
 
   # ────────────────────────────────────────────────────────
   # REDIS 7
   # ────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: crm_redis
-    restart: unless-stopped
     command: redis-server --save 60 1 --loglevel warning
     volumes:
       - redis_data:/data
@@ -196,6 +203,13 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      placement:
+        constraints:
+          - node.role == manager
 
 # ── Volumes ───────────────────────────────────────────────
 volumes:
@@ -209,8 +223,8 @@ volumes:
 # ── Redes ─────────────────────────────────────────────────
 networks:
   crm_internal:
-    driver: bridge
-    internal: true
+    driver: overlay      # overlay obrigatório no Swarm
+    attachable: true
   serverossi:
     external: true
     name: serverossi
