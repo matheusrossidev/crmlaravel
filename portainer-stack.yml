@@ -46,6 +46,7 @@ services:
       APP_DEBUG: "false"
       APP_TIMEZONE: America/Sao_Paulo
       APP_URL: https://syncro.matheusrossi.com.br
+      ASSET_URL: https://syncro.matheusrossi.com.br
       APP_KEY: "base64:yyrXOSQTQq6MYA7fk0+1YHOUkslOvswrHifAomKMGGU="
       APP_LOCALE: pt_BR
       APP_FALLBACK_LOCALE: pt_BR
