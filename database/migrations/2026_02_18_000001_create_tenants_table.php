@@ -22,10 +22,21 @@ return new class extends Migration
             $table->integer('api_rate_limit')->default(1000);
             $table->timestamps();
         });
+
+        // Add FK from users.tenant_id → tenants.id (deferred here because tenants
+        // must exist before the constraint can reference it, but the users table
+        // migration runs first due to its 0001_01_01 date prefix)
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreign('tenant_id')->references('id')->on('tenants')->nullOnDelete();
+        });
     }
 
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['tenant_id']);
+        });
+
         Schema::dropIfExists('tenants');
     }
 };
