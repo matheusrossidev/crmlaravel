@@ -875,7 +875,7 @@ function ConditionForm({ data, update, allVars }) {
     );
 }
 
-function ActionForm({ data, update, pipelines, allVars, tags }) {
+function ActionForm({ data, update, pipelines, allVars, tags, users }) {
     const [selectedPipeline, setSelectedPipeline] = useState(null);
     useEffect(() => {
         if (data.pipeline_id && pipelines.length) {
@@ -949,6 +949,19 @@ function ActionForm({ data, update, pipelines, allVars, tags }) {
                             Nenhuma tag encontrada nos leads. Digite o nome manualmente.
                         </p>
                     )}
+                </FieldGroup>
+            )}
+
+            {data.type === 'assign_human' && users.length > 0 && (
+                <FieldGroup label="Atribuir para">
+                    <select
+                        style={field.input}
+                        value={data.user_id || ''}
+                        onChange={e => update('user_id', e.target.value ? parseInt(e.target.value) : null)}
+                    >
+                        <option value="">— Qualquer humano disponível —</option>
+                        {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                    </select>
                 </FieldGroup>
             )}
 
@@ -1056,7 +1069,7 @@ function EndForm({ data, update, textareaRef, saveCursor }) {
     );
 }
 
-function NodePanel({ node, onUpdate, onDelete, variables, pipelines, tags }) {
+function NodePanel({ node, onUpdate, onDelete, variables, pipelines, tags, users }) {
     const [data, setData] = useState(node.data);
     const cfg = NODE_TYPES_CONFIG[node.type] || NODE_TYPES_CONFIG.message;
     const textareaRef  = useRef(null);
@@ -1154,7 +1167,7 @@ function NodePanel({ node, onUpdate, onDelete, variables, pipelines, tags }) {
                 {node.type === 'message'   && <MessageForm data={data} update={update} textareaRef={textareaRef} saveCursor={saveCursor} />}
                 {node.type === 'input'     && <InputForm   data={data} update={update} textareaRef={textareaRef} saveCursor={saveCursor} variables={variables} />}
                 {node.type === 'condition' && <ConditionForm data={data} update={update} allVars={allVars} />}
-                {node.type === 'action'    && <ActionForm data={data} update={update} pipelines={pipelines} allVars={allVars} tags={tags} />}
+                {node.type === 'action'    && <ActionForm data={data} update={update} pipelines={pipelines} allVars={allVars} tags={tags} users={users} />}
                 {node.type === 'delay'     && <DelayForm data={data} update={update} />}
                 {node.type === 'end'       && <EndForm data={data} update={update} textareaRef={textareaRef} saveCursor={saveCursor} />}
 
@@ -1448,7 +1461,8 @@ function ChatbotBuilder() {
     const [variables, setVariables] = useState(cfg.flow?.variables || []);
     const [triggerKeywords, setTriggerKeywords] = useState(cfg.flow?.trigger_keywords || []);
     const [pipelines, setPipelines] = useState([]);
-    const tags = cfg.tags || [];
+    const tags  = cfg.tags  || [];
+    const users = cfg.users || [];
     const [isActive, setIsActive] = useState(!!cfg.flow?.is_active);
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState('');
@@ -1705,6 +1719,7 @@ function ChatbotBuilder() {
                             variables={variables}
                             pipelines={pipelines}
                             tags={tags}
+                            users={users}
                         />
                     </div>
                 )}

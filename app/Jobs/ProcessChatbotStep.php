@@ -268,12 +268,19 @@ class ProcessChatbotStep
                 break;
 
             case 'assign_human':
+                $updateData = ['chatbot_flow_id' => null, 'chatbot_node_id' => null];
+                if (! empty($config['user_id'])) {
+                    $updateData['assigned_user_id'] = (int) $config['user_id'];
+                }
                 WhatsappConversation::withoutGlobalScope('tenant')
                     ->where('id', $conv->id)
-                    ->update(['chatbot_flow_id' => null, 'chatbot_node_id' => null]);
+                    ->update($updateData);
                 $conv->chatbot_flow_id = null;
                 $conv->chatbot_node_id = null;
-                Log::channel('whatsapp')->info('Chatbot: conversa transferida para humano', ['id' => $conv->id]);
+                Log::channel('whatsapp')->info('Chatbot: conversa transferida para humano', [
+                    'id'      => $conv->id,
+                    'user_id' => $config['user_id'] ?? null,
+                ]);
                 break;
 
             case 'close_conversation':

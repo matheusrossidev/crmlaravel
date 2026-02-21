@@ -760,6 +760,7 @@
 
     <div class="wa-filters">
         <button class="wa-filter-btn active" data-filter="all">Todas</button>
+        <button class="wa-filter-btn" data-filter="mine">Para mim</button>
         <button class="wa-filter-btn" data-filter="open">Abertas</button>
         <button class="wa-filter-btn" data-filter="closed">Fechadas</button>
     </div>
@@ -772,6 +773,7 @@
              data-status="{{ $conv->status }}"
              data-channel="whatsapp"
              data-tags="{{ json_encode($conv->tags ?? []) }}"
+             data-assigned-user-id="{{ $conv->assigned_user_id ?? '' }}"
              onclick="openConversation({{ $conv->id }}, this)">
             <div class="wa-conv-avatar-wrap">
                 <div class="wa-conv-avatar">
@@ -1093,9 +1095,10 @@ let reactionTargetId  = null;
 let lastRenderedDate  = null; // persiste entre chamadas a renderMessages/appendMessages
 const renderedMsgIds  = new Set(); // evita duplicatas quando polling e histórico coexistem
 
-const CSRF      = document.querySelector('meta[name="csrf-token"]')?.content;
-const TENANT_ID = {{ auth()->user()->tenant_id ?? 'null' }};
-const PIPELINES = @json($pipelines ?? []);
+const CSRF            = document.querySelector('meta[name="csrf-token"]')?.content;
+const TENANT_ID       = {{ auth()->user()->tenant_id ?? 'null' }};
+const CURRENT_USER_ID = {{ auth()->id() ?? 'null' }};
+const PIPELINES       = @json($pipelines ?? []);
 
 // Tags predefinidas e mapa de cores { 'VIP': '#F59E0B', ... }
 const _whatsappTagsDefs = @json($whatsappTags ?? []);
@@ -1249,7 +1252,13 @@ function setupFilters() {
             this.classList.add('active');
             const filter = this.dataset.filter;
             document.querySelectorAll('.wa-conv-item').forEach(item => {
-                item.style.display = (filter === 'all' || item.dataset.status === filter) ? '' : 'none';
+                let visible = true;
+                if (filter === 'mine') {
+                    visible = String(item.dataset.assignedUserId) === String(CURRENT_USER_ID);
+                } else if (filter === 'open' || filter === 'closed') {
+                    visible = item.dataset.status === filter;
+                }
+                item.style.display = visible ? '' : 'none';
             });
         });
     });

@@ -9,6 +9,7 @@ use App\Models\ChatbotFlow;
 use App\Models\ChatbotFlowEdge;
 use App\Models\ChatbotFlowNode;
 use App\Models\Pipeline;
+use App\Models\User;
 use App\Models\WhatsappTag;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -55,6 +56,13 @@ class ChatbotFlowController extends Controller
 
         $tags = WhatsappTag::orderBy('name')->pluck('name')->all();
 
+        $users = User::where('tenant_id', auth()->user()->tenant_id)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name])
+            ->values()
+            ->all();
+
         $builderData = [
             'flow'         => [
                 'id'               => $flow->id,
@@ -71,6 +79,7 @@ class ChatbotFlowController extends Controller
             'toggleUrl'    => route('chatbot.flows.toggle', $flow),
             'csrfToken'    => csrf_token(),
             'tags'         => $tags,
+            'users'        => $users,
         ];
 
         return view('tenant.chatbot.edit', compact('flow', 'builderData'));
