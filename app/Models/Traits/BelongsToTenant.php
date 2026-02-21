@@ -11,8 +11,9 @@ trait BelongsToTenant
     protected static function bootBelongsToTenant(): void
     {
         static::addGlobalScope('tenant', function (Builder $builder) {
-            if (auth()->check() && !auth()->user()->is_super_admin) {
-                $builder->where($builder->getModel()->getTable() . '.tenant_id', auth()->user()->tenant_id);
+            if (auth()->check()) {
+                // Always filter by tenant_id. Super admin with tenant_id=null gets 0 → sees nothing.
+                $builder->where($builder->getModel()->getTable() . '.tenant_id', auth()->user()->tenant_id ?? 0);
             }
         });
 

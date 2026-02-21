@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Master\TenantController as MasterTenantController;
+use App\Http\Controllers\Master\UserController as MasterUserController;
 use App\Http\Controllers\Tenant\ApiKeyController;
 use App\Http\Controllers\Tenant\CampaignController;
 use App\Http\Controllers\Tenant\DashboardController;
@@ -171,6 +172,11 @@ Route::middleware(['auth', 'super_admin'])->prefix('master')->name('master.')->g
     Route::get('empresas/{tenant}',    [MasterTenantController::class, 'show'])->name('tenants.show');
     Route::put('empresas/{tenant}',    [MasterTenantController::class, 'update'])->name('tenants.update');
     Route::delete('empresas/{tenant}', [MasterTenantController::class, 'destroy'])->name('tenants.destroy');
+
+    // Gerenciamento de usuários por tenant
+    Route::post('empresas/{tenant}/usuarios',          [MasterUserController::class, 'store'])->name('tenants.users.store');
+    Route::put('empresas/{tenant}/usuarios/{user}',    [MasterUserController::class, 'update'])->name('tenants.users.update');
+    Route::delete('empresas/{tenant}/usuarios/{user}', [MasterUserController::class, 'destroy'])->name('tenants.users.destroy');
 
     // Configuração global de IA (provedor LLM + API key)
     Route::get('ia',         [AiConfigurationController::class, 'show'])->name('ai.config');

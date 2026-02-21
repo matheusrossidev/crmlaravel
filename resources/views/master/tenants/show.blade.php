@@ -132,6 +132,55 @@
         transition: background .15s;
     }
     .btn-back:hover { background: #e8eaf0; }
+
+    .btn-add-user {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 6px 14px; background: #3B82F6; color: #fff;
+        border: none; border-radius: 8px; font-size: 12.5px;
+        font-weight: 600; cursor: pointer; transition: background .15s;
+    }
+    .btn-add-user:hover { background: #2563EB; }
+
+    .btn-icon-act {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 30px; height: 30px; border-radius: 7px;
+        border: 1px solid #e8eaf0; background: #f8fafc; color: #374151;
+        cursor: pointer; transition: all .15s; font-size: 13px; margin-left: 4px;
+    }
+    .btn-icon-act:hover { background: #e8eaf0; }
+    .btn-icon-danger { color: #dc2626; border-color: #fecaca; background: #fef2f2; }
+    .btn-icon-danger:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+
+    /* Modal */
+    .modal-overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,.45); z-index: 9000;
+        align-items: center; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-box {
+        background: #fff; border-radius: 16px; padding: 28px 30px;
+        width: 100%; max-width: 440px; box-shadow: 0 20px 60px rgba(0,0,0,.18);
+    }
+    .modal-title {
+        font-size: 17px; font-weight: 700; color: #1a1d23;
+        margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+    }
+    .modal-actions {
+        display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;
+    }
+    .btn-modal-cancel {
+        padding: 8px 18px; background: #f4f6fb; color: #374151;
+        border: 1px solid #e8eaf0; border-radius: 9px; font-size: 13.5px;
+        font-weight: 600; cursor: pointer;
+    }
+    .btn-modal-save {
+        padding: 8px 20px; background: #3B82F6; color: #fff;
+        border: none; border-radius: 9px; font-size: 13.5px;
+        font-weight: 600; cursor: pointer; transition: background .15s;
+    }
+    .btn-modal-save:hover { background: #2563EB; }
+    .btn-modal-save:disabled { opacity: .6; cursor: not-allowed; }
 </style>
 @endpush
 
@@ -177,32 +226,47 @@
             {{-- Usuários --}}
             <div class="show-card">
                 <div class="show-card-header">
-                    <h3><i class="bi bi-people" style="color:#3B82F6;"></i> Usuários ({{ count($users) }})</h3>
+                    <h3><i class="bi bi-people" style="color:#3B82F6;"></i> Usuários (<span id="usersCount">{{ count($users) }}</span>)</h3>
+                    <button class="btn-add-user" onclick="openUserModal()">
+                        <i class="bi bi-plus-lg"></i> Adicionar
+                    </button>
                 </div>
                 @if(count($users) === 0)
-                <div style="text-align:center;padding:30px;color:#9ca3af;">Nenhum usuário</div>
+                <div id="emptyUsers" style="text-align:center;padding:30px;color:#9ca3af;">Nenhum usuário</div>
                 @else
-                <table class="users-table">
+                <div id="emptyUsers" style="display:none;text-align:center;padding:30px;color:#9ca3af;">Nenhum usuário</div>
+                @endif
+                <table class="users-table" id="usersTable" @if(count($users) === 0) style="display:none" @endif>
                     <thead>
                         <tr>
                             <th>Nome</th>
                             <th>E-mail</th>
                             <th>Papel</th>
                             <th>Desde</th>
+                            <th></th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="usersBody">
                         @foreach($users as $u)
-                        <tr>
+                        <tr id="user-row-{{ $u->id }}">
                             <td style="font-weight:600;color:#1a1d23;">{{ $u->name }}</td>
                             <td>{{ $u->email }}</td>
                             <td><span class="role-badge role-{{ $u->role }}">{{ ucfirst($u->role) }}</span></td>
                             <td style="font-size:12px;color:#9ca3af;">{{ $u->created_at->format('d/m/Y') }}</td>
+                            <td style="text-align:right;white-space:nowrap;">
+                                <button class="btn-icon-act" title="Editar"
+                                    onclick="openUserModal({{ $u->id }}, '{{ addslashes($u->name) }}', '{{ addslashes($u->email) }}', '{{ $u->role }}')">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn-icon-act btn-icon-danger" title="Excluir"
+                                    onclick="deleteUser({{ $u->id }}, '{{ addslashes($u->name) }}')">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>
                 </table>
-                @endif
             </div>
 
         </div>
@@ -292,6 +356,40 @@
 </div>
 @endsection
 
+{{-- Modal Criar/Editar Usuário --}}
+<div class="modal-overlay" id="userModal">
+    <div class="modal-box">
+        <div class="modal-title">
+            <i class="bi bi-person-gear" style="color:#3B82F6;"></i>
+            <span id="userModalTitle">Adicionar usuário</span>
+        </div>
+        <div class="form-group">
+            <label>Nome</label>
+            <input type="text" class="form-control" id="uName" placeholder="Nome completo">
+        </div>
+        <div class="form-group">
+            <label>E-mail</label>
+            <input type="email" class="form-control" id="uEmail" placeholder="email@empresa.com">
+        </div>
+        <div class="form-group">
+            <label>Papel</label>
+            <select class="form-control" id="uRole">
+                <option value="admin">Admin</option>
+                <option value="manager">Manager</option>
+                <option value="viewer">Viewer</option>
+            </select>
+        </div>
+        <div class="form-group" id="uPasswordGroup">
+            <label id="uPasswordLabel">Senha</label>
+            <input type="password" class="form-control" id="uPassword" placeholder="Mínimo 8 caracteres">
+        </div>
+        <div class="modal-actions">
+            <button class="btn-modal-cancel" onclick="closeUserModal()">Cancelar</button>
+            <button class="btn-modal-save" id="btnSaveUser" onclick="saveUser()">Salvar</button>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 const updateUrl = "{{ route('master.tenants.update', $tenant) }}";
@@ -340,6 +438,141 @@ function deleteTenant() {
                 if (data.success) {
                     toastr.success('Empresa excluída.');
                     setTimeout(() => window.location.href = indexUrl, 800);
+                } else {
+                    toastr.error(data.message ?? 'Erro ao excluir.');
+                }
+            } catch { toastr.error('Erro de conexão.'); }
+        },
+    });
+}
+
+// ── Gerenciamento de usuários ──────────────────────────────────────────────────
+const tenantId = {{ $tenant->id }};
+const usersStoreUrl  = `/master/empresas/${tenantId}/usuarios`;
+
+let editingUserId = null;
+
+function openUserModal(id = null, name = '', email = '', role = 'manager') {
+    editingUserId = id;
+    document.getElementById('userModalTitle').textContent = id ? 'Editar usuário' : 'Adicionar usuário';
+    document.getElementById('uName').value   = name;
+    document.getElementById('uEmail').value  = email;
+    document.getElementById('uRole').value   = role;
+    document.getElementById('uPassword').value = '';
+    document.getElementById('uPasswordLabel').textContent = id ? 'Nova senha (deixe em branco para não alterar)' : 'Senha';
+    document.getElementById('uPasswordGroup').style.display = 'block';
+    document.getElementById('userModal').classList.add('show');
+    setTimeout(() => document.getElementById('uName').focus(), 80);
+}
+
+function closeUserModal() {
+    document.getElementById('userModal').classList.remove('show');
+    editingUserId = null;
+}
+
+document.getElementById('userModal').addEventListener('click', function(e) {
+    if (e.target === this) closeUserModal();
+});
+
+async function saveUser() {
+    const btn  = document.getElementById('btnSaveUser');
+    const name = document.getElementById('uName').value.trim();
+    const email = document.getElementById('uEmail').value.trim();
+    const role = document.getElementById('uRole').value;
+    const pwd  = document.getElementById('uPassword').value;
+
+    if (!name || !email) { toastr.warning('Preencha nome e e-mail.'); return; }
+    if (!editingUserId && !pwd) { toastr.warning('Informe uma senha.'); return; }
+
+    btn.disabled = true;
+    const url    = editingUserId ? `/master/empresas/${tenantId}/usuarios/${editingUserId}` : usersStoreUrl;
+    const method = editingUserId ? 'PUT' : 'POST';
+    const body   = { name, email, role };
+    if (pwd) body.password = pwd;
+
+    try {
+        const res  = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            toastr.success(editingUserId ? 'Usuário atualizado.' : 'Usuário criado.');
+            closeUserModal();
+
+            if (editingUserId) {
+                // Update row in-place
+                const row = document.getElementById(`user-row-${editingUserId}`);
+                if (row) {
+                    const cells = row.querySelectorAll('td');
+                    cells[0].textContent = name;
+                    cells[1].textContent = email;
+                    cells[2].innerHTML   = `<span class="role-badge role-${role}">${role.charAt(0).toUpperCase()+role.slice(1)}</span>`;
+                    // Update edit button args
+                    const editBtn = row.querySelector('.btn-icon-act:not(.btn-icon-danger)');
+                    if (editBtn) editBtn.setAttribute('onclick',
+                        `openUserModal(${editingUserId}, '${name.replace(/'/g,"\\'")}', '${email.replace(/'/g,"\\'")}', '${role}')`);
+                }
+            } else {
+                // Append new row
+                const u    = data.user;
+                const tbody = document.getElementById('usersBody');
+                const tr   = document.createElement('tr');
+                tr.id = `user-row-${u.id}`;
+                tr.innerHTML = `
+                    <td style="font-weight:600;color:#1a1d23;">${escapeHtml(u.name)}</td>
+                    <td>${escapeHtml(u.email)}</td>
+                    <td><span class="role-badge role-${u.role}">${u.role.charAt(0).toUpperCase()+u.role.slice(1)}</span></td>
+                    <td style="font-size:12px;color:#9ca3af;">${u.created_at}</td>
+                    <td style="text-align:right;white-space:nowrap;">
+                        <button class="btn-icon-act" title="Editar"
+                            onclick="openUserModal(${u.id}, '${u.name.replace(/'/g,"\\'")}', '${u.email.replace(/'/g,"\\'")}', '${u.role}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn-icon-act btn-icon-danger" title="Excluir"
+                            onclick="deleteUser(${u.id}, '${u.name.replace(/'/g,"\\'")}')">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </td>`;
+                tbody.appendChild(tr);
+                // Show table, hide empty
+                document.getElementById('usersTable').style.display = '';
+                document.getElementById('emptyUsers').style.display  = 'none';
+                document.getElementById('usersCount').textContent =
+                    parseInt(document.getElementById('usersCount').textContent) + 1;
+            }
+        } else {
+            const first = data.errors ? Object.values(data.errors)[0][0] : (data.message ?? 'Erro.');
+            toastr.error(first);
+        }
+    } catch { toastr.error('Erro de conexão.'); }
+    btn.disabled = false;
+}
+
+function deleteUser(id, name) {
+    confirmAction({
+        title: 'Excluir usuário',
+        message: `Excluir o usuário <strong>${escapeHtml(name)}</strong>?`,
+        confirmText: 'Excluir',
+        onConfirm: async () => {
+            try {
+                const res  = await fetch(`/master/empresas/${tenantId}/usuarios/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                });
+                const data = await res.json();
+                if (data.success) {
+                    toastr.success('Usuário excluído.');
+                    const row = document.getElementById(`user-row-${id}`);
+                    if (row) row.remove();
+                    const count = parseInt(document.getElementById('usersCount').textContent) - 1;
+                    document.getElementById('usersCount').textContent = count;
+                    if (count === 0) {
+                        document.getElementById('usersTable').style.display = 'none';
+                        document.getElementById('emptyUsers').style.display  = '';
+                    }
                 } else {
                     toastr.error(data.message ?? 'Erro ao excluir.');
                 }
