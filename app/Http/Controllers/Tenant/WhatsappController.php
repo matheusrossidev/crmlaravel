@@ -14,6 +14,7 @@ use App\Models\WhatsappMessage;
 use App\Models\WhatsappTag;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -220,9 +221,15 @@ class WhatsappController extends Controller
             'ai_agent_id' => 'nullable|exists:ai_agents,id',
         ]);
 
-        $conversation->update(['ai_agent_id' => $request->input('ai_agent_id')]);
+        $agentId = $request->input('ai_agent_id');
+        $conversation->update(['ai_agent_id' => $agentId]);
 
-        return response()->json(['success' => true, 'ai_agent_id' => $conversation->ai_agent_id]);
+        Log::channel('whatsapp')->info('Agente IA atribuído à conversa', [
+            'conversation_id' => $conversation->id,
+            'ai_agent_id'     => $agentId,
+        ]);
+
+        return response()->json(['success' => true, 'ai_agent_id' => $conversation->fresh()->ai_agent_id]);
     }
 
     public function destroy(WhatsappConversation $conversation): JsonResponse
