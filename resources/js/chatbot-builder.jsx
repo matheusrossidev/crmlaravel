@@ -29,6 +29,7 @@ const NODE_TYPES_CONFIG = {
     input:     { label: 'Pergunta', icon: 'keyboard'         },
     condition: { label: 'Condição', icon: 'diagram-2'        },
     action:    { label: 'Ação',     icon: 'lightning-charge' },
+    delay:     { label: 'Aguardar', icon: 'hourglass-split'  },
     end:       { label: 'Fim',      icon: 'stop-circle'      },
 };
 
@@ -350,6 +351,19 @@ function ActionNode({ id, data, selected }) {
     );
 }
 
+function DelayNode({ id, data, selected }) {
+    const seconds = data.seconds ?? 3;
+    const label   = seconds === 1 ? '1 segundo' : `${seconds} segundos`;
+    return (
+        <BaseNode type="delay" data={data} selected={selected} hasDefaultHandle={true}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <i className="bi bi-hourglass-split" style={{ fontSize: 16, color: '#f59e0b' }} />
+                <span style={{ fontWeight: 700, color: '#92400e', fontSize: 13 }}>{label}</span>
+            </div>
+        </BaseNode>
+    );
+}
+
 function EndNode({ id, data, selected }) {
     return (
         <BaseNode type="end" data={data} selected={selected} hasDefaultHandle={false} rightHandles={[]}>
@@ -358,7 +372,7 @@ function EndNode({ id, data, selected }) {
     );
 }
 
-const nodeTypes = { message: MessageNode, input: InputNode, condition: ConditionNode, action: ActionNode, end: EndNode };
+const nodeTypes = { message: MessageNode, input: InputNode, condition: ConditionNode, action: ActionNode, delay: DelayNode, end: EndNode };
 
 // ── Node Edit Panel ───────────────────────────────────────────────────────────
 
@@ -984,6 +998,43 @@ function ActionForm({ data, update, pipelines, allVars, tags }) {
     );
 }
 
+function DelayForm({ data, update }) {
+    const FONT    = "'Inter', system-ui, sans-serif";
+    const seconds = data.seconds ?? 3;
+
+    return (
+        <>
+            <FieldGroup label="Duração (segundos)">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <input
+                        type="range"
+                        min={1}
+                        max={30}
+                        value={seconds}
+                        onChange={e => update('seconds', parseInt(e.target.value, 10))}
+                        style={{ flex: 1, accentColor: '#f59e0b' }}
+                    />
+                    <span style={{
+                        minWidth: 52, textAlign: 'center',
+                        fontWeight: 700, fontSize: 15, color: '#92400e',
+                        background: '#fffbeb', border: '1px solid #fde68a',
+                        borderRadius: 7, padding: '3px 8px', fontFamily: FONT,
+                    }}>
+                        {seconds}s
+                    </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#9ca3af', marginTop: 3 }}>
+                    <span>1s</span><span>30s</span>
+                </div>
+            </FieldGroup>
+            <div style={{ padding: '8px 10px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 7, fontSize: 11, color: '#92400e', fontFamily: FONT }}>
+                <i className="bi bi-info-circle" style={{ marginRight: 5 }} />
+                O bot aguardará <strong>{seconds} segundo{seconds !== 1 ? 's' : ''}</strong> antes de enviar a próxima mensagem, simulando digitação.
+            </div>
+        </>
+    );
+}
+
 function EndForm({ data, update, textareaRef, saveCursor }) {
     return (
         <FieldGroup label="Mensagem final (opcional)">
@@ -1101,6 +1152,7 @@ function NodePanel({ node, onUpdate, onDelete, variables, pipelines, tags }) {
                 {node.type === 'input'     && <InputForm   data={data} update={update} textareaRef={textareaRef} saveCursor={saveCursor} variables={variables} />}
                 {node.type === 'condition' && <ConditionForm data={data} update={update} allVars={allVars} />}
                 {node.type === 'action'    && <ActionForm data={data} update={update} pipelines={pipelines} allVars={allVars} tags={tags} />}
+                {node.type === 'delay'     && <DelayForm data={data} update={update} />}
                 {node.type === 'end'       && <EndForm data={data} update={update} textareaRef={textareaRef} saveCursor={saveCursor} />}
 
                 {/* Variables — clickable chips that insert at cursor */}

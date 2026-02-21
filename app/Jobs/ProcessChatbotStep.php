@@ -115,6 +115,17 @@ class ProcessChatbotStep
                     $currentNode = $nextId ? ChatbotFlowNode::withoutGlobalScope('tenant')->find($nextId) : null;
                     break;
 
+                case 'delay':
+                    $seconds = max(1, min(30, (int) ($currentNode->config['seconds'] ?? 3)));
+                    Log::channel('whatsapp')->info('Chatbot: aguardando', [
+                        'conversation_id' => $conv->id,
+                        'seconds'         => $seconds,
+                    ]);
+                    sleep($seconds);
+                    $nextId      = $this->resolveEdge($flow->id, $currentNode->id, 'default');
+                    $currentNode = $nextId ? ChatbotFlowNode::withoutGlobalScope('tenant')->find($nextId) : null;
+                    break;
+
                 case 'end':
                     $this->executeEnd($currentNode, $conv, $vars);
                     $this->clearFlow($conv);
