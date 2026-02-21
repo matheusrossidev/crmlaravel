@@ -102,6 +102,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::put('/conversations/{conversation}/contact',   [WhatsappController::class, 'updateContact'])->name('conversations.contact');
         Route::post('/conversations/{conversation}/messages', [WhatsappMessageController::class, 'store'])->name('messages.store');
         Route::post('/conversations/{conversation}/react',    [WhatsappMessageController::class, 'react'])->name('messages.react');
+        Route::put('/conversations/{conversation}/ai-agent',  [WhatsappController::class, 'assignAiAgent'])->name('conversations.ai-agent');
         Route::delete('/conversations/{conversation}',        [WhatsappController::class, 'destroy'])->name('conversations.destroy');
     });
 

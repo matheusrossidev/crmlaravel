@@ -1029,6 +1029,23 @@
             @endforeach
         </select>
     </div>
+
+    {{-- Agente de IA --}}
+    @if(isset($aiAgents) && $aiAgents->isNotEmpty())
+    <div class="wa-details-section">
+        <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
+            <span><i class="bi bi-robot" style="margin-right:4px;color:#6366f1;"></i> Agente de IA</span>
+            <span id="aiAgentStatus" style="font-size:11px;font-weight:600;"></span>
+        </div>
+        <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="aiAgentSelect" onchange="assignAiAgent()">
+            <option value="">Sem agente (IA desativada)</option>
+            @foreach($aiAgents as $ag)
+            <option value="{{ $ag->id }}">{{ $ag->name }}</option>
+            @endforeach
+        </select>
+    </div>
+    @endif
+
     <div class="wa-details-section">
         <div class="wa-details-label">Status</div>
         <div class="wa-details-value" id="detailsStatus"></div>
@@ -1306,6 +1323,13 @@ async function openConversation(convId, el) {
         assignSel.value = data.assigned_user_id;
     } else if (assignSel) {
         assignSel.value = '';
+    }
+
+    // Atualiza select de agente de IA
+    const aiSel = document.getElementById('aiAgentSelect');
+    if (aiSel) {
+        aiSel.value = data.ai_agent_id ?? '';
+        updateAiAgentStatusBadge(data.ai_agent_id);
     }
 
     // Renderiza painel de lead
@@ -1718,6 +1742,37 @@ async function assignUser() {
         headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId }),
     });
+}
+
+async function assignAiAgent() {
+    if (!activeConvId) return;
+    const sel      = document.getElementById('aiAgentSelect');
+    const agentId  = sel ? sel.value : '';
+
+    try {
+        const res  = await fetch(`/chats/conversations/${activeConvId}/ai-agent`, {
+            method: 'PUT',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ai_agent_id: agentId || null }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            updateAiAgentStatusBadge(agentId || null);
+            toastr.success(agentId ? 'Agente de IA ativado.' : 'Agente de IA removido.');
+        }
+    } catch { toastr.error('Erro ao salvar agente de IA.'); }
+}
+
+function updateAiAgentStatusBadge(agentId) {
+    const badge = document.getElementById('aiAgentStatus');
+    if (!badge) return;
+    if (agentId) {
+        badge.textContent = 'Ativo';
+        badge.style.color = '#16a34a';
+    } else {
+        badge.textContent = 'Inativo';
+        badge.style.color = '#9ca3af';
+    }
 }
 
 // ── Painel de detalhes ────────────────────────────────────────────────────────

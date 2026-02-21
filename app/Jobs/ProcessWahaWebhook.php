@@ -16,6 +16,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -294,6 +295,22 @@ class ProcessWahaWebhook implements ShouldQueue
             'type'            => $type,
             'has_media'       => $mediaUrl !== null,
         ]);
+
+        // ── Trigger debounce de resposta da IA (apenas mensagens inbound) ────────
+        // Só dispara se a conversa tem um agente de IA atribuído e ativo.
+        if (! $isFromMe && $conversation->ai_agent_id) {
+            $conversation->loadMissing('aiAgent');
+            if ($conversation->aiAgent && $conversation->aiAgent->is_active) {
+                $delay   = max(5, (int) ($conversation->aiAgent->response_delay_seconds ?? 30));
+                $version = (int) Cache::increment("ai:version:{$conversation->id}");
+                ProcessAiResponse::dispatch($conversation->id, $version)->delay($delay);
+                Log::channel('whatsapp')->info('AI debounce agendado', [
+                    'conversation_id' => $conversation->id,
+                    'version'         => $version,
+                    'delay_seconds'   => $delay,
+                ]);
+            }
+        }
 
         // Atualizar conversa ANTES do broadcast — garante que last_message_at e
         // unread_count sejam salvos mesmo se o broadcaster estiver indisponível.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Models\AiAgent;
 use App\Models\Pipeline;
 use App\Models\User;
 use App\Models\WhatsappConversation;
@@ -46,7 +47,11 @@ class WhatsappController extends Controller
                 ->get(['id', 'name', 'color']);
         }
 
-        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'users', 'pipelines', 'whatsappTags'));
+        $aiAgents = AiAgent::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'users', 'pipelines', 'whatsappTags', 'aiAgents'));
     }
 
     public function poll(Request $request): JsonResponse
@@ -117,6 +122,7 @@ class WhatsappController extends Controller
             'messages'         => $messages,
             'lead'             => $lead,
             'assigned_user_id' => $conversation->assigned_user_id,
+            'ai_agent_id'      => $conversation->ai_agent_id,
             'tags'             => $conversation->tags ?? [],
             'contact_name'     => $conversation->contact_name,
             'phone'            => $conversation->phone,
@@ -208,6 +214,17 @@ class WhatsappController extends Controller
         ]]);
     }
 
+    public function assignAiAgent(WhatsappConversation $conversation, Request $request): JsonResponse
+    {
+        $request->validate([
+            'ai_agent_id' => 'nullable|exists:ai_agents,id',
+        ]);
+
+        $conversation->update(['ai_agent_id' => $request->input('ai_agent_id')]);
+
+        return response()->json(['success' => true, 'ai_agent_id' => $conversation->ai_agent_id]);
+    }
+
     public function destroy(WhatsappConversation $conversation): JsonResponse
     {
         // Cascade delete via FK — messages are deleted with the conversation
@@ -271,6 +288,7 @@ class WhatsappController extends Controller
             'last_message_body' => $latest?->body ?? ($latest ? '[' . $latest->type . ']' : null),
             'last_message_type' => $latest?->type,
             'assigned_user'     => $c->assignedUser?->name,
+            'ai_agent_id'       => $c->ai_agent_id,
         ];
     }
 }
