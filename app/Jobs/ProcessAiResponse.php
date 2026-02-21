@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Http\Controllers\Tenant\AiConfigurationController;
-use App\Models\AiConfiguration;
 use App\Models\WhatsappConversation;
 use App\Services\AiAgentService;
 use Illuminate\Bus\Queueable;
@@ -35,9 +34,6 @@ class ProcessAiResponse implements ShouldQueue
     public function handle(): void
     {
         // ── 1. Verificar versão (debounce) ────────────────────────────────────
-        // Cada nova mensagem inbound incrementa o contador. Se a versão armazenada
-        // for maior que a deste job, significa que chegou outra mensagem depois deste
-        // job ter sido despachado → este job está desatualizado (stale) → ignorar.
         $currentVersion = (int) Cache::get("ai:version:{$this->conversationId}", 0);
         if ($currentVersion !== $this->version) {
             Log::channel('whatsapp')->debug('AI job stale — nova mensagem chegou, pulando', [
@@ -84,10 +80,13 @@ class ProcessAiResponse implements ShouldQueue
             return;
         }
 
-        // ── Configuração do LLM ───────────────────────────────────────────────
-        $aiConfig = AiConfiguration::first();
-        if (! $aiConfig || ! $aiConfig->llm_api_key) {
-            Log::channel('whatsapp')->warning('AI job: sem configuração LLM', [
+        // ── Configuração do LLM via ENV ───────────────────────────────────────
+        $provider = (string) config('ai.provider', 'openai');
+        $apiKey   = (string) config('ai.api_key', '');
+        $model    = (string) config('ai.model', 'gpt-4o-mini');
+
+        if ($apiKey === '') {
+            Log::channel('whatsapp')->warning('AI job: LLM_API_KEY não configurado no .env', [
                 'conversation_id' => $this->conversationId,
             ]);
             return;
@@ -96,8 +95,8 @@ class ProcessAiResponse implements ShouldQueue
         Log::channel('whatsapp')->info('AI job: processando resposta', [
             'conversation_id' => $this->conversationId,
             'agent'           => $agent->name,
-            'provider'        => $aiConfig->llm_provider,
-            'model'           => $aiConfig->llm_model,
+            'provider'        => $provider,
+            'model'           => $model,
         ]);
 
         // ── Montar prompt e histórico ─────────────────────────────────────────
@@ -116,9 +115,9 @@ class ProcessAiResponse implements ShouldQueue
         $maxTokens = max(200, ($agent->max_message_length ?? 500) + 200);
 
         $reply = AiConfigurationController::callLlm(
-            provider:  $aiConfig->llm_provider,
-            apiKey:    $aiConfig->llm_api_key,
-            model:     $aiConfig->llm_model,
+            provider:  $provider,
+            apiKey:    $apiKey,
+            model:     $model,
             messages:  $history,
             maxTokens: $maxTokens,
             system:    $system,

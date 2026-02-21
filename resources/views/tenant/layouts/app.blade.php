@@ -728,12 +728,6 @@
             <i class="bi bi-shield-check nav-icon"></i>
             <span class="nav-label">Painel Master</span>
         </a>
-        <a href="{{ route('master.ai.config') }}"
-           class="nav-item {{ request()->routeIs('master.ai*') ? 'active' : '' }}"
-           title="Config. Inteligencia Artificial">
-            <i class="bi bi-cpu nav-icon"></i>
-            <span class="nav-label">Config. IA</span>
-        </a>
     </nav>
     @endif
 

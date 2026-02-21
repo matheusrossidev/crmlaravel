@@ -65,6 +65,10 @@ x-app-env: &app-env
   VITE_REVERB_HOST: "syncro.matheusrossi.com.br"
   VITE_REVERB_PORT: "443"
   VITE_REVERB_SCHEME: "https"
+  # LLM (Inteligencia Artificial)
+  LLM_PROVIDER: openai
+  LLM_API_KEY: "COLE_AQUI_SUA_OPENAI_API_KEY"
+  LLM_MODEL: gpt-4o-mini
   # WAHA
   WAHA_BASE_URL: https://waha.matheusrossi.com.br
   WAHA_API_KEY: "faf5b83c9d4a9b913c9f7ecbf3da2b50"

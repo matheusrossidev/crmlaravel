@@ -16,7 +16,6 @@ use App\Http\Controllers\Tenant\ProfileController;
 use App\Http\Controllers\Tenant\ReportController;
 use App\Http\Controllers\Tenant\UserController;
 use App\Http\Controllers\Tenant\AiAgentController;
-use App\Http\Controllers\Tenant\AiConfigurationController;
 use App\Http\Controllers\Tenant\WhatsappController;
 use App\Http\Controllers\Tenant\WhatsappMessageController;
 use App\Http\Controllers\Tenant\WhatsappTagController;
@@ -179,11 +178,8 @@ Route::middleware(['auth', 'super_admin'])->prefix('master')->name('master.')->g
     Route::put('empresas/{tenant}/usuarios/{user}',    [MasterUserController::class, 'update'])->name('tenants.users.update');
     Route::delete('empresas/{tenant}/usuarios/{user}', [MasterUserController::class, 'destroy'])->name('tenants.users.destroy');
 
-    // Configuração global de IA (provedor LLM + API key)
-    Route::get('ia',         [AiConfigurationController::class, 'show'])->name('ai.config');
-    Route::put('ia',         [AiConfigurationController::class, 'update'])->name('ai.config.update');
-    Route::post('ia/test',   [AiConfigurationController::class, 'testConnection'])->name('ai.test');
 });
+// Nota: configuração LLM (provider/api_key/model) agora via ENV: LLM_PROVIDER, LLM_API_KEY, LLM_MODEL
 
 // ── Webhook público WAHA (sem autenticação) ───────────────────────────────────
 Route::post('/webhook/whatsapp', [WhatsappWebhookController::class, 'handle'])

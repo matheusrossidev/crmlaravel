@@ -41,15 +41,17 @@ class UserController extends Controller
         ], 201);
     }
 
-    public function update(Tenant $tenant, User $user, Request $request): JsonResponse
+    public function update(Tenant $tenant, Request $request, int $user): JsonResponse
     {
-        if ($user->tenant_id !== $tenant->id) {
-            abort(404);
+        $userModel = User::findOrFail($user);
+
+        if ((int) $userModel->tenant_id !== (int) $tenant->id) {
+            return response()->json(['success' => false, 'message' => 'Usuário não pertence a esta empresa.'], 404);
         }
 
         $data = $request->validate([
             'name'     => 'required|string|max:100',
-            'email'    => 'required|email|max:150|unique:users,email,' . $user->id,
+            'email'    => 'required|email|max:150|unique:users,email,' . $userModel->id,
             'role'     => 'required|in:admin,manager,viewer',
             'password' => 'nullable|string|min:8',
         ]);
@@ -60,27 +62,32 @@ class UserController extends Controller
             'role'  => $data['role'],
         ];
 
-        if (!empty($data['password'])) {
+        if (! empty($data['password'])) {
             $update['password'] = $data['password'];
         }
 
-        $user->update($update);
+        $userModel->update($update);
 
         return response()->json(['success' => true, 'message' => 'Usuário atualizado.']);
     }
 
-    public function destroy(Tenant $tenant, User $user): JsonResponse
+    public function destroy(Tenant $tenant, int $user): JsonResponse
     {
-        if ($user->tenant_id !== $tenant->id) {
-            abort(404);
+        $userModel = User::findOrFail($user);
+
+        if ((int) $userModel->tenant_id !== (int) $tenant->id) {
+            return response()->json(['success' => false, 'message' => 'Usuário não pertence a esta empresa.'], 404);
         }
 
-        if ($user->id === auth()->id()) {
+        if ($userModel->id === auth()->id()) {
             return response()->json(['success' => false, 'message' => 'Você não pode excluir sua própria conta.'], 422);
         }
 
-        $user->delete();
-
-        return response()->json(['success' => true]);
+        try {
+            $userModel->delete();
+            return response()->json(['success' => true]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Erro ao excluir usuário: ' . $e->getMessage()], 500);
+        }
     }
 }
