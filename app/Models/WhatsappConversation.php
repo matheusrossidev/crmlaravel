@@ -17,7 +17,7 @@ class WhatsappConversation extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'tenant_id', 'instance_id', 'lead_id', 'phone',
+        'tenant_id', 'instance_id', 'lead_id', 'phone', 'is_group',
         'contact_name', 'contact_picture_url', 'tags',
         'whatsapp_message_id', 'referral_source', 'referral_campaign_id',
         'status', 'assigned_user_id', 'ai_agent_id', 'unread_count',
@@ -26,6 +26,7 @@ class WhatsappConversation extends Model
 
     protected $casts = [
         'tags'            => 'array',
+        'is_group'        => 'boolean',
         'started_at'      => 'datetime',
         'last_message_at' => 'datetime',
         'closed_at'       => 'datetime',

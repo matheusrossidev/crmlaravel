@@ -224,11 +224,12 @@ class IntegrationController extends Controller
             ]);
         }
 
-        // Fallback: JSON com campo "value" (formato raw do WAHA)
-        $json = $response->json() ?? [];
+        // Fallback: JSON com campo "value", "qr" ou "data" (varia conforme versão do WAHA)
+        $json     = $response->json() ?? [];
+        $qrBase64 = $json['value'] ?? $json['qr'] ?? $json['data'] ?? null;
         return response()->json([
             'status'    => 'qr',
-            'qr_base64' => $json['value'] ?? null,
+            'qr_base64' => $qrBase64,
         ]);
     }
 

@@ -209,6 +209,14 @@ class ProcessWahaWebhook implements ShouldQueue
             if ($contactName && str_contains($contactName, '@')) {
                 $contactName = null;
             }
+            // Se o payload não trouxe o nome, buscar via WAHA API
+            if (! $contactName) {
+                try {
+                    $wahaForGroup = new \App\Services\WahaService($instance->session_name);
+                    $groupInfo    = $wahaForGroup->getGroupInfo($from);
+                    $contactName  = $groupInfo['subject'] ?? $groupInfo['name'] ?? null;
+                } catch (\Throwable) {}
+            }
             $messageSenderName = $msg['_data']['Info']['PushName']
                 ?? $msg['_data']['notifyName']
                 ?? $msg['notifyName']
@@ -222,20 +230,31 @@ class ProcessWahaWebhook implements ShouldQueue
         }
 
         if (! $conversation) {
+            // Tentar buscar foto de perfil do contato/grupo ao criar nova conversa
+            $pictureUrl = null;
+            try {
+                $wahaForPic = new \App\Services\WahaService($instance->session_name);
+                $pictureUrl = $wahaForPic->getContactPicture($from);
+            } catch (\Throwable) {}
+
             $conversation = WhatsappConversation::withoutGlobalScope('tenant')->create([
-                'tenant_id'       => $instance->tenant_id,
-                'instance_id'     => $instance->id,
-                'phone'           => $phone,
-                'contact_name'    => $contactName,
-                'status'          => 'open',
-                'started_at'      => now(),
-                'last_message_at' => now(),
-                'unread_count'    => 0,
+                'tenant_id'           => $instance->tenant_id,
+                'instance_id'         => $instance->id,
+                'phone'               => $phone,
+                'is_group'            => $isGroup,
+                'contact_name'        => $contactName,
+                'contact_picture_url' => $pictureUrl,
+                'status'              => 'open',
+                'started_at'          => now(),
+                'last_message_at'     => now(),
+                'unread_count'        => 0,
             ]);
             Log::channel('whatsapp')->info('Conversa CRIADA', [
                 'conversation_id' => $conversation->id,
                 'phone'           => $phone,
                 'contact_name'    => $contactName,
+                'is_group'        => $isGroup,
+                'has_picture'     => $pictureUrl !== null,
             ]);
         } else {
             Log::channel('whatsapp')->info('Conversa encontrada', [
@@ -244,8 +263,8 @@ class ProcessWahaWebhook implements ShouldQueue
             ]);
         }
 
-        // Vincular a conversa a um Lead — cria automaticamente se não existir
-        if (! $conversation->lead_id) {
+        // Vincular a conversa a um Lead — apenas para conversas individuais (não grupos)
+        if (! $isGroup && ! $conversation->lead_id) {
             $lead = $this->findOrCreateLead($instance->tenant_id, $phone, $contactName);
             if ($lead) {
                 WhatsappConversation::withoutGlobalScope('tenant')

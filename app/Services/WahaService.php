@@ -85,11 +85,46 @@ class WahaService
 
     /**
      * Returns the raw HTTP response for the QR endpoint.
-     * WAHA with format=image returns PNG binary; we base64-encode it in the controller.
+     * Uses a client WITHOUT acceptJson() so WAHA can return PNG binary with format=image.
      */
     public function getQrResponse(): \Illuminate\Http\Client\Response
     {
-        return $this->client()->get("/api/{$this->session}/auth/qr", ['format' => 'image']);
+        return Http::baseUrl($this->baseUrl)
+            ->withHeader('X-Api-Key', $this->apiKey)
+            ->timeout(30)
+            ->get("/api/{$this->session}/auth/qr", ['format' => 'image']);
+    }
+
+    // ── Groups ────────────────────────────────────────────────────────────────
+
+    /**
+     * Fetches group metadata (name/subject) from WAHA.
+     * groupJid format: "120363181130044902@g.us"
+     */
+    public function getGroupInfo(string $groupJid): array
+    {
+        $groupId = rawurlencode($groupJid);
+        return $this->get("/api/{$this->session}/groups/{$groupId}");
+    }
+
+    // ── Contacts ──────────────────────────────────────────────────────────────
+
+    /**
+     * Fetches the profile picture URL for a contact or group.
+     * Returns null if the picture is private or unavailable.
+     * contactJid format: "556192008997@c.us" or "120363...@g.us"
+     */
+    public function getContactPicture(string $contactJid): ?string
+    {
+        try {
+            $result = $this->get('/api/contacts/profile-picture', [
+                'session'   => $this->session,
+                'contactId' => $contactJid,
+            ]);
+            return $result['profilePictureURL'] ?? $result['url'] ?? $result['eurl'] ?? null;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     // ── Send Messages ─────────────────────────────────────────────────────────
