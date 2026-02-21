@@ -16,6 +16,7 @@ use App\Http\Controllers\Tenant\ProfileController;
 use App\Http\Controllers\Tenant\ReportController;
 use App\Http\Controllers\Tenant\UserController;
 use App\Http\Controllers\Tenant\AiAgentController;
+use App\Http\Controllers\Tenant\ChatbotFlowController;
 use App\Http\Controllers\Tenant\WhatsappController;
 use App\Http\Controllers\Tenant\WhatsappMessageController;
 use App\Http\Controllers\Tenant\WhatsappTagController;
@@ -101,8 +102,23 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::put('/conversations/{conversation}/contact',   [WhatsappController::class, 'updateContact'])->name('conversations.contact');
         Route::post('/conversations/{conversation}/messages', [WhatsappMessageController::class, 'store'])->name('messages.store');
         Route::post('/conversations/{conversation}/react',    [WhatsappMessageController::class, 'react'])->name('messages.react');
-        Route::put('/conversations/{conversation}/ai-agent',  [WhatsappController::class, 'assignAiAgent'])->name('conversations.ai-agent');
-        Route::delete('/conversations/{conversation}',        [WhatsappController::class, 'destroy'])->name('conversations.destroy');
+        Route::put('/conversations/{conversation}/ai-agent',      [WhatsappController::class, 'assignAiAgent'])->name('conversations.ai-agent');
+        Route::put('/conversations/{conversation}/chatbot-flow',   [WhatsappController::class, 'assignChatbotFlow'])->name('conversations.chatbot-flow');
+        Route::delete('/conversations/{conversation}',             [WhatsappController::class, 'destroy'])->name('conversations.destroy');
+    });
+
+    // Chatbot Builder
+    Route::prefix('chatbot/fluxos')->name('chatbot.flows.')->group(function () {
+        Route::get('pipelines',      [ChatbotFlowController::class, 'getPipelines'])->name('pipelines');
+        Route::get('',               [ChatbotFlowController::class, 'index'])->name('index');
+        Route::get('criar',          [ChatbotFlowController::class, 'create'])->name('create');
+        Route::post('',              [ChatbotFlowController::class, 'store'])->name('store');
+        Route::get('{flow}/editar',  [ChatbotFlowController::class, 'edit'])->name('edit');
+        Route::put('{flow}',         [ChatbotFlowController::class, 'update'])->name('update');
+        Route::delete('{flow}',      [ChatbotFlowController::class, 'destroy'])->name('destroy');
+        Route::post('upload-image',  [ChatbotFlowController::class, 'uploadImage'])->name('upload-image');
+        Route::post('{flow}/toggle', [ChatbotFlowController::class, 'toggle'])->name('toggle');
+        Route::put('{flow}/graph',   [ChatbotFlowController::class, 'saveGraph'])->name('graph');
     });
 
     // Configurações — Pipelines + Stages

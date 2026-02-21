@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\AiAgent;
+use App\Models\ChatbotFlow;
 use App\Models\Pipeline;
 use App\Models\User;
 use App\Models\WhatsappConversation;
@@ -48,11 +49,15 @@ class WhatsappController extends Controller
                 ->get(['id', 'name', 'color']);
         }
 
-        $aiAgents = AiAgent::where('is_active', true)
+        $aiAgents     = AiAgent::where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'users', 'pipelines', 'whatsappTags', 'aiAgents'));
+        $chatbotFlows = ChatbotFlow::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'users', 'pipelines', 'whatsappTags', 'aiAgents', 'chatbotFlows'));
     }
 
     public function poll(Request $request): JsonResponse
@@ -124,6 +129,7 @@ class WhatsappController extends Controller
             'lead'             => $lead,
             'assigned_user_id' => $conversation->assigned_user_id,
             'ai_agent_id'      => $conversation->ai_agent_id,
+            'chatbot_flow_id'  => $conversation->chatbot_flow_id,
             'tags'             => $conversation->tags ?? [],
             'contact_name'     => $conversation->contact_name,
             'phone'            => $conversation->phone,
@@ -230,6 +236,31 @@ class WhatsappController extends Controller
         ]);
 
         return response()->json(['success' => true, 'ai_agent_id' => $conversation->fresh()->ai_agent_id]);
+    }
+
+    public function assignChatbotFlow(WhatsappConversation $conversation, Request $request): JsonResponse
+    {
+        $request->validate([
+            'chatbot_flow_id' => 'nullable|exists:chatbot_flows,id',
+        ]);
+
+        $flowId = $request->input('chatbot_flow_id');
+
+        $conversation->update([
+            'chatbot_flow_id'   => $flowId,
+            'chatbot_node_id'   => null,
+            'chatbot_variables' => null,
+        ]);
+
+        Log::channel('whatsapp')->info('Chatbot flow atribuído à conversa', [
+            'conversation_id' => $conversation->id,
+            'chatbot_flow_id' => $flowId,
+        ]);
+
+        return response()->json([
+            'success'         => true,
+            'chatbot_flow_id' => $conversation->fresh()->chatbot_flow_id,
+        ]);
     }
 
     public function destroy(WhatsappConversation $conversation): JsonResponse

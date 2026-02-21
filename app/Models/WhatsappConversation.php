@@ -20,18 +20,22 @@ class WhatsappConversation extends Model
         'tenant_id', 'instance_id', 'lead_id', 'phone', 'is_group',
         'contact_name', 'contact_picture_url', 'tags',
         'whatsapp_message_id', 'referral_source', 'referral_campaign_id',
-        'status', 'assigned_user_id', 'ai_agent_id', 'unread_count',
-        'started_at', 'last_message_at', 'closed_at',
+        'status', 'assigned_user_id', 'ai_agent_id',
+        'chatbot_flow_id', 'chatbot_node_id', 'chatbot_variables',
+        'unread_count', 'started_at', 'last_message_at', 'closed_at',
     ];
 
     protected $casts = [
-        'tags'            => 'array',
-        'is_group'        => 'boolean',
-        'started_at'      => 'datetime',
-        'last_message_at' => 'datetime',
-        'closed_at'       => 'datetime',
-        'created_at'      => 'datetime',
-        'ai_agent_id'     => 'integer',
+        'tags'               => 'array',
+        'chatbot_variables'  => 'array',
+        'is_group'           => 'boolean',
+        'started_at'         => 'datetime',
+        'last_message_at'    => 'datetime',
+        'closed_at'          => 'datetime',
+        'created_at'         => 'datetime',
+        'ai_agent_id'        => 'integer',
+        'chatbot_flow_id'    => 'integer',
+        'chatbot_node_id'    => 'integer',
     ];
 
     public function instance(): BelongsTo
@@ -57,6 +61,11 @@ class WhatsappConversation extends Model
     public function aiAgent(): BelongsTo
     {
         return $this->belongsTo(AiAgent::class, 'ai_agent_id');
+    }
+
+    public function chatbotFlow(): BelongsTo
+    {
+        return $this->belongsTo(ChatbotFlow::class, 'chatbot_flow_id');
     }
 
     public function messages(): HasMany

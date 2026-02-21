@@ -656,11 +656,11 @@
             <span class="nav-label">Relatórios</span>
         </a>
 
-        <a href="{{ route('ai.agents.index') }}"
-           class="nav-item {{ request()->routeIs('ai.agents.*') ? 'active' : '' }}"
-           title="Agentes de IA">
-            <i class="bi bi-robot nav-icon"></i>
-            <span class="nav-label">Agentes de IA</span>
+        <a href="{{ route('chatbot.flows.index') }}"
+           class="nav-item {{ request()->routeIs('chatbot.flows.*') ? 'active' : '' }}"
+           title="Chatbot Builder">
+            <i class="bi bi-diagram-3 nav-icon"></i>
+            <span class="nav-label">Chatbot</span>
         </a>
 
         @php
@@ -929,6 +929,7 @@ document.getElementById('sidebarToggle')?.addEventListener('click', () => {
 });
 
 // ── Flash messages ────────────────────────────────────────────────────────
+toastr.options = { positionClass: 'toast-bottom-right', timeOut: 4000, closeButton: true, progressBar: true };
 @if(session('success'))
     toastr.success("{{ session('success') }}");
 @endif

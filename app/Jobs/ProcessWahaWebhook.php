@@ -6,6 +6,8 @@ namespace App\Jobs;
 
 use App\Events\WhatsappConversationUpdated;
 use App\Events\WhatsappMessageCreated;
+use App\Jobs\ProcessChatbotStep;
+use App\Models\ChatbotFlow;
 use App\Models\Lead;
 use App\Models\Pipeline;
 use App\Models\WhatsappConversation;
@@ -288,6 +290,29 @@ class ProcessWahaWebhook implements ShouldQueue
                 'is_group'        => $isGroup,
                 'has_picture'     => $pictureUrl !== null,
             ]);
+
+            // Auto-trigger de chatbot: se existe fluxo ativo com keyword que bate na 1ª mensagem
+            if (! $isGroup) {
+                $msgBodyLower = strtolower($body ?? '');
+                $activeFlow   = ChatbotFlow::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $instance->tenant_id)
+                    ->where('is_active', true)
+                    ->whereNotNull('trigger_keywords')
+                    ->get()
+                    ->first(fn ($f) => collect($f->trigger_keywords)
+                        ->contains(fn ($kw) => str_contains($msgBodyLower, strtolower($kw))));
+
+                if ($activeFlow) {
+                    WhatsappConversation::withoutGlobalScope('tenant')
+                        ->where('id', $conversation->id)
+                        ->update(['chatbot_flow_id' => $activeFlow->id]);
+                    $conversation->chatbot_flow_id = $activeFlow->id;
+                    Log::channel('whatsapp')->info('Chatbot: flow auto-atribuído', [
+                        'conversation_id' => $conversation->id,
+                        'flow_id'         => $activeFlow->id,
+                    ]);
+                }
+            }
         } else {
             Log::channel('whatsapp')->info('Conversa encontrada', [
                 'conversation_id' => $conversation->id,
@@ -373,6 +398,19 @@ class ProcessWahaWebhook implements ShouldQueue
         } catch (\Throwable $e) {
             // Broadcaster indisponível — o polling de 5s do frontend supre o real-time.
             Log::channel('whatsapp')->error('Broadcast FALHOU', ['error' => $e->getMessage()]);
+        }
+
+        // Executar chatbot — apenas para mensagens inbound em conversas com fluxo ativo
+        if (! $isFromMe && ! $isGroup && $conversation->chatbot_flow_id) {
+            try {
+                (new ProcessChatbotStep($conversation->id, $body ?? ''))->handle();
+            } catch (\Throwable $e) {
+                Log::channel('whatsapp')->error('Chatbot step falhou', [
+                    'conversation_id' => $conversation->id,
+                    'error'           => $e->getMessage(),
+                    'file'            => $e->getFile() . ':' . $e->getLine(),
+                ]);
+            }
         }
     }
 

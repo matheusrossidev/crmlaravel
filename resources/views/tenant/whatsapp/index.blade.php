@@ -1044,6 +1044,22 @@
             @endforeach
         </select>
     </div>
+
+    <div class="wa-details-section">
+        <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
+            <span><i class="bi bi-diagram-3" style="margin-right:4px;color:#8b5cf6;"></i> Chatbot</span>
+            <a href="{{ route('chatbot.flows.index') }}" style="font-size:11px;color:#8b5cf6;text-decoration:none;" title="Gerenciar fluxos">
+                <i class="fas fa-external-link-alt"></i>
+            </a>
+        </div>
+        <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="chatbotFlowSelect" onchange="assignChatbotFlow()">
+            <option value="">Sem fluxo (chatbot desativado)</option>
+            @foreach($chatbotFlows as $cf)
+            <option value="{{ $cf->id }}">{{ $cf->name }}</option>
+            @endforeach
+        </select>
+        <div id="chatbotVarsInfo" style="display:none;font-size:11px;color:#8b5cf6;margin-top:4px;"></div>
+    </div>
     @endif
 
     <div class="wa-details-section">
@@ -1330,6 +1346,17 @@ async function openConversation(convId, el) {
     if (aiSel) {
         aiSel.value = data.ai_agent_id ?? '';
         updateAiAgentStatusBadge(data.ai_agent_id);
+    }
+
+    // Atualiza select de chatbot flow
+    const chatbotSel  = document.getElementById('chatbotFlowSelect');
+    const chatbotInfo = document.getElementById('chatbotVarsInfo');
+    if (chatbotSel) {
+        chatbotSel.value = data.chatbot_flow_id ?? '';
+        if (chatbotInfo) {
+            chatbotInfo.style.display = data.chatbot_flow_id ? 'block' : 'none';
+            if (data.chatbot_flow_id) chatbotInfo.textContent = 'Fluxo ativo nesta conversa.';
+        }
     }
 
     // Renderiza painel de lead
@@ -1773,6 +1800,33 @@ function updateAiAgentStatusBadge(agentId) {
         badge.textContent = 'Inativo';
         badge.style.color = '#9ca3af';
     }
+}
+
+async function assignChatbotFlow() {
+    if (!activeConvId) return;
+    const sel    = document.getElementById('chatbotFlowSelect');
+    const flowId = sel ? sel.value : '';
+
+    try {
+        const res  = await fetch(`/chats/conversations/${activeConvId}/chatbot-flow`, {
+            method: 'PUT',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatbot_flow_id: flowId || null }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            toastr.success(flowId ? 'Fluxo de chatbot ativado.' : 'Chatbot desativado.');
+            const info = document.getElementById('chatbotVarsInfo');
+            if (info) {
+                if (flowId) {
+                    info.style.display = 'block';
+                    info.textContent = 'Estado reiniciado. Próxima mensagem inicia o fluxo.';
+                } else {
+                    info.style.display = 'none';
+                }
+            }
+        }
+    } catch { toastr.error('Erro ao salvar fluxo de chatbot.'); }
 }
 
 // ── Painel de detalhes ────────────────────────────────────────────────────────
