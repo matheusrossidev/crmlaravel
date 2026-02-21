@@ -656,35 +656,12 @@
             <span class="nav-label">Relatórios</span>
         </a>
 
-        @php
-            $aiOpen = request()->routeIs('ai.*') || request()->routeIs('master.ai*');
-        @endphp
-        <div class="nav-submenu-wrap {{ $aiOpen ? 'open' : '' }}" id="aiSubmenuWrap">
-            <button type="button"
-                    class="nav-item nav-submenu-toggle w-100"
-                    onclick="toggleSubmenu('aiSubmenu')"
-                    title="Agente de IA"
-                    style="background:none;border:none;cursor:pointer;text-align:left;{{ $aiOpen ? 'color:#3B82F6;background:#eff6ff;font-weight:600;' : '' }}">
-                <i class="bi bi-robot nav-icon"></i>
-                <span class="nav-label">Agente de IA</span>
-                <i class="bi bi-chevron-down nav-chevron nav-label" id="aiChevron"
-                   style="margin-left:auto;font-size:11px;transition:transform .2s;{{ $aiOpen ? 'transform:rotate(180deg);' : '' }}"></i>
-            </button>
-            <div class="nav-submenu" id="aiSubmenu" style="{{ $aiOpen ? '' : 'display:none;' }}">
-                @if(auth()->user()->isSuperAdmin())
-                <a href="{{ route('master.ai.config') }}"
-                   class="nav-subitem {{ request()->routeIs('master.ai*') ? 'active' : '' }}">
-                    <i class="bi bi-gear nav-icon" style="font-size:14px;"></i>
-                    <span class="nav-label">Configuração</span>
-                </a>
-                @endif
-                <a href="{{ route('ai.agents.index') }}"
-                   class="nav-subitem {{ request()->routeIs('ai.agents.*') ? 'active' : '' }}">
-                    <i class="bi bi-cpu nav-icon" style="font-size:14px;"></i>
-                    <span class="nav-label">Agentes</span>
-                </a>
-            </div>
-        </div>
+        <a href="{{ route('ai.agents.index') }}"
+           class="nav-item {{ request()->routeIs('ai.agents.*') ? 'active' : '' }}"
+           title="Agentes de IA">
+            <i class="bi bi-robot nav-icon"></i>
+            <span class="nav-label">Agentes de IA</span>
+        </a>
 
         @php
             $settingsOpen = request()->routeIs('settings.*');
@@ -746,10 +723,16 @@
     <nav class="nav-group">
         <div class="nav-group-label">Master</div>
         <a href="{{ route('master.tenants') }}"
-           class="nav-item {{ request()->routeIs('master*') ? 'active' : '' }}"
+           class="nav-item {{ request()->routeIs('master.tenants*') ? 'active' : '' }}"
            title="Painel Master">
             <i class="bi bi-shield-check nav-icon"></i>
             <span class="nav-label">Painel Master</span>
+        </a>
+        <a href="{{ route('master.ai.config') }}"
+           class="nav-item {{ request()->routeIs('master.ai*') ? 'active' : '' }}"
+           title="Config. Inteligencia Artificial">
+            <i class="bi bi-cpu nav-icon"></i>
+            <span class="nav-label">Config. IA</span>
         </a>
     </nav>
     @endif

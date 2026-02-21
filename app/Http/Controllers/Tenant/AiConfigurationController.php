@@ -23,7 +23,7 @@ class AiConfigurationController extends Controller
     {
         $config = AiConfiguration::first() ?? new AiConfiguration();
 
-        return view('tenant.ai.config', [
+        return view('master.ai.config', [
             'config'       => $config,
             'modelOptions' => self::MODELS,
         ]);
