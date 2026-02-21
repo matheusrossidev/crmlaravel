@@ -54,6 +54,13 @@ class ProcessAiResponse implements ShouldQueue
 
         try {
             $this->process();
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->error('AI job: erro ao processar resposta', [
+                'conversation_id' => $this->conversationId,
+                'error'           => $e->getMessage(),
+                'file'            => $e->getFile() . ':' . $e->getLine(),
+            ]);
+            throw $e;  // re-throw para o queue worker marcar como failed
         } finally {
             Cache::forget("ai:lock:{$this->conversationId}");
         }
@@ -61,6 +68,11 @@ class ProcessAiResponse implements ShouldQueue
 
     private function process(): void
     {
+        Log::channel('whatsapp')->info('AI job: iniciando', [
+            'conversation_id' => $this->conversationId,
+            'version'         => $this->version,
+        ]);
+
         // ── Carregar conversa e agente ────────────────────────────────────────
         $conv = WhatsappConversation::withoutGlobalScope('tenant')
             ->with('aiAgent')
