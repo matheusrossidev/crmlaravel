@@ -8,7 +8,7 @@
 
 @push('styles')
 <style>
-    .ai-form-wrap { max-width: 780px; }
+    .ai-form-wrap { width: 100%; }
 
     .section-card {
         background: #fff; border: 1px solid #e8eaf0;

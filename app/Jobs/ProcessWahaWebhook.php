@@ -6,6 +6,7 @@ namespace App\Jobs;
 
 use App\Events\WhatsappConversationUpdated;
 use App\Events\WhatsappMessageCreated;
+use App\Models\AiAgent;
 use App\Models\Lead;
 use App\Models\Pipeline;
 use App\Models\WhatsappConversation;
@@ -269,6 +270,17 @@ class ProcessWahaWebhook implements ShouldQueue
                 $pictureUrl = $wahaForPic->getContactPicture($from);
             } catch (\Throwable) {}
 
+            // Auto-associar agente de IA WhatsApp ativo (apenas conversas individuais)
+            $autoAgentId = null;
+            if (! $isGroup) {
+                $autoAgent = AiAgent::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $instance->tenant_id)
+                    ->where('channel', 'whatsapp')
+                    ->where('is_active', true)
+                    ->first();
+                $autoAgentId = $autoAgent?->id;
+            }
+
             $conversation = WhatsappConversation::withoutGlobalScope('tenant')->create([
                 'tenant_id'           => $instance->tenant_id,
                 'instance_id'         => $instance->id,
@@ -276,6 +288,7 @@ class ProcessWahaWebhook implements ShouldQueue
                 'is_group'            => $isGroup,
                 'contact_name'        => $contactName,
                 'contact_picture_url' => $pictureUrl,
+                'ai_agent_id'         => $autoAgentId,
                 'status'              => 'open',
                 'started_at'          => now(),
                 'last_message_at'     => now(),
@@ -287,6 +300,7 @@ class ProcessWahaWebhook implements ShouldQueue
                 'contact_name'    => $contactName,
                 'is_group'        => $isGroup,
                 'has_picture'     => $pictureUrl !== null,
+                'ai_agent_id'     => $autoAgentId,
             ]);
         } else {
             Log::channel('whatsapp')->info('Conversa encontrada', [
