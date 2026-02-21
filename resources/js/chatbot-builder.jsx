@@ -14,6 +14,9 @@ import {
     Position,
     MarkerType,
     useReactFlow,
+    getSmoothStepPath,
+    BaseEdge,
+    EdgeLabelRenderer,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -1336,10 +1339,89 @@ function TriggerPanel({ keywords, setKeywords, onClose }) {
     );
 }
 
+// ── Edge: deletável com botão X ───────────────────────────────────────────────
+
+function DeletableEdge({
+    id, sourceX, sourceY, targetX, targetY,
+    sourcePosition, targetPosition, selected,
+}) {
+    const { setEdges } = useReactFlow();
+    const [hovered, setHovered] = useState(false);
+
+    const [edgePath, labelX, labelY] = getSmoothStepPath({
+        sourceX, sourceY, sourcePosition,
+        targetX, targetY, targetPosition,
+    });
+
+    const showBtn = selected || hovered;
+
+    return (
+        <>
+            {/* Área invisível mais larga para facilitar hover/clique */}
+            <path
+                d={edgePath}
+                fill="none"
+                stroke="transparent"
+                strokeWidth={16}
+                onMouseEnter={() => setHovered(true)}
+                onMouseLeave={() => setHovered(false)}
+                style={{ cursor: 'pointer' }}
+            />
+            <BaseEdge
+                path={edgePath}
+                style={{
+                    stroke: showBtn ? '#f97316' : BLUE,
+                    strokeWidth: showBtn ? 2.5 : 2,
+                    transition: 'stroke 0.15s',
+                }}
+                markerEnd={`url(#arrow-${showBtn ? 'hover' : 'default'})`}
+            />
+            <EdgeLabelRenderer>
+                <div
+                    style={{
+                        position: 'absolute',
+                        transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+                        pointerEvents: 'all',
+                        opacity: showBtn ? 1 : 0,
+                        transition: 'opacity 0.15s',
+                    }}
+                    onMouseEnter={() => setHovered(true)}
+                    onMouseLeave={() => setHovered(false)}
+                >
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setEdges(eds => eds.filter(ed => ed.id !== id));
+                        }}
+                        title="Remover conexão"
+                        style={{
+                            width: 20, height: 20,
+                            borderRadius: '50%',
+                            background: '#ef4444',
+                            border: '2px solid #fff',
+                            color: '#fff',
+                            fontSize: 12, fontWeight: 700,
+                            lineHeight: 1,
+                            cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
+                            padding: 0,
+                        }}
+                    >
+                        ×
+                    </button>
+                </div>
+            </EdgeLabelRenderer>
+        </>
+    );
+}
+
+const edgeTypes = { deletable: DeletableEdge };
+
 // ── Edge defaults ─────────────────────────────────────────────────────────────
 
 const defaultEdgeOptions = {
-    type: 'smoothstep',
+    type: 'deletable',
     animated: true,
     style: { stroke: BLUE, strokeWidth: 2 },
     markerEnd: { type: MarkerType.ArrowClosed, color: BLUE, width: 14, height: 14 },
@@ -1354,6 +1436,7 @@ function ChatbotBuilder() {
     const initialNodes = (cfg.nodes || []).map(n => ({ ...n, type: n.type || 'message' }));
     const initialEdges = (cfg.edges || []).map(e => ({
         ...e,
+        type: 'deletable',
         animated: true,
         style: defaultEdgeOptions.style,
         markerEnd: defaultEdgeOptions.markerEnd,
@@ -1592,6 +1675,7 @@ function ChatbotBuilder() {
                         onNodeClick={onNodeClick}
                         onPaneClick={onPaneClick}
                         nodeTypes={nodeTypes}
+                        edgeTypes={edgeTypes}
                         defaultEdgeOptions={defaultEdgeOptions}
                         fitView
                         fitViewOptions={{ padding: 0.3 }}
