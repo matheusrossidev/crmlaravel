@@ -113,7 +113,7 @@ class ChatbotFlowController extends Controller
         $validated = $request->validate([
             'nodes'              => 'required|array',
             'nodes.*.id'         => 'required|string',
-            'nodes.*.type'       => 'required|string|in:message,input,condition,action,end',
+            'nodes.*.type'       => 'required|string|in:message,input,condition,action,delay,end',
             'nodes.*.position.x' => 'required|numeric',
             'nodes.*.position.y' => 'required|numeric',
             'nodes.*.data'       => 'required|array',
