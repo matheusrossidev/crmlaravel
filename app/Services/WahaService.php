@@ -110,6 +110,19 @@ class WahaService
     // ── Contacts ──────────────────────────────────────────────────────────────
 
     /**
+     * Fetches contact info from WAHA.
+     * Used to resolve @lid JIDs to real phone numbers.
+     * Response may contain 'id' field with the real JID (e.g. "556192...@c.us").
+     */
+    public function getContactInfo(string $contactJid): array
+    {
+        return $this->get('/api/contacts', [
+            'session'   => $this->session,
+            'contactId' => $contactJid,
+        ]);
+    }
+
+    /**
      * Fetches the profile picture URL for a contact or group.
      * Returns null if the picture is private or unavailable.
      * contactJid format: "556192008997@c.us" or "120363...@g.us"

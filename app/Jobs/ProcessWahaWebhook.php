@@ -93,6 +93,26 @@ class ProcessWahaWebhook implements ShouldQueue
 
         $phone = $this->normalizePhone($from, $msg, $isFromMe);
 
+        // Se o phone parece um LID numérico (> 13 dígitos, apenas dígitos),
+        // tentar resolver para o número real via WAHA contacts API.
+        if (! $isGroup && strlen($phone) > 13 && ctype_digit($phone)) {
+            try {
+                $wahaLid     = new \App\Services\WahaService($instance->session_name);
+                $contactInfo = $wahaLid->getContactInfo($from); // passa o JID completo "@lid"
+                $resolvedJid = $contactInfo['id'] ?? '';
+                if ($resolvedJid && ! str_ends_with($resolvedJid, '@lid')) {
+                    $resolved = (string) preg_replace('/[:@].+$/', '', $resolvedJid);
+                    if ($resolved && ctype_digit($resolved)) {
+                        Log::channel('whatsapp')->info('LID resolvido via WAHA contacts', [
+                            'lid'      => $phone,
+                            'resolved' => $resolved,
+                        ]);
+                        $phone = $resolved;
+                    }
+                }
+            } catch (\Throwable) {}
+        }
+
         Log::channel('whatsapp')->info('Processando mensagem', [
             'event'  => $event,
             'from'   => $from,

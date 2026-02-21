@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\AiAgent;
-use App\Models\AiConfiguration;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -75,9 +74,12 @@ class AiAgentController extends Controller
             'history' => 'nullable|array',
         ]);
 
-        $config = AiConfiguration::first();
-        if (! $config || ! $config->llm_api_key) {
-            return response()->json(['success' => false, 'message' => 'Configure o provedor de IA em Configurações → Inteligência Artificial primeiro.'], 422);
+        $provider = (string) config('ai.provider', 'openai');
+        $apiKey   = (string) config('ai.api_key', '');
+        $model    = (string) config('ai.model', 'gpt-4o-mini');
+
+        if ($apiKey === '') {
+            return response()->json(['success' => false, 'message' => 'LLM_API_KEY não configurado no servidor.'], 422);
         }
 
         // Monta o system prompt a partir das configurações do agente
@@ -95,19 +97,11 @@ class AiAgentController extends Controller
             [['role' => 'user', 'content' => $request->input('message')]],
         );
 
-        // Anthropic não usa 'system' no array de messages — move para parâmetro separado
-        if ($config->llm_provider === 'anthropic') {
-            $systemMsg = array_shift($messages); // remove o system do array
-            // callAnthropic via callLlm — passamos system inline via prompt hack por ora
-            // (implementação simples: inclui system no primeiro user message)
-            $messages[0]['content'] = "SYSTEM:\n{$systemMsg['content']}\n\n---\nUSER:\n{$messages[0]['content']}";
-        }
-
         try {
             $reply = AiConfigurationController::callLlm(
-                provider:  $config->llm_provider,
-                apiKey:    $config->llm_api_key,
-                model:     $config->llm_model,
+                provider:  $provider,
+                apiKey:    $apiKey,
+                model:     $model,
                 messages:  $messages,
                 maxTokens: $agent->max_message_length + 200,
             );
