@@ -29,7 +29,7 @@ class ChatbotVariableService
     {
         $lead = $conv->lead_id
             ? Lead::withoutGlobalScope('tenant')
-                ->with(['stage', 'tags'])
+                ->with(['stage'])
                 ->find($conv->lead_id)
             : null;
 
@@ -38,9 +38,8 @@ class ChatbotVariableService
             ->where('tenant_id', $conv->tenant_id)
             ->count();
 
-        $tags = $lead && $lead->relationLoaded('tags')
-            ? $lead->tags->pluck('name')->join(', ')
-            : '';
+        // tags no Lead é uma coluna JSON (array simples de strings), não um relacionamento
+        $tags = $lead ? implode(', ', $lead->tags ?? []) : '';
 
         return [
             '$lead_exists'          => $lead ? 'sim' : 'não',
