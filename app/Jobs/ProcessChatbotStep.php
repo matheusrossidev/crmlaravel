@@ -18,6 +18,9 @@ class ProcessChatbotStep
 {
     private const MAX_ITERATIONS = 30;
 
+    /** Pausa automática (segundos) entre envios de mensagem para simular digitação. */
+    private const DEFAULT_MESSAGE_DELAY = 3;
+
     public function __construct(
         private readonly int    $conversationId,
         private readonly string $inboundBody,
@@ -373,6 +376,7 @@ class ProcessChatbotStep
 
             $waha = new WahaService($instance->session_name);
             $waha->sendText($chatId, $text);
+            sleep(self::DEFAULT_MESSAGE_DELAY);
         } catch (\Throwable $e) {
             Log::channel('whatsapp')->error('Chatbot: erro ao enviar mensagem', [
                 'conversation_id' => $conv->id,
