@@ -6,7 +6,6 @@ namespace App\Jobs;
 
 use App\Events\WhatsappConversationUpdated;
 use App\Events\WhatsappMessageCreated;
-use App\Models\AiAgent;
 use App\Models\Lead;
 use App\Models\Pipeline;
 use App\Models\WhatsappConversation;
@@ -270,17 +269,6 @@ class ProcessWahaWebhook implements ShouldQueue
                 $pictureUrl = $wahaForPic->getContactPicture($from);
             } catch (\Throwable) {}
 
-            // Auto-associar agente de IA WhatsApp ativo (apenas conversas individuais)
-            $autoAgentId = null;
-            if (! $isGroup) {
-                $autoAgent = AiAgent::withoutGlobalScope('tenant')
-                    ->where('tenant_id', $instance->tenant_id)
-                    ->where('channel', 'whatsapp')
-                    ->where('is_active', true)
-                    ->first();
-                $autoAgentId = $autoAgent?->id;
-            }
-
             $conversation = WhatsappConversation::withoutGlobalScope('tenant')->create([
                 'tenant_id'           => $instance->tenant_id,
                 'instance_id'         => $instance->id,
@@ -288,7 +276,6 @@ class ProcessWahaWebhook implements ShouldQueue
                 'is_group'            => $isGroup,
                 'contact_name'        => $contactName,
                 'contact_picture_url' => $pictureUrl,
-                'ai_agent_id'         => $autoAgentId,
                 'status'              => 'open',
                 'started_at'          => now(),
                 'last_message_at'     => now(),
@@ -300,7 +287,6 @@ class ProcessWahaWebhook implements ShouldQueue
                 'contact_name'    => $contactName,
                 'is_group'        => $isGroup,
                 'has_picture'     => $pictureUrl !== null,
-                'ai_agent_id'     => $autoAgentId,
             ]);
         } else {
             Log::channel('whatsapp')->info('Conversa encontrada', [
@@ -360,22 +346,6 @@ class ProcessWahaWebhook implements ShouldQueue
             'type'            => $type,
             'has_media'       => $mediaUrl !== null,
         ]);
-
-        // ── Trigger debounce de resposta da IA (apenas mensagens inbound) ────────
-        // Só dispara se a conversa tem um agente de IA atribuído e ativo.
-        if (! $isFromMe && $conversation->ai_agent_id) {
-            $conversation->loadMissing('aiAgent');
-            if ($conversation->aiAgent && $conversation->aiAgent->is_active) {
-                $delay   = max(5, (int) ($conversation->aiAgent->response_delay_seconds ?? 30));
-                $version = (int) Cache::increment("ai:version:{$conversation->id}");
-                ProcessAiResponse::dispatch($conversation->id, $version)->delay($delay);
-                Log::channel('whatsapp')->info('AI debounce agendado', [
-                    'conversation_id' => $conversation->id,
-                    'version'         => $version,
-                    'delay_seconds'   => $delay,
-                ]);
-            }
-        }
 
         // Atualizar conversa ANTES do broadcast — garante que last_message_at e
         // unread_count sejam salvos mesmo se o broadcaster estiver indisponível.
