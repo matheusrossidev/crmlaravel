@@ -72,17 +72,15 @@ class TenantController extends Controller
 
     public function show(Tenant $tenant): View
     {
-        $tenant->loadCount(['users', 'leads']);
-
         $users = User::where('tenant_id', $tenant->id)
             ->orderBy('name')
             ->get();
 
         $leadsStats = [
-            'total'  => Lead::where('tenant_id', $tenant->id)->count(),
-            'active' => Lead::where('tenant_id', $tenant->id)->whereNull('won_at')->whereNull('lost_at')->count(),
-            'won'    => Lead::where('tenant_id', $tenant->id)->whereNotNull('won_at')->count(),
-            'lost'   => Lead::where('tenant_id', $tenant->id)->whereNotNull('lost_at')->count(),
+            'total'  => Lead::forTenant($tenant->id)->count(),
+            'active' => Lead::forTenant($tenant->id)->whereNull('won_at')->whereNull('lost_at')->count(),
+            'won'    => Lead::forTenant($tenant->id)->whereNotNull('won_at')->count(),
+            'lost'   => Lead::forTenant($tenant->id)->whereNotNull('lost_at')->count(),
         ];
 
         return view('master.tenants.show', compact('tenant', 'users', 'leadsStats'));
