@@ -144,7 +144,7 @@ services:
         rm -f /var/www/bootstrap/cache/packages.php &&
         php artisan package:discover --ansi 2>/dev/null || true &&
         php artisan queue:work redis
-          --queue=whatsapp,default
+          --queue=ai,whatsapp,default
           --tries=3
           --backoff=5
           --sleep=3
