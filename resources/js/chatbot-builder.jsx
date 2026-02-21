@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
     ReactFlow,
@@ -104,11 +104,27 @@ function BaseNode({ type, data, selected, children, rightHandles = [], hasDefaul
             border: `1.5px solid ${selected ? BLUE : '#e5e7eb'}`,
             borderRadius: 10,
             width: 240,
+            position: 'relative',
             boxShadow: selected
                 ? `0 0 0 3px ${BLUE}22, 0 6px 20px rgba(0,0,0,0.10)`
                 : '0 1px 6px rgba(0,0,0,0.07)',
             fontFamily: FONT,
         }}>
+
+            {/* INÍCIO badge — aparece no nó raiz (sem incoming edges) */}
+            {data._isStart && (
+                <div style={{
+                    position: 'absolute', top: -28, left: '50%', transform: 'translateX(-50%)',
+                    background: '#10b981', color: '#fff', fontSize: 10, fontWeight: 700,
+                    padding: '3px 10px', borderRadius: 99, whiteSpace: 'nowrap',
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    boxShadow: '0 2px 6px rgba(16,185,129,0.35)', pointerEvents: 'none',
+                    letterSpacing: '0.04em',
+                }}>
+                    <i className="bi bi-play-fill" style={{ fontSize: 8 }} />
+                    INÍCIO DO FLUXO
+                </div>
+            )}
 
             {/* LEFT: single target handle — centered on full node height */}
             <Handle
@@ -301,7 +317,7 @@ function ConditionNode({ id, data, selected }) {
     const conditions = data.conditions || [];
     const rightHandles = [
         ...conditions.map((c, i) => ({ id: c.handle || `branch-${i}`, label: c.label || `Cond ${i + 1}` })),
-        { id: 'default', label: 'Padrão' },
+        { id: 'default', label: '↩ Padrão' },
     ];
     return (
         <BaseNode type="condition" data={data} selected={selected} hasDefaultHandle={false} rightHandles={rightHandles}>
@@ -697,9 +713,14 @@ function ConditionForm({ data, update, allVars }) {
     const updateCond = (i, f, v) => update('conditions', conditions.map((c, idx) => idx === i ? { ...c, [f]: v } : c));
     const removeCond = (i) => update('conditions', conditions.filter((_, idx) => idx !== i));
 
-    const varLabel = selectedVar
-        ? <span style={{ fontFamily: 'monospace', fontWeight: 700, color: BLUE }}>{`{{${selectedVar}}}`}</span>
-        : <span style={{ color: '#d1d5db' }}>nenhuma</span>;
+    const applyPreset = (preset) => {
+        if (preset === '$is_returning_contact') {
+            update('conditions', [
+                { handle: 'branch-0', operator: 'equals', value: 'sim', label: 'Já é cliente' },
+                { handle: 'branch-1', operator: 'equals', value: 'não', label: 'Novo cliente' },
+            ]);
+        }
+    };
 
     const FONT = "'Inter', system-ui, sans-serif";
 
@@ -718,6 +739,22 @@ function ConditionForm({ data, update, allVars }) {
                     </optgroup>
                 </select>
             </FieldGroup>
+
+            {/* Preset rápido para variáveis com valores conhecidos */}
+            {selectedVar === '$is_returning_contact' && (
+                <div style={{ marginBottom: 12, padding: '8px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 7 }}>
+                    <div style={{ fontSize: 11, color: '#15803d', fontWeight: 600, marginBottom: 6, fontFamily: FONT }}>
+                        <i className="bi bi-lightning-fill" style={{ marginRight: 4 }} />
+                        Preset disponível para esta variável
+                    </div>
+                    <button
+                        onClick={() => applyPreset('$is_returning_contact')}
+                        style={{ ...field.smallBtn, background: '#15803d', color: '#fff', border: 'none', width: '100%', textAlign: 'center' }}
+                    >
+                        Aplicar: "Já é cliente" (sim) / "Novo cliente" (não)
+                    </button>
+                </div>
+            )}
 
             <div style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -805,10 +842,16 @@ function ConditionForm({ data, update, allVars }) {
                 ))}
 
                 {conditions.length > 0 && (
-                    <p style={{ fontSize: 11, color: '#9ca3af', margin: 0, fontFamily: FONT }}>
-                        <i className="bi bi-info-circle" style={{ marginRight: 4, fontSize: 10 }} />
-                        O handle <strong>Padrão</strong> ativa quando nenhuma condição corresponder.
-                    </p>
+                    <div style={{ padding: '8px 10px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 7, fontSize: 11, color: '#92400e', fontFamily: FONT }}>
+                        <div style={{ fontWeight: 700, marginBottom: 3 }}>
+                            <i className="bi bi-arrow-return-left" style={{ marginRight: 4 }} />
+                            O que é a saída <strong>"↩ Padrão"</strong>?
+                        </div>
+                        É a saída <strong>de fallback</strong>: dispara quando <strong>nenhuma</strong> das condições acima for satisfeita.
+                        {selectedVar === '$is_returning_contact' && conditions.length >= 2 && (
+                            <span> Como você tem "sim" e "não" cobertos, o Padrão nunca vai disparar neste nó.</span>
+                        )}
+                    </div>
                 )}
             </div>
         </>
@@ -1171,6 +1214,76 @@ function VariablesPanel({ variables, setVariables, onClose }) {
     );
 }
 
+// ── Trigger Panel ─────────────────────────────────────────────────────────────
+
+function TriggerPanel({ keywords, setKeywords, onClose }) {
+    const [newKw, setNewKw] = useState('');
+
+    const addKw = () => {
+        const kw = newKw.trim().toLowerCase();
+        if (kw && !keywords.includes(kw)) {
+            setKeywords([...keywords, kw]);
+            setNewKw('');
+        }
+    };
+
+    return (
+        <div style={{ width: 240, borderRight: '1px solid #e5e7eb', background: '#fff', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+            <div style={{ padding: '12px 14px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f9fafb' }}>
+                <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#111827', fontFamily: "'Inter', sans-serif" }}>Trigger</div>
+                    <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: "'Inter', sans-serif" }}>Palavras que ativam o fluxo</div>
+                </div>
+                <button onClick={onClose} style={{ ...field.smallBtn, padding: '3px 8px', lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
+                <p style={{ fontSize: 11, color: '#6b7280', marginTop: 0, marginBottom: 10, fontFamily: "'Inter', sans-serif", lineHeight: 1.5 }}>
+                    Quando um contato enviar uma dessas palavras, este fluxo será iniciado automaticamente.
+                </p>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                    <input
+                        style={{ ...field.input, flex: 1, fontSize: 12 }}
+                        value={newKw}
+                        onChange={e => setNewKw(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addKw()}
+                        placeholder="Ex: olá, oi, início…"
+                    />
+                    <button
+                        onClick={addKw}
+                        style={{ ...field.smallBtn, background: BLUE, color: '#fff', border: 'none', padding: '4px 10px', flexShrink: 0 }}
+                    >+</button>
+                </div>
+                {keywords.length === 0 && (
+                    <div style={{ fontSize: 12, color: '#9ca3af', textAlign: 'center', padding: '14px 0', fontFamily: "'Inter', sans-serif" }}>
+                        Nenhuma keyword.<br />
+                        <span style={{ fontSize: 11 }}>O fluxo só iniciará manualmente.</span>
+                    </div>
+                )}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {keywords.map((kw, i) => (
+                        <div key={i} style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            background: BLUE_LIGHT, border: `1px solid ${BLUE_BORDER}`,
+                            color: BLUE, borderRadius: 99, padding: '3px 10px', fontSize: 12, fontWeight: 600,
+                            fontFamily: "'Inter', sans-serif",
+                        }}>
+                            {kw}
+                            <button
+                                onClick={() => setKeywords(keywords.filter((_, idx) => idx !== i))}
+                                style={{ background: 'none', border: 'none', color: '#93c5fd', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 }}
+                            >×</button>
+                        </div>
+                    ))}
+                </div>
+                <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 14, fontFamily: "'Inter', sans-serif" }}>
+                    <i className="bi bi-info-circle" style={{ marginRight: 4 }} />
+                    Salve o fluxo após editar as keywords.
+                </p>
+            </div>
+        </div>
+    );
+}
+
 // ── Edge defaults ─────────────────────────────────────────────────────────────
 
 const defaultEdgeOptions = {
@@ -1198,12 +1311,26 @@ function ChatbotBuilder() {
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
     const [selectedNode, setSelectedNode] = useState(null);
     const [variables, setVariables] = useState(cfg.flow?.variables || []);
+    const [triggerKeywords, setTriggerKeywords] = useState(cfg.flow?.trigger_keywords || []);
     const [pipelines, setPipelines] = useState([]);
     const tags = cfg.tags || [];
     const [isActive, setIsActive] = useState(!!cfg.flow?.is_active);
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState('');
     const [showVars, setShowVars] = useState(false);
+    const [showTrigger, setShowTrigger] = useState(false);
+
+    // Nó de início: o que não é alvo de nenhuma edge
+    const startNodeId = useMemo(() => {
+        const targetIds = new Set(edges.map(e => e.target));
+        const startNode = nodes.find(n => !targetIds.has(n.id));
+        return startNode?.id ?? null;
+    }, [nodes, edges]);
+
+    // Injeta _isStart no data dos nós para o badge "INÍCIO DO FLUXO"
+    const displayNodes = useMemo(() =>
+        nodes.map(n => ({ ...n, data: { ...n.data, _isStart: n.id === startNodeId } })),
+    [nodes, startNodeId]);
 
     useEffect(() => {
         if (cfg.pipelinesUrl) {
@@ -1262,6 +1389,7 @@ function ChatbotBuilder() {
             const payload = {
                 nodes: nodes.map(n => ({ id: n.id, type: n.type, position: n.position, data: n.data })),
                 edges: edges.map(e => ({ id: e.id, source: e.source, sourceHandle: e.sourceHandle || 'default', target: e.target })),
+                trigger_keywords: triggerKeywords,
             };
             const res = await fetch(cfg.saveUrl, {
                 method: 'PUT',
@@ -1313,9 +1441,29 @@ function ChatbotBuilder() {
 
                 <div style={{ width: 1, height: 24, background: '#e5e7eb', margin: '0 2px', flexShrink: 0 }} />
 
+                {/* Trigger toggle */}
+                <button
+                    onClick={() => { setShowTrigger(t => !t); setShowVars(false); }}
+                    style={{
+                        ...field.smallBtn,
+                        background: showTrigger ? '#fef3c7' : '#f9fafb',
+                        color: showTrigger ? '#92400e' : '#374151',
+                        border: `1px solid ${showTrigger ? '#fde68a' : '#e5e7eb'}`,
+                        display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
+                    }}
+                >
+                    <i className="bi bi-lightning-charge" style={{ fontSize: 11 }} />
+                    Trigger
+                    {triggerKeywords.length > 0 && (
+                        <span style={{ background: BLUE, color: '#fff', borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '1px 6px' }}>
+                            {triggerKeywords.length}
+                        </span>
+                    )}
+                </button>
+
                 {/* Variables toggle */}
                 <button
-                    onClick={() => setShowVars(!showVars)}
+                    onClick={() => { setShowVars(v => !v); setShowTrigger(false); }}
                     style={{
                         ...field.smallBtn,
                         background: showVars ? BLUE_LIGHT : '#f9fafb',
@@ -1371,6 +1519,11 @@ function ChatbotBuilder() {
             {/* ── Canvas area + side panels ── */}
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
+                {/* Left: trigger panel */}
+                {showTrigger && (
+                    <TriggerPanel keywords={triggerKeywords} setKeywords={setTriggerKeywords} onClose={() => setShowTrigger(false)} />
+                )}
+
                 {/* Left: variables panel */}
                 {showVars && (
                     <VariablesPanel variables={variables} setVariables={setVariables} onClose={() => setShowVars(false)} />
@@ -1379,7 +1532,7 @@ function ChatbotBuilder() {
                 {/* Center: canvas */}
                 <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
                     <ReactFlow
-                        nodes={nodes}
+                        nodes={displayNodes}
                         edges={edges}
                         onNodesChange={onNodesChange}
                         onEdgesChange={onEdgesChange}

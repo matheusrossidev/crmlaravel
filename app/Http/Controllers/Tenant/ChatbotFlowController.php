@@ -120,6 +120,8 @@ class ChatbotFlowController extends Controller
             'edges'              => 'present|array',
             'edges.*.source'     => 'required|string',
             'edges.*.target'     => 'required|string',
+            'trigger_keywords'   => 'nullable|array',
+            'trigger_keywords.*' => 'string|max:100',
         ]);
 
         DB::transaction(function () use ($validated, $flow) {
@@ -196,6 +198,12 @@ class ChatbotFlowController extends Controller
                 );
             }
         });
+
+        // Atualizar trigger_keywords do flow se enviado pelo builder
+        if (array_key_exists('trigger_keywords', $validated)) {
+            $keywords = array_values(array_filter(array_map('trim', $validated['trigger_keywords'] ?? [])));
+            $flow->update(['trigger_keywords' => $keywords ?: null]);
+        }
 
         Log::info('Chatbot: grafo salvo', ['flow_id' => $flow->id]);
 

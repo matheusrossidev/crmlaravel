@@ -291,28 +291,6 @@ class ProcessWahaWebhook implements ShouldQueue
                 'has_picture'     => $pictureUrl !== null,
             ]);
 
-            // Auto-trigger de chatbot: se existe fluxo ativo com keyword que bate na 1ª mensagem
-            if (! $isGroup) {
-                $msgBodyLower = strtolower($body ?? '');
-                $activeFlow   = ChatbotFlow::withoutGlobalScope('tenant')
-                    ->where('tenant_id', $instance->tenant_id)
-                    ->where('is_active', true)
-                    ->whereNotNull('trigger_keywords')
-                    ->get()
-                    ->first(fn ($f) => collect($f->trigger_keywords)
-                        ->contains(fn ($kw) => str_contains($msgBodyLower, strtolower($kw))));
-
-                if ($activeFlow) {
-                    WhatsappConversation::withoutGlobalScope('tenant')
-                        ->where('id', $conversation->id)
-                        ->update(['chatbot_flow_id' => $activeFlow->id]);
-                    $conversation->chatbot_flow_id = $activeFlow->id;
-                    Log::channel('whatsapp')->info('Chatbot: flow auto-atribuído', [
-                        'conversation_id' => $conversation->id,
-                        'flow_id'         => $activeFlow->id,
-                    ]);
-                }
-            }
         } else {
             Log::channel('whatsapp')->info('Conversa encontrada', [
                 'conversation_id' => $conversation->id,
@@ -337,6 +315,30 @@ class ProcessWahaWebhook implements ShouldQueue
         [$type, $mediaUrl, $mediaMime, $mediaFilename] = $this->extractMedia($msg);
 
         $body = $msg['body'] ?? $msg['caption'] ?? null;
+
+        // Auto-trigger de chatbot: verifica keyword em QUALQUER mensagem inbound sem flow ativo.
+        // DEVE ficar APÓS a atribuição de $body (acima) para comparar a mensagem correta.
+        if (! $isFromMe && ! $isGroup && ! $conversation->chatbot_flow_id) {
+            $msgBodyLower = strtolower($body ?? '');
+            $activeFlow   = ChatbotFlow::withoutGlobalScope('tenant')
+                ->where('tenant_id', $instance->tenant_id)
+                ->where('is_active', true)
+                ->whereNotNull('trigger_keywords')
+                ->get()
+                ->first(fn ($f) => collect($f->trigger_keywords)
+                    ->contains(fn ($kw) => str_contains($msgBodyLower, strtolower($kw))));
+
+            if ($activeFlow) {
+                WhatsappConversation::withoutGlobalScope('tenant')
+                    ->where('id', $conversation->id)
+                    ->update(['chatbot_flow_id' => $activeFlow->id]);
+                $conversation->chatbot_flow_id = $activeFlow->id;
+                Log::channel('whatsapp')->info('Chatbot: flow auto-atribuído', [
+                    'conversation_id' => $conversation->id,
+                    'flow_id'         => $activeFlow->id,
+                ]);
+            }
+        }
 
         // Evitar duplicatas pelo waha_message_id
         $wahaId = $msg['id'] ?? null;
