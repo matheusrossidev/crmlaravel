@@ -121,11 +121,12 @@
                         <th>Usuários</th>
                         <th>Leads</th>
                         <th>Criada em</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($tenants as $tenant)
-                    <tr onclick="window.location='{{ route('master.tenants.show', $tenant) }}'">
+                    <tr>
                         <td>
                             <div style="font-weight:600;color:#1a1d23;">{{ $tenant->name }}</div>
                             <div style="font-size:11px;color:#9ca3af;">{{ $tenant->slug }}</div>
@@ -147,6 +148,17 @@
                             </span>
                         </td>
                         <td style="font-size:12px;color:#9ca3af;">{{ $tenant->created_at->format('d/m/Y') }}</td>
+                        <td style="text-align:right;white-space:nowrap;">
+                            <a href="{{ route('master.tenants.show', $tenant) }}"
+                               style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;
+                                      background:#eff6ff;color:#2563EB;border:1px solid #bfdbfe;
+                                      border-radius:7px;font-size:12px;font-weight:600;text-decoration:none;
+                                      transition:background .15s;"
+                               onmouseover="this.style.background='#dbeafe'"
+                               onmouseout="this.style.background='#eff6ff'">
+                                <i class="bi bi-people-fill"></i> Gerenciar
+                            </a>
+                        </td>
                     </tr>
                     @endforeach
                 </tbody>
