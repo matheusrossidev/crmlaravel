@@ -457,6 +457,15 @@
 
     .wa-bubble.deleted { font-style: italic; color: #9ca3af; font-size: 12.5px; }
 
+    /* Sender name label (group messages) */
+    .wa-sender-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #6366f1;
+        margin-bottom: 2px;
+        padding-left: 2px;
+    }
+
     /* Metadados da mensagem */
     .wa-msg-meta {
         display: flex;
@@ -1358,6 +1367,14 @@ function buildMessageEl(msg) {
         label.className = 'wa-note-label';
         label.innerHTML = '<i class="bi bi-lock-fill"></i> Nota interna — visível só para o time';
         wrap.appendChild(label);
+    }
+
+    // Sender name (only for group messages with sender_name set)
+    if (msg.direction === 'inbound' && msg.sender_name) {
+        const senderLabel = document.createElement('div');
+        senderLabel.className = 'wa-sender-label';
+        senderLabel.textContent = msg.sender_name;
+        wrap.appendChild(senderLabel);
     }
 
     const bubble = document.createElement('div');

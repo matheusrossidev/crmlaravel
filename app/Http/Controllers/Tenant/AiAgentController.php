@@ -22,13 +22,21 @@ class AiAgentController extends Controller
 
     public function create(): View
     {
-        return view('tenant.ai.agents.form', ['agent' => new AiAgent()]);
+        return view('tenant.ai.agents.create');
     }
 
-    public function store(Request $request): \Illuminate\Http\RedirectResponse
+    public function store(Request $request): JsonResponse|\Illuminate\Http\RedirectResponse
     {
         $data = $this->validated($request);
-        AiAgent::create($data);
+        $data['is_active'] = true;
+        $agent = AiAgent::create($data);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success'  => true,
+                'redirect' => route('ai.agents.edit', $agent->id),
+            ]);
+        }
 
         return redirect()->route('ai.agents.index')->with('success', 'Agente criado com sucesso.');
     }

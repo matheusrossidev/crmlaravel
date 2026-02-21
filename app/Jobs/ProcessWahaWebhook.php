@@ -70,11 +70,13 @@ class ProcessWahaWebhook implements ShouldQueue
             $from = $recipientFrom ?? $msg['to'] ?? $msg['chatId'] ?? $from;
         }
 
-        // Ignorar grupos
-        if (str_contains($from, '@g.us')) {
-            Log::channel('whatsapp')->debug('Ignorado: grupo', ['from' => $from, 'event' => $event]);
+        // Ignorar status/stories do WhatsApp (from = status@broadcast ou broadcast)
+        if (str_contains($from, 'broadcast') || str_contains($from, 'status@')) {
+            Log::channel('whatsapp')->debug('Ignorado: status broadcast', ['from' => $from, 'event' => $event]);
             return;
         }
+
+        $isGroup = str_contains($from, '@g.us');
 
         // Mensagens fromMe: podem ser (a) enviadas pelo CRM — já no banco, ignorar;
         // ou (b) enviadas diretamente do celular — salvar como outbound.
@@ -195,12 +197,28 @@ class ProcessWahaWebhook implements ShouldQueue
             }
         }
 
-        // GOWS engine: nome vem em _data.Info.PushName
-        // Fallback para engines antigas: _data.notifyName ou notifyName
-        $contactName = $msg['_data']['Info']['PushName']
-            ?? $msg['_data']['notifyName']
-            ?? $msg['notifyName']
-            ?? null;
+        // Para grupos: contact_name = nome do grupo; sender_name = quem enviou a mensagem.
+        // Para 1:1: contact_name = nome do contato; sender_name = null.
+        if ($isGroup) {
+            $contactName = $msg['chatName']
+                ?? $msg['_data']['Info']['Subject']
+                ?? $msg['_data']['Info']['Chat']
+                ?? null;
+            // Se for JID, descarta (não é nome legível)
+            if ($contactName && str_contains($contactName, '@')) {
+                $contactName = null;
+            }
+            $messageSenderName = $msg['_data']['Info']['PushName']
+                ?? $msg['_data']['notifyName']
+                ?? $msg['notifyName']
+                ?? null;
+        } else {
+            $contactName = $msg['_data']['Info']['PushName']
+                ?? $msg['_data']['notifyName']
+                ?? $msg['notifyName']
+                ?? null;
+            $messageSenderName = null;
+        }
 
         if (! $conversation) {
             $conversation = WhatsappConversation::withoutGlobalScope('tenant')->create([
@@ -258,6 +276,7 @@ class ProcessWahaWebhook implements ShouldQueue
             'conversation_id' => $conversation->id,
             'waha_message_id' => $wahaId,
             'direction'       => $isFromMe ? 'outbound' : 'inbound',
+            'sender_name'     => $messageSenderName ?? null,
             'type'            => $type,
             'body'            => $body,
             'media_url'       => $mediaUrl,

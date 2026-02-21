@@ -17,6 +17,7 @@ class WhatsappMessage extends Model
         'conversation_id',
         'waha_message_id',
         'direction',
+        'sender_name',
         'type',
         'body',
         'media_url',
