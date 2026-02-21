@@ -126,7 +126,7 @@
                 </thead>
                 <tbody>
                     @foreach($tenants as $tenant)
-                    <tr>
+                    <tr id="tenant-row-{{ $tenant->id }}">
                         <td>
                             <div style="font-weight:600;color:#1a1d23;">{{ $tenant->name }}</div>
                             <div style="font-size:11px;color:#9ca3af;">{{ $tenant->slug }}</div>
@@ -149,15 +149,16 @@
                         </td>
                         <td style="font-size:12px;color:#9ca3af;">{{ $tenant->created_at->format('d/m/Y') }}</td>
                         <td style="text-align:right;white-space:nowrap;">
-                            <a href="{{ route('master.tenants.show', $tenant) }}"
-                               style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;
-                                      background:#eff6ff;color:#2563EB;border:1px solid #bfdbfe;
-                                      border-radius:7px;font-size:12px;font-weight:600;text-decoration:none;
-                                      transition:background .15s;"
-                               onmouseover="this.style.background='#dbeafe'"
-                               onmouseout="this.style.background='#eff6ff'">
-                                <i class="bi bi-people-fill"></i> Gerenciar
-                            </a>
+                            <button onclick="deleteTenant({{ $tenant->id }}, '{{ addslashes($tenant->name) }}')"
+                                style="display:inline-flex;align-items:center;justify-content:center;
+                                       width:30px;height:30px;border-radius:7px;cursor:pointer;
+                                       border:1px solid #fecaca;background:#fef2f2;color:#dc2626;
+                                       font-size:13px;transition:all .15s;"
+                                title="Excluir empresa"
+                                onmouseover="this.style.background='#dc2626';this.style.color='#fff'"
+                                onmouseout="this.style.background='#fef2f2';this.style.color='#dc2626'">
+                                <i class="bi bi-trash3"></i>
+                            </button>
                         </td>
                     </tr>
                     @endforeach
@@ -220,6 +221,30 @@
 <script>
 const storeUrl = "{{ route('master.tenants.store') }}";
 const csrf     = document.querySelector('meta[name=csrf-token]').content;
+
+function deleteTenant(id, name) {
+    confirmAction({
+        title: 'Excluir empresa',
+        message: `Excluir a empresa <strong>${escapeHtml(name)}</strong> e TODOS os seus dados?`,
+        confirmText: 'Excluir',
+        onConfirm: async () => {
+            try {
+                const res  = await fetch(`/master/empresas/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                });
+                const data = await res.json();
+                if (data.success) {
+                    toastr.success('Empresa excluída.');
+                    const row = document.getElementById(`tenant-row-${id}`);
+                    if (row) row.remove();
+                } else {
+                    toastr.error(data.message ?? 'Erro ao excluir.');
+                }
+            } catch { toastr.error('Erro de conexão.'); }
+        },
+    });
+}
 
 async function createTenant() {
     clearErrors(['errTName','errTEmail','errTPwd']);
