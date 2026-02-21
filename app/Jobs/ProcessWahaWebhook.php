@@ -56,6 +56,18 @@ class ProcessWahaWebhook implements ShouldQueue
         $msg   = $this->payload['payload'] ?? [];
         $event = $this->payload['event'] ?? '';
 
+        // Deduplicação: WAHA envia 'message' E 'message.any' para cada mensagem.
+        // Usamos Cache::add() (atômico no Redis) para garantir que apenas o
+        // primeiro worker processa o msg_id — o segundo retorna imediatamente.
+        $msgIdForLock = $msg['id'] ?? null;
+        if ($msgIdForLock && ! Cache::add("waha:processing:{$msgIdForLock}", 1, 10)) {
+            Log::channel('whatsapp')->debug('Evento duplicado ignorado (message/message.any)', [
+                'id'    => $msgIdForLock,
+                'event' => $event,
+            ]);
+            return;
+        }
+
         $from     = $msg['from'] ?? '';
         $isFromMe = ! empty($msg['fromMe']);
 
