@@ -101,7 +101,11 @@ class AiAgentService
             }
 
             // Mensagem com imagem — tentar incluir base64 (limitado a MAX_IMAGES_IN_HISTORY)
-            if ($msg->type === 'image' && $imageCount < self::MAX_IMAGES_IN_HISTORY) {
+            $supportedImageMimes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+            $imageMime = $msg->media_mime ?: 'image/jpeg';
+            $isSupportedImage = in_array(strtolower($imageMime), $supportedImageMimes, true);
+
+            if ($msg->type === 'image' && $isSupportedImage && $imageCount < self::MAX_IMAGES_IN_HISTORY) {
                 $base64 = $this->fetchImageBase64($msg->media_url);
 
                 if ($base64 !== null) {
