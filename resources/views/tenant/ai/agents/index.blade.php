@@ -67,11 +67,11 @@
     .btn-action.danger:hover { background: #fee2e2; border-color: #fca5a5; color: #ef4444; }
 
     .empty-state {
-        text-align: center; padding: 64px 24px; color: #9ca3af;
-        background: #fff; border: 1px solid #e8eaf0; border-radius: 14px;
+        text-align: center; padding: 80px 20px; color: #9ca3af;
     }
-    .empty-state i { font-size: 42px; opacity: .2; display: block; margin-bottom: 14px; }
-    .empty-state p { font-size: 14px; margin-bottom: 18px; }
+    .empty-state i  { font-size: 52px; opacity: .2; margin-bottom: 14px; display: block; }
+    .empty-state h3 { font-size: 16px; color: #374151; margin: 0 0 6px; }
+    .empty-state p  { font-size: 13.5px; margin: 0 0 20px; }
 </style>
 @endpush
 
@@ -91,10 +91,13 @@
     @if($agents->isEmpty())
     <div class="empty-state">
         <i class="bi bi-robot"></i>
-        <p>Nenhum agente criado ainda.</p>
-        <a href="{{ route('ai.agents.create') }}" class="btn-primary-sm">
-            <i class="bi bi-plus-lg"></i> Criar primeiro agente
-        </a>
+        <h3>Nenhum agente criado ainda</h3>
+        <p>
+            Crie um agente de IA para responder automaticamente nos seus chats.<br>
+            <a href="{{ route('ai.agents.create') }}" style="color:#3B82F6;font-weight:600;">
+                Criar primeiro agente →
+            </a>
+        </p>
     </div>
     @else
     <div class="agents-grid">

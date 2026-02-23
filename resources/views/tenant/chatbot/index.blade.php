@@ -100,71 +100,109 @@
     .btn-delete-flow { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }
     .btn-delete-flow:hover { background: #fee2e2 !important; border-color: #fca5a5 !important; color: #ef4444 !important; }
 
-    /* ── Test Chat Modal ────────────────────────────────────────────────────── */
-    .tcm-overlay {
-        position: fixed; inset: 0; background: rgba(0,0,0,.45);
-        z-index: 2000; display: flex; align-items: center; justify-content: center;
+    /* ── Test Chat Sidebar ──────────────────────────────────────────────────── */
+    .tcm-backdrop {
+        position: fixed; inset: 0; background: rgba(0,0,0,.18);
+        z-index: 1999; opacity: 0; pointer-events: none;
+        transition: opacity .32s ease;
     }
-    .tcm-box {
-        background: #fff; border-radius: 16px; width: 420px; max-width: 95vw;
-        display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.18);
-        max-height: 85vh; overflow: hidden;
+    .tcm-backdrop.open { opacity: 1; pointer-events: all; }
+
+    .tcm-sidebar {
+        position: fixed; top: 0; right: 0; width: 380px; max-width: 95vw;
+        height: 100vh; background: #fff;
+        box-shadow: -6px 0 40px rgba(0,0,0,.1);
+        display: flex; flex-direction: column; z-index: 2000;
+        transform: translateX(100%);
+        transition: transform .35s cubic-bezier(.4,0,.2,1);
+        overflow: hidden;
     }
+    .tcm-sidebar.open { transform: translateX(0); }
+
     .tcm-header {
         display: flex; align-items: center; gap: 10px;
-        padding: 14px 18px; border-bottom: 1px solid #f0f2f7;
-        flex-shrink: 0;
+        padding: 16px 18px; border-bottom: 1px solid #f0f2f7; flex-shrink: 0;
+        background: #fff;
     }
-    .tcm-header h3 { font-size: 14px; font-weight: 700; color: #1a1d23; flex: 1; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .tcm-header button { background: none; border: none; font-size: 18px; color: #9ca3af; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
-    .tcm-header button:hover { background: #f3f4f6; color: #374151; }
+    .tcm-header-icon {
+        width: 34px; height: 34px; border-radius: 10px; background: #eff6ff;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; color: #3B82F6; flex-shrink: 0;
+    }
+    .tcm-header-info { flex: 1; min-width: 0; }
+    .tcm-header-info h3 { font-size: 13px; font-weight: 700; color: #1a1d23; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tcm-header-info span { font-size: 11px; color: #9ca3af; }
+    .tcm-header-btn { background: none; border: none; font-size: 18px; color: #9ca3af; cursor: pointer; padding: 4px 6px; border-radius: 7px; line-height: 1; }
+    .tcm-header-btn:hover { background: #f3f4f6; color: #374151; }
 
     .tcm-messages {
-        flex: 1; overflow-y: auto; padding: 14px 16px;
-        display: flex; flex-direction: column; gap: 8px;
-        background: #f8fafc;
+        flex: 1; overflow-y: auto; padding: 16px 14px;
+        display: flex; flex-direction: column; gap: 6px;
+        background: #f8fafc; scroll-behavior: smooth;
     }
-    .tcm-msg-bot, .tcm-msg-user, .tcm-msg-system { max-width: 80%; }
+    .tcm-messages::-webkit-scrollbar { width: 4px; }
+    .tcm-messages::-webkit-scrollbar-track { background: transparent; }
+    .tcm-messages::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+
+    @keyframes tcm-in {
+        from { opacity: 0; transform: translateY(8px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .tcm-msg-bot, .tcm-msg-user, .tcm-msg-system {
+        max-width: 82%; animation: tcm-in .22s ease forwards;
+    }
     .tcm-msg-bot   { align-self: flex-start; }
     .tcm-msg-user  { align-self: flex-end; }
-    .tcm-msg-system { align-self: center; max-width: 95%; }
+    .tcm-msg-system { align-self: center; max-width: 96%; }
 
     .tcm-bubble {
-        padding: 9px 13px; border-radius: 14px;
-        font-size: 13px; line-height: 1.5; word-break: break-word;
+        padding: 9px 13px; border-radius: 16px;
+        font-size: 13px; line-height: 1.55; word-break: break-word;
     }
-    .tcm-msg-bot  .tcm-bubble { background: #fff; border: 1px solid #e8eaf0; border-bottom-left-radius: 4px; color: #1a1d23; }
+    .tcm-msg-bot  .tcm-bubble { background: #fff; border: 1px solid #e8eaf0; border-bottom-left-radius: 4px; color: #1a1d23; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
     .tcm-msg-user .tcm-bubble { background: #3B82F6; color: #fff; border-bottom-right-radius: 4px; }
-    .tcm-msg-system .tcm-bubble { background: #f3f4f6; color: #6b7280; font-size: 11.5px; border-radius: 8px; text-align: center; }
+    .tcm-msg-system .tcm-bubble { background: #f0f9ff; color: #6b7280; font-size: 11.5px; border-radius: 8px; text-align: center; border: 1px dashed #bfdbfe; padding: 5px 12px; }
 
-    .tcm-img { border-radius: 10px; overflow: hidden; max-width: 240px; }
+    /* Typing dots */
+    .tcm-typing-bubble { display: flex; gap: 5px; align-items: center; padding: 11px 16px !important; }
+    @keyframes tcm-dot { 0%, 80%, 100% { transform: scale(.7); opacity: .4; } 40% { transform: scale(1); opacity: 1; } }
+    .tcm-dot { width: 7px; height: 7px; border-radius: 50%; background: #9ca3af; animation: tcm-dot 1.3s infinite; display: inline-block; }
+    .tcm-dot:nth-child(2) { animation-delay: .2s; }
+    .tcm-dot:nth-child(3) { animation-delay: .4s; }
+
+    .tcm-img { border-radius: 12px; overflow: hidden; max-width: 220px; }
     .tcm-img img { width: 100%; display: block; }
     .tcm-img-caption { font-size: 12px; color: #6b7280; padding: 5px 2px 0; }
 
     .tcm-footer {
-        padding: 12px 14px; border-top: 1px solid #f0f2f7; flex-shrink: 0;
-        display: flex; flex-direction: column; gap: 8px;
+        padding: 12px 14px 16px; border-top: 1px solid #f0f2f7; flex-shrink: 0;
+        display: flex; flex-direction: column; gap: 9px; background: #fff;
     }
-    .tcm-input-row { display: flex; gap: 8px; }
+    .tcm-input-row { display: flex; gap: 7px; }
     .tcm-input {
-        flex: 1; border: 1.5px solid #e8eaf0; border-radius: 10px;
-        padding: 8px 12px; font-size: 13px; outline: none;
-        resize: none; height: 38px; line-height: 1.4;
+        flex: 1; border: 1.5px solid #e8eaf0; border-radius: 12px;
+        padding: 9px 12px; font-size: 13px; outline: none;
+        resize: none; min-height: 38px; max-height: 90px; line-height: 1.45;
+        transition: border-color .15s;
     }
     .tcm-input:focus { border-color: #3B82F6; }
     .tcm-send {
-        background: #3B82F6; color: #fff; border: none; border-radius: 10px;
-        padding: 0 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+        background: #3B82F6; color: #fff; border: none; border-radius: 12px;
+        padding: 0 16px; font-size: 14px; cursor: pointer; align-self: flex-end;
+        height: 38px; transition: background .15s, transform .1s;
     }
     .tcm-send:hover { background: #2563eb; }
-    .tcm-send:disabled { opacity: .5; cursor: default; }
+    .tcm-send:active { transform: scale(.95); }
+    .tcm-send:disabled { opacity: .45; cursor: default; transform: none; }
+    .tcm-bottom-row { display: flex; align-items: center; gap: 10px; }
     .tcm-restart {
         background: none; border: 1.5px solid #e8eaf0; border-radius: 8px;
-        padding: 5px 12px; font-size: 12px; color: #6b7280; cursor: pointer;
-        display: flex; align-items: center; gap: 5px; align-self: flex-start;
+        padding: 5px 11px; font-size: 12px; color: #6b7280; cursor: pointer;
+        display: flex; align-items: center; gap: 5px; transition: all .15s;
     }
-    .tcm-restart:hover { background: #f3f4f6; }
-    .tcm-done-msg { font-size: 12px; color: #6b7280; text-align: center; padding: 4px 0 0; }
+    .tcm-restart:hover { background: #f3f4f6; border-color: #d1d5db; }
+    .tcm-done-msg { font-size: 12px; color: #059669; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+    .tcm-hint { font-size: 11px; color: #9ca3af; }
 </style>
 @endpush
 
@@ -176,21 +214,26 @@ const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 let tcmUrl   = '';
 let tcmState = { node_id: null, vars: {} };
 let tcmBusy  = false;
+let _typingCtr = 0;
+
+const tcmSleep = ms => new Promise(r => setTimeout(r, ms));
 
 function openTestChat(flowId, flowName, url) {
     tcmUrl   = url;
     tcmState = { node_id: null, vars: {} };
-    document.getElementById('tcmTitle').textContent    = flowName;
-    document.getElementById('tcmMessages').innerHTML   = '';
+    document.getElementById('tcmTitle').textContent     = flowName;
+    document.getElementById('tcmMessages').innerHTML    = '';
     document.getElementById('tcmDoneMsg').style.display = 'none';
-    document.getElementById('tcmInput').disabled       = false;
-    document.getElementById('tcmSendBtn').disabled     = false;
-    document.getElementById('tcmOverlay').style.display = 'flex';
+    document.getElementById('tcmInput').disabled        = false;
+    document.getElementById('tcmSendBtn').disabled      = false;
+    document.getElementById('tcmBackdrop').classList.add('open');
+    document.getElementById('tcmSidebar').classList.add('open');
     tcmCall(null);
 }
 
 function closeTestChat() {
-    document.getElementById('tcmOverlay').style.display = 'none';
+    document.getElementById('tcmBackdrop').classList.remove('open');
+    document.getElementById('tcmSidebar').classList.remove('open');
 }
 
 function tcmRestart() {
@@ -214,39 +257,64 @@ function tcmSend() {
 async function tcmCall(message) {
     tcmBusy = true;
     document.getElementById('tcmSendBtn').disabled = true;
-    const typingId = tcmAppendTyping();
 
+    // Initial network-loading indicator
+    const loadingId = tcmAppendTyping();
+    let data;
     try {
-        const res  = await fetch(tcmUrl, {
+        const res = await fetch(tcmUrl, {
             method:  'POST',
             headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json' },
             body:    JSON.stringify({ message, state: tcmState }),
         });
-        const data = await res.json();
-        tcmRemoveTyping(typingId);
-
-        for (const msg of data.messages ?? []) {
-            if (msg.type === 'text')   tcmAppendMessage('bot', msg.content);
-            if (msg.type === 'image')  tcmAppendImage(msg.url, msg.caption);
-            if (msg.type === 'system') tcmAppendSystem(msg.content);
-        }
-
-        tcmState = data.state ?? { node_id: null, vars: {} };
-
-        if (data.done) {
-            document.getElementById('tcmDoneMsg').style.display = 'inline';
-            document.getElementById('tcmInput').disabled        = true;
-            document.getElementById('tcmSendBtn').disabled      = true;
-        } else {
-            document.getElementById('tcmSendBtn').disabled = false;
-            document.getElementById('tcmInput').focus();
-        }
+        data = await res.json();
     } catch (e) {
-        tcmRemoveTyping(typingId);
+        tcmRemoveTyping(loadingId);
         tcmAppendSystem('❌ Erro ao comunicar com o servidor.');
         document.getElementById('tcmSendBtn').disabled = false;
+        tcmBusy = false;
+        return;
+    }
+    tcmRemoveTyping(loadingId);
+
+    await tcmShowMessages(data.messages ?? []);
+
+    tcmState = data.state ?? { node_id: null, vars: {} };
+
+    if (data.done) {
+        document.getElementById('tcmDoneMsg').style.display = 'flex';
+        document.getElementById('tcmInput').disabled        = true;
+        document.getElementById('tcmSendBtn').disabled      = true;
+    } else {
+        document.getElementById('tcmSendBtn').disabled = false;
+        document.getElementById('tcmInput').focus();
     }
     tcmBusy = false;
+}
+
+// Displays messages one-by-one with per-message typing animation + natural delays
+async function tcmShowMessages(messages) {
+    for (let i = 0; i < messages.length; i++) {
+        const msg   = messages[i];
+        const isBot = msg.type === 'text' || msg.type === 'image';
+
+        if (isBot) {
+            const tid = tcmAppendTyping();
+            // Typing delay proportional to text length (600ms – 1800ms)
+            const ms  = msg.type === 'text'
+                ? Math.min(1800, Math.max(600, (msg.content?.length ?? 20) * 25))
+                : 900;
+            await tcmSleep(ms);
+            tcmRemoveTyping(tid);
+        }
+
+        if (msg.type === 'text')   tcmAppendMessage('bot', msg.content);
+        if (msg.type === 'image')  tcmAppendImage(msg.url, msg.caption);
+        if (msg.type === 'system') tcmAppendSystem(msg.content);
+
+        // Short pause between consecutive messages
+        if (i < messages.length - 1) await tcmSleep(isBot ? 300 : 80);
+    }
 }
 
 function tcmAppendMessage(side, text) {
@@ -285,14 +353,13 @@ function tcmAppendSystem(text) {
     box.scrollTop = box.scrollHeight;
 }
 
-let _typingCtr = 0;
 function tcmAppendTyping() {
-    const id   = 'tcm-typing-' + (++_typingCtr);
+    const id   = 'tcm-t-' + (++_typingCtr);
     const box  = document.getElementById('tcmMessages');
     const wrap = document.createElement('div');
-    wrap.id    = id;
+    wrap.id        = id;
     wrap.className = 'tcm-msg-bot';
-    wrap.innerHTML = '<div class="tcm-bubble" style="color:#9ca3af;letter-spacing:3px;font-size:18px;">···</div>';
+    wrap.innerHTML = '<div class="tcm-bubble tcm-typing-bubble"><span class="tcm-dot"></span><span class="tcm-dot"></span><span class="tcm-dot"></span></div>';
     box.appendChild(wrap);
     box.scrollTop = box.scrollHeight;
     return id;
@@ -379,32 +446,35 @@ function tcmRemoveTyping(id) {
         </div>
     @endif
 
-    {{-- ── Test Chat Modal ──────────────────────────────────────────────────── --}}
-    <div id="tcmOverlay" class="tcm-overlay" style="display:none;" onclick="if(event.target===this)closeTestChat()">
-        <div class="tcm-box">
-            <div class="tcm-header">
-                <i class="bi bi-robot" style="font-size:18px;color:#3B82F6;flex-shrink:0;"></i>
+    {{-- ── Test Chat Sidebar ──────────────────────────────────────────────────── --}}
+    <div id="tcmBackdrop" class="tcm-backdrop" onclick="closeTestChat()"></div>
+    <div id="tcmSidebar" class="tcm-sidebar">
+        <div class="tcm-header">
+            <div class="tcm-header-icon"><i class="bi bi-robot"></i></div>
+            <div class="tcm-header-info">
                 <h3 id="tcmTitle">Testando fluxo</h3>
-                <button onclick="closeTestChat()" title="Fechar"><i class="bi bi-x-lg"></i></button>
+                <span>Simulação · nenhuma mensagem real enviada</span>
             </div>
-            <div id="tcmMessages" class="tcm-messages"></div>
-            <div class="tcm-footer">
-                <div class="tcm-input-row">
-                    <textarea id="tcmInput" class="tcm-input" placeholder="Digite sua resposta…" rows="1"
-                        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();tcmSend();}"></textarea>
-                    <button id="tcmSendBtn" class="tcm-send" onclick="tcmSend()">
-                        <i class="bi bi-send-fill"></i>
-                    </button>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <button class="tcm-restart" onclick="tcmRestart()">
-                        <i class="bi bi-arrow-counterclockwise"></i> Reiniciar
-                    </button>
-                    <span id="tcmDoneMsg" class="tcm-done-msg" style="display:none;">
-                        Fluxo concluído.
-                    </span>
-                </div>
+            <button class="tcm-header-btn" onclick="closeTestChat()" title="Fechar"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div id="tcmMessages" class="tcm-messages"></div>
+        <div class="tcm-footer">
+            <div class="tcm-input-row">
+                <textarea id="tcmInput" class="tcm-input" placeholder="Digite sua resposta…" rows="1"
+                    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();tcmSend();}"></textarea>
+                <button id="tcmSendBtn" class="tcm-send" onclick="tcmSend()">
+                    <i class="bi bi-send-fill"></i>
+                </button>
             </div>
+            <div class="tcm-bottom-row">
+                <button class="tcm-restart" onclick="tcmRestart()">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reiniciar
+                </button>
+                <span id="tcmDoneMsg" class="tcm-done-msg" style="display:none;">
+                    <i class="bi bi-check-circle"></i> Fluxo concluído
+                </span>
+            </div>
+            <div class="tcm-hint">Enter para enviar &middot; Shift+Enter para nova linha</div>
         </div>
     </div>
 
