@@ -153,37 +153,45 @@ class IntegrationController extends Controller
         $tenant  = auth()->user()->tenant;
         $session = 'tenant_' . $tenant->id;
 
-        $instance = WhatsappInstance::firstOrCreate(
-            ['tenant_id' => $tenant->id],
-            ['session_name' => $session, 'status' => 'disconnected']
-        );
+        try {
+            $instance = WhatsappInstance::firstOrCreate(
+                ['tenant_id' => $tenant->id],
+                ['session_name' => $session, 'status' => 'disconnected']
+            );
 
-        // Monta webhook URL usando APP_URL para garantir https://
-        $webhookUrl    = rtrim(config('app.url'), '/') . '/webhook/whatsapp';
-        $webhookSecret = (string) config('services.waha.webhook_secret', '');
+            // Monta webhook URL usando APP_URL para garantir https://
+            $webhookUrl    = rtrim(config('app.url'), '/') . '/webhook/whatsapp';
+            $webhookSecret = (string) config('services.waha.webhook_secret', '');
 
-        $waha   = new WahaService($instance->session_name);
-        $result = $waha->createSession($webhookUrl, $webhookSecret);
+            $waha   = new WahaService($instance->session_name);
+            $result = $waha->createSession($webhookUrl, $webhookSecret);
 
-        if (isset($result['error'])) {
-            if (($result['status'] ?? 0) === 422) {
-                // Sessão já existe no WAHA — atualiza webhook e (re)inicia
-                $waha->patchSession($webhookUrl, $webhookSecret);
-                $waha->startSession();
+            if (isset($result['error'])) {
+                if (($result['status'] ?? 0) === 422) {
+                    // Sessão já existe no WAHA — atualiza webhook e (re)inicia
+                    $waha->patchSession($webhookUrl, $webhookSecret);
+                    $waha->startSession();
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Falha ao criar sessão no WAHA: ' . ($result['body'] ?? 'erro desconhecido'),
+                    ], 500);
+                }
             } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Falha ao criar sessão no WAHA: ' . ($result['body'] ?? 'erro desconhecido'),
-                ], 500);
+                // Sessão criada com sucesso — precisa iniciar (WAHA cria em estado STOPPED)
+                $waha->startSession();
             }
-        } else {
-            // Sessão criada com sucesso — precisa iniciar (WAHA cria em estado STOPPED)
-            $waha->startSession();
+
+            $instance->update(['status' => 'qr']);
+
+            return response()->json(['success' => true, 'session_name' => $instance->session_name]);
+
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao conectar com o WAHA: ' . $e->getMessage(),
+            ], 500);
         }
-
-        $instance->update(['status' => 'qr']);
-
-        return response()->json(['success' => true, 'session_name' => $instance->session_name]);
     }
 
     public function getWhatsappQr(): JsonResponse
