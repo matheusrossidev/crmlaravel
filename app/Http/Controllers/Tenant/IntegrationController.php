@@ -421,70 +421,115 @@ class IntegrationController extends Controller
 
     public function callbackInstagram(): RedirectResponse
     {
+        Log::channel('instagram')->info('OAuth callback iniciado', [
+            'has_code'  => (bool) request()->get('code'),
+            'has_error' => (bool) request()->get('error'),
+            'error_msg' => request()->get('error_description'),
+        ]);
+
         $code = request()->get('code');
 
         if (! $code) {
+            $errorDesc = request()->get('error_description', 'Autorização negada pelo Instagram.');
+            Log::channel('instagram')->warning('OAuth callback sem code', ['error' => $errorDesc]);
             return redirect()->route('settings.integrations.index')
                 ->with('error', 'Autorização negada pelo Instagram.');
         }
 
-        // 1. Trocar code por short-lived token
-        $tokenResponse = Http::asForm()->post('https://api.instagram.com/oauth/access_token', [
-            'client_id'     => config('services.instagram.client_id'),
-            'client_secret' => config('services.instagram.client_secret'),
-            'grant_type'    => 'authorization_code',
-            'redirect_uri'  => config('services.instagram.redirect'),
-            'code'          => $code,
-        ]);
+        try {
+            // 1. Trocar code por short-lived token
+            Log::channel('instagram')->info('Trocando code por token…');
+            $tokenResponse = Http::timeout(15)->asForm()->post('https://api.instagram.com/oauth/access_token', [
+                'client_id'     => config('services.instagram.client_id'),
+                'client_secret' => config('services.instagram.client_secret'),
+                'grant_type'    => 'authorization_code',
+                'redirect_uri'  => config('services.instagram.redirect'),
+                'code'          => $code,
+            ]);
 
-        if ($tokenResponse->failed()) {
-            Log::error('Instagram OAuth token exchange failed', ['body' => $tokenResponse->body()]);
+            Log::channel('instagram')->info('Resposta token exchange', [
+                'status' => $tokenResponse->status(),
+                'body'   => $tokenResponse->body(),
+            ]);
+
+            if ($tokenResponse->failed()) {
+                return redirect()->route('settings.integrations.index')
+                    ->with('error', 'Falha ao obter token do Instagram: ' . $tokenResponse->body());
+            }
+
+            $shortToken  = $tokenResponse->json('access_token');
+            $igAccountId = (string) ($tokenResponse->json('user_id') ?? '');
+
+            if (! $shortToken) {
+                Log::channel('instagram')->error('Token não retornado pela API', ['body' => $tokenResponse->body()]);
+                return redirect()->route('settings.integrations.index')
+                    ->with('error', 'Instagram não retornou token de acesso.');
+            }
+
+            // 2. Trocar por long-lived token (60 dias)
+            Log::channel('instagram')->info('Trocando por long-lived token…');
+            $longTokenResponse = Http::timeout(15)->get('https://graph.instagram.com/access_token', [
+                'grant_type'    => 'ig_exchange_token',
+                'client_secret' => config('services.instagram.client_secret'),
+                'access_token'  => $shortToken,
+            ]);
+
+            Log::channel('instagram')->info('Resposta long-lived token', [
+                'status' => $longTokenResponse->status(),
+                'body'   => $longTokenResponse->body(),
+            ]);
+
+            $accessToken = $longTokenResponse->successful()
+                ? ($longTokenResponse->json('access_token') ?? $shortToken)
+                : $shortToken;
+
+            $expiresIn = $longTokenResponse->json('expires_in');
+
+            // 3. Buscar username/foto da conta
+            Log::channel('instagram')->info('Buscando perfil da conta…');
+            $service    = new InstagramService($accessToken);
+            $me         = $service->getMe();
+            $username   = $me['username'] ?? null;
+            $pictureUrl = $me['profile_picture_url'] ?? null;
+
+            Log::channel('instagram')->info('Perfil obtido', [
+                'ig_account_id' => $igAccountId,
+                'username'      => $username,
+            ]);
+
+            $tenant = auth()->user()->tenant;
+
+            InstagramInstance::withoutGlobalScope('tenant')->updateOrCreate(
+                ['tenant_id' => $tenant->id],
+                [
+                    'instagram_account_id' => $igAccountId,
+                    'username'             => $username,
+                    'profile_picture_url'  => $pictureUrl,
+                    'access_token'         => encrypt($accessToken),
+                    'token_expires_at'     => $expiresIn
+                        ? now()->addSeconds((int) $expiresIn)
+                        : now()->addDays(60),
+                    'status'               => 'connected',
+                ]
+            );
+
+            Log::channel('instagram')->info('Instagram conectado com sucesso', [
+                'tenant_id' => $tenant->id,
+                'username'  => $username,
+            ]);
+
             return redirect()->route('settings.integrations.index')
-                ->with('error', 'Falha ao obter token do Instagram.');
+                ->with('success', 'Instagram conectado com sucesso!');
+
+        } catch (\Throwable $e) {
+            Log::channel('instagram')->error('OAuth callback falhou', [
+                'error' => $e->getMessage(),
+                'file'  => $e->getFile() . ':' . $e->getLine(),
+                'trace' => mb_substr($e->getTraceAsString(), 0, 1000),
+            ]);
+            return redirect()->route('settings.integrations.index')
+                ->with('error', 'Erro ao conectar Instagram: ' . $e->getMessage());
         }
-
-        $shortToken  = $tokenResponse->json('access_token');
-        $igAccountId = (string) $tokenResponse->json('user_id');
-
-        // 2. Trocar por long-lived token (60 dias)
-        $longTokenResponse = Http::get('https://graph.instagram.com/access_token', [
-            'grant_type'        => 'ig_exchange_token',
-            'client_secret'     => config('services.instagram.client_secret'),
-            'access_token'      => $shortToken,
-        ]);
-
-        $accessToken = $longTokenResponse->successful()
-            ? ($longTokenResponse->json('access_token') ?? $shortToken)
-            : $shortToken;
-
-        $expiresIn = $longTokenResponse->json('expires_in'); // seconds
-
-        // 3. Buscar username/foto da conta
-        $service    = new InstagramService($accessToken);
-        $me         = $service->getMe();
-        $username   = $me['username'] ?? null;
-        $pictureUrl = $me['profile_picture_url'] ?? null;
-
-        $tenant = auth()->user()->tenant;
-
-        InstagramInstance::withoutGlobalScope('tenant')->updateOrCreate(
-            ['tenant_id' => $tenant->id],
-            [
-                'instagram_account_id' => $igAccountId,
-                'username'             => $username,
-                'profile_picture_url'  => $pictureUrl,
-                'access_token'         => encrypt($accessToken),
-                'token_expires_at'     => $expiresIn
-                    ? now()->addSeconds((int) $expiresIn)
-                    : now()->addDays(60),
-                'status'               => 'connected',
-            ]
-        );
-
-        Log::info('Instagram conectado', ['tenant_id' => $tenant->id, 'username' => $username]);
-
-        return redirect()->route('settings.integrations.index')
-            ->with('success', 'Instagram conectado com sucesso!');
     }
 
     public function disconnectInstagram(): JsonResponse
