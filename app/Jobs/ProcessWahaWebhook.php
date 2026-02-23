@@ -400,6 +400,17 @@ class ProcessWahaWebhook implements ShouldQueue
 
         // Transcrever áudio para texto via Whisper (apenas mensagens inbound com agente de IA ativo)
         // Whisper é um serviço OpenAI independente do provider principal do LLM
+        if ($type === 'audio') {
+            Log::channel('whatsapp')->info('Whisper: diagnóstico de áudio recebido', [
+                'message_id'      => $message->id,
+                'is_from_me'      => $isFromMe,
+                'has_media_url'   => ! empty($mediaUrl),
+                'media_url'       => $mediaUrl ? mb_substr($mediaUrl, 0, 80) : null,
+                'ai_agent_id'     => $conversation->ai_agent_id,
+                'whisper_key_set' => (string) config('ai.whisper_api_key') !== '',
+            ]);
+        }
+
         if (! $isFromMe && $type === 'audio' && $mediaUrl && $conversation->ai_agent_id
             && (string) config('ai.whisper_api_key') !== ''
         ) {
