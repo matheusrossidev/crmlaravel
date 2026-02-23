@@ -1235,16 +1235,8 @@ $pageIcon = 'chat-dots';
     const renderedMsgIds = new Set(); // evita duplicatas quando polling e histórico coexistem
 
     const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
-    const TENANT_ID = {
-        {
-            auth() - > user() - > tenant_id ?? 'null'
-        }
-    };
-    const CURRENT_USER_ID = {
-        {
-            auth() - > id() ?? 'null'
-        }
-    };
+    const TENANT_ID       = {{ auth()->user()->tenant_id ?? 'null' }};
+    const CURRENT_USER_ID = {{ auth()->id() ?? 'null' }};
     const PIPELINES = @json($pipelines ?? []);
 
     // Tags predefinidas e mapa de cores { 'VIP': '#F59E0B', ... }

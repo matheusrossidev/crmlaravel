@@ -663,6 +663,13 @@
             <span class="nav-label">Chatbot</span>
         </a>
 
+        <a href="{{ route('ai.agents.index') }}"
+           class="nav-item {{ request()->routeIs('ai.agents.*') ? 'active' : '' }}"
+           title="Agentes de IA">
+            <i class="bi bi-robot nav-icon"></i>
+            <span class="nav-label">Agentes de IA</span>
+        </a>
+
         @php
             $settingsOpen = request()->routeIs('settings.*');
         @endphp
