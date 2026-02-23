@@ -71,11 +71,11 @@ class InstagramService
     /**
      * Subscribe this account to receive webhook events (required after OAuth).
      * Without this call, Meta does NOT send DM webhooks for this account.
-     * POST /me/subscribed_apps?subscribed_fields=messages
+     * Must be sent as form-urlencoded (not JSON) — that's why we use asForm().
      */
     public function subscribeToWebhooks(): array
     {
-        return $this->post('/me/subscribed_apps', [
+        return $this->postForm('/me/subscribed_apps', [
             'subscribed_fields' => 'messages',
         ]);
     }
@@ -130,6 +130,23 @@ class InstagramService
 
         if ($response->failed()) {
             Log::channel('instagram')->warning('InstagramService POST failed', [
+                'path'   => $path,
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+            return ['error' => true, 'status' => $response->status(), 'body' => $response->body()];
+        }
+
+        return $response->json() ?? [];
+    }
+
+    private function postForm(string $path, array $data): array
+    {
+        $data['access_token'] = $this->accessToken;
+        $response = $this->client()->asForm()->post($path, $data);
+
+        if ($response->failed()) {
+            Log::channel('instagram')->warning('InstagramService POST (form) failed', [
                 'path'   => $path,
                 'status' => $response->status(),
                 'body'   => $response->body(),

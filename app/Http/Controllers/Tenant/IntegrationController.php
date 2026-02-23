@@ -524,6 +524,21 @@ class IntegrationController extends Controller
                 'username'  => $username,
             ]);
 
+            // Subscrever conta para receber eventos de webhook (form-urlencoded)
+            try {
+                $subResult = $service->subscribeToWebhooks();
+                if (! empty($subResult['error'])) {
+                    Log::channel('instagram')->warning('Falha ao subscrever webhooks (não crítico)', [
+                        'response' => $subResult,
+                    ]);
+                } else {
+                    Log::channel('instagram')->info('Webhook subscribed', ['result' => $subResult]);
+                }
+            } catch (\Throwable $subEx) {
+                Log::channel('instagram')->warning('Exceção ao subscrever webhooks (não crítico)', [
+                    'error' => $subEx->getMessage(),
+                ]);
+            }
 
             return redirect()->route('settings.integrations.index')
                 ->with('success', 'Instagram conectado com sucesso!');
