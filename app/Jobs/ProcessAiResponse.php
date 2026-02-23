@@ -19,9 +19,6 @@ class ProcessAiResponse implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /** Fila dedicada para respostas de IA (prioridade separada). */
-    public $queue = 'ai';
-
     public int $tries = 1;   // Sem retry — se falhou, a janela de debounce já passou
 
     public int $timeout = 120;
@@ -29,7 +26,9 @@ class ProcessAiResponse implements ShouldQueue
     public function __construct(
         public readonly int $conversationId,
         public readonly int $version = 0,
-    ) {}
+    ) {
+        $this->queue = 'ai'; // via Queueable trait — evita conflito de tipo com ?string
+    }
 
     public function handle(): void
     {
