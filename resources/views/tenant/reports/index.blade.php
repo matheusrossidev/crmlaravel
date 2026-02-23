@@ -275,6 +275,114 @@
         background: #EF4444;
         border-radius: 99px;
     }
+
+    /* ── Funil de Conversão Visual ───────────────────────────────── */
+    .funnel-visual {
+        display: flex;
+        gap: 6px;
+        align-items: stretch;
+        margin-bottom: 20px;
+    }
+
+    .funnel-visual-step {
+        flex: 1;
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .funnel-visual-step .fv-count {
+        font-size: 22px;
+        font-weight: 800;
+        color: #1a1d23;
+        line-height: 1;
+    }
+
+    .funnel-visual-step .fv-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    .funnel-visual-step .fv-pct {
+        font-size: 11px;
+        margin-top: 2px;
+        opacity: .65;
+    }
+
+    .fv-total   { background: #EFF6FF; }
+    .fv-total   .fv-label { color: #3B82F6; }
+    .fv-open    { background: #FFFBEB; }
+    .fv-open    .fv-label { color: #D97706; }
+    .fv-won     { background: #F0FDF4; }
+    .fv-won     .fv-label { color: #16A34A; }
+    .fv-lost    { background: #FEF2F2; }
+    .fv-lost    .fv-label { color: #DC2626; }
+
+    .funnel-arrow {
+        color: #d1d5db;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    /* ── WhatsApp mini KPIs ──────────────────────────────────────── */
+    .wa-kpi-mini-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    @media (max-width: 900px) { .wa-kpi-mini-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .wa-kpi-mini {
+        background: #f8fafc;
+        border-radius: 10px;
+        border: 1px solid #e8eaf0;
+        padding: 14px 16px;
+    }
+
+    .wa-kpi-mini .wk-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        margin-bottom: 5px;
+    }
+
+    .wa-kpi-mini .wk-value {
+        font-size: 20px;
+        font-weight: 800;
+        color: #1a1d23;
+        line-height: 1;
+    }
+
+    .wa-kpi-mini .wk-sub {
+        font-size: 11px;
+        color: #9ca3af;
+        margin-top: 3px;
+    }
+
+    /* ── Barra de atividade ─────────────────────────────────────── */
+    .activity-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .activity-bar-bg   { flex: 1; height: 6px; background: #f0f2f7; border-radius: 99px; overflow: hidden; }
+    .activity-bar-fill { height: 100%; background: #3B82F6; border-radius: 99px; }
+
+    /* ── Taxa conversão colorida ────────────────────────────────── */
+    .conv-high { color: #16A34A; font-weight: 700; }
+    .conv-mid  { color: #D97706; font-weight: 700; }
+    .conv-low  { color: #6b7280; }
+
+    /* ── Leads perdidos: grid 3 colunas ────────────────────────── */
+    .lost-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+    @media (max-width: 900px) { .lost-grid-3 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) { .lost-grid-3 { grid-template-columns: 1fr; } }
 </style>
 @endpush
 
@@ -391,6 +499,46 @@
             <canvas id="chartLeadsBySource" height="180"></canvas>
         </div>
 
+    </div>
+
+    {{-- ════════════════════════════════════════════════════════════ --}}
+    {{-- FUNIL DE CONVERSÃO VISUAL                                   --}}
+    {{-- ════════════════════════════════════════════════════════════ --}}
+    <div class="report-section">
+        <div class="report-section-header">
+            <i class="bi bi-funnel"></i>
+            Funil de Conversão
+        </div>
+        <div class="report-section-body">
+            <div class="funnel-visual">
+                @php
+                    $fvBase = $totalLeads > 0 ? $totalLeads : 1;
+                @endphp
+                <div class="funnel-visual-step fv-total">
+                    <div class="fv-count">{{ number_format($totalLeads, 0, ',', '.') }}</div>
+                    <div class="fv-label">Leads gerados</div>
+                    <div class="fv-pct">100% do total</div>
+                </div>
+                <div class="funnel-arrow"><i class="bi bi-chevron-right"></i></div>
+                <div class="funnel-visual-step fv-open">
+                    <div class="fv-count">{{ number_format($funnelEmAberto, 0, ',', '.') }}</div>
+                    <div class="fv-label">Em andamento</div>
+                    <div class="fv-pct">{{ round($funnelEmAberto / $fvBase * 100, 1) }}% do total</div>
+                </div>
+                <div class="funnel-arrow"><i class="bi bi-chevron-right"></i></div>
+                <div class="funnel-visual-step fv-won">
+                    <div class="fv-count">{{ number_format($salesCount, 0, ',', '.') }}</div>
+                    <div class="fv-label">Convertidos</div>
+                    <div class="fv-pct">{{ round($salesCount / $fvBase * 100, 1) }}% do total</div>
+                </div>
+                <div class="funnel-arrow"><i class="bi bi-chevron-right"></i></div>
+                <div class="funnel-visual-step fv-lost">
+                    <div class="fv-count">{{ number_format($totalLost, 0, ',', '.') }}</div>
+                    <div class="fv-label">Perdidos</div>
+                    <div class="fv-pct">{{ round($totalLost / $fvBase * 100, 1) }}% do total</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- ════════════════════════════════════════════════════════════ --}}
@@ -536,7 +684,7 @@
             </span>
         </div>
 
-        <div class="report-section-body" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div class="report-section-body lost-grid-3">
 
             {{-- Por Motivo --}}
             <div>
@@ -571,8 +719,228 @@
                 @endforelse
             </div>
 
+            {{-- Por Vendedor --}}
+            <div>
+                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">Por Vendedor</div>
+                @forelse($lostByVendedor as $row)
+                <div style="margin-bottom:12px;">
+                    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+                        <span style="color:#374151;font-weight:500;">{{ $row['user'] }}</span>
+                        <span style="color:#EF4444;font-weight:700;">{{ $row['total'] }}
+                            <span style="color:#9ca3af;font-weight:400;">({{ $row['pct'] }}%)</span>
+                        </span>
+                    </div>
+                    <div class="reason-bar-bg">
+                        <div class="reason-bar-fill" style="width:{{ $row['pct'] }}%;"></div>
+                    </div>
+                </div>
+                @empty
+                <p style="color:#9ca3af;font-size:13px;">Nenhuma perda no período.</p>
+                @endforelse
+            </div>
+
         </div>
     </div>
+
+
+    {{-- ════════════════════════════════════════════════════════════ --}}
+    {{-- DESEMPENHO POR VENDEDOR                                     --}}
+    {{-- ════════════════════════════════════════════════════════════ --}}
+    <div class="report-section">
+        <div class="report-section-header">
+            <i class="bi bi-person-badge"></i>
+            Desempenho por Vendedor
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>Vendedor</th>
+                        <th class="num">Leads atribuídos</th>
+                        <th class="num">Vendas fechadas</th>
+                        <th class="num">Conversão</th>
+                        <th class="num">Receita</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($vendedores as $row)
+                    <tr>
+                        <td style="font-weight:600;color:#1a1d23;">{{ $row['user']->name }}</td>
+                        <td class="num">{{ $row['leads'] }}</td>
+                        <td class="num">{{ $row['vendas'] }}</td>
+                        <td class="num">
+                            @php $conv = $row['conv']; @endphp
+                            <span class="{{ $conv >= 30 ? 'conv-high' : ($conv >= 10 ? 'conv-mid' : 'conv-low') }}">
+                                {{ $conv }}%
+                            </span>
+                        </td>
+                        <td class="num" style="color:#10B981;font-weight:700;">
+                            {{ $row['receita'] > 0 ? 'R$ ' . number_format($row['receita'], 0, ',', '.') : '—' }}
+                        </td>
+                    </tr>
+                    @empty
+                    <tr class="empty-row">
+                        <td colspan="5">
+                            <i class="bi bi-person-badge" style="font-size:28px;opacity:.2;display:block;margin-bottom:6px;"></i>
+                            Nenhum vendedor com dados no período
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {{-- ════════════════════════════════════════════════════════════ --}}
+    {{-- WHATSAPP — ATENDIMENTO                                      --}}
+    {{-- ════════════════════════════════════════════════════════════ --}}
+    <div class="report-section">
+        <div class="report-section-header">
+            <i class="bi bi-whatsapp" style="color:#25D366;"></i>
+            WhatsApp — Atendimento
+            @if($avgFirstResponse !== null)
+            <span style="margin-left:auto;font-size:12px;font-weight:500;color:#9ca3af;">
+                Tempo médio de 1ª resposta:
+                <strong style="color:#3B82F6;">
+                    @if($avgFirstResponse < 60)
+                        {{ $avgFirstResponse }} min
+                    @else
+                        {{ floor($avgFirstResponse / 60) }}h {{ $avgFirstResponse % 60 }}min
+                    @endif
+                </strong>
+                (atendimento humano)
+            </span>
+            @endif
+        </div>
+        <div class="report-section-body">
+            <div class="wa-kpi-mini-grid">
+                <div class="wa-kpi-mini">
+                    <div class="wk-label">Conversas iniciadas</div>
+                    <div class="wk-value">{{ number_format($waTotal, 0, ',', '.') }}</div>
+                    <div class="wk-sub">no período</div>
+                </div>
+                <div class="wa-kpi-mini">
+                    <div class="wk-label">Fechadas</div>
+                    <div class="wk-value">{{ number_format($waFechadas, 0, ',', '.') }}</div>
+                    <div class="wk-sub">{{ $waTotal > 0 ? round($waFechadas / $waTotal * 100, 1) : 0 }}% do total</div>
+                </div>
+                <div class="wa-kpi-mini">
+                    <div class="wk-label">Viraram lead</div>
+                    <div class="wk-value">{{ number_format($waComLead, 0, ',', '.') }}</div>
+                    <div class="wk-sub">{{ $waTotal > 0 ? round($waComLead / $waTotal * 100, 1) : 0 }}% do total</div>
+                </div>
+                <div class="wa-kpi-mini">
+                    <div class="wk-label">Atendidas por IA</div>
+                    <div class="wk-value">{{ number_format($waIA, 0, ',', '.') }}</div>
+                    <div class="wk-sub">{{ $waTotal > 0 ? round($waIA / $waTotal * 100, 1) : 0 }}% do total</div>
+                </div>
+            </div>
+
+            @if($waMsgByUser->isNotEmpty())
+            <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px;">Mensagens enviadas por atendente</div>
+            @php $maxMsgs = $waMsgByUser->max('total') ?: 1; @endphp
+            @foreach($waMsgByUser as $row)
+            <div style="margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+                    <span style="color:#374151;font-weight:500;">{{ $row->user?->name ?? 'Usuário #' . $row->user_id }}</span>
+                    <span style="color:#3B82F6;font-weight:700;">{{ number_format($row->total, 0, ',', '.') }} msgs</span>
+                </div>
+                <div class="activity-bar-bg">
+                    <div class="activity-bar-fill" style="width:{{ round($row->total / $maxMsgs * 100) }}%;"></div>
+                </div>
+            </div>
+            @endforeach
+            @else
+            <p style="color:#9ca3af;font-size:13px;margin:0;">Nenhuma mensagem enviada por atendentes no período.</p>
+            @endif
+        </div>
+    </div>
+
+    {{-- ════════════════════════════════════════════════════════════ --}}
+    {{-- ORIGEM × CONVERSÃO                                          --}}
+    {{-- ════════════════════════════════════════════════════════════ --}}
+    <div class="report-section">
+        <div class="report-section-header">
+            <i class="bi bi-diagram-3"></i>
+            Origem × Conversão
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>Origem</th>
+                        <th class="num">Leads</th>
+                        <th class="num">Vendas</th>
+                        <th class="num">Conversão</th>
+                        <th class="num">Receita</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($sourceConversion as $row)
+                    <tr>
+                        <td style="font-weight:600;color:#1a1d23;">{{ $row['source'] }}</td>
+                        <td class="num">{{ $row['leads'] }}</td>
+                        <td class="num">{{ $row['vendas'] }}</td>
+                        <td class="num">
+                            @php $conv = $row['conv']; @endphp
+                            <span class="{{ $conv >= 30 ? 'conv-high' : ($conv >= 10 ? 'conv-mid' : 'conv-low') }}">
+                                {{ $conv }}%
+                            </span>
+                        </td>
+                        <td class="num" style="color:#10B981;font-weight:700;">
+                            {{ $row['receita'] > 0 ? 'R$ ' . number_format($row['receita'], 0, ',', '.') : '—' }}
+                        </td>
+                    </tr>
+                    @empty
+                    <tr class="empty-row">
+                        <td colspan="5">Nenhum dado de origem no período</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {{-- ════════════════════════════════════════════════════════════ --}}
+    {{-- ATIVIDADE DA EQUIPE                                         --}}
+    {{-- ════════════════════════════════════════════════════════════ --}}
+    @if($teamActivity->isNotEmpty())
+    <div class="report-section">
+        <div class="report-section-header">
+            <i class="bi bi-activity"></i>
+            Atividade da Equipe
+        </div>
+        <div style="overflow-x:auto;">
+            @php $maxActivity = $teamActivity->max('total') ?: 1; @endphp
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>Usuário</th>
+                        <th class="num">Msgs WhatsApp</th>
+                        <th class="num">Eventos CRM</th>
+                        <th class="num">Total</th>
+                        <th style="min-width:120px;">Atividade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($teamActivity as $row)
+                    <tr>
+                        <td style="font-weight:600;color:#1a1d23;">{{ $row['user']->name }}</td>
+                        <td class="num">{{ number_format($row['msgs'], 0, ',', '.') }}</td>
+                        <td class="num">{{ number_format($row['events'], 0, ',', '.') }}</td>
+                        <td class="num" style="font-weight:700;color:#3B82F6;">{{ number_format($row['total'], 0, ',', '.') }}</td>
+                        <td style="padding-right:24px;">
+                            <div class="activity-bar-bg">
+                                <div class="activity-bar-fill" style="width:{{ round($row['total'] / $maxActivity * 100) }}%;"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
 
 </div>
 @endsection

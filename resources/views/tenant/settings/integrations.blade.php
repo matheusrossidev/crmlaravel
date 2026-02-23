@@ -48,9 +48,59 @@
         flex-shrink: 0;
     }
 
-    .integration-logo.facebook  { background: #1877F2; }
-    .integration-logo.google    { background: linear-gradient(135deg, #4285F4 0%, #EA4335 50%, #FBBC04 75%, #34A853 100%); }
-    .integration-logo.whatsapp  { background: #25D366; }
+    .integration-logo.facebook   { background: #1877F2; }
+    .integration-logo.google     { background: linear-gradient(135deg, #4285F4 0%, #EA4335 50%, #FBBC04 75%, #34A853 100%); }
+    .integration-logo.whatsapp   { background: #25D366; }
+    .integration-logo.instagram  { background: #d1d5db; }
+
+    .conn-soon { background: #f3f4f6; color: #9ca3af; }
+
+    .integration-card.coming-soon {
+        opacity: .45;
+        filter: grayscale(1);
+        pointer-events: none;
+    }
+
+    .integration-features {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .integration-features li {
+        font-size: 12.5px;
+        color: #4b5563;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .integration-features li::before {
+        content: '✓';
+        font-size: 11px;
+        font-weight: 700;
+        color: #9ca3af;
+        flex-shrink: 0;
+        width: 14px;
+        text-align: center;
+    }
+
+    .btn-coming-soon {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 18px;
+        background: #f3f4f6;
+        color: #9ca3af;
+        border: 1.5px solid #e8eaf0;
+        border-radius: 9px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: not-allowed;
+    }
 
     /* Modal QR */
     .wa-modal-overlay {
@@ -289,6 +339,13 @@
                 @endif
             </div>
             <div class="integration-body">
+                <ul class="integration-features">
+                    <li>Importa campanhas e conjuntos de anúncios</li>
+                    <li>Sincroniza métricas de alcance, cliques e gastos</li>
+                    <li>Atribui leads automaticamente às campanhas de origem</li>
+                    <li>Atualização automática a cada hora</li>
+                </ul>
+
                 @if($facebook)
                 <div class="conn-detail">
                     <strong>{{ $facebook->platform_user_name ?? 'Conta conectada' }}</strong><br>
@@ -299,7 +356,7 @@
                 </div>
                 @else
                 <div class="conn-detail" style="color:#9ca3af;">
-                    Nenhuma conta conectada. Conecte para importar campanhas automaticamente.
+                    Nenhuma conta conectada.
                 </div>
                 @endif
 
@@ -337,6 +394,13 @@
                 @endif
             </div>
             <div class="integration-body">
+                <ul class="integration-features">
+                    <li>Importa campanhas de Search, Display e Shopping</li>
+                    <li>Sincroniza impressões, cliques e custo por conversão</li>
+                    <li>Atribui leads automaticamente às campanhas de origem</li>
+                    <li>Atualização automática a cada hora</li>
+                </ul>
+
                 @if($google)
                 <div class="conn-detail">
                     <strong>{{ $google->platform_user_name ?? 'Conta conectada' }}</strong><br>
@@ -347,7 +411,7 @@
                 </div>
                 @else
                 <div class="conn-detail" style="color:#9ca3af;">
-                    Nenhuma conta conectada. Conecte para importar campanhas automaticamente.
+                    Nenhuma conta conectada.
                 </div>
                 @endif
 
@@ -387,6 +451,13 @@
                 @endif
             </div>
             <div class="integration-body">
+                <ul class="integration-features">
+                    <li>Receba e envie mensagens direto do CRM</li>
+                    <li>Chatbot com fluxo visual de automação</li>
+                    <li>Agente de IA para atendimento automático</li>
+                    <li>Transcrição de áudios via IA</li>
+                </ul>
+
                 @if($whatsapp && $whatsapp->status === 'connected')
                 <div class="conn-detail">
                     <strong>{{ $whatsapp->display_name ?? $whatsapp->phone_number ?? 'Número conectado' }}</strong><br>
@@ -394,7 +465,7 @@
                 </div>
                 @else
                 <div class="conn-detail" style="color:#9ca3af;">
-                    Nenhum número conectado. Escaneie o QR Code para começar a usar o chat.
+                    Nenhum número conectado.
                 </div>
                 @endif
 
@@ -415,6 +486,33 @@
                             <i class="bi bi-whatsapp"></i> Conectar WhatsApp
                         </button>
                     @endif
+                </div>
+            </div>
+        </div>
+
+        {{-- ─── Instagram (Em breve) ────────────────────────────────────── --}}
+        <div class="integration-card coming-soon">
+            <div class="integration-header">
+                <div class="integration-logo instagram">
+                    <i class="bi bi-instagram" style="font-size:20px;"></i>
+                </div>
+                <div class="integration-title">
+                    <h3>Instagram</h3>
+                    <p>Chat, comentários e automações</p>
+                </div>
+                <span class="conn-badge conn-soon">Em breve</span>
+            </div>
+            <div class="integration-body">
+                <ul class="integration-features">
+                    <li>Chat de mensagens diretas (DMs) no CRM</li>
+                    <li>Resposta automática a comentários em posts</li>
+                    <li>Envio de DM quando alguém comentar</li>
+                    <li>Agente de IA para atender DMs automaticamente</li>
+                </ul>
+                <div class="integration-actions">
+                    <button class="btn-coming-soon" disabled>
+                        <i class="bi bi-clock"></i> Em desenvolvimento
+                    </button>
                 </div>
             </div>
         </div>

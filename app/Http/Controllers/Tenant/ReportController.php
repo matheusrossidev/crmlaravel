@@ -8,10 +8,14 @@ use App\Http\Controllers\Controller;
 use App\Models\AdSpend;
 use App\Models\Campaign;
 use App\Models\Lead;
+use App\Models\LeadEvent;
 use App\Models\LostSale;
 use App\Models\LostSaleReason;
 use App\Models\Pipeline;
 use App\Models\Sale;
+use App\Models\User;
+use App\Models\WhatsappConversation;
+use App\Models\WhatsappMessage;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -204,6 +208,139 @@ class ReportController extends Controller
                 'total'    => $row->total,
             ]);
 
+        // Por vendedor
+        $lostByVendedor = $lostQuery()
+            ->selectRaw('lost_by, COUNT(*) as total')
+            ->groupBy('lost_by')
+            ->orderByDesc('total')
+            ->with('lostBy')
+            ->get()
+            ->map(fn ($row) => [
+                'user'  => $row->lostBy?->name ?? 'Sem usuário',
+                'total' => $row->total,
+                'pct'   => $totalLost > 0 ? round($row->total / $totalLost * 100, 1) : 0,
+            ]);
+
+        // ══════════════════════════════════════════════════════════════════════
+        // 5. DESEMPENHO POR VENDEDOR
+        // ══════════════════════════════════════════════════════════════════════
+
+        $tenantId   = auth()->user()->tenant_id;
+        $vendedores = User::where('tenant_id', $tenantId)
+            ->orderBy('name')
+            ->get()
+            ->map(function (User $user) use ($dateFrom, $dateTo, $filterCampaign, $filterPipeline) {
+                $leads   = Lead::where('assigned_to', $user->id)
+                    ->whereBetween('created_at', [$dateFrom, $dateTo])
+                    ->when($filterCampaign, fn ($q) => $q->where('campaign_id', $filterCampaign))
+                    ->when($filterPipeline, fn ($q) => $q->where('pipeline_id', $filterPipeline))
+                    ->count();
+                $vendas  = Sale::where('closed_by', $user->id)
+                    ->whereBetween('closed_at', [$dateFrom, $dateTo])
+                    ->when($filterCampaign, fn ($q) => $q->where('campaign_id', $filterCampaign))
+                    ->when($filterPipeline, fn ($q) => $q->where('pipeline_id', $filterPipeline))
+                    ->count();
+                $receita = (float) (Sale::where('closed_by', $user->id)
+                    ->whereBetween('closed_at', [$dateFrom, $dateTo])
+                    ->sum('value') ?? 0);
+                return [
+                    'user'    => $user,
+                    'leads'   => $leads,
+                    'vendas'  => $vendas,
+                    'receita' => $receita,
+                    'conv'    => $leads > 0 ? round($vendas / $leads * 100, 1) : 0,
+                ];
+            })
+            ->filter(fn ($r) => $r['leads'] > 0 || $r['vendas'] > 0)
+            ->sortByDesc('receita')
+            ->values();
+
+        // ══════════════════════════════════════════════════════════════════════
+        // 6. WHATSAPP ANALYTICS
+        // ══════════════════════════════════════════════════════════════════════
+
+        $waTotal    = WhatsappConversation::whereBetween('started_at', [$dateFrom, $dateTo])->where('is_group', false)->count();
+        $waFechadas = WhatsappConversation::whereBetween('started_at', [$dateFrom, $dateTo])->where('is_group', false)->where('status', 'closed')->count();
+        $waComLead  = WhatsappConversation::whereBetween('started_at', [$dateFrom, $dateTo])->where('is_group', false)->whereNotNull('lead_id')->count();
+        $waIA       = WhatsappConversation::whereBetween('started_at', [$dateFrom, $dateTo])->where('is_group', false)->whereNotNull('ai_agent_id')->count();
+
+        // Tempo médio de 1ª resposta humana (sample 300 conversas, exclui IA)
+        $avgFirstResponse = null;
+        $convSample       = WhatsappConversation::whereBetween('started_at', [$dateFrom, $dateTo])
+            ->where('is_group', false)->whereNull('ai_agent_id')->limit(300)->pluck('id');
+        $times = [];
+        foreach ($convSample as $cid) {
+            $firstIn  = WhatsappMessage::where('conversation_id', $cid)->where('direction', 'inbound')
+                ->where('is_deleted', false)->orderBy('sent_at')->value('sent_at');
+            if (! $firstIn) continue;
+            $firstOut = WhatsappMessage::where('conversation_id', $cid)->where('direction', 'outbound')
+                ->whereNotNull('user_id')->where('is_deleted', false)
+                ->where('sent_at', '>', $firstIn)->orderBy('sent_at')->value('sent_at');
+            if (! $firstOut) continue;
+            $diff = Carbon::parse($firstIn)->diffInMinutes(Carbon::parse($firstOut));
+            if ($diff <= 1440) $times[] = $diff;
+        }
+        $avgFirstResponse = count($times) > 0 ? (int) round(array_sum($times) / count($times)) : null;
+
+        // Mensagens enviadas por atendente humano no período
+        $waMsgByUser = WhatsappMessage::where('direction', 'outbound')
+            ->whereBetween('sent_at', [$dateFrom, $dateTo])
+            ->whereNotNull('user_id')->where('is_deleted', false)
+            ->selectRaw('user_id, COUNT(*) as total')
+            ->groupBy('user_id')->orderByDesc('total')
+            ->with('user')->get();
+
+        // ══════════════════════════════════════════════════════════════════════
+        // 7. ORIGEM × CONVERSÃO
+        // ══════════════════════════════════════════════════════════════════════
+
+        $sourceConversion = Lead::whereBetween('created_at', [$dateFrom, $dateTo])
+            ->selectRaw('COALESCE(source, "manual") as src, COUNT(*) as total')
+            ->groupBy('src')
+            ->get()
+            ->map(function ($row) use ($dateFrom, $dateTo) {
+                $leadIds = Lead::whereBetween('created_at', [$dateFrom, $dateTo])
+                    ->whereRaw('COALESCE(source, "manual") = ?', [$row->src])
+                    ->pluck('id');
+                $vendas  = Sale::whereIn('lead_id', $leadIds)
+                    ->whereBetween('closed_at', [$dateFrom, $dateTo])->count();
+                $receita = (float) (Sale::whereIn('lead_id', $leadIds)
+                    ->whereBetween('closed_at', [$dateFrom, $dateTo])->sum('value') ?? 0);
+                return [
+                    'source'  => ucfirst((string) $row->src),
+                    'leads'   => (int) $row->total,
+                    'vendas'  => $vendas,
+                    'receita' => $receita,
+                    'conv'    => $row->total > 0 ? round($vendas / $row->total * 100, 1) : 0,
+                ];
+            })
+            ->sortByDesc('leads')
+            ->values();
+
+        // ══════════════════════════════════════════════════════════════════════
+        // 8. FUNIL DE CONVERSÃO VISUAL (sem queries extras)
+        // ══════════════════════════════════════════════════════════════════════
+
+        $funnelEmAberto = max(0, $totalLeads - $salesCount - $totalLost);
+
+        // ══════════════════════════════════════════════════════════════════════
+        // 9. ATIVIDADE DA EQUIPE
+        // ══════════════════════════════════════════════════════════════════════
+
+        $teamActivity = User::where('tenant_id', $tenantId)
+            ->orderBy('name')
+            ->get()
+            ->map(function (User $user) use ($dateFrom, $dateTo) {
+                $msgs   = WhatsappMessage::where('user_id', $user->id)->where('direction', 'outbound')
+                    ->whereBetween('sent_at', [$dateFrom, $dateTo])->where('is_deleted', false)->count();
+                $events = LeadEvent::where('performed_by', $user->id)
+                    ->whereBetween('created_at', [$dateFrom, $dateTo])->count();
+                return ['user' => $user, 'msgs' => $msgs, 'events' => $events, 'total' => $msgs + $events];
+            })
+            ->filter(fn ($r) => $r['total'] > 0)
+            ->sortByDesc('total')
+            ->values();
+
         return view('tenant.reports.index', compact(
             // filtros aplicados
             'dateFrom', 'dateTo', 'filterCampaign', 'filterPipeline', 'filterUser',
@@ -218,7 +355,17 @@ class ReportController extends Controller
             // funil
             'pipelineRows',
             // perdidos
-            'totalLost', 'lostPotentialValue', 'lostByReason', 'lostByCampaign',
+            'totalLost', 'lostPotentialValue', 'lostByReason', 'lostByCampaign', 'lostByVendedor',
+            // vendedores
+            'vendedores',
+            // whatsapp
+            'waTotal', 'waFechadas', 'waComLead', 'waIA', 'avgFirstResponse', 'waMsgByUser',
+            // origem × conversão
+            'sourceConversion',
+            // funil visual
+            'funnelEmAberto',
+            // atividade
+            'teamActivity',
         ));
     }
 }
