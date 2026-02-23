@@ -141,9 +141,11 @@ class AiAgentController extends Controller
             'response_delay_seconds' => 'nullable|integer|min:0|max:30',
             'channel'                => 'required|in:whatsapp,web_chat',
             'is_active'              => 'nullable|boolean',
+            'auto_assign'            => 'nullable|boolean',
         ]);
 
-        $data['is_active'] = $request->boolean('is_active');
+        $data['is_active']   = $request->boolean('is_active');
+        $data['auto_assign'] = $request->boolean('auto_assign');
 
         return $data;
     }

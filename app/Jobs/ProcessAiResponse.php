@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Http\Controllers\Tenant\AiConfigurationController;
+use App\Models\Lead;
 use App\Models\WhatsappConversation;
 use App\Services\AiAgentService;
 use Illuminate\Bus\Queueable;
@@ -111,9 +112,45 @@ class ProcessAiResponse implements ShouldQueue
             'model'           => $model,
         ]);
 
+        // ── Carregar pipeline stages do lead (se existir) ────────────────────
+        $stages = [];
+        if ($conv->lead_id) {
+            $lead = Lead::withoutGlobalScope('tenant')
+                ->with('stage.pipeline.stages')
+                ->find($conv->lead_id);
+            if ($lead && $lead->stage && $lead->stage->pipeline) {
+                $stages = $lead->stage->pipeline->stages
+                    ->map(fn ($s) => [
+                        'id'      => $s->id,
+                        'name'    => $s->name,
+                        'current' => $s->id === $lead->stage_id,
+                    ])
+                    ->values()
+                    ->toArray();
+            }
+        }
+
+        // ── Carregar tags existentes no tenant ────────────────────────────────
+        $availTags = WhatsappConversation::withoutGlobalScope('tenant')
+            ->where('tenant_id', $conv->tenant_id)
+            ->whereNotNull('tags')
+            ->pluck('tags')
+            ->flatten()
+            ->merge(
+                Lead::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $conv->tenant_id)
+                    ->whereNotNull('tags')
+                    ->pluck('tags')
+                    ->flatten()
+            )
+            ->unique()
+            ->filter()
+            ->values()
+            ->toArray();
+
         // ── Montar prompt e histórico ─────────────────────────────────────────
         $service = new AiAgentService();
-        $system  = $service->buildSystemPrompt($agent);
+        $system  = $service->buildSystemPrompt($agent, $stages, $availTags);
         $history = $service->buildHistory($conv, limit: 50);
 
         if (empty($history)) {
@@ -124,7 +161,10 @@ class ProcessAiResponse implements ShouldQueue
         }
 
         // ── Chamar o LLM ─────────────────────────────────────────────────────
-        $maxTokens = max(200, ($agent->max_message_length ?? 500) + 200);
+        $maxLength = max(200, $agent->max_message_length ?? 500);
+        // Aumentar maxTokens quando esperamos JSON (headers de controle adicionam tokens)
+        $extraTokens = (! empty($stages) || ! empty($availTags)) ? 300 : 0;
+        $maxTokens   = $maxLength + 200 + $extraTokens;
 
         $reply = AiConfigurationController::callLlm(
             provider:  $provider,
@@ -144,13 +184,91 @@ class ProcessAiResponse implements ShouldQueue
             return;
         }
 
-        // Truncar se necessário
-        $maxLength = $agent->max_message_length ?? 500;
-        if ($maxLength > 0 && mb_strlen($reply) > $maxLength) {
-            $reply = mb_substr($reply, 0, $maxLength) . '…';
+        // ── Parsear JSON de ações (quando pipeline/tags disponíveis) ─────────
+        $actions = [];
+        if (! empty($stages) || ! empty($availTags)) {
+            // Remover markdown code blocks se o LLM os incluiu
+            $clean = preg_replace('/```(?:json)?\s*([\s\S]*?)```/i', '$1', $reply);
+            $clean = trim($clean ?? $reply);
+
+            $decoded = null;
+            if (str_starts_with($clean, '{')) {
+                $decoded = json_decode($clean, true);
+            }
+
+            if (is_array($decoded) && isset($decoded['reply'])) {
+                $reply   = trim((string) ($decoded['reply'] ?? ''));
+                $actions = (array) ($decoded['actions'] ?? []);
+            } else {
+                Log::channel('whatsapp')->warning('AI job: resposta não era JSON válido, usando texto bruto', [
+                    'conversation_id' => $this->conversationId,
+                    'raw'             => mb_substr($reply, 0, 300),
+                ]);
+            }
         }
 
-        // ── Enviar pelo WhatsApp ──────────────────────────────────────────────
-        $service->sendWhatsappReply($conv, $reply);
+        if ($reply === '') {
+            Log::channel('whatsapp')->warning('AI job: reply vazio após parse JSON', [
+                'conversation_id' => $this->conversationId,
+            ]);
+            return;
+        }
+
+        // ── Aplicar ações de pipeline e tags ─────────────────────────────────
+        foreach ($actions as $action) {
+            match ($action['type'] ?? '') {
+                'set_stage' => $this->applySetStage($conv, (int) ($action['stage_id'] ?? 0)),
+                'add_tags'  => $this->applyAddTags($conv, (array) ($action['tags'] ?? [])),
+                default     => null,
+            };
+        }
+
+        // ── Dividir em mensagens e enviar com delay ───────────────────────────
+        $delay    = max(1, $agent->response_delay_seconds ?? 2);
+        $messages = $service->splitIntoMessages($reply, $maxLength);
+
+        Log::channel('whatsapp')->info('AI job: enviando resposta', [
+            'conversation_id' => $this->conversationId,
+            'parts'           => count($messages),
+            'delay_seconds'   => $delay,
+        ]);
+
+        $service->sendWhatsappReplies($conv, $messages, $delay);
+    }
+
+    // ── Ações ─────────────────────────────────────────────────────────────────
+
+    private function applySetStage(WhatsappConversation $conv, int $stageId): void
+    {
+        if (! $conv->lead_id || $stageId <= 0) return;
+
+        Lead::withoutGlobalScope('tenant')
+            ->where('id', $conv->lead_id)
+            ->update(['stage_id' => $stageId]);
+
+        Log::channel('whatsapp')->info('AI: lead movido de etapa', [
+            'conversation_id' => $conv->id,
+            'lead_id'         => $conv->lead_id,
+            'new_stage_id'    => $stageId,
+        ]);
+    }
+
+    private function applyAddTags(WhatsappConversation $conv, array $newTags): void
+    {
+        if (empty($newTags)) return;
+
+        $conv->refresh();
+        $existing = $conv->tags ?? [];
+        $merged   = array_values(array_unique(array_merge($existing, $newTags)));
+
+        WhatsappConversation::withoutGlobalScope('tenant')
+            ->where('id', $conv->id)
+            ->update(['tags' => json_encode($merged)]);
+
+        Log::channel('whatsapp')->info('AI: tags adicionadas', [
+            'conversation_id' => $conv->id,
+            'tags_added'      => $newTags,
+            'tags_total'      => $merged,
+        ]);
     }
 }

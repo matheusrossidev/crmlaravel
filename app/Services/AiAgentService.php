@@ -15,15 +15,17 @@ use Illuminate\Support\Facades\Storage;
 
 class AiAgentService
 {
-    /** Número máximo de imagens incluídas no histórico (para não explodir o contexto). */
-    private const MAX_IMAGES_IN_HISTORY = 5;
-
     /**
      * Constrói o system prompt a partir das configurações do agente.
-     * Mesma lógica do AiAgentController::buildSystemPrompt().
+     *
+     * @param array $stages     Ex: [['id'=>1,'name'=>'Novo Lead','current'=>true], ...]
+     * @param array $availTags  Ex: ['interessado','vip','retorno']
      */
-    public function buildSystemPrompt(AiAgent $agent): string
-    {
+    public function buildSystemPrompt(
+        AiAgent $agent,
+        array   $stages    = [],
+        array   $availTags = [],
+    ): string {
         $objective = match ($agent->objective) {
             'sales'   => 'vendas',
             'support' => 'suporte ao cliente',
@@ -63,7 +65,46 @@ class AiAgentService
             $lines[] = "\n--- BASE DE CONHECIMENTO ---\n{$agent->knowledge_base}\n--- FIM DA BASE DE CONHECIMENTO ---";
         }
 
+        // ── Contexto de pipeline (se disponível) ──────────────────────────────
+        if (! empty($stages)) {
+            $currentStage = collect($stages)->firstWhere('current', true);
+            $stageList    = collect($stages)->map(fn ($s) => "{$s['id']}: {$s['name']}")->implode(', ');
+            $lines[] = "\n--- CONTROLE DE FUNIL ---";
+            $lines[] = "Etapas disponíveis ({$stageList})";
+            if ($currentStage) {
+                $lines[] = "Etapa atual do lead: {$currentStage['name']}";
+            }
+            $lines[] = "Você pode mover o lead de etapa conforme a conversa evoluir.";
+            $lines[] = "--- FIM DO CONTROLE DE FUNIL ---";
+        }
+
+        // ── Contexto de tags (se disponível) ──────────────────────────────────
+        if (! empty($availTags)) {
+            $tagList = implode(', ', $availTags);
+            $lines[] = "\n--- TAGS DISPONÍVEIS ---";
+            $lines[] = "Tags existentes: {$tagList}";
+            $lines[] = "Você pode adicionar tags ao lead conforme o contexto da conversa.";
+            $lines[] = "--- FIM DAS TAGS ---";
+        }
+
         $lines[] = "\nResponda sempre em {$agent->language}. Seja conciso (máximo {$agent->max_message_length} caracteres por mensagem).";
+
+        // ── Formato JSON obrigatório quando há pipeline ou tags ───────────────
+        if (! empty($stages) || ! empty($availTags)) {
+            $lines[] = <<<'JSONINSTR'
+
+FORMATO DE RESPOSTA OBRIGATÓRIO — responda APENAS com JSON válido, sem markdown:
+{
+  "reply": "sua resposta ao cliente aqui",
+  "actions": [
+    {"type": "set_stage", "stage_id": <id_numérico>},
+    {"type": "add_tags", "tags": ["tag1", "tag2"]}
+  ]
+}
+Se não precisar de ações, use "actions": [].
+NUNCA inclua texto fora do JSON.
+JSONINSTR;
+        }
 
         return implode("\n", $lines);
     }
@@ -71,27 +112,24 @@ class AiAgentService
     /**
      * Constrói o histórico de mensagens da conversa para o LLM.
      * Retorna array no formato OpenAI: [{role, content}]
-     * Content pode ser string (texto) ou array de blocos (multimodal).
      */
     public function buildHistory(WhatsappConversation $conv, int $limit = 50): array
     {
         $messages = WhatsappMessage::withoutGlobalScope('tenant')
             ->where('conversation_id', $conv->id)
             ->where('is_deleted', false)
-            ->whereIn('type', ['text', 'image'])  // só texto e imagens (reações não são contexto)
+            ->whereIn('type', ['text', 'image'])
             ->orderByDesc('sent_at')
             ->limit($limit)
             ->get()
-            ->reverse()  // LLM espera ordem cronológica (mais antigo primeiro)
+            ->reverse()
             ->values();
 
-        $history     = [];
-        $imageCount  = 0;
+        $history = [];
 
         foreach ($messages as $msg) {
             $role = $msg->direction === 'inbound' ? 'user' : 'assistant';
 
-            // Mensagem de texto simples
             if ($msg->type === 'text' || ! $msg->media_url) {
                 $history[] = [
                     'role'    => $role,
@@ -100,7 +138,6 @@ class AiAgentService
                 continue;
             }
 
-            // Mensagem de mídia — incluir como placeholder de texto
             $label = match ($msg->type) {
                 'image'    => '[imagem enviada]',
                 'audio'    => '[áudio enviado]',
@@ -115,6 +152,58 @@ class AiAgentService
         }
 
         return $history;
+    }
+
+    /**
+     * Divide uma resposta longa em múltiplas mensagens por parágrafos/sentenças.
+     */
+    public function splitIntoMessages(string $text, int $maxLength): array
+    {
+        // Dividir por parágrafos (quebra dupla de linha)
+        $parts = preg_split('/\n{2,}/', $text);
+        $parts = array_values(array_filter(array_map('trim', $parts)));
+
+        if (count($parts) <= 1) {
+            return $parts ?: [$text];
+        }
+
+        // Se algum parágrafo for longo demais, dividir por sentença
+        $messages = [];
+        foreach ($parts as $part) {
+            if (mb_strlen($part) <= $maxLength) {
+                $messages[] = $part;
+            } else {
+                $sentences = preg_split('/(?<=[.!?])\s+/', $part, -1, PREG_SPLIT_NO_EMPTY);
+                $current   = '';
+                foreach ($sentences as $sentence) {
+                    $candidate = $current ? $current . ' ' . $sentence : $sentence;
+                    if (mb_strlen($candidate) > $maxLength && $current !== '') {
+                        $messages[] = trim($current);
+                        $current    = $sentence;
+                    } else {
+                        $current = $candidate;
+                    }
+                }
+                if ($current !== '') {
+                    $messages[] = trim($current);
+                }
+            }
+        }
+
+        return array_values(array_filter($messages));
+    }
+
+    /**
+     * Envia múltiplas partes de resposta com delay entre elas.
+     */
+    public function sendWhatsappReplies(WhatsappConversation $conv, array $messages, int $delaySeconds = 2): void
+    {
+        foreach ($messages as $i => $text) {
+            if ($i > 0 && $delaySeconds > 0) {
+                sleep($delaySeconds);
+            }
+            $this->sendWhatsappReply($conv, $text);
+        }
     }
 
     /**
@@ -175,7 +264,7 @@ class AiAgentService
             'direction'       => 'outbound',
             'type'            => 'text',
             'body'            => $text,
-            'user_id'         => null,  // mensagem automática (IA)
+            'user_id'         => null,
             'ack'             => 'sent',
             'sent_at'         => now(),
         ]);
@@ -197,34 +286,5 @@ class AiAgentService
             'waha_message_id' => $wahaMessageId,
             'length'          => mb_strlen($text),
         ]);
-    }
-
-    /**
-     * Tenta carregar a imagem do storage local ou URL e retornar em base64.
-     * Retorna null se não conseguir.
-     */
-    private function fetchImageBase64(string $mediaUrl): ?string
-    {
-        try {
-            // URL relativa ao storage público (ex: /storage/whatsapp/image/xxx.jpg)
-            if (str_starts_with($mediaUrl, '/storage/')) {
-                $relativePath = str_replace('/storage/', '', $mediaUrl);
-                if (Storage::disk('public')->exists($relativePath)) {
-                    return base64_encode(Storage::disk('public')->get($relativePath));
-                }
-            }
-
-            // URL HTTP — busca diretamente
-            if (str_starts_with($mediaUrl, 'http')) {
-                $response = \Illuminate\Support\Facades\Http::timeout(10)->get($mediaUrl);
-                if ($response->successful()) {
-                    return base64_encode($response->body());
-                }
-            }
-        } catch (\Throwable $e) {
-            Log::channel('whatsapp')->debug('AI: falha ao carregar imagem para base64', ['url' => $mediaUrl, 'error' => $e->getMessage()]);
-        }
-
-        return null;
     }
 }

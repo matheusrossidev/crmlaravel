@@ -212,6 +212,18 @@
         </div>
         <input type="hidden" name="is_active" id="isActiveInput" value="{{ $agent->is_active ? '1' : '0' }}">
 
+        {{-- Toggle auto-assign --}}
+        <div class="toggle-wrap" onclick="toggleAutoAssign()" style="margin-bottom:10px;">
+            <div class="toggle-switch {{ ($agent->auto_assign ?? false) ? 'on' : '' }}" id="autoAssignSwitch"></div>
+            <div>
+                <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="autoAssignLabel">
+                    {{ ($agent->auto_assign ?? false) ? 'Auto-assign Ativado' : 'Auto-assign Desativado' }}
+                </div>
+                <div style="font-size:11.5px;color:#9ca3af;">Atribuir automaticamente a novas conversas WhatsApp</div>
+            </div>
+        </div>
+        <input type="hidden" name="auto_assign" id="autoAssignInput" value="{{ ($agent->auto_assign ?? false) ? '1' : '0' }}">
+
         {{-- 1. Identidade --}}
         <div class="section-card">
             <div class="section-card-header" onclick="toggleSection('identity')">
@@ -451,6 +463,17 @@ function toggleActive() {
     input.value = isOn ? '0' : '1';
     sw.classList.toggle('on', !isOn);
     label.textContent = isOn ? 'Agente Inativo' : 'Agente Ativo';
+}
+
+/* ── Toggle auto-assign ── */
+function toggleAutoAssign() {
+    const sw    = document.getElementById('autoAssignSwitch');
+    const input = document.getElementById('autoAssignInput');
+    const label = document.getElementById('autoAssignLabel');
+    const isOn  = input.value === '1';
+    input.value = isOn ? '0' : '1';
+    sw.classList.toggle('on', !isOn);
+    label.textContent = isOn ? 'Auto-assign Desativado' : 'Auto-assign Ativado';
 }
 
 /* ── Sections ── */

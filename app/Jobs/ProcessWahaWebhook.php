@@ -8,6 +8,7 @@ use App\Events\WhatsappConversationUpdated;
 use App\Events\WhatsappMessageCreated;
 use App\Jobs\ProcessAiResponse;
 use App\Jobs\ProcessChatbotStep;
+use App\Models\AiAgent;
 use App\Models\ChatbotFlow;
 use App\Models\Lead;
 use App\Models\Pipeline;
@@ -291,6 +292,27 @@ class ProcessWahaWebhook implements ShouldQueue
                 'is_group'        => $isGroup,
                 'has_picture'     => $pictureUrl !== null,
             ]);
+
+            // Auto-assign: atribuir agente de IA automaticamente (apenas conversas individuais)
+            if (! $isGroup) {
+                $autoAgent = AiAgent::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $instance->tenant_id)
+                    ->where('is_active', true)
+                    ->where('auto_assign', true)
+                    ->where('channel', 'whatsapp')
+                    ->first();
+                if ($autoAgent) {
+                    WhatsappConversation::withoutGlobalScope('tenant')
+                        ->where('id', $conversation->id)
+                        ->update(['ai_agent_id' => $autoAgent->id]);
+                    $conversation->ai_agent_id = $autoAgent->id;
+                    Log::channel('whatsapp')->info('AI auto-assign', [
+                        'conversation_id' => $conversation->id,
+                        'agent_id'        => $autoAgent->id,
+                        'agent_name'      => $autoAgent->name,
+                    ]);
+                }
+            }
 
         } else {
             Log::channel('whatsapp')->info('Conversa encontrada', [
