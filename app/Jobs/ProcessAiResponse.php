@@ -28,23 +28,13 @@ class ProcessAiResponse implements ShouldQueue
 
     public function __construct(
         public readonly int $conversationId,
-        public readonly int $version,
+        public readonly int $version = 0,
     ) {}
 
     public function handle(): void
     {
-        Log::channel('whatsapp')->info('AI handle() chamado', [
-            'conversation_id' => $this->conversationId,
-            'version'         => $this->version,
-        ]);
-
         // ── 1. Verificar versão (debounce) ────────────────────────────────────
         $currentVersion = (int) Cache::get("ai:version:{$this->conversationId}", 0);
-        Log::channel('whatsapp')->info('AI versão', [
-            'current' => $currentVersion,
-            'job'     => $this->version,
-            'match'   => $currentVersion === $this->version,
-        ]);
         if ($currentVersion !== $this->version) {
             Log::channel('whatsapp')->debug('AI job stale — nova mensagem chegou, pulando', [
                 'conversation_id' => $this->conversationId,
@@ -56,7 +46,6 @@ class ProcessAiResponse implements ShouldQueue
 
         // ── 2. Lock para evitar execução concorrente ──────────────────────────
         $lockAcquired = Cache::add("ai:lock:{$this->conversationId}", 1, 120);
-        Log::channel('whatsapp')->info('AI lock', ['acquired' => $lockAcquired]);
         if (! $lockAcquired) {
             Log::channel('whatsapp')->debug('AI job: já em processamento, pulando', [
                 'conversation_id' => $this->conversationId,
@@ -78,7 +67,7 @@ class ProcessAiResponse implements ShouldQueue
         }
     }
 
-    private function process(): void
+    public function process(): void
     {
         Log::channel('whatsapp')->info('AI job: iniciando', [
             'conversation_id' => $this->conversationId,

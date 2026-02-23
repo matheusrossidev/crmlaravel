@@ -16,7 +16,6 @@ use App\Models\WhatsappTag;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Jobs\ProcessAiResponse;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -240,8 +239,7 @@ class WhatsappController extends Controller
         // Disparar resposta de IA imediatamente para cobrir mensagens pendentes
         if ($agentId) {
             try {
-                $aiVersion = (int) Cache::increment("ai:version:{$conversation->id}");
-                (new ProcessAiResponse($conversation->id, $aiVersion))->handle();
+                (new ProcessAiResponse($conversation->id))->process();
             } catch (\Throwable $e) {
                 Log::channel('whatsapp')->error('AI agent (assign) falhou', [
                     'conversation_id' => $conversation->id,

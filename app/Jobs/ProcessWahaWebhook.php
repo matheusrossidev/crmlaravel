@@ -416,23 +416,13 @@ class ProcessWahaWebhook implements ShouldQueue
             }
         }
 
-        // Diagnóstico temporário — remover após resolver bug
-        Log::channel('whatsapp')->info('AI check state', [
-            'conversation_id'  => $conversation->id,
-            'isFromMe'         => $isFromMe,
-            'isGroup'          => $isGroup,
-            'ai_agent_id'      => $conversation->ai_agent_id,
-            'chatbot_flow_id'  => $conversation->chatbot_flow_id,
-        ]);
-
         // Executar agente de IA — apenas para mensagens inbound sem chatbot ativo
         if (! $isFromMe && ! $isGroup
             && $conversation->ai_agent_id
             && ! $conversation->chatbot_flow_id
         ) {
             try {
-                $aiVersion = (int) Cache::increment("ai:version:{$conversation->id}");
-                (new ProcessAiResponse($conversation->id, $aiVersion))->handle();
+                (new ProcessAiResponse($conversation->id))->process();
             } catch (\Throwable $e) {
                 Log::channel('whatsapp')->error('AI agent falhou', [
                     'conversation_id' => $conversation->id,
