@@ -11,8 +11,8 @@ x-app-env: &app-env
   APP_ENV: production
   APP_DEBUG: "false"
   APP_TIMEZONE: America/Sao_Paulo
-  APP_URL: https://syncro.matheusrossi.com.br
-  ASSET_URL: https://syncro.matheusrossi.com.br
+  APP_URL: https://app.syncro.chat
+  ASSET_URL: https://app.syncro.chat
   APP_KEY: "base64:yyrXOSQTQq6MYA7fk0+1YHOUkslOvswrHifAomKMGGU="
   APP_LOCALE: pt_BR
   APP_FALLBACK_LOCALE: pt_BR
@@ -53,7 +53,7 @@ x-app-env: &app-env
   REVERB_APP_KEY: "crm-reverb-key"
   REVERB_APP_SECRET: "crm-reverb-secret"
   # Endereço PÚBLICO (browser → nginx /app/ → reverb:8080)
-  REVERB_HOST: "syncro.matheusrossi.com.br"
+  REVERB_HOST: "app.syncro.chat"
   REVERB_PORT: "443"
   REVERB_SCHEME: "https"
   # Endereço INTERNO Docker (PHP app→reverb via crm_private, sem TLS)
@@ -62,7 +62,7 @@ x-app-env: &app-env
   REVERB_SERVER_SCHEME: "http"
   # Vite Reverb (para build do frontend)
   VITE_REVERB_APP_KEY: "crm-reverb-key"
-  VITE_REVERB_HOST: "syncro.matheusrossi.com.br"
+  VITE_REVERB_HOST: "app.syncro.chat"
   VITE_REVERB_PORT: "443"
   VITE_REVERB_SCHEME: "https"
   # LLM (Inteligencia Artificial)
@@ -76,11 +76,11 @@ x-app-env: &app-env
   # OAuth
   FACEBOOK_CLIENT_ID: ""
   FACEBOOK_CLIENT_SECRET: ""
-  FACEBOOK_REDIRECT_URI: https://syncro.matheusrossi.com.br/oauth/facebook/callback
+  FACEBOOK_REDIRECT_URI: https://app.syncro.chat/oauth/facebook/callback
   FACEBOOK_API_VERSION: v19.0
   GOOGLE_CLIENT_ID: ""
   GOOGLE_CLIENT_SECRET: ""
-  GOOGLE_REDIRECT_URI: https://syncro.matheusrossi.com.br/oauth/google/callback
+  GOOGLE_REDIRECT_URI: https://app.syncro.chat/oauth/google/callback
   GOOGLE_DEVELOPER_TOKEN: ""
   GOOGLE_ADS_API_VERSION: v16
   WHATSAPP_VERIFY_TOKEN: plataforma360_whatsapp_verify
@@ -89,7 +89,7 @@ x-app-env: &app-env
   WHATSAPP_ACCESS_TOKEN: ""
   INSTAGRAM_CLIENT_ID: ""
   INSTAGRAM_CLIENT_SECRET: ""
-  INSTAGRAM_REDIRECT_URI: https://syncro.matheusrossi.com.br/configuracoes/integracoes/instagram/callback
+  INSTAGRAM_REDIRECT_URI: https://app.syncro.chat/configuracoes/integracoes/instagram/callback
   INSTAGRAM_WEBHOOK_VERIFY_TOKEN: plataforma360_instagram_verify_2026
 
 services:
@@ -113,12 +113,12 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=serverossi"
-        - "traefik.http.routers.crm.rule=Host(`syncro.matheusrossi.com.br`)"
+        - "traefik.http.routers.crm.rule=Host(`app.syncro.chat`)"
         - "traefik.http.routers.crm.entrypoints=websecure"
         - "traefik.http.routers.crm.tls=true"
         - "traefik.http.routers.crm.tls.certresolver=letsencryptresolver"
         - "traefik.http.services.crm.loadbalancer.server.port=80"
-        - "traefik.http.routers.crm-http.rule=Host(`syncro.matheusrossi.com.br`)"
+        - "traefik.http.routers.crm-http.rule=Host(`app.syncro.chat`)"
         - "traefik.http.routers.crm-http.entrypoints=web"
         - "traefik.http.routers.crm-http.middlewares=https-redirect@docker"
 
