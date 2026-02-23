@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\Log;
 class InstagramService
 {
     private string $accessToken;
-    private string $apiVersion = 'v19.0';
-    private string $baseUrl    = 'https://graph.facebook.com';
+    private string $apiVersion = 'v21.0';
+    private string $baseUrl    = 'https://graph.instagram.com';
 
     public function __construct(string $accessToken)
     {
@@ -100,7 +100,7 @@ class InstagramService
         $response = $this->client()->get($path, $query);
 
         if ($response->failed()) {
-            Log::warning('InstagramService GET failed', [
+            Log::channel('instagram')->warning('InstagramService GET failed', [
                 'path'   => $path,
                 'status' => $response->status(),
                 'body'   => $response->body(),
@@ -117,7 +117,7 @@ class InstagramService
         $response = $this->client()->post($path, $data);
 
         if ($response->failed()) {
-            Log::warning('InstagramService POST failed', [
+            Log::channel('instagram')->warning('InstagramService POST failed', [
                 'path'   => $path,
                 'status' => $response->status(),
                 'body'   => $response->body(),

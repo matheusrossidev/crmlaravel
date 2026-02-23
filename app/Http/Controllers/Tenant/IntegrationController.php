@@ -487,15 +487,21 @@ class IntegrationController extends Controller
 
             // 3. Buscar username/foto da conta
             Log::channel('instagram')->info('Buscando perfil da conta…');
-            $service    = new InstagramService($accessToken);
-            $me         = $service->getMe();
-            $username   = $me['username'] ?? null;
-            $pictureUrl = $me['profile_picture_url'] ?? null;
+            $service = new InstagramService($accessToken);
+            $me      = $service->getMe();
 
             Log::channel('instagram')->info('Perfil obtido', [
                 'ig_account_id' => $igAccountId,
-                'username'      => $username,
+                'me_response'   => $me,
             ]);
+
+            if (isset($me['error']) && $me['error'] === true) {
+                return redirect()->route('settings.integrations.index')
+                    ->with('error', 'Token obtido mas falhou ao buscar perfil da conta: ' . ($me['body'] ?? ''));
+            }
+
+            $username   = $me['username'] ?? null;
+            $pictureUrl = $me['profile_picture_url'] ?? null;
 
             $tenant = auth()->user()->tenant;
 
