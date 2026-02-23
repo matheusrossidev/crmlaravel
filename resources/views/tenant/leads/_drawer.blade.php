@@ -329,6 +329,7 @@ $_cfDefsJson = isset($customFieldDefs)
 // ── Dados de pipelines e campos personalizados injetados pelo servidor ────
 const PIPELINES_DATA = {!! json_encode($_pipelinesJson) !!};
 const CF_DEFS        = {!! json_encode($_cfDefsJson) !!};
+const CF_UPLOAD_URL  = '{{ route('leads.cf-upload') }}';
 
 // ── Tag input logic ───────────────────────────────────────────────────────
 let _currentTags = [];
@@ -733,6 +734,28 @@ function buildFieldHtml(def, currentValue) {
     } else if (def.field_type === 'email') {
         inputHtml = `<input type="email" id="${id}" class="drawer-input" placeholder="email@exemplo.com" value="${escapeHtml(String(val))}">`;
 
+    } else if (def.field_type === 'file') {
+        // Input oculto guarda a URL após upload; input[file] dispara o envio
+        const existingLink = val
+            ? `<a href="${escapeHtml(String(val))}" target="_blank" rel="noopener"
+                  style="font-size:12px;color:#006acf;word-break:break-all;">${escapeHtml(String(val).split('/').pop())}</a>
+               <button type="button" onclick="removeCfFile('${def.name}','${id}')"
+                       style="background:none;border:none;color:#9ca3af;cursor:pointer;padding:0 4px;font-size:14px;line-height:1;" title="Remover arquivo">✕</button>`
+            : '';
+        inputHtml = `
+            <input type="hidden" id="${id}" value="${escapeHtml(String(val))}">
+            <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+                          border:1px solid #e2e8f0;border-radius:6px;padding:7px 12px;
+                          font-size:13px;color:#374151;background:#f8fafc;width:100%;">
+                <input type="file" id="cf_file_${def.name}" style="display:none;"
+                       onchange="handleCfFileUpload(this,'${def.name}','${id}')">
+                <span style="color:#006acf;font-size:13px;">&#128206;</span>
+                <span>Escolher arquivo</span>
+            </label>
+            <div id="cf_status_${def.name}" style="margin-top:4px;display:flex;align-items:center;gap:6px;">
+                ${existingLink}
+            </div>`;
+
     } else {
         // text (default)
         inputHtml = `<input type="text" id="${id}" class="drawer-input" value="${escapeHtml(String(val))}">`;
@@ -764,6 +787,11 @@ function collectCustomFields() {
             const checked = Array.from(container.querySelectorAll(`.cf-multi-${def.name}:checked`)).map(el => el.value);
             result[def.name] = checked;
 
+        } else if (def.field_type === 'file') {
+            // Lê a URL armazenada no hidden input (já foi feito upload assíncrono)
+            const el = document.getElementById(id);
+            result[def.name] = el ? (el.value || null) : null;
+
         } else {
             const el = document.getElementById(id);
             result[def.name] = el ? (el.value || null) : null;
@@ -771,5 +799,46 @@ function collectCustomFields() {
     });
 
     return result;
+}
+
+// ── Upload de arquivo para campo personalizado tipo "file" ────────────────
+
+function handleCfFileUpload(fileInput, fieldName, hiddenId) {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const statusEl = document.getElementById(`cf_status_${fieldName}`);
+    statusEl.innerHTML = '<span style="font-size:12px;color:#64748b;">Enviando...</span>';
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+    fetch(CF_UPLOAD_URL, { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById(hiddenId).value = data.url;
+                const name = escapeHtml(file.name);
+                statusEl.innerHTML = `
+                    <a href="${escapeHtml(data.url)}" target="_blank" rel="noopener"
+                       style="font-size:12px;color:#006acf;word-break:break-all;">${name}</a>
+                    <button type="button" onclick="removeCfFile('${fieldName}','${hiddenId}')"
+                            style="background:none;border:none;color:#9ca3af;cursor:pointer;padding:0 4px;font-size:14px;line-height:1;" title="Remover">✕</button>`;
+            } else {
+                statusEl.innerHTML = '<span style="font-size:12px;color:#ef4444;">Erro ao enviar arquivo.</span>';
+            }
+        })
+        .catch(() => {
+            statusEl.innerHTML = '<span style="font-size:12px;color:#ef4444;">Erro ao enviar arquivo.</span>';
+        });
+}
+
+function removeCfFile(fieldName, hiddenId) {
+    document.getElementById(hiddenId).value = '';
+    const fileInput = document.getElementById(`cf_file_${fieldName}`);
+    if (fileInput) fileInput.value = '';
+    const statusEl = document.getElementById(`cf_status_${fieldName}`);
+    if (statusEl) statusEl.innerHTML = '';
 }
 </script>
