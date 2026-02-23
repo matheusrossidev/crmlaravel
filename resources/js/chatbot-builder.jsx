@@ -46,11 +46,19 @@ const ACTION_TYPES = [
     { value: 'send_webhook',       label: 'Enviar Webhook (HTTP)'   },
 ];
 
-const SYSTEM_VARS = [
-    '$lead_exists', '$lead_stage_name', '$lead_stage_id', '$lead_source',
-    '$lead_tags', '$conversations_count', '$is_returning_contact',
-    '$messages_count', '$contact_phone', '$contact_name',
+const SYSTEM_VARS_META = [
+    { key: '$lead_exists',          label: 'Lead Existe?'        },
+    { key: '$lead_stage_name',      label: 'Etapa do Lead'       },
+    { key: '$lead_stage_id',        label: 'ID da Etapa'         },
+    { key: '$lead_source',          label: 'Origem do Lead'      },
+    { key: '$lead_tags',            label: 'Tags do Lead'        },
+    { key: '$conversations_count',  label: 'Total de Conversas'  },
+    { key: '$is_returning_contact', label: 'Contato Recorrente?' },
+    { key: '$messages_count',       label: 'Total de Mensagens'  },
+    { key: '$contact_phone',        label: 'Telefone'            },
+    { key: '$contact_name',         label: 'Nome do Contato'     },
 ];
+const SYSTEM_VARS = SYSTEM_VARS_META.map(v => v.key);
 
 const OPERATORS = [
     { value: 'equals',      label: 'igual a'      },
@@ -752,7 +760,7 @@ function ConditionForm({ data, update, allVars }) {
                         ))}
                     </optgroup>
                     <optgroup label="Dados do lead (sistema)">
-                        {SYSTEM_VARS.map(v => <option key={v} value={v}>{v}</option>)}
+                        {SYSTEM_VARS_META.map(v => <option key={v.key} value={v.key}>{v.label} ({v.key})</option>)}
                     </optgroup>
                 </select>
             </FieldGroup>
@@ -1212,10 +1220,11 @@ function NodePanel({ node, onUpdate, onDelete, variables, pipelines, tags, users
                     <div>
                         <div style={{ fontSize: 10, fontWeight: 600, color: '#7c3aed', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sistema</div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                            {SYSTEM_VARS.map(v => (
+                            {SYSTEM_VARS_META.map(v => (
                                 <button
-                                    key={v}
-                                    onClick={() => insertVar(v)}
+                                    key={v.key}
+                                    onClick={() => insertVar(v.key)}
+                                    title={v.key}
                                     style={{
                                         background: '#faf5ff', border: '1px solid #e9d5ff',
                                         color: '#6d28d9', borderRadius: 5, padding: '2px 7px',
@@ -1223,7 +1232,7 @@ function NodePanel({ node, onUpdate, onDelete, variables, pipelines, tags, users
                                         cursor: 'pointer', fontWeight: 500,
                                     }}
                                 >
-                                    {v}
+                                    {v.label}
                                 </button>
                             ))}
                         </div>
@@ -1266,14 +1275,15 @@ function VariablesPanel({ variables, setVariables, onClose }) {
                     <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
                         Sistema (leitura)
                     </div>
-                    {SYSTEM_VARS.map(v => (
-                        <div key={v} style={{
+                    {SYSTEM_VARS_META.map(v => (
+                        <div key={v.key} title={v.key} style={{
                             fontSize: 11, color: '#7c3aed',
                             background: '#faf5ff', border: '1px solid #ede9fe',
                             borderRadius: 5, padding: '3px 8px', marginBottom: 4,
-                            fontFamily: 'monospace',
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6,
                         }}>
-                            {v}
+                            <span style={{ fontWeight: 600 }}>{v.label}</span>
+                            <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#9ca3af' }}>{v.key}</span>
                         </div>
                     ))}
                 </div>

@@ -22,7 +22,7 @@ class ChatbotFlowController extends Controller
 {
     public function index(): View
     {
-        $flows = ChatbotFlow::orderByDesc('created_at')->get();
+        $flows = ChatbotFlow::withCount('conversations')->orderByDesc('created_at')->get();
         return view('tenant.chatbot.index', compact('flows'));
     }
 

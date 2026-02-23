@@ -156,19 +156,27 @@ class ProcessChatbotStep
 
     private function executeMessage(ChatbotFlowNode $node, WhatsappConversation $conv, array $vars): void
     {
-        $text = ChatbotVariableService::interpolate((string) ($node->config['text'] ?? ''), $vars);
-        if ($text === '') {
-            return;
+        $text     = ChatbotVariableService::interpolate((string) ($node->config['text'] ?? ''), $vars);
+        $imageUrl = (string) ($node->config['image_url'] ?? '');
+
+        if ($imageUrl !== '') {
+            // Envia imagem com o texto como legenda (pode ser vazio)
+            $this->sendWahaImage($conv, $imageUrl, $text);
+        } elseif ($text !== '') {
+            $this->sendWahaMessage($conv, $text);
         }
-        $this->sendWahaMessage($conv, $text);
     }
 
     // ── Nó: input — envio da pergunta ────────────────────────────────────────
 
     private function executeInputSend(ChatbotFlowNode $node, WhatsappConversation $conv, array $vars): void
     {
-        $text = ChatbotVariableService::interpolate((string) ($node->config['text'] ?? ''), $vars);
-        if ($text !== '') {
+        $text     = ChatbotVariableService::interpolate((string) ($node->config['text'] ?? ''), $vars);
+        $imageUrl = (string) ($node->config['image_url'] ?? '');
+
+        if ($imageUrl !== '') {
+            $this->sendWahaImage($conv, $imageUrl, $text);
+        } elseif ($text !== '') {
             $this->sendWahaMessage($conv, $text);
         }
     }
@@ -350,6 +358,26 @@ class ProcessChatbotStep
             ->first();
     }
 
+    private function resolveChatId(WhatsappConversation $conv): ?string
+    {
+        $sampleId = WhatsappMessage::withoutGlobalScope('tenant')
+            ->where('conversation_id', $conv->id)
+            ->whereNotNull('waha_message_id')
+            ->where('direction', 'inbound')
+            ->latest('sent_at')
+            ->value('waha_message_id');
+
+        if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
+            $jid = $m[1];
+            return str_ends_with($jid, '@lid')
+                ? preg_replace('/[:@].+$/', '', $jid) . '@lid'
+                : preg_replace('/[:@].+$/', '', $jid) . '@c.us';
+        }
+
+        $rawPhone = ltrim((string) preg_replace('/[:@\s].+$/', '', $conv->phone), '+');
+        return $rawPhone . '@c.us';
+    }
+
     private function sendWahaMessage(WhatsappConversation $conv, string $text): void
     {
         try {
@@ -359,34 +387,35 @@ class ProcessChatbotStep
                 return;
             }
 
-            // Deriva chatId a partir do JID original armazenado nos waha_message_ids
-            // (igual ao WhatsappMessageController) para suportar @lid corretamente.
-            $chatId   = null;
-            $sampleId = WhatsappMessage::withoutGlobalScope('tenant')
-                ->where('conversation_id', $conv->id)
-                ->whereNotNull('waha_message_id')
-                ->where('direction', 'inbound')
-                ->latest('sent_at')
-                ->value('waha_message_id');
-
-            if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
-                $jid    = $m[1];
-                $chatId = str_ends_with($jid, '@lid')
-                    ? preg_replace('/[:@].+$/', '', $jid) . '@lid'
-                    : preg_replace('/[:@].+$/', '', $jid) . '@c.us';
-            }
-
-            if (! $chatId) {
-                $rawPhone = ltrim((string) preg_replace('/[:@\s].+$/', '', $conv->phone), '+');
-                $chatId   = $rawPhone . '@c.us';
-            }
-
-            $waha = new WahaService($instance->session_name);
+            $chatId = $this->resolveChatId($conv);
+            $waha   = new WahaService($instance->session_name);
             $waha->sendText($chatId, $text);
             sleep(self::DEFAULT_MESSAGE_DELAY);
         } catch (\Throwable $e) {
             Log::channel('whatsapp')->error('Chatbot: erro ao enviar mensagem', [
                 'conversation_id' => $conv->id,
+                'error'           => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function sendWahaImage(WhatsappConversation $conv, string $imageUrl, string $caption = ''): void
+    {
+        try {
+            $instance = $conv->instance;
+            if (! $instance) {
+                Log::channel('whatsapp')->warning('Chatbot: instância não encontrada para imagem', ['conv' => $conv->id]);
+                return;
+            }
+
+            $chatId = $this->resolveChatId($conv);
+            $waha   = new WahaService($instance->session_name);
+            $waha->sendImage($chatId, $imageUrl, $caption);
+            sleep(self::DEFAULT_MESSAGE_DELAY);
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->error('Chatbot: erro ao enviar imagem', [
+                'conversation_id' => $conv->id,
+                'image_url'       => $imageUrl,
                 'error'           => $e->getMessage(),
             ]);
         }

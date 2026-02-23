@@ -141,6 +141,10 @@
                             <span><i class="bi bi-hand-index me-1"></i>Manual</span>
                         @endif
                         <span><i class="bi bi-diagram-3 me-1"></i>{{ $flow->nodes()->count() }} nós</span>
+                        <span title="Conversas atribuídas a este fluxo agora">
+                            <i class="bi bi-person-lines-fill me-1" style="color:#8b5cf6;"></i>
+                            {{ $flow->conversations_count }} {{ $flow->conversations_count === 1 ? 'lead atendido' : 'leads atendidos' }}
+                        </span>
                     </div>
 
                     {{-- Ações --}}
@@ -154,8 +158,8 @@
                         <form method="POST" action="{{ route('chatbot.flows.destroy', $flow) }}" style="margin-left:auto;"
                               onsubmit="return confirm('Excluir o fluxo «{{ addslashes($flow->name) }}»? Esta ação não pode ser desfeita.')">
                             @csrf @method('DELETE')
-                            <button type="submit" class="btn-secondary-sm" style="color:#dc2626;border-color:#fca5a5;background:#fff0f0;display:inline-flex;align-items:center;">
-                                <i class="bi bi-trash3"></i>
+                            <button type="submit" class="btn-secondary-sm" style="color:#dc2626;border-color:#fca5a5;background:#fff0f0;display:inline-flex;align-items:center;gap:5px;font-size:12px;">
+                                <i class="bi bi-trash3"></i> Excluir
                             </button>
                         </form>
                     </div>

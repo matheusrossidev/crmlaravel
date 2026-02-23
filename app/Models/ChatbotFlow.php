@@ -32,4 +32,9 @@ class ChatbotFlow extends Model
     {
         return $this->hasMany(ChatbotFlowEdge::class, 'flow_id');
     }
+
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(WhatsappConversation::class, 'chatbot_flow_id');
+    }
 }
