@@ -100,51 +100,18 @@ class AiAgentService
                 continue;
             }
 
-            // Mensagem com imagem — tentar incluir base64 (limitado a MAX_IMAGES_IN_HISTORY)
-            $supportedImageMimes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
-            $imageMime = $msg->media_mime ?: 'image/jpeg';
-            $isSupportedImage = in_array(strtolower($imageMime), $supportedImageMimes, true);
-
-            if ($msg->type === 'image' && $isSupportedImage && $imageCount < self::MAX_IMAGES_IN_HISTORY) {
-                $base64 = $this->fetchImageBase64($msg->media_url);
-
-                if ($base64 !== null) {
-                    $imageCount++;
-                    $mime    = $msg->media_mime ?: 'image/jpeg';
-                    $caption = $msg->body ?? '';
-
-                    // Formato OpenAI (será convertido por cada provider se necessário)
-                    $contentBlocks = [
-                        [
-                            'type'      => 'image_url',
-                            'image_url' => ['url' => "data:{$mime};base64,{$base64}"],
-                        ],
-                    ];
-                    if ($caption !== '') {
-                        $contentBlocks[] = ['type' => 'text', 'text' => $caption];
-                    }
-
-                    $history[] = ['role' => $role, 'content' => $contentBlocks];
-                } else {
-                    // Imagem não acessível — incluir placeholder no texto
-                    $history[] = [
-                        'role'    => $role,
-                        'content' => ($msg->body ? $msg->body . ' ' : '') . '[imagem enviada]',
-                    ];
-                }
-            } else {
-                // Tipo de mídia não-imagem (áudio, vídeo, documento) ou limite de imagens atingido
-                $label = match ($msg->type) {
-                    'audio'    => '[áudio enviado]',
-                    'video'    => '[vídeo enviado]',
-                    'document' => '[documento enviado]',
-                    default    => '[mídia enviada]',
-                };
-                $history[] = [
-                    'role'    => $role,
-                    'content' => ($msg->body ? $msg->body . ' ' : '') . $label,
-                ];
-            }
+            // Mensagem de mídia — incluir como placeholder de texto
+            $label = match ($msg->type) {
+                'image'    => '[imagem enviada]',
+                'audio'    => '[áudio enviado]',
+                'video'    => '[vídeo enviado]',
+                'document' => '[documento enviado]',
+                default    => '[mídia enviada]',
+            };
+            $history[] = [
+                'role'    => $role,
+                'content' => ($msg->body ? $msg->body . ' ' : '') . $label,
+            ];
         }
 
         return $history;
