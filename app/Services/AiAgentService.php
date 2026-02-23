@@ -248,7 +248,13 @@ JSONINSTR;
                 return null;
             }
             $audioContent = $dlResponse->body();
-            $ext = pathinfo(parse_url($mediaUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'ogg';
+            // Strip path parameters (e.g. ".ogg;codecs=opus" → ".ogg") before extracting extension
+            $urlPath = explode(';', parse_url($mediaUrl, PHP_URL_PATH) ?? '')[0];
+            $ext     = pathinfo($urlPath, PATHINFO_EXTENSION) ?: 'ogg';
+            // Whisper não aceita .opus — usar .ogg (mesmo container, codecs compatíveis)
+            if ($ext === 'opus') {
+                $ext = 'ogg';
+            }
         } else {
             // Caminho relativo de storage público
             $path = Storage::disk('public')->path($mediaUrl);

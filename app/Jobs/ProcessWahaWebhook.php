@@ -721,19 +721,24 @@ class ProcessWahaWebhook implements ShouldQueue
 
     private function mimeToExt(string $mime): string
     {
-        return match ($mime) {
+        // Strip MIME parameters (e.g. "audio/ogg;codecs=opus" → "audio/ogg")
+        $base = trim(explode(';', $mime)[0]);
+
+        return match ($base) {
             'image/jpeg'                => 'jpg',
             'image/png'                 => 'png',
             'image/gif'                 => 'gif',
             'image/webp'                => 'webp',
             'audio/ogg'                 => 'ogg',
+            'audio/opus'                => 'ogg',   // Whisper não aceita .opus, usar .ogg
             'audio/mpeg'                => 'mp3',
             'audio/webm'                => 'webm',
             'audio/mp4'                 => 'm4a',
+            'audio/aac'                 => 'm4a',
             'video/mp4'                 => 'mp4',
             'application/pdf'           => 'pdf',
             'application/octet-stream'  => 'bin',
-            default                     => explode('/', $mime)[1] ?? 'bin',
+            default                     => explode('/', $base)[1] ?? 'ogg',
         };
     }
 
