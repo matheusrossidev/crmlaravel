@@ -516,7 +516,7 @@
                     @if($instagram->profile_picture_url)
                         <img src="{{ $instagram->profile_picture_url }}" alt="" style="width:28px;height:28px;border-radius:50%;margin-right:8px;vertical-align:middle;">
                     @endif
-                    <strong>@{{ $instagram->username ?? 'Conta conectada' }}</strong><br>
+                    <strong>{{ $instagram->username ?? 'Conta conectada' }}</strong><br>
                     <span>Conectado {{ $instagram->updated_at?->diffForHumans() ?? '' }}</span>
                 </div>
                 @else
