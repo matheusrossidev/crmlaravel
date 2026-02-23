@@ -550,7 +550,21 @@
              data-is-lost="{{ $stage['is_lost'] ? '1' : '0' }}">
 
             @if(count($stage['leads']))
+            @php
+            $srcMeta = [
+                'facebook'  => ['icon' => 'bi-facebook',    'color' => '#1877F2', 'label' => 'Facebook Ads'],
+                'google'    => ['icon' => 'bi-google',       'color' => '#4285F4', 'label' => 'Google Ads'],
+                'instagram' => ['icon' => 'bi-instagram',    'color' => '#E1306C', 'label' => 'Instagram'],
+                'whatsapp'  => ['icon' => 'bi-whatsapp',     'color' => '#25D366', 'label' => 'WhatsApp'],
+                'site'      => ['icon' => 'bi-globe',        'color' => '#6366F1', 'label' => 'Site'],
+                'indicacao' => ['icon' => 'bi-people-fill',  'color' => '#F59E0B', 'label' => 'Indicação'],
+                'api'       => ['icon' => 'bi-code-slash',   'color' => '#8B5CF6', 'label' => 'API'],
+                'manual'    => ['icon' => 'bi-pencil',       'color' => '#6B7280', 'label' => 'Manual'],
+                'outro'     => ['icon' => 'bi-three-dots',   'color' => '#9CA3AF', 'label' => 'Outro'],
+            ];
+            @endphp
             @foreach($stage['leads'] as $lead)
+            @php $s = $srcMeta[$lead->source ?? 'manual'] ?? $srcMeta['outro']; @endphp
             <div class="lead-card"
                  data-lead-id="{{ $lead->id }}"
                  data-stage-id="{{ $stage['id'] }}"
@@ -593,7 +607,7 @@
                 </div>
 
                 <div class="card-footer">
-                    <span class="source-badge">{{ $lead->source ?? 'manual' }}</span>
+                    <span class="source-badge"><i class="bi {{ $s['icon'] }}" style="color:{{ $s['color'] }};margin-right:3px;"></i>{{ $s['label'] }}</span>
                     @if($lead->value)
                     <span class="card-value">R$ {{ number_format((float)$lead->value, 0, ',', '.') }}</span>
                     @endif
@@ -937,6 +951,22 @@ function updateCardInBoard(lead) {
     }
 }
 
+const SOURCE_META = {
+    facebook:  { icon: 'bi-facebook',    color: '#1877F2', label: 'Facebook Ads' },
+    google:    { icon: 'bi-google',       color: '#4285F4', label: 'Google Ads' },
+    instagram: { icon: 'bi-instagram',   color: '#E1306C', label: 'Instagram' },
+    whatsapp:  { icon: 'bi-whatsapp',    color: '#25D366', label: 'WhatsApp' },
+    site:      { icon: 'bi-globe',       color: '#6366F1', label: 'Site' },
+    indicacao: { icon: 'bi-people-fill', color: '#F59E0B', label: 'Indicação' },
+    api:       { icon: 'bi-code-slash',  color: '#8B5CF6', label: 'API' },
+    manual:    { icon: 'bi-pencil',      color: '#6B7280', label: 'Manual' },
+    outro:     { icon: 'bi-three-dots',  color: '#9CA3AF', label: 'Outro' },
+};
+function renderSourceBadge(source, cls = 'source-badge') {
+    const m = SOURCE_META[source] || SOURCE_META.outro;
+    return `<span class="${cls}"><i class="bi ${m.icon}" style="color:${m.color};margin-right:3px;"></i>${escapeHtml(m.label)}</span>`;
+}
+
 function buildCard(lead) {
     const phone    = lead.phone    ? `<div class="card-meta-row"><i class="bi bi-telephone"></i>${escapeHtml(lead.phone)}</div>` : '';
     const email    = lead.email    ? `<div class="card-meta-row"><i class="bi bi-envelope"></i>${escapeHtml(lead.email)}</div>` : '';
@@ -968,7 +998,7 @@ function buildCard(lead) {
         </div>
         <div class="card-meta">${phone}${email}${campaign}${tags}${cfRows}</div>
         <div class="card-footer">
-            <span class="source-badge">${escapeHtml(lead.source || 'manual')}</span>
+            ${renderSourceBadge(lead.source || 'manual')}
             ${value}
         </div>
     </div>`;

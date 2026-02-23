@@ -16,6 +16,7 @@ use App\Models\Pipeline;
 use App\Models\PipelineStage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -250,6 +251,18 @@ class LeadController extends Controller
             'created_at'    => $lead->created_at?->format('d/m/Y H:i'),
             'custom_fields' => $lead->customFields,  // usa o accessor do Model
         ];
+    }
+
+    public function uploadCustomFieldFile(Request $request): JsonResponse
+    {
+        $request->validate(['file' => 'required|file|max:20480']); // 20 MB
+
+        $path = $request->file('file')->store('lead-files', 'public');
+
+        return response()->json([
+            'success' => true,
+            'url'     => Storage::disk('public')->url($path),
+        ]);
     }
 
     private function saveCustomFields(Lead $lead, array $fields): void

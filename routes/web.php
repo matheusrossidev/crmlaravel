@@ -61,6 +61,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     // Leads / Contatos — exportar e importar ANTES do {lead} wildcard
     Route::get('/contatos/exportar', [LeadController::class, 'export'])->name('leads.export');
     Route::post('/contatos/importar', [LeadController::class, 'import'])->name('leads.import');
+    Route::post('/contatos/custom-fields/upload', [LeadController::class, 'uploadCustomFieldFile'])->name('leads.cf-upload');
 
     Route::get('/contatos', [LeadController::class, 'index'])->name('leads.index');
     Route::post('/contatos', [LeadController::class, 'store'])->name('leads.store');

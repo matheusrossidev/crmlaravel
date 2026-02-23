@@ -329,6 +329,23 @@ $_cfDefsJson = isset($customFieldDefs)
 // ── Dados de pipelines e campos personalizados injetados pelo servidor ────
 const PIPELINES_DATA = {!! json_encode($_pipelinesJson) !!};
 const CF_DEFS        = {!! json_encode($_cfDefsJson) !!};
+const CF_UPLOAD_URL  = @json(route('leads.cf-upload'));
+
+const SOURCE_META = {
+    facebook:  { icon: 'bi-facebook',    color: '#1877F2', label: 'Facebook Ads' },
+    google:    { icon: 'bi-google',       color: '#4285F4', label: 'Google Ads' },
+    instagram: { icon: 'bi-instagram',   color: '#E1306C', label: 'Instagram' },
+    whatsapp:  { icon: 'bi-whatsapp',    color: '#25D366', label: 'WhatsApp' },
+    site:      { icon: 'bi-globe',       color: '#6366F1', label: 'Site' },
+    indicacao: { icon: 'bi-people-fill', color: '#F59E0B', label: 'Indicação' },
+    api:       { icon: 'bi-code-slash',  color: '#8B5CF6', label: 'API' },
+    manual:    { icon: 'bi-pencil',      color: '#6B7280', label: 'Manual' },
+    outro:     { icon: 'bi-three-dots',  color: '#9CA3AF', label: 'Outro' },
+};
+function renderSourceBadge(source, cls = 'source-pill') {
+    const m = SOURCE_META[source] || SOURCE_META.outro;
+    return `<span class="${cls}"><i class="bi ${m.icon}" style="color:${m.color};margin-right:4px;"></i>${escapeHtml(m.label)}</span>`;
+}
 
 // ── Tag input logic ───────────────────────────────────────────────────────
 let _currentTags = [];
@@ -682,6 +699,38 @@ function renderCustomFields(defs, values) {
 
     section.style.display = '';
     container.innerHTML   = defs.map(d => buildFieldHtml(d, values[d.name])).join('');
+
+    // Registrar upload automático para campos do tipo "file"
+    defs.filter(d => d.field_type === 'file').forEach(def => {
+        const fileInput = document.getElementById(`cf_file_input_${def.name}`);
+        if (! fileInput) return;
+        fileInput.addEventListener('change', async () => {
+            const file = fileInput.files[0];
+            if (! file) return;
+            const statusEl  = document.getElementById(`cf_file_status_${def.name}`);
+            const previewEl = document.getElementById(`cf_file_preview_${def.name}`);
+            const hiddenEl  = document.getElementById(`cf_${def.name}`);
+            statusEl.textContent = 'Enviando...';
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+            try {
+                const res  = await fetch(CF_UPLOAD_URL, { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success && data.url) {
+                    hiddenEl.value = data.url;
+                    statusEl.textContent = '';
+                    const name = decodeURIComponent(data.url.split('/').pop());
+                    previewEl.style.display = '';
+                    previewEl.innerHTML = `<a href="${escapeHtml(data.url)}" target="_blank" style="color:#3B82F6;word-break:break-all;"><i class="bi bi-paperclip"></i> ${escapeHtml(name)}</a>`;
+                } else {
+                    statusEl.textContent = 'Erro no upload.';
+                }
+            } catch {
+                statusEl.textContent = 'Erro de conexão.';
+            }
+        });
+    });
 }
 
 function buildFieldHtml(def, currentValue) {
@@ -732,6 +781,23 @@ function buildFieldHtml(def, currentValue) {
 
     } else if (def.field_type === 'email') {
         inputHtml = `<input type="email" id="${id}" class="drawer-input" placeholder="email@exemplo.com" value="${escapeHtml(String(val))}">`;
+
+    } else if (def.field_type === 'file') {
+        const hasFile = val && String(val).startsWith('http');
+        const fileName = hasFile ? decodeURIComponent(String(val).split('/').pop()) : '';
+        const preview = hasFile
+            ? `<div id="cf_file_preview_${def.name}" style="margin-bottom:6px;font-size:12px;">
+                   <a href="${escapeHtml(String(val))}" target="_blank" style="color:#3B82F6;word-break:break-all;">
+                       <i class="bi bi-paperclip"></i> ${escapeHtml(fileName)}
+                   </a>
+               </div>`
+            : `<div id="cf_file_preview_${def.name}" style="display:none;margin-bottom:6px;font-size:12px;"></div>`;
+        inputHtml = `${preview}
+            <input type="hidden" id="${id}" value="${escapeHtml(String(val))}">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <input type="file" id="cf_file_input_${def.name}" style="flex:1;font-size:13px;">
+                <span id="cf_file_status_${def.name}" style="font-size:11px;color:#6B7280;"></span>
+            </div>`;
 
     } else {
         // text (default)

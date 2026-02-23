@@ -253,6 +253,7 @@
                 <option value="url">URL / Link</option>
                 <option value="phone">Telefone</option>
                 <option value="email">E-mail</option>
+                <option value="file">Arquivo (upload)</option>
             </select>
             <div class="type-hint" id="typeHint"></div>
         </div>

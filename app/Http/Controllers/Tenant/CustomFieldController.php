@@ -35,7 +35,7 @@ class CustomFieldController extends Controller
 
         $request->validate([
             'label'        => 'required|string|max:100',
-            'field_type'   => 'required|in:text,textarea,number,currency,date,select,multiselect,checkbox,url,phone,email',
+            'field_type'   => 'required|in:text,textarea,number,currency,date,select,multiselect,checkbox,url,phone,email,file',
             'options'      => 'nullable|string',
             'is_required'  => 'boolean',
             'show_on_card' => 'boolean',
