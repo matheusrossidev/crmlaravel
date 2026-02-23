@@ -69,6 +69,29 @@ class InstagramService
     }
 
     /**
+     * Fetch the Facebook-platform Business Account ID (used by webhooks in entry.id).
+     * This is different from the Instagram Login API user ID.
+     * Returns null if the token doesn't have access to graph.facebook.com.
+     */
+    public function getBusinessAccountId(): ?string
+    {
+        try {
+            $response = Http::timeout(15)->get('https://graph.facebook.com/' . $this->apiVersion . '/me', [
+                'fields'       => 'id',
+                'access_token' => $this->accessToken,
+            ]);
+
+            if ($response->successful()) {
+                $id = $response->json('id');
+                return $id ? (string) $id : null;
+            }
+        } catch (\Throwable) {
+        }
+
+        return null;
+    }
+
+    /**
      * Subscribe this account to receive webhook events (required after OAuth).
      * Without this call, Meta does NOT send DM webhooks for this account.
      * Must be sent as form-urlencoded (not JSON) — that's why we use asForm().

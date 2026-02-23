@@ -503,19 +503,27 @@ class IntegrationController extends Controller
             $username   = $me['username'] ?? null;
             $pictureUrl = $me['profile_picture_url'] ?? null;
 
+            // Buscar o ID no formato Facebook/Meta (usado pelo webhook em entry.id)
+            $businessAccountId = $service->getBusinessAccountId();
+            Log::channel('instagram')->info('IDs da conta', [
+                'ig_login_id'       => $igAccountId,
+                'ig_business_id'    => $businessAccountId,
+            ]);
+
             $tenant = auth()->user()->tenant;
 
             InstagramInstance::withoutGlobalScope('tenant')->updateOrCreate(
                 ['tenant_id' => $tenant->id],
                 [
-                    'instagram_account_id' => $igAccountId,
-                    'username'             => $username,
-                    'profile_picture_url'  => $pictureUrl,
-                    'access_token'         => encrypt($accessToken),
-                    'token_expires_at'     => $expiresIn
+                    'instagram_account_id'   => $igAccountId,
+                    'ig_business_account_id' => $businessAccountId,
+                    'username'               => $username,
+                    'profile_picture_url'    => $pictureUrl,
+                    'access_token'           => encrypt($accessToken),
+                    'token_expires_at'       => $expiresIn
                         ? now()->addSeconds((int) $expiresIn)
                         : now()->addDays(60),
-                    'status'               => 'connected',
+                    'status'                 => 'connected',
                 ]
             );
 

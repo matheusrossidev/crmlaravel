@@ -36,7 +36,10 @@ class ProcessInstagramWebhook implements ShouldQueue
             }
 
             $instance = InstagramInstance::withoutGlobalScope('tenant')
-                ->where('instagram_account_id', $igAccountId)
+                ->where(function ($q) use ($igAccountId) {
+                    $q->where('instagram_account_id', $igAccountId)
+                      ->orWhere('ig_business_account_id', $igAccountId);
+                })
                 ->first();
 
             if (! $instance) {

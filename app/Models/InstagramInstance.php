@@ -16,6 +16,7 @@ class InstagramInstance extends Model
     protected $fillable = [
         'tenant_id',
         'instagram_account_id',
+        'ig_business_account_id',
         'username',
         'profile_picture_url',
         'access_token',
