@@ -43,8 +43,25 @@ class ProcessInstagramWebhook implements ShouldQueue
                 ->first();
 
             if (! $instance) {
-                Log::channel('instagram')->warning('Instância não encontrada', ['ig_account_id' => $igAccountId]);
-                continue;
+                // Auto-descoberta: IGA token retorna ID diferente do usado no webhook (entry.id).
+                // Na primeira entrega, procurar instância conectada sem ig_business_account_id
+                // e atualizar automaticamente.
+                $instance = InstagramInstance::withoutGlobalScope('tenant')
+                    ->where('status', 'connected')
+                    ->whereNull('ig_business_account_id')
+                    ->orderByDesc('updated_at')
+                    ->first();
+
+                if ($instance) {
+                    $instance->update(['ig_business_account_id' => $igAccountId]);
+                    Log::channel('instagram')->info('ig_business_account_id auto-descoberto e salvo', [
+                        'instance_id'            => $instance->id,
+                        'ig_business_account_id' => $igAccountId,
+                    ]);
+                } else {
+                    Log::channel('instagram')->warning('Instância não encontrada', ['ig_account_id' => $igAccountId]);
+                    continue;
+                }
             }
 
             foreach ($entry['messaging'] ?? [] as $messaging) {
