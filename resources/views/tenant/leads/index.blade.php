@@ -207,21 +207,7 @@
                 </tr>
             </thead>
             <tbody id="leadsTableBody">
-                @php
-                $srcMeta = [
-                    'facebook'  => ['icon' => 'bi-facebook',    'color' => '#1877F2', 'label' => 'Facebook Ads'],
-                    'google'    => ['icon' => 'bi-google',       'color' => '#4285F4', 'label' => 'Google Ads'],
-                    'instagram' => ['icon' => 'bi-instagram',    'color' => '#E1306C', 'label' => 'Instagram'],
-                    'whatsapp'  => ['icon' => 'bi-whatsapp',     'color' => '#25D366', 'label' => 'WhatsApp'],
-                    'site'      => ['icon' => 'bi-globe',        'color' => '#6366F1', 'label' => 'Site'],
-                    'indicacao' => ['icon' => 'bi-people-fill',  'color' => '#F59E0B', 'label' => 'Indicação'],
-                    'api'       => ['icon' => 'bi-code-slash',   'color' => '#8B5CF6', 'label' => 'API'],
-                    'manual'    => ['icon' => 'bi-pencil',       'color' => '#6B7280', 'label' => 'Manual'],
-                    'outro'     => ['icon' => 'bi-three-dots',   'color' => '#9CA3AF', 'label' => 'Outro'],
-                ];
-                @endphp
                 @forelse($leads as $lead)
-                @php $s = $srcMeta[$lead->source ?? 'manual'] ?? $srcMeta['outro']; @endphp
                 <tr class="lead-row" data-lead-id="{{ $lead->id }}">
                     <td class="lead-name-cell">
                         {{ $lead->name }}
@@ -244,7 +230,7 @@
                     <td class="value-cell">
                         {{ $lead->value ? 'R$ ' . number_format((float)$lead->value, 2, ',', '.') : '—' }}
                     </td>
-                    <td><span class="source-pill"><i class="bi {{ $s['icon'] }}" style="color:{{ $s['color'] }};margin-right:4px;"></i>{{ $s['label'] }}</span></td>
+                    <td><span class="source-pill">{{ $lead->source ?? 'manual' }}</span></td>
                     <td>{{ $lead->campaign?->name ?? '—' }}</td>
                     <td style="white-space:nowrap;color:#9ca3af;">{{ $lead->created_at->format('d/m/Y') }}</td>
                 </tr>
