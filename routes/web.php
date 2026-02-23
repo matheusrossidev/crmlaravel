@@ -41,6 +41,9 @@ Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 
+// Páginas públicas (sem autenticação)
+Route::view('/politica-de-privacidade', 'public.privacy')->name('privacy');
+
 /*
 |--------------------------------------------------------------------------
 | Rotas do Painel do Tenant
