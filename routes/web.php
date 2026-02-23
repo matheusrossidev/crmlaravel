@@ -179,6 +179,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::delete('{agent}',                 [AiAgentController::class, 'destroy'])->name('destroy');
         Route::post('{agent}/toggle',            [AiAgentController::class, 'toggleActive'])->name('toggle');
         Route::post('{agent}/test-chat',         [AiAgentController::class, 'testChat'])->name('test-chat');
+        Route::post('{agent}/knowledge-files',           [AiAgentController::class, 'uploadKnowledgeFile'])->name('knowledge-files.store');
+        Route::delete('{agent}/knowledge-files/{file}',  [AiAgentController::class, 'deleteKnowledgeFile'])->name('knowledge-files.destroy');
     });
 });
 

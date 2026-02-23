@@ -176,6 +176,47 @@
     @if(!$isEdit)
     .test-chat-panel { display: none; }
     @endif
+
+    /* Knowledge file list */
+    .kb-file-item {
+        display: flex; align-items: flex-start; gap: 10px;
+        padding: 10px 12px; border: 1px solid #e8eaf0;
+        border-radius: 9px; margin-bottom: 7px; background: #fafafa;
+    }
+    .kb-file-icon { font-size: 22px; flex-shrink: 0; line-height: 1; padding-top: 2px; }
+    .kb-file-info { flex: 1; min-width: 0; }
+    .kb-file-name { font-size: 13px; font-weight: 600; color: #1a1d23; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .kb-status-badge {
+        display: inline-block; font-size: 10.5px; font-weight: 700;
+        padding: 1px 7px; border-radius: 20px; margin-top: 3px;
+    }
+    .kb-status-badge.done    { background: #dcfce7; color: #16a34a; }
+    .kb-status-badge.failed  { background: #fee2e2; color: #dc2626; }
+    .kb-status-badge.pending { background: #fef9c3; color: #ca8a04; }
+    .kb-preview-btn {
+        font-size: 11px; color: #3B82F6; border: none; background: none;
+        padding: 0; cursor: pointer; margin-left: 6px;
+    }
+    .kb-del-btn {
+        flex-shrink: 0; width: 28px; height: 28px;
+        border: 1px solid #e8eaf0; border-radius: 7px;
+        background: #fff; color: #9ca3af; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px; transition: all .15s;
+    }
+    .kb-del-btn:hover { background: #fee2e2; color: #ef4444; border-color: #fca5a5; }
+    .kb-file-preview {
+        font-size: 11.5px; color: #6b7280; background: #f8fafc;
+        border: 1px solid #e8eaf0; border-radius: 7px;
+        padding: 8px 10px; margin-bottom: 7px; white-space: pre-wrap;
+        line-height: 1.5;
+    }
+    .kb-uploading {
+        display: flex; align-items: center; gap: 8px;
+        padding: 10px 12px; border: 1px dashed #93c5fd;
+        border-radius: 9px; margin-bottom: 7px; background: #eff6ff;
+        font-size: 12.5px; color: #3B82F6;
+    }
 </style>
 @endpush
 
@@ -372,8 +413,77 @@
                     Inclua informações sobre sua empresa, produtos, preços, FAQs, políticas, etc.
                     O agente usará estas informações para responder.
                 </div>
-                <textarea name="knowledge_base" class="form-control" rows="10"
+                <textarea name="knowledge_base" class="form-control" rows="8"
                           placeholder="Empresa: XYZ Tecnologia&#10;Produtos: Plano Básico R$49/mês, Plano Pro R$99/mês&#10;Horário: seg-sex 9h-18h&#10;Telefone: (11) 1234-5678&#10;...">{{ old('knowledge_base', $agent->knowledge_base) }}</textarea>
+
+                @if($isEdit)
+                {{-- Upload de arquivos --}}
+                <div style="margin-top:20px;">
+                    <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">
+                        <i class="bi bi-paperclip" style="margin-right:4px;"></i>Arquivos de Conhecimento
+                    </div>
+                    <div style="font-size:12px;color:#9ca3af;margin-bottom:10px;">
+                        Faça upload de PDFs, imagens ou arquivos de texto. O conteúdo será extraído automaticamente e usado pelo agente.
+                    </div>
+
+                    {{-- Dropzone --}}
+                    <div id="kbDropzone" style="border:2px dashed #d1d5db;border-radius:10px;padding:20px 16px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px;"
+                         onclick="document.getElementById('kbFileInput').click()"
+                         ondragover="event.preventDefault();this.style.borderColor='#3B82F6';this.style.background='#eff6ff';"
+                         ondragleave="this.style.borderColor='#d1d5db';this.style.background='';"
+                         ondrop="handleKbDrop(event)">
+                        <i class="bi bi-cloud-arrow-up" style="font-size:26px;color:#9ca3af;display:block;margin-bottom:6px;"></i>
+                        <div style="font-size:13px;color:#6b7280;font-weight:600;">Clique ou arraste arquivos aqui</div>
+                        <div style="font-size:11.5px;color:#9ca3af;margin-top:3px;">PDF, TXT, CSV, PNG, JPG, WEBP — máx. 20 MB</div>
+                    </div>
+                    <input type="file" id="kbFileInput" style="display:none;"
+                           accept=".pdf,.txt,.csv,.png,.jpg,.jpeg,.webp,.gif"
+                           onchange="uploadKbFile(this.files[0])">
+
+                    {{-- Lista de arquivos --}}
+                    <div id="kbFileList">
+                        @foreach($knowledgeFiles as $kbFile)
+                        <div class="kb-file-item" id="kb-file-{{ $kbFile->id }}">
+                            <div class="kb-file-icon">
+                                @if(str_starts_with($kbFile->mime_type, 'image/'))
+                                    <i class="bi bi-file-earmark-image" style="color:#8b5cf6;"></i>
+                                @elseif($kbFile->mime_type === 'application/pdf')
+                                    <i class="bi bi-file-earmark-pdf" style="color:#ef4444;"></i>
+                                @else
+                                    <i class="bi bi-file-earmark-text" style="color:#3B82F6;"></i>
+                                @endif
+                            </div>
+                            <div class="kb-file-info">
+                                <div class="kb-file-name">{{ $kbFile->original_name }}</div>
+                                @if($kbFile->status === 'done')
+                                    <span class="kb-status-badge done">Extraído</span>
+                                    @if($kbFile->extracted_text)
+                                    <button type="button" class="kb-preview-btn" onclick="toggleKbPreview({{ $kbFile->id }})">
+                                        <i class="bi bi-eye"></i> Ver prévia
+                                    </button>
+                                    @endif
+                                @elseif($kbFile->status === 'failed')
+                                    <span class="kb-status-badge failed">Falhou</span>
+                                    @if($kbFile->error_message)
+                                    <span style="font-size:11px;color:#ef4444;display:block;margin-top:2px;">{{ $kbFile->error_message }}</span>
+                                    @endif
+                                @else
+                                    <span class="kb-status-badge pending">Pendente</span>
+                                @endif
+                            </div>
+                            <button type="button" class="kb-del-btn" onclick="deleteKbFile({{ $kbFile->id }}, '{{ e($kbFile->original_name) }}')" title="Remover">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
+                        @if($kbFile->extracted_text)
+                        <div class="kb-file-preview" id="kb-preview-{{ $kbFile->id }}" style="display:none;">
+                            {{ mb_substr($kbFile->extracted_text, 0, 600) }}{{ mb_strlen($kbFile->extracted_text) > 600 ? '…' : '' }}
+                        </div>
+                        @endif
+                        @endforeach
+                    </div>
+                </div>
+                @endif
             </div>
         </div>
 
@@ -554,8 +664,124 @@
 
 @push('scripts')
 <script>
-const AGENT_ID = {{ $agent->id ?? 'null' }};
-const CSRF     = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+const AGENT_ID  = {{ $agent->id ?? 'null' }};
+const CSRF      = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+const KB_UPLOAD = '{{ $isEdit ? route('ai.agents.knowledge-files.store', $agent) : '' }}';
+const KB_DELETE = '{{ $isEdit ? url('/ia/agentes/' . $agent->id . '/knowledge-files') : '' }}';
+
+/* ── Knowledge Files ── */
+function fileIcon(mime) {
+    if (mime.startsWith('image/')) return '<i class="bi bi-file-earmark-image" style="color:#8b5cf6;font-size:22px;"></i>';
+    if (mime === 'application/pdf') return '<i class="bi bi-file-earmark-pdf" style="color:#ef4444;font-size:22px;"></i>';
+    return '<i class="bi bi-file-earmark-text" style="color:#3B82F6;font-size:22px;"></i>';
+}
+
+function handleKbDrop(e) {
+    e.preventDefault();
+    const dz = document.getElementById('kbDropzone');
+    dz.style.borderColor = '#d1d5db';
+    dz.style.background  = '';
+    const file = e.dataTransfer.files[0];
+    if (file) uploadKbFile(file);
+}
+
+async function uploadKbFile(file) {
+    if (!file || !AGENT_ID) return;
+
+    const list = document.getElementById('kbFileList');
+    const tmpId = 'tmp-' + Date.now();
+
+    // Placeholder carregando
+    const tmpEl = document.createElement('div');
+    tmpEl.className = 'kb-uploading';
+    tmpEl.id = tmpId;
+    tmpEl.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Fazendo upload e extraindo conteúdo de <strong>' + escapeHtml(file.name) + '</strong>…';
+    list.prepend(tmpEl);
+
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('_token', CSRF);
+
+    try {
+        const res  = await fetch(KB_UPLOAD, { method: 'POST', body: fd });
+        const data = await res.json();
+        tmpEl.remove();
+
+        if (!res.ok) {
+            toastr.error(data.message ?? 'Erro ao fazer upload.', 'Erro');
+            return;
+        }
+
+        // Montar HTML do novo arquivo
+        let badgeHtml = '';
+        if (data.status === 'done') {
+            badgeHtml = '<span class="kb-status-badge done">Extraído</span>';
+            if (data.preview) {
+                badgeHtml += ' <button type="button" class="kb-preview-btn" onclick="toggleKbPreview(' + data.id + ')"><i class="bi bi-eye"></i> Ver prévia</button>';
+            }
+        } else if (data.status === 'failed') {
+            badgeHtml = '<span class="kb-status-badge failed">Falhou</span>';
+            if (data.error_message) badgeHtml += '<span style="font-size:11px;color:#ef4444;display:block;margin-top:2px;">' + escapeHtml(data.error_message) + '</span>';
+        } else {
+            badgeHtml = '<span class="kb-status-badge pending">Pendente</span>';
+        }
+
+        const itemEl = document.createElement('div');
+        itemEl.className = 'kb-file-item';
+        itemEl.id = 'kb-file-' + data.id;
+        itemEl.innerHTML = `
+            <div class="kb-file-icon">${fileIcon(data.mime_type ?? '')}</div>
+            <div class="kb-file-info">
+                <div class="kb-file-name">${escapeHtml(data.original_name)}</div>
+                ${badgeHtml}
+            </div>
+            <button type="button" class="kb-del-btn" onclick="deleteKbFile(${data.id}, '${escapeHtml(data.original_name)}')" title="Remover">
+                <i class="bi bi-trash3"></i>
+            </button>`;
+        list.prepend(itemEl);
+
+        if (data.preview) {
+            const prevEl = document.createElement('div');
+            prevEl.className = 'kb-file-preview';
+            prevEl.id = 'kb-preview-' + data.id;
+            prevEl.style.display = 'none';
+            prevEl.textContent = data.preview;
+            itemEl.insertAdjacentElement('afterend', prevEl);
+        }
+
+        if (data.status === 'done') toastr.success('Arquivo processado com sucesso!', 'OK');
+        else if (data.status === 'failed') toastr.warning('Extração falhou. Veja o motivo na lista.', 'Atenção');
+    } catch (err) {
+        tmpEl.remove();
+        toastr.error('Erro de rede. Tente novamente.', 'Erro');
+    }
+
+    // Reset input
+    document.getElementById('kbFileInput').value = '';
+}
+
+function toggleKbPreview(id) {
+    const el = document.getElementById('kb-preview-' + id);
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function deleteKbFile(id, name) {
+    if (!confirm('Remover "' + name + '" da base de conhecimento?')) return;
+
+    try {
+        const res = await fetch(KB_DELETE + '/' + id, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+        });
+        if (!res.ok) { toastr.error('Erro ao remover arquivo.'); return; }
+
+        document.getElementById('kb-file-' + id)?.remove();
+        document.getElementById('kb-preview-' + id)?.remove();
+        toastr.success('Arquivo removido.', 'OK');
+    } catch {
+        toastr.error('Erro de rede.', 'Erro');
+    }
+}
 let testHistory = [];
 let testChatOpen = false;
 

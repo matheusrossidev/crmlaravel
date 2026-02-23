@@ -73,6 +73,14 @@ class AiAgentService
             $lines[] = "\n--- BASE DE CONHECIMENTO ---\n{$agent->knowledge_base}\n--- FIM DA BASE DE CONHECIMENTO ---";
         }
 
+        // Arquivos de conhecimento carregados
+        $kbFiles = $agent->knowledgeFiles()->where('status', 'done')->get();
+        foreach ($kbFiles as $kbFile) {
+            if ($kbFile->extracted_text) {
+                $lines[] = "\n--- ARQUIVO: {$kbFile->original_name} ---\n{$kbFile->extracted_text}\n--- FIM DO ARQUIVO ---";
+            }
+        }
+
         // ── Contexto de pipeline (se disponível) ──────────────────────────────
         if (! empty($stages)) {
             $currentStage = collect($stages)->firstWhere('current', true);

@@ -45,4 +45,9 @@ class AiAgent extends Model
     {
         return $this->hasMany(WhatsappConversation::class, 'ai_agent_id');
     }
+
+    public function knowledgeFiles(): HasMany
+    {
+        return $this->hasMany(AiAgentKnowledgeFile::class, 'ai_agent_id');
+    }
 }

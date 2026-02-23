@@ -6,8 +6,11 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\AiAgent;
+use App\Models\AiAgentKnowledgeFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class AiAgentController extends Controller
@@ -21,8 +24,10 @@ class AiAgentController extends Controller
 
     public function create(): View
     {
-        $agent = new AiAgent();
-        return view('tenant.ai.agents.form', compact('agent'));
+        $agent          = new AiAgent();
+        $knowledgeFiles = collect();
+
+        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles'));
     }
 
     public function store(Request $request): JsonResponse|\Illuminate\Http\RedirectResponse
@@ -51,7 +56,9 @@ class AiAgentController extends Controller
 
     public function edit(AiAgent $agent): View
     {
-        return view('tenant.ai.agents.form', compact('agent'));
+        $knowledgeFiles = $agent->knowledgeFiles()->orderBy('created_at')->get();
+
+        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles'));
     }
 
     public function update(Request $request, AiAgent $agent): \Illuminate\Http\RedirectResponse
@@ -124,6 +131,131 @@ class AiAgentController extends Controller
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
+    }
+
+    // ── Knowledge Files ───────────────────────────────────────────────────────
+
+    public function uploadKnowledgeFile(Request $request, AiAgent $agent): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|max:20480|mimes:pdf,txt,csv,png,jpg,jpeg,webp,gif',
+        ]);
+
+        $uploaded  = $request->file('file');
+        $mime      = $uploaded->getMimeType() ?? $uploaded->getClientMimeType();
+        $origName  = $uploaded->getClientOriginalName();
+
+        $path = $uploaded->store("ai-knowledge/{$agent->id}", 'public');
+
+        $record = AiAgentKnowledgeFile::create([
+            'ai_agent_id'   => $agent->id,
+            'tenant_id'     => auth()->user()->tenant_id,
+            'original_name' => $origName,
+            'storage_path'  => $path,
+            'mime_type'     => $mime,
+            'status'        => 'pending',
+        ]);
+
+        try {
+            $extractedText  = null;
+            $errorMessage   = null;
+
+            if (str_starts_with($mime, 'image/')) {
+                // Descrever imagem via LLM Vision
+                $fullPath = Storage::disk('public')->path($path);
+                $base64   = base64_encode(file_get_contents($fullPath));
+                $extractedText = $this->describeFileWithLlm($base64, $mime);
+            } elseif ($mime === 'application/pdf') {
+                // Extrair texto do PDF via smalot/pdfparser
+                $fullPath = Storage::disk('public')->path($path);
+                $parser   = new \Smalot\PdfParser\Parser();
+                $pdf      = $parser->parseFile($fullPath);
+                $text     = $pdf->getText();
+                if (mb_strlen(trim($text)) < 10) {
+                    throw new \RuntimeException('PDF sem texto legível. Converta as páginas em imagem e faça upload como PNG/JPG.');
+                }
+                // Trunca para não exceder tokens do LLM
+                $extractedText = mb_substr($text, 0, 100000);
+            } else {
+                // TXT, CSV e outros textos — leitura direta
+                $fullPath      = Storage::disk('public')->path($path);
+                $extractedText = mb_substr(file_get_contents($fullPath), 0, 100000);
+            }
+
+            $record->update([
+                'extracted_text' => $extractedText,
+                'status'         => 'done',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Knowledge file extraction failed', [
+                'file_id' => $record->id,
+                'error'   => $e->getMessage(),
+            ]);
+            $record->update([
+                'status'        => 'failed',
+                'error_message' => mb_substr($e->getMessage(), 0, 500),
+            ]);
+        }
+
+        $record->refresh();
+
+        return response()->json([
+            'id'            => $record->id,
+            'original_name' => $record->original_name,
+            'mime_type'     => $record->mime_type,
+            'status'        => $record->status,
+            'error_message' => $record->error_message,
+            'preview'       => $record->extracted_text
+                ? mb_substr($record->extracted_text, 0, 300) . (mb_strlen($record->extracted_text) > 300 ? '…' : '')
+                : null,
+        ]);
+    }
+
+    public function deleteKnowledgeFile(AiAgent $agent, AiAgentKnowledgeFile $file): JsonResponse
+    {
+        abort_unless($file->ai_agent_id === $agent->id, 404);
+
+        Storage::disk('public')->delete($file->storage_path);
+        $file->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    private function describeFileWithLlm(string $base64, string $mimeType): string
+    {
+        $provider = (string) config('ai.provider', 'openai');
+        $apiKey   = (string) config('ai.api_key', '');
+        $model    = (string) config('ai.model', 'gpt-4o-mini');
+
+        if ($apiKey === '') {
+            throw new \RuntimeException('LLM_API_KEY não configurado. Configure em Configurações → IA.');
+        }
+
+        $dataUri = "data:{$mimeType};base64,{$base64}";
+
+        $messages = [
+            [
+                'role'    => 'user',
+                'content' => [
+                    [
+                        'type'      => 'image_url',
+                        'image_url' => ['url' => $dataUri],
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => 'Descreva em detalhes o conteúdo desta imagem/documento para servir como base de conhecimento de um assistente de vendas. Seja objetivo e capture todos os dados importantes (preços, produtos, nomes, especificações, informações de contato, etc.).',
+                    ],
+                ],
+            ],
+        ];
+
+        return AiConfigurationController::callLlm(
+            provider:  $provider,
+            apiKey:    $apiKey,
+            model:     $model,
+            messages:  $messages,
+            maxTokens: 2000,
+        );
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -209,6 +341,14 @@ class AiAgentController extends Controller
 
         if ($agent->knowledge_base) {
             $lines[] = "\n--- BASE DE CONHECIMENTO ---\n{$agent->knowledge_base}\n--- FIM DA BASE DE CONHECIMENTO ---";
+        }
+
+        // Arquivos de conhecimento carregados
+        $kbFiles = $agent->knowledgeFiles()->where('status', 'done')->get();
+        foreach ($kbFiles as $kbFile) {
+            if ($kbFile->extracted_text) {
+                $lines[] = "\n--- ARQUIVO: {$kbFile->original_name} ---\n{$kbFile->extracted_text}\n--- FIM DO ARQUIVO ---";
+            }
         }
 
         $lines[] = "\nResponda sempre em {$agent->language}. Seja conciso (máximo {$agent->max_message_length} caracteres por mensagem).";
