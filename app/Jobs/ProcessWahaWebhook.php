@@ -6,6 +6,7 @@ namespace App\Jobs;
 
 use App\Events\WhatsappConversationUpdated;
 use App\Events\WhatsappMessageCreated;
+use App\Jobs\ProcessAiResponse;
 use App\Jobs\ProcessChatbotStep;
 use App\Models\ChatbotFlow;
 use App\Models\Lead;
@@ -408,6 +409,23 @@ class ProcessWahaWebhook implements ShouldQueue
                 (new ProcessChatbotStep($conversation->id, $body ?? ''))->handle();
             } catch (\Throwable $e) {
                 Log::channel('whatsapp')->error('Chatbot step falhou', [
+                    'conversation_id' => $conversation->id,
+                    'error'           => $e->getMessage(),
+                    'file'            => $e->getFile() . ':' . $e->getLine(),
+                ]);
+            }
+        }
+
+        // Executar agente de IA — apenas para mensagens inbound sem chatbot ativo
+        if (! $isFromMe && ! $isGroup
+            && $conversation->ai_agent_id
+            && ! $conversation->chatbot_flow_id
+        ) {
+            try {
+                $aiVersion = (int) Cache::increment("ai:version:{$conversation->id}");
+                (new ProcessAiResponse($conversation->id, $aiVersion))->handle();
+            } catch (\Throwable $e) {
+                Log::channel('whatsapp')->error('AI agent falhou', [
                     'conversation_id' => $conversation->id,
                     'error'           => $e->getMessage(),
                     'file'            => $e->getFile() . ':' . $e->getLine(),

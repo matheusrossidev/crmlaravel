@@ -124,6 +124,10 @@
                     <i class="bi bi-{{ $chIcon }}"></i> {{ $chLabel }}
                 </span>
                 <span class="badge badge-obj">{{ $objLabel }}</span>
+                <span class="badge" style="background:#f3e8ff;color:#7c3aed;" title="Conversas atribuídas a este agente">
+                    <i class="bi bi-person-lines-fill"></i>
+                    {{ $agent->conversations_count }} {{ $agent->conversations_count === 1 ? 'lead' : 'leads' }} atendidos
+                </span>
             </div>
 
             @if($agent->persona_description)

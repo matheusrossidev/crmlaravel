@@ -14,7 +14,7 @@ class AiAgentController extends Controller
 {
     public function index(): View
     {
-        $agents = AiAgent::orderByDesc('created_at')->get();
+        $agents = AiAgent::withCount('conversations')->orderByDesc('created_at')->get();
 
         return view('tenant.ai.agents.index', compact('agents'));
     }

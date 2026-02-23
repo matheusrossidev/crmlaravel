@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AiAgent extends Model
 {
@@ -27,4 +28,9 @@ class AiAgent extends Model
         'response_delay_seconds'=> 'integer',
         'is_active'             => 'boolean',
     ];
+
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(WhatsappConversation::class, 'ai_agent_id');
+    }
 }
