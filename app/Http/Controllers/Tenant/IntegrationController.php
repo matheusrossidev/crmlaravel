@@ -524,6 +524,14 @@ class IntegrationController extends Controller
                 'username'  => $username,
             ]);
 
+            // 4. Subscrever webhooks para esta conta (obrigatório — sem isso a Meta não envia eventos DM)
+            try {
+                $subscribeResult = $service->subscribeToWebhooks();
+                Log::channel('instagram')->info('Webhook subscribed_apps', ['result' => $subscribeResult]);
+            } catch (\Throwable $e) {
+                Log::channel('instagram')->warning('Falha ao subscrever webhooks (não crítico)', ['error' => $e->getMessage()]);
+            }
+
             return redirect()->route('settings.integrations.index')
                 ->with('success', 'Instagram conectado com sucesso!');
 

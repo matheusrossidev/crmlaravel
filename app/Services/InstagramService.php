@@ -68,6 +68,18 @@ class InstagramService
         return $this->get('/me', ['fields' => 'id,username,profile_picture_url,name']);
     }
 
+    /**
+     * Subscribe this account to receive webhook events (required after OAuth).
+     * Without this call, Meta does NOT send DM webhooks for this account.
+     * POST /me/subscribed_apps?subscribed_fields=messages
+     */
+    public function subscribeToWebhooks(): array
+    {
+        return $this->post('/me/subscribed_apps', [
+            'subscribed_fields' => 'messages',
+        ]);
+    }
+
     // ── Token exchange ────────────────────────────────────────────────────────
 
     /**
