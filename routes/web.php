@@ -84,6 +84,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         // WhatsApp — rotas específicas ANTES dos wildcards
         Route::post('whatsapp/connect', [IntegrationController::class, 'connectWhatsapp'])->name('whatsapp.connect');
         Route::get('whatsapp/qr',       [IntegrationController::class, 'getWhatsappQr'])->name('whatsapp.qr');
+        Route::post('whatsapp/import',  [IntegrationController::class, 'importHistoryWhatsapp'])->name('whatsapp.import');
         Route::delete('whatsapp',       [IntegrationController::class, 'disconnectWhatsapp'])->name('whatsapp.disconnect');
         // Wildcards (OAuth) — após as rotas específicas
         Route::delete('{platform}',     [IntegrationController::class, 'disconnect'])->name('disconnect');

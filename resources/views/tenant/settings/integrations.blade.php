@@ -474,6 +474,9 @@
                         <button class="btn-disconnect" onclick="disconnectWhatsapp(this)">
                             <i class="bi bi-x-circle"></i> Desconectar
                         </button>
+                        <button id="btnImportHistory" class="btn-connect" style="background:#6366f1;" onclick="importWhatsappHistory(this)">
+                            <i class="bi bi-clock-history"></i> Importar histórico
+                        </button>
                     @elseif($whatsapp && $whatsapp->status === 'qr')
                         <button class="btn-connect" onclick="openWaModal(true)">
                             <i class="bi bi-qr-code"></i> Ver QR Code
@@ -553,6 +556,7 @@ const DISCONNECT_URL      = @json(route('settings.integrations.disconnect', ['pl
 const WA_CONNECT_URL      = @json(route('settings.integrations.whatsapp.connect'));
 const WA_QR_URL           = @json(route('settings.integrations.whatsapp.qr'));
 const WA_DISCONNECT_URL   = @json(route('settings.integrations.whatsapp.disconnect'));
+const WA_IMPORT_URL       = @json(route('settings.integrations.whatsapp.import'));
 
 let waQrPollInterval = null;
 
@@ -655,6 +659,40 @@ async function disconnectWhatsapp(btn) {
             }
         },
     });
+}
+
+async function importWhatsappHistory(btn) {
+    if (! confirm('Isso irá importar todas as conversas e mensagens anteriores do WhatsApp. Pode levar alguns minutos. Continuar?')) {
+        return;
+    }
+    btn.disabled = true;
+    const original = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Importando...';
+
+    try {
+        const res  = await fetch(WA_IMPORT_URL, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+        });
+        const data = await res.json();
+        if (data.success) {
+            toastr.success(
+                `Importação concluída! ${data.imported_chats} conversa(s) e ${data.imported_messages} mensagem(ns) importadas.`,
+                'Histórico importado',
+                { timeOut: 6000 }
+            );
+        } else {
+            toastr.error(data.message || 'Erro ao importar histórico.');
+        }
+    } catch (e) {
+        toastr.error('Erro de conexão ao importar histórico.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
+    }
 }
 
 // Fechar modal clicando no overlay
