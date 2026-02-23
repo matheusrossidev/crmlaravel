@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 class InstagramService
 {
     private string $accessToken;
-    private string $apiVersion = 'v21.0';
+    private string $apiVersion = 'v25.0';
     private string $baseUrl    = 'https://graph.instagram.com';
 
     public function __construct(string $accessToken)
