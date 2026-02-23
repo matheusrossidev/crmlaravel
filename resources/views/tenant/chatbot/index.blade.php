@@ -17,8 +17,8 @@
 <style>
     .flows-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 16px;
+        grid-template-columns: 1fr;
+        gap: 12px;
     }
 
     .flow-card {
@@ -97,8 +97,18 @@
     .empty-state h3     { font-size: 16px; color: #374151; margin: 0 0 6px; }
     .empty-state p      { font-size: 13.5px; margin: 0 0 20px; }
 
-    .btn-delete-flow { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }
-    .btn-delete-flow:hover { background: #fee2e2 !important; border-color: #fca5a5 !important; color: #ef4444 !important; }
+    .btn-delete-flow {
+        display: inline-flex; align-items: center; gap: 5px;
+        font-size: 12px; padding: 8px 16px;
+        border: none; border-radius: 9px;
+    }
+    .btn-delete-flow:hover { background: #fee2e2 !important; color: #ef4444 !important; }
+
+    .btn-test-flow {
+        display: inline-flex; align-items: center; gap: 5px;
+        font-size: 12px; padding: 8px 16px;
+        border: none; border-radius: 9px;
+    }
 
     /* ── Test Chat Sidebar ──────────────────────────────────────────────────── */
     .tcm-backdrop {
@@ -427,7 +437,7 @@ function tcmRemoveTyping(id) {
                         <a href="{{ route('chatbot.flows.edit', $flow) }}?settings=1" class="btn-secondary-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;font-size:12px;">
                             <i class="bi bi-gear"></i> Config.
                         </a>
-                        <button class="btn-secondary-sm" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;"
+                        <button class="btn-secondary-sm btn-test-flow"
                                 onclick="openTestChat({{ $flow->id }}, '{{ addslashes($flow->name) }}', '{{ route('chatbot.flows.test-step', $flow) }}')">
                             <i class="bi bi-play-circle"></i> Testar
                         </button>

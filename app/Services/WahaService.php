@@ -174,7 +174,11 @@ class WahaService
         return $this->post('/api/sendImage', [
             'session' => $this->session,
             'chatId'  => $chatId,
-            'file'    => ['data' => "data:{$mimeType};base64,{$base64}", 'mimetype' => $mimeType],
+            'file'    => [
+                'data'     => $base64,
+                'mimetype' => $mimeType,
+                'filename' => basename($filePath),
+            ],
             'caption' => $caption,
         ]);
     }
