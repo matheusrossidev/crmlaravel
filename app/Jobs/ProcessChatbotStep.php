@@ -408,9 +408,19 @@ class ProcessChatbotStep
                 return;
             }
 
-            $chatId = $this->resolveChatId($conv);
-            $waha   = new WahaService($instance->session_name);
-            $waha->sendImage($chatId, $imageUrl, $caption);
+            $chatId    = $this->resolveChatId($conv);
+            $waha      = new WahaService($instance->session_name);
+            $localPath = $this->resolveLocalImagePath($imageUrl);
+
+            if ($localPath !== null && file_exists($localPath)) {
+                // Arquivo local: envia via base64 (evita problema de URL inacessível do WAHA)
+                $mime = mime_content_type($localPath) ?: 'image/jpeg';
+                $waha->sendImageBase64($chatId, $localPath, $mime, $caption);
+            } else {
+                // URL externa: WAHA baixa diretamente
+                $waha->sendImage($chatId, $imageUrl, $caption);
+            }
+
             sleep(self::DEFAULT_MESSAGE_DELAY);
         } catch (\Throwable $e) {
             Log::channel('whatsapp')->error('Chatbot: erro ao enviar imagem', [
@@ -419,6 +429,19 @@ class ProcessChatbotStep
                 'error'           => $e->getMessage(),
             ]);
         }
+    }
+
+    private function resolveLocalImagePath(string $url): ?string
+    {
+        $appUrl        = rtrim((string) config('app.url'), '/');
+        $storagePrefix = $appUrl . '/storage/';
+
+        if (str_starts_with($url, $storagePrefix)) {
+            $relative = substr($url, strlen($storagePrefix));
+            return storage_path('app/public/' . $relative);
+        }
+
+        return null;
     }
 
     private function modifyTag(WhatsappConversation $conv, string $tagName, string $action): void

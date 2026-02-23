@@ -117,8 +117,9 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::put('{flow}',         [ChatbotFlowController::class, 'update'])->name('update');
         Route::delete('{flow}',      [ChatbotFlowController::class, 'destroy'])->name('destroy');
         Route::post('upload-image',  [ChatbotFlowController::class, 'uploadImage'])->name('upload-image');
-        Route::post('{flow}/toggle', [ChatbotFlowController::class, 'toggle'])->name('toggle');
-        Route::put('{flow}/graph',   [ChatbotFlowController::class, 'saveGraph'])->name('graph');
+        Route::post('{flow}/toggle',    [ChatbotFlowController::class, 'toggle'])->name('toggle');
+        Route::put('{flow}/graph',      [ChatbotFlowController::class, 'saveGraph'])->name('graph');
+        Route::post('{flow}/test-step', [ChatbotFlowController::class, 'testStep'])->name('test-step');
     });
 
     // Configurações — Pipelines + Stages

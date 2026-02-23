@@ -11,6 +11,7 @@ use App\Models\ChatbotFlowNode;
 use App\Models\Pipeline;
 use App\Models\User;
 use App\Models\WhatsappTag;
+use App\Services\ChatbotVariableService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -239,6 +240,46 @@ class ChatbotFlowController extends Controller
         return response()->json($pipelines);
     }
 
+    /**
+     * Simulação do fluxo sem enviar mensagens reais (test chat).
+     * Request: { message?: string, state: { node_id?: int, vars?: object } }
+     */
+    public function testStep(Request $request, ChatbotFlow $flow): JsonResponse
+    {
+        $request->validate([
+            'message'       => 'nullable|string|max:1000',
+            'state'         => 'nullable|array',
+            'state.node_id' => 'nullable|integer',
+            'state.vars'    => 'nullable|array',
+        ]);
+
+        $inbound       = trim((string) $request->input('message', ''));
+        $state         = $request->input('state', []);
+        $waitingNodeId = isset($state['node_id']) ? (int) $state['node_id'] : null;
+
+        // Variáveis de sistema com valores de exemplo para o teste
+        $vars = array_merge([
+            '$contact_name'         => 'Visitante',
+            '$contact_phone'        => '5511999999999',
+            '$lead_exists'          => 'false',
+            '$lead_stage_name'      => '',
+            '$lead_stage_id'        => '',
+            '$lead_source'          => '',
+            '$lead_tags'            => '',
+            '$conversations_count'  => '1',
+            '$is_returning_contact' => 'false',
+            '$messages_count'       => '1',
+        ], (array) ($state['vars'] ?? []));
+
+        [$messages, $newNodeId, $newVars, $done] = $this->simulateFlow($flow, $waitingNodeId, $inbound, $vars);
+
+        return response()->json([
+            'messages' => $messages,
+            'state'    => ['node_id' => $newNodeId, 'vars' => $newVars],
+            'done'     => $done,
+        ]);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private function validatedFlow(Request $request): array
@@ -266,5 +307,150 @@ class ChatbotFlowController extends Controller
         }
 
         return $data;
+    }
+
+    /**
+     * Percorre o fluxo em modo dry-run, coletando mensagens sem efeitos colaterais reais.
+     *
+     * @return array{0: list<array>, 1: int|null, 2: array, 3: bool}
+     *              [messages, nextWaitingNodeId, vars, done]
+     */
+    private function simulateFlow(ChatbotFlow $flow, ?int $waitingNodeId, string $inbound, array $vars): array
+    {
+        $messages = [];
+        $done     = false;
+        $newNode  = null;
+        $maxIter  = 30;
+        $iter     = 0;
+
+        $nodes = ChatbotFlowNode::where('flow_id', $flow->id)->get()->keyBy('id');
+        $edges = ChatbotFlowEdge::where('flow_id', $flow->id)->get();
+
+        $edge = fn (int $src, string $handle): ?int => $edges
+            ->where('source_node_id', $src)
+            ->where('source_handle', $handle)
+            ->first()?->target_node_id;
+
+        // ── Resolver próximo nó a partir do estado ────────────────────────────
+        if ($waitingNodeId) {
+            $waiting = $nodes->get($waitingNodeId);
+            if (! $waiting) {
+                return [[], null, $vars, true];
+            }
+
+            $nextId = null;
+            if ($waiting->type === 'input') {
+                $saveTo = $waiting->config['save_to'] ?? null;
+                if ($saveTo && ! str_starts_with($saveTo, '$')) {
+                    $vars[$saveTo] = $inbound;
+                }
+                foreach ($waiting->config['branches'] ?? [] as $branch) {
+                    $kws = array_map('strtolower', (array) ($branch['keywords'] ?? []));
+                    if (in_array(strtolower($inbound), $kws, true)) {
+                        $nextId = $edge($waitingNodeId, $branch['handle'] ?? '');
+                        break;
+                    }
+                }
+                $nextId ??= $edge($waitingNodeId, 'default');
+            } else {
+                $nextId = $edge($waitingNodeId, 'default');
+            }
+
+            $current = $nextId ? $nodes->get($nextId) : null;
+        } else {
+            $targetIds = $edges->pluck('target_node_id')->toArray();
+            $current   = $nodes->filter(fn ($n) => ! in_array($n->id, $targetIds))->sortBy('canvas_y')->first();
+        }
+
+        // ── Loop principal ────────────────────────────────────────────────────
+        while ($current && $iter < $maxIter) {
+            $iter++;
+            $cfg = $current->config ?? [];
+
+            switch ($current->type) {
+                case 'message':
+                case 'input':
+                    $text  = ChatbotVariableService::interpolate((string) ($cfg['text'] ?? ''), $vars);
+                    $img   = (string) ($cfg['image_url'] ?? '');
+                    if ($img !== '') {
+                        $messages[] = ['type' => 'image', 'url' => $img, 'caption' => $text];
+                    } elseif ($text !== '') {
+                        $messages[] = ['type' => 'text', 'content' => $text];
+                    }
+                    if ($current->type === 'input') {
+                        $newNode = $current->id;
+                        $current = null;
+                        break 2;
+                    }
+                    $current = ($nid = $edge($current->id, 'default')) ? $nodes->get($nid) : null;
+                    break;
+
+                case 'condition':
+                    $varVal     = strtolower((string) ($vars[$cfg['variable'] ?? ''] ?? ''));
+                    $nextId     = null;
+                    foreach ($cfg['conditions'] ?? [] as $cond) {
+                        $val     = strtolower((string) ($cond['value'] ?? ''));
+                        $matched = match ($cond['operator'] ?? 'equals') {
+                            'equals'      => $varVal === $val,
+                            'not_equals'  => $varVal !== $val,
+                            'contains'    => str_contains($varVal, $val),
+                            'starts_with' => str_starts_with($varVal, $val),
+                            'ends_with'   => str_ends_with($varVal, $val),
+                            'gt'          => is_numeric($varVal) && is_numeric($val) && (float) $varVal > (float) $val,
+                            'lt'          => is_numeric($varVal) && is_numeric($val) && (float) $varVal < (float) $val,
+                            default       => false,
+                        };
+                        if ($matched) {
+                            $nextId = $edge($current->id, $cond['handle'] ?? 'default');
+                            break;
+                        }
+                    }
+                    $nextId  ??= $edge($current->id, 'default');
+                    $current   = $nextId ? $nodes->get($nextId) : null;
+                    break;
+
+                case 'action':
+                    $type       = $cfg['type'] ?? '';
+                    $label      = match ($type) {
+                        'change_stage'       => '📋 Etapa alterada',
+                        'add_tag'            => '🏷️ Tag adicionada: ' . ($cfg['value'] ?? ''),
+                        'remove_tag'         => '🏷️ Tag removida: ' . ($cfg['value'] ?? ''),
+                        'assign_human'       => '👤 Transferido para atendente humano',
+                        'close_conversation' => '🔒 Conversa encerrada',
+                        'save_variable'      => '💾 Variável salva: ' . ($cfg['variable'] ?? ''),
+                        'send_webhook'       => '🔗 Webhook: ' . ($cfg['url'] ?? ''),
+                        default              => '⚙️ Ação: ' . $type,
+                    };
+                    $messages[] = ['type' => 'system', 'content' => $label];
+                    if ($type === 'save_variable') {
+                        $vn = (string) ($cfg['variable'] ?? '');
+                        if ($vn && ! str_starts_with($vn, '$')) {
+                            $vars[$vn] = ChatbotVariableService::interpolate((string) ($cfg['value'] ?? ''), $vars);
+                        }
+                    }
+                    $current = ($nid = $edge($current->id, 'default')) ? $nodes->get($nid) : null;
+                    break;
+
+                case 'delay':
+                    $secs       = (int) ($cfg['seconds'] ?? 3);
+                    $messages[] = ['type' => 'system', 'content' => "⏱️ Aguarda {$secs}s"];
+                    $current    = ($nid = $edge($current->id, 'default')) ? $nodes->get($nid) : null;
+                    break;
+
+                case 'end':
+                    $text = ChatbotVariableService::interpolate((string) ($cfg['text'] ?? ''), $vars);
+                    if ($text !== '') {
+                        $messages[] = ['type' => 'text', 'content' => $text];
+                    }
+                    $done    = true;
+                    $current = null;
+                    break;
+
+                default:
+                    $current = ($nid = $edge($current->id, 'default')) ? $nodes->get($nid) : null;
+            }
+        }
+
+        return [$messages, $newNode, $vars, $done];
     }
 }
