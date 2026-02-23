@@ -23,6 +23,7 @@ class WhatsappConversation extends Model
         'status', 'assigned_user_id', 'ai_agent_id',
         'chatbot_flow_id', 'chatbot_node_id', 'chatbot_variables',
         'unread_count', 'started_at', 'last_message_at', 'closed_at',
+        'followup_count', 'last_followup_at',
     ];
 
     protected $casts = [
@@ -32,10 +33,12 @@ class WhatsappConversation extends Model
         'started_at'         => 'datetime',
         'last_message_at'    => 'datetime',
         'closed_at'          => 'datetime',
+        'last_followup_at'   => 'datetime',
         'created_at'         => 'datetime',
         'ai_agent_id'        => 'integer',
         'chatbot_flow_id'    => 'integer',
         'chatbot_node_id'    => 'integer',
+        'followup_count'     => 'integer',
     ];
 
     public function instance(): BelongsTo

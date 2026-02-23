@@ -170,6 +170,36 @@ services:
         delay: 15s
 
   # ────────────────────────────────────────────────────────
+  # SCHEDULER — Laravel schedule:run a cada 60s
+  # Roda: ai:followup (a cada 10 min), campaigns:sync (hourly)
+  # ────────────────────────────────────────────────────────
+  scheduler:
+    image: matolado/crm:latest
+    command: >
+      bash -c "
+        while true; do
+          php artisan schedule:run --verbose --no-interaction >> /var/www/storage/logs/scheduler.log 2>&1
+          sleep 60
+        done
+      "
+    environment:
+      <<: *app-env
+    volumes:
+      - storage_data:/var/www/storage/app
+      - logs_data:/var/www/storage/logs
+      - cache_data:/var/www/bootstrap/cache
+    networks:
+      - crm_private
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 10s
+      resources:
+        limits:
+          memory: 128M
+
+  # ────────────────────────────────────────────────────────
   # REVERB — WebSocket server
   # O nginx já tem /app/ e /apps/ fazendo proxy para reverb:8080.
   # memory: 256M evita que o OS OOM Killer mate o processo —

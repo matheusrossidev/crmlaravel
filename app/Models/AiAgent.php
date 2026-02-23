@@ -20,6 +20,8 @@ class AiAgent extends Model
         'conversation_stages', 'knowledge_base',
         'max_message_length', 'response_delay_seconds', 'response_wait_seconds',
         'channel', 'is_active', 'auto_assign',
+        'followup_enabled', 'followup_delay_minutes', 'followup_max_count',
+        'followup_hour_start', 'followup_hour_end',
     ];
 
     protected $casts = [
@@ -29,6 +31,11 @@ class AiAgent extends Model
         'response_wait_seconds'  => 'integer',
         'is_active'              => 'boolean',
         'auto_assign'            => 'boolean',
+        'followup_enabled'       => 'boolean',
+        'followup_delay_minutes' => 'integer',
+        'followup_max_count'     => 'integer',
+        'followup_hour_start'    => 'integer',
+        'followup_hour_end'      => 'integer',
     ];
 
     public function conversations(): HasMany

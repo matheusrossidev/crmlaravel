@@ -152,10 +152,16 @@ class AiAgentController extends Controller
             'channel'                => 'required|in:whatsapp,web_chat',
             'is_active'              => 'nullable|boolean',
             'auto_assign'            => 'nullable|boolean',
+            'followup_enabled'       => 'nullable|boolean',
+            'followup_delay_minutes' => 'nullable|integer|min:5|max:1440',
+            'followup_max_count'     => 'nullable|integer|min:1|max:10',
+            'followup_hour_start'    => 'nullable|integer|min:0|max:23',
+            'followup_hour_end'      => 'nullable|integer|min:1|max:23',
         ]);
 
-        $data['is_active']   = $request->boolean('is_active');
-        $data['auto_assign'] = $request->boolean('auto_assign');
+        $data['is_active']        = $request->boolean('is_active');
+        $data['auto_assign']      = $request->boolean('auto_assign');
+        $data['followup_enabled'] = $request->boolean('followup_enabled');
 
         return $data;
     }

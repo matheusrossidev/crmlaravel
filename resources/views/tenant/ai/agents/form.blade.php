@@ -422,6 +422,64 @@
             </div>
         </div>
 
+        {{-- 7. Follow-up Automático --}}
+        <div class="section-card">
+            <div class="section-card-header" onclick="toggleSection('followup')">
+                <div class="section-icon"><i class="bi bi-arrow-repeat"></i></div>
+                <div class="section-card-title">7. Follow-up Automático</div>
+                <i class="bi bi-chevron-down chevron" id="chevron-followup"></i>
+            </div>
+            <div class="section-card-body collapsed" id="body-followup">
+                {{-- Toggle followup_enabled --}}
+                <div class="toggle-wrap" onclick="toggleFollowup()" style="margin-bottom:16px;">
+                    <div class="toggle-switch {{ ($agent->followup_enabled ?? false) ? 'on' : '' }}" id="followupSwitch"></div>
+                    <div style="margin-left:10px;">
+                        <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="followupLabel">
+                            {{ ($agent->followup_enabled ?? false) ? 'Follow-up Ativado' : 'Follow-up Desativado' }}
+                        </div>
+                        <div style="font-size:11px;color:#9ca3af;">Quando o cliente para de responder, o agente retoma o contato automaticamente</div>
+                    </div>
+                </div>
+                <input type="hidden" name="followup_enabled" id="followupInput" value="{{ ($agent->followup_enabled ?? false) ? '1' : '0' }}">
+
+                {{-- Opções (visíveis só quando habilitado) --}}
+                <div id="followupOptions" style="{{ ($agent->followup_enabled ?? false) ? '' : 'display:none' }}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Intervalo entre tentativas (minutos)</label>
+                            <input type="number" name="followup_delay_minutes" class="form-control"
+                                   value="{{ old('followup_delay_minutes', $agent->followup_delay_minutes ?? 40) }}"
+                                   min="5" max="1440">
+                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Padrão: 40 minutos</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Máximo de tentativas por conversa</label>
+                            <input type="number" name="followup_max_count" class="form-control"
+                                   value="{{ old('followup_max_count', $agent->followup_max_count ?? 3) }}"
+                                   min="1" max="10">
+                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Após este limite a conversa é ignorada</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Horário comercial — início (hora)</label>
+                            <input type="number" name="followup_hour_start" class="form-control"
+                                   value="{{ old('followup_hour_start', $agent->followup_hour_start ?? 8) }}"
+                                   min="0" max="23">
+                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Ex: 8 = a partir das 08:00</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Horário comercial — fim (hora)</label>
+                            <input type="number" name="followup_hour_end" class="form-control"
+                                   value="{{ old('followup_hour_end', $agent->followup_hour_end ?? 18) }}"
+                                   min="1" max="23">
+                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Ex: 18 = até as 18:59</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="form-footer">
             <button type="submit" class="btn-primary">
                 <i class="bi bi-floppy"></i> {{ $isEdit ? 'Salvar alterações' : 'Criar Agente' }}
@@ -487,6 +545,18 @@ function toggleAutoAssign() {
     input.value = isOn ? '0' : '1';
     sw.classList.toggle('on', !isOn);
     label.textContent = isOn ? 'Auto-assign Desativado' : 'Auto-assign Ativado';
+}
+
+function toggleFollowup() {
+    const sw      = document.getElementById('followupSwitch');
+    const input   = document.getElementById('followupInput');
+    const label   = document.getElementById('followupLabel');
+    const options = document.getElementById('followupOptions');
+    const isOn    = input.value === '1';
+    input.value = isOn ? '0' : '1';
+    sw.classList.toggle('on', !isOn);
+    label.textContent = isOn ? 'Follow-up Desativado' : 'Follow-up Ativado';
+    options.style.display = isOn ? 'none' : '';
 }
 
 /* ── Sections ── */
