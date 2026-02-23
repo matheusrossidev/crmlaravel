@@ -5,15 +5,14 @@
 
 @section('topbar_actions')
 <div class="topbar-actions">
-    {{-- Pipeline selector --}}
     @if($pipelines->count())
+    {{-- Pipeline selector --}}
     <select id="pipelineSelect"
             style="padding:7px 14px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:13px;font-family:inherit;outline:none;background:#fafafa;color:#374151;cursor:pointer;font-weight:500;">
         @foreach($pipelines as $p)
         <option value="{{ $p->id }}" {{ $pipeline?->id === $p->id ? 'selected' : '' }}>{{ $p->name }}</option>
         @endforeach
     </select>
-    @endif
 
     <button class="topbar-btn" title="Filtros" id="btnToggleFilters">
         <i class="bi bi-funnel{{ request()->hasAny(['source','date_from','date_to','campaign_id','tag']) ? '-fill' : '' }}"></i>
@@ -23,6 +22,12 @@
         <i class="bi bi-plus-lg"></i>
         Novo Lead
     </button>
+    @else
+    <button class="btn-primary-sm" onclick="openPipelineModal()">
+        <i class="bi bi-plus-lg"></i>
+        Criar funil
+    </button>
+    @endif
 </div>
 @endsection
 
@@ -301,10 +306,175 @@
         gap: 4px;
     }
     .filter-clear:hover { background: #fee2e2; color: #ef4444; }
+
+    /* ── Empty state (sem pipelines) ─────────────────────────────────────── */
+    .pipeline-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        padding: 80px 20px;
+        text-align: center;
+    }
+    .pipeline-empty-state .es-icon {
+        font-size: 60px;
+        opacity: .18;
+        color: #374151;
+        margin-bottom: 20px;
+        display: block;
+    }
+    .pipeline-empty-state h3 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1a1d23;
+        margin: 0 0 8px;
+    }
+    .pipeline-empty-state p {
+        font-size: 13.5px;
+        color: #6b7280;
+        margin: 0 0 28px;
+        max-width: 420px;
+        line-height: 1.6;
+    }
+
+    /* ── Modal criar pipeline ─────────────────────────────────────────────── */
+    #modalCreatePipeline {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.5);
+        z-index: 700;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .cp-modal-box {
+        background: #fff;
+        border-radius: 16px;
+        width: 700px;
+        max-width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 24px 80px rgba(0,0,0,.22);
+    }
+    .cp-modal-header {
+        padding: 22px 24px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 4px;
+    }
+    .cp-modal-title { font-size: 16px; font-weight: 700; color: #1a1d23; }
+    .cp-modal-close {
+        background: none; border: none; font-size: 22px;
+        color: #9ca3af; cursor: pointer; line-height: 1; padding: 0;
+    }
+    .cp-modal-close:hover { color: #374151; }
+    .cp-modal-body { padding: 16px 24px 24px; }
+    .cp-modal-subtitle { font-size: 13px; color: #6b7280; margin: 0 0 18px; }
+
+    .cp-templates-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+    .cp-template-card {
+        border: 2px solid #e8eaf0;
+        border-radius: 12px;
+        padding: 18px 12px 14px;
+        cursor: pointer;
+        transition: all .15s;
+        text-align: center;
+        background: #fafafa;
+    }
+    .cp-template-card:hover { border-color: #3B82F6; background: #eff6ff; transform: translateY(-1px); }
+    .cp-template-card.selected { border-color: #3B82F6; background: #eff6ff; }
+    .cp-template-card .tpl-icon { font-size: 30px; margin-bottom: 10px; display: block; }
+    .cp-template-card .tpl-label { font-size: 12px; font-weight: 600; color: #374151; }
+
+    .cp-scratch-btn {
+        width: 100%;
+        padding: 12px;
+        border: 2px dashed #d1d5db;
+        border-radius: 12px;
+        background: transparent;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        cursor: pointer;
+        transition: all .15s;
+        font-family: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+    }
+    .cp-scratch-btn:hover { border-color: #3B82F6; color: #3B82F6; background: #eff6ff; }
+
+    .cp-stages-preview {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 4px;
+    }
+    .cp-stage-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 11px;
+        border-radius: 99px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .cp-form-row { display: flex; gap: 12px; margin-bottom: 18px; }
+    .cp-form-field { flex: 1; }
+    .cp-form-field label { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; display: block; }
+    .cp-form-field input[type=text] {
+        width: 100%;
+        padding: 9px 12px;
+        border: 1.5px solid #e8eaf0;
+        border-radius: 9px;
+        font-size: 13px;
+        font-family: inherit;
+        box-sizing: border-box;
+        outline: none;
+        transition: border-color .15s;
+    }
+    .cp-form-field input[type=text]:focus { border-color: #3B82F6; }
+    .cp-form-field input[type=color] {
+        width: 100%;
+        height: 40px;
+        border: 1.5px solid #e8eaf0;
+        border-radius: 9px;
+        cursor: pointer;
+        padding: 3px;
+        box-sizing: border-box;
+    }
+    .cp-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; }
+    .cp-btn-back {
+        padding: 9px 20px; border-radius: 9px; border: 1.5px solid #e8eaf0;
+        background: #fff; font-size: 13px; font-weight: 600; color: #6b7280;
+        cursor: pointer; font-family: inherit;
+    }
+    .cp-btn-back:hover { background: #f9fafb; }
+    .cp-btn-create {
+        padding: 9px 24px; border-radius: 9px; border: none;
+        background: #3B82F6; color: #fff; font-size: 13px; font-weight: 600;
+        cursor: pointer; font-family: inherit; transition: background .15s;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .cp-btn-create:hover { background: #2563eb; }
+    .cp-btn-create:disabled { background: #93c5fd; cursor: not-allowed; }
 </style>
 @endpush
 
 @section('content')
+
+@if($pipelines->isNotEmpty())
 
 <div class="kanban-header">
     @if($pipeline)
@@ -496,6 +666,69 @@
         <div style="display:flex;gap:8px;justify-content:flex-end;">
             <button onclick="skipLostModal()" style="padding:8px 16px;border-radius:8px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;">Pular</button>
             <button onclick="confirmLostModal()" style="padding:8px 20px;border-radius:8px;border:none;background:#EF4444;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+@else
+
+{{-- Empty state: nenhum funil criado --}}
+<div class="pipeline-empty-state">
+    <i class="bi bi-diagram-3 es-icon"></i>
+    <h3>Nenhum funil configurado</h3>
+    <p>Crie seu primeiro funil de vendas para começar a organizar seus leads em etapas e acompanhar o progresso do seu negócio.</p>
+    <button class="btn-primary-sm" onclick="openPipelineModal()" style="font-size:14px;padding:10px 28px;gap:8px;">
+        <i class="bi bi-plus-lg"></i>
+        Criar meu primeiro funil
+    </button>
+</div>
+
+@endif
+
+{{-- Modal: Criar Pipeline ─────────────────────────────────────────────────── --}}
+<div id="modalCreatePipeline">
+    <div class="cp-modal-box">
+        <div class="cp-modal-header">
+            <span class="cp-modal-title" id="cpModalTitle">Criar novo funil</span>
+            <button class="cp-modal-close" onclick="closePipelineModal()">×</button>
+        </div>
+        <div class="cp-modal-body">
+
+            {{-- Step 1: Escolher template --}}
+            <div id="cpStepTemplates">
+                <p class="cp-modal-subtitle">Escolha um modelo de funil para começar mais rápido, ou crie o seu do zero.</p>
+                <div class="cp-templates-grid" id="cpTemplatesGrid">
+                    {{-- preenchido por JS --}}
+                </div>
+                <button class="cp-scratch-btn" onclick="cpSelectScratch()">
+                    <i class="bi bi-pencil-square"></i>
+                    Criar funil personalizado (do zero)
+                </button>
+            </div>
+
+            {{-- Step 2: Prévia + formulário --}}
+            <div id="cpStepForm" style="display:none;">
+                <div id="cpStagesPreviewWrap"></div>
+
+                <div class="cp-form-row">
+                    <div class="cp-form-field">
+                        <label for="cpPipelineName">Nome do funil</label>
+                        <input type="text" id="cpPipelineName" placeholder="Ex: Vendas 2025" autocomplete="off">
+                    </div>
+                    <div class="cp-form-field" style="max-width:110px;">
+                        <label for="cpPipelineColor">Cor</label>
+                        <input type="color" id="cpPipelineColor" value="#3B82F6">
+                    </div>
+                </div>
+
+                <div class="cp-actions">
+                    <button class="cp-btn-back" onclick="cpBackToTemplates()">← Voltar</button>
+                    <button class="cp-btn-create" id="cpBtnCreate" onclick="cpCreatePipeline()">
+                        <i class="bi bi-check-lg"></i> Criar funil
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -795,5 +1028,199 @@ setInterval(pollKanban, 10000);
         } catch(e) {}
     });
 }());
+
+// ── Modal: Criar Pipeline ──────────────────────────────────────────────────
+const CP_STORE_URL  = @json(route('settings.pipelines.store'));
+const CP_STAGE_BASE = '/configuracoes/pipelines'; // /{id}/stages
+const CP_CRM_URL    = @json(route('crm.kanban'));
+const CP_CSRF       = document.querySelector('meta[name="csrf-token"]')?.content;
+
+const PIPELINE_TEMPLATES = [
+    {
+        id: 'vendas', label: 'Vendas B2B', icon: 'bi-briefcase', color: '#3B82F6',
+        stages: [
+            { name: 'Prospecção',   color: '#6B7280' },
+            { name: 'Qualificação', color: '#3B82F6' },
+            { name: 'Proposta',     color: '#F59E0B' },
+            { name: 'Negociação',   color: '#8B5CF6' },
+            { name: 'Fechado',      color: '#10B981', is_won: true },
+            { name: 'Perdido',      color: '#EF4444', is_lost: true },
+        ],
+    },
+    {
+        id: 'imoveis', label: 'Imóveis', icon: 'bi-house', color: '#10B981',
+        stages: [
+            { name: 'Captação',          color: '#6B7280' },
+            { name: 'Visita Agendada',   color: '#3B82F6' },
+            { name: 'Visita Realizada',  color: '#F59E0B' },
+            { name: 'Proposta',          color: '#8B5CF6' },
+            { name: 'Contrato Assinado', color: '#10B981', is_won: true },
+            { name: 'Desistência',       color: '#EF4444', is_lost: true },
+        ],
+    },
+    {
+        id: 'marketing', label: 'Marketing Digital', icon: 'bi-graph-up-arrow', color: '#8B5CF6',
+        stages: [
+            { name: 'Lead',        color: '#6B7280' },
+            { name: 'Nutrição',    color: '#3B82F6' },
+            { name: 'Qualificado', color: '#F59E0B' },
+            { name: 'Demo',        color: '#8B5CF6' },
+            { name: 'Fechado',     color: '#10B981', is_won: true },
+            { name: 'Descartado',  color: '#EF4444', is_lost: true },
+        ],
+    },
+    {
+        id: 'ecommerce', label: 'E-commerce', icon: 'bi-bag', color: '#F59E0B',
+        stages: [
+            { name: 'Carrinho Abandonado', color: '#6B7280' },
+            { name: 'Contato Feito',       color: '#3B82F6' },
+            { name: 'Oferta Enviada',      color: '#F59E0B' },
+            { name: 'Venda Concluída',     color: '#10B981', is_won: true },
+            { name: 'Não Comprou',         color: '#EF4444', is_lost: true },
+        ],
+    },
+    {
+        id: 'educacao', label: 'Educação / Cursos', icon: 'bi-mortarboard', color: '#EC4899',
+        stages: [
+            { name: 'Interessado',   color: '#6B7280' },
+            { name: 'Contato Feito', color: '#3B82F6' },
+            { name: 'Proposta',      color: '#F59E0B' },
+            { name: 'Matriculado',   color: '#10B981', is_won: true },
+            { name: 'Desistência',   color: '#EF4444', is_lost: true },
+        ],
+    },
+    {
+        id: 'saude', label: 'Saúde / Clínica', icon: 'bi-heart-pulse', color: '#EF4444',
+        stages: [
+            { name: 'Consulta Agendada',  color: '#6B7280' },
+            { name: 'Consulta Realizada', color: '#3B82F6' },
+            { name: 'Follow-up',          color: '#F59E0B' },
+            { name: 'Recorrente',         color: '#10B981', is_won: true },
+            { name: 'Cancelado',          color: '#EF4444', is_lost: true },
+        ],
+    },
+];
+
+let _cpTemplate = null; // null = scratch, object = template selecionado
+
+function openPipelineModal() {
+    const modal = document.getElementById('modalCreatePipeline');
+    modal.style.display = 'flex';
+    cpShowTemplates();
+}
+
+function closePipelineModal() {
+    document.getElementById('modalCreatePipeline').style.display = 'none';
+    _cpTemplate = null;
+}
+
+function cpShowTemplates() {
+    document.getElementById('cpStepTemplates').style.display = '';
+    document.getElementById('cpStepForm').style.display = 'none';
+    document.getElementById('cpModalTitle').textContent = 'Criar novo funil';
+
+    const grid = document.getElementById('cpTemplatesGrid');
+    grid.innerHTML = PIPELINE_TEMPLATES.map(t => `
+        <div class="cp-template-card" data-tpl="${t.id}" onclick="cpSelectTemplate('${t.id}')">
+            <i class="bi ${t.icon} tpl-icon" style="color:${t.color}"></i>
+            <div class="tpl-label">${t.label}</div>
+        </div>
+    `).join('');
+}
+
+function cpSelectTemplate(id) {
+    _cpTemplate = PIPELINE_TEMPLATES.find(t => t.id === id);
+    if (!_cpTemplate) return;
+
+    document.getElementById('cpModalTitle').textContent = _cpTemplate.label;
+    document.getElementById('cpPipelineName').value    = _cpTemplate.label;
+    document.getElementById('cpPipelineColor').value   = _cpTemplate.color;
+
+    // Renderiza prévia das etapas
+    const pills = _cpTemplate.stages.map((s, i) => {
+        const badge = s.is_won ? ' 🏆' : s.is_lost ? ' ✕' : '';
+        const arrow = i < _cpTemplate.stages.length - 1 ? '<span style="color:#d1d5db;font-size:14px;">→</span>' : '';
+        return `<span class="cp-stage-pill" style="background:${s.color}">${s.name}${badge}</span>${arrow}`;
+    }).join('');
+
+    document.getElementById('cpStagesPreviewWrap').innerHTML = `
+        <p style="font-size:12px;font-weight:600;color:#374151;margin:0 0 10px;">Etapas do funil:</p>
+        <div class="cp-stages-preview">${pills}</div>
+        <div style="height:1px;background:#f0f0f0;margin:16px 0 18px;"></div>
+    `;
+
+    document.getElementById('cpStepTemplates').style.display = 'none';
+    document.getElementById('cpStepForm').style.display = '';
+}
+
+function cpSelectScratch() {
+    _cpTemplate = null;
+    document.getElementById('cpModalTitle').textContent = 'Funil personalizado';
+    document.getElementById('cpPipelineName').value = '';
+    document.getElementById('cpPipelineColor').value = '#3B82F6';
+    document.getElementById('cpStagesPreviewWrap').innerHTML = '';
+    document.getElementById('cpStepTemplates').style.display = 'none';
+    document.getElementById('cpStepForm').style.display = '';
+}
+
+function cpBackToTemplates() {
+    cpShowTemplates();
+}
+
+async function cpCreatePipeline() {
+    const name  = document.getElementById('cpPipelineName').value.trim();
+    const color = document.getElementById('cpPipelineColor').value;
+
+    if (!name) {
+        document.getElementById('cpPipelineName').focus();
+        return;
+    }
+
+    const btn = document.getElementById('cpBtnCreate');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Criando…';
+
+    try {
+        // 1. Criar o pipeline
+        const res  = await fetch(CP_STORE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CP_CSRF, 'Accept': 'application/json' },
+            body: JSON.stringify({ name, color }),
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error('Erro ao criar pipeline');
+
+        const pipelineId = data.pipeline.id;
+
+        // 2. Criar etapas sequencialmente (se template selecionado)
+        if (_cpTemplate) {
+            for (const stage of _cpTemplate.stages) {
+                await fetch(`${CP_STAGE_BASE}/${pipelineId}/stages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CP_CSRF, 'Accept': 'application/json' },
+                    body: JSON.stringify({
+                        name:    stage.name,
+                        color:   stage.color,
+                        is_won:  stage.is_won  ? 1 : 0,
+                        is_lost: stage.is_lost ? 1 : 0,
+                    }),
+                });
+            }
+        }
+
+        // 3. Redirecionar para o kanban com o novo pipeline
+        window.location.href = `${CP_CRM_URL}?pipeline_id=${pipelineId}`;
+
+    } catch (e) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-lg"></i> Criar funil';
+        toastr.error('Erro ao criar o funil. Tente novamente.');
+    }
+}
+
+// Fechar ao clicar no backdrop
+document.getElementById('modalCreatePipeline')?.addEventListener('click', function(e) {
+    if (e.target === this) closePipelineModal();
+});
 </script>
 @endpush
