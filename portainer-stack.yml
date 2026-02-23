@@ -87,6 +87,10 @@ x-app-env: &app-env
   WHATSAPP_PHONE_NUMBER_ID: ""
   WHATSAPP_BUSINESS_ACCOUNT_ID: ""
   WHATSAPP_ACCESS_TOKEN: ""
+  INSTAGRAM_CLIENT_ID: ""
+  INSTAGRAM_CLIENT_SECRET: ""
+  INSTAGRAM_REDIRECT_URI: https://syncro.matheusrossi.com.br/configuracoes/integracoes/instagram/callback
+  INSTAGRAM_WEBHOOK_VERIFY_TOKEN: plataforma360_instagram_verify_2026
 
 services:
 
