@@ -87,6 +87,10 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::get('whatsapp/qr',       [IntegrationController::class, 'getWhatsappQr'])->name('whatsapp.qr');
         Route::post('whatsapp/import',  [IntegrationController::class, 'importHistoryWhatsapp'])->name('whatsapp.import');
         Route::delete('whatsapp',       [IntegrationController::class, 'disconnectWhatsapp'])->name('whatsapp.disconnect');
+        // Instagram OAuth
+        Route::get('instagram/redirect', [IntegrationController::class, 'redirectInstagram'])->name('instagram.redirect');
+        Route::get('instagram/callback', [IntegrationController::class, 'callbackInstagram'])->name('instagram.callback');
+        Route::delete('instagram',        [IntegrationController::class, 'disconnectInstagram'])->name('instagram.disconnect');
         // Wildcards (OAuth) — após as rotas específicas
         Route::delete('{platform}',     [IntegrationController::class, 'disconnect'])->name('disconnect');
         Route::post('{platform}/sync',  [IntegrationController::class, 'syncNow'])->name('sync');

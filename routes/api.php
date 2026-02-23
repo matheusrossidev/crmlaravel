@@ -2,12 +2,17 @@
 
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\PipelineController;
+use App\Http\Controllers\InstagramWebhookController;
 use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
 
 // ── Webhook WAHA (público, sem autenticação) ──────────────────────────────
 Route::post('/webhook/waha', [WhatsappWebhookController::class, 'handle'])
     ->name('waha.webhook');
+
+// ── Webhook Instagram / Meta (público, sem autenticação) ──────────────────
+Route::get ('/webhook/instagram', [InstagramWebhookController::class, 'verify'])->name('instagram.webhook.verify');
+Route::post('/webhook/instagram', [InstagramWebhookController::class, 'handle'])->name('instagram.webhook.handle');
 
 /*
 |--------------------------------------------------------------------------

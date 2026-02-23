@@ -51,15 +51,9 @@
     .integration-logo.facebook   { background: #1877F2; }
     .integration-logo.google     { background: linear-gradient(135deg, #4285F4 0%, #EA4335 50%, #FBBC04 75%, #34A853 100%); }
     .integration-logo.whatsapp   { background: #25D366; }
-    .integration-logo.instagram  { background: #d1d5db; }
+    .integration-logo.instagram  { background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
 
     .conn-soon { background: #f3f4f6; color: #9ca3af; }
-
-    .integration-card.coming-soon {
-        opacity: .45;
-        filter: grayscale(1);
-        pointer-events: none;
-    }
 
     .integration-features {
         list-style: none;
@@ -493,29 +487,54 @@
             </div>
         </div>
 
-        {{-- ─── Instagram (Em breve) ────────────────────────────────────── --}}
-        <div class="integration-card coming-soon">
+        {{-- ─── Instagram ────────────────────────────────────────────────── --}}
+        <div class="integration-card">
             <div class="integration-header">
                 <div class="integration-logo instagram">
                     <i class="bi bi-instagram" style="font-size:20px;"></i>
                 </div>
                 <div class="integration-title">
                     <h3>Instagram</h3>
-                    <p>Chat, comentários e automações</p>
+                    <p>Chat de mensagens diretas (DMs)</p>
                 </div>
-                <span class="conn-badge conn-soon">Em breve</span>
+                @if($instagram && $instagram->status === 'connected')
+                    <span class="conn-badge conn-active">Conectado</span>
+                @else
+                    <span class="conn-badge conn-none">Desconectado</span>
+                @endif
             </div>
             <div class="integration-body">
                 <ul class="integration-features">
                     <li>Chat de mensagens diretas (DMs) no CRM</li>
-                    <li>Resposta automática a comentários em posts</li>
-                    <li>Envio de DM quando alguém comentar</li>
                     <li>Agente de IA para atender DMs automaticamente</li>
+                    <li>Criação automática de leads a partir de DMs</li>
+                    <li>Histórico completo de conversas</li>
                 </ul>
+
+                @if($instagram && $instagram->status === 'connected')
+                <div class="conn-detail">
+                    @if($instagram->profile_picture_url)
+                        <img src="{{ $instagram->profile_picture_url }}" alt="" style="width:28px;height:28px;border-radius:50%;margin-right:8px;vertical-align:middle;">
+                    @endif
+                    <strong>@{{ $instagram->username ?? 'Conta conectada' }}</strong><br>
+                    <span>Conectado {{ $instagram->updated_at?->diffForHumans() ?? '' }}</span>
+                </div>
+                @else
+                <div class="conn-detail" style="color:#9ca3af;">
+                    Nenhuma conta conectada.
+                </div>
+                @endif
+
                 <div class="integration-actions">
-                    <button class="btn-coming-soon" disabled>
-                        <i class="bi bi-clock"></i> Em desenvolvimento
-                    </button>
+                    @if($instagram && $instagram->status === 'connected')
+                        <button class="btn-disconnect" onclick="disconnectInstagram(this)">
+                            <i class="bi bi-x-circle"></i> Desconectar
+                        </button>
+                    @else
+                        <a href="{{ route('settings.integrations.instagram.redirect') }}" class="btn-connect" style="background:#dc2743;">
+                            <i class="bi bi-instagram"></i> Conectar Instagram
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -557,6 +576,7 @@ const WA_CONNECT_URL      = @json(route('settings.integrations.whatsapp.connect'
 const WA_QR_URL           = @json(route('settings.integrations.whatsapp.qr'));
 const WA_DISCONNECT_URL   = @json(route('settings.integrations.whatsapp.disconnect'));
 const WA_IMPORT_URL       = @json(route('settings.integrations.whatsapp.import'));
+const IG_DISCONNECT_URL   = @json(route('settings.integrations.instagram.disconnect'));
 
 let waQrPollInterval = null;
 
@@ -747,6 +767,37 @@ function disconnectPlatform(platform, btn) {
                 const data = await res.json();
                 if (data.success) {
                     toastr.success('Integração desconectada.');
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    toastr.error('Erro ao desconectar.');
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                toastr.error('Erro de conexão.');
+                btn.disabled = false;
+            }
+        },
+    });
+}
+
+async function disconnectInstagram(btn) {
+    confirmAction({
+        title: 'Desconectar Instagram',
+        message: 'Tem certeza que deseja desconectar a conta do Instagram?',
+        confirmText: 'Desconectar',
+        onConfirm: async () => {
+            btn.disabled = true;
+            try {
+                const res  = await fetch(IG_DISCONNECT_URL, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                });
+                const data = await res.json();
+                if (data.success) {
+                    toastr.success('Instagram desconectado.');
                     setTimeout(() => location.reload(), 1200);
                 } else {
                     toastr.error('Erro ao desconectar.');

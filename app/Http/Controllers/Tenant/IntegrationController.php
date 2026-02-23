@@ -6,10 +6,12 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\SyncCampaignsJob;
+use App\Models\InstagramInstance;
 use App\Models\OAuthConnection;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
+use App\Services\InstagramService;
 use App\Services\WahaService;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
@@ -31,8 +33,9 @@ class IntegrationController extends Controller
         $facebook  = $connections->get('facebook');
         $google    = $connections->get('google');
         $whatsapp  = WhatsappInstance::first();
+        $instagram = InstagramInstance::first();
 
-        return view('tenant.settings.integrations', compact('facebook', 'google', 'whatsapp'));
+        return view('tenant.settings.integrations', compact('facebook', 'google', 'whatsapp', 'instagram'));
     }
 
     // ── Facebook ──────────────────────────────────────────────────────────────
@@ -395,6 +398,102 @@ class IntegrationController extends Controller
             $waha->deleteSession();
             $instance->update(['status' => 'disconnected', 'phone_number' => null, 'display_name' => null]);
         }
+
+        return response()->json(['success' => true]);
+    }
+
+    // ── Instagram ─────────────────────────────────────────────────────────────
+
+    public function redirectInstagram(): RedirectResponse
+    {
+        $clientId    = (string) config('services.instagram.client_id');
+        $redirectUri = (string) config('services.instagram.redirect');
+
+        $params = http_build_query([
+            'client_id'     => $clientId,
+            'redirect_uri'  => $redirectUri,
+            'scope'         => 'instagram_business_basic,instagram_business_manage_messages',
+            'response_type' => 'code',
+        ]);
+
+        return redirect("https://api.instagram.com/oauth/authorize?{$params}");
+    }
+
+    public function callbackInstagram(): RedirectResponse
+    {
+        $code = request()->get('code');
+
+        if (! $code) {
+            return redirect()->route('settings.integrations.index')
+                ->with('error', 'Autorização negada pelo Instagram.');
+        }
+
+        // 1. Trocar code por short-lived token
+        $tokenResponse = Http::asForm()->post('https://api.instagram.com/oauth/access_token', [
+            'client_id'     => config('services.instagram.client_id'),
+            'client_secret' => config('services.instagram.client_secret'),
+            'grant_type'    => 'authorization_code',
+            'redirect_uri'  => config('services.instagram.redirect'),
+            'code'          => $code,
+        ]);
+
+        if ($tokenResponse->failed()) {
+            Log::error('Instagram OAuth token exchange failed', ['body' => $tokenResponse->body()]);
+            return redirect()->route('settings.integrations.index')
+                ->with('error', 'Falha ao obter token do Instagram.');
+        }
+
+        $shortToken  = $tokenResponse->json('access_token');
+        $igAccountId = (string) $tokenResponse->json('user_id');
+
+        // 2. Trocar por long-lived token (60 dias)
+        $longTokenResponse = Http::get('https://graph.instagram.com/access_token', [
+            'grant_type'        => 'ig_exchange_token',
+            'client_secret'     => config('services.instagram.client_secret'),
+            'access_token'      => $shortToken,
+        ]);
+
+        $accessToken = $longTokenResponse->successful()
+            ? ($longTokenResponse->json('access_token') ?? $shortToken)
+            : $shortToken;
+
+        $expiresIn = $longTokenResponse->json('expires_in'); // seconds
+
+        // 3. Buscar username/foto da conta
+        $service    = new InstagramService($accessToken);
+        $me         = $service->getMe();
+        $username   = $me['username'] ?? null;
+        $pictureUrl = $me['profile_picture_url'] ?? null;
+
+        $tenant = auth()->user()->tenant;
+
+        InstagramInstance::withoutGlobalScope('tenant')->updateOrCreate(
+            ['tenant_id' => $tenant->id],
+            [
+                'instagram_account_id' => $igAccountId,
+                'username'             => $username,
+                'profile_picture_url'  => $pictureUrl,
+                'access_token'         => encrypt($accessToken),
+                'token_expires_at'     => $expiresIn
+                    ? now()->addSeconds((int) $expiresIn)
+                    : now()->addDays(60),
+                'status'               => 'connected',
+            ]
+        );
+
+        Log::info('Instagram conectado', ['tenant_id' => $tenant->id, 'username' => $username]);
+
+        return redirect()->route('settings.integrations.index')
+            ->with('success', 'Instagram conectado com sucesso!');
+    }
+
+    public function disconnectInstagram(): JsonResponse
+    {
+        $tenant = auth()->user()->tenant;
+
+        InstagramInstance::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->delete();
 
         return response()->json(['success' => true]);
     }

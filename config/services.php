@@ -53,4 +53,11 @@ return [
         'webhook_secret' => env('WAHA_WEBHOOK_SECRET', ''),
     ],
 
+    'instagram' => [
+        'client_id'            => env('INSTAGRAM_CLIENT_ID'),
+        'client_secret'        => env('INSTAGRAM_CLIENT_SECRET'),
+        'redirect'             => env('INSTAGRAM_REDIRECT_URI'),
+        'webhook_verify_token' => env('INSTAGRAM_WEBHOOK_VERIFY_TOKEN', 'plataforma360_instagram_verify_2026'),
+    ],
+
 ];

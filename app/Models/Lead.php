@@ -17,6 +17,7 @@ class Lead extends Model
         'tenant_id', 'name', 'phone', 'email', 'value',
         'source', 'tags', 'pipeline_id', 'stage_id',
         'assigned_to', 'campaign_id', 'created_by', 'notes',
+        'instagram_username',
     ];
 
     protected $casts = [

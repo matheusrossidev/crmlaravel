@@ -134,6 +134,13 @@ return [
             'days'   => 7,
         ],
 
+        'instagram' => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/instagram.log'),
+            'level'  => 'debug',
+            'days'   => 7,
+        ],
+
     ],
 
 ];
