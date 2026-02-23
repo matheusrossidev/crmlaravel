@@ -34,6 +34,12 @@ class ChatbotFlowController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // Limite de 1 fluxo de chatbot por tenant
+        if (ChatbotFlow::exists()) {
+            return redirect()->route('chatbot.flows.index')
+                ->withErrors(['limit' => 'Cada conta pode ter apenas 1 fluxo de chatbot. Edite o fluxo existente.']);
+        }
+
         $data = $this->validatedFlow($request);
         $flow = ChatbotFlow::create($data);
         return redirect()->route('chatbot.flows.edit', $flow)->with('success', 'Fluxo criado! Agora adicione os nós.');

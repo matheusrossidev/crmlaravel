@@ -229,7 +229,15 @@ class WhatsappController extends Controller
         ]);
 
         $agentId = $request->input('ai_agent_id');
-        $conversation->update(['ai_agent_id' => $agentId]);
+
+        // Exclusividade: se atribuindo agente de IA, limpa chatbot ativo
+        $updateData = ['ai_agent_id' => $agentId];
+        if ($agentId && $conversation->chatbot_flow_id) {
+            $updateData['chatbot_flow_id']   = null;
+            $updateData['chatbot_node_id']   = null;
+            $updateData['chatbot_variables'] = null;
+        }
+        $conversation->update($updateData);
 
         Log::channel('whatsapp')->info('Agente IA atribuído à conversa', [
             'conversation_id' => $conversation->id,
@@ -259,11 +267,16 @@ class WhatsappController extends Controller
 
         $flowId = $request->input('chatbot_flow_id');
 
-        $conversation->update([
+        // Exclusividade: se atribuindo chatbot, limpa agente de IA ativo
+        $updateData = [
             'chatbot_flow_id'   => $flowId,
             'chatbot_node_id'   => null,
             'chatbot_variables' => null,
-        ]);
+        ];
+        if ($flowId && $conversation->ai_agent_id) {
+            $updateData['ai_agent_id'] = null;
+        }
+        $conversation->update($updateData);
 
         Log::channel('whatsapp')->info('Chatbot flow atribuído à conversa', [
             'conversation_id' => $conversation->id,

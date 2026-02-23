@@ -93,6 +93,29 @@ class ProcessAiResponse implements ShouldQueue
             return;
         }
 
+        // ── Debounce: aguardar para agregar mensagens enviadas em sequência ────
+        // Se o usuário manda 3 mensagens em 5 s, apenas a última passa pelo debounce.
+        $waitSecs = max(0, (int) ($agent->response_wait_seconds ?? 0));
+        if ($waitSecs > 0) {
+            Log::channel('whatsapp')->debug('AI job: aguardando batching', [
+                'conversation_id' => $this->conversationId,
+                'wait_seconds'    => $waitSecs,
+            ]);
+            sleep($waitSecs);
+
+            // Re-verificar versão após o sleep — se outra mensagem chegou e
+            // incrementou o contador, esta execução é obsoleta.
+            $latestVersion = (int) Cache::get("ai:version:{$this->conversationId}", 0);
+            if ($latestVersion !== $this->version) {
+                Log::channel('whatsapp')->debug('AI job: descartado após batching (nova mensagem chegou)', [
+                    'conversation_id' => $this->conversationId,
+                    'job_version'     => $this->version,
+                    'latest_version'  => $latestVersion,
+                ]);
+                return;
+            }
+        }
+
         // ── Configuração do LLM via ENV ───────────────────────────────────────
         $provider = (string) config('ai.provider', 'openai');
         $apiKey   = (string) config('ai.api_key', '');

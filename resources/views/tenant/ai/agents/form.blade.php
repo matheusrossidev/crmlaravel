@@ -393,10 +393,23 @@
                                min="50" max="4000" step="50">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Tempo de Resposta (segundos)</label>
+                        <label class="form-label">Delay entre mensagens (segundos)</label>
                         <input type="number" name="response_delay_seconds" class="form-control"
                                value="{{ old('response_delay_seconds', $agent->response_delay_seconds ?? 2) }}"
-                               min="0" max="30">
+                               min="0" max="30"
+                               title="Pausa entre cada parte da resposta (quando dividida em múltiplas mensagens)">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Tempo de espera para batching (segundos)</label>
+                        <input type="number" name="response_wait_seconds" class="form-control"
+                               value="{{ old('response_wait_seconds', $agent->response_wait_seconds ?? 0) }}"
+                               min="0" max="30"
+                               title="Aguardar X segundos antes de processar, para agrupar mensagens enviadas em sequência. 0 = sem espera.">
+                        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">
+                            Quando o usuário manda várias mensagens seguidas, o agente aguarda este tempo antes de responder, processando todas juntas.
+                        </div>
                     </div>
                 </div>
                 <div class="form-group">

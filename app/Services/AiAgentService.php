@@ -10,6 +10,7 @@ use App\Models\AiAgent;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -118,7 +119,7 @@ JSONINSTR;
         $messages = WhatsappMessage::withoutGlobalScope('tenant')
             ->where('conversation_id', $conv->id)
             ->where('is_deleted', false)
-            ->whereIn('type', ['text', 'image'])
+            ->whereIn('type', ['text', 'image', 'audio'])
             ->orderByDesc('sent_at')
             ->limit($limit)
             ->get()
@@ -130,7 +131,8 @@ JSONINSTR;
         foreach ($messages as $msg) {
             $role = $msg->direction === 'inbound' ? 'user' : 'assistant';
 
-            if ($msg->type === 'text' || ! $msg->media_url) {
+            // Texto puro, sem mídia, ou áudio com transcrição disponível no body
+            if ($msg->type === 'text' || ! $msg->media_url || ($msg->type === 'audio' && $msg->body)) {
                 $history[] = [
                     'role'    => $role,
                     'content' => $msg->body ?? '',
@@ -203,6 +205,72 @@ JSONINSTR;
                 sleep($delaySeconds);
             }
             $this->sendWhatsappReply($conv, $text);
+        }
+    }
+
+    /**
+     * Transcreve um arquivo de áudio via OpenAI Whisper.
+     * Aceita URLs absolutas (http/https) ou caminhos relativos do storage público.
+     */
+    public function transcribeAudio(string $mediaUrl): ?string
+    {
+        $apiKey = (string) config('ai.whisper_api_key');
+        if ($apiKey === '') {
+            return null;
+        }
+
+        // Obter conteúdo do áudio
+        $audioContent = null;
+        $ext          = 'ogg';
+
+        if (str_starts_with($mediaUrl, 'http://') || str_starts_with($mediaUrl, 'https://')) {
+            $dlResponse = Http::timeout(30)->get($mediaUrl);
+            if (! $dlResponse->successful()) {
+                Log::channel('whatsapp')->warning('Whisper: falha ao baixar áudio', [
+                    'url'    => $mediaUrl,
+                    'status' => $dlResponse->status(),
+                ]);
+                return null;
+            }
+            $audioContent = $dlResponse->body();
+            $ext = pathinfo(parse_url($mediaUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'ogg';
+        } else {
+            // Caminho relativo de storage público
+            $path = Storage::disk('public')->path($mediaUrl);
+            if (! file_exists($path)) {
+                Log::channel('whatsapp')->warning('Whisper: arquivo de áudio não encontrado', ['path' => $path]);
+                return null;
+            }
+            $audioContent = file_get_contents($path);
+            $ext = pathinfo($path, PATHINFO_EXTENSION) ?: 'ogg';
+        }
+
+        if (! $audioContent) {
+            return null;
+        }
+
+        try {
+            $response = Http::withToken($apiKey)
+                ->timeout(60)
+                ->attach('file', $audioContent, 'audio.' . $ext)
+                ->attach('model', 'whisper-1')
+                ->attach('language', 'pt')
+                ->post('https://api.openai.com/v1/audio/transcriptions');
+
+            if (! $response->successful()) {
+                Log::channel('whatsapp')->warning('Whisper: API retornou erro', [
+                    'status' => $response->status(),
+                    'body'   => mb_substr($response->body(), 0, 500),
+                ]);
+                return null;
+            }
+
+            return $response->json('text') ?: null;
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->error('Whisper: exceção ao transcrever', [
+                'error' => $e->getMessage(),
+            ]);
+            return null;
         }
     }
 

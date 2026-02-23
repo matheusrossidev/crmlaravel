@@ -341,7 +341,8 @@ class ProcessWahaWebhook implements ShouldQueue
 
         // Auto-trigger de chatbot: verifica keyword em QUALQUER mensagem inbound sem flow ativo.
         // DEVE ficar APÓS a atribuição de $body (acima) para comparar a mensagem correta.
-        if (! $isFromMe && ! $isGroup && ! $conversation->chatbot_flow_id) {
+        // Não ativar chatbot se a conversa já tem agente de IA — exclusividade mútua.
+        if (! $isFromMe && ! $isGroup && ! $conversation->chatbot_flow_id && ! $conversation->ai_agent_id) {
             $msgBodyLower = strtolower($body ?? '');
             $activeFlow   = ChatbotFlow::withoutGlobalScope('tenant')
                 ->where('tenant_id', $instance->tenant_id)
@@ -397,6 +398,31 @@ class ProcessWahaWebhook implements ShouldQueue
             'has_media'       => $mediaUrl !== null,
         ]);
 
+        // Transcrever áudio para texto via Whisper (apenas mensagens inbound com agente de IA ativo)
+        if (! $isFromMe && $type === 'audio' && $mediaUrl && $conversation->ai_agent_id
+            && config('ai.provider') === 'openai'
+            && (string) config('ai.whisper_api_key') !== ''
+        ) {
+            try {
+                $transcript = (new \App\Services\AiAgentService())->transcribeAudio($mediaUrl);
+                if ($transcript) {
+                    WhatsappMessage::withoutGlobalScope('tenant')
+                        ->where('id', $message->id)
+                        ->update(['body' => $transcript]);
+                    $message->body = $transcript;
+                    Log::channel('whatsapp')->info('Áudio transcrito via Whisper', [
+                        'message_id' => $message->id,
+                        'length'     => mb_strlen($transcript),
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::channel('whatsapp')->error('Whisper: transcrição falhou', [
+                    'message_id' => $message->id,
+                    'error'      => $e->getMessage(),
+                ]);
+            }
+        }
+
         // Atualizar conversa ANTES do broadcast — garante que last_message_at e
         // unread_count sejam salvos mesmo se o broadcaster estiver indisponível.
         $convUpdate = [
@@ -444,7 +470,11 @@ class ProcessWahaWebhook implements ShouldQueue
             && ! $conversation->chatbot_flow_id
         ) {
             try {
-                (new ProcessAiResponse($conversation->id))->process();
+                // Incrementar versão atomicamente — serve como debounce quando o usuário
+                // envia várias mensagens seguidas. ProcessAiResponse dorme response_wait_seconds
+                // e descarta se a versão não bater (mensagem mais recente assume o processamento).
+                $aiVersion = (int) Cache::increment("ai:version:{$conversation->id}");
+                (new ProcessAiResponse($conversation->id, $aiVersion))->process();
             } catch (\Throwable $e) {
                 Log::channel('whatsapp')->error('AI agent falhou', [
                     'conversation_id' => $conversation->id,

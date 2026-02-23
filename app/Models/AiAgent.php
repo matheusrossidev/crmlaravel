@@ -18,16 +18,17 @@ class AiAgent extends Model
         'persona_description', 'behavior',
         'on_finish_action', 'on_transfer_message', 'on_invalid_response',
         'conversation_stages', 'knowledge_base',
-        'max_message_length', 'response_delay_seconds',
+        'max_message_length', 'response_delay_seconds', 'response_wait_seconds',
         'channel', 'is_active', 'auto_assign',
     ];
 
     protected $casts = [
-        'conversation_stages'   => 'array',
-        'max_message_length'    => 'integer',
-        'response_delay_seconds'=> 'integer',
-        'is_active'             => 'boolean',
-        'auto_assign'           => 'boolean',
+        'conversation_stages'    => 'array',
+        'max_message_length'     => 'integer',
+        'response_delay_seconds' => 'integer',
+        'response_wait_seconds'  => 'integer',
+        'is_active'              => 'boolean',
+        'auto_assign'            => 'boolean',
     ];
 
     public function conversations(): HasMany

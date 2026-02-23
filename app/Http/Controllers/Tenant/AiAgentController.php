@@ -27,6 +27,15 @@ class AiAgentController extends Controller
 
     public function store(Request $request): JsonResponse|\Illuminate\Http\RedirectResponse
     {
+        // Limite de 1 agente por tenant
+        if (AiAgent::exists()) {
+            $message = 'Cada conta pode ter apenas 1 agente de IA. Edite o agente existente.';
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+            return redirect()->route('ai.agents.index')->withErrors(['limit' => $message]);
+        }
+
         $data  = $this->validated($request);
         $agent = AiAgent::create($data);
 
@@ -139,6 +148,7 @@ class AiAgentController extends Controller
             'knowledge_base'         => 'nullable|string',
             'max_message_length'     => 'nullable|integer|min:50|max:4000',
             'response_delay_seconds' => 'nullable|integer|min:0|max:30',
+            'response_wait_seconds'  => 'nullable|integer|min:0|max:30',
             'channel'                => 'required|in:whatsapp,web_chat',
             'is_active'              => 'nullable|boolean',
             'auto_assign'            => 'nullable|boolean',
