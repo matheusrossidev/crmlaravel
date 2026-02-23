@@ -10,6 +10,7 @@ use App\Models\WhatsappMessage;
 use App\Services\AiAgentService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class AiFollowUpCommand extends Command
@@ -85,6 +86,12 @@ class AiFollowUpCommand extends Command
 
             if (! $lastMsg || $lastMsg->direction !== 'outbound') {
                 continue; // Último a falar foi o cliente — nenhuma ação necessária
+            }
+
+            // ── Lock atômico: evita execução simultânea em múltiplas réplicas ─
+            $lockKey = "followup:lock:{$conv->id}";
+            if (! Cache::add($lockKey, 1, now()->addMinutes(11))) {
+                continue; // Outra réplica já está processando esta conversa
             }
 
             // ── Chamar LLM: classificar + gerar follow-up em 1 chamada ──────
