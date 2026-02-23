@@ -147,6 +147,8 @@ class ProcessAiResponse implements ShouldQueue
                         'id'      => $s->id,
                         'name'    => $s->name,
                         'current' => $s->id === $lead->stage_id,
+                        'is_won'  => (bool) $s->is_won,
+                        'is_lost' => (bool) $s->is_lost,
                     ])
                     ->values()
                     ->toArray();

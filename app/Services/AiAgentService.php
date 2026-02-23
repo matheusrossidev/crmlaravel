@@ -84,13 +84,26 @@ class AiAgentService
         // ── Contexto de pipeline (se disponível) ──────────────────────────────
         if (! empty($stages)) {
             $currentStage = collect($stages)->firstWhere('current', true);
-            $stageList    = collect($stages)->map(fn ($s) => "{$s['id']}: {$s['name']}")->implode(', ');
             $lines[] = "\n--- CONTROLE DE FUNIL ---";
-            $lines[] = "Etapas disponíveis ({$stageList})";
+            $lines[] = "Etapas disponíveis:";
+            foreach ($stages as $s) {
+                $annotation = '';
+                if ($s['is_won']) {
+                    $annotation = ' [ETAPA FINAL: GANHO — use SOMENTE quando o cliente confirmar explicitamente que quer contratar ou comprar]';
+                } elseif ($s['is_lost']) {
+                    $annotation = ' [ETAPA FINAL: PERDIDO — use SOMENTE quando o cliente recusar explicitamente o serviço ou demonstrar total desinteresse]';
+                }
+                $lines[] = "  {$s['id']}: {$s['name']}{$annotation}";
+            }
             if ($currentStage) {
                 $lines[] = "Etapa atual do lead: {$currentStage['name']}";
             }
-            $lines[] = "Você pode mover o lead de etapa conforme a conversa evoluir.";
+            $lines[] = "REGRAS PARA MUDANÇA DE ETAPA:";
+            $lines[] = "- Avance etapas gradualmente conforme a conversa evolui.";
+            $lines[] = "- Mova para GANHO SOMENTE se o cliente confirmar explicitamente que deseja contratar/comprar.";
+            $lines[] = "- Mova para PERDIDO SOMENTE se o cliente recusar o serviço de forma explícita.";
+            $lines[] = "- Se o cliente demonstrar INTERESSE em contratar → avance para a próxima etapa intermediária, NUNCA para PERDIDO.";
+            $lines[] = "- Em caso de dúvida sobre qual etapa usar → mantenha a etapa atual (actions: []).";
             $lines[] = "--- FIM DO CONTROLE DE FUNIL ---";
         }
 
