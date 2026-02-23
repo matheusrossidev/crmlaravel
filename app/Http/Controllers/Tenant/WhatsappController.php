@@ -7,12 +7,16 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\AiAgent;
 use App\Models\ChatbotFlow;
+use App\Models\InstagramConversation;
+use App\Models\InstagramInstance;
+use App\Models\InstagramMessage;
 use App\Models\Pipeline;
 use App\Models\User;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
 use App\Models\WhatsappTag;
+use App\Services\InstagramService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Jobs\ProcessAiResponse;
@@ -27,10 +31,11 @@ class WhatsappController extends Controller
         $instance  = WhatsappInstance::first();
         $connected = $instance && $instance->status === 'connected';
 
-        $conversations = [];
-        $users         = [];
-        $pipelines     = [];
-        $whatsappTags  = collect();
+        $conversations   = [];
+        $igConversations = collect();
+        $users           = [];
+        $pipelines       = [];
+        $whatsappTags    = collect();
 
         if ($connected) {
             $conversations = WhatsappConversation::with(['latestMessage', 'assignedUser'])
@@ -50,6 +55,26 @@ class WhatsappController extends Controller
                 ->get(['id', 'name', 'color']);
         }
 
+        // Carregar conversas Instagram independente do WhatsApp estar conectado
+        $igInstance = InstagramInstance::first();
+        if ($igInstance && $igInstance->status === 'connected') {
+            $igConversations = InstagramConversation::with(['latestMessage'])
+                ->orderByDesc('last_message_at')
+                ->get();
+        }
+
+        // Unificar e ordenar por data (WhatsApp + Instagram misturados)
+        $allConversations = collect();
+        foreach ($conversations as $c) {
+            $c->_channel = 'whatsapp';
+            $allConversations->push($c);
+        }
+        foreach ($igConversations as $c) {
+            $c->_channel = 'instagram';
+            $allConversations->push($c);
+        }
+        $allConversations = $allConversations->sortByDesc('last_message_at')->values();
+
         $aiAgents     = AiAgent::where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name']);
@@ -58,7 +83,110 @@ class WhatsappController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'users', 'pipelines', 'whatsappTags', 'aiAgents', 'chatbotFlows'));
+        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'igConversations', 'allConversations', 'users', 'pipelines', 'whatsappTags', 'aiAgents', 'chatbotFlows'));
+    }
+
+    // ── Instagram Conversations ───────────────────────────────────────────────
+
+    public function showInstagram(InstagramConversation $conversation): JsonResponse
+    {
+        $conversation->load(['lead.pipeline', 'lead.stage']);
+
+        $messages = InstagramMessage::where('conversation_id', $conversation->id)
+            ->orderBy('sent_at')
+            ->get()
+            ->map(fn ($m) => [
+                'id'        => $m->id,
+                'direction' => $m->direction,
+                'type'      => $m->type,
+                'body'      => $m->body,
+                'media_url' => $m->media_url,
+                'ack'       => $m->ack,
+                'sent_at'   => $m->sent_at?->toISOString(),
+            ]);
+
+        $lead = null;
+        if ($conversation->lead) {
+            $l    = $conversation->lead;
+            $lead = [
+                'id'            => $l->id,
+                'name'          => $l->name,
+                'phone'         => $l->phone,
+                'email'         => $l->email,
+                'value'         => $l->value,
+                'pipeline_id'   => $l->pipeline_id,
+                'pipeline_name' => $l->pipeline?->name,
+                'stage_id'      => $l->stage_id,
+                'stage_name'    => $l->stage?->name,
+                'source'        => $l->source,
+            ];
+        }
+
+        return response()->json([
+            'messages'         => $messages,
+            'lead'             => $lead,
+            'assigned_user_id' => $conversation->assigned_user_id,
+            'ai_agent_id'      => $conversation->ai_agent_id,
+            'chatbot_flow_id'  => null,
+            'tags'             => $conversation->tags ?? [],
+            'contact_name'     => $conversation->contact_name,
+            'phone'            => '@' . ltrim($conversation->contact_username ?? '', '@'),
+            'is_group'         => false,
+        ]);
+    }
+
+    public function markReadInstagram(InstagramConversation $conversation): JsonResponse
+    {
+        $conversation->update(['unread_count' => 0]);
+        return response()->json(['success' => true]);
+    }
+
+    public function sendInstagramMessage(InstagramConversation $conversation, Request $request): JsonResponse
+    {
+        $body = $request->input('body', '');
+        if (! $body) {
+            return response()->json(['error' => 'Mensagem vazia'], 422);
+        }
+
+        $instance = InstagramInstance::first();
+        if (! $instance || $instance->status !== 'connected') {
+            return response()->json(['error' => 'Instagram não conectado'], 422);
+        }
+
+        try {
+            $service = new InstagramService(decrypt($instance->access_token));
+            $service->sendMessage($conversation->igsid, $body);
+        } catch (\Throwable $e) {
+            Log::channel('instagram')->error('Falha ao enviar mensagem', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Falha ao enviar: ' . $e->getMessage()], 500);
+        }
+
+        $message = InstagramMessage::create([
+            'tenant_id'       => $conversation->tenant_id,
+            'conversation_id' => $conversation->id,
+            'ig_message_id'   => null,
+            'direction'       => 'outbound',
+            'type'            => 'text',
+            'body'            => $body,
+            'ack'             => 'sent',
+            'sent_at'         => now(),
+        ]);
+
+        InstagramConversation::where('id', $conversation->id)
+            ->update(['last_message_at' => now(), 'status' => 'open', 'closed_at' => null]);
+
+        return response()->json([
+            'success' => true,
+            'message' => [
+                'id'        => $message->id,
+                'direction' => 'outbound',
+                'type'      => 'text',
+                'body'      => $body,
+                'media_url' => null,
+                'ack'       => 'sent',
+                'sent_at'   => $message->sent_at->toISOString(),
+            ],
+        ]);
     }
 
     public function poll(Request $request): JsonResponse

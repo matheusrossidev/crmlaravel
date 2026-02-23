@@ -905,12 +905,22 @@ $pageIcon = 'chat-dots';
         </div>
 
         <div class="wa-conv-list" id="convList">
-            @forelse($conversations as $conv)
+            @forelse($allConversations as $conv)
+            @php
+                $ch      = $conv->_channel;
+                $convName = $ch === 'instagram'
+                    ? ($conv->contact_name ?? $conv->contact_username ?? 'Contato Instagram')
+                    : ($conv->contact_name ?? ($conv->is_group ? 'Grupo' : $conv->phone));
+                $convPhone = $ch === 'instagram'
+                    ? ('@' . ltrim($conv->contact_username ?? '', '@'))
+                    : ($conv->phone ?? '');
+                $avatarLetter = strtoupper(substr($convName, 0, 1));
+            @endphp
             <div class="wa-conv-item"
                 data-conv-id="{{ $conv->id }}"
-                data-phone="{{ $conv->phone }}"
+                data-phone="{{ $convPhone }}"
                 data-status="{{ $conv->status }}"
-                data-channel="whatsapp"
+                data-channel="{{ $ch }}"
                 data-tags="{{ json_encode($conv->tags ?? []) }}"
                 data-assigned-user-id="{{ $conv->assigned_user_id ?? '' }}"
                 onclick="openConversation({{ $conv->id }}, this)">
@@ -919,16 +929,22 @@ $pageIcon = 'chat-dots';
                         @if($conv->contact_picture_url)
                         <img src="{{ $conv->contact_picture_url }}" alt="">
                         @else
-                        {{ strtoupper(substr($conv->contact_name ?? ($conv->is_group ? 'G' : $conv->phone), 0, 1)) }}
+                        {{ $avatarLetter }}
                         @endif
                     </div>
+                    @if($ch === 'instagram')
+                    <span class="wa-channel-icon instagram" title="Instagram">
+                        <i class="bi bi-instagram"></i>
+                    </span>
+                    @else
                     <span class="wa-channel-icon whatsapp" title="WhatsApp">
                         <i class="bi bi-whatsapp"></i>
                     </span>
+                    @endif
                 </div>
                 <div class="wa-conv-info">
                     <div class="wa-conv-top">
-                        <span class="wa-conv-name">{{ $conv->contact_name ?? ($conv->is_group ? 'Grupo' : $conv->phone) }}</span>
+                        <span class="wa-conv-name">{{ $convName }}</span>
                         <span class="wa-conv-time">{{ $conv->last_message_at?->diffForHumans(short: true) }}</span>
                     </div>
                     <div class="wa-conv-bottom">
@@ -1223,8 +1239,15 @@ $pageIcon = 'chat-dots';
 <script>
     // ── Estado global ─────────────────────────────────────────────────────────────
     let activeConvId = null;
+    let activeConvChannel = 'whatsapp'; // 'whatsapp' | 'instagram'
     let activeConvStatus = 'open';
     let activeLeadId = null; // lead vinculado à conversa ativa
+
+    function convBaseUrl(id) {
+        return activeConvChannel === 'instagram'
+            ? `/chats/instagram-conversations/${id}`
+            : `/chats/conversations/${id}`;
+    }
     let composeMode = 'reply';
     let mediaRecorder = null;
     let audioChunks = [];
@@ -1305,7 +1328,7 @@ $pageIcon = 'chat-dots';
                 if (data.new_messages?.length) {
                     appendMessages(data.new_messages);
                     if (activeConvId) {
-                        fetch(`/chats/conversations/${activeConvId}/read`, {
+                        fetch(`${convBaseUrl(activeConvId)}/read`, {
                             method: 'POST',
                             headers: {
                                 'X-CSRF-TOKEN': CSRF,
@@ -1336,7 +1359,7 @@ $pageIcon = 'chat-dots';
             channel.listen('.whatsapp.message', data => {
                 if (data.conversation_id == activeConvId) {
                     appendMessages([data]);
-                    fetch(`/chats/conversations/${activeConvId}/read`, {
+                    fetch(`${convBaseUrl(activeConvId)}/read`, {
                         method: 'POST',
                         headers: {
                             'X-CSRF-TOKEN': CSRF,
@@ -1422,6 +1445,7 @@ $pageIcon = 'chat-dots';
     // ── Abrir conversa ────────────────────────────────────────────────────────────
     async function openConversation(convId, el) {
         activeConvId = convId;
+        activeConvChannel = el.dataset.channel || 'whatsapp';
 
         document.querySelectorAll('.wa-conv-item').forEach(i => i.classList.remove('active'));
         el.classList.add('active');
@@ -1431,7 +1455,7 @@ $pageIcon = 'chat-dots';
 
         const name = el.querySelector('.wa-conv-name').textContent;
         const phone = el.dataset.phone;
-        const channel = el.dataset.channel || 'whatsapp';
+        const channel = activeConvChannel;
         activeConvStatus = el.dataset.status;
 
         document.getElementById('chatHeader').style.display = 'flex';
@@ -1464,7 +1488,7 @@ $pageIcon = 'chat-dots';
             channelIcon.title = channel === 'instagram' ? 'Instagram' : 'WhatsApp';
         }
 
-        await fetch(`/chats/conversations/${convId}/read`, {
+        await fetch(`${convBaseUrl(convId)}/read`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': CSRF,
@@ -1473,7 +1497,7 @@ $pageIcon = 'chat-dots';
         });
         updateTotalUnread();
 
-        const res = await fetch(`/chats/conversations/${convId}`, {
+        const res = await fetch(convBaseUrl(convId), {
             headers: {
                 'Accept': 'application/json'
             }
@@ -1694,7 +1718,7 @@ $pageIcon = 'chat-dots';
         formData.append('type', type);
         formData.append('body', body);
 
-        const res = await fetch(`/chats/conversations/${activeConvId}/messages`, {
+        const res = await fetch(`${convBaseUrl(activeConvId)}/messages`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': CSRF,
@@ -1718,7 +1742,7 @@ $pageIcon = 'chat-dots';
         formData.append('type', 'image');
         formData.append('file', input.files[0]);
 
-        const res = await fetch(`/chats/conversations/${activeConvId}/messages`, {
+        const res = await fetch(`${convBaseUrl(activeConvId)}/messages`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': CSRF,
@@ -1811,7 +1835,7 @@ $pageIcon = 'chat-dots';
 
             cancelRecording();
 
-            const res = await fetch(`/chats/conversations/${activeConvId}/messages`, {
+            const res = await fetch(`${convBaseUrl(activeConvId)}/messages`, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': CSRF,

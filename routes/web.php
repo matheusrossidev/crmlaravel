@@ -114,6 +114,10 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::put('/conversations/{conversation}/ai-agent',      [WhatsappController::class, 'assignAiAgent'])->name('conversations.ai-agent');
         Route::put('/conversations/{conversation}/chatbot-flow',   [WhatsappController::class, 'assignChatbotFlow'])->name('conversations.chatbot-flow');
         Route::delete('/conversations/{conversation}',             [WhatsappController::class, 'destroy'])->name('conversations.destroy');
+        // Instagram conversations
+        Route::get ('/instagram-conversations/{conversation}',         [WhatsappController::class, 'showInstagram'])->name('ig-conversations.show');
+        Route::post('/instagram-conversations/{conversation}/read',    [WhatsappController::class, 'markReadInstagram'])->name('ig-conversations.read');
+        Route::post('/instagram-conversations/{conversation}/messages',[WhatsappController::class, 'sendInstagramMessage'])->name('ig-conversations.messages');
     });
 
     // Chatbot Builder
