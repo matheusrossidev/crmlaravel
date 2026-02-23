@@ -434,6 +434,10 @@ class ProcessWahaWebhook implements ShouldQueue
         if (! $isFromMe) {
             $convUpdate['unread_count'] = \Illuminate\Support\Facades\DB::raw('unread_count + 1');
         }
+        // Se conversa já existia sem nome (ex: importada), atualizar com o nome resolvido
+        if (! empty($contactName) && empty($conversation->contact_name)) {
+            $convUpdate['contact_name'] = $contactName;
+        }
         WhatsappConversation::withoutGlobalScope('tenant')
             ->where('id', $conversation->id)
             ->update($convUpdate);

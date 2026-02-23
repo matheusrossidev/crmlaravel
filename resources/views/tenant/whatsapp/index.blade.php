@@ -919,7 +919,7 @@ $pageIcon = 'chat-dots';
                         @if($conv->contact_picture_url)
                         <img src="{{ $conv->contact_picture_url }}" alt="">
                         @else
-                        {{ strtoupper(substr($conv->contact_name ?? $conv->phone, 0, 1)) }}
+                        {{ strtoupper(substr($conv->contact_name ?? ($conv->is_group ? 'G' : $conv->phone), 0, 1)) }}
                         @endif
                     </div>
                     <span class="wa-channel-icon whatsapp" title="WhatsApp">
@@ -928,7 +928,7 @@ $pageIcon = 'chat-dots';
                 </div>
                 <div class="wa-conv-info">
                     <div class="wa-conv-top">
-                        <span class="wa-conv-name">{{ $conv->contact_name ?? $conv->phone }}</span>
+                        <span class="wa-conv-name">{{ $conv->contact_name ?? ($conv->is_group ? 'Grupo' : $conv->phone) }}</span>
                         <span class="wa-conv-time">{{ $conv->last_message_at?->diffForHumans(short: true) }}</span>
                     </div>
                     <div class="wa-conv-bottom">
@@ -1483,7 +1483,7 @@ $pageIcon = 'chat-dots';
 
         // Atualiza nome/telefone com dados frescos do servidor (pode ter migrado de LID)
         if (data.contact_name || data.phone) {
-            const freshName = data.contact_name || data.phone;
+            const freshName = data.contact_name || (data.is_group ? 'Grupo' : data.phone);
             const freshPhone = data.phone;
             document.getElementById('chatContactName').textContent = freshName;
             document.getElementById('chatContactPhone').textContent = freshPhone;
@@ -2118,19 +2118,20 @@ $pageIcon = 'chat-dots';
         const data = await res.json();
         const c = data.conversation;
 
+        const cDisplayName = c.contact_name || (c.is_group ? 'Grupo' : c.phone);
         // Actualiza header e detalhes
-        document.getElementById('detailsName').textContent = c.contact_name || c.phone;
+        document.getElementById('detailsName').textContent = cDisplayName;
         document.getElementById('detailsPhone').textContent = c.phone;
-        document.getElementById('chatContactName').textContent = c.contact_name || c.phone;
+        document.getElementById('chatContactName').textContent = cDisplayName;
         document.getElementById('chatContactPhone').textContent = c.phone;
-        document.getElementById('chatAvatar').textContent = (c.contact_name || c.phone || '?').charAt(0).toUpperCase();
+        document.getElementById('chatAvatar').textContent = (cDisplayName || '?').charAt(0).toUpperCase();
 
         // Actualiza card na sidebar
         const el = document.querySelector(`[data-conv-id="${activeConvId}"]`);
         if (el) {
             el.dataset.phone = c.phone;
             const nameEl = el.querySelector('.wa-conv-name');
-            if (nameEl) nameEl.textContent = c.contact_name || c.phone;
+            if (nameEl) nameEl.textContent = cDisplayName;
         }
 
         toggleContactEdit();
@@ -2246,7 +2247,8 @@ $pageIcon = 'chat-dots';
             conv.last_message_type === 'note' ? '🔒 Nota' :
             (conv.last_message_body || '').substring(0, 40);
 
-        const initial = (conv.contact_name || conv.phone || '?').charAt(0).toUpperCase();
+        const convDisplayName = conv.contact_name || (conv.is_group ? 'Grupo' : conv.phone);
+        const initial = (convDisplayName || '?').charAt(0).toUpperCase();
         const timeAgo = conv.last_message_at ? timeRelative(conv.last_message_at) : '';
         const channel = el.dataset.channel || 'whatsapp';
         const chanIcon = channel === 'instagram' ? '<i class="bi bi-instagram"></i>' : '<i class="bi bi-whatsapp"></i>';
@@ -2266,7 +2268,7 @@ $pageIcon = 'chat-dots';
         </div>
         <div class="wa-conv-info">
             <div class="wa-conv-top">
-                <span class="wa-conv-name">${escHtml(conv.contact_name || conv.phone)}</span>
+                <span class="wa-conv-name">${escHtml(convDisplayName)}</span>
                 <span class="wa-conv-time">${timeAgo}</span>
             </div>
             <div class="wa-conv-bottom">

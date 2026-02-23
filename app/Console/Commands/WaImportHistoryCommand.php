@@ -97,6 +97,14 @@ class WaImportHistoryCommand extends Command
             return;
         }
 
+        // Se grupo sem nome, tentar buscar via WAHA API
+        if ($isGroup && empty($contactName)) {
+            try {
+                $groupInfo   = $waha->getGroupInfo($chatId);
+                $contactName = $groupInfo['subject'] ?? $groupInfo['name'] ?? null;
+            } catch (\Throwable) {}
+        }
+
         // Busca ou cria conversa
         $conversation = WhatsappConversation::withoutGlobalScope('tenant')
             ->where('tenant_id', $instance->tenant_id)
@@ -117,6 +125,13 @@ class WaImportHistoryCommand extends Command
             ]);
             $this->importedChats++;
             $this->line("  + Chat: {$phone} ({$contactName})");
+        } elseif (! empty($contactName) && empty($conversation->contact_name)) {
+            // Conversa já existia sem nome — atualizar
+            WhatsappConversation::withoutGlobalScope('tenant')
+                ->where('id', $conversation->id)
+                ->update(['contact_name' => $contactName]);
+            $conversation->contact_name = $contactName;
+            $this->line("  ~ Nome atualizado: {$phone} ({$contactName})");
         }
 
         // Buscar mensagens sem download de mídia
