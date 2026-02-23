@@ -20,7 +20,7 @@ class ProcessAiResponse implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /** Fila dedicada para respostas de IA (prioridade separada). */
-    public string $queue = 'ai';
+    public $queue = 'ai';
 
     public int $tries = 1;   // Sem retry — se falhou, a janela de debounce já passou
 
