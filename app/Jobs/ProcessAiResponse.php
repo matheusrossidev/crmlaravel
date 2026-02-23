@@ -135,9 +135,9 @@ class ProcessAiResponse implements ShouldQueue
             'model'           => $model,
         ]);
 
-        // ── Carregar pipeline stages do lead (se existir) ────────────────────
+        // ── Carregar pipeline stages — apenas se ferramenta habilitada ──────────
         $stages = [];
-        if ($conv->lead_id) {
+        if ($agent->enable_pipeline_tool && $conv->lead_id) {
             $lead = Lead::withoutGlobalScope('tenant')
                 ->with('stage.pipeline.stages')
                 ->find($conv->lead_id);
@@ -153,23 +153,26 @@ class ProcessAiResponse implements ShouldQueue
             }
         }
 
-        // ── Carregar tags existentes no tenant ────────────────────────────────
-        $availTags = WhatsappConversation::withoutGlobalScope('tenant')
-            ->where('tenant_id', $conv->tenant_id)
-            ->whereNotNull('tags')
-            ->pluck('tags')
-            ->flatten()
-            ->merge(
-                Lead::withoutGlobalScope('tenant')
-                    ->where('tenant_id', $conv->tenant_id)
-                    ->whereNotNull('tags')
-                    ->pluck('tags')
-                    ->flatten()
-            )
-            ->unique()
-            ->filter()
-            ->values()
-            ->toArray();
+        // ── Carregar tags existentes — apenas se ferramenta habilitada ─────────
+        $availTags = [];
+        if ($agent->enable_tags_tool) {
+            $availTags = WhatsappConversation::withoutGlobalScope('tenant')
+                ->where('tenant_id', $conv->tenant_id)
+                ->whereNotNull('tags')
+                ->pluck('tags')
+                ->flatten()
+                ->merge(
+                    Lead::withoutGlobalScope('tenant')
+                        ->where('tenant_id', $conv->tenant_id)
+                        ->whereNotNull('tags')
+                        ->pluck('tags')
+                        ->flatten()
+                )
+                ->unique()
+                ->filter()
+                ->values()
+                ->toArray();
+        }
 
         // ── Montar prompt e histórico ─────────────────────────────────────────
         $service = new AiAgentService();
@@ -214,6 +217,14 @@ class ProcessAiResponse implements ShouldQueue
             $clean = preg_replace('/```(?:json)?\s*([\s\S]*?)```/i', '$1', $reply);
             $clean = trim($clean ?? $reply);
 
+            // O LLM às vezes adiciona texto antes do JSON — encontrar o primeiro '{'
+            if (! str_starts_with($clean, '{')) {
+                $jsonStart = strpos($clean, '{');
+                if ($jsonStart !== false) {
+                    $clean = substr($clean, $jsonStart);
+                }
+            }
+
             $decoded = null;
             if (str_starts_with($clean, '{')) {
                 $decoded = json_decode($clean, true);
@@ -239,11 +250,24 @@ class ProcessAiResponse implements ShouldQueue
 
         // ── Aplicar ações de pipeline e tags ─────────────────────────────────
         foreach ($actions as $action) {
-            match ($action['type'] ?? '') {
-                'set_stage' => $this->applySetStage($conv, (int) ($action['stage_id'] ?? 0)),
-                'add_tags'  => $this->applyAddTags($conv, (array) ($action['tags'] ?? [])),
-                default     => null,
-            };
+            $type = $action['type'] ?? '';
+
+            if ($type === 'set_stage') {
+                // Só aplicar se a ferramenta está ativa e o stage_id é válido para este funil
+                $stageId  = (int) ($action['stage_id'] ?? 0);
+                $validIds = array_column($stages, 'id');
+                if (! empty($stages) && $stageId > 0 && in_array($stageId, $validIds, true)) {
+                    $this->applySetStage($conv, $stageId);
+                } else {
+                    Log::channel('whatsapp')->warning('AI: set_stage ignorado — id inválido ou ferramenta desativada', [
+                        'conversation_id' => $conv->id,
+                        'stage_id'        => $stageId,
+                        'valid_ids'       => $validIds,
+                    ]);
+                }
+            } elseif ($type === 'add_tags') {
+                $this->applyAddTags($conv, (array) ($action['tags'] ?? []));
+            }
         }
 
         // ── Dividir em mensagens e enviar com delay ───────────────────────────

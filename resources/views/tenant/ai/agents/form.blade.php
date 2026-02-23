@@ -377,11 +377,45 @@
             </div>
         </div>
 
-        {{-- 6. Configurações Avançadas --}}
+        {{-- 6. Ferramentas do Agente --}}
+        <div class="section-card">
+            <div class="section-card-header" onclick="toggleSection('tools')">
+                <div class="section-icon"><i class="bi bi-tools"></i></div>
+                <div class="section-card-title">6. Ferramentas do Agente</div>
+                <i class="bi bi-chevron-down chevron" id="chevron-tools"></i>
+            </div>
+            <div class="section-card-body collapsed" id="body-tools">
+                {{-- Toggle enable_pipeline_tool --}}
+                <div class="toggle-wrap" onclick="togglePipelineTool()" style="margin-bottom:16px;">
+                    <div class="toggle-switch {{ ($agent->enable_pipeline_tool ?? false) ? 'on' : '' }}" id="pipelineToolSwitch"></div>
+                    <div style="margin-left:10px;">
+                        <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="pipelineToolLabel">
+                            {{ ($agent->enable_pipeline_tool ?? false) ? 'Controle de Funil Ativado' : 'Controle de Funil Desativado' }}
+                        </div>
+                        <div style="font-size:11px;color:#9ca3af;">O agente pode mover o lead entre as etapas do funil automaticamente durante o atendimento</div>
+                    </div>
+                </div>
+                <input type="hidden" name="enable_pipeline_tool" id="pipelineToolInput" value="{{ ($agent->enable_pipeline_tool ?? false) ? '1' : '0' }}">
+
+                {{-- Toggle enable_tags_tool --}}
+                <div class="toggle-wrap" onclick="toggleTagsTool()">
+                    <div class="toggle-switch {{ ($agent->enable_tags_tool ?? false) ? 'on' : '' }}" id="tagsToolSwitch"></div>
+                    <div style="margin-left:10px;">
+                        <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="tagsToolLabel">
+                            {{ ($agent->enable_tags_tool ?? false) ? 'Atribuição de Tags Ativada' : 'Atribuição de Tags Desativada' }}
+                        </div>
+                        <div style="font-size:11px;color:#9ca3af;">O agente pode adicionar tags à conversa automaticamente conforme o contexto</div>
+                    </div>
+                </div>
+                <input type="hidden" name="enable_tags_tool" id="tagsToolInput" value="{{ ($agent->enable_tags_tool ?? false) ? '1' : '0' }}">
+            </div>
+        </div>
+
+        {{-- 7. Configurações Avançadas --}}
         <div class="section-card">
             <div class="section-card-header" onclick="toggleSection('advanced')">
                 <div class="section-icon"><i class="bi bi-sliders"></i></div>
-                <div class="section-card-title">6. Configurações Avançadas</div>
+                <div class="section-card-title">7. Configurações Avançadas</div>
                 <i class="bi bi-chevron-down chevron" id="chevron-advanced"></i>
             </div>
             <div class="section-card-body collapsed" id="body-advanced">
@@ -422,11 +456,11 @@
             </div>
         </div>
 
-        {{-- 7. Follow-up Automático --}}
+        {{-- 8. Follow-up Automático --}}
         <div class="section-card">
             <div class="section-card-header" onclick="toggleSection('followup')">
                 <div class="section-icon"><i class="bi bi-arrow-repeat"></i></div>
-                <div class="section-card-title">7. Follow-up Automático</div>
+                <div class="section-card-title">8. Follow-up Automático</div>
                 <i class="bi bi-chevron-down chevron" id="chevron-followup"></i>
             </div>
             <div class="section-card-body collapsed" id="body-followup">
@@ -545,6 +579,26 @@ function toggleAutoAssign() {
     input.value = isOn ? '0' : '1';
     sw.classList.toggle('on', !isOn);
     label.textContent = isOn ? 'Auto-assign Desativado' : 'Auto-assign Ativado';
+}
+
+function togglePipelineTool() {
+    const sw    = document.getElementById('pipelineToolSwitch');
+    const input = document.getElementById('pipelineToolInput');
+    const label = document.getElementById('pipelineToolLabel');
+    const isOn  = input.value === '1';
+    input.value = isOn ? '0' : '1';
+    sw.classList.toggle('on', !isOn);
+    label.textContent = isOn ? 'Controle de Funil Desativado' : 'Controle de Funil Ativado';
+}
+
+function toggleTagsTool() {
+    const sw    = document.getElementById('tagsToolSwitch');
+    const input = document.getElementById('tagsToolInput');
+    const label = document.getElementById('tagsToolLabel');
+    const isOn  = input.value === '1';
+    input.value = isOn ? '0' : '1';
+    sw.classList.toggle('on', !isOn);
+    label.textContent = isOn ? 'Atribuição de Tags Desativada' : 'Atribuição de Tags Ativada';
 }
 
 function toggleFollowup() {

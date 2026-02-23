@@ -20,6 +20,7 @@ class AiAgent extends Model
         'conversation_stages', 'knowledge_base',
         'max_message_length', 'response_delay_seconds', 'response_wait_seconds',
         'channel', 'is_active', 'auto_assign',
+        'enable_pipeline_tool', 'enable_tags_tool',
         'followup_enabled', 'followup_delay_minutes', 'followup_max_count',
         'followup_hour_start', 'followup_hour_end',
     ];
@@ -31,6 +32,8 @@ class AiAgent extends Model
         'response_wait_seconds'  => 'integer',
         'is_active'              => 'boolean',
         'auto_assign'            => 'boolean',
+        'enable_pipeline_tool'   => 'boolean',
+        'enable_tags_tool'       => 'boolean',
         'followup_enabled'       => 'boolean',
         'followup_delay_minutes' => 'integer',
         'followup_max_count'     => 'integer',

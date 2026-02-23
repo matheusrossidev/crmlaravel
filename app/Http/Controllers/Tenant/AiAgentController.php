@@ -152,6 +152,8 @@ class AiAgentController extends Controller
             'channel'                => 'required|in:whatsapp,web_chat',
             'is_active'              => 'nullable|boolean',
             'auto_assign'            => 'nullable|boolean',
+            'enable_pipeline_tool'   => 'nullable|boolean',
+            'enable_tags_tool'       => 'nullable|boolean',
             'followup_enabled'       => 'nullable|boolean',
             'followup_delay_minutes' => 'nullable|integer|min:5|max:1440',
             'followup_max_count'     => 'nullable|integer|min:1|max:10',
@@ -159,9 +161,11 @@ class AiAgentController extends Controller
             'followup_hour_end'      => 'nullable|integer|min:1|max:23',
         ]);
 
-        $data['is_active']        = $request->boolean('is_active');
-        $data['auto_assign']      = $request->boolean('auto_assign');
-        $data['followup_enabled'] = $request->boolean('followup_enabled');
+        $data['is_active']             = $request->boolean('is_active');
+        $data['auto_assign']           = $request->boolean('auto_assign');
+        $data['enable_pipeline_tool']  = $request->boolean('enable_pipeline_tool');
+        $data['enable_tags_tool']      = $request->boolean('enable_tags_tool');
+        $data['followup_enabled']      = $request->boolean('followup_enabled');
 
         return $data;
     }
