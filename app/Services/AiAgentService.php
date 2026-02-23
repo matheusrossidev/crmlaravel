@@ -39,7 +39,14 @@ class AiAgentService
             default   => 'natural e cordial',
         };
 
+        // Data/hora atual no fuso do servidor — essencial para saudações corretas
+        $now     = \Carbon\Carbon::now(config('app.timezone', 'America/Sao_Paulo'));
+        $weekdays = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+        $dayName  = $weekdays[$now->dayOfWeek];
+        $dateStr  = $now->format('d/m/Y') . ' (' . $dayName . ') — ' . $now->format('H:i');
+
         $lines = [
+            "Data e hora atual: {$dateStr}.",
             "Você é {$agent->name}, um assistente virtual de {$objective}.",
         ];
 
