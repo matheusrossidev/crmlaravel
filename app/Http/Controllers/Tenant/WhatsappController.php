@@ -134,6 +134,7 @@ class WhatsappController extends Controller
             'tags'             => $conversation->tags ?? [],
             'contact_name'     => $conversation->contact_name,
             'phone'            => $conversation->phone,
+            'is_group'         => $conversation->is_group,
         ]);
     }
 
@@ -315,6 +316,7 @@ class WhatsappController extends Controller
             'is_deleted'      => $m->is_deleted,
             'sent_at'         => $m->sent_at?->toISOString(),
             'user_name'       => $m->user?->name,
+            'sender_name'     => $m->sender_name,
         ];
     }
 
