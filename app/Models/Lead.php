@@ -8,6 +8,7 @@ use App\Models\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Lead extends Model
 {
@@ -50,6 +51,11 @@ class Lead extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function whatsappConversation(): HasOne
+    {
+        return $this->hasOne(WhatsappConversation::class)->latest('last_message_at');
     }
 
     public function customFieldValues(): HasMany

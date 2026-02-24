@@ -38,7 +38,7 @@ class KanbanController extends Controller
         if ($pipeline) {
             $stages = $pipeline->stages->map(function (PipelineStage $stage) use ($request) {
                 $query = Lead::where('stage_id', $stage->id)
-                    ->with(['campaign', 'assignedTo', 'customFieldValues.fieldDefinition'])
+                    ->with(['campaign', 'assignedTo', 'customFieldValues.fieldDefinition', 'whatsappConversation.aiAgent'])
                     ->orderByDesc('created_at');
 
                 if ($source = $request->get('source')) {
@@ -88,14 +88,15 @@ class KanbanController extends Controller
                 }
 
                 return [
-                    'id'      => $stage->id,
-                    'name'    => $stage->name,
-                    'color'   => $stage->color,
-                    'is_won'  => $stage->is_won,
-                    'is_lost' => $stage->is_lost,
-                    'leads'   => $leads,
-                    'lead_cf' => $leadCf,
-                    'count'   => $leads->count(),
+                    'id'          => $stage->id,
+                    'name'        => $stage->name,
+                    'color'       => $stage->color,
+                    'is_won'      => $stage->is_won,
+                    'is_lost'     => $stage->is_lost,
+                    'leads'       => $leads,
+                    'lead_cf'     => $leadCf,
+                    'count'       => $leads->count(),
+                    'total_value' => (int) $leads->sum('value'),
                 ];
             });
         }
@@ -177,7 +178,7 @@ class KanbanController extends Controller
 
         $sinceDate = Carbon::createFromTimestamp($since);
 
-        $leads = Lead::with(['campaign', 'customFieldValues.fieldDefinition', 'stage'])
+        $leads = Lead::with(['campaign', 'assignedTo', 'customFieldValues.fieldDefinition', 'stage', 'whatsappConversation.aiAgent'])
             ->whereHas('stage', fn ($q) => $q->where('pipeline_id', $pipelineId))
             ->where(fn ($q) => $q
                 ->where('created_at', '>', $sinceDate)
@@ -199,19 +200,23 @@ class KanbanController extends Controller
         }
 
         return [
-            'id'          => $lead->id,
-            'name'        => $lead->name,
-            'phone'       => $lead->phone,
-            'email'       => $lead->email,
-            'value'       => $lead->value,
-            'value_fmt'   => $lead->value ? 'R$ ' . number_format((float) $lead->value, 0, ',', '.') : null,
-            'source'      => $lead->source,
-            'tags'        => $lead->tags ?? [],
-            'stage_id'    => $lead->stage_id,
-            'pipeline_id' => $lead->pipeline_id,
-            'campaign_id' => $lead->campaign_id,
-            'campaign'    => $lead->campaign ? ['id' => $lead->campaign->id, 'name' => $lead->campaign->name] : null,
-            'cf_flat'     => $cfFlat,
+            'id'               => $lead->id,
+            'name'             => $lead->name,
+            'phone'            => $lead->phone,
+            'email'            => $lead->email,
+            'value'            => $lead->value,
+            'value_fmt'        => $lead->value ? 'R$ ' . number_format((float) $lead->value, 0, ',', '.') : null,
+            'source'           => $lead->source,
+            'tags'             => $lead->tags ?? [],
+            'stage_id'         => $lead->stage_id,
+            'pipeline_id'      => $lead->pipeline_id,
+            'campaign_id'      => $lead->campaign_id,
+            'campaign'         => $lead->campaign ? ['id' => $lead->campaign->id, 'name' => $lead->campaign->name] : null,
+            'cf_flat'          => $cfFlat,
+            'assigned_to_name' => $lead->assignedTo?->name,
+            'ai_agent_name'    => $lead->whatsappConversation?->aiAgent?->name,
+            'unread_count'     => $lead->whatsappConversation?->unread_count ?? 0,
+            'created_at'       => $lead->created_at?->format('d/m/y'),
         ];
     }
 }

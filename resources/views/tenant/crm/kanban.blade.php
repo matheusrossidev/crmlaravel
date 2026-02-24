@@ -1,7 +1,9 @@
 @extends('tenant.layouts.app')
 
-@php($title = 'CRM')
-@php($pageIcon = 'kanban')
+@php
+    $title = 'CRM';
+    $pageIcon = 'kanban';
+@endphp
 
 @section('topbar_actions')
 <div class="topbar-actions">
@@ -159,24 +161,12 @@
         font-size: 13.5px;
         font-weight: 600;
         color: #1a1d23;
-        margin-bottom: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .card-name button {
-        background: none;
-        border: none;
-        padding: 2px 4px;
-        color: #9ca3af;
-        font-size: 14px;
+        margin-bottom: 7px;
         cursor: pointer;
-        border-radius: 5px;
-        line-height: 1;
+        line-height: 1.35;
     }
 
-    .card-name button:hover { background: #f0f2f7; color: #3B82F6; }
+    .card-name:hover { color: #3B82F6; }
 
     .card-meta {
         display: flex;
@@ -215,9 +205,88 @@
         letter-spacing: .04em;
     }
 
+    .card-value-row {
+        font-size: 13px;
+        font-weight: 700;
+        color: #10B981;
+        margin-bottom: 8px;
+    }
+
     .card-value {
         font-size: 12px;
         font-weight: 700;
+        color: #10B981;
+    }
+
+    /* Linha superior do card: ref + agente */
+    .card-top-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+    .card-ref {
+        font-size: 10.5px;
+        color: #9ca3af;
+        font-weight: 500;
+    }
+    .card-agent-badge {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 10.5px;
+        font-weight: 600;
+        color: #6b7280;
+        background: #f0f2f7;
+        border-radius: 99px;
+        padding: 2px 7px;
+        max-width: 110px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    .card-agent-badge i { font-size: 10px; color: #9ca3af; }
+
+    /* Data no footer */
+    .card-date {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 11px;
+        color: #9ca3af;
+    }
+
+    /* Bubble WhatsApp */
+    .card-bubble {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        background: #f0f2f7;
+        border: none;
+        border-radius: 99px;
+        padding: 3px 7px;
+        font-size: 11px;
+        color: #9ca3af;
+        cursor: default;
+        line-height: 1;
+        margin-left: auto;
+    }
+    .card-bubble.has-unread {
+        background: #dcfce7;
+        color: #10B981;
+    }
+    .card-bubble.has-unread i { color: #10B981; }
+    .bubble-count { font-weight: 700; font-size: 10.5px; }
+
+    /* Cabeçalho da coluna — right side */
+    .col-header-right {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .col-value {
+        font-size: 11px;
+        font-weight: 600;
         color: #10B981;
     }
 
@@ -526,6 +595,9 @@
 <div class="kanban-board" id="kanbanBoard">
 
     @if($stages->count())
+    @php
+        $cfOnCard = $customFieldDefs->where('show_on_card', true);
+    @endphp
     @foreach($stages as $stage)
     <div class="kanban-col" data-stage-id="{{ $stage['id'] }}">
 
@@ -539,7 +611,12 @@
                     <i class="bi bi-x-circle-fill" style="color:#EF4444;font-size:11px;"></i>
                 @endif
             </div>
-            <span class="col-count" data-count="{{ $stage['id'] }}">{{ $stage['count'] }}</span>
+            <div class="col-header-right">
+                @if($stage['total_value'] > 0)
+                <span class="col-value">R$ {{ number_format($stage['total_value'], 0, ',', '.') }}</span>
+                @endif
+                <span class="col-count" data-count="{{ $stage['id'] }}">{{ $stage['count'] }}</span>
+            </div>
         </div>
 
         <div class="kanban-list sortable-zone"
@@ -554,52 +631,66 @@
             <div class="lead-card"
                  data-lead-id="{{ $lead->id }}"
                  data-stage-id="{{ $stage['id'] }}"
-                 data-lead-value="{{ $lead->value ?? '' }}"
-                 data-cf="@json($stage['lead_cf'][$lead->id] ?? [])">
+                 data-lead-value="{{ $lead->value ?? '' }}">
 
-                <div class="card-name">
-                    <span>{{ $lead->name }}</span>
-                    <button class="btn-open-lead" data-lead-id="{{ $lead->id }}" title="Editar">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                </div>
-
-                <div class="card-meta">
-                    @if($lead->phone)
-                    <div class="card-meta-row">
-                        <i class="bi bi-telephone"></i>
-                        <a href="{{ whatsappUrl($lead->phone) }}" target="_blank" rel="noopener"
-                           style="color:inherit;text-decoration:none;" onclick="event.stopPropagation()">
-                            {{ formatBrPhone($lead->phone) }}
-                        </a>
-                    </div>
-                    @endif
-                    @if($lead->email)
-                    <div class="card-meta-row">
-                        <i class="bi bi-envelope"></i>
-                        {{ Str::limit($lead->email, 28) }}
-                    </div>
-                    @endif
-                    @if($lead->campaign)
-                    <div class="card-meta-row">
-                        <i class="bi bi-megaphone"></i>
-                        {{ Str::limit($lead->campaign->name, 24) }}
-                    </div>
-                    @endif
-                    @if(!empty($lead->tags) && count($lead->tags))
-                    <div class="card-tags">
-                        @foreach($lead->tags as $tag)
-                        <span class="card-tag-badge">{{ $tag }}</span>
-                        @endforeach
-                    </div>
+                {{-- Linha 1: ref + agente --}}
+                <div class="card-top-row">
+                    <span class="card-ref">#{{ $lead->id }}</span>
+                    @if($lead->assignedTo?->name ?? $lead->whatsappConversation?->aiAgent?->name)
+                    <span class="card-agent-badge">
+                        <i class="bi bi-person-fill"></i>
+                        {{ Str::limit($lead->assignedTo?->name ?? $lead->whatsappConversation?->aiAgent?->name ?? '', 14) }}
+                    </span>
                     @endif
                 </div>
 
+                {{-- Nome (clicável) --}}
+                <div class="card-name btn-open-lead" data-lead-id="{{ $lead->id }}">{{ $lead->name }}</div>
+
+                {{-- Tags --}}
+                @if(!empty($lead->tags) && count($lead->tags))
+                <div class="card-tags">
+                    @foreach($lead->tags as $tag)
+                    <span class="card-tag-badge">{{ $tag }}</span>
+                    @endforeach
+                </div>
+                @endif
+
+                {{-- Custom fields (show_on_card=true) --}}
+                @if($cfOnCard->count() && !empty($stage['lead_cf'][$lead->id]))
+                <div class="card-meta" style="margin-top:6px;">
+                    @foreach($cfOnCard as $cfDef)
+                    @if(($stage['lead_cf'][$lead->id][$cfDef->name]['value'] ?? null) !== null
+                        && ($stage['lead_cf'][$lead->id][$cfDef->name]['value'] ?? '') !== ''
+                        && ($stage['lead_cf'][$lead->id][$cfDef->name]['value'] ?? false) !== false)
+                    <div class="card-meta-row">
+                        <i class="bi bi-tag" style="font-size:11px;"></i>
+                        <span style="font-weight:600;color:#374151;">{{ $cfDef->label }}:</span>
+                        <span>{{ is_array($stage['lead_cf'][$lead->id][$cfDef->name]['value']) ? implode(', ', $stage['lead_cf'][$lead->id][$cfDef->name]['value']) : ($stage['lead_cf'][$lead->id][$cfDef->name]['value'] ?? '') }}</span>
+                    </div>
+                    @endif
+                    @endforeach
+                </div>
+                @endif
+
+                {{-- Valor (linha própria) --}}
+                @if($lead->value)
+                <div class="card-value-row">R$ {{ number_format((float)$lead->value, 0, ',', '.') }}</div>
+                @endif
+
+                {{-- Footer: data + bubble --}}
                 <div class="card-footer">
-                    <span class="source-badge">{{ $lead->source ?? 'manual' }}</span>
-                    @if($lead->value)
-                    <span class="card-value">R$ {{ number_format((float)$lead->value, 0, ',', '.') }}</span>
-                    @endif
+                    <span class="card-date">
+                        <i class="bi bi-clock"></i>
+                        {{ $lead->created_at?->format('d/m/y') }}
+                    </span>
+                    <button class="card-bubble {{ ($lead->whatsappConversation?->unread_count ?? 0) > 0 ? 'has-unread' : '' }}"
+                            onclick="event.stopPropagation()" title="Mensagens não lidas">
+                        <i class="bi bi-chat-dots-fill"></i>
+                        @if(($lead->whatsappConversation?->unread_count ?? 0) > 0)
+                        <span class="bubble-count">{{ $lead->whatsappConversation->unread_count }}</span>
+                        @endif
+                    </button>
                 </div>
 
             </div>
@@ -965,17 +1056,18 @@ function renderSourceBadge(source, cls = 'source-badge') {
 }
 
 function buildCard(lead) {
-    const phone    = lead.phone    ? (() => {
-        const digits = lead.phone.replace(/\D/g, '');
-        const waNum  = digits.startsWith('55') ? digits : '55' + digits;
-        return `<div class="card-meta-row"><i class="bi bi-telephone"></i><a href="https://wa.me/${waNum}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;" onclick="event.stopPropagation()">${escapeHtml(formatBrPhone(lead.phone))}</a></div>`;
-    })() : '';
-    const email    = lead.email    ? `<div class="card-meta-row"><i class="bi bi-envelope"></i>${escapeHtml(lead.email)}</div>` : '';
-    const campaign = lead.campaign ? `<div class="card-meta-row"><i class="bi bi-megaphone"></i>${escapeHtml(lead.campaign.name.substring(0,24))}</div>` : '';
-    const tags     = (lead.tags && lead.tags.length)
+    const agentName  = lead.assigned_to_name || lead.ai_agent_name || null;
+    const agentBadge = agentName
+        ? `<span class="card-agent-badge"><i class="bi bi-person-fill"></i>${escapeHtml(agentName.substring(0,14))}</span>`
+        : '';
+    const unread = lead.unread_count || 0;
+    const bubble = `<button class="card-bubble${unread > 0 ? ' has-unread' : ''}" onclick="event.stopPropagation()" title="Mensagens não lidas"><i class="bi bi-chat-dots-fill"></i>${unread > 0 ? `<span class="bubble-count">${unread}</span>` : ''}</button>`;
+    const date   = lead.created_at ? `<span class="card-date"><i class="bi bi-clock"></i>${escapeHtml(lead.created_at)}</span>` : '';
+    const valueRow = lead.value_fmt ? `<div class="card-value-row">${escapeHtml(lead.value_fmt)}</div>` : '';
+
+    const tags = (lead.tags && lead.tags.length)
         ? `<div class="card-tags">${lead.tags.map(t => `<span class="card-tag-badge">${escapeHtml(t)}</span>`).join('')}</div>`
         : '';
-    const value    = lead.value_fmt ? `<span class="card-value">${escapeHtml(lead.value_fmt)}</span>` : '';
 
     // Custom fields on card — normaliza formato flat (polling) ou nested (drawer)
     const cfSource = lead.cf_flat || {};
@@ -990,17 +1082,21 @@ function buildCard(lead) {
         const d = Array.isArray(v) ? v.join(', ') : String(v);
         return `<div class="card-meta-row"><i class="bi bi-tag" style="font-size:11px;"></i><span style="font-weight:600;color:#374151;">${escapeHtml(f.label)}:</span> <span>${escapeHtml(d)}</span></div>`;
     }).join('');
+    const cfBlock = cfRows ? `<div class="card-meta" style="margin-top:6px;">${cfRows}</div>` : '';
 
     return `
     <div class="lead-card" data-lead-id="${lead.id}" data-stage-id="${lead.stage_id}" data-lead-value="${lead.value || ''}">
-        <div class="card-name">
-            <span>${escapeHtml(lead.name)}</span>
-            <button class="btn-open-lead" data-lead-id="${lead.id}" title="Editar"><i class="bi bi-pencil"></i></button>
+        <div class="card-top-row">
+            <span class="card-ref">#${lead.id}</span>
+            ${agentBadge}
         </div>
-        <div class="card-meta">${phone}${email}${campaign}${tags}${cfRows}</div>
+        <div class="card-name btn-open-lead" data-lead-id="${lead.id}">${escapeHtml(lead.name)}</div>
+        ${tags}
+        ${cfBlock}
+        ${valueRow}
         <div class="card-footer">
-            ${renderSourceBadge(lead.source || 'manual')}
-            ${value}
+            ${date}
+            ${bubble}
         </div>
     </div>`;
 }
@@ -1033,32 +1129,6 @@ function pollKanban() {
 }
 
 setInterval(pollKanban, 10000);
-
-// ── Renderiza campos personalizados nos cards server-rendered ──────────────
-(function renderServerCF() {
-    document.querySelectorAll('.lead-card[data-cf]').forEach(function (card) {
-        try {
-            var rawCf = JSON.parse(card.dataset.cf || '{}');
-            var cfSource = {};
-            Object.entries(rawCf).forEach(function(entry) {
-                var k = entry[0], v = entry[1];
-                cfSource[k] = (v && typeof v === 'object' && 'value' in v) ? v.value : v;
-            });
-            var cfRows = CF_ON_CARD.map(function (f) {
-                var v = cfSource[f.name];
-                if (v === undefined || v === null || v === '') return '';
-                var d = Array.isArray(v) ? v.join(', ') : String(v);
-                return '<div class="card-meta-row"><i class="bi bi-tag" style="font-size:11px;"></i>'
-                     + '<span style="font-weight:600;color:#374151;">' + escapeHtml(f.label) + ':</span> '
-                     + '<span>' + escapeHtml(d) + '</span></div>';
-            }).join('');
-            if (cfRows) {
-                var meta = card.querySelector('.card-meta');
-                if (meta) meta.insertAdjacentHTML('beforeend', cfRows);
-            }
-        } catch(e) {}
-    });
-}());
 
 // ── Modal: Criar Pipeline ──────────────────────────────────────────────────
 const CP_STORE_URL  = @json(route('settings.pipelines.store'));
