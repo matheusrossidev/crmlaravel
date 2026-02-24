@@ -163,7 +163,7 @@
     <div class="section-header">
         <div>
             <div class="section-title">Tags</div>
-            <div class="section-subtitle">Crie tags com cores para categorizar conversas.</div>
+            <div class="section-subtitle">Crie tags com cores para categorizar leads e conversas.</div>
         </div>
         <button class="btn-primary-sm" id="btnNewTag">
             <i class="bi bi-plus-lg"></i> Nova Tag

@@ -126,6 +126,8 @@
                     <div id="tagBadgesContainer" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
                     <input type="text" id="tagRawInput" placeholder="Digite e pressione Enter ou vírgula..." style="border:none;outline:none;font-size:13px;font-family:inherit;background:transparent;min-width:140px;padding:2px 0;">
                 </div>
+                {{-- Sugestões de tags pré-configuradas --}}
+                <div id="tagSuggestions" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;"></div>
             </div>
 
             {{-- Notas --}}
@@ -299,6 +301,22 @@
         align-items: center;
     }
     .tag-chip button:hover { opacity: 1; }
+
+    .tag-suggestion-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 9px;
+        border-radius: 99px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1.5px solid transparent;
+        transition: opacity .15s, transform .1s;
+        white-space: nowrap;
+        user-select: none;
+    }
+    .tag-suggestion-chip:hover { opacity: .8; transform: scale(1.03); }
+    .tag-suggestion-chip.active { opacity: .4; cursor: default; pointer-events: none; }
 </style>
 
 @php
@@ -323,6 +341,10 @@ $_cfDefsJson = isset($customFieldDefs)
         'default_value'=> $d->default_value,
     ])->values()->toArray()
     : [];
+
+$_configuredTagsJson = isset($_configuredTags)
+    ? $_configuredTags->map(fn($t) => ['name' => $t->name, 'color' => $t->color])->values()->toArray()
+    : [];
 @endphp
 
 <script>
@@ -330,6 +352,7 @@ $_cfDefsJson = isset($customFieldDefs)
 const PIPELINES_DATA = {!! json_encode($_pipelinesJson) !!};
 const CF_DEFS        = {!! json_encode($_cfDefsJson) !!};
 const CF_UPLOAD_URL  = '{{ route('leads.cf-upload') }}';
+const LEAD_TAGS      = {!! json_encode($_configuredTagsJson) !!};
 
 // ── Tag input logic ───────────────────────────────────────────────────────
 let _currentTags = [];
@@ -344,6 +367,33 @@ function renderTagBadges() {
         `<span class="tag-chip">${escapeHtml(tag)}<button type="button" onclick="removeTag(${i})">×</button></span>`
     ).join('');
     syncTagsHidden();
+    renderTagSuggestions();
+}
+
+function isColorDark(hex) {
+    const c = (hex || '#6366f1').replace('#', '');
+    const r = parseInt(c.substring(0, 2), 16);
+    const g = parseInt(c.substring(2, 4), 16);
+    const b = parseInt(c.substring(4, 6), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 < 128;
+}
+
+function renderTagSuggestions() {
+    const container = document.getElementById('tagSuggestions');
+    if (!container || !LEAD_TAGS.length) return;
+    container.innerHTML = LEAD_TAGS.map(t => {
+        const hex    = t.color || '#6366f1';
+        const txt    = isColorDark(hex) ? '#fff' : '#1a1d23';
+        const active = _currentTags.includes(t.name) ? ' active' : '';
+        return `<button type="button" class="tag-suggestion-chip${active}"
+            style="background:${hex};color:${txt};border-color:${hex};"
+            data-tag="${escapeHtml(t.name)}"
+            onclick="addTagFromSuggestion(this.dataset.tag)">${escapeHtml(t.name)}</button>`;
+    }).join('');
+}
+
+function addTagFromSuggestion(name) {
+    addTag(name);
 }
 
 function addTag(raw) {
