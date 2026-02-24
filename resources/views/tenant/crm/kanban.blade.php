@@ -263,6 +263,8 @@
         font-size: 11px;
         color: #9ca3af;
     }
+    .card-date--won { color: #10B981; font-weight: 600; }
+    .card-date--won i { color: #10B981; }
 
     /* Bubble WhatsApp */
     .card-bubble {
@@ -688,10 +690,17 @@
 
                 {{-- Footer: data + bubble --}}
                 <div class="card-footer">
+                    @if($lead->converted_at)
+                    <span class="card-date card-date--won" title="Convertido em {{ $lead->converted_at->format('d/m/Y') }}">
+                        <i class="bi bi-trophy-fill"></i>
+                        {{ $lead->converted_at->format('d/m/y') }}
+                    </span>
+                    @else
                     <span class="card-date">
                         <i class="bi bi-clock"></i>
                         {{ $lead->created_at?->format('d/m/y') }}
                     </span>
+                    @endif
                     <button class="card-bubble {{ ($lead->whatsappConversation?->unread_count ?? 0) > 0 ? 'has-unread' : '' }}"
                             onclick="event.stopPropagation()" title="Mensagens não lidas">
                         <i class="bi bi-chat-dots-fill"></i>
@@ -1120,7 +1129,9 @@ function buildCard(lead) {
         : '';
     const unread = lead.unread_count || 0;
     const bubble = `<button class="card-bubble${unread > 0 ? ' has-unread' : ''}" onclick="event.stopPropagation()" title="Mensagens não lidas"><i class="bi bi-chat-dots-fill"></i>${unread > 0 ? `<span class="bubble-count">${unread}</span>` : ''}</button>`;
-    const date   = lead.created_at ? `<span class="card-date"><i class="bi bi-clock"></i>${escapeHtml(lead.created_at)}</span>` : '';
+    const date = lead.converted_at
+        ? `<span class="card-date card-date--won" title="Convertido em ${escapeHtml(lead.converted_at)}"><i class="bi bi-trophy-fill"></i>${escapeHtml(lead.converted_at)}</span>`
+        : (lead.created_at ? `<span class="card-date"><i class="bi bi-clock"></i>${escapeHtml(lead.created_at)}</span>` : '');
     const valueRow = lead.value_fmt ? `<div class="card-value-row">${escapeHtml(lead.value_fmt)}</div>` : '';
 
     const tags = (lead.tags && lead.tags.length)

@@ -48,16 +48,28 @@ class KanbanImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
                 $value = is_numeric($clean) ? (float) $clean : null;
             }
 
+            // Parse data de conversão (aceita dd/mm/yyyy ou yyyy-mm-dd)
+            $convertedAtRaw = trim((string) ($row['convertido_em'] ?? $row['converted_at'] ?? ''));
+            $convertedAt    = null;
+            if ($convertedAtRaw !== '') {
+                try {
+                    $convertedAt = \Carbon\Carbon::parse($convertedAtRaw);
+                } catch (\Exception) {
+                    $convertedAt = null;
+                }
+            }
+
             $lead = Lead::create([
-                'name'        => $name,
-                'phone'       => trim((string) ($row['telefone'] ?? $row['phone'] ?? '')),
-                'email'       => strtolower(trim((string) ($row['email'] ?? ''))),
-                'value'       => $value,
-                'source'      => trim((string) ($row['origem'] ?? $row['source'] ?? 'importado')),
-                'notes'       => trim((string) ($row['notas'] ?? $row['notes'] ?? '')),
-                'pipeline_id' => $this->pipelineId,
-                'stage_id'    => $stageId,
-                'created_by'  => auth()->id(),
+                'name'         => $name,
+                'phone'        => trim((string) ($row['telefone'] ?? $row['phone'] ?? '')),
+                'email'        => strtolower(trim((string) ($row['email'] ?? ''))),
+                'value'        => $value,
+                'source'       => trim((string) ($row['origem'] ?? $row['source'] ?? 'importado')),
+                'notes'        => trim((string) ($row['notas'] ?? $row['notes'] ?? '')),
+                'pipeline_id'  => $this->pipelineId,
+                'stage_id'     => $stageId,
+                'created_by'   => auth()->id(),
+                'converted_at' => $convertedAt,
             ]);
 
             LeadEvent::create([

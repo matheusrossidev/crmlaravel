@@ -146,13 +146,20 @@ class KanbanController extends Controller
             ]);
 
             if ($newStage?->is_won) {
+                $closedAt = now();
+
+                // Marca data de conversão no lead (apenas na primeira vez)
+                if (!$lead->converted_at) {
+                    $lead->update(['converted_at' => $closedAt]);
+                }
+
                 Sale::create([
                     'lead_id'     => $lead->id,
                     'pipeline_id' => $data['pipeline_id'],
                     'campaign_id' => $lead->campaign_id,
                     'value'       => $data['value'] ?? $lead->value,
                     'closed_by'   => auth()->id(),
-                    'closed_at'   => now(),
+                    'closed_at'   => $closedAt,
                 ]);
             }
 
@@ -275,6 +282,7 @@ class KanbanController extends Controller
             'ai_agent_name'    => $lead->whatsappConversation?->aiAgent?->name,
             'unread_count'     => $lead->whatsappConversation?->unread_count ?? 0,
             'created_at'       => $lead->created_at?->format('d/m/y'),
+            'converted_at'     => $lead->converted_at?->format('d/m/y'),
         ];
     }
 }

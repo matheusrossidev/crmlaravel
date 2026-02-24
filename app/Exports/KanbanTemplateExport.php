@@ -20,7 +20,7 @@ class KanbanTemplateExport implements FromArray, WithHeadings, ShouldAutoSize, W
 
     public function headings(): array
     {
-        return ['Nome*', 'Telefone', 'E-mail', 'Valor', 'Etapa', 'Origem', 'Tags', 'Notas'];
+        return ['Nome*', 'Telefone', 'E-mail', 'Valor', 'Etapa', 'Origem', 'Tags', 'Notas', 'Convertido em'];
     }
 
     public function array(): array
@@ -37,6 +37,7 @@ class KanbanTemplateExport implements FromArray, WithHeadings, ShouldAutoSize, W
                 'manual',
                 'tag1, tag2',
                 'Nota opcional sobre o lead',
+                '15/01/2025',
             ],
         ];
     }
