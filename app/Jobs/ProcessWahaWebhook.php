@@ -651,45 +651,46 @@ class ProcessWahaWebhook implements ShouldQueue
 
     private function normalizePhone(string $from, array $msg = [], bool $isFromMe = false): string
     {
-        // PRIORITY: _data.Info.Chat always holds the real contact JID
-        // ("556192008997@s.whatsapp.net"), even for fromMe=true messages where
-        // "from" would be the bot's own number instead of the contact's.
-        $chat = $msg['_data']['Info']['Chat'] ?? '';
-        if ($chat
-            && ! str_ends_with($chat, '@lid')
-            && ! str_contains($chat, '@g.us')
-            && ! str_contains($chat, '@broadcast')
-        ) {
-            return (string) preg_replace('/[:@].+$/', '', $chat);
-        }
+        // WAHA GOWS engine identifies some contacts via LID (14-digit numeric ID) instead
+        // of their real phone. When Chat/Sender are LID, SenderAlt holds the real JID:
+        //   from:           "83296646115442@lid"
+        //   _data.Info.Chat:      "83296646115442@lid"   ← LID
+        //   _data.Info.SenderAlt: "556181749938@s.whatsapp.net" ← REAL phone here
+        //
+        // Strategy: check candidates in order, return the first valid Brazilian number
+        // (starts with "55", 12 or 13 digits = country code + DDD + 8-9 digit number).
+        $info = $msg['_data']['Info'] ?? [];
 
-        // Fallback: GOWS @lid JIDs in the "from" field.
-        if (str_ends_with($from, '@lid')) {
-            // Sender JID for inbound — "556192008997:22@s.whatsapp.net"
-            if (! $isFromMe) {
-                $sender = $msg['_data']['Info']['Sender'] ?? '';
-                if ($sender && ! str_ends_with($sender, '@lid')) {
-                    return (string) preg_replace('/[:@].+$/', '', $sender);
-                }
-            }
+        $candidates = [
+            $info['Chat']      ?? '',   // conversation JID — always the contact in 1:1
+            $info['SenderAlt'] ?? '',   // alternate ID — real phone when Chat/Sender are LID
+            $from,                      // pre-processed in handleInbound() (recipient for fromMe)
+        ];
 
-            // chatId — GOWS engine sets chatId to real phone@c.us even when from is @lid.
-            $chatId = $msg['chatId'] ?? '';
-            if ($chatId
-                && ! str_ends_with($chatId, '@lid')
-                && ! str_contains($chatId, '@g.us')
-                && ! str_contains($chatId, '@broadcast')
+        foreach ($candidates as $jid) {
+            if (! $jid
+                || str_contains($jid, '@g.us')
+                || str_contains($jid, '@broadcast')
             ) {
-                return (string) preg_replace('/[:@].+$/', '', $chatId);
+                continue;
             }
 
-            // Last resort: strip @lid suffix
-            return (string) preg_replace('/[:@].+$/', '', $from);
+            // Extract digits only (strip @server and :device suffixes)
+            $digits = (string) preg_replace('/[:@].+$/u', '', $jid);
+
+            // Valid Brazilian phone: starts with 55, 12-13 digits total
+            // (55 + 2-digit area code + 8 or 9-digit number)
+            if ($digits
+                && str_starts_with($digits, '55')
+                && strlen($digits) >= 12
+                && strlen($digits) <= 13
+            ) {
+                return $digits;
+            }
         }
 
-        // Standard JID: strip server suffix and optional device id
-        // "556192008997@c.us" | "556192008997:22@s.whatsapp.net" → "556192008997"
-        return (string) preg_replace('/[:@].+$/', '', $from);
+        // No valid Brazilian number found — return raw digits from 'from' as-is
+        return (string) preg_replace('/[:@].+$/u', '', $from) ?: $from;
     }
 
     private function extractMedia(array $msg): array
