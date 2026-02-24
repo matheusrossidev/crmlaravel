@@ -17,6 +17,7 @@ use App\Models\Pipeline;
 use App\Models\PipelineStage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
@@ -172,33 +173,45 @@ class LeadController extends Controller
             'notes'       => 'nullable|string|max:2000',
         ]);
 
-        $oldStageId = $lead->stage_id;
-        $lead->update($data);
+        try {
+            $oldStageId = $lead->stage_id;
+            $lead->update($data);
 
-        $this->saveCustomFields($lead, $request->input('custom_fields', []));
+            $this->saveCustomFields($lead, $request->input('custom_fields', []));
 
-        if ($oldStageId !== (int) $data['stage_id']) {
-            $newStage = PipelineStage::find($data['stage_id']);
-            LeadEvent::create([
-                'lead_id'      => $lead->id,
-                'event_type'   => 'stage_changed',
-                'description'  => "Movido para {$newStage?->name}",
-                'performed_by' => auth()->id(),
-                'created_at'   => now(),
+            if ($oldStageId !== (int) $data['stage_id']) {
+                $newStage = PipelineStage::find($data['stage_id']);
+                LeadEvent::create([
+                    'lead_id'      => $lead->id,
+                    'event_type'   => 'stage_changed',
+                    'description'  => "Movido para {$newStage?->name}",
+                    'performed_by' => auth()->id(),
+                    'created_at'   => now(),
+                ]);
+            } else {
+                LeadEvent::create([
+                    'lead_id'      => $lead->id,
+                    'event_type'   => 'updated',
+                    'description'  => 'Lead atualizado',
+                    'performed_by' => auth()->id(),
+                    'created_at'   => now(),
+                ]);
+            }
+
+            $lead->load(['stage', 'pipeline', 'campaign', 'assignedTo']);
+
+            return response()->json(['success' => true, 'lead' => $this->formatLead($lead)]);
+        } catch (\Throwable $e) {
+            Log::error('LeadController::update falhou', [
+                'lead_id'   => $lead->id,
+                'exception' => get_class($e),
+                'message'   => $e->getMessage(),
+                'file'      => $e->getFile(),
+                'line'      => $e->getLine(),
+                'trace'     => $e->getTraceAsString(),
             ]);
-        } else {
-            LeadEvent::create([
-                'lead_id'      => $lead->id,
-                'event_type'   => 'updated',
-                'description'  => 'Lead atualizado',
-                'performed_by' => auth()->id(),
-                'created_at'   => now(),
-            ]);
+            throw $e;
         }
-
-        $lead->load(['stage', 'pipeline', 'campaign', 'assignedTo']);
-
-        return response()->json(['success' => true, 'lead' => $this->formatLead($lead)]);
     }
 
     public function destroy(Lead $lead): JsonResponse
