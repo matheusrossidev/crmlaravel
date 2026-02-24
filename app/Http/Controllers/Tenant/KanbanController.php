@@ -232,9 +232,22 @@ class KanbanController extends Controller
         $pipelineId = (int) $request->get('pipeline_id', 0);
         $pipeline   = Pipeline::with('stages')->findOrFail($pipelineId);
 
+        // Tags únicas de todos os leads do funil (para exibir na planilha)
+        $existingTags = Lead::whereHas('stage', fn ($q) => $q->where('pipeline_id', $pipelineId))
+            ->whereNotNull('tags')
+            ->pluck('tags')
+            ->flatten()
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+
         $safeName = preg_replace('/[^a-z0-9]+/i', '-', $pipeline->name);
 
-        return Excel::download(new KanbanTemplateExport($pipeline), "template-{$safeName}.xlsx");
+        return Excel::download(
+            new KanbanTemplateExport($pipeline, $existingTags),
+            "template-{$safeName}.xlsx"
+        );
     }
 
     // ── GET /crm/poll?pipeline_id=X&since=TIMESTAMP ───────────────────────
