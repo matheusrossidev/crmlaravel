@@ -52,6 +52,7 @@ Route::view('/politica-de-privacidade', 'public.privacy')->name('privacy');
 Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/inicio', [DashboardController::class, 'index'])->name('inicio');
+    Route::post('/dashboard/config', [DashboardController::class, 'saveConfig'])->name('dashboard.config');
 
     // Redireciona /configuracoes para perfil
     Route::get('/configuracoes', fn () => redirect()->route('settings.profile'));

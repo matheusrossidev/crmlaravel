@@ -10,13 +10,30 @@ use App\Models\LostSale;
 use App\Models\Pipeline;
 use App\Models\Sale;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    private const AVAILABLE_CARDS = ['leads', 'vendas', 'conversao', 'ticket', 'perdidos'];
+
+    public function saveConfig(Request $request): JsonResponse
+    {
+        $cards = array_values(array_intersect(
+            $request->input('cards', []),
+            self::AVAILABLE_CARDS
+        ));
+        auth()->user()->update(['dashboard_config' => ['cards' => $cards]]);
+        return response()->json(['success' => true]);
+    }
+
     public function index(Request $request): View
     {
+        // ── Card visibility config ─────────────────────────────────────────
+        $dashConfig   = auth()->user()->dashboard_config ?? [];
+        $visibleCards = $dashConfig['cards'] ?? self::AVAILABLE_CARDS;
+        $visibleCards = array_values(array_intersect($visibleCards, self::AVAILABLE_CARDS));
         // ── Métricas principais ────────────────────────────────────────────
         $leadsThisMonth = Lead::whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
@@ -103,6 +120,25 @@ class DashboardController extends Controller
                 ->sum('value');
         }
 
+        // ── Leads por origem × mês (stacked bar) ──────────────────────────
+        $sixMonths = collect(range(5, 0))->map(fn($i) => now()->copy()->subMonths($i)->startOfMonth());
+
+        $rawBySource = Lead::selectRaw("DATE_FORMAT(created_at, '%m/%Y') as month, source, COUNT(*) as total")
+            ->where('created_at', '>=', now()->copy()->subMonths(5)->startOfMonth())
+            ->groupBy('month', 'source')
+            ->get();
+
+        $srcKeys = $rawBySource->pluck('source')->unique()->filter()->values();
+        $leadsPerMonthBySource = [];
+        foreach ($srcKeys as $src) {
+            $leadsPerMonthBySource[$src] = $sixMonths->map(function ($month) use ($rawBySource, $src) {
+                return (int) $rawBySource
+                    ->where('source', $src)
+                    ->where('month', $month->format('m/Y'))
+                    ->sum('total');
+            })->values()->all();
+        }
+
         // ── Leads por origem (top 6) ───────────────────────────────────────
         $leadsBySource = Lead::selectRaw('source, count(*) as total')
             ->whereNotNull('source')
@@ -148,9 +184,11 @@ class DashboardController extends Controller
             'leadsPerMonth',
             'salesPerMonth',
             'leadsBySource',
+            'leadsPerMonthBySource',
             'stagesWithCount',
             'pipeline',
             'maxStageCount',
+            'visibleCards',
         ));
     }
 }

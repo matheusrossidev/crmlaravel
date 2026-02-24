@@ -651,17 +651,21 @@ class ProcessWahaWebhook implements ShouldQueue
 
     private function normalizePhone(string $from, array $msg = [], bool $isFromMe = false): string
     {
-        // GOWS engine may use @lid JIDs in the "from" field.
-        // Real phone is in _data.Info.Chat or _data.Info.Sender (@s.whatsapp.net format).
-        if (str_ends_with($from, '@lid')) {
-            // 1st try: Chat JID — "556192008997@s.whatsapp.net"
-            $chat = $msg['_data']['Info']['Chat'] ?? '';
-            if ($chat && ! str_ends_with($chat, '@lid')) {
-                return (string) preg_replace('/[:@].+$/', '', $chat);
-            }
+        // PRIORITY: _data.Info.Chat always holds the real contact JID
+        // ("556192008997@s.whatsapp.net"), even for fromMe=true messages where
+        // "from" would be the bot's own number instead of the contact's.
+        $chat = $msg['_data']['Info']['Chat'] ?? '';
+        if ($chat
+            && ! str_ends_with($chat, '@lid')
+            && ! str_contains($chat, '@g.us')
+            && ! str_contains($chat, '@broadcast')
+        ) {
+            return (string) preg_replace('/[:@].+$/', '', $chat);
+        }
 
-            // 2nd try: Sender JID — "556192008997:22@s.whatsapp.net"
-            // Apenas para inbound: em fromMe, Sender = nosso próprio telefone, não o do contato.
+        // Fallback: GOWS @lid JIDs in the "from" field.
+        if (str_ends_with($from, '@lid')) {
+            // Sender JID for inbound — "556192008997:22@s.whatsapp.net"
             if (! $isFromMe) {
                 $sender = $msg['_data']['Info']['Sender'] ?? '';
                 if ($sender && ! str_ends_with($sender, '@lid')) {
@@ -669,8 +673,7 @@ class ProcessWahaWebhook implements ShouldQueue
                 }
             }
 
-            // 3rd try: chatId — GOWS engine sets chatId to real phone@c.us even when from is @lid.
-            // Valid for individual chats only (not groups, not broadcasts).
+            // chatId — GOWS engine sets chatId to real phone@c.us even when from is @lid.
             $chatId = $msg['chatId'] ?? '';
             if ($chatId
                 && ! str_ends_with($chatId, '@lid')
@@ -680,8 +683,7 @@ class ProcessWahaWebhook implements ShouldQueue
                 return (string) preg_replace('/[:@].+$/', '', $chatId);
             }
 
-            // Last resort: strip @lid and device suffix
-            // "36576092528787:22@lid" → "36576092528787"
+            // Last resort: strip @lid suffix
             return (string) preg_replace('/[:@].+$/', '', $from);
         }
 

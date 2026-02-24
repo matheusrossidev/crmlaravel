@@ -8,6 +8,9 @@
     <span style="font-size:13px;color:#6b7280;">
         {{ now()->translatedFormat('l, d \d\e F') }}
     </span>
+    <button class="topbar-btn" onclick="openCustomize()" title="Personalizar dashboard">
+        <i class="bi bi-sliders"></i>
+    </button>
     <button class="topbar-btn" title="Notificações">
         <i class="bi bi-bell"></i>
     </button>
@@ -39,65 +42,56 @@
     /* ── Stat Cards ───────────────────────────────────────────────────── */
     .stats-grid {
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px;
         margin-bottom: 20px;
     }
     .stat-card {
         background: #fff;
         border-radius: 14px;
-        padding: 20px 22px;
+        padding: 16px 18px;
         border: 1px solid #e8eaf0;
-        position: relative;
-        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
     }
-    .stat-card::after {
-        content: '';
-        position: absolute;
-        top: -20px; right: -20px;
-        width: 80px; height: 80px;
-        border-radius: 50%;
-        opacity: .05;
+    .stat-card-top {
+        display: flex;
+        align-items: center;
+        gap: 9px;
     }
-    .stat-card.blue::after   { background: #3B82F6; }
-    .stat-card.green::after  { background: #10B981; }
-    .stat-card.purple::after { background: #8B5CF6; }
-    .stat-card.orange::after { background: #F59E0B; }
-    .stat-card.red::after    { background: #EF4444; }
-
     .stat-icon {
-        width: 38px; height: 38px;
-        border-radius: 10px;
+        width: 30px; height: 30px;
+        border-radius: 8px;
         display: flex; align-items: center; justify-content: center;
-        font-size: 18px;
-        margin-bottom: 12px;
+        font-size: 14px;
+        flex-shrink: 0;
     }
     .stat-icon.blue   { background: #eff6ff; color: #3B82F6; }
     .stat-icon.green  { background: #f0fdf4; color: #10B981; }
     .stat-icon.purple { background: #f5f3ff; color: #8B5CF6; }
     .stat-icon.orange { background: #fffbeb; color: #F59E0B; }
     .stat-icon.red    { background: #fef2f2; color: #EF4444; }
-
     .stat-label {
         font-size: 12px;
-        color: #6b7280;
+        color: #9ca3af;
         font-weight: 500;
-        margin-bottom: 5px;
+        line-height: 1.3;
+    }
+    .stat-bottom {
+        display: flex;
+        align-items: baseline;
+        gap: 7px;
+        flex-wrap: wrap;
     }
     .stat-value {
-        font-size: 24px;
+        font-size: 22px;
         font-weight: 700;
         color: #1a1d23;
         line-height: 1;
-        margin-bottom: 6px;
-    }
-    .stat-footer {
-        display: flex;
-        align-items: center;
-        gap: 6px;
     }
     .stat-sub {
-        font-size: 11.5px;
+        font-size: 11px;
         color: #9ca3af;
     }
     .trend-badge {
@@ -106,7 +100,7 @@
         gap: 2px;
         font-size: 11px;
         font-weight: 600;
-        padding: 2px 7px;
+        padding: 2px 6px;
         border-radius: 99px;
     }
     .trend-badge.up   { background: #f0fdf4; color: #16a34a; }
@@ -160,7 +154,7 @@
     }
     .chart-wrap {
         position: relative;
-        height: 220px;
+        height: 260px;
     }
     .chart-wrap canvas {
         width: 100% !important;
@@ -315,18 +309,11 @@
     .empty-state p { font-size: 13px; margin: 0; }
 
     /* ── Responsive ───────────────────────────────────────────────────── */
-    @media (max-width: 1200px) {
-        .stats-grid  { grid-template-columns: repeat(3, 1fr); }
-    }
     @media (max-width: 1000px) {
         .bottom-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 820px) {
-        .stats-grid { grid-template-columns: repeat(2, 1fr); }
-        .mid-grid   { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 500px) {
-        .stats-grid { grid-template-columns: 1fr; }
+        .mid-grid { grid-template-columns: 1fr; }
     }
 </style>
 @endpush
@@ -342,73 +329,80 @@
 
     {{-- ── Row 1: Stat Cards ─────────────────────────────────────────── --}}
     <div class="stats-grid">
-
-        {{-- Leads este mês --}}
+    @foreach($visibleCards as $cardKey)
+        @switch($cardKey)
+        @case('leads')
         <div class="stat-card blue">
-            <div class="stat-icon blue"><i class="bi bi-people"></i></div>
-            <div class="stat-label">Leads este mês</div>
-            <div class="stat-value" data-val="{{ $leadsThisMonth }}" data-prefix="" data-suffix="">{{ $cfLeads }}</div>
-            <div class="stat-footer">
+            <div class="stat-card-top">
+                <div class="stat-icon blue"><i class="bi bi-people"></i></div>
+                <span class="stat-label">Leads este mês</span>
+            </div>
+            <div class="stat-bottom">
+                <span class="stat-value" data-val="{{ $leadsThisMonth }}" data-prefix="" data-suffix="">{{ $cfLeads }}</span>
                 @if($leadsTrend !== null)
-                    <span class="trend-badge {{ $leadsTrend >= 0 ? 'up' : 'down' }}">
-                        <i class="bi bi-arrow-{{ $leadsTrend >= 0 ? 'up' : 'down' }}-short"></i>
-                        {{ abs($leadsTrend) }}%
-                    </span>
-                    <span class="stat-sub">vs mês anterior</span>
+                    <span class="trend-badge {{ $leadsTrend >= 0 ? 'up' : 'down' }}">{{ $leadsTrend >= 0 ? '↗' : '↘' }} {{ abs($leadsTrend) }}%</span>
+                    <span class="stat-sub">vs mês ant.</span>
                 @else
-                    <span class="stat-sub">nenhum dado anterior</span>
+                    <span class="stat-sub">sem dados anteriores</span>
                 @endif
             </div>
         </div>
-
-        {{-- Vendas este mês --}}
+        @break
+        @case('vendas')
         <div class="stat-card green">
-            <div class="stat-icon green"><i class="bi bi-currency-dollar"></i></div>
-            <div class="stat-label">Vendas este mês</div>
-            <div class="stat-value" data-val="{{ $totalSales }}" data-prefix="R$ " data-suffix="">{{ $cfSales }}</div>
-            <div class="stat-footer">
+            <div class="stat-card-top">
+                <div class="stat-icon green"><i class="bi bi-currency-dollar"></i></div>
+                <span class="stat-label">Vendas este mês</span>
+            </div>
+            <div class="stat-bottom">
+                <span class="stat-value" data-val="{{ $totalSales }}" data-prefix="R$ " data-suffix="">{{ $cfSales }}</span>
                 @if($salesTrend !== null)
-                    <span class="trend-badge {{ $salesTrend >= 0 ? 'up' : 'down' }}">
-                        <i class="bi bi-arrow-{{ $salesTrend >= 0 ? 'up' : 'down' }}-short"></i>
-                        {{ abs($salesTrend) }}%
-                    </span>
-                    <span class="stat-sub">vs mês anterior</span>
+                    <span class="trend-badge {{ $salesTrend >= 0 ? 'up' : 'down' }}">{{ $salesTrend >= 0 ? '↗' : '↘' }} {{ abs($salesTrend) }}%</span>
+                    <span class="stat-sub">vs mês ant.</span>
                 @else
-                    <span class="stat-sub">em receita fechada</span>
+                    <span class="stat-sub">receita fechada</span>
                 @endif
             </div>
         </div>
-
-        {{-- Taxa de conversão --}}
+        @break
+        @case('conversao')
         <div class="stat-card purple">
-            <div class="stat-icon purple"><i class="bi bi-percent"></i></div>
-            <div class="stat-label">Taxa de Conversão</div>
-            <div class="stat-value" data-val="{{ $conversionRate }}" data-prefix="" data-suffix="%" data-decimals="1">{{ $conversionRate }}%</div>
-            <div class="stat-footer">
-                <span class="stat-sub">leads → vendas (total)</span>
+            <div class="stat-card-top">
+                <div class="stat-icon purple"><i class="bi bi-percent"></i></div>
+                <span class="stat-label">Taxa de Conversão</span>
+            </div>
+            <div class="stat-bottom">
+                <span class="stat-value" data-val="{{ $conversionRate }}" data-prefix="" data-suffix="%" data-decimals="1">{{ $conversionRate }}%</span>
+                <span class="stat-sub">leads → vendas</span>
             </div>
         </div>
-
-        {{-- Ticket médio --}}
+        @break
+        @case('ticket')
         <div class="stat-card orange">
-            <div class="stat-icon orange"><i class="bi bi-graph-up"></i></div>
-            <div class="stat-label">Ticket Médio</div>
-            <div class="stat-value" data-val="{{ $ticketMedio }}" data-prefix="R$ " data-suffix="">{{ $cfTicket }}</div>
-            <div class="stat-footer">
-                <span class="stat-sub">{{ $leadsGanhos }} negócio{{ $leadsGanhos !== 1 ? 's' : '' }} fechado{{ $leadsGanhos !== 1 ? 's' : '' }} este mês</span>
+            <div class="stat-card-top">
+                <div class="stat-icon orange"><i class="bi bi-graph-up"></i></div>
+                <span class="stat-label">Ticket Médio</span>
+            </div>
+            <div class="stat-bottom">
+                <span class="stat-value" data-val="{{ $ticketMedio }}" data-prefix="R$ " data-suffix="">{{ $cfTicket }}</span>
+                <span class="stat-sub">{{ $leadsGanhos }} negócio{{ $leadsGanhos !== 1 ? 's' : '' }} este mês</span>
             </div>
         </div>
-
-        {{-- Leads perdidos --}}
+        @break
+        @case('perdidos')
         <div class="stat-card red">
-            <div class="stat-icon red"><i class="bi bi-x-circle"></i></div>
-            <div class="stat-label">Leads Perdidos</div>
-            <div class="stat-value" data-val="{{ $leadsPerdidos }}" data-prefix="" data-suffix="">{{ $cfPerdidos }}</div>
-            <div class="stat-footer">
+            <div class="stat-card-top">
+                <div class="stat-icon red"><i class="bi bi-x-circle"></i></div>
+                <span class="stat-label">Leads Perdidos</span>
+            </div>
+            <div class="stat-bottom">
+                <span class="stat-value" data-val="{{ $leadsPerdidos }}" data-prefix="" data-suffix="">{{ $cfPerdidos }}</span>
                 <span class="stat-sub">perdidos este mês</span>
             </div>
         </div>
-
+        @break
+        @endswitch
+    @endforeach
     </div>
 
     {{-- ── Row 2: Gráfico Leads + Ações Rápidas ──────────────────────── --}}
@@ -579,63 +573,115 @@
     </div>
 
 </div>
+
+{{-- ── Modal: Personalizar Dashboard ─────────────────────────────────── --}}
+<div id="customizeOverlay"
+     style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1050; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:16px; width:360px; max-width:95vw; padding:24px; box-shadow:0 8px 48px rgba(0,0,0,.2);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+            <h3 style="font-size:15px; font-weight:700; color:#1a1d23; margin:0;">Personalizar Dashboard</h3>
+            <button onclick="closeCustomize()" style="background:none; border:none; cursor:pointer; font-size:22px; color:#9ca3af; line-height:1; padding:0;">×</button>
+        </div>
+        <p style="font-size:12px; color:#9ca3af; margin:0 0 16px;">Arraste para reordenar. Marque para exibir.</p>
+        <ul id="cardSortList" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px;"></ul>
+        <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
+            <button onclick="closeCustomize()" class="btn-clear">Cancelar</button>
+            <button onclick="saveCustomize()" class="btn-apply" id="btnSaveCustomize">Salvar</button>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
 (function () {
-    const monthLabels   = @json($monthLabels);
-    const leadsPerMonth = @json($leadsPerMonth);
-    const salesPerMonth = @json($salesPerMonth);
-    const origLabels    = @json(array_keys($leadsBySource));
-    const origData      = @json(array_values($leadsBySource));
+    const monthLabels            = @json($monthLabels);
+    const leadsPerMonth          = @json($leadsPerMonth);
+    const salesPerMonth          = @json($salesPerMonth);
+    const origLabels             = @json(array_keys($leadsBySource));
+    const origData               = @json(array_values($leadsBySource));
+    const leadsPerMonthBySource  = {!! json_encode($leadsPerMonthBySource) !!};
+
+    const SOURCE_COLORS = {
+        'whatsapp':  '#25D366',
+        'instagram': '#E1306C',
+        'facebook':  '#1877F2',
+        'site':      '#3B82F6',
+        'google':    '#FBBC04',
+        'linkedin':  '#0A66C2',
+        'indicacao': '#8B5CF6',
+        'manual':    '#94A3B8',
+    };
+    const SOURCE_COLORS_FALLBACK = ['#10B981','#F59E0B','#EF4444','#06B6D4','#F97316','#EC4899'];
+    function sourceColor(name, idx) {
+        const key = (name || '').toLowerCase().trim();
+        return SOURCE_COLORS[key] ?? SOURCE_COLORS_FALLBACK[idx % SOURCE_COLORS_FALLBACK.length];
+    }
 
     const chartDefaults = {
         font: { family: "'Inter', sans-serif" },
     };
 
-    // ── Novos Leads ────────────────────────────────────────────────────
+    // ── Novos Leads (stacked bar por origem) ───────────────────────────
+    const sourceNames = Object.keys(leadsPerMonthBySource);
+    const datasets = sourceNames.length > 0
+        ? sourceNames.map((src, i) => ({
+            label: src.charAt(0).toUpperCase() + src.slice(1),
+            data: leadsPerMonthBySource[src],
+            backgroundColor: sourceColor(src, i),
+            borderWidth: 2,
+            borderColor: '#ffffff',
+            borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
+            borderSkipped: false,
+            stack: 'leads',
+        }))
+        : [{
+            label: 'Leads',
+            data: leadsPerMonth,
+            backgroundColor: '#3B82F6',
+            borderRadius: 6,
+            borderSkipped: false,
+        }];
+
     new Chart(document.getElementById('chartLeads'), {
         type: 'bar',
-        data: {
-            labels: monthLabels,
-            datasets: [{
-                label: 'Leads',
-                data: leadsPerMonth,
-                backgroundColor: '#3B82F6',
-                borderRadius: 6,
-                borderSkipped: false,
-            }]
-        },
+        data: { labels: monthLabels, datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: false },
+                legend: {
+                    display: sourceNames.length > 0,
+                    position: 'bottom',
+                    labels: { boxWidth: 10, padding: 12, font: { size: 11 } },
+                },
                 tooltip: {
                     callbacks: {
-                        label: ctx => ` ${ctx.parsed.y} lead${ctx.parsed.y !== 1 ? 's' : ''}`
+                        footer: (items) => {
+                            const total = items.reduce((s, i) => s + i.parsed.y, 0);
+                            return 'Total: ' + total + ' lead(s)';
+                        }
                     }
                 }
             },
             scales: {
-                x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-                y: { beginAtZero: true, ticks: { precision: 0, font: { size: 11 } }, grid: { color: '#f0f2f7' } },
-            }
+                x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
+                y: { stacked: true, beginAtZero: true, ticks: { precision: 0, font: { size: 11 } }, grid: { color: '#f0f2f7' } },
+            },
         }
     });
 
     // ── Leads por Origem ───────────────────────────────────────────────
     if (document.getElementById('chartOrigin')) {
-        const origColors = ['#3B82F6','#10B981','#F59E0B','#8B5CF6','#EF4444','#EC4899'];
         new Chart(document.getElementById('chartOrigin'), {
             type: 'doughnut',
             data: {
                 labels: origLabels,
                 datasets: [{
                     data: origData,
-                    backgroundColor: origColors.slice(0, origLabels.length),
+                    backgroundColor: origLabels.map((src, i) => sourceColor(src, i)),
                     borderWidth: 2,
                     borderColor: '#fff',
                     hoverOffset: 6,
@@ -725,6 +771,76 @@ document.querySelectorAll('.stat-value[data-val]').forEach(el => {
     }
     el.textContent = statCompact(0, prefix, suffix, decimals);
     requestAnimationFrame(step);
+});
+
+// ── Personalizar Dashboard ──────────────────────────────────────────────────
+const ALL_CARDS = {
+    leads:     'Leads este mês',
+    vendas:    'Vendas este mês',
+    conversao: 'Taxa de Conversão',
+    ticket:    'Ticket Médio',
+    perdidos:  'Leads Perdidos',
+};
+const currentCards = @json($visibleCards);
+
+let sortableInstance = null;
+
+function openCustomize() {
+    const list    = document.getElementById('cardSortList');
+    const visible = new Set(currentCards);
+    const ordered = [...currentCards, ...Object.keys(ALL_CARDS).filter(k => !visible.has(k))];
+
+    list.innerHTML = ordered.map(key => `
+        <li data-key="${key}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #e8eaf0;border-radius:9px;background:#fff;user-select:none;">
+            <i class="bi bi-grip-vertical drag-handle" style="color:#d1d5db;cursor:grab;font-size:16px;flex-shrink:0;"></i>
+            <span style="flex:1;font-size:13px;font-weight:500;color:#374151;">${ALL_CARDS[key]}</span>
+            <label style="display:flex;align-items:center;cursor:pointer;gap:0;">
+                <input type="checkbox" ${visible.has(key) ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;">
+            </label>
+        </li>
+    `).join('');
+
+    if (sortableInstance) { sortableInstance.destroy(); }
+    sortableInstance = Sortable.create(list, { animation: 150, handle: '.drag-handle' });
+
+    const overlay = document.getElementById('customizeOverlay');
+    overlay.style.display = 'flex';
+}
+
+function closeCustomize() {
+    document.getElementById('customizeOverlay').style.display = 'none';
+}
+
+function saveCustomize() {
+    const btn   = document.getElementById('btnSaveCustomize');
+    const items = [...document.querySelectorAll('#cardSortList li')];
+    const cards = items
+        .filter(li => li.querySelector('input[type=checkbox]').checked)
+        .map(li => li.dataset.key);
+
+    btn.disabled = true;
+    btn.textContent = 'Salvando…';
+
+    fetch('{{ route("dashboard.config") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+        body: JSON.stringify({ cards }),
+    })
+    .then(r => r.json())
+    .then(() => {
+        if (typeof toastr !== 'undefined') toastr.success('Dashboard atualizado!');
+        location.reload();
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.textContent = 'Salvar';
+        if (typeof toastr !== 'undefined') toastr.error('Erro ao salvar. Tente novamente.');
+    });
+}
+
+// Fechar ao clicar fora do painel
+document.getElementById('customizeOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeCustomize();
 });
 </script>
 @endpush

@@ -150,12 +150,32 @@ class ReportController extends Controller
             ->get()
             ->map(function (Pipeline $pipeline) use ($dateFrom, $dateTo) {
                 $stagesData = $pipeline->stages->map(function ($stage) use ($dateFrom, $dateTo) {
+                    $avgDays = Lead::where('stage_id', $stage->id)
+                        ->selectRaw('AVG(DATEDIFF(NOW(), updated_at)) as avg_d')
+                        ->value('avg_d');
                     return [
-                        'stage' => $stage,
-                        'count' => Lead::where('stage_id', $stage->id)
+                        'stage'    => $stage,
+                        'count'    => Lead::where('stage_id', $stage->id)
                             ->whereBetween('created_at', [$dateFrom, $dateTo])
                             ->count(),
+                        'avg_days' => $avgDays !== null ? (int) round((float) $avgDays) : null,
                     ];
+                });
+
+                // Calcula largura visual do funil: normal stages 100→32%, won/lost ambos em 28%
+                $normalStages = $stagesData->filter(fn ($s) => ! $s['stage']->is_won && ! $s['stage']->is_lost);
+                $normalCount  = max($normalStages->count(), 1);
+                $normalIdx    = 0;
+                $stagesData   = $stagesData->map(function ($s) use (&$normalIdx, $normalCount) {
+                    if ($s['stage']->is_won || $s['stage']->is_lost) {
+                        $s['bar_width'] = 28;
+                    } else {
+                        $s['bar_width'] = $normalCount > 1
+                            ? (int) round(100 - (68 * $normalIdx / ($normalCount - 1)))
+                            : 100;
+                        $normalIdx++;
+                    }
+                    return $s;
                 });
 
                 $totalInPipeline = $stagesData->sum('count');

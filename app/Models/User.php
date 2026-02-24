@@ -17,7 +17,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'tenant_id', 'name', 'email', 'password', 'role',
-        'is_super_admin', 'avatar', 'last_login_at',
+        'is_super_admin', 'avatar', 'last_login_at', 'dashboard_config',
     ];
 
     protected $hidden = [
@@ -31,6 +31,7 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
+            'dashboard_config' => 'array',
         ];
     }
 

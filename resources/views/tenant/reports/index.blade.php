@@ -383,6 +383,61 @@
     .lost-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
     @media (max-width: 900px) { .lost-grid-3 { grid-template-columns: 1fr 1fr; } }
     @media (max-width: 600px) { .lost-grid-3 { grid-template-columns: 1fr; } }
+
+    /* ── Layout Funil + Campanhas 50/50 ─────────────────────────── */
+    .funnel-campaigns-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+    @media (max-width: 900px) { .funnel-campaigns-grid { grid-template-columns: 1fr; } }
+
+    /* ── Funil Real Vertical ─────────────────────────────────────── */
+    .real-funnel { display: flex; flex-direction: column; gap: 5px; }
+
+    .funnel-rrow { display: flex; flex-direction: column; gap: 3px; }
+
+    .funnel-rbar-outer { width: 100%; display: flex; justify-content: center; }
+
+    .funnel-rbar-inner {
+        height: 44px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 14px;
+        transition: width .5s ease;
+        min-width: 50px;
+    }
+
+    .funnel-rbar-label { font-size: 13px; font-weight: 700; color: #fff; }
+    .funnel-rbar-pct   { font-size: 11px; color: rgba(255,255,255,.85); font-weight: 600; }
+
+    .funnel-rrow-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 3px;
+    }
+
+    .funnel-rrow-name { font-size: 12px; color: #6b7280; font-weight: 500; }
+
+    .funnel-rrow-time {
+        font-size: 11px;
+        color: #9ca3af;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+    }
+
+    .funnel-rconnector {
+        display: flex;
+        justify-content: center;
+        color: #d1d5db;
+        font-size: 13px;
+        line-height: 1;
+    }
 </style>
 @endpush
 
@@ -491,119 +546,127 @@
 
         <div class="chart-box">
             <div class="chart-title">Leads por dia</div>
-            <canvas id="chartLeadsByDay" height="120"></canvas>
+            <div style="position:relative;height:180px;">
+                <canvas id="chartLeadsByDay"></canvas>
+            </div>
         </div>
 
         <div class="chart-box">
             <div class="chart-title">Leads por origem</div>
-            <canvas id="chartLeadsBySource" height="180"></canvas>
-        </div>
-
-    </div>
-
-    {{-- ════════════════════════════════════════════════════════════ --}}
-    {{-- FUNIL DE CONVERSÃO VISUAL                                   --}}
-    {{-- ════════════════════════════════════════════════════════════ --}}
-    <div class="report-section">
-        <div class="report-section-header">
-            <i class="bi bi-funnel"></i>
-            Funil de Conversão
-        </div>
-        <div class="report-section-body">
-            <div class="funnel-visual">
-                @php
-                    $fvBase = $totalLeads > 0 ? $totalLeads : 1;
-                @endphp
-                <div class="funnel-visual-step fv-total">
-                    <div class="fv-count">{{ number_format($totalLeads, 0, ',', '.') }}</div>
-                    <div class="fv-label">Leads gerados</div>
-                    <div class="fv-pct">100% do total</div>
-                </div>
-                <div class="funnel-arrow"><i class="bi bi-chevron-right"></i></div>
-                <div class="funnel-visual-step fv-open">
-                    <div class="fv-count">{{ number_format($funnelEmAberto, 0, ',', '.') }}</div>
-                    <div class="fv-label">Em andamento</div>
-                    <div class="fv-pct">{{ round($funnelEmAberto / $fvBase * 100, 1) }}% do total</div>
-                </div>
-                <div class="funnel-arrow"><i class="bi bi-chevron-right"></i></div>
-                <div class="funnel-visual-step fv-won">
-                    <div class="fv-count">{{ number_format($salesCount, 0, ',', '.') }}</div>
-                    <div class="fv-label">Convertidos</div>
-                    <div class="fv-pct">{{ round($salesCount / $fvBase * 100, 1) }}% do total</div>
-                </div>
-                <div class="funnel-arrow"><i class="bi bi-chevron-right"></i></div>
-                <div class="funnel-visual-step fv-lost">
-                    <div class="fv-count">{{ number_format($totalLost, 0, ',', '.') }}</div>
-                    <div class="fv-label">Perdidos</div>
-                    <div class="fv-pct">{{ round($totalLost / $fvBase * 100, 1) }}% do total</div>
-                </div>
+            <div style="position:relative;height:180px;">
+                <canvas id="chartLeadsBySource"></canvas>
             </div>
         </div>
+
     </div>
 
     {{-- ════════════════════════════════════════════════════════════ --}}
-    {{-- CAMPANHAS                                                   --}}
+    {{-- FUNIL REAL + CAMPANHAS (50/50)                             --}}
     {{-- ════════════════════════════════════════════════════════════ --}}
-    <div class="report-section">
-        <div class="report-section-header">
-            <i class="bi bi-megaphone"></i>
-            Desempenho de Campanhas
-        </div>
-        <div style="overflow-x:auto;">
-            <table class="report-table">
-                <thead>
-                    <tr>
-                        <th>Campanha</th>
-                        <th>Plataforma</th>
-                        <th class="num">Investido</th>
-                        <th class="num">Impressões</th>
-                        <th class="num">Cliques</th>
-                        <th class="num">CTR</th>
-                        <th class="num">Leads</th>
-                        <th class="num">Custo/Lead</th>
-                        <th class="num">Receita</th>
-                        <th class="num">ROI</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($campaignRows as $row)
-                    <tr>
-                        <td style="font-weight:600;color:#1a1d23;">{{ $row['campaign']->name }}</td>
-                        <td>
-                            <span class="platform-dot">
-                                <span class="dot {{ $row['campaign']->platform === 'facebook' ? 'dot-facebook' : 'dot-google' }}"></span>
-                                {{ $row['campaign']->platform === 'facebook' ? 'Facebook' : 'Google' }}
-                            </span>
-                        </td>
-                        <td class="num">{{ $row['spend'] > 0 ? 'R$ ' . number_format($row['spend'], 2, ',', '.') : '—' }}</td>
-                        <td class="num">{{ $row['impressions'] > 0 ? number_format($row['impressions'], 0, ',', '.') : '—' }}</td>
-                        <td class="num">{{ $row['clicks'] > 0 ? number_format($row['clicks'], 0, ',', '.') : '—' }}</td>
-                        <td class="num">{{ $row['ctr'] !== null ? $row['ctr'] . '%' : '—' }}</td>
-                        <td class="num" style="font-weight:700;color:#3B82F6;">{{ $row['leads_count'] }}</td>
-                        <td class="num">{{ $row['cost_per_lead'] !== null ? 'R$ ' . number_format($row['cost_per_lead'], 2, ',', '.') : '—' }}</td>
-                        <td class="num" style="color:#10B981;font-weight:700;">{{ $row['revenue'] > 0 ? 'R$ ' . number_format($row['revenue'], 2, ',', '.') : '—' }}</td>
-                        <td class="num">
-                            @if($row['roi'] !== null)
-                                <span class="{{ $row['roi'] >= 0 ? 'roi-positive' : 'roi-negative' }}">
-                                    {{ $row['roi'] >= 0 ? '+' : '' }}{{ $row['roi'] }}%
+    <div class="funnel-campaigns-grid">
+
+        {{-- Funil Real de Pipeline --}}
+        <div class="report-section" style="margin-bottom:0;">
+            <div class="report-section-header">
+                <i class="bi bi-funnel"></i>
+                Funil de Conversão
+            </div>
+            <div class="report-section-body">
+                @php $funnelPipe = $pipelineRows->first(fn($r) => $r['stages']->isNotEmpty()); @endphp
+                @if($funnelPipe)
+                    @php $funnelBase = max($funnelPipe['total'], 1); @endphp
+                    <div class="real-funnel">
+                        @foreach($funnelPipe['stages'] as $i => $stageRow)
+                        @php
+                            $stage   = $stageRow['stage'];
+                            $count   = $stageRow['count'];
+                            $avgDays = $stageRow['avg_days'] ?? null;
+                            $pct     = round($count / $funnelBase * 100, 1);
+                            $barW    = $stageRow['bar_width'];
+                            $color   = $stage->color ?? '#3B82F6';
+                        @endphp
+                        @if($i > 0)
+                        <div class="funnel-rconnector"><i class="bi bi-chevron-down"></i></div>
+                        @endif
+                        <div class="funnel-rrow">
+                            <div class="funnel-rrow-meta">
+                                <span class="funnel-rrow-name">
+                                    {{ $stage->name }}
+                                    @if($stage->is_won)  <span class="badge-won" style="font-size:9px;vertical-align:middle;">GANHO</span>   @endif
+                                    @if($stage->is_lost) <span class="badge-lost" style="font-size:9px;vertical-align:middle;">PERDIDO</span> @endif
                                 </span>
-                            @else
-                                <span class="roi-neutral">—</span>
-                            @endif
-                        </td>
-                    </tr>
-                    @empty
-                    <tr class="empty-row">
-                        <td colspan="10">
-                            <i class="bi bi-megaphone" style="font-size:28px;opacity:.2;display:block;margin-bottom:6px;"></i>
-                            Nenhuma campanha com dados no período selecionado
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                                @if($avgDays !== null)
+                                <span class="funnel-rrow-time">
+                                    <i class="bi bi-clock" style="font-size:10px;"></i> {{ $avgDays }}d méd.
+                                </span>
+                                @endif
+                            </div>
+                            <div class="funnel-rbar-outer">
+                                <div class="funnel-rbar-inner" style="width:{{ $barW }}%;background:{{ $color }};">
+                                    <span class="funnel-rbar-label">{{ number_format($count, 0, ',', '.') }}</span>
+                                    <span class="funnel-rbar-pct">{{ $pct }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                @else
+                    <p style="color:#9ca3af;font-size:13px;text-align:center;padding:24px 0;">Nenhum pipeline com dados.</p>
+                @endif
+            </div>
         </div>
-    </div>
+
+        {{-- Campanhas --}}
+        <div class="report-section" style="margin-bottom:0;">
+            <div class="report-section-header">
+                <i class="bi bi-megaphone"></i>
+                Campanhas
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Campanha</th>
+                            <th class="num">Investido</th>
+                            <th class="num">Leads</th>
+                            <th class="num">C/Lead</th>
+                            <th class="num">Receita</th>
+                            <th class="num">ROI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($campaignRows as $row)
+                        <tr>
+                            <td style="font-size:12px;">
+                                <span style="font-weight:600;color:#1a1d23;">{{ $row['campaign']->name }}</span><br>
+                                <span style="font-size:11px;color:#9ca3af;">{{ $row['campaign']->platform === 'facebook' ? 'Facebook' : 'Google' }}</span>
+                            </td>
+                            <td class="num">{{ $row['spend'] > 0 ? 'R$ '.number_format($row['spend'], 0, ',', '.') : '—' }}</td>
+                            <td class="num" style="font-weight:700;color:#3B82F6;">{{ $row['leads_count'] }}</td>
+                            <td class="num">{{ $row['cost_per_lead'] !== null ? 'R$ '.number_format($row['cost_per_lead'], 0, ',', '.') : '—' }}</td>
+                            <td class="num" style="color:#10B981;font-weight:700;">{{ $row['revenue'] > 0 ? 'R$ '.number_format($row['revenue'], 0, ',', '.') : '—' }}</td>
+                            <td class="num">
+                                @if($row['roi'] !== null)
+                                    <span class="{{ $row['roi'] >= 0 ? 'roi-positive' : 'roi-negative' }}">{{ $row['roi'] >= 0 ? '+' : '' }}{{ $row['roi'] }}%</span>
+                                @else
+                                    <span class="roi-neutral">—</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @empty
+                        <tr class="empty-row">
+                            <td colspan="6">
+                                <i class="bi bi-megaphone" style="font-size:28px;opacity:.2;display:block;margin-bottom:6px;"></i>
+                                Nenhuma campanha com dados
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>{{-- /funnel-campaigns-grid --}}
 
     {{-- ════════════════════════════════════════════════════════════ --}}
     {{-- PIPELINE / FUNIL                                            --}}
@@ -948,6 +1011,23 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
+// ── Paleta de cores por origem ─────────────────────────────────────────────
+const SOURCE_COLORS = {
+    'whatsapp':  '#25D366',
+    'instagram': '#E1306C',
+    'facebook':  '#1877F2',
+    'site':      '#3B82F6',
+    'google':    '#FBBC04',
+    'linkedin':  '#0A66C2',
+    'indicacao': '#8B5CF6',
+    'manual':    '#94A3B8',
+};
+const SOURCE_COLORS_FALLBACK = ['#10B981','#F59E0B','#EF4444','#06B6D4','#F97316','#EC4899'];
+function sourceColor(name, idx) {
+    const key = (name || '').toLowerCase().trim();
+    return SOURCE_COLORS[key] ?? SOURCE_COLORS_FALLBACK[idx % SOURCE_COLORS_FALLBACK.length];
+}
+
 // ── Dados do servidor ─────────────────────────────────────────────────────
 const chartDates = @json($chartDates);
 const chartLeads = @json($chartLeads);
@@ -963,6 +1043,9 @@ const sourceData   = @json($srcData);
 (function () {
     const ctx = document.getElementById('chartLeadsByDay');
     if (!ctx || !window.Chart) return;
+    const grad = ctx.getContext('2d').createLinearGradient(0, 0, 0, 260);
+    grad.addColorStop(0, 'rgba(59,130,246,0.35)');
+    grad.addColorStop(1, 'rgba(59,130,246,0.00)');
     new Chart(ctx, {
         type: 'line',
         data: {
@@ -971,16 +1054,17 @@ const sourceData   = @json($srcData);
                 label: 'Leads',
                 data: chartLeads,
                 borderColor: '#3B82F6',
-                backgroundColor: 'rgba(59,130,246,.08)',
-                borderWidth: 2,
+                backgroundColor: grad,
+                borderWidth: 2.5,
                 pointRadius: chartDates.length > 30 ? 0 : 3,
                 pointBackgroundColor: '#3B82F6',
                 fill: true,
-                tension: .35,
+                stepped: 'after',
             }],
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
                 x: { grid: { display: false }, ticks: { font: { size: 11 }, maxTicksLimit: 10 } },
@@ -994,7 +1078,6 @@ const sourceData   = @json($srcData);
 (function () {
     const ctx = document.getElementById('chartLeadsBySource');
     if (!ctx || !window.Chart) return;
-    const colors = ['#3B82F6','#10B981','#8B5CF6','#F59E0B','#EF4444','#06B6D4','#F97316','#84CC16'];
     new Chart(ctx, {
         type: 'bar',
         data: {
@@ -1002,7 +1085,7 @@ const sourceData   = @json($srcData);
             datasets: [{
                 label: 'Leads',
                 data: sourceData,
-                backgroundColor: sourceLabels.map((_, i) => colors[i % colors.length] + 'cc'),
+                backgroundColor: sourceLabels.map((src, i) => sourceColor(src, i)),
                 borderRadius: 6,
                 borderSkipped: false,
             }],
@@ -1010,6 +1093,7 @@ const sourceData   = @json($srcData);
         options: {
             indexAxis: 'y',
             responsive: true,
+            maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
                 x: { beginAtZero: true, ticks: { font: { size: 11 }, precision: 0 } },
