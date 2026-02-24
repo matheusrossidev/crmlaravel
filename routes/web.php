@@ -59,6 +59,9 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     // CRM Kanban
     Route::get('/crm', [KanbanController::class, 'index'])->name('crm.kanban');
     Route::get('/crm/poll', [KanbanController::class, 'poll'])->name('crm.poll');
+    Route::get('/crm/exportar', [KanbanController::class, 'export'])->name('crm.export');
+    Route::post('/crm/importar', [KanbanController::class, 'import'])->name('crm.import');
+    Route::get('/crm/template', [KanbanController::class, 'template'])->name('crm.template');
     Route::post('/crm/lead/{lead}/stage', [KanbanController::class, 'updateStage'])->name('crm.lead.stage');
 
     // Leads / Contatos — exportar e importar ANTES do {lead} wildcard

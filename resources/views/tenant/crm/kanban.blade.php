@@ -20,6 +20,14 @@
         <i class="bi bi-funnel{{ request()->hasAny(['source','date_from','date_to','campaign_id','tag']) ? '-fill' : '' }}"></i>
     </button>
 
+    <button class="topbar-btn" title="Exportar leads" onclick="exportarLeads()">
+        <i class="bi bi-download"></i>
+    </button>
+
+    <button class="topbar-btn" title="Importar leads" onclick="openImportModal()">
+        <i class="bi bi-upload"></i>
+    </button>
+
     <button class="btn-primary-sm" id="btnNovoLead">
         <i class="bi bi-plus-lg"></i>
         Novo Lead
@@ -827,6 +835,56 @@
     </div>
 </div>
 
+{{-- Modal: Importar Leads ────────────────────────────────────────────────── --}}
+<div id="modalImport" style="display:none;position:fixed;inset:0;z-index:1060;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:16px;width:480px;max-width:95vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.18);">
+
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
+            <div>
+                <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0 0 3px;">Importar Leads</h3>
+                <p id="importModalPipeline" style="font-size:12px;color:#9ca3af;margin:0;"></p>
+            </div>
+            <button onclick="closeImportModal()" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;line-height:1;padding:0;"><i class="bi bi-x-lg"></i></button>
+        </div>
+
+        {{-- Download template --}}
+        <div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:18px;display:flex;align-items:center;gap:12px;">
+            <i class="bi bi-file-earmark-spreadsheet" style="font-size:24px;color:#0ea5e9;flex-shrink:0;"></i>
+            <div style="flex:1;min-width:0;">
+                <p style="font-size:12.5px;font-weight:600;color:#0369a1;margin:0 0 2px;">Planilha modelo</p>
+                <p style="font-size:11.5px;color:#6b7280;margin:0;">Inclui as etapas do funil atual como referência</p>
+            </div>
+            <a id="btnDownloadTemplate" href="#" class="btn-primary-sm" style="font-size:12px;padding:6px 14px;white-space:nowrap;text-decoration:none;">
+                <i class="bi bi-download"></i> Baixar
+            </a>
+        </div>
+
+        {{-- File upload --}}
+        <div style="margin-bottom:16px;">
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Selecionar arquivo</label>
+            <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv"
+                   style="width:100%;padding:10px;border:1.5px dashed #d1d5db;border-radius:9px;font-size:13px;box-sizing:border-box;cursor:pointer;background:#fafafa;font-family:inherit;">
+            <p style="font-size:11px;color:#9ca3af;margin:5px 0 0;">Formatos: .xlsx, .xls, .csv — máximo 5 MB</p>
+        </div>
+
+        {{-- Result --}}
+        <div id="importResult" style="display:none;margin-bottom:16px;"></div>
+
+        {{-- Actions --}}
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button onclick="closeImportModal()"
+                    style="padding:9px 20px;border-radius:9px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;">
+                Cancelar
+            </button>
+            <button id="btnImportSubmit" onclick="submitImport()"
+                    style="padding:9px 24px;border-radius:9px;border:none;background:#3B82F6;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
+                <i class="bi bi-upload"></i> Importar
+            </button>
+        </div>
+
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -1322,6 +1380,96 @@ async function cpCreatePipeline() {
 // Fechar ao clicar no backdrop
 document.getElementById('modalCreatePipeline')?.addEventListener('click', function(e) {
     if (e.target === this) closePipelineModal();
+});
+
+// ── Exportar / Importar Leads ──────────────────────────────────────────────
+const KANBAN_EXPORT_URL = @json(route('crm.export'));
+const KANBAN_IMPORT_URL = @json(route('crm.import'));
+const KANBAN_TMPL_URL   = @json(route('crm.template'));
+
+function exportarLeads() {
+    const pipelineId = document.getElementById('pipelineSelect')?.value;
+    const params = new URLSearchParams();
+    if (pipelineId) params.set('pipeline_id', pipelineId);
+
+    // Repassa filtros ativos da URL atual
+    const urlParams = new URLSearchParams(window.location.search);
+    ['source', 'campaign_id', 'date_from', 'date_to', 'tag'].forEach(k => {
+        const v = urlParams.get(k);
+        if (v) params.set(k, v);
+    });
+
+    window.location.href = `${KANBAN_EXPORT_URL}?${params.toString()}`;
+}
+
+let _importPipelineId = null;
+
+function openImportModal() {
+    const sel = document.getElementById('pipelineSelect');
+    _importPipelineId = sel?.value || null;
+    const pipelineName = sel?.options[sel.selectedIndex]?.text || '';
+
+    document.getElementById('importModalPipeline').textContent = pipelineName ? `Funil: ${pipelineName}` : '';
+    document.getElementById('btnDownloadTemplate').href = `${KANBAN_TMPL_URL}?pipeline_id=${_importPipelineId}`;
+    document.getElementById('importResult').style.display = 'none';
+    document.getElementById('importFileInput').value = '';
+
+    const btn = document.getElementById('btnImportSubmit');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-upload"></i> Importar';
+
+    document.getElementById('modalImport').style.display = 'flex';
+}
+
+function closeImportModal() {
+    document.getElementById('modalImport').style.display = 'none';
+}
+
+async function submitImport() {
+    const file = document.getElementById('importFileInput').files[0];
+    if (!file) { toastr.warning('Selecione um arquivo antes de importar.'); return; }
+    if (!_importPipelineId) { toastr.error('Nenhum funil selecionado.'); return; }
+
+    const btn = document.getElementById('btnImportSubmit');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Importando...';
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('pipeline_id', _importPipelineId);
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+
+    try {
+        const res  = await fetch(KANBAN_IMPORT_URL, { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (data.success) {
+            const skippedMsg = data.skipped > 0
+                ? ` <span style="color:#6b7280;">(${data.skipped} ignorados — sem nome)</span>`
+                : '';
+            document.getElementById('importResult').style.display = 'block';
+            document.getElementById('importResult').innerHTML =
+                `<div style="background:#dcfce7;border:1.5px solid #86efac;border-radius:9px;padding:12px;font-size:13px;color:#166534;">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <strong>${data.imported}</strong> lead${data.imported !== 1 ? 's' : ''} importado${data.imported !== 1 ? 's' : ''} com sucesso.${skippedMsg}
+                </div>`;
+
+            btn.innerHTML = '<i class="bi bi-check-lg"></i> Concluído';
+
+            // Recarrega o kanban após 2 s
+            setTimeout(() => window.location.reload(), 2000);
+        } else {
+            throw new Error('Erro no servidor');
+        }
+    } catch (e) {
+        toastr.error('Erro ao importar. Verifique o arquivo e tente novamente.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-upload"></i> Importar';
+    }
+}
+
+document.getElementById('modalImport')?.addEventListener('click', function(e) {
+    if (e.target === this) closeImportModal();
 });
 </script>
 @endpush

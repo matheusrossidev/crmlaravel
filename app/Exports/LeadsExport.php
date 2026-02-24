@@ -51,6 +51,10 @@ class LeadsExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSiz
             $query->whereJsonContains('tags', $this->filters['tag']);
         }
 
+        if (!empty($this->filters['pipeline_id'])) {
+            $query->where('pipeline_id', $this->filters['pipeline_id']);
+        }
+
         return $query;
     }
 

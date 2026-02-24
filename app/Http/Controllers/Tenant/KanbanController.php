@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Exports\KanbanTemplateExport;
+use App\Exports\LeadsExport;
 use App\Http\Controllers\Controller;
+use App\Imports\KanbanImport;
 use App\Models\Campaign;
 use App\Models\CustomFieldDefinition;
 use App\Models\Lead;
@@ -18,6 +21,8 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class KanbanController extends Controller
 {
@@ -164,6 +169,59 @@ class KanbanController extends Controller
         }
 
         return response()->json(['success' => true, 'lead_id' => $lead->id]);
+    }
+
+    // ── GET /crm/exportar?pipeline_id=X&[filters] ────────────────────────
+    public function export(Request $request): BinaryFileResponse
+    {
+        $pipelineId = (int) $request->get('pipeline_id', 0);
+
+        $filters = array_merge(
+            $request->only(['source', 'campaign_id', 'date_from', 'date_to', 'tag', 'stage_id']),
+            $pipelineId ? ['pipeline_id' => $pipelineId] : []
+        );
+
+        $filename = 'leads-kanban-' . now()->format('Y-m-d') . '.xlsx';
+
+        return Excel::download(new LeadsExport($filters), $filename);
+    }
+
+    // ── POST /crm/importar ────────────────────────────────────────────────
+    public function import(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file'        => 'required|file|mimes:xlsx,xls,csv|max:5120',
+            'pipeline_id' => 'required|integer|exists:pipelines,id',
+        ]);
+
+        $pipelineId = (int) $request->pipeline_id;
+        $pipeline   = Pipeline::with('stages')->findOrFail($pipelineId);
+
+        $stages       = $pipeline->stages->sortBy('position');
+        $firstStage   = $stages->first();
+        $stagesByName = $stages->mapWithKeys(
+            fn ($s) => [mb_strtolower($s->name) => $s->id]
+        );
+
+        $importer = new KanbanImport($pipelineId, $firstStage?->id ?? 0, $stagesByName);
+        Excel::import($importer, $request->file('file'));
+
+        return response()->json([
+            'success'  => true,
+            'imported' => $importer->getImported(),
+            'skipped'  => $importer->getSkipped(),
+        ]);
+    }
+
+    // ── GET /crm/template?pipeline_id=X ──────────────────────────────────
+    public function template(Request $request): BinaryFileResponse
+    {
+        $pipelineId = (int) $request->get('pipeline_id', 0);
+        $pipeline   = Pipeline::with('stages')->findOrFail($pipelineId);
+
+        $safeName = preg_replace('/[^a-z0-9]+/i', '-', $pipeline->name);
+
+        return Excel::download(new KanbanTemplateExport($pipeline), "template-{$safeName}.xlsx");
     }
 
     // ── GET /crm/poll?pipeline_id=X&since=TIMESTAMP ───────────────────────
