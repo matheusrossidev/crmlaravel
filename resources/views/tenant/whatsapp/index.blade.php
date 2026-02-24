@@ -923,6 +923,7 @@ $pageIcon = 'chat-dots';
                 data-channel="{{ $ch }}"
                 data-tags="{{ json_encode($conv->tags ?? []) }}"
                 data-assigned-user-id="{{ $conv->assigned_user_id ?? '' }}"
+                data-picture="{{ $conv->contact_picture_url }}"
                 onclick="openConversation({{ $conv->id }}, this)">
                 <div class="wa-conv-avatar-wrap">
                     <div class="wa-conv-avatar">
@@ -1279,6 +1280,15 @@ $pageIcon = 'chat-dots';
         el.dataset.raw = phone || '';
     }
 
+    function setAvatar(el, name, pictureUrl) {
+        const initial = (name || '?').charAt(0).toUpperCase();
+        if (pictureUrl) {
+            el.innerHTML = `<img src="${pictureUrl}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentElement.textContent='${initial}'">`;
+        } else {
+            el.textContent = initial;
+        }
+    }
+
     function convBaseUrl(id) {
         return activeConvChannel === 'instagram'
             ? `/chats/instagram-conversations/${id}`
@@ -1501,7 +1511,7 @@ $pageIcon = 'chat-dots';
 
         document.getElementById('chatContactName').textContent = name;
         setPhoneDisplay(document.getElementById('chatContactPhone'), phone);
-        document.getElementById('chatAvatar').textContent = name.charAt(0).toUpperCase();
+        setAvatar(document.getElementById('chatAvatar'), name, el.dataset.picture || '');
         document.getElementById('detailsName').textContent = name;
         setPhoneDisplay(document.getElementById('detailsPhone'), phone);
         // Reset tags e contact edit ao trocar conversa
@@ -1547,13 +1557,14 @@ $pageIcon = 'chat-dots';
             const freshPhone = data.phone;
             document.getElementById('chatContactName').textContent = freshName;
             setPhoneDisplay(document.getElementById('chatContactPhone'), freshPhone);
-            document.getElementById('chatAvatar').textContent = freshName.charAt(0).toUpperCase();
+            setAvatar(document.getElementById('chatAvatar'), freshName, data.contact_picture_url || '');
             document.getElementById('detailsName').textContent = freshName;
             setPhoneDisplay(document.getElementById('detailsPhone'), freshPhone);
             // Atualiza card na sidebar
             const cardEl = document.querySelector(`[data-conv-id="${convId}"]`);
             if (cardEl) {
                 cardEl.dataset.phone = freshPhone;
+                if (data.contact_picture_url) cardEl.dataset.picture = data.contact_picture_url;
                 const nameEl = cardEl.querySelector('.wa-conv-name');
                 if (nameEl) nameEl.textContent = freshName;
             }
@@ -2189,7 +2200,6 @@ $pageIcon = 'chat-dots';
         setPhoneDisplay(document.getElementById('detailsPhone'), c.phone);
         document.getElementById('chatContactName').textContent = cDisplayName;
         setPhoneDisplay(document.getElementById('chatContactPhone'), c.phone);
-        document.getElementById('chatAvatar').textContent = (cDisplayName || '?').charAt(0).toUpperCase();
 
         // Actualiza card na sidebar
         const el = document.querySelector(`[data-conv-id="${activeConvId}"]`);
@@ -2198,6 +2208,7 @@ $pageIcon = 'chat-dots';
             const nameEl = el.querySelector('.wa-conv-name');
             if (nameEl) nameEl.textContent = cDisplayName;
         }
+        setAvatar(document.getElementById('chatAvatar'), cDisplayName, el?.dataset.picture || '');
 
         toggleContactEdit();
     }
@@ -2307,6 +2318,9 @@ $pageIcon = 'chat-dots';
             document.getElementById('convList').prepend(el);
         }
 
+        // Update picture attribute whenever we have fresh data
+        if (conv.contact_picture) el.dataset.picture = conv.contact_picture;
+
         const preview = conv.last_message_type === 'image' ? '📷 Imagem' :
             conv.last_message_type === 'audio' ? '🎵 Áudio' :
             conv.last_message_type === 'note' ? '🔒 Nota' :
@@ -2314,6 +2328,10 @@ $pageIcon = 'chat-dots';
 
         const convDisplayName = conv.contact_name || (conv.is_group ? 'Grupo' : conv.phone);
         const initial = (convDisplayName || '?').charAt(0).toUpperCase();
+        const pictureUrl = conv.contact_picture || el.dataset.picture || '';
+        const avatarInner = pictureUrl
+            ? `<img src="${pictureUrl}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentElement.textContent='${initial}'">`
+            : initial;
         const timeAgo = conv.last_message_at ? timeRelative(conv.last_message_at) : '';
         const channel = el.dataset.channel || 'whatsapp';
         const chanIcon = channel === 'instagram' ? '<i class="bi bi-instagram"></i>' : '<i class="bi bi-whatsapp"></i>';
@@ -2328,7 +2346,7 @@ $pageIcon = 'chat-dots';
 
         el.innerHTML = `
         <div class="wa-conv-avatar-wrap">
-            <div class="wa-conv-avatar">${initial}</div>
+            <div class="wa-conv-avatar">${avatarInner}</div>
             <span class="wa-channel-icon ${channel}" title="${channel === 'instagram' ? 'Instagram' : 'WhatsApp'}">${chanIcon}</span>
         </div>
         <div class="wa-conv-info">

@@ -254,15 +254,16 @@ class WhatsappController extends Controller
         }
 
         return response()->json([
-            'messages'         => $messages,
-            'lead'             => $lead,
-            'assigned_user_id' => $conversation->assigned_user_id,
-            'ai_agent_id'      => $conversation->ai_agent_id,
-            'chatbot_flow_id'  => $conversation->chatbot_flow_id,
-            'tags'             => $conversation->tags ?? [],
-            'contact_name'     => $conversation->contact_name,
-            'phone'            => $conversation->phone,
-            'is_group'         => $conversation->is_group,
+            'messages'            => $messages,
+            'lead'                => $lead,
+            'assigned_user_id'    => $conversation->assigned_user_id,
+            'ai_agent_id'         => $conversation->ai_agent_id,
+            'chatbot_flow_id'     => $conversation->chatbot_flow_id,
+            'tags'                => $conversation->tags ?? [],
+            'contact_name'        => $conversation->contact_name,
+            'phone'               => $conversation->phone,
+            'is_group'            => $conversation->is_group,
+            'contact_picture_url' => $conversation->contact_picture_url,
         ]);
     }
 
