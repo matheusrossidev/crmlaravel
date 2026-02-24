@@ -78,6 +78,11 @@ class Lead extends Model
         return $this->hasMany(LostSale::class);
     }
 
+    public function leadNotes(): HasMany
+    {
+        return $this->hasMany(LeadNote::class)->orderByDesc('created_at');
+    }
+
     public function getCustomFieldsAttribute(): array
     {
         return $this->customFieldValues

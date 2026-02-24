@@ -130,10 +130,16 @@
                 <div id="tagSuggestions" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;"></div>
             </div>
 
-            {{-- Notas --}}
-            <div class="drawer-section-label" style="margin-top:18px;">Notas</div>
-            <div class="drawer-group">
-                <textarea id="fNotes" name="notes" placeholder="Observações sobre este lead..." class="drawer-input" rows="3" style="resize:vertical;"></textarea>
+            {{-- Notas (múltiplas — só em modo edição) --}}
+            <div id="notesSection" style="display:none;margin-top:18px;">
+                <div class="drawer-section-label">Notas</div>
+                <div id="notesList" style="margin-bottom:8px;"></div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <textarea id="fNoteInput" placeholder="Escreva uma nota..." class="drawer-input" rows="2" style="resize:vertical;min-height:58px;"></textarea>
+                    <button type="button" onclick="addNote()" class="drawer-add-note-btn">
+                        <i class="bi bi-plus-lg"></i> Adicionar Nota
+                    </button>
+                </div>
             </div>
 
             {{-- Campos Personalizados (dinâmico via JS) --}}
@@ -317,6 +323,39 @@
     }
     .tag-suggestion-chip:hover { opacity: .8; transform: scale(1.03); }
     .tag-suggestion-chip.active { opacity: .4; cursor: default; pointer-events: none; }
+
+    .note-item {
+        background: #f8f9fb;
+        border: 1px solid #e8eaf0;
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 7px;
+    }
+    .note-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 5px;
+    }
+    .note-author { font-size: 12px; font-weight: 700; color: #374151; }
+    .note-date   { font-size: 11px; color: #9ca3af; flex: 1; }
+    .note-del-btn {
+        background: none; border: none; padding: 0;
+        cursor: pointer; color: #d1d5db; font-size: 13px; line-height: 1;
+    }
+    .note-del-btn:hover { color: #ef4444; }
+    .note-body {
+        font-size: 13px; color: #4b5563;
+        white-space: pre-wrap; word-break: break-word; line-height: 1.5;
+    }
+    .drawer-add-note-btn {
+        display: flex; align-items: center; justify-content: center; gap: 5px;
+        padding: 8px 14px; background: #f0f4ff; color: #3B82F6;
+        border: 1.5px dashed #3B82F6; border-radius: 8px;
+        font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s;
+    }
+    .drawer-add-note-btn:hover { background: #dbeafe; }
+    .drawer-add-note-btn:disabled { opacity: .6; cursor: not-allowed; }
 </style>
 
 @php
@@ -349,10 +388,12 @@ $_configuredTagsJson = isset($_configuredTags)
 
 <script>
 // ── Dados de pipelines e campos personalizados injetados pelo servidor ────
-const PIPELINES_DATA = {!! json_encode($_pipelinesJson) !!};
-const CF_DEFS        = {!! json_encode($_cfDefsJson) !!};
-const CF_UPLOAD_URL  = '{{ route('leads.cf-upload') }}';
-const LEAD_TAGS      = {!! json_encode($_configuredTagsJson) !!};
+const PIPELINES_DATA   = {!! json_encode($_pipelinesJson) !!};
+const CF_DEFS          = {!! json_encode($_cfDefsJson) !!};
+const CF_UPLOAD_URL    = '{{ route('leads.cf-upload') }}';
+const LEAD_TAGS        = {!! json_encode($_configuredTagsJson) !!};
+const LEAD_NOTE_STORE  = '{{ route('leads.notes.store',   ['lead' => '__ID__']) }}';
+const LEAD_NOTE_DEL    = '{{ route('leads.notes.destroy', ['lead' => '__LEAD__', 'note' => '__NOTE__']) }}';
 
 // ── Tag input logic ───────────────────────────────────────────────────────
 let _currentTags = [];
@@ -501,7 +542,10 @@ function populateDrawer(res) {
     document.getElementById('fPhone').value  = lead.phone || '';
     document.getElementById('fEmail').value  = lead.email || '';
     document.getElementById('fValue').value  = lead.value || '';
-    document.getElementById('fNotes').value  = lead.notes || '';
+
+    // Notas múltiplas
+    renderNotes(lead.notes_list || []);
+    document.getElementById('notesSection').style.display = '';
 
     document.getElementById('fSource').value = lead.source || 'manual';
 
@@ -580,6 +624,80 @@ function loadCampaigns(selectedId) {
     // Para novo lead, o select fica vazio (OK para MVP)
 }
 
+// ── Notas múltiplas ───────────────────────────────────────────────────────
+function renderNotes(notes) {
+    const list = document.getElementById('notesList');
+    if (!notes.length) {
+        list.innerHTML = '<p style="font-size:12px;color:#9ca3af;text-align:center;padding:6px 0 10px;">Nenhuma nota ainda.</p>';
+        return;
+    }
+    list.innerHTML = notes.map(n => `
+        <div class="note-item" data-note-id="${n.id}">
+            <div class="note-header">
+                <span class="note-author">${escapeHtml(n.author)}</span>
+                <span class="note-date">${escapeHtml(n.created_at || '')}</span>
+                ${n.is_mine ? `<button type="button" class="note-del-btn" onclick="deleteNote(${n.id})" title="Excluir nota"><i class="bi bi-trash3"></i></button>` : ''}
+            </div>
+            <div class="note-body">${escapeHtml(n.body)}</div>
+        </div>
+    `).join('');
+}
+
+function addNote() {
+    const input = document.getElementById('fNoteInput');
+    const body  = input.value.trim();
+    if (!body) { input.focus(); return; }
+
+    const btn = document.querySelector('.drawer-add-note-btn');
+    btn.disabled = true;
+
+    $.ajax({
+        url:         LEAD_NOTE_STORE.replace('__ID__', _drawerLeadId),
+        method:      'POST',
+        contentType: 'application/json',
+        headers:     { 'Accept': 'application/json', 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+        data:        JSON.stringify({ body }),
+        success(res) {
+            if (!res.success) return;
+            input.value = '';
+            const list     = document.getElementById('notesList');
+            const emptyMsg = list.querySelector('p');
+            if (emptyMsg) emptyMsg.remove();
+            const html = `
+                <div class="note-item" data-note-id="${res.note.id}">
+                    <div class="note-header">
+                        <span class="note-author">${escapeHtml(res.note.author)}</span>
+                        <span class="note-date">${escapeHtml(res.note.created_at || '')}</span>
+                        <button type="button" class="note-del-btn" onclick="deleteNote(${res.note.id})" title="Excluir nota"><i class="bi bi-trash3"></i></button>
+                    </div>
+                    <div class="note-body">${escapeHtml(res.note.body)}</div>
+                </div>`;
+            list.insertAdjacentHTML('afterbegin', html);
+        },
+        error() { toastr.error('Erro ao adicionar nota.'); },
+        complete() { btn.disabled = false; },
+    });
+}
+
+function deleteNote(noteId) {
+    if (!confirm('Excluir esta nota?')) return;
+    $.ajax({
+        url:    LEAD_NOTE_DEL.replace('__LEAD__', _drawerLeadId).replace('__NOTE__', noteId),
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+        success(res) {
+            if (!res.success) return;
+            const el = document.querySelector(`.note-item[data-note-id="${noteId}"]`);
+            if (el) el.remove();
+            if (!document.querySelectorAll('.note-item').length) {
+                document.getElementById('notesList').innerHTML =
+                    '<p style="font-size:12px;color:#9ca3af;text-align:center;padding:6px 0 10px;">Nenhuma nota ainda.</p>';
+            }
+        },
+        error(xhr) { toastr.error(xhr.responseJSON?.message || 'Erro ao excluir nota.'); },
+    });
+}
+
 // ── Salvar lead ───────────────────────────────────────────────────────────
 document.getElementById('btnSaveLead')?.addEventListener('click', () => {
     clearDrawerErrors();
@@ -594,7 +712,6 @@ document.getElementById('btnSaveLead')?.addEventListener('click', () => {
         pipeline_id:   document.getElementById('fPipeline').value,
         stage_id:      document.getElementById('fStage').value,
         campaign_id:   document.getElementById('fCampaign').value || null,
-        notes:         document.getElementById('fNotes').value.trim() || null,
         custom_fields: collectCustomFields(),
     };
 
@@ -695,6 +812,9 @@ function resetDrawerForm() {
     document.getElementById('fCampaign').innerHTML = '<option value="">Nenhuma</option>';
     document.getElementById('eventsSection').style.display = 'none';
     document.getElementById('eventsList').innerHTML = '';
+    document.getElementById('notesSection').style.display = 'none';
+    document.getElementById('notesList').innerHTML = '';
+    document.getElementById('fNoteInput').value = '';
     document.getElementById('customFieldsSection').style.display = 'none';
     document.getElementById('customFieldsContainer').innerHTML = '';
     setTags([]);

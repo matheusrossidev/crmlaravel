@@ -76,6 +76,10 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::put('/contatos/{lead}', [LeadController::class, 'update'])->name('leads.update');
     Route::delete('/contatos/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
 
+    // Lead notes
+    Route::post('/contatos/{lead}/notas', [LeadController::class, 'addNote'])->name('leads.notes.store');
+    Route::delete('/contatos/{lead}/notas/{note}', [LeadController::class, 'deleteNote'])->name('leads.notes.destroy');
+
     // Relatórios
     Route::get('/relatorios', [ReportController::class, 'index'])->name('reports.index');
 

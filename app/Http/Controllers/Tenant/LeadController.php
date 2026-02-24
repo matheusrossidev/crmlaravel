@@ -12,6 +12,7 @@ use App\Models\CustomFieldDefinition;
 use App\Models\CustomFieldValue;
 use App\Models\Lead;
 use App\Models\LeadEvent;
+use App\Models\LeadNote;
 use App\Models\Pipeline;
 use App\Models\PipelineStage;
 use Illuminate\Http\JsonResponse;
@@ -115,7 +116,7 @@ class LeadController extends Controller
             return redirect()->route('leads.index', ['lead' => $lead->id]);
         }
 
-        $lead->load(['stage', 'pipeline', 'campaign', 'assignedTo', 'events.performedBy', 'customFieldValues.fieldDefinition']);
+        $lead->load(['stage', 'pipeline', 'campaign', 'assignedTo', 'events.performedBy', 'customFieldValues.fieldDefinition', 'leadNotes.author']);
 
         $pipelines = Pipeline::with('stages')->orderBy('sort_order')->get();
         $campaigns = Campaign::orderBy('name')->get(['id', 'name', 'platform']);
@@ -134,7 +135,7 @@ class LeadController extends Controller
             ]);
 
         return response()->json([
-            'lead'              => $this->formatLead($lead),
+            'lead'              => $this->formatLead($lead, withNotes: true),
             'custom_field_defs' => $customFieldDefs,
             'events'            => $lead->events->map(fn ($e) => [
                 'type'         => $e->event_type,
@@ -207,6 +208,48 @@ class LeadController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function addNote(Request $request, Lead $lead): JsonResponse
+    {
+        $request->validate(['body' => 'required|string|max:3000']);
+
+        $note = $lead->leadNotes()->create([
+            'body'       => $request->body,
+            'created_by' => auth()->id(),
+        ]);
+
+        $note->load('author');
+
+        LeadEvent::create([
+            'lead_id'      => $lead->id,
+            'event_type'   => 'note_added',
+            'description'  => 'Nota adicionada',
+            'performed_by' => auth()->id(),
+            'created_at'   => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'note'    => [
+                'id'         => $note->id,
+                'body'       => $note->body,
+                'author'     => $note->author?->name ?? 'Desconhecido',
+                'created_at' => $note->created_at?->format('d/m/Y H:i'),
+                'is_mine'    => true,
+            ],
+        ]);
+    }
+
+    public function deleteNote(Request $request, Lead $lead, LeadNote $note): JsonResponse
+    {
+        if ($note->lead_id !== $lead->id || $note->created_by !== auth()->id()) {
+            return response()->json(['success' => false, 'message' => 'Sem permissão.'], 403);
+        }
+
+        $note->delete();
+
+        return response()->json(['success' => true]);
+    }
+
     public function export(Request $request)
     {
         $filters = $request->only(['search', 'stage_id', 'source', 'date_from', 'date_to', 'tag']);
@@ -230,9 +273,9 @@ class LeadController extends Controller
         ]);
     }
 
-    private function formatLead(Lead $lead): array
+    private function formatLead(Lead $lead, bool $withNotes = false): array
     {
-        return [
+        $data = [
             'id'            => $lead->id,
             'name'          => $lead->name,
             'phone'         => $lead->phone,
@@ -251,6 +294,18 @@ class LeadController extends Controller
             'created_at'    => $lead->created_at?->format('d/m/Y H:i'),
             'custom_fields' => $lead->customFields,  // usa o accessor do Model
         ];
+
+        if ($withNotes) {
+            $data['notes_list'] = $lead->leadNotes()->with('author')->get()->map(fn (LeadNote $n) => [
+                'id'         => $n->id,
+                'body'       => $n->body,
+                'author'     => $n->author?->name ?? 'Desconhecido',
+                'created_at' => $n->created_at?->format('d/m/Y H:i'),
+                'is_mine'    => $n->created_by === auth()->id(),
+            ])->values()->all();
+        }
+
+        return $data;
     }
 
     public function uploadCustomFieldFile(Request $request): JsonResponse
