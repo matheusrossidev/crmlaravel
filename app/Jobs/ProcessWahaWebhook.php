@@ -239,6 +239,8 @@ class ProcessWahaWebhook implements ShouldQueue
         if ($isGroup) {
             $contactName = $msg['chatName']
                 ?? $msg['_data']['Info']['Subject']
+                ?? $msg['_data']['Info']['GroupName']
+                ?? $msg['_data']['Info']['Name']
                 ?? $msg['_data']['Info']['Chat']
                 ?? null;
             // Se for JID, descarta (não é nome legível)
@@ -250,7 +252,11 @@ class ProcessWahaWebhook implements ShouldQueue
                 try {
                     $wahaForGroup = new \App\Services\WahaService($instance->session_name);
                     $groupInfo    = $wahaForGroup->getGroupInfo($from);
-                    $contactName  = $groupInfo['subject'] ?? $groupInfo['name'] ?? null;
+                    $contactName  = $groupInfo['subject']
+                        ?? $groupInfo['name']
+                        ?? $groupInfo['groupName']
+                        ?? $groupInfo['title']
+                        ?? null;
                 } catch (\Throwable) {}
             }
             $messageSenderName = $msg['_data']['Info']['PushName']
@@ -661,6 +667,17 @@ class ProcessWahaWebhook implements ShouldQueue
                 if ($sender && ! str_ends_with($sender, '@lid')) {
                     return (string) preg_replace('/[:@].+$/', '', $sender);
                 }
+            }
+
+            // 3rd try: chatId — GOWS engine sets chatId to real phone@c.us even when from is @lid.
+            // Valid for individual chats only (not groups, not broadcasts).
+            $chatId = $msg['chatId'] ?? '';
+            if ($chatId
+                && ! str_ends_with($chatId, '@lid')
+                && ! str_contains($chatId, '@g.us')
+                && ! str_contains($chatId, '@broadcast')
+            ) {
+                return (string) preg_replace('/[:@].+$/', '', $chatId);
             }
 
             // Last resort: strip @lid and device suffix
