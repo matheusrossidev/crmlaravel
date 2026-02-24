@@ -588,7 +588,9 @@
         <select name="tag" class="filter-control" onchange="this.form.submit()">
             <option value="">Todas as tags</option>
             @foreach($availableTags as $t)
-            <option value="{{ $t }}" {{ request('tag') === $t ? 'selected' : '' }}>{{ $t }}</option>
+            <option value="{{ $t->name }}" {{ request('tag') === $t->name ? 'selected' : '' }}>
+                {{ $t->name }}
+            </option>
             @endforeach
         </select>
 

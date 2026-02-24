@@ -17,6 +17,7 @@ use App\Models\LostSaleReason;
 use App\Models\Sale;
 use App\Models\Pipeline;
 use App\Models\PipelineStage;
+use App\Models\WhatsappTag;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -109,18 +110,32 @@ class KanbanController extends Controller
         $lostReasons     = LostSaleReason::where('is_active', true)->orderBy('sort_order')->get();
         $customFieldDefs = CustomFieldDefinition::where('is_active', true)->orderBy('sort_order')->get();
 
-        // Tags únicas de todos os leads do funil atual (para o filtro)
-        $availableTags = collect();
+        // Tags disponíveis para o filtro:
+        //   1. Tags configuradas em Configurações → Tags (WhatsappTag, com cor)
+        //   2. + tags livres já usadas nos leads do funil (leads.tags JSON)
+        $configuredTags = WhatsappTag::orderBy('sort_order')->get(['name', 'color']);
+
+        $leadTagNames = collect();
         if ($pipeline) {
-            $availableTags = Lead::whereHas('stage', fn ($q) => $q->where('pipeline_id', $pipeline->id))
+            $leadTagNames = Lead::whereHas('stage', fn ($q) => $q->where('pipeline_id', $pipeline->id))
                 ->whereNotNull('tags')
                 ->pluck('tags')
                 ->flatten()
                 ->filter()
-                ->unique()
-                ->sort()
-                ->values();
+                ->unique();
         }
+
+        // Nomes das tags configuradas (para deduplicar)
+        $configuredNames = $configuredTags->pluck('name')->map(fn ($n) => mb_strtolower($n));
+
+        // Tags livres não presentes nas configuradas
+        $extraTags = $leadTagNames
+            ->filter(fn ($t) => !$configuredNames->contains(mb_strtolower($t)))
+            ->sort()
+            ->values()
+            ->map(fn ($name) => (object) ['name' => $name, 'color' => null]);
+
+        $availableTags = $configuredTags->concat($extraTags);
 
         return view('tenant.crm.kanban', compact('pipelines', 'pipeline', 'stages', 'campaigns', 'lostReasons', 'customFieldDefs', 'availableTags'));
     }
@@ -232,14 +247,16 @@ class KanbanController extends Controller
         $pipelineId = (int) $request->get('pipeline_id', 0);
         $pipeline   = Pipeline::with('stages')->findOrFail($pipelineId);
 
-        // Tags únicas de todos os leads do funil (para exibir na planilha)
-        $existingTags = Lead::whereHas('stage', fn ($q) => $q->where('pipeline_id', $pipelineId))
+        // Tags para a planilha: configuradas em Settings + livres dos leads
+        $configuredTagNames = WhatsappTag::orderBy('sort_order')->pluck('name');
+        $leadTagNames = Lead::whereHas('stage', fn ($q) => $q->where('pipeline_id', $pipelineId))
             ->whereNotNull('tags')
             ->pluck('tags')
             ->flatten()
             ->filter()
-            ->unique()
-            ->sort()
+            ->unique();
+        $existingTags = $configuredTagNames
+            ->concat($leadTagNames->filter(fn ($t) => !$configuredTagNames->map(fn ($n) => mb_strtolower($n))->contains(mb_strtolower($t))))
             ->values();
 
         $safeName = preg_replace('/[^a-z0-9]+/i', '-', $pipeline->name);
