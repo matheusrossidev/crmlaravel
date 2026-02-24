@@ -341,13 +341,21 @@
     </div>
 
     {{-- ── Row 1: Stat Cards ─────────────────────────────────────────── --}}
+    @php
+        $compact = function(float $val, string $prefix = '', string $suffix = ''): string {
+            if ($val >= 1_000_000) return $prefix . number_format($val / 1_000_000, 1, ',', '.') . 'M' . $suffix;
+            if ($val >= 1_000)     return $prefix . number_format($val / 1_000,     1, ',', '.') . 'K' . $suffix;
+            return $prefix . number_format($val, 0, ',', '.') . $suffix;
+        };
+    @endphp
+
     <div class="stats-grid">
 
         {{-- Leads este mês --}}
         <div class="stat-card blue">
             <div class="stat-icon blue"><i class="bi bi-people"></i></div>
             <div class="stat-label">Leads este mês</div>
-            <div class="stat-value">{{ number_format($leadsThisMonth, 0, ',', '.') }}</div>
+            <div class="stat-value" data-val="{{ $leadsThisMonth }}" data-prefix="" data-suffix="">{{ $compact((float)$leadsThisMonth) }}</div>
             <div class="stat-footer">
                 @if($leadsTrend !== null)
                     <span class="trend-badge {{ $leadsTrend >= 0 ? 'up' : 'down' }}">
@@ -365,7 +373,7 @@
         <div class="stat-card green">
             <div class="stat-icon green"><i class="bi bi-currency-dollar"></i></div>
             <div class="stat-label">Vendas este mês</div>
-            <div class="stat-value">R$ {{ number_format($totalSales, 0, ',', '.') }}</div>
+            <div class="stat-value" data-val="{{ $totalSales }}" data-prefix="R$ " data-suffix="">{{ $compact((float)$totalSales, 'R$ ') }}</div>
             <div class="stat-footer">
                 @if($salesTrend !== null)
                     <span class="trend-badge {{ $salesTrend >= 0 ? 'up' : 'down' }}">
@@ -383,7 +391,7 @@
         <div class="stat-card purple">
             <div class="stat-icon purple"><i class="bi bi-percent"></i></div>
             <div class="stat-label">Taxa de Conversão</div>
-            <div class="stat-value">{{ $conversionRate }}%</div>
+            <div class="stat-value" data-val="{{ $conversionRate }}" data-prefix="" data-suffix="%" data-decimals="1">{{ $conversionRate }}%</div>
             <div class="stat-footer">
                 <span class="stat-sub">leads → vendas (total)</span>
             </div>
@@ -393,7 +401,7 @@
         <div class="stat-card orange">
             <div class="stat-icon orange"><i class="bi bi-graph-up"></i></div>
             <div class="stat-label">Ticket Médio</div>
-            <div class="stat-value">R$ {{ number_format($ticketMedio, 0, ',', '.') }}</div>
+            <div class="stat-value" data-val="{{ $ticketMedio }}" data-prefix="R$ " data-suffix="">{{ $compact((float)$ticketMedio, 'R$ ') }}</div>
             <div class="stat-footer">
                 <span class="stat-sub">{{ $leadsGanhos }} negócio{{ $leadsGanhos !== 1 ? 's' : '' }} fechado{{ $leadsGanhos !== 1 ? 's' : '' }} este mês</span>
             </div>
@@ -403,7 +411,7 @@
         <div class="stat-card red">
             <div class="stat-icon red"><i class="bi bi-x-circle"></i></div>
             <div class="stat-label">Leads Perdidos</div>
-            <div class="stat-value">{{ number_format($leadsPerdidos, 0, ',', '.') }}</div>
+            <div class="stat-value" data-val="{{ $leadsPerdidos }}" data-prefix="" data-suffix="">{{ $compact((float)$leadsPerdidos) }}</div>
             <div class="stat-footer">
                 <span class="stat-sub">perdidos este mês</span>
             </div>
@@ -693,5 +701,38 @@
         }
     });
 }());
+
+// ── Stat Cards: compact format + count-up animation ────────────────────────
+function statCompact(val, prefix, suffix, decimals) {
+    const dec = parseInt(decimals || 0);
+    let display;
+    if (val >= 1_000_000) {
+        display = (val / 1_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'M';
+    } else if (val >= 1_000) {
+        display = (val / 1_000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'K';
+    } else {
+        display = val.toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    }
+    return (prefix || '') + display + (suffix || '');
+}
+
+document.querySelectorAll('.stat-value[data-val]').forEach(el => {
+    const target   = parseFloat(el.dataset.val   || 0);
+    const prefix   = el.dataset.prefix || '';
+    const suffix   = el.dataset.suffix || '';
+    const decimals = el.dataset.decimals || '0';
+    const duration = 1100;
+    const startTs  = performance.now();
+
+    function step(now) {
+        const progress = Math.min((now - startTs) / duration, 1);
+        const eased    = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        el.textContent = statCompact(target * eased, prefix, suffix, decimals);
+        if (progress < 1) requestAnimationFrame(step);
+        else el.textContent = statCompact(target, prefix, suffix, decimals);
+    }
+    el.textContent = statCompact(0, prefix, suffix, decimals);
+    requestAnimationFrame(step);
+});
 </script>
 @endpush
