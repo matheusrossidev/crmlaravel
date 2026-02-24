@@ -1243,6 +1243,29 @@ $pageIcon = 'chat-dots';
     let activeConvStatus = 'open';
     let activeLeadId = null; // lead vinculado à conversa ativa
 
+    // ── Formatação de telefone brasileiro ─────────────────────────────────────
+    function formatBrPhone(phone) {
+        let d = (phone || '').replace(/\D/g, '');
+        if (d.startsWith('55') && d.length >= 12) d = d.slice(2);
+        if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+        if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+        return phone || '';
+    }
+
+    function phoneLink(phone) {
+        if (!phone) return '';
+        const digits = phone.replace(/\D/g, '');
+        const waNum = digits.startsWith('55') ? digits : '55' + digits;
+        const fmt = formatBrPhone(phone);
+        return `<a href="https://wa.me/${waNum}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">${fmt}</a>`;
+    }
+
+    // Define innerHTML formatado + salva raw em data-raw (para o campo de edição)
+    function setPhoneDisplay(el, phone) {
+        el.innerHTML = phone ? phoneLink(phone) : '';
+        el.dataset.raw = phone || '';
+    }
+
     function convBaseUrl(id) {
         return activeConvChannel === 'instagram'
             ? `/chats/instagram-conversations/${id}`
@@ -1464,10 +1487,10 @@ $pageIcon = 'chat-dots';
         document.getElementById('noConvPlaceholder').style.display = 'none';
 
         document.getElementById('chatContactName').textContent = name;
-        document.getElementById('chatContactPhone').textContent = phone;
+        setPhoneDisplay(document.getElementById('chatContactPhone'), phone);
         document.getElementById('chatAvatar').textContent = name.charAt(0).toUpperCase();
         document.getElementById('detailsName').textContent = name;
-        document.getElementById('detailsPhone').textContent = phone;
+        setPhoneDisplay(document.getElementById('detailsPhone'), phone);
         // Reset tags e contact edit ao trocar conversa
         const tagsRaw = el.dataset.tags ? JSON.parse(el.dataset.tags) : [];
         renderTags(tagsRaw);
@@ -1510,10 +1533,10 @@ $pageIcon = 'chat-dots';
             const freshName = data.contact_name || (data.is_group ? 'Grupo' : data.phone);
             const freshPhone = data.phone;
             document.getElementById('chatContactName').textContent = freshName;
-            document.getElementById('chatContactPhone').textContent = freshPhone;
+            setPhoneDisplay(document.getElementById('chatContactPhone'), freshPhone);
             document.getElementById('chatAvatar').textContent = freshName.charAt(0).toUpperCase();
             document.getElementById('detailsName').textContent = freshName;
-            document.getElementById('detailsPhone').textContent = freshPhone;
+            setPhoneDisplay(document.getElementById('detailsPhone'), freshPhone);
             // Atualiza card na sidebar
             const cardEl = document.querySelector(`[data-conv-id="${convId}"]`);
             if (cardEl) {
@@ -2113,7 +2136,7 @@ $pageIcon = 'chat-dots';
             edit.style.display = 'none';
         } else {
             document.getElementById('editContactName').value = document.getElementById('detailsName').textContent;
-            document.getElementById('editContactPhone').value = document.getElementById('detailsPhone').textContent;
+            document.getElementById('editContactPhone').value = document.getElementById('detailsPhone').dataset.raw || '';
             view.style.display = 'none';
             edit.style.display = '';
             document.getElementById('editContactName').focus();
@@ -2145,9 +2168,9 @@ $pageIcon = 'chat-dots';
         const cDisplayName = c.contact_name || (c.is_group ? 'Grupo' : c.phone);
         // Actualiza header e detalhes
         document.getElementById('detailsName').textContent = cDisplayName;
-        document.getElementById('detailsPhone').textContent = c.phone;
+        setPhoneDisplay(document.getElementById('detailsPhone'), c.phone);
         document.getElementById('chatContactName').textContent = cDisplayName;
-        document.getElementById('chatContactPhone').textContent = c.phone;
+        setPhoneDisplay(document.getElementById('chatContactPhone'), c.phone);
         document.getElementById('chatAvatar').textContent = (cDisplayName || '?').charAt(0).toUpperCase();
 
         // Actualiza card na sidebar

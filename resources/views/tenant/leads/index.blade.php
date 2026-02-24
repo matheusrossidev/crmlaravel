@@ -215,7 +215,16 @@
                         <small>{{ $lead->pipeline->name }}</small>
                         @endif
                     </td>
-                    <td>{{ $lead->phone ?? '—' }}</td>
+                    <td>
+                        @if($lead->phone)
+                        <a href="{{ whatsappUrl($lead->phone) }}" target="_blank" rel="noopener"
+                           style="color:inherit;text-decoration:none;white-space:nowrap;">
+                            {{ formatBrPhone($lead->phone) }}
+                        </a>
+                        @else
+                        —
+                        @endif
+                    </td>
                     <td>{{ $lead->email ?? '—' }}</td>
                     <td>
                         @if($lead->stage)
@@ -285,6 +294,21 @@
 
 @push('scripts')
 <script>
+function formatBrPhone(phone) {
+    let d = (phone || '').replace(/\D/g, '');
+    if (d.startsWith('55') && d.length >= 12) d = d.slice(2);
+    if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+    if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+    return phone || '';
+}
+
+function phoneCell(phone) {
+    if (!phone) return '—';
+    const digits = phone.replace(/\D/g, '');
+    const waNum  = digits.startsWith('55') ? digits : '55' + digits;
+    return `<a href="https://wa.me/${waNum}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;white-space:nowrap;">${escapeHtml(formatBrPhone(phone))}</a>`;
+}
+
 const LEAD_SHOW  = @json(route('leads.show',   ['lead' => '__ID__']));
 const LEAD_STORE = @json(route('leads.store'));
 const LEAD_UPD   = @json(route('leads.update', ['lead' => '__ID__']));
@@ -332,7 +356,7 @@ window.onLeadSaved = function(lead, isNew) {
         tbody.insertAdjacentHTML('afterbegin', `
             <tr class="lead-row" data-lead-id="${lead.id}">
                 <td class="lead-name-cell">${escapeHtml(lead.name)}</td>
-                <td>${escapeHtml(lead.phone || '—')}</td>
+                <td>${phoneCell(lead.phone)}</td>
                 <td>${escapeHtml(lead.email || '—')}</td>
                 <td>${stageHtml}</td>
                 <td class="value-cell">${escapeHtml(valueHtml)}</td>
@@ -351,7 +375,7 @@ window.onLeadSaved = function(lead, isNew) {
                    </span>`
                 : '—';
             row.querySelector('.lead-name-cell').textContent = lead.name;
-            row.cells[1].textContent = lead.phone || '—';
+            row.cells[1].innerHTML = phoneCell(lead.phone);
             row.cells[2].textContent = lead.email || '—';
             row.cells[3].innerHTML = stageHtml;
             row.cells[4].textContent = lead.value_fmt || '—';

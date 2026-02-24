@@ -568,7 +568,10 @@
                     @if($lead->phone)
                     <div class="card-meta-row">
                         <i class="bi bi-telephone"></i>
-                        {{ $lead->phone }}
+                        <a href="{{ whatsappUrl($lead->phone) }}" target="_blank" rel="noopener"
+                           style="color:inherit;text-decoration:none;" onclick="event.stopPropagation()">
+                            {{ formatBrPhone($lead->phone) }}
+                        </a>
                     </div>
                     @endif
                     @if($lead->email)
@@ -738,6 +741,14 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
+function formatBrPhone(phone) {
+    let d = (phone || '').replace(/\D/g, '');
+    if (d.startsWith('55') && d.length >= 12) d = d.slice(2);
+    if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+    if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+    return phone || '';
+}
+
 const STAGE_URL      = @json(route('crm.lead.stage', ['lead' => '__ID__']));
 const LEAD_SHOW      = @json(route('leads.show',   ['lead' => '__ID__']));
 const LEAD_STORE     = @json(route('leads.store'));
@@ -954,7 +965,11 @@ function renderSourceBadge(source, cls = 'source-badge') {
 }
 
 function buildCard(lead) {
-    const phone    = lead.phone    ? `<div class="card-meta-row"><i class="bi bi-telephone"></i>${escapeHtml(lead.phone)}</div>` : '';
+    const phone    = lead.phone    ? (() => {
+        const digits = lead.phone.replace(/\D/g, '');
+        const waNum  = digits.startsWith('55') ? digits : '55' + digits;
+        return `<div class="card-meta-row"><i class="bi bi-telephone"></i><a href="https://wa.me/${waNum}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;" onclick="event.stopPropagation()">${escapeHtml(formatBrPhone(lead.phone))}</a></div>`;
+    })() : '';
     const email    = lead.email    ? `<div class="card-meta-row"><i class="bi bi-envelope"></i>${escapeHtml(lead.email)}</div>` : '';
     const campaign = lead.campaign ? `<div class="card-meta-row"><i class="bi bi-megaphone"></i>${escapeHtml(lead.campaign.name.substring(0,24))}</div>` : '';
     const tags     = (lead.tags && lead.tags.length)
