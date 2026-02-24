@@ -651,45 +651,42 @@ class ProcessWahaWebhook implements ShouldQueue
 
     private function normalizePhone(string $from, array $msg = [], bool $isFromMe = false): string
     {
-        // WAHA GOWS engine identifies some contacts via LID (14-digit numeric ID) instead
-        // of their real phone. When Chat/Sender are LID, SenderAlt holds the real JID:
-        //   from:           "83296646115442@lid"
-        //   _data.Info.Chat:      "83296646115442@lid"   ← LID
-        //   _data.Info.SenderAlt: "556181749938@s.whatsapp.net" ← REAL phone here
+        // WAHA GOWS engine sometimes identifies contacts via LID (internal WhatsApp numeric ID)
+        // instead of their real phone number. When this happens, Chat/Sender arrive as
+        // "83296646115442@lid" but SenderAlt contains the real JID:
+        //   _data.Info.Chat:      "83296646115442@lid"          ← LID (internal ID)
+        //   _data.Info.SenderAlt: "556181749938@s.whatsapp.net" ← real phone
         //
-        // Strategy: check candidates in order, return the first valid Brazilian number
-        // (starts with "55", 12 or 13 digits = country code + DDD + 8-9 digit number).
+        // Discriminator: any JID ending in "@lid" is an internal WhatsApp ID, not a phone.
+        // Any JID ending in "@c.us", "@s.whatsapp.net", etc. is a real phone number.
+        //
+        // Check candidates in order; skip LIDs and group/broadcast JIDs; return the first
+        // real phone found. Works for any country (not restricted to Brazilian numbers).
         $info = $msg['_data']['Info'] ?? [];
 
         $candidates = [
-            $info['Chat']      ?? '',   // conversation JID — always the contact in 1:1
-            $info['SenderAlt'] ?? '',   // alternate ID — real phone when Chat/Sender are LID
-            $from,                      // pre-processed in handleInbound() (recipient for fromMe)
+            $info['Chat']      ?? '',   // conversation JID — contact in 1:1 chats
+            $info['SenderAlt'] ?? '',   // alternate ID — real phone when Chat is LID
+            $from,                      // pre-processed in handleInbound() for fromMe messages
         ];
 
         foreach ($candidates as $jid) {
             if (! $jid
                 || str_contains($jid, '@g.us')
                 || str_contains($jid, '@broadcast')
+                || str_ends_with($jid, '@lid')   // LID = internal WhatsApp ID, skip
             ) {
                 continue;
             }
 
-            // Extract digits only (strip @server and :device suffixes)
+            // Strip @server-suffix and optional :device-id — keep only the phone digits
             $digits = (string) preg_replace('/[:@].+$/u', '', $jid);
-
-            // Valid Brazilian phone: starts with 55, 12-13 digits total
-            // (55 + 2-digit area code + 8 or 9-digit number)
-            if ($digits
-                && str_starts_with($digits, '55')
-                && strlen($digits) >= 12
-                && strlen($digits) <= 13
-            ) {
+            if ($digits) {
                 return $digits;
             }
         }
 
-        // No valid Brazilian number found — return raw digits from 'from' as-is
+        // All candidates were LIDs — last resort: strip suffix from 'from' as-is
         return (string) preg_replace('/[:@].+$/u', '', $from) ?: $from;
     }
 
