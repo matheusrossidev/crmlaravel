@@ -8,6 +8,7 @@ use App\Exports\KanbanTemplateExport;
 use App\Exports\LeadsExport;
 use App\Http\Controllers\Controller;
 use App\Imports\KanbanImport;
+use App\Imports\KanbanPreviewImport;
 use App\Models\Campaign;
 use App\Models\CustomFieldDefinition;
 use App\Models\Lead;
@@ -214,9 +215,56 @@ class KanbanController extends Controller
         return Excel::download(new LeadsExport($filters), $filename);
     }
 
+    // ── POST /crm/importar/preview ────────────────────────────────────────
+    public function preview(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file'        => 'required|file|mimes:xlsx,xls,csv|max:5120',
+            'pipeline_id' => 'required|integer|exists:pipelines,id',
+        ]);
+
+        $pipelineId   = (int) $request->pipeline_id;
+        $pipeline     = Pipeline::with('stages')->findOrFail($pipelineId);
+        $stagesByName = $pipeline->stages->sortBy('position')
+            ->mapWithKeys(fn ($s) => [mb_strtolower($s->name) => $s->id]);
+
+        $importer = new KanbanPreviewImport($stagesByName);
+        Excel::import($importer, $request->file('file'));
+        $rows = $importer->getRows();
+
+        // Salvar arquivo temporário (expira em 30 min)
+        $tempDir = storage_path('app/private/imports');
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+        $filename = uniqid('import_', true) . '.' . $request->file('file')->getClientOriginalExtension();
+        $request->file('file')->move($tempDir, $filename);
+
+        $token = encrypt([
+            'path'        => $tempDir . DIRECTORY_SEPARATOR . $filename,
+            'pipeline_id' => $pipelineId,
+            'tenant_id'   => auth()->user()->tenant_id,
+            'expires_at'  => now()->addMinutes(30)->timestamp,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'rows'    => $rows,
+            'total'   => count($rows),
+            'skipped' => count(array_filter($rows, fn ($r) => $r['will_skip'])),
+            'token'   => $token,
+        ]);
+    }
+
     // ── POST /crm/importar ────────────────────────────────────────────────
     public function import(Request $request): JsonResponse
     {
+        // Branch A: confirmar preview (token sem file)
+        if ($request->filled('token') && !$request->hasFile('file')) {
+            return $this->importFromToken($request);
+        }
+
+        // Branch B: upload direto (legado / inalterado)
         $request->validate([
             'file'        => 'required|file|mimes:xlsx,xls,csv|max:5120',
             'pipeline_id' => 'required|integer|exists:pipelines,id',
@@ -231,8 +279,46 @@ class KanbanController extends Controller
             fn ($s) => [mb_strtolower($s->name) => $s->id]
         );
 
-        $importer = new KanbanImport($pipelineId, $firstStage?->id ?? 0, $stagesByName);
+        $importer = new KanbanImport($pipelineId, $firstStage?->id ?? 0, $stagesByName, $pipeline);
         Excel::import($importer, $request->file('file'));
+
+        return response()->json([
+            'success'  => true,
+            'imported' => $importer->getImported(),
+            'skipped'  => $importer->getSkipped(),
+        ]);
+    }
+
+    private function importFromToken(Request $request): JsonResponse
+    {
+        $request->validate([
+            'token'       => 'required|string',
+            'pipeline_id' => 'required|integer|exists:pipelines,id',
+        ]);
+
+        try {
+            $payload = decrypt($request->token);
+        } catch (\Exception) {
+            return response()->json(['success' => false, 'message' => 'Token inválido.'], 422);
+        }
+
+        if (
+            ($payload['tenant_id'] ?? null) !== auth()->user()->tenant_id ||
+            ($payload['pipeline_id'] ?? null) !== (int) $request->pipeline_id ||
+            ($payload['expires_at'] ?? 0) < now()->timestamp ||
+            !file_exists($payload['path'] ?? '')
+        ) {
+            return response()->json(['success' => false, 'message' => 'Token expirado ou inválido.'], 422);
+        }
+
+        $pipelineId   = (int) $request->pipeline_id;
+        $pipeline     = Pipeline::with('stages')->findOrFail($pipelineId);
+        $stages       = $pipeline->stages->sortBy('position');
+        $stagesByName = $stages->mapWithKeys(fn ($s) => [mb_strtolower($s->name) => $s->id]);
+
+        $importer = new KanbanImport($pipelineId, $stages->first()?->id ?? 0, $stagesByName, $pipeline);
+        Excel::import($importer, $payload['path']);
+        @unlink($payload['path']);
 
         return response()->json([
             'success'  => true,

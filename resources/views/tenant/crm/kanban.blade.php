@@ -611,7 +611,8 @@
 
     @if($stages->count())
     @php
-        $cfOnCard = $customFieldDefs->where('show_on_card', true);
+        $cfOnCard    = $customFieldDefs->where('show_on_card', true);
+        $tagColorMap = $availableTags->whereNotNull('color')->mapWithKeys(fn($t) => [$t->name => $t->color])->all();
     @endphp
     @foreach($stages as $stage)
     <div class="kanban-col" data-stage-id="{{ $stage['id'] }}">
@@ -666,7 +667,11 @@
                 @if(!empty($lead->tags) && count($lead->tags))
                 <div class="card-tags">
                     @foreach($lead->tags as $tag)
-                    <span class="card-tag-badge">{{ $tag }}</span>
+                    <span class="card-tag-badge"
+                        @if(isset($tagColorMap[$tag]))
+                        style="background:{{ $tagColorMap[$tag] }}20;color:{{ $tagColorMap[$tag] }};border:1px solid {{ $tagColorMap[$tag] }}40;"
+                        @endif
+                    >{{ $tag }}</span>
                     @endforeach
                 </div>
                 @endif
@@ -844,49 +849,91 @@
 
 {{-- Modal: Importar Leads ────────────────────────────────────────────────── --}}
 <div id="modalImport" style="display:none;position:fixed;inset:0;z-index:1060;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:16px;width:480px;max-width:95vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.18);">
+    <div id="importModalBox" style="background:#fff;border-radius:16px;width:720px;max-width:96vw;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.18);display:flex;flex-direction:column;max-height:90vh;">
 
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
-            <div>
-                <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0 0 3px;">Importar Leads</h3>
-                <p id="importModalPipeline" style="font-size:12px;color:#9ca3af;margin:0;"></p>
+        {{-- ── TELA A: Upload ─────────────────────────────────────────────── --}}
+        <div id="importScreenUpload">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
+                <div>
+                    <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0 0 3px;">Importar Leads</h3>
+                    <p id="importModalPipeline" style="font-size:12px;color:#9ca3af;margin:0;"></p>
+                </div>
+                <button onclick="closeImportModal()" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;line-height:1;padding:0;"><i class="bi bi-x-lg"></i></button>
             </div>
-            <button onclick="closeImportModal()" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;line-height:1;padding:0;"><i class="bi bi-x-lg"></i></button>
-        </div>
 
-        {{-- Download template --}}
-        <div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:18px;display:flex;align-items:center;gap:12px;">
-            <i class="bi bi-file-earmark-spreadsheet" style="font-size:24px;color:#0ea5e9;flex-shrink:0;"></i>
-            <div style="flex:1;min-width:0;">
-                <p style="font-size:12.5px;font-weight:600;color:#0369a1;margin:0 0 2px;">Planilha modelo</p>
-                <p style="font-size:11.5px;color:#6b7280;margin:0;">Inclui as etapas do funil atual como referência</p>
+            {{-- Download template --}}
+            <div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:18px;display:flex;align-items:center;gap:12px;">
+                <i class="bi bi-file-earmark-spreadsheet" style="font-size:24px;color:#0ea5e9;flex-shrink:0;"></i>
+                <div style="flex:1;min-width:0;">
+                    <p style="font-size:12.5px;font-weight:600;color:#0369a1;margin:0 0 2px;">Planilha modelo</p>
+                    <p style="font-size:11.5px;color:#6b7280;margin:0;">Inclui as etapas do funil atual como referência</p>
+                </div>
+                <a id="btnDownloadTemplate" href="#" class="btn-primary-sm" style="font-size:12px;padding:6px 14px;white-space:nowrap;text-decoration:none;">
+                    <i class="bi bi-download"></i> Baixar
+                </a>
             </div>
-            <a id="btnDownloadTemplate" href="#" class="btn-primary-sm" style="font-size:12px;padding:6px 14px;white-space:nowrap;text-decoration:none;">
-                <i class="bi bi-download"></i> Baixar
-            </a>
+
+            {{-- File upload --}}
+            <div style="margin-bottom:20px;">
+                <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Selecionar arquivo</label>
+                <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv"
+                       style="width:100%;padding:10px;border:1.5px dashed #d1d5db;border-radius:9px;font-size:13px;box-sizing:border-box;cursor:pointer;background:#fafafa;font-family:inherit;">
+                <p style="font-size:11px;color:#9ca3af;margin:5px 0 0;">Formatos: .xlsx, .xls, .csv — máximo 5 MB</p>
+            </div>
+
+            {{-- Actions --}}
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button onclick="closeImportModal()"
+                        style="padding:9px 20px;border-radius:9px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;">
+                    Cancelar
+                </button>
+                <button id="btnImportPreview" onclick="submitPreview()"
+                        style="padding:9px 24px;border-radius:9px;border:none;background:#3B82F6;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
+                    <i class="bi bi-eye"></i> Pré-visualizar
+                </button>
+            </div>
         </div>
 
-        {{-- File upload --}}
-        <div style="margin-bottom:16px;">
-            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Selecionar arquivo</label>
-            <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv"
-                   style="width:100%;padding:10px;border:1.5px dashed #d1d5db;border-radius:9px;font-size:13px;box-sizing:border-box;cursor:pointer;background:#fafafa;font-family:inherit;">
-            <p style="font-size:11px;color:#9ca3af;margin:5px 0 0;">Formatos: .xlsx, .xls, .csv — máximo 5 MB</p>
-        </div>
+        {{-- ── TELA B: Preview ─────────────────────────────────────────────── --}}
+        <div id="importScreenPreview" style="display:none;flex-direction:column;flex:1;min-height:0;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;flex-shrink:0;">
+                <div>
+                    <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0 0 3px;">Pré-visualização</h3>
+                    <p id="importPreviewSummary" style="font-size:12px;color:#6b7280;margin:0;"></p>
+                </div>
+                <button onclick="closeImportModal()" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;line-height:1;padding:0;"><i class="bi bi-x-lg"></i></button>
+            </div>
 
-        {{-- Result --}}
-        <div id="importResult" style="display:none;margin-bottom:16px;"></div>
+            {{-- Tabela scrollável --}}
+            <div style="flex:1;overflow-y:auto;min-height:0;max-height:420px;border:1.5px solid #e8eaf0;border-radius:10px;">
+                <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+                    <thead style="position:sticky;top:0;background:#f8fafc;z-index:1;">
+                        <tr>
+                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">Nome</th>
+                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">Telefone</th>
+                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">E-mail</th>
+                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">Valor</th>
+                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">Etapa</th>
+                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">Tags</th>
+                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">Origem</th>
+                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">Criado em</th>
+                        </tr>
+                    </thead>
+                    <tbody id="importPreviewTbody"></tbody>
+                </table>
+            </div>
 
-        {{-- Actions --}}
-        <div style="display:flex;gap:10px;justify-content:flex-end;">
-            <button onclick="closeImportModal()"
-                    style="padding:9px 20px;border-radius:9px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;">
-                Cancelar
-            </button>
-            <button id="btnImportSubmit" onclick="submitImport()"
-                    style="padding:9px 24px;border-radius:9px;border:none;background:#3B82F6;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
-                <i class="bi bi-upload"></i> Importar
-            </button>
+            {{-- Actions --}}
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-shrink:0;">
+                <button onclick="importGoBack()"
+                        style="padding:9px 20px;border-radius:9px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </button>
+                <button id="btnImportConfirm" onclick="confirmImport()"
+                        style="padding:9px 24px;border-radius:9px;border:none;background:#10B981;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
+                    <i class="bi bi-check-circle"></i> Confirmar importação
+                </button>
+            </div>
         </div>
 
     </div>
@@ -912,6 +959,7 @@ const LEAD_UPD       = @json(route('leads.update', ['lead' => '__ID__']));
 const LEAD_DEL       = @json(route('leads.destroy',['lead' => '__ID__']));
 const KANBAN_POLL    = @json(route('crm.poll'));
 const CF_ON_CARD     = @json($customFieldDefs->where('show_on_card', true)->values()->map(fn($d) => ['name' => $d->name, 'label' => $d->label])->toArray());
+const TAG_COLORS     = {!! json_encode($tagColorMap) !!};
 
 // ── Pipeline select ────────────────────────────────────────────────────────
 document.getElementById('pipelineSelect')?.addEventListener('change', function() {
@@ -1131,7 +1179,11 @@ function buildCard(lead) {
     const valueRow = lead.value_fmt ? `<div class="card-value-row">${escapeHtml(lead.value_fmt)}</div>` : '';
 
     const tags = (lead.tags && lead.tags.length)
-        ? `<div class="card-tags">${lead.tags.map(t => `<span class="card-tag-badge">${escapeHtml(t)}</span>`).join('')}</div>`
+        ? `<div class="card-tags">${lead.tags.map(t => {
+            const c = TAG_COLORS[t];
+            const s = c ? ` style="background:${c}20;color:${c};border:1px solid ${c}40;"` : '';
+            return `<span class="card-tag-badge"${s}>${escapeHtml(t)}</span>`;
+          }).join('')}</div>`
         : '';
 
     // Custom fields on card — normaliza formato flat (polling) ou nested (drawer)
@@ -1390,56 +1442,68 @@ document.getElementById('modalCreatePipeline')?.addEventListener('click', functi
 });
 
 // ── Exportar / Importar Leads ──────────────────────────────────────────────
-const KANBAN_EXPORT_URL = @json(route('crm.export'));
-const KANBAN_IMPORT_URL = @json(route('crm.import'));
-const KANBAN_TMPL_URL   = @json(route('crm.template'));
+const KANBAN_EXPORT_URL  = @json(route('crm.export'));
+const KANBAN_IMPORT_URL  = @json(route('crm.import'));
+const KANBAN_PREVIEW_URL = @json(route('crm.import.preview'));
+const KANBAN_TMPL_URL    = @json(route('crm.template'));
 
 function exportarLeads() {
     const pipelineId = document.getElementById('pipelineSelect')?.value;
     const params = new URLSearchParams();
     if (pipelineId) params.set('pipeline_id', pipelineId);
-
-    // Repassa filtros ativos da URL atual
     const urlParams = new URLSearchParams(window.location.search);
     ['source', 'campaign_id', 'date_from', 'date_to', 'tag'].forEach(k => {
         const v = urlParams.get(k);
         if (v) params.set(k, v);
     });
-
     window.location.href = `${KANBAN_EXPORT_URL}?${params.toString()}`;
 }
 
 let _importPipelineId = null;
+let _importToken      = null;
 
 function openImportModal() {
     const sel = document.getElementById('pipelineSelect');
     _importPipelineId = sel?.value || null;
+    _importToken      = null;
     const pipelineName = sel?.options[sel.selectedIndex]?.text || '';
 
     document.getElementById('importModalPipeline').textContent = pipelineName ? `Funil: ${pipelineName}` : '';
     document.getElementById('btnDownloadTemplate').href = `${KANBAN_TMPL_URL}?pipeline_id=${_importPipelineId}`;
-    document.getElementById('importResult').style.display = 'none';
     document.getElementById('importFileInput').value = '';
 
-    const btn = document.getElementById('btnImportSubmit');
+    const btn = document.getElementById('btnImportPreview');
     btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-upload"></i> Importar';
+    btn.innerHTML = '<i class="bi bi-eye"></i> Pré-visualizar';
+
+    document.getElementById('importScreenUpload').style.display  = '';
+    document.getElementById('importScreenPreview').style.display = 'none';
 
     document.getElementById('modalImport').style.display = 'flex';
 }
 
 function closeImportModal() {
     document.getElementById('modalImport').style.display = 'none';
+    _importToken = null;
 }
 
-async function submitImport() {
+function importGoBack() {
+    _importToken = null;
+    document.getElementById('importScreenPreview').style.display = 'none';
+    document.getElementById('importScreenUpload').style.display  = '';
+    const btn = document.getElementById('btnImportPreview');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-eye"></i> Pré-visualizar';
+}
+
+async function submitPreview() {
     const file = document.getElementById('importFileInput').files[0];
-    if (!file) { toastr.warning('Selecione um arquivo antes de importar.'); return; }
+    if (!file) { toastr.warning('Selecione um arquivo antes de pré-visualizar.'); return; }
     if (!_importPipelineId) { toastr.error('Nenhum funil selecionado.'); return; }
 
-    const btn = document.getElementById('btnImportSubmit');
+    const btn = document.getElementById('btnImportPreview');
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Importando...';
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Analisando...';
 
     const formData = new FormData();
     formData.append('file', file);
@@ -1447,31 +1511,101 @@ async function submitImport() {
     formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
 
     try {
+        const res  = await fetch(KANBAN_PREVIEW_URL, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Erro no servidor');
+        _importToken = data.token;
+        renderPreviewScreen(data);
+    } catch (e) {
+        toastr.error('Erro ao analisar o arquivo. Verifique o formato e tente novamente.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-eye"></i> Pré-visualizar';
+    }
+}
+
+function renderPreviewScreen(data) {
+    const willImport = data.total - data.skipped;
+    let summary = `${data.total} linha${data.total !== 1 ? 's' : ''} encontrada${data.total !== 1 ? 's' : ''}`;
+    if (data.skipped > 0) {
+        summary += ` — <strong style="color:#DC2626;">${data.skipped} ser${data.skipped !== 1 ? 'ão' : 'á'} ignorada${data.skipped !== 1 ? 's' : ''} (sem nome)</strong>`;
+    }
+    summary += ` — <strong style="color:#10B981;">${willImport} ser${willImport !== 1 ? 'ão' : 'á'} importada${willImport !== 1 ? 's' : ''}</strong>`;
+    document.getElementById('importPreviewSummary').innerHTML = summary;
+
+    const tbody = document.getElementById('importPreviewTbody');
+    tbody.innerHTML = '';
+    data.rows.forEach((row, i) => {
+        const tr = document.createElement('tr');
+        if (row.will_skip) {
+            tr.style.background = '#FEF2F2';
+        } else if (i % 2 === 0) {
+            tr.style.background = '#fafafa';
+        }
+
+        const nameCellHtml = row.will_skip
+            ? `<span style="color:#DC2626;font-style:italic;">(sem nome — ignorado)</span>`
+            : escapeHtml(row.name);
+
+        const stageStyle = !row.stage_found && row.stage_raw
+            ? 'background:#FEF3C7;color:#92400E;border-radius:4px;padding:1px 5px;font-size:11px;'
+            : '';
+        const stageWarn = !row.stage_found && row.stage_raw
+            ? ' <i class="bi bi-exclamation-triangle-fill" style="font-size:10px;" title="Etapa não encontrada — será usada a etapa inicial"></i>'
+            : '';
+        const stageHtml = row.stage_raw
+            ? `<span style="${stageStyle}">${escapeHtml(row.stage_raw)}${stageWarn}</span>`
+            : '<span style="color:#9ca3af;">—</span>';
+
+        tr.innerHTML = `
+            <td style="padding:8px 12px;border-bottom:1px solid #f0f2f7;">${nameCellHtml}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #f0f2f7;color:#6b7280;white-space:nowrap;">${escapeHtml(row.phone)}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #f0f2f7;color:#6b7280;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(row.email)}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #f0f2f7;font-weight:600;color:#10B981;white-space:nowrap;">${escapeHtml(row.value_fmt)}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #f0f2f7;">${stageHtml}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #f0f2f7;color:#6b7280;">${escapeHtml((row.tags || []).join(', '))}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #f0f2f7;color:#6b7280;white-space:nowrap;">${escapeHtml(row.source)}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #f0f2f7;color:#6b7280;white-space:nowrap;">${escapeHtml(row.created_at || '')}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('importScreenUpload').style.display  = 'none';
+    document.getElementById('importScreenPreview').style.display = 'flex';
+
+    const confirmBtn = document.getElementById('btnImportConfirm');
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar importação';
+}
+
+async function confirmImport() {
+    if (!_importToken)      { toastr.error('Token ausente. Volte e tente novamente.'); return; }
+    if (!_importPipelineId) { toastr.error('Nenhum funil selecionado.'); return; }
+
+    const btn = document.getElementById('btnImportConfirm');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Importando...';
+
+    const formData = new FormData();
+    formData.append('token', _importToken);
+    formData.append('pipeline_id', _importPipelineId);
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+
+    try {
         const res  = await fetch(KANBAN_IMPORT_URL, { method: 'POST', body: formData });
         const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Erro no servidor');
 
-        if (data.success) {
-            const skippedMsg = data.skipped > 0
-                ? ` <span style="color:#6b7280;">(${data.skipped} ignorados — sem nome)</span>`
-                : '';
-            document.getElementById('importResult').style.display = 'block';
-            document.getElementById('importResult').innerHTML =
-                `<div style="background:#dcfce7;border:1.5px solid #86efac;border-radius:9px;padding:12px;font-size:13px;color:#166534;">
-                    <i class="bi bi-check-circle-fill"></i>
-                    <strong>${data.imported}</strong> lead${data.imported !== 1 ? 's' : ''} importado${data.imported !== 1 ? 's' : ''} com sucesso.${skippedMsg}
-                </div>`;
-
-            btn.innerHTML = '<i class="bi bi-check-lg"></i> Concluído';
-
-            // Recarrega o kanban após 2 s
-            setTimeout(() => window.location.reload(), 2000);
-        } else {
-            throw new Error('Erro no servidor');
-        }
+        toastr.success(
+            `${data.imported} lead${data.imported !== 1 ? 's' : ''} importado${data.imported !== 1 ? 's' : ''} com sucesso!` +
+            (data.skipped > 0 ? ` ${data.skipped} ignorado(s).` : ''),
+            '', { timeOut: 4000 }
+        );
+        closeImportModal();
+        setTimeout(() => window.location.reload(), 1500);
     } catch (e) {
-        toastr.error('Erro ao importar. Verifique o arquivo e tente novamente.');
+        toastr.error(e.message || 'Erro ao importar. Tente novamente.');
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-upload"></i> Importar';
+        btn.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar importação';
     }
 }
 
