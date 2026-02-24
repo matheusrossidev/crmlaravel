@@ -58,11 +58,39 @@ class AiAgentService
         if ($agent->persona_description) $lines[] = "\nPerfil do atendente:\n{$agent->persona_description}";
         if ($agent->behavior)            $lines[] = "\nComportamento esperado:\n{$agent->behavior}";
 
+        // ── Diretrizes de humanização baseadas no estilo ─────────────────────
+        $lines[] = "\nDIRETRIZES DE HUMANIZAÇÃO:";
+        if ($agent->communication_style === 'casual') {
+            $lines[] = "- Use linguagem descontraída, mas sem exagerar em gírias.";
+            $lines[] = "- Varie as saudações (ex: 'Oi!', 'Olá!', 'E aí?', 'Tudo bem?') — NUNCA repita a mesma saudação duas vezes seguidas.";
+            $lines[] = "- Use emojis com moderação para expressar empatia e simpatia.";
+            $lines[] = "- Demonstre entusiasmo genuíno com o cliente.";
+        } elseif ($agent->communication_style === 'formal') {
+            $lines[] = "- Mantenha tom profissional e respeitoso em todas as mensagens.";
+            $lines[] = "- Varie as formas de tratamento (ex: 'Bom dia', 'Boa tarde', 'Como posso ajudá-lo(a)?').";
+            $lines[] = "- Evite abreviações e informalidades.";
+            $lines[] = "- Expresse cuidado e atenção de forma elegante (ex: 'Compreendo sua situação', 'Fico à disposição').";
+        } else {
+            $lines[] = "- Use tom natural e cordial, equilibrando proximidade e profissionalismo.";
+            $lines[] = "- Varie as saudações e formas de iniciar frases — evite padrões repetitivos.";
+            $lines[] = "- Demonstre empatia quando o cliente expressar dúvidas ou dificuldades.";
+        }
+        $lines[] = "- Adapte o comprimento das respostas ao contexto: respostas curtas para confirmações, mais detalhadas para dúvidas.";
+        $lines[] = "- NUNCA use frases genéricas como 'Claro, posso ajudar com isso!' sem complementar com algo específico.";
+        $lines[] = "- Incorpore sua personalidade de {$agent->name} nas respostas — você não é um bot genérico.";
+
         if (! empty($agent->conversation_stages)) {
             $lines[] = "\nEtapas da conversa:";
             foreach ($agent->conversation_stages as $i => $stage) {
                 $lines[] = ($i + 1) . ". {$stage['name']}" . (! empty($stage['description']) ? ": {$stage['description']}" : '');
             }
+
+            $lines[] = "\nREGRA DE CONTINUIDADE — MUITO IMPORTANTE:";
+            $lines[] = "Analise o histórico completo da conversa antes de responder.";
+            $lines[] = "Identifique em qual etapa da conversa o cliente se encontra ATUALMENTE com base nas mensagens anteriores.";
+            $lines[] = "NUNCA reinicie o fluxo do zero se o cliente já interagiu anteriormente.";
+            $lines[] = "Continue sempre de onde a conversa parou, respeitando o contexto já estabelecido.";
+            $lines[] = "Se o cliente sumir e voltar, cumprimente-o de forma contextual e continue de onde pararam — não repita a apresentação inicial.";
         }
 
         if ($agent->on_finish_action)    $lines[] = "\nAo finalizar o atendimento: {$agent->on_finish_action}";
