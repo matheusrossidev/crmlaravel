@@ -2401,6 +2401,16 @@ $pageIcon = 'chat-dots';
             month: '2-digit'
         });
     }
+
+    // ── Auto-abre conversa via ?open=ID (vindo do Kanban) ─────────────────────
+    (function () {
+        const openId = new URLSearchParams(location.search).get('open');
+        if (!openId) return;
+        const el = document.querySelector(`[data-conv-id="${openId}"]`);
+        if (el) {
+            openConversation(parseInt(openId), el);
+        }
+    })();
 </script>
 <style>
     @keyframes spin {
