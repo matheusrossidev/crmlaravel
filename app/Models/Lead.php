@@ -18,15 +18,14 @@ class Lead extends Model
         'tenant_id', 'name', 'phone', 'email', 'value',
         'source', 'tags', 'pipeline_id', 'stage_id',
         'assigned_to', 'campaign_id', 'created_by', 'notes',
-        'instagram_username', 'converted_at',
+        'instagram_username',
     ];
 
     protected $casts = [
-        'tags'         => 'array',
-        'value'        => 'decimal:2',
-        'converted_at' => 'datetime',
-        'created_at'   => 'datetime',
-        'updated_at'   => 'datetime',
+        'tags'       => 'array',
+        'value'      => 'decimal:2',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function pipeline(): BelongsTo

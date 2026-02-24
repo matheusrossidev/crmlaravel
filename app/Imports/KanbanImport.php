@@ -6,6 +6,7 @@ namespace App\Imports;
 
 use App\Models\Lead;
 use App\Models\LeadEvent;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToCollection;
@@ -48,36 +49,42 @@ class KanbanImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
                 $value = is_numeric($clean) ? (float) $clean : null;
             }
 
-            // Parse data de conversão (aceita dd/mm/yyyy ou yyyy-mm-dd)
-            $convertedAtRaw = trim((string) ($row['convertido_em'] ?? $row['converted_at'] ?? ''));
-            $convertedAt    = null;
-            if ($convertedAtRaw !== '') {
+            // Parse data de criação histórica (aceita dd/mm/yyyy, dd/mm/yy, yyyy-mm-dd)
+            $createdAtRaw = trim((string) ($row['criado_em'] ?? $row['created_at'] ?? ''));
+            $createdAt    = null;
+            if ($createdAtRaw !== '') {
                 try {
-                    $convertedAt = \Carbon\Carbon::parse($convertedAtRaw);
+                    $createdAt = Carbon::parse($createdAtRaw);
                 } catch (\Exception) {
-                    $convertedAt = null;
+                    $createdAt = null;
                 }
             }
 
             $lead = Lead::create([
-                'name'         => $name,
-                'phone'        => trim((string) ($row['telefone'] ?? $row['phone'] ?? '')),
-                'email'        => strtolower(trim((string) ($row['email'] ?? ''))),
-                'value'        => $value,
-                'source'       => trim((string) ($row['origem'] ?? $row['source'] ?? 'importado')),
-                'notes'        => trim((string) ($row['notas'] ?? $row['notes'] ?? '')),
-                'pipeline_id'  => $this->pipelineId,
-                'stage_id'     => $stageId,
-                'created_by'   => auth()->id(),
-                'converted_at' => $convertedAt,
+                'name'        => $name,
+                'phone'       => trim((string) ($row['telefone'] ?? $row['phone'] ?? '')),
+                'email'       => strtolower(trim((string) ($row['email'] ?? ''))),
+                'value'       => $value,
+                'source'      => trim((string) ($row['origem'] ?? $row['source'] ?? 'importado')),
+                'notes'       => trim((string) ($row['notas'] ?? $row['notes'] ?? '')),
+                'pipeline_id' => $this->pipelineId,
+                'stage_id'    => $stageId,
+                'created_by'  => auth()->id(),
             ]);
+
+            // Sobrescreve created_at com data histórica fornecida na planilha
+            if ($createdAt) {
+                $lead->timestamps = false;
+                $lead->created_at = $createdAt;
+                $lead->save();
+            }
 
             LeadEvent::create([
                 'lead_id'      => $lead->id,
                 'event_type'   => 'created',
                 'description'  => 'Lead importado via planilha (Kanban)',
                 'performed_by' => auth()->id(),
-                'created_at'   => now(),
+                'created_at'   => $createdAt ?? now(),
             ]);
 
             $this->imported++;

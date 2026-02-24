@@ -20,7 +20,7 @@ class KanbanTemplateExport implements FromArray, WithHeadings, ShouldAutoSize, W
 
     public function headings(): array
     {
-        return ['Nome*', 'Telefone', 'E-mail', 'Valor', 'Etapa', 'Origem', 'Tags', 'Notas', 'Convertido em'];
+        return ['Nome*', 'Telefone', 'E-mail', 'Valor', 'Etapa', 'Origem', 'Tags', 'Notas', 'Criado em'];
     }
 
     public function array(): array

@@ -60,7 +60,7 @@ class LeadsExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSiz
 
     public function headings(): array
     {
-        return ['Nome', 'Telefone', 'E-mail', 'Valor', 'Origem', 'Tags', 'Pipeline', 'Etapa', 'Campanha', 'Notas', 'Criado em', 'Convertido em'];
+        return ['Nome', 'Telefone', 'E-mail', 'Valor', 'Origem', 'Tags', 'Pipeline', 'Etapa', 'Campanha', 'Notas', 'Criado em'];
     }
 
     public function map($lead): array
@@ -77,7 +77,6 @@ class LeadsExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSiz
             $lead->campaign?->name ?? '',
             $lead->notes ?? '',
             $lead->created_at?->format('d/m/Y H:i'),
-            $lead->converted_at?->format('d/m/Y H:i') ?? '',
         ];
     }
 }
