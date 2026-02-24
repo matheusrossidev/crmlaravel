@@ -58,6 +58,17 @@ class DashboardController extends Controller
         $wonTotal       = Sale::count();
         $conversionRate = $totalLeads > 0 ? round($wonTotal / $totalLeads * 100, 1) : 0;
 
+        // ── Compact number formatting ──────────────────────────────────────
+        $cfFmt = static function (float $v, string $pre = '', string $suf = ''): string {
+            if ($v >= 1_000_000) return $pre . number_format($v / 1_000_000, 1, ',', '.') . 'M' . $suf;
+            if ($v >= 1_000)     return $pre . number_format($v / 1_000,     1, ',', '.') . 'K' . $suf;
+            return $pre . number_format($v, 0, ',', '.') . $suf;
+        };
+        $cfLeads    = $cfFmt((float) $leadsThisMonth);
+        $cfSales    = $cfFmt((float) $totalSales, 'R$ ');
+        $cfTicket   = $cfFmt((float) $ticketMedio, 'R$ ');
+        $cfPerdidos = $cfFmt((float) $leadsPerdidos);
+
         // Motivos de perda (todos os tempos, top 8)
         $tenantId     = auth()->user()->tenant_id;
         $lostByReason = DB::table('lost_sales')
@@ -128,6 +139,10 @@ class DashboardController extends Controller
             'leadsPerdidos',
             'ticketMedio',
             'conversionRate',
+            'cfLeads',
+            'cfSales',
+            'cfTicket',
+            'cfPerdidos',
             'lostByReason',
             'monthLabels',
             'leadsPerMonth',

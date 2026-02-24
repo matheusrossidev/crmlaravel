@@ -341,21 +341,13 @@
     </div>
 
     {{-- ── Row 1: Stat Cards ─────────────────────────────────────────── --}}
-    @php
-        $compact = function(float $val, string $prefix = '', string $suffix = ''): string {
-            if ($val >= 1_000_000) return $prefix . number_format($val / 1_000_000, 1, ',', '.') . 'M' . $suffix;
-            if ($val >= 1_000)     return $prefix . number_format($val / 1_000,     1, ',', '.') . 'K' . $suffix;
-            return $prefix . number_format($val, 0, ',', '.') . $suffix;
-        };
-    @endphp
-
     <div class="stats-grid">
 
         {{-- Leads este mês --}}
         <div class="stat-card blue">
             <div class="stat-icon blue"><i class="bi bi-people"></i></div>
             <div class="stat-label">Leads este mês</div>
-            <div class="stat-value" data-val="{{ $leadsThisMonth }}" data-prefix="" data-suffix="">{{ $compact((float)$leadsThisMonth) }}</div>
+            <div class="stat-value" data-val="{{ $leadsThisMonth }}" data-prefix="" data-suffix="">{{ $cfLeads }}</div>
             <div class="stat-footer">
                 @if($leadsTrend !== null)
                     <span class="trend-badge {{ $leadsTrend >= 0 ? 'up' : 'down' }}">
@@ -373,7 +365,7 @@
         <div class="stat-card green">
             <div class="stat-icon green"><i class="bi bi-currency-dollar"></i></div>
             <div class="stat-label">Vendas este mês</div>
-            <div class="stat-value" data-val="{{ $totalSales }}" data-prefix="R$ " data-suffix="">{{ $compact((float)$totalSales, 'R$ ') }}</div>
+            <div class="stat-value" data-val="{{ $totalSales }}" data-prefix="R$ " data-suffix="">{{ $cfSales }}</div>
             <div class="stat-footer">
                 @if($salesTrend !== null)
                     <span class="trend-badge {{ $salesTrend >= 0 ? 'up' : 'down' }}">
@@ -401,7 +393,7 @@
         <div class="stat-card orange">
             <div class="stat-icon orange"><i class="bi bi-graph-up"></i></div>
             <div class="stat-label">Ticket Médio</div>
-            <div class="stat-value" data-val="{{ $ticketMedio }}" data-prefix="R$ " data-suffix="">{{ $compact((float)$ticketMedio, 'R$ ') }}</div>
+            <div class="stat-value" data-val="{{ $ticketMedio }}" data-prefix="R$ " data-suffix="">{{ $cfTicket }}</div>
             <div class="stat-footer">
                 <span class="stat-sub">{{ $leadsGanhos }} negócio{{ $leadsGanhos !== 1 ? 's' : '' }} fechado{{ $leadsGanhos !== 1 ? 's' : '' }} este mês</span>
             </div>
@@ -411,7 +403,7 @@
         <div class="stat-card red">
             <div class="stat-icon red"><i class="bi bi-x-circle"></i></div>
             <div class="stat-label">Leads Perdidos</div>
-            <div class="stat-value" data-val="{{ $leadsPerdidos }}" data-prefix="" data-suffix="">{{ $compact((float)$leadsPerdidos) }}</div>
+            <div class="stat-value" data-val="{{ $leadsPerdidos }}" data-prefix="" data-suffix="">{{ $cfPerdidos }}</div>
             <div class="stat-footer">
                 <span class="stat-sub">perdidos este mês</span>
             </div>
