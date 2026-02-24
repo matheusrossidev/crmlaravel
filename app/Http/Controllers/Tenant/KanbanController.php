@@ -109,7 +109,20 @@ class KanbanController extends Controller
         $lostReasons     = LostSaleReason::where('is_active', true)->orderBy('sort_order')->get();
         $customFieldDefs = CustomFieldDefinition::where('is_active', true)->orderBy('sort_order')->get();
 
-        return view('tenant.crm.kanban', compact('pipelines', 'pipeline', 'stages', 'campaigns', 'lostReasons', 'customFieldDefs'));
+        // Tags únicas de todos os leads do funil atual (para o filtro)
+        $availableTags = collect();
+        if ($pipeline) {
+            $availableTags = Lead::whereHas('stage', fn ($q) => $q->where('pipeline_id', $pipeline->id))
+                ->whereNotNull('tags')
+                ->pluck('tags')
+                ->flatten()
+                ->filter()
+                ->unique()
+                ->sort()
+                ->values();
+        }
+
+        return view('tenant.crm.kanban', compact('pipelines', 'pipeline', 'stages', 'campaigns', 'lostReasons', 'customFieldDefs', 'availableTags'));
     }
 
     public function updateStage(Request $request, Lead $lead): JsonResponse

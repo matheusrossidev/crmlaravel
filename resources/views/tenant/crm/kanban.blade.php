@@ -585,7 +585,12 @@
             @endforeach
         </select>
 
-        <input type="text" name="tag" class="filter-control" placeholder="Filtrar por tag..." value="{{ request('tag') }}" style="width:140px;">
+        <select name="tag" class="filter-control" onchange="this.form.submit()">
+            <option value="">Todas as tags</option>
+            @foreach($availableTags as $t)
+            <option value="{{ $t }}" {{ request('tag') === $t ? 'selected' : '' }}>{{ $t }}</option>
+            @endforeach
+        </select>
 
         <input type="date" name="date_from" class="filter-control" value="{{ request('date_from') }}" title="Data de">
         <input type="date" name="date_to"   class="filter-control" value="{{ request('date_to') }}"   title="Data até">
