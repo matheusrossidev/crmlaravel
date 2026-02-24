@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\ApiKey;
+use App\Models\CustomFieldDefinition;
+use App\Models\Pipeline;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,9 +16,15 @@ class ApiKeyController extends Controller
 {
     public function index(): View
     {
-        $apiKeys = ApiKey::orderByDesc('created_at')->get();
+        $apiKeys      = ApiKey::orderByDesc('created_at')->get();
+        $customFields = CustomFieldDefinition::where('is_active', true)
+                            ->orderBy('sort_order')
+                            ->get(['id', 'name', 'label', 'field_type']);
+        $pipelines    = Pipeline::with(['stages' => fn ($q) => $q->orderBy('position')])
+                            ->orderBy('sort_order')
+                            ->get();
 
-        return view('tenant.settings.api-keys', compact('apiKeys'));
+        return view('tenant.settings.api-keys', compact('apiKeys', 'customFields', 'pipelines'));
     }
 
     public function store(Request $request): JsonResponse
