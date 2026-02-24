@@ -267,6 +267,21 @@
         </div>
     </div>
 </div>
+
+{{-- Modal: confirmar exclusão de tag --}}
+<div class="wt-modal-overlay" id="deleteTagModal">
+    <div class="wt-modal" style="text-align:center;">
+        <div style="font-size:36px;color:#EF4444;margin-bottom:12px;"><i class="bi bi-trash3-fill"></i></div>
+        <div class="wt-modal-title" style="margin-bottom:8px;">Excluir tag?</div>
+        <p style="font-size:13.5px;color:#6b7280;margin-bottom:24px;line-height:1.5;">
+            As conversas que a utilizam manterão o nome, mas perderão a cor.<br>Esta ação não pode ser desfeita.
+        </p>
+        <div style="display:flex;justify-content:center;gap:10px;">
+            <button class="btn-cancel" onclick="document.getElementById('deleteTagModal').classList.remove('open')">Cancelar</button>
+            <button class="btn-save" style="background:#EF4444;" onclick="_doDeleteTag()">Excluir</button>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -438,11 +453,21 @@ function updateRow(t) {
         `openEdit(${t.id},'${t.name.replace(/'/g,"\\'")}','${t.color}')`);
 }
 
-async function deleteTag(id, btn) {
-    if (!confirm('Excluir esta tag? As conversas que a utilizam manterão o nome, mas perderão a cor.')) return;
+let _deleteTagId  = null;
+let _deleteTagBtn = null;
 
-    const row = btn.closest('tr');
-    const res  = await fetch(URL_DESTROY.replace('__ID__', id), {
+function deleteTag(id, btn) {
+    _deleteTagId  = id;
+    _deleteTagBtn = btn;
+    document.getElementById('deleteTagModal').classList.add('open');
+}
+
+async function _doDeleteTag() {
+    document.getElementById('deleteTagModal').classList.remove('open');
+    if (!_deleteTagId) return;
+
+    const row = _deleteTagBtn.closest('tr');
+    const res  = await fetch(URL_DESTROY.replace('__ID__', _deleteTagId), {
         method: 'DELETE',
         headers: { 'X-CSRF-TOKEN': CSRF },
     });

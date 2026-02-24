@@ -1233,6 +1233,19 @@ $pageIcon = 'chat-dots';
 
     @endif
 </div>
+
+{{-- Modal: confirmar exclusão de conversa --}}
+<div class="del-modal-overlay" id="delConvModal">
+    <div class="del-modal">
+        <div class="del-modal-icon"><i class="bi bi-trash3-fill"></i></div>
+        <div class="del-modal-title">Excluir conversa?</div>
+        <div class="del-modal-text">Todas as mensagens serão removidas permanentemente.<br>Esta ação não pode ser desfeita.</div>
+        <div class="del-modal-footer">
+            <button class="btn-del-cancel" onclick="document.getElementById('delConvModal').classList.remove('open')">Cancelar</button>
+            <button class="btn-del-confirm" onclick="_doDeleteConversation()">Excluir</button>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -1924,9 +1937,14 @@ $pageIcon = 'chat-dots';
     }
 
     // ── Deletar conversa ──────────────────────────────────────────────────────────
-    async function deleteConversation() {
+    function deleteConversation() {
         if (!activeConvId) return;
-        if (!confirm('Tem certeza que deseja deletar esta conversa e todas as suas mensagens? Esta ação não pode ser desfeita.')) return;
+        document.getElementById('delConvModal').classList.add('open');
+    }
+
+    async function _doDeleteConversation() {
+        document.getElementById('delConvModal').classList.remove('open');
+        if (!activeConvId) return;
 
         const res = await fetch(`/chats/conversations/${activeConvId}`, {
             method: 'DELETE',
@@ -1950,7 +1968,7 @@ $pageIcon = 'chat-dots';
             document.getElementById('messagesContainer').innerHTML = '';
             updateTotalUnread();
         } else {
-            alert('Erro ao deletar conversa.');
+            toastr.error('Erro ao deletar conversa.');
         }
     }
 
@@ -2381,5 +2399,32 @@ $pageIcon = 'chat-dots';
         animation: spin .8s linear infinite;
         display: inline-block;
     }
+    /* ── Delete Confirmation Modal ── */
+    .del-modal-overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,.45); z-index: 9999;
+        align-items: center; justify-content: center;
+    }
+    .del-modal-overlay.open { display: flex; }
+    .del-modal {
+        background: #fff; border-radius: 14px; padding: 28px;
+        width: 400px; max-width: 94vw;
+        box-shadow: 0 20px 60px rgba(0,0,0,.18);
+        text-align: center;
+    }
+    .del-modal-icon { font-size: 36px; color: #EF4444; margin-bottom: 12px; }
+    .del-modal-title { font-size: 16px; font-weight: 700; color: #1a1d23; margin-bottom: 8px; }
+    .del-modal-text { font-size: 13.5px; color: #6b7280; margin-bottom: 24px; line-height: 1.5; }
+    .del-modal-footer { display: flex; justify-content: center; gap: 10px; }
+    .btn-del-cancel {
+        padding: 9px 22px; border-radius: 9px; font-size: 13.5px; font-weight: 600;
+        border: 1.5px solid #e8eaf0; background: #f4f6fb; color: #4b5563; cursor: pointer;
+    }
+    .btn-del-cancel:hover { background: #e8eaf0; }
+    .btn-del-confirm {
+        padding: 9px 22px; border-radius: 9px; font-size: 13.5px; font-weight: 600;
+        border: none; background: #EF4444; color: #fff; cursor: pointer;
+    }
+    .btn-del-confirm:hover { background: #dc2626; }
 </style>
 @endpush

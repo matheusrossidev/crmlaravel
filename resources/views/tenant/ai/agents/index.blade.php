@@ -210,6 +210,33 @@
         width: fit-content; transition: color .15s;
     }
     .tcm-reset:hover { color: #ef4444; }
+    /* ── Delete Confirmation Modal ── */
+    .del-modal-overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,.45); z-index: 9999;
+        align-items: center; justify-content: center;
+    }
+    .del-modal-overlay.open { display: flex; }
+    .del-modal {
+        background: #fff; border-radius: 14px; padding: 28px;
+        width: 400px; max-width: 94vw;
+        box-shadow: 0 20px 60px rgba(0,0,0,.18);
+        text-align: center;
+    }
+    .del-modal-icon { font-size: 36px; color: #EF4444; margin-bottom: 12px; }
+    .del-modal-title { font-size: 16px; font-weight: 700; color: #1a1d23; margin-bottom: 8px; }
+    .del-modal-text { font-size: 13.5px; color: #6b7280; margin-bottom: 24px; line-height: 1.5; }
+    .del-modal-footer { display: flex; justify-content: center; gap: 10px; }
+    .btn-del-cancel {
+        padding: 9px 22px; border-radius: 9px; font-size: 13.5px; font-weight: 600;
+        border: 1.5px solid #e8eaf0; background: #f4f6fb; color: #4b5563; cursor: pointer;
+    }
+    .btn-del-cancel:hover { background: #e8eaf0; }
+    .btn-del-confirm {
+        padding: 9px 22px; border-radius: 9px; font-size: 13.5px; font-weight: 600;
+        border: none; background: #EF4444; color: #fff; cursor: pointer;
+    }
+    .btn-del-confirm:hover { background: #dc2626; }
 </style>
 @endpush
 
@@ -328,6 +355,18 @@
     </div>
 </div>
 
+{{-- Modal: confirmar exclusão de agente --}}
+<div class="del-modal-overlay" id="delAgentModal">
+    <div class="del-modal">
+        <div class="del-modal-icon"><i class="bi bi-trash3-fill"></i></div>
+        <div class="del-modal-title">Excluir agente?</div>
+        <div class="del-modal-text">O agente será removido permanentemente.<br>Esta ação não pode ser desfeita.</div>
+        <div class="del-modal-footer">
+            <button class="btn-del-cancel" onclick="document.getElementById('delAgentModal').classList.remove('open')">Cancelar</button>
+            <button class="btn-del-confirm" onclick="_doDeleteAgent()">Excluir</button>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -437,15 +476,25 @@ async function toggleActive(id, isActive, btn) {
     location.reload();
 }
 
-async function deleteAgent(id, btn) {
-    if (!confirm('Excluir este agente?')) return;
-    const res  = await fetch(`/ia/agentes/${id}`, {
+let _deleteAgentId  = null;
+let _deleteAgentBtn = null;
+
+function deleteAgent(id, btn) {
+    _deleteAgentId  = id;
+    _deleteAgentBtn = btn;
+    document.getElementById('delAgentModal').classList.add('open');
+}
+
+async function _doDeleteAgent() {
+    document.getElementById('delAgentModal').classList.remove('open');
+    if (!_deleteAgentId) return;
+    const res  = await fetch(`/ia/agentes/${_deleteAgentId}`, {
         method: 'DELETE',
         headers: { 'X-CSRF-TOKEN': CSRF },
     });
     const data = await res.json();
     if (!data.success) { toastr.error('Erro ao excluir.'); return; }
-    btn.closest('.agent-card').remove();
+    _deleteAgentBtn?.closest('.agent-card')?.remove();
     toastr.success('Agente excluído.');
 }
 </script>

@@ -285,6 +285,9 @@
     }
     .card-bubble.has-unread i { color: #10B981; }
     .bubble-count { font-weight: 700; font-size: 10.5px; }
+    .card-bubble.has-conversation { cursor: pointer; }
+    .card-bubble.has-conversation:hover { background: #dbeafe; color: #3B82F6; }
+    .card-bubble.has-conversation.has-unread:hover { background: #bbf7d0; color: #059669; }
 
     /* Cabeçalho da coluna — right side */
     .col-header-right {
@@ -704,8 +707,10 @@
                         <i class="bi bi-clock"></i>
                         {{ $lead->created_at?->format('d/m/y') }}
                     </span>
-                    <button class="card-bubble {{ ($lead->whatsappConversation?->unread_count ?? 0) > 0 ? 'has-unread' : '' }}"
-                            onclick="event.stopPropagation()" title="Mensagens não lidas">
+                    <button class="card-bubble {{ ($lead->whatsappConversation?->unread_count ?? 0) > 0 ? 'has-unread' : '' }} {{ $lead->whatsappConversation?->id ? 'has-conversation' : '' }}"
+                            data-conv-url="{{ $lead->whatsappConversation?->id ? route('chats.conversations.show', $lead->whatsappConversation->id) : '' }}"
+                            onclick="event.stopPropagation(); var u=this.dataset.convUrl; if(u) window.location.href=u;"
+                            title="{{ $lead->whatsappConversation?->id ? 'Abrir conversa WhatsApp' : 'Sem conversa vinculada' }}">
                         <i class="bi bi-chat-dots-fill"></i>
                         @if(($lead->whatsappConversation?->unread_count ?? 0) > 0)
                         <span class="bubble-count">{{ $lead->whatsappConversation->unread_count }}</span>
@@ -1173,8 +1178,9 @@ function buildCard(lead) {
     const agentBadge = agentName
         ? `<span class="card-agent-badge"><i class="bi bi-person-fill"></i>${escapeHtml(agentName.substring(0,14))}</span>`
         : '';
-    const unread = lead.unread_count || 0;
-    const bubble = `<button class="card-bubble${unread > 0 ? ' has-unread' : ''}" onclick="event.stopPropagation()" title="Mensagens não lidas"><i class="bi bi-chat-dots-fill"></i>${unread > 0 ? `<span class="bubble-count">${unread}</span>` : ''}</button>`;
+    const unread  = lead.unread_count || 0;
+    const convUrl = lead.conversation_id ? `/chats/conversations/${lead.conversation_id}` : '';
+    const bubble  = `<button class="card-bubble${unread > 0 ? ' has-unread' : ''}${convUrl ? ' has-conversation' : ''}" data-conv-url="${convUrl}" onclick="event.stopPropagation(); var u=this.dataset.convUrl; if(u) window.location.href=u;" title="${convUrl ? 'Abrir conversa WhatsApp' : 'Sem conversa vinculada'}"><i class="bi bi-chat-dots-fill"></i>${unread > 0 ? `<span class="bubble-count">${unread}</span>` : ''}</button>`;
     const date = lead.created_at ? `<span class="card-date"><i class="bi bi-clock"></i>${escapeHtml(lead.created_at)}</span>` : '';
     const valueRow = lead.value_fmt ? `<div class="card-value-row">${escapeHtml(lead.value_fmt)}</div>` : '';
 

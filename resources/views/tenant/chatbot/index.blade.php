@@ -213,6 +213,33 @@
     .tcm-restart:hover { background: #f3f4f6; border-color: #d1d5db; }
     .tcm-done-msg { font-size: 12px; color: #059669; font-weight: 600; display: flex; align-items: center; gap: 4px; }
     .tcm-hint { font-size: 11px; color: #9ca3af; }
+    /* ── Delete Confirmation Modal ── */
+    .del-modal-overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,.45); z-index: 9999;
+        align-items: center; justify-content: center;
+    }
+    .del-modal-overlay.open { display: flex; }
+    .del-modal {
+        background: #fff; border-radius: 14px; padding: 28px;
+        width: 400px; max-width: 94vw;
+        box-shadow: 0 20px 60px rgba(0,0,0,.18);
+        text-align: center;
+    }
+    .del-modal-icon { font-size: 36px; color: #EF4444; margin-bottom: 12px; }
+    .del-modal-title { font-size: 16px; font-weight: 700; color: #1a1d23; margin-bottom: 8px; }
+    .del-modal-text { font-size: 13.5px; color: #6b7280; margin-bottom: 24px; line-height: 1.5; }
+    .del-modal-footer { display: flex; justify-content: center; gap: 10px; }
+    .btn-del-cancel {
+        padding: 9px 22px; border-radius: 9px; font-size: 13.5px; font-weight: 600;
+        border: 1.5px solid #e8eaf0; background: #f4f6fb; color: #4b5563; cursor: pointer;
+    }
+    .btn-del-cancel:hover { background: #e8eaf0; }
+    .btn-del-confirm {
+        padding: 9px 22px; border-radius: 9px; font-size: 13.5px; font-weight: 600;
+        border: none; background: #EF4444; color: #fff; cursor: pointer;
+    }
+    .btn-del-confirm:hover { background: #dc2626; }
 </style>
 @endpush
 
@@ -378,6 +405,20 @@ function tcmAppendTyping() {
 function tcmRemoveTyping(id) {
     document.getElementById(id)?.remove();
 }
+
+/* ── Delete flow modal ── */
+let _deleteFlowForm = null;
+
+function openFlowDeleteModal(form, name) {
+    _deleteFlowForm = form;
+    document.getElementById('delFlowName').textContent = name;
+    document.getElementById('delFlowModal').classList.add('open');
+}
+
+function _doDeleteFlow() {
+    document.getElementById('delFlowModal').classList.remove('open');
+    if (_deleteFlowForm) _deleteFlowForm.submit();
+}
 </script>
 @endpush
 
@@ -442,9 +483,10 @@ function tcmRemoveTyping(id) {
                             <i class="bi bi-play-circle"></i> Testar
                         </button>
                         <form method="POST" action="{{ route('chatbot.flows.destroy', $flow) }}" style="margin-left:auto;"
-                              onsubmit="return confirm('Excluir o fluxo «{{ addslashes($flow->name) }}»? Esta ação não pode ser desfeita.')">
+                              class="flow-delete-form">
                             @csrf @method('DELETE')
-                            <button type="submit" class="btn-secondary-sm btn-delete-flow">
+                            <button type="button" class="btn-secondary-sm btn-delete-flow"
+                                    onclick="openFlowDeleteModal(this.closest('form'), '{{ addslashes($flow->name) }}')">
                                 <i class="bi bi-trash3"></i> Excluir
                             </button>
                         </form>
@@ -488,5 +530,18 @@ function tcmRemoveTyping(id) {
         </div>
     </div>
 
+</div>
+
+{{-- Modal: confirmar exclusão de fluxo --}}
+<div class="del-modal-overlay" id="delFlowModal">
+    <div class="del-modal">
+        <div class="del-modal-icon"><i class="bi bi-trash3-fill"></i></div>
+        <div class="del-modal-title">Excluir fluxo?</div>
+        <div class="del-modal-text">O fluxo <strong id="delFlowName"></strong> será removido permanentemente.<br>Esta ação não pode ser desfeita.</div>
+        <div class="del-modal-footer">
+            <button class="btn-del-cancel" onclick="document.getElementById('delFlowModal').classList.remove('open')">Cancelar</button>
+            <button class="btn-del-confirm" onclick="_doDeleteFlow()">Excluir</button>
+        </div>
+    </div>
 </div>
 @endsection
