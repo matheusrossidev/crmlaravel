@@ -203,27 +203,55 @@ class WhatsappController extends Controller
         // O frontend usa renderedMsgIds (Set) para evitar duplicatas.
         $since = $since->subSeconds(2);
 
-        $convId = $request->input('conversation_id');
+        $convId      = $request->input('conversation_id');
+        $convChannel = $request->input('conv_channel', 'whatsapp');
 
         $newMessages = [];
         if ($convId) {
-            $newMessages = WhatsappMessage::where('conversation_id', $convId)
-                ->where('created_at', '>=', $since)
-                ->orderBy('sent_at')
-                ->get()
-                ->map(fn ($m) => $this->formatMessage($m));
+            if ($convChannel === 'instagram') {
+                $newMessages = InstagramMessage::where('conversation_id', $convId)
+                    ->where('created_at', '>=', $since)
+                    ->orderBy('sent_at')
+                    ->get()
+                    ->map(fn ($m) => [
+                        'id'         => $m->id,
+                        'direction'  => $m->direction,
+                        'type'       => $m->type,
+                        'body'       => $m->body,
+                        'media_url'  => $m->media_url,
+                        'ack'        => $m->ack,
+                        'is_deleted' => false,
+                        'sent_at'    => $m->sent_at?->toISOString(),
+                    ]);
+            } else {
+                $newMessages = WhatsappMessage::where('conversation_id', $convId)
+                    ->where('created_at', '>=', $since)
+                    ->orderBy('sent_at')
+                    ->get()
+                    ->map(fn ($m) => $this->formatMessage($m));
+            }
         }
 
-        $updatedConvs = WhatsappConversation::with(['latestMessage', 'assignedUser'])
+        $updatedWaConvs = WhatsappConversation::with(['latestMessage', 'assignedUser'])
             ->where('last_message_at', '>=', $since)
             ->orderByDesc('last_message_at')
             ->get()
             ->map(fn ($c) => $this->formatConversation($c));
 
+        $updatedIgConvs = InstagramConversation::with(['latestMessage'])
+            ->where('last_message_at', '>=', $since)
+            ->orderByDesc('last_message_at')
+            ->get()
+            ->map(fn ($c) => $this->formatInstagramConversation($c));
+
+        $updatedConvs = $updatedWaConvs->concat($updatedIgConvs)
+            ->sortByDesc('last_message_at')
+            ->values();
+
         return response()->json([
             'new_messages'          => $newMessages,
             'conversations_updated' => $updatedConvs,
-            'now'                   => now()->utc()->toISOString(), // always UTC so browser comparison is unambiguous
+            'now'                   => now()->utc()->toISOString(),
         ]);
     }
 
@@ -483,7 +511,32 @@ class WhatsappController extends Controller
             'last_message_body' => $latest?->body ?? ($latest ? '[' . $latest->type . ']' : null),
             'last_message_type' => $latest?->type,
             'assigned_user'     => $c->assignedUser?->name,
+            'assigned_user_id'  => $c->assigned_user_id,
+            'is_group'          => $c->is_group ?? false,
             'ai_agent_id'       => $c->ai_agent_id,
+            'channel'           => 'whatsapp',
+        ];
+    }
+
+    private function formatInstagramConversation(InstagramConversation $c): array
+    {
+        $latest = $c->latestMessage;
+        return [
+            'id'                => $c->id,
+            'phone'             => '@' . ltrim($c->contact_username ?? '', '@'),
+            'contact_name'      => $c->contact_name,
+            'contact_picture'   => $c->contact_picture_url,
+            'tags'              => $c->tags ?? [],
+            'status'            => $c->status,
+            'unread_count'      => $c->unread_count,
+            'last_message_at'   => $c->last_message_at?->toISOString(),
+            'last_message_body' => $latest?->body ?? ($latest ? '[' . $latest->type . ']' : null),
+            'last_message_type' => $latest?->type,
+            'assigned_user'     => null,
+            'assigned_user_id'  => $c->assigned_user_id,
+            'is_group'          => false,
+            'ai_agent_id'       => $c->ai_agent_id,
+            'channel'           => 'instagram',
         ];
     }
 }

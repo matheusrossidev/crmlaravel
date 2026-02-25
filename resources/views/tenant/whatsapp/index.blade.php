@@ -1408,7 +1408,10 @@ $pageIcon = 'chat-dots';
         const params = new URLSearchParams({
             since: lastPollAt
         });
-        if (activeConvId) params.append('conversation_id', activeConvId);
+        if (activeConvId) {
+            params.append('conversation_id', activeConvId);
+            params.append('conv_channel', activeConvChannel || 'whatsapp');
+        }
 
         fetch(`/chats/poll?${params}`, {
                 headers: {
@@ -2386,10 +2389,12 @@ $pageIcon = 'chat-dots';
         if (!el) {
             el = document.createElement('div');
             el.className = 'wa-conv-item';
-            el.dataset.convId = conv.id;
-            el.dataset.phone = conv.phone;
-            el.dataset.status = conv.status;
-            el.dataset.channel = 'whatsapp';
+            el.dataset.convId          = conv.id;
+            el.dataset.phone           = conv.phone || '';
+            el.dataset.status          = conv.status || 'open';
+            el.dataset.channel         = conv.channel || 'whatsapp';
+            el.dataset.assignedUserId  = conv.assigned_user_id || '';
+            el.dataset.tags            = JSON.stringify(conv.tags || []);
             el.onclick = function() {
                 openConversation(conv.id, this);
             };
