@@ -41,7 +41,7 @@ class InstagramService
     public function getProfile(string $igsid): array
     {
         return $this->get("/{$igsid}", [
-            'fields' => 'name,username,profile_pic',
+            'fields' => 'name,username,profile_picture_url',
         ]);
     }
 

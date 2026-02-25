@@ -127,7 +127,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         // Instagram conversations
         Route::get ('/instagram-conversations/{conversation}',         [WhatsappController::class, 'showInstagram'])->name('ig-conversations.show');
         Route::post('/instagram-conversations/{conversation}/read',    [WhatsappController::class, 'markReadInstagram'])->name('ig-conversations.read');
-        Route::post('/instagram-conversations/{conversation}/messages',[WhatsappController::class, 'sendInstagramMessage'])->name('ig-conversations.messages');
+        Route::post  ('/instagram-conversations/{conversation}/messages',[WhatsappController::class, 'sendInstagramMessage'])->name('ig-conversations.messages');
+        Route::delete('/instagram-conversations/{conversation}',         [WhatsappController::class, 'destroyInstagram'])->name('ig-conversations.destroy');
     });
 
     // Chatbot Builder

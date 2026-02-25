@@ -2038,7 +2038,7 @@ $pageIcon = 'chat-dots';
         document.getElementById('delConvModal').classList.remove('open');
         if (!activeConvId) return;
 
-        const res = await fetch(`/chats/conversations/${activeConvId}`, {
+        const res = await fetch(convBaseUrl(activeConvId), {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': CSRF,

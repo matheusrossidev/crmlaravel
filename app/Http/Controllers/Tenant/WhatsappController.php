@@ -455,6 +455,13 @@ class WhatsappController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function destroyInstagram(InstagramConversation $conversation): JsonResponse
+    {
+        $conversation->delete();
+
+        return response()->json(['success' => true]);
+    }
+
     // ── Formatters ────────────────────────────────────────────────────────────
 
     private function formatMessage(WhatsappMessage $m): array

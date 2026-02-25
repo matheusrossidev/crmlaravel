@@ -140,7 +140,10 @@ class ProcessInstagramWebhook implements ShouldQueue
                     : now(),
             ]);
         } catch (\Illuminate\Database\QueryException $e) {
-            // Duplicata — UNIQUE constraint disparou
+            // Apenas UNIQUE violations (1062) devem ser silenciadas
+            if (($e->errorInfo[1] ?? 0) !== 1062) {
+                throw $e;
+            }
             Log::channel('instagram')->debug('Mensagem duplicada ignorada (UNIQUE)', ['mid' => $msgId]);
             return;
         }
@@ -190,7 +193,7 @@ class ProcessInstagramWebhook implements ShouldQueue
 
             $contactName     = $profile['name']        ?? null;
             $contactUsername = $profile['username']    ?? null;
-            $pictureUrl      = $profile['profile_pic'] ?? null;
+            $pictureUrl      = $profile['profile_picture_url'] ?? null;
         } catch (\Throwable $e) {
             Log::channel('instagram')->warning('Falha ao buscar perfil do contato', [
                 'igsid' => $igsid,
