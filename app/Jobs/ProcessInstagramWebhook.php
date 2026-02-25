@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Events\InstagramConversationUpdated;
+use App\Events\InstagramMessageCreated;
 use App\Models\AiAgent;
 use App\Models\InstagramConversation;
 use App\Models\InstagramInstance;
@@ -130,8 +132,9 @@ class ProcessInstagramWebhook implements ShouldQueue
         $body = $messageData['text'] ?? null;
 
         // Salvar mensagem (UNIQUE em ig_message_id previne duplicatas)
+        $message = null;
         try {
-            InstagramMessage::withoutGlobalScope('tenant')->create([
+            $message = InstagramMessage::withoutGlobalScope('tenant')->create([
                 'tenant_id'       => $instance->tenant_id,
                 'conversation_id' => $conversation->id,
                 'ig_message_id'   => $msgId,
@@ -171,6 +174,17 @@ class ProcessInstagramWebhook implements ShouldQueue
             'mid'             => $msgId,
             'type'            => $type,
         ]);
+
+        // Broadcast via WebSocket — envolvido em try/catch para que uma falha
+        // no broadcaster não impeça que a mensagem seja salva no banco.
+        try {
+            InstagramMessageCreated::dispatch($message, $instance->tenant_id);
+            $conversation->refresh();
+            InstagramConversationUpdated::dispatch($conversation, $instance->tenant_id);
+            Log::channel('instagram')->info('Broadcast enviado', ['tenant_id' => $instance->tenant_id]);
+        } catch (\Throwable $e) {
+            Log::channel('instagram')->error('Broadcast FALHOU', ['error' => $e->getMessage()]);
+        }
     }
 
     private function fetchContactProfile(InstagramInstance $instance, string $igsid): array

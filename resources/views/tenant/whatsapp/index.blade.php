@@ -1473,6 +1473,24 @@ $pageIcon = 'chat-dots';
                 updateConvInSidebar(data);
             });
 
+            channel.listen('.instagram.message', data => {
+                if (data.conversation_id == activeConvId && activeConvChannel === 'instagram') {
+                    appendMessages([data]);
+                    fetch(`${convBaseUrl(activeConvId)}/read`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': CSRF,
+                            'Accept': 'application/json'
+                        }
+                    });
+                }
+                lastPollAt = data.sent_at ?? new Date().toISOString();
+            });
+
+            channel.listen('.instagram.conversation', data => {
+                updateConvInSidebar(data);
+            });
+
             // Use optional chaining — connector.pusher might not exist for all Echo drivers
             const conn = window.Echo.connector?.pusher?.connection;
             if (!conn) return; // No pusher connector — keep polling
