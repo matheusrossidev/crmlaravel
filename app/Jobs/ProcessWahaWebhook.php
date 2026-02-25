@@ -664,10 +664,11 @@ class ProcessWahaWebhook implements ShouldQueue
         // real phone found. Works for any country (not restricted to Brazilian numbers).
         $info = $msg['_data']['Info'] ?? [];
 
+        $chatJid    = $info['Chat'] ?? '';
         $candidates = [
-            $info['Chat']      ?? '',   // conversation JID — contact in 1:1 chats
-            $info['SenderAlt'] ?? '',   // alternate ID — real phone when Chat is LID
-            $from,                      // pre-processed in handleInbound() for fromMe messages
+            $chatJid,                                                                    // conversation JID — contact in 1:1 chats
+            str_ends_with($chatJid, '@lid') ? ($info['SenderAlt'] ?? '') : '',          // SenderAlt only when Chat is LID (not for groups)
+            $from,                                                                       // pre-processed in handleInbound() for fromMe messages
         ];
 
         foreach ($candidates as $jid) {
