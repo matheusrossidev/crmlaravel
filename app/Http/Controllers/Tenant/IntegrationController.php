@@ -43,7 +43,7 @@ class IntegrationController extends Controller
     public function redirectFacebook(): RedirectResponse
     {
         return Socialite::driver('facebook')
-            ->scopes(['ads_read', 'email', 'public_profile'])
+            ->setScopes(['public_profile', 'ads_read'])
             ->redirect();
     }
 
@@ -71,7 +71,7 @@ class IntegrationController extends Controller
                 'token_expires_at'   => isset($longLived['expires_in'])
                     ? now()->addSeconds((int) $longLived['expires_in'])
                     : now()->addDays(60),
-                'scopes_json'        => ['ads_read', 'email', 'public_profile'],
+                'scopes_json'        => ['public_profile', 'ads_read'],
                 'status'             => 'active',
             ]
         );
@@ -439,7 +439,7 @@ class IntegrationController extends Controller
         try {
             // 1. Trocar code por short-lived token
             Log::channel('instagram')->info('Trocando code por token…');
-            $tokenResponse = Http::timeout(15)->asForm()->post('https://api.instagram.com/oauth/access_token', [
+            $tokenResponse = Http::timeout(15)->asForm()->post('https://www.instagram.com/oauth/access_token', [
                 'client_id'     => config('services.instagram.client_id'),
                 'client_secret' => config('services.instagram.client_secret'),
                 'grant_type'    => 'authorization_code',
