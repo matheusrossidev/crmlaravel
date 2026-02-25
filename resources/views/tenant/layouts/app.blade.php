@@ -154,7 +154,7 @@
             width: 32px;
             height: 32px;
             border-radius: 8px;
-            background: linear-gradient(135deg, #3B82F6, #6366F1);
+            background: #2a84ef;
             display: flex;
             align-items: center;
             justify-content: center;

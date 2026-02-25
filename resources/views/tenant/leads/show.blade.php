@@ -103,7 +103,7 @@ $pageIcon = 'person-badge';
 .lp-step.current .lp-step-dot {
     border-width: 3px;
     color: #fff;
-    box-shadow: 0 0 0 4px rgba(59,130,246,.15);
+    box-shadow: 0 0 0 4px rgba(37,211,102,.2);
 }
 .lp-step-label {
     font-size: 11.5px;
@@ -122,7 +122,7 @@ $pageIcon = 'person-badge';
     min-width: 32px;
     margin-bottom: 18px; /* align with dots */
 }
-.lp-step-line.filled { background: #3b82f6; }
+.lp-step-line.filled { background: #25d366; }
 
 /* ── Main grid ── */
 .lp-grid {
@@ -472,7 +472,7 @@ $pageIcon = 'person-badge';
             $isPast    = $stage->position < $currentPos;
             $isCurrent = $stage->id === $lead->stage_id;
             $cls       = $isPast ? 'past' : ($isCurrent ? 'current' : 'future');
-            $dotBg     = ($isPast || $isCurrent) ? $stage->color : '#e5e7eb';
+            $dotBg     = ($isPast || $isCurrent) ? '#25d366' : '#e5e7eb';
             $dotColor  = ($isPast || $isCurrent) ? '#fff' : '#9ca3af';
         @endphp
         <div class="lp-step {{ $cls }}">
@@ -489,7 +489,7 @@ $pageIcon = 'person-badge';
             <div class="lp-step-label">{{ $stage->name }}</div>
         </div>
         @if(!$loop->last)
-        <div class="lp-step-line {{ ($isPast || $isCurrent) ? 'filled' : '' }}" style="{{ ($isPast || $isCurrent) ? 'background:'.$stage->color.';' : '' }}"></div>
+        <div class="lp-step-line {{ ($isPast || $isCurrent) ? 'filled' : '' }}"></div>
         @endif
         @endforeach
     </div>
