@@ -398,6 +398,7 @@ const CF_UPLOAD_URL    = '{{ route('leads.cf-upload') }}';
 const LEAD_TAGS        = {!! json_encode($_configuredTagsJson) !!};
 const LEAD_NOTE_STORE  = '{{ route('leads.notes.store',   ['lead' => '__ID__']) }}';
 const LEAD_NOTE_DEL    = '{{ route('leads.notes.destroy', ['lead' => '__LEAD__', 'note' => '__NOTE__']) }}';
+const LEAD_PROFILE     = '{{ route('leads.profile',       ['lead' => '__ID__']) }}';
 
 // ── Tag input logic ───────────────────────────────────────────────────────
 let _currentTags = [];
@@ -547,7 +548,7 @@ function populateDrawer(res) {
     // Link para perfil completo
     const profileLink = document.getElementById('drawerProfileLink');
     if (profileLink) {
-        profileLink.href = `/contatos/${lead.id}/perfil`;
+        profileLink.href = LEAD_PROFILE.replace('__ID__', lead.id);
         profileLink.style.display = '';
     }
 

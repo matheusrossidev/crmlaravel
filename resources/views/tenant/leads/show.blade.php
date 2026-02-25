@@ -542,7 +542,7 @@ $pageIcon = 'person-badge';
                             <div class="lp-note-date">{{ $note->created_at->diffForHumans() }}</div>
                         </div>
                         @if($note->created_by === auth()->id())
-                        <button class="lp-note-del" onclick="deleteNote({{ $note->id }})" title="Excluir nota">
+                        <button class="lp-note-del" onclick="deletePageNote({{ $note->id }})" title="Excluir nota">
                             <i class="bi bi-trash3"></i>
                         </button>
                         @endif
@@ -560,7 +560,7 @@ $pageIcon = 'person-badge';
             {{-- Form nova nota --}}
             <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f2f7;">
                 <textarea id="newNoteBody" class="lp-note-textarea" placeholder="Escreva uma nota..."></textarea>
-                <button class="lp-btn-add-note" id="btnAddNote" onclick="addNote()">
+                <button class="lp-btn-add-note" id="btnAddNote" onclick="addPageNote()">
                     <i class="bi bi-plus-lg"></i> Adicionar Nota
                 </button>
             </div>
@@ -868,41 +868,15 @@ $pageIcon = 'person-badge';
 {{-- Drawer compartilhado (para edição) --}}
 @include('tenant.leads._drawer', ['pipelines' => $pipelines, 'customFieldDefs' => $cfDefs])
 
-@php
-    $_pipelinesJson = json_encode($pipelines->map(fn($p) => [
-        'id'     => $p->id,
-        'name'   => $p->name,
-        'stages' => $p->stages->map(fn($s) => [
-            'id'    => $s->id,
-            'name'  => $s->name,
-            'color' => $s->color,
-        ])->values()->all(),
-    ])->values()->all());
-
-    $_cfDefsJson = json_encode($cfDefs->map(fn($d) => [
-        'id'            => $d->id,
-        'name'          => $d->name,
-        'label'         => $d->label,
-        'field_type'    => $d->field_type,
-        'options_json'  => $d->options_json,
-        'is_required'   => $d->is_required,
-        'default_value' => $d->default_value,
-    ])->values()->all());
-@endphp
+@endsection
 
 @push('scripts')
 <script>
-// Constantes que o drawer precisa
-const LEAD_SHOW      = '{{ route('leads.show',        ['lead' => '__ID__']) }}';
-const LEAD_STORE     = '{{ route('leads.store') }}';
-const LEAD_UPD       = '{{ route('leads.update',      ['lead' => '__ID__']) }}';
-const LEAD_DEL       = '{{ route('leads.destroy',     ['lead' => '__ID__']) }}';
-const LEAD_NOTE_STORE= '{{ route('leads.notes.store', ['lead' => '__ID__']) }}';
-const LEAD_NOTE_DEL  = '{{ route('leads.notes.destroy', ['lead' => '__LEAD__', 'note' => '__NOTE__']) }}';
-
-const PIPELINES_DATA = {!! $_pipelinesJson !!};
-const CF_DEFS        = {!! $_cfDefsJson !!};
-const LEAD_TAGS      = [];
+// Constantes que o drawer precisa (PIPELINES_DATA, CF_DEFS, LEAD_TAGS, LEAD_NOTE_STORE, LEAD_NOTE_DEL são definidas pelo drawer)
+const LEAD_SHOW  = '{{ route('leads.show',    ['lead' => '__ID__']) }}';
+const LEAD_STORE = '{{ route('leads.store') }}';
+const LEAD_UPD   = '{{ route('leads.update',  ['lead' => '__ID__']) }}';
+const LEAD_DEL   = '{{ route('leads.destroy', ['lead' => '__ID__']) }}';
 
 // Após salvar no drawer, recarregar a página
 window.onLeadSaved = function(lead, isNew) {
@@ -932,7 +906,7 @@ document.querySelectorAll('.lp-tab-btn').forEach(btn => {
 // ── Notas ─────────────────────────────────────────────────────────────────
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
 
-async function addNote() {
+async function addPageNote() {
     const textarea = document.getElementById('newNoteBody');
     const body     = textarea.value.trim();
     if (!body) return;
@@ -970,7 +944,7 @@ async function addNote() {
                     <div class="lp-note-author">${escapeHtml(note.author || 'Eu')}</div>
                     <div class="lp-note-date">agora mesmo</div>
                 </div>
-                <button class="lp-note-del" onclick="deleteNote(${note.id})" title="Excluir nota">
+                <button class="lp-note-del" onclick="deletePageNote(${note.id})" title="Excluir nota">
                     <i class="bi bi-trash3"></i>
                 </button>
             </div>
@@ -999,7 +973,7 @@ async function addNote() {
     }
 }
 
-async function deleteNote(noteId) {
+async function deletePageNote(noteId) {
     if (!confirm('Excluir esta nota?')) return;
     const url = LEAD_NOTE_DEL
         .replace('__LEAD__', {{ $lead->id }})
