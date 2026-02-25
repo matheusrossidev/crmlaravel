@@ -13,7 +13,7 @@ class ChatbotFlow extends Model
     use BelongsToTenant;
 
     protected $fillable = [
-        'tenant_id', 'name', 'description', 'is_active',
+        'tenant_id', 'name', 'channel', 'description', 'is_active',
         'trigger_keywords', 'variables',
     ];
 

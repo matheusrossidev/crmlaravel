@@ -281,7 +281,7 @@ class AiAgentController extends Controller
             'max_message_length'     => 'nullable|integer|min:50|max:4000',
             'response_delay_seconds' => 'nullable|integer|min:0|max:30',
             'response_wait_seconds'  => 'nullable|integer|min:0|max:30',
-            'channel'                => 'required|in:whatsapp,web_chat',
+            'channel'                => 'required|in:whatsapp,web_chat,instagram',
             'is_active'              => 'nullable|boolean',
             'auto_assign'            => 'nullable|boolean',
             'enable_pipeline_tool'   => 'nullable|boolean',

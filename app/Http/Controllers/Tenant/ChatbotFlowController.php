@@ -292,6 +292,7 @@ class ChatbotFlowController extends Controller
     {
         $data = $request->validate([
             'name'             => 'required|string|max:100',
+            'channel'          => 'required|in:whatsapp,instagram',
             'description'      => 'nullable|string|max:1000',
             'is_active'        => 'boolean',
             'trigger_keywords' => 'nullable|string',

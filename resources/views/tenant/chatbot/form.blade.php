@@ -198,6 +198,9 @@
     }
 
     .btn-open-builder:hover { background: #dcfce7; border-color: #86efac; color: #15803d; }
+
+    .chatbot-channel-card:hover { border-color: #93c5fd !important; background: #f0f8ff !important; color: #2563eb !important; }
+    .chatbot-channel-card.selected { border-color: #3B82F6 !important; background: #eff6ff !important; color: #2563eb !important; }
 </style>
 @endpush
 
@@ -216,6 +219,26 @@
         <form method="POST" action="{{ $isEdit ? route('chatbot.flows.update', $flow) : route('chatbot.flows.store') }}">
             @csrf
             @if($isEdit) @method('PUT') @endif
+
+            {{-- Canal --}}
+            <div class="form-section-label">Canal</div>
+
+            @php $currentChannel = old('channel', $flow->channel ?? 'whatsapp'); @endphp
+            <div class="form-group">
+                <div style="display:flex;gap:10px;">
+                    @foreach([['whatsapp','WhatsApp','whatsapp'],['instagram','Instagram','instagram']] as [$val,$label,$icon])
+                    <label style="flex:1;cursor:pointer;">
+                        <input type="radio" name="channel" value="{{ $val }}" {{ $currentChannel === $val ? 'checked' : '' }}
+                               style="display:none;" onchange="updateChatbotChannelCards()">
+                        <div class="chatbot-channel-card {{ $currentChannel === $val ? 'selected' : '' }}" data-channel="{{ $val }}"
+                             style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 8px;border:2px solid #e8eaf0;border-radius:10px;background:#fafafa;color:#6b7280;font-size:12.5px;font-weight:600;transition:all .15s;text-align:center;cursor:pointer;">
+                            <i class="bi bi-{{ $icon }}" style="font-size:20px;"></i>
+                            <span>{{ $label }}</span>
+                        </div>
+                    </label>
+                    @endforeach
+                </div>
+            </div>
 
             {{-- Identificação --}}
             <div class="form-section-label">Identificação</div>
@@ -306,4 +329,15 @@
 
 </div>
 </div>
+
+@push('scripts')
+<script>
+function updateChatbotChannelCards() {
+    const selected = document.querySelector('input[name="channel"]:checked')?.value;
+    document.querySelectorAll('.chatbot-channel-card').forEach(card => {
+        card.classList.toggle('selected', card.dataset.channel === selected);
+    });
+}
+</script>
+@endpush
 @endsection

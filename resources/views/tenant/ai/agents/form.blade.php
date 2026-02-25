@@ -217,6 +217,15 @@
         border-radius: 9px; margin-bottom: 7px; background: #eff6ff;
         font-size: 12.5px; color: #3B82F6;
     }
+
+    .channel-card {
+        display: flex; flex-direction: column; align-items: center; gap: 5px;
+        padding: 12px 8px; border: 2px solid #e8eaf0; border-radius: 10px;
+        background: #fafafa; color: #6b7280; font-size: 12px; font-weight: 600;
+        transition: all .15s; text-align: center;
+    }
+    .channel-card:hover { border-color: #93c5fd; background: #f0f8ff; color: #2563eb; }
+    .channel-card.selected { border-color: #3B82F6; background: #eff6ff; color: #2563eb; }
 </style>
 @endpush
 
@@ -240,6 +249,24 @@
           class="ai-form-wrap">
         @csrf
         @if($isEdit) @method('PUT') @endif
+
+        {{-- Seletor de Canal --}}
+        <div style="margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Canal de atuação</div>
+            <div style="display:flex;gap:10px;">
+                @php $currentChannel = old('channel', $agent->channel ?? 'whatsapp'); @endphp
+                @foreach([['whatsapp','WhatsApp','whatsapp'],['instagram','Instagram','instagram'],['web_chat','Web Chat','globe']] as [$val,$label,$icon])
+                <label style="flex:1;cursor:pointer;">
+                    <input type="radio" name="channel" value="{{ $val }}" {{ $currentChannel === $val ? 'checked' : '' }}
+                           style="display:none;" onchange="updateChannelCards()">
+                    <div class="channel-card {{ $currentChannel === $val ? 'selected' : '' }}" data-channel="{{ $val }}">
+                        <i class="bi bi-{{ $icon }}" style="font-size:18px;"></i>
+                        <span>{{ $label }}</span>
+                    </div>
+                </label>
+                @endforeach
+            </div>
+        </div>
 
         {{-- Toggle ativo --}}
         <div class="toggle-wrap" onclick="toggleActive()">
@@ -556,13 +583,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Canal</label>
-                    <select name="channel" class="form-control">
-                        <option value="whatsapp" {{ old('channel', $agent->channel) === 'whatsapp' ? 'selected' : '' }}>WhatsApp</option>
-                        <option value="web_chat" {{ old('channel', $agent->channel) === 'web_chat' ? 'selected' : '' }}>Web Chat</option>
-                    </select>
-                </div>
             </div>
         </div>
 
@@ -784,6 +804,14 @@ async function deleteKbFile(id, name) {
 }
 let testHistory = [];
 let testChatOpen = false;
+
+/* ── Canal ── */
+function updateChannelCards() {
+    const selected = document.querySelector('input[name="channel"]:checked')?.value;
+    document.querySelectorAll('.channel-card').forEach(card => {
+        card.classList.toggle('selected', card.dataset.channel === selected);
+    });
+}
 
 /* ── Toggle ativo ── */
 function toggleActive() {
