@@ -358,6 +358,98 @@ textarea.form-control { resize: vertical; min-height: 68px; }
 .match-type-radio { display: flex; gap: 16px; }
 .match-type-radio label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; font-weight: 400; color: #374151; text-transform: none; letter-spacing: 0; }
 
+/* ── DM Sequence builder ─────────────────────────── */
+.dm-block {
+    border: 1.5px solid #e8eaf0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+.dm-block-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: #f8f9fb;
+    border-bottom: 1px solid #e8eaf0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    user-select: none;
+}
+.dm-block-head .dm-block-type {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.dm-block-body { padding: 10px 12px; }
+
+.dm-img-preview {
+    width: 100%;
+    max-height: 120px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-top: 6px;
+    display: none;
+}
+.dm-img-preview.show { display: block; }
+
+/* button chips inside a block */
+.dm-btn-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 6px 8px;
+    border: 1.5px solid #e8eaf0;
+    border-radius: 8px;
+    min-height: 36px;
+    cursor: text;
+    margin-top: 6px;
+    transition: border-color .15s;
+}
+.dm-btn-wrap:focus-within { border-color: #2a84ef; box-shadow: 0 0 0 3px rgba(42,132,239,.1); }
+.dm-btn-chip {
+    background: #dbeafe;
+    color: #1d4ed8;
+    border-radius: 20px;
+    padding: 2px 8px 2px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+}
+.dm-btn-chip button {
+    background: none; border: none; cursor: pointer;
+    color: #1d4ed8; padding: 0; font-size: 12px; line-height: 1;
+}
+.dm-btn-input {
+    border: none; outline: none;
+    font-size: 12.5px; flex: 1; min-width: 80px;
+    background: transparent; padding: 2px 0;
+}
+.dm-add-btns {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+}
+.dm-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    border-radius: 7px;
+    padding: 5px 12px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .15s;
+}
+.dm-add-btn:hover { background: #e5e7eb; }
+
 /* ── Buttons ─────────────────────────────────────── */
 .btn-primary-ig {
     background: #2a84ef;
@@ -651,17 +743,22 @@ textarea.form-control { resize: vertical; min-height: 68px; }
             <div class="char-count" id="countReply">0 / 2200</div>
         </div>
 
-        {{-- DM message --}}
+        {{-- DM sequence builder --}}
         <div class="form-group" style="margin-bottom:0;">
             <label>
                 <i class="bi bi-envelope-fill" style="color:#2a84ef;font-size:11px;"></i>
                 Enviar DM
-                <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">(opcional)</span>
+                <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">(opcional — sequência de mensagens)</span>
             </label>
-            <textarea id="dmMessage" class="form-control" maxlength="1000"
-                      placeholder="Mensagem privada enviada no inbox..."
-                      oninput="updateCount('dmMessage','countDm',1000)"></textarea>
-            <div class="char-count" id="countDm">0 / 1000</div>
+            <div id="dmBuilder"></div>
+            <div class="dm-add-btns">
+                <button type="button" class="dm-add-btn" onclick="addDmBlock('text')">
+                    <i class="bi bi-chat-left-text"></i> Texto
+                </button>
+                <button type="button" class="dm-add-btn" onclick="addDmBlock('image')">
+                    <i class="bi bi-image"></i> Imagem
+                </button>
+            </div>
         </div>
     </div>
     <div class="ig-drawer-foot">
@@ -705,6 +802,7 @@ let postNextCursor = null;
 let postsLoaded    = false;
 let keywords       = [];
 let pendingDeleteId = null;
+let dmBlocks       = [];   // [{type, text, url, buttons:[]}]
 
 // ── Modal Nova/Editar ─────────────────────────────────────────────────────
 function openModal(auto = null) {
@@ -714,11 +812,10 @@ function openModal(auto = null) {
     document.getElementById('selectedMediaId').value        = auto?.media_id ?? '';
     document.getElementById('selectedMediaThumb').value     = auto?.media_thumbnail_url ?? '';
     document.getElementById('selectedMediaCaption').value   = auto?.media_caption ?? '';
-    document.getElementById('replyComment').value           = auto?.reply_comment ?? '';
-    document.getElementById('dmMessage').value              = auto?.dm_message ?? '';
-
+    document.getElementById('replyComment').value = auto?.reply_comment ?? '';
     updateCount('replyComment', 'countReply', 2200);
-    updateCount('dmMessage', 'countDm', 1000);
+
+    loadDmMessages(auto);
 
     keywords = auto ? [...(auto.keywords || [])] : [];
     renderKwChips();
@@ -739,6 +836,8 @@ function closeModal() {
     document.getElementById('igDrawer').classList.remove('open');
     postsLoaded    = false;
     postNextCursor = null;
+    dmBlocks       = [];
+    document.getElementById('dmBuilder').innerHTML = '';
 }
 
 function editAuto(id) {
@@ -903,12 +1002,159 @@ function updateCount(inputId, countId, max) {
     el.className   = 'char-count' + (len >= max ? ' danger' : len > max * .88 ? ' warn' : '');
 }
 
+// ── DM Sequence Builder ───────────────────────────────────────────────────
+function loadDmMessages(auto) {
+    if (auto && auto.dm_messages && auto.dm_messages.length > 0) {
+        dmBlocks = auto.dm_messages.map(m => ({
+            type:    m.type    ?? 'text',
+            text:    m.text    ?? '',
+            url:     m.url     ?? '',
+            buttons: Array.isArray(m.buttons) ? [...m.buttons] : [],
+        }));
+    } else if (auto && auto.dm_message) {
+        // Legacy: convert single dm_message to first text block
+        dmBlocks = [{ type: 'text', text: auto.dm_message, url: '', buttons: [] }];
+    } else {
+        dmBlocks = [];
+    }
+    renderDmBuilder();
+}
+
+function addDmBlock(type) {
+    dmBlocks.push({ type, text: '', url: '', buttons: [] });
+    renderDmBuilder();
+}
+
+function removeDmBlock(idx) {
+    dmBlocks.splice(idx, 1);
+    renderDmBuilder();
+}
+
+function addDmButton(idx) {
+    const wrap  = document.getElementById(`dmBtnWrap-${idx}`);
+    const input = document.getElementById(`dmBtnInput-${idx}`);
+    if (!wrap || !input) return;
+    const val = input.value.trim().substring(0, 20);
+    if (!val) return;
+    if (dmBlocks[idx].buttons.length >= 13) { alert('Máximo de 13 botões.'); return; }
+    dmBlocks[idx].buttons.push(val);
+    input.value = '';
+    renderDmBtnChips(idx);
+}
+
+function removeDmButton(idx, bi) {
+    dmBlocks[idx].buttons.splice(bi, 1);
+    renderDmBtnChips(idx);
+}
+
+function renderDmBtnChips(idx) {
+    const wrap  = document.getElementById(`dmBtnWrap-${idx}`);
+    const input = document.getElementById(`dmBtnInput-${idx}`);
+    if (!wrap || !input) return;
+    wrap.querySelectorAll('.dm-btn-chip').forEach(c => c.remove());
+    (dmBlocks[idx].buttons || []).forEach((btn, bi) => {
+        const chip = document.createElement('span');
+        chip.className = 'dm-btn-chip';
+        chip.innerHTML = `${escHtml(btn)}<button type="button" onclick="removeDmButton(${idx},${bi})">×</button>`;
+        wrap.insertBefore(chip, input);
+    });
+}
+
+function renderDmBuilder() {
+    const container = document.getElementById('dmBuilder');
+    container.innerHTML = '';
+    dmBlocks.forEach((block, idx) => {
+        const div = document.createElement('div');
+        div.className = 'dm-block';
+
+        if (block.type === 'image') {
+            div.innerHTML = `
+                <div class="dm-block-head">
+                    <span class="dm-block-type"><i class="bi bi-image" style="color:#2a84ef;"></i> Imagem</span>
+                    <button type="button" class="btn-icon danger" onclick="removeDmBlock(${idx})"><i class="bi bi-trash"></i></button>
+                </div>
+                <div class="dm-block-body">
+                    <input type="url" class="form-control" id="dmUrl-${idx}"
+                           placeholder="https://public.com/imagem.jpg"
+                           value="${escHtml(block.url)}"
+                           oninput="dmBlocks[${idx}].url=this.value;updateImgPreview(${idx})">
+                    <img id="dmImgPrev-${idx}" class="dm-img-preview ${block.url ? 'show' : ''}"
+                         src="${escHtml(block.url)}" alt="preview" onerror="this.classList.remove('show')">
+                </div>`;
+        } else {
+            div.innerHTML = `
+                <div class="dm-block-head">
+                    <span class="dm-block-type"><i class="bi bi-chat-left-text" style="color:#2a84ef;"></i> Texto</span>
+                    <button type="button" class="btn-icon danger" onclick="removeDmBlock(${idx})"><i class="bi bi-trash"></i></button>
+                </div>
+                <div class="dm-block-body">
+                    <textarea class="form-control" id="dmText-${idx}" rows="3"
+                              maxlength="1000" placeholder="Mensagem de texto... (links são clicáveis automaticamente)"
+                              oninput="dmBlocks[${idx}].text=this.value">${escHtml(block.text)}</textarea>
+                    <div style="margin-top:8px;">
+                        <label style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">
+                            Botões de resposta rápida <span style="font-weight:400;text-transform:none;color:#9ca3af;">(opcional, max 13)</span>
+                        </label>
+                        <div class="dm-btn-wrap" id="dmBtnWrap-${idx}"
+                             onclick="document.getElementById('dmBtnInput-${idx}').focus()">
+                            <input type="text" class="dm-btn-input" id="dmBtnInput-${idx}"
+                                   maxlength="20" placeholder="Adicionar botão (Enter)">
+                        </div>
+                    </div>
+                </div>`;
+        }
+        container.appendChild(div);
+
+        // Render existing button chips
+        if (block.type === 'text') {
+            renderDmBtnChips(idx);
+            // Bind enter key on button input
+            const btnInput = document.getElementById(`dmBtnInput-${idx}`);
+            if (btnInput) {
+                btnInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        addDmButton(idx);
+                    }
+                });
+                btnInput.addEventListener('blur', function() {
+                    if (this.value.trim()) addDmButton(idx);
+                });
+            }
+        }
+    });
+}
+
+function updateImgPreview(idx) {
+    const url   = document.getElementById(`dmUrl-${idx}`)?.value;
+    const prev  = document.getElementById(`dmImgPrev-${idx}`);
+    if (!prev) return;
+    if (url) {
+        prev.src = url;
+        prev.classList.add('show');
+        prev.onerror = () => prev.classList.remove('show');
+    } else {
+        prev.classList.remove('show');
+    }
+}
+
+function serializeDmMessages() {
+    return dmBlocks
+        .map(b => {
+            if (b.type === 'image') {
+                return b.url.trim() ? { type: 'image', url: b.url.trim() } : null;
+            }
+            return b.text.trim() ? { type: 'text', text: b.text.trim(), buttons: b.buttons } : null;
+        })
+        .filter(Boolean);
+}
+
 // ── Save ──────────────────────────────────────────────────────────────────
 async function saveAutomation() {
     if (keywords.length === 0) { alert('Adicione pelo menos uma palavra-chave.'); return; }
-    const reply = document.getElementById('replyComment').value.trim();
-    const dm    = document.getElementById('dmMessage').value.trim();
-    if (!reply && !dm) { alert('Defina pelo menos uma ação: resposta ao comentário ou DM.'); return; }
+    const reply      = document.getElementById('replyComment').value.trim();
+    const dmSerialized = serializeDmMessages();
+    if (!reply && dmSerialized.length === 0) { alert('Defina pelo menos uma ação: resposta ao comentário ou DM.'); return; }
 
     const scope = document.querySelector('[name="postScope"]:checked').value;
     const id    = document.getElementById('editingId').value;
@@ -921,7 +1167,7 @@ async function saveAutomation() {
         keywords,
         match_type:           document.querySelector('[name="matchType"]:checked').value,
         reply_comment:        reply || null,
-        dm_message:           dm || null,
+        dm_messages:          dmSerialized.length > 0 ? dmSerialized : null,
     };
 
     const isEdit = !!id;

@@ -32,6 +32,48 @@ class InstagramService
         ]);
     }
 
+    /**
+     * Send an image DM via a publicly-accessible URL.
+     * Requires instagram_business_manage_messages permission.
+     */
+    public function sendImageAttachment(string $igsid, string $url): array
+    {
+        return $this->post('/me/messages', [
+            'recipient' => ['id' => $igsid],
+            'message'   => [
+                'attachment' => [
+                    'type'    => 'image',
+                    'payload' => ['url' => $url],
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Send a text DM with Quick Reply buttons (up to 13 buttons, titles max 20 chars).
+     * Requires instagram_business_manage_messages permission.
+     */
+    public function sendMessageWithButtons(string $igsid, string $text, array $buttons): array
+    {
+        $quickReplies = array_values(array_map(
+            fn (string $btn, int $i) => [
+                'content_type' => 'text',
+                'title'        => mb_substr($btn, 0, 20),
+                'payload'      => 'BTN_' . $i,
+            ],
+            $buttons,
+            array_keys($buttons),
+        ));
+
+        return $this->post('/me/messages', [
+            'recipient' => ['id' => $igsid],
+            'message'   => [
+                'text'          => $text,
+                'quick_replies' => $quickReplies,
+            ],
+        ]);
+    }
+
     // ── Profile ───────────────────────────────────────────────────────────────
 
     /**

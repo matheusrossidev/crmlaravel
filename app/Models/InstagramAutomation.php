@@ -26,6 +26,7 @@ class InstagramAutomation extends Model
         'is_active',
         'comments_replied',
         'dms_sent',
+        'dm_messages',
     ];
 
     protected $casts = [
@@ -33,6 +34,7 @@ class InstagramAutomation extends Model
         'is_active'        => 'boolean',
         'comments_replied' => 'integer',
         'dms_sent'         => 'integer',
+        'dm_messages'      => 'array',
     ];
 
     public function instance(): BelongsTo

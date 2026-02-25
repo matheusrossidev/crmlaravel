@@ -69,18 +69,24 @@ class InstagramAutomationController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'          => 'nullable|string|max:100',
-            'media_id'      => 'nullable|string|max:191',
-            'media_thumbnail_url' => 'nullable|string',
-            'media_caption' => 'nullable|string',
-            'keywords'      => 'required|array|min:1',
-            'keywords.*'    => 'required|string|max:100',
-            'match_type'    => 'nullable|in:any,all',
-            'reply_comment' => 'nullable|string|max:2200',
-            'dm_message'    => 'nullable|string|max:1000',
+            'name'                   => 'nullable|string|max:100',
+            'media_id'               => 'nullable|string|max:191',
+            'media_thumbnail_url'    => 'nullable|string',
+            'media_caption'          => 'nullable|string',
+            'keywords'               => 'required|array|min:1',
+            'keywords.*'             => 'required|string|max:100',
+            'match_type'             => 'nullable|in:any,all',
+            'reply_comment'          => 'nullable|string|max:2200',
+            'dm_message'             => 'nullable|string|max:1000',
+            'dm_messages'            => 'nullable|array',
+            'dm_messages.*.type'     => 'required_with:dm_messages|in:text,image',
+            'dm_messages.*.text'     => 'nullable|string|max:1000',
+            'dm_messages.*.url'      => 'nullable|url',
+            'dm_messages.*.buttons'  => 'nullable|array|max:13',
+            'dm_messages.*.buttons.*'=> 'string|max:20',
         ]);
 
-        if (empty($data['reply_comment']) && empty($data['dm_message'])) {
+        if (empty($data['reply_comment']) && empty($data['dm_message']) && empty($data['dm_messages'])) {
             return response()->json([
                 'error' => 'Defina pelo menos uma ação: resposta ao comentário ou DM.',
             ], 422);
@@ -92,6 +98,9 @@ class InstagramAutomationController extends Controller
             return response()->json(['error' => 'Instagram não conectado.'], 422);
         }
 
+        // Extract first text block as legacy dm_message for list preview
+        $legacyDm = $data['dm_message'] ?? $this->extractFirstText($data['dm_messages'] ?? null);
+
         $automation = InstagramAutomation::create([
             'tenant_id'           => auth()->user()->tenant_id,
             'instance_id'         => $instance->id,
@@ -102,7 +111,8 @@ class InstagramAutomationController extends Controller
             'keywords'            => $data['keywords'],
             'match_type'          => $data['match_type'] ?? 'any',
             'reply_comment'       => $data['reply_comment'] ?? null,
-            'dm_message'          => $data['dm_message'] ?? null,
+            'dm_message'          => $legacyDm,
+            'dm_messages'         => $data['dm_messages'] ?? null,
             'is_active'           => true,
         ]);
 
@@ -112,22 +122,30 @@ class InstagramAutomationController extends Controller
     public function update(Request $request, InstagramAutomation $automation): JsonResponse
     {
         $data = $request->validate([
-            'name'          => 'nullable|string|max:100',
-            'media_id'      => 'nullable|string|max:191',
-            'media_thumbnail_url' => 'nullable|string',
-            'media_caption' => 'nullable|string',
-            'keywords'      => 'required|array|min:1',
-            'keywords.*'    => 'required|string|max:100',
-            'match_type'    => 'nullable|in:any,all',
-            'reply_comment' => 'nullable|string|max:2200',
-            'dm_message'    => 'nullable|string|max:1000',
+            'name'                   => 'nullable|string|max:100',
+            'media_id'               => 'nullable|string|max:191',
+            'media_thumbnail_url'    => 'nullable|string',
+            'media_caption'          => 'nullable|string',
+            'keywords'               => 'required|array|min:1',
+            'keywords.*'             => 'required|string|max:100',
+            'match_type'             => 'nullable|in:any,all',
+            'reply_comment'          => 'nullable|string|max:2200',
+            'dm_message'             => 'nullable|string|max:1000',
+            'dm_messages'            => 'nullable|array',
+            'dm_messages.*.type'     => 'required_with:dm_messages|in:text,image',
+            'dm_messages.*.text'     => 'nullable|string|max:1000',
+            'dm_messages.*.url'      => 'nullable|url',
+            'dm_messages.*.buttons'  => 'nullable|array|max:13',
+            'dm_messages.*.buttons.*'=> 'string|max:20',
         ]);
 
-        if (empty($data['reply_comment']) && empty($data['dm_message'])) {
+        if (empty($data['reply_comment']) && empty($data['dm_message']) && empty($data['dm_messages'])) {
             return response()->json([
                 'error' => 'Defina pelo menos uma ação: resposta ao comentário ou DM.',
             ], 422);
         }
+
+        $data['dm_message'] = $data['dm_message'] ?? $this->extractFirstText($data['dm_messages'] ?? null);
 
         $automation->update($data);
 
@@ -144,5 +162,18 @@ class InstagramAutomationController extends Controller
     {
         $automation->update(['is_active' => ! $automation->is_active]);
         return response()->json(['is_active' => $automation->is_active]);
+    }
+
+    private function extractFirstText(?array $dmMessages): ?string
+    {
+        if (empty($dmMessages)) {
+            return null;
+        }
+        foreach ($dmMessages as $msg) {
+            if (($msg['type'] ?? '') === 'text' && ! empty($msg['text'])) {
+                return $msg['text'];
+            }
+        }
+        return null;
     }
 }
