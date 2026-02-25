@@ -140,6 +140,42 @@ $pageIcon = 'chat-dots';
         background: #fff;
     }
 
+    .wa-channel-tabs {
+        display: flex;
+        border-bottom: 1.5px solid #f0f0f0;
+        padding: 0 8px;
+        flex-shrink: 0;
+    }
+
+    .wa-channel-tab {
+        flex: 1;
+        padding: 9px 4px;
+        background: none;
+        border: none;
+        border-bottom: 2.5px solid transparent;
+        margin-bottom: -1.5px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: #6b7280;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        transition: color .15s, border-color .15s;
+        font-family: inherit;
+    }
+
+    .wa-channel-tab:hover { color: #374151; }
+
+    .wa-channel-tab.active {
+        color: #3b82f6;
+        border-bottom-color: #3b82f6;
+    }
+
+    .wa-channel-tab[data-channel="whatsapp"].active { color: #16a34a; border-bottom-color: #16a34a; }
+    .wa-channel-tab[data-channel="instagram"].active { color: #d946ef; border-bottom-color: #d946ef; }
+
     .wa-filters {
         display: flex;
         gap: 4px;
@@ -897,6 +933,18 @@ $pageIcon = 'chat-dots';
             </div>
         </div>
 
+        <div class="wa-channel-tabs">
+            <button class="wa-channel-tab active" data-channel="all">
+                <i class="bi bi-grid-3x3-gap-fill"></i> Geral
+            </button>
+            <button class="wa-channel-tab" data-channel="whatsapp">
+                <i class="bi bi-whatsapp"></i> WhatsApp
+            </button>
+            <button class="wa-channel-tab" data-channel="instagram">
+                <i class="bi bi-instagram"></i> Instagram
+            </button>
+        </div>
+
         <div class="wa-filters">
             <button class="wa-filter-btn active" data-filter="all">Todas</button>
             <button class="wa-filter-btn" data-filter="mine">Para mim</button>
@@ -1327,6 +1375,7 @@ $pageIcon = 'chat-dots';
     document.addEventListener('DOMContentLoaded', () => {
         setupSearch();
         setupFilters();
+        setupChannelTabs();
         updateTotalUnread();
         setupEcho();
 
@@ -1458,33 +1507,62 @@ $pageIcon = 'chat-dots';
     }
 
     // ── Filtros e pesquisa ────────────────────────────────────────────────────────
+    let activeStatusFilter = 'all';
+    let activeChannelTab   = 'all';
+
     function setupSearch() {
-        document.getElementById('searchInput').addEventListener('input', function() {
-            const q = this.value.toLowerCase();
-            document.querySelectorAll('.wa-conv-item').forEach(item => {
-                const name = item.querySelector('.wa-conv-name').textContent.toLowerCase();
-                const phone = item.dataset.phone.toLowerCase();
-                item.style.display = (name.includes(q) || phone.includes(q)) ? '' : 'none';
-            });
-        });
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
     }
 
     function setupFilters() {
         document.querySelectorAll('.wa-filter-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function () {
                 document.querySelectorAll('.wa-filter-btn').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
-                const filter = this.dataset.filter;
-                document.querySelectorAll('.wa-conv-item').forEach(item => {
-                    let visible = true;
-                    if (filter === 'mine') {
-                        visible = String(item.dataset.assignedUserId) === String(CURRENT_USER_ID);
-                    } else if (filter === 'open' || filter === 'closed') {
-                        visible = item.dataset.status === filter;
-                    }
-                    item.style.display = visible ? '' : 'none';
-                });
+                activeStatusFilter = this.dataset.filter;
+                applyFilters();
             });
+        });
+    }
+
+    function setupChannelTabs() {
+        document.querySelectorAll('.wa-channel-tab').forEach(tab => {
+            tab.addEventListener('click', function () {
+                document.querySelectorAll('.wa-channel-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                activeChannelTab = this.dataset.channel;
+                applyFilters();
+            });
+        });
+    }
+
+    function applyFilters() {
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        document.querySelectorAll('.wa-conv-item').forEach(item => {
+            let visible = true;
+
+            // Canal
+            if (activeChannelTab !== 'all') {
+                visible = item.dataset.channel === activeChannelTab;
+            }
+
+            // Status / atribuição
+            if (visible) {
+                if (activeStatusFilter === 'mine') {
+                    visible = String(item.dataset.assignedUserId) === String(CURRENT_USER_ID);
+                } else if (activeStatusFilter === 'open' || activeStatusFilter === 'closed') {
+                    visible = item.dataset.status === activeStatusFilter;
+                }
+            }
+
+            // Busca por texto
+            if (visible && q) {
+                const name  = item.querySelector('.wa-conv-name')?.textContent.toLowerCase() ?? '';
+                const phone = item.dataset.phone?.toLowerCase() ?? '';
+                visible = name.includes(q) || phone.includes(q);
+            }
+
+            item.style.display = visible ? '' : 'none';
         });
     }
 
