@@ -94,14 +94,38 @@ class InstagramService
 
     /**
      * Subscribe this account to receive webhook events (required after OAuth).
-     * Without this call, Meta does NOT send DM webhooks for this account.
+     * Without this call, Meta does NOT send DM/comment webhooks for this account.
      * Must be sent as form-urlencoded (not JSON) — that's why we use asForm().
      */
     public function subscribeToWebhooks(): array
     {
         return $this->postForm('/me/subscribed_apps', [
-            'subscribed_fields' => 'messages',
+            'subscribed_fields' => 'messages,comments',
         ]);
+    }
+
+    /**
+     * Fetch the user's media posts (feed) with cursor-based pagination.
+     * Requires instagram_business_basic permission.
+     */
+    public function getUserMedia(?string $after = null): array
+    {
+        $params = [
+            'fields' => 'id,caption,media_url,thumbnail_url,timestamp,media_type,permalink',
+        ];
+        if ($after) {
+            $params['after'] = $after;
+        }
+        return $this->get('/me/media', $params);
+    }
+
+    /**
+     * Reply to a comment on the account's media.
+     * Requires instagram_business_manage_comments permission.
+     */
+    public function replyToComment(string $commentId, string $message): array
+    {
+        return $this->post("/{$commentId}/replies", ['message' => $message]);
     }
 
     // ── Token exchange ────────────────────────────────────────────────────────

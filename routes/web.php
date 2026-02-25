@@ -20,6 +20,7 @@ use App\Http\Controllers\Tenant\ChatbotFlowController;
 use App\Http\Controllers\Tenant\WhatsappController;
 use App\Http\Controllers\Tenant\WhatsappMessageController;
 use App\Http\Controllers\Tenant\WhatsappTagController;
+use App\Http\Controllers\Tenant\InstagramAutomationController;
 use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -147,6 +148,16 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::post('{flow}/toggle',    [ChatbotFlowController::class, 'toggle'])->name('toggle');
         Route::put('{flow}/graph',      [ChatbotFlowController::class, 'saveGraph'])->name('graph');
         Route::post('{flow}/test-step', [ChatbotFlowController::class, 'testStep'])->name('test-step');
+    });
+
+    // Automações de Instagram
+    Route::prefix('configuracoes/instagram-automacoes')->name('settings.ig-automations.')->group(function () {
+        Route::get('posts',                 [InstagramAutomationController::class, 'posts'])->name('posts');
+        Route::get('',                      [InstagramAutomationController::class, 'index'])->name('index');
+        Route::post('',                     [InstagramAutomationController::class, 'store'])->name('store');
+        Route::put('{automation}',          [InstagramAutomationController::class, 'update'])->name('update');
+        Route::delete('{automation}',       [InstagramAutomationController::class, 'destroy'])->name('destroy');
+        Route::patch('{automation}/toggle', [InstagramAutomationController::class, 'toggleActive'])->name('toggle');
     });
 
     // Configurações — Pipelines + Stages

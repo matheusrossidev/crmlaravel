@@ -412,7 +412,7 @@ class IntegrationController extends Controller
         $params = http_build_query([
             'client_id'     => $clientId,
             'redirect_uri'  => $redirectUri,
-            'scope'         => 'instagram_business_basic,instagram_business_manage_messages',
+            'scope'         => 'instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments',
             'response_type' => 'code',
         ]);
 

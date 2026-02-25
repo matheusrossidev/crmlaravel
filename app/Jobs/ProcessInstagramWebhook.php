@@ -7,6 +7,7 @@ namespace App\Jobs;
 use App\Events\InstagramConversationUpdated;
 use App\Events\InstagramMessageCreated;
 use App\Models\AiAgent;
+use App\Models\InstagramAutomation;
 use App\Models\InstagramConversation;
 use App\Models\InstagramInstance;
 use App\Models\InstagramMessage;
@@ -72,6 +73,12 @@ class ProcessInstagramWebhook implements ShouldQueue
 
             foreach ($entry['messaging'] ?? [] as $messaging) {
                 $this->processMessaging($instance, $messaging);
+            }
+
+            foreach ($entry['changes'] ?? [] as $change) {
+                if (($change['field'] ?? '') === 'comments') {
+                    $this->processComment($instance, $change['value'] ?? []);
+                }
             }
         }
     }
@@ -373,5 +380,110 @@ class ProcessInstagramWebhook implements ShouldQueue
         }
 
         return ['text', null];
+    }
+
+    // ── Comment Automation ────────────────────────────────────────────────────
+
+    private function processComment(InstagramInstance $instance, array $value): void
+    {
+        $commentId   = $value['id'] ?? null;
+        $commentText = $value['text'] ?? '';
+        $mediaId     = $value['media']['id'] ?? null;
+        $fromId      = $value['from']['id'] ?? null; // IGSID do comentarista
+
+        if (! $commentId || ! $fromId) {
+            return;
+        }
+
+        // Dedup via Cache (60s)
+        if (! Cache::add("ig:comment:{$commentId}", 1, 60)) {
+            Log::channel('instagram')->debug('Comentário duplicado ignorado', ['comment_id' => $commentId]);
+            return;
+        }
+
+        Log::channel('instagram')->info('Comentário recebido', [
+            'comment_id' => $commentId,
+            'media_id'   => $mediaId,
+            'from_id'    => $fromId,
+            'text'       => mb_substr($commentText, 0, 100),
+        ]);
+
+        $automations = InstagramAutomation::withoutGlobalScope('tenant')
+            ->where('tenant_id', $instance->tenant_id)
+            ->where('instance_id', $instance->id)
+            ->where('is_active', true)
+            ->where(function ($q) use ($mediaId) {
+                $q->whereNull('media_id')->orWhere('media_id', $mediaId);
+            })
+            ->get();
+
+        foreach ($automations as $automation) {
+            if (! $this->matchesKeywords($commentText, $automation)) {
+                continue;
+            }
+
+            Log::channel('instagram')->info('Automação acionada por comentário', [
+                'automation_id' => $automation->id,
+                'comment_id'    => $commentId,
+            ]);
+
+            $service = new InstagramService(decrypt($instance->access_token));
+
+            if ($automation->reply_comment) {
+                try {
+                    $service->replyToComment($commentId, $automation->reply_comment);
+                    Log::channel('instagram')->info('Comentário respondido com sucesso', [
+                        'comment_id'    => $commentId,
+                        'automation_id' => $automation->id,
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::channel('instagram')->error('Falha ao responder comentário', [
+                        'comment_id' => $commentId,
+                        'error'      => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            if ($automation->dm_message) {
+                try {
+                    $service->sendMessage($fromId, $automation->dm_message);
+                    Log::channel('instagram')->info('DM enviada para comentarista', [
+                        'from_id'       => $fromId,
+                        'automation_id' => $automation->id,
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::channel('instagram')->error('Falha ao enviar DM para comentarista', [
+                        'from_id' => $fromId,
+                        'error'   => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+    }
+
+    private function matchesKeywords(string $text, InstagramAutomation $automation): bool
+    {
+        $keywords = $automation->keywords ?? [];
+        if (empty($keywords)) {
+            return false;
+        }
+
+        $lower = mb_strtolower($text);
+
+        if ($automation->match_type === 'all') {
+            foreach ($keywords as $kw) {
+                if (! str_contains($lower, mb_strtolower($kw))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        foreach ($keywords as $kw) {
+            if (str_contains($lower, mb_strtolower($kw))) {
+                return true;
+            }
+        }
+        return false;
     }
 }
