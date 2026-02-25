@@ -59,7 +59,11 @@ class ProcessInstagramWebhook implements ShouldQueue
                         'ig_business_account_id' => $igAccountId,
                     ]);
                 } else {
-                    Log::channel('instagram')->warning('Instância não encontrada', ['ig_account_id' => $igAccountId]);
+                    // entry.id pode ser o FB Page ID enviado pelo Meta como webhook duplicado —
+                    // o evento real chega pelo outro entry com o IG Account ID correto.
+                    Log::channel('instagram')->debug('entry.id não corresponde a nenhuma instância (possível duplicata Meta)', [
+                        'ig_account_id' => $igAccountId,
+                    ]);
                     continue;
                 }
             }
@@ -169,6 +173,35 @@ class ProcessInstagramWebhook implements ShouldQueue
         ]);
     }
 
+    private function fetchContactProfile(InstagramInstance $instance, string $igsid): array
+    {
+        try {
+            $token   = decrypt($instance->access_token);
+            $service = new InstagramService($token);
+            $profile = $service->getProfile($igsid);
+
+            // getProfile() retorna ['error'=>true,...] em vez de lançar exceção
+            if (! empty($profile['error'])) {
+                Log::channel('instagram')->warning('Falha ao buscar perfil do contato', [
+                    'igsid' => $igsid,
+                    'body'  => $profile['body'] ?? null,
+                ]);
+                return ['name' => null, 'username' => null];
+            }
+
+            return [
+                'name'     => $profile['name']     ?? null,
+                'username' => $profile['username'] ?? null,
+            ];
+        } catch (\Throwable $e) {
+            Log::channel('instagram')->warning('Exceção ao buscar perfil do contato', [
+                'igsid' => $igsid,
+                'error' => $e->getMessage(),
+            ]);
+            return ['name' => null, 'username' => null];
+        }
+    }
+
     private function findOrCreateConversation(
         InstagramInstance $instance,
         string $igsid
@@ -179,28 +212,33 @@ class ProcessInstagramWebhook implements ShouldQueue
             ->first();
 
         if ($conversation) {
+            // Se conversa já existe mas sem nome/username (falha anterior), tentar atualizar
+            if (! $conversation->contact_name && ! $conversation->contact_username) {
+                $profile = $this->fetchContactProfile($instance, $igsid);
+                if ($profile['name'] || $profile['username']) {
+                    InstagramConversation::withoutGlobalScope('tenant')
+                        ->where('id', $conversation->id)
+                        ->update([
+                            'contact_name'     => $profile['name'],
+                            'contact_username' => $profile['username'],
+                        ]);
+                    $conversation->contact_name     = $profile['name'];
+                    $conversation->contact_username = $profile['username'];
+                    Log::channel('instagram')->info('Perfil do contato atualizado', [
+                        'conversation_id' => $conversation->id,
+                        'name'            => $profile['name'],
+                        'username'        => $profile['username'],
+                    ]);
+                }
+            }
             return $conversation;
         }
 
-        // Buscar perfil do contato via API
-        $contactName     = null;
-        $contactUsername = null;
-        $pictureUrl      = null;
-
-        try {
-            $token   = decrypt($instance->access_token);
-            $service = new InstagramService($token);
-            $profile = $service->getProfile($igsid);
-
-            $contactName     = $profile['name']        ?? null;
-            $contactUsername = $profile['username']    ?? null;
-            $pictureUrl      = $profile['profile_picture_url'] ?? null;
-        } catch (\Throwable $e) {
-            Log::channel('instagram')->warning('Falha ao buscar perfil do contato', [
-                'igsid' => $igsid,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        // Conversa nova — buscar perfil do contato
+        $profile         = $this->fetchContactProfile($instance, $igsid);
+        $contactName     = $profile['name'];
+        $contactUsername = $profile['username'];
+        $pictureUrl      = null; // profile_picture_url não disponível via IGSID endpoint
 
         $conversation = InstagramConversation::withoutGlobalScope('tenant')->create([
             'tenant_id'           => $instance->tenant_id,
