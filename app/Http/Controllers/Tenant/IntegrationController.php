@@ -416,7 +416,7 @@ class IntegrationController extends Controller
             'response_type' => 'code',
         ]);
 
-        return redirect("https://api.instagram.com/oauth/authorize?{$params}");
+        return redirect("https://www.instagram.com/oauth/authorize?{$params}");
     }
 
     public function callbackInstagram(): RedirectResponse
