@@ -123,15 +123,16 @@ class WhatsappController extends Controller
         }
 
         return response()->json([
-            'messages'         => $messages,
-            'lead'             => $lead,
-            'assigned_user_id' => $conversation->assigned_user_id,
-            'ai_agent_id'      => $conversation->ai_agent_id,
-            'chatbot_flow_id'  => null,
-            'tags'             => $conversation->tags ?? [],
-            'contact_name'     => $conversation->contact_name,
-            'phone'            => '@' . ltrim($conversation->contact_username ?? '', '@'),
-            'is_group'         => false,
+            'messages'            => $messages,
+            'lead'                => $lead,
+            'assigned_user_id'    => $conversation->assigned_user_id,
+            'ai_agent_id'         => $conversation->ai_agent_id,
+            'chatbot_flow_id'     => null,
+            'tags'                => $conversation->tags ?? [],
+            'contact_name'        => $conversation->contact_name,
+            'contact_picture_url' => $conversation->contact_picture_url,
+            'phone'               => '@' . ltrim($conversation->contact_username ?? '', '@'),
+            'is_group'            => false,
         ]);
     }
 

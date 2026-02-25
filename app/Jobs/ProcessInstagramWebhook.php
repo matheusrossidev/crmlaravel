@@ -84,7 +84,8 @@ class ProcessInstagramWebhook implements ShouldQueue
         }
 
         $msgId    = $messageData['mid'] ?? null;
-        $isFromMe = ($senderId === $instance->instagram_account_id);
+        $isFromMe = ($senderId === $instance->instagram_account_id)
+            || ($instance->ig_business_account_id && $senderId === $instance->ig_business_account_id);
 
         // Dedup via Cache (atomic): Meta pode entregar o mesmo evento mais de uma vez
         if ($msgId && ! Cache::add("ig:processing:{$msgId}", 1, 10)) {
@@ -136,7 +137,7 @@ class ProcessInstagramWebhook implements ShouldQueue
                 'media_url'       => $mediaUrl,
                 'ack'             => 'delivered',
                 'sent_at'         => $timestamp
-                    ? \Carbon\Carbon::createFromTimestamp((int) $timestamp, config('app.timezone'))
+                    ? \Carbon\Carbon::createFromTimestampMs((int) $timestamp)
                     : now(),
             ]);
         } catch (\Illuminate\Database\QueryException $e) {
