@@ -526,7 +526,7 @@
         <div class="content-card">
             <div class="content-card-header">
                 <h3><i class="bi bi-slash-circle" style="color:#EF4444;"></i> Motivos de Perda</h3>
-                <a href="{{ route('settings.lost-reasons') }}" class="card-link">
+                <a href="{{ route('settings.pipelines') }}" class="card-link">
                     Gerenciar <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
