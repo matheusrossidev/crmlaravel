@@ -210,7 +210,16 @@
                 @forelse($leads as $lead)
                 <tr class="lead-row" data-lead-id="{{ $lead->id }}">
                     <td class="lead-name-cell">
-                        {{ $lead->name }}
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span>{{ $lead->name }}</span>
+                            <a href="{{ route('leads.profile', $lead) }}"
+                               title="Ver perfil completo"
+                               onclick="event.stopPropagation();"
+                               style="color:#d1d5db;font-size:12px;flex-shrink:0;line-height:1;transition:color .15s;"
+                               onmouseover="this.style.color='#3b82f6'" onmouseout="this.style.color='#d1d5db'">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                            </a>
+                        </div>
                         @if($lead->pipeline)
                         <small>{{ $lead->pipeline->name }}</small>
                         @endif

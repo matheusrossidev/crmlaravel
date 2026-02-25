@@ -82,6 +82,9 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::post('/contatos/{lead}/notas', [LeadController::class, 'addNote'])->name('leads.notes.store');
     Route::delete('/contatos/{lead}/notas/{note}', [LeadController::class, 'deleteNote'])->name('leads.notes.destroy');
 
+    // Lead profile page
+    Route::get('/contatos/{lead}/perfil', [LeadController::class, 'showPage'])->name('leads.profile');
+
     // Relatórios
     Route::get('/relatorios', [ReportController::class, 'index'])->name('reports.index');
 

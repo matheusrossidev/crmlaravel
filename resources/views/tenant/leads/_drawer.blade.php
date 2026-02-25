@@ -31,6 +31,10 @@
             <div id="drawerSub" style="font-size:12px;color:#9ca3af;margin-top:2px;"></div>
         </div>
         <div style="display:flex;gap:6px;align-items:center;">
+            <a id="drawerProfileLink" href="#" target="_blank" style="display:none;"
+               class="drawer-icon-btn" title="Ver perfil completo">
+                <i class="bi bi-box-arrow-up-right"></i>
+            </a>
             <button id="btnDeleteLead" style="display:none;" class="drawer-icon-btn danger" title="Excluir lead">
                 <i class="bi bi-trash"></i>
             </button>
@@ -485,6 +489,8 @@ function openNewLeadDrawer(defaults = {}) {
     document.getElementById('drawerSub').textContent   = '';
     document.getElementById('btnDeleteLead').style.display = 'none';
     document.getElementById('eventsSection').style.display = 'none';
+    const _pLink = document.getElementById('drawerProfileLink');
+    if (_pLink) _pLink.style.display = 'none';
 
     // Pré-selecionar pipeline/stage se passado (ex: clique em coluna do kanban)
     if (defaults.pipeline_id) {
@@ -537,6 +543,13 @@ function populateDrawer(res) {
     document.getElementById('drawerSub').textContent   = `Criado em ${lead.created_at || ''}`;
     document.getElementById('leadId').value            = lead.id;
     document.getElementById('btnDeleteLead').style.display = '';
+
+    // Link para perfil completo
+    const profileLink = document.getElementById('drawerProfileLink');
+    if (profileLink) {
+        profileLink.href = `/contatos/${lead.id}/perfil`;
+        profileLink.style.display = '';
+    }
 
     document.getElementById('fName').value   = lead.name  || '';
     document.getElementById('fPhone').value  = lead.phone || '';

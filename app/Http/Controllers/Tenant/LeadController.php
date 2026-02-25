@@ -10,11 +10,14 @@ use App\Imports\LeadsImport;
 use App\Models\Campaign;
 use App\Models\CustomFieldDefinition;
 use App\Models\CustomFieldValue;
+use App\Models\InstagramConversation;
 use App\Models\Lead;
 use App\Models\LeadEvent;
 use App\Models\LeadNote;
 use App\Models\Pipeline;
 use App\Models\PipelineStage;
+use App\Models\User;
+use App\Models\WhatsappConversation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -154,6 +157,43 @@ class LeadController extends Controller
             ]),
             'campaigns' => $campaigns,
         ]);
+    }
+
+    public function showPage(Lead $lead): View
+    {
+        $lead->load([
+            'pipeline.stages',
+            'stage',
+            'assignedTo',
+            'campaign',
+            'leadNotes.author',
+            'events.performedBy',
+            'customFieldValues.fieldDefinition',
+        ]);
+
+        $waConversation = WhatsappConversation::where('lead_id', $lead->id)
+            ->with(['messages' => fn ($q) => $q->orderBy('sent_at')->limit(100)])
+            ->first();
+
+        $igConversation = InstagramConversation::withoutGlobalScope('tenant')
+            ->where('lead_id', $lead->id)
+            ->where('tenant_id', auth()->user()->tenant_id)
+            ->with(['messages' => fn ($q) => $q->orderBy('sent_at')->limit(100)])
+            ->first();
+
+        $pipelines = Pipeline::with('stages:id,pipeline_id,name,color,position,is_won,is_lost')
+            ->orderBy('sort_order')
+            ->get(['id', 'name', 'is_default']);
+
+        $campaigns = Campaign::orderBy('name')->get(['id', 'name']);
+        $cfDefs    = CustomFieldDefinition::where('is_active', true)->orderBy('sort_order')->get();
+        $users     = User::where('tenant_id', auth()->user()->tenant_id)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('tenant.leads.show', compact(
+            'lead', 'waConversation', 'igConversation', 'pipelines', 'campaigns', 'cfDefs', 'users'
+        ));
     }
 
     public function update(Request $request, Lead $lead): JsonResponse
