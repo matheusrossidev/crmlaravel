@@ -432,6 +432,7 @@ class ProcessInstagramWebhook implements ShouldQueue
             if ($automation->reply_comment) {
                 try {
                     $service->replyToComment($commentId, $automation->reply_comment);
+                    $automation->increment('comments_replied');
                     Log::channel('instagram')->info('Comentário respondido com sucesso', [
                         'comment_id'    => $commentId,
                         'automation_id' => $automation->id,
@@ -447,6 +448,7 @@ class ProcessInstagramWebhook implements ShouldQueue
             if ($automation->dm_message) {
                 try {
                     $service->sendMessage($fromId, $automation->dm_message);
+                    $automation->increment('dms_sent');
                     Log::channel('instagram')->info('DM enviada para comentarista', [
                         'from_id'       => $fromId,
                         'automation_id' => $automation->id,

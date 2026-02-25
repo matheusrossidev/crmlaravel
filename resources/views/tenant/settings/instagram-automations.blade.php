@@ -418,6 +418,25 @@ textarea.form-control { resize: vertical; min-height: 68px; }
 .char-count.warn   { color: #f59e0b; }
 .char-count.danger { color: #ef4444; }
 
+/* ── Métricas ─────────────────────────────────────── */
+.ig-metrics {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+.ig-metric {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #2a84ef;
+    background: #eff6ff;
+    border-radius: 20px;
+    padding: 2px 9px;
+}
+
 .section-header {
     display: flex;
     align-items: center;
@@ -447,15 +466,6 @@ textarea.form-control { resize: vertical; min-height: 68px; }
                 Instagram não está conectado. Para usar Automações,
                 <a href="{{ route('settings.integrations.index') }}">vá em Integrações</a> e conecte sua conta.
             </span>
-        </div>
-    @else
-        <div class="ig-banner warning">
-            <i class="bi bi-exclamation-triangle-fill" style="font-size:17px;flex-shrink:0;margin-top:1px;"></i>
-            <div>
-                Esta funcionalidade requer a permissão <strong>instagram_business_manage_comments</strong>.
-                Se você conectou o Instagram antes de hoje, <strong>desconecte e reconecte</strong> para ativar a permissão.
-                <a href="{{ route('settings.integrations.index') }}">Ir para Integrações →</a>
-            </div>
         </div>
     @endif
 
@@ -511,6 +521,22 @@ textarea.form-control { resize: vertical; min-height: 68px; }
                                 </span>
                             @endif
                         </div>
+                        @if($auto->comments_replied > 0 || $auto->dms_sent > 0)
+                            <div class="ig-metrics">
+                                @if($auto->comments_replied > 0)
+                                    <span class="ig-metric">
+                                        <i class="bi bi-chat-left-text"></i>
+                                        {{ number_format($auto->comments_replied) }} comentário(s) respondido(s)
+                                    </span>
+                                @endif
+                                @if($auto->dms_sent > 0)
+                                    <span class="ig-metric">
+                                        <i class="bi bi-send-fill"></i>
+                                        {{ number_format($auto->dms_sent) }} DM(s) enviada(s)
+                                    </span>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                     <div class="ig-item-actions">
                         <label class="ig-toggle" title="{{ $auto->is_active ? 'Ativa' : 'Inativa' }}">
@@ -978,6 +1004,13 @@ function renderItem(auto, el) {
     const dmPrev    = auto.dm_message
         ? `<span><i class="bi bi-envelope-fill" style="color:#2a84ef;"></i> ${escHtml(auto.dm_message.substring(0, 50))}${auto.dm_message.length > 50 ? '…' : ''}</span>` : '';
 
+    const commentMetric = (auto.comments_replied > 0)
+        ? `<span class="ig-metric"><i class="bi bi-chat-left-text"></i> ${auto.comments_replied} comentário(s) respondido(s)</span>` : '';
+    const dmMetric = (auto.dms_sent > 0)
+        ? `<span class="ig-metric"><i class="bi bi-send-fill"></i> ${auto.dms_sent} DM(s) enviada(s)</span>` : '';
+    const metricsHtml = (commentMetric || dmMetric)
+        ? `<div class="ig-metrics">${commentMetric}${dmMetric}</div>` : '';
+
     el.innerHTML = `
         <div class="ig-item-thumb">${thumbHtml}</div>
         <div class="ig-item-body">
@@ -985,6 +1018,7 @@ function renderItem(auto, el) {
             <div class="ig-item-meta">${auto.match_type === 'all' ? 'Todas as palavras' : 'Qualquer palavra'} &bull; ${auto.keywords?.length ?? 0} palavra(s)-chave</div>
             <div class="ig-chips">${kwChips}</div>
             <div class="ig-action-preview">${replyPrev}${dmPrev}</div>
+            ${metricsHtml}
         </div>
         <div class="ig-item-actions">
             <label class="ig-toggle">

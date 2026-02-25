@@ -24,11 +24,15 @@ class InstagramAutomation extends Model
         'reply_comment',
         'dm_message',
         'is_active',
+        'comments_replied',
+        'dms_sent',
     ];
 
     protected $casts = [
-        'keywords'  => 'array',
-        'is_active' => 'boolean',
+        'keywords'         => 'array',
+        'is_active'        => 'boolean',
+        'comments_replied' => 'integer',
+        'dms_sent'         => 'integer',
     ];
 
     public function instance(): BelongsTo
