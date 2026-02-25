@@ -176,49 +176,56 @@
 .ig-toggle input:checked + .slider { background: #2a84ef; }
 .ig-toggle input:checked + .slider::before { transform: translateX(16px); }
 
-/* ── Main modal ──────────────────────────────────── */
-.ig-modal-overlay {
+/* ── Drawer lateral ──────────────────────────────── */
+.ig-drawer-overlay {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,.45);
-    z-index: 1050;
-    align-items: center;
-    justify-content: center;
+    background: rgba(0,0,0,.35);
+    z-index: 199;
 }
-.ig-modal-overlay.open { display: flex; }
-.ig-modal {
+.ig-drawer-overlay.open { display: block; }
+
+.ig-drawer {
+    position: fixed;
+    top: 0; right: 0;
+    width: 480px;
+    height: 100vh;
     background: #fff;
-    border-radius: 14px;
-    width: 100%;
-    max-width: 580px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0,0,0,.18);
-    margin: 16px;
+    box-shadow: -4px 0 32px rgba(0,0,0,.1);
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform .25s cubic-bezier(.4,0,.2,1);
+    overflow: hidden;
 }
-.ig-modal-head {
+.ig-drawer.open { transform: translateX(0); }
+
+.ig-drawer-head {
+    padding: 18px 22px;
+    border-bottom: 1px solid #f0f2f7;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 18px 22px 14px;
-    border-bottom: 1px solid #f0f2f7;
-    position: sticky;
-    top: 0;
-    background: #fff;
-    z-index: 1;
+    flex-shrink: 0;
 }
-.ig-modal-head h3 { margin: 0; font-size: 15px; font-weight: 700; color: #111827; }
-.ig-modal-body { padding: 18px 22px; }
-.ig-modal-foot {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
+.ig-drawer-head h3 { margin: 0; font-size: 15px; font-weight: 700; color: #1a1d23; }
+
+.ig-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 22px;
+}
+
+.ig-drawer-foot {
     padding: 14px 22px;
     border-top: 1px solid #f0f2f7;
     background: #fafafa;
-    position: sticky;
-    bottom: 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
 }
 
 /* ── Confirm modal ───────────────────────────────── */
@@ -534,109 +541,108 @@ textarea.form-control { resize: vertical; min-height: 68px; }
 
 </div>
 
-{{-- ── Modal Nova/Editar Automação ───────────────────────────────── --}}
-<div id="igModal" class="ig-modal-overlay" onclick="if(event.target===this)closeModal()">
-    <div class="ig-modal">
-        <div class="ig-modal-head">
-            <h3 id="modalTitle">Nova Automação</h3>
-            <button class="btn-icon" onclick="closeModal()"><i class="bi bi-x-lg"></i></button>
+{{-- ── Drawer Nova/Editar Automação ───────────────────────────────── --}}
+<div id="igOverlay" class="ig-drawer-overlay" onclick="closeModal()"></div>
+<aside id="igDrawer" class="ig-drawer">
+    <div class="ig-drawer-head">
+        <h3 id="modalTitle">Nova Automação</h3>
+        <button class="btn-icon" onclick="closeModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="ig-drawer-body">
+        <input type="hidden" id="editingId" value="">
+
+        {{-- Nome --}}
+        <div class="form-group">
+            <label>Nome <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">(opcional)</span></label>
+            <input type="text" id="autoName" class="form-control"
+                   placeholder="Ex: Responder sobre preços" maxlength="100">
         </div>
-        <div class="ig-modal-body">
-            <input type="hidden" id="editingId" value="">
 
-            {{-- Nome --}}
-            <div class="form-group">
-                <label>Nome <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">(opcional)</span></label>
-                <input type="text" id="autoName" class="form-control"
-                       placeholder="Ex: Responder sobre preços" maxlength="100">
+        {{-- Post --}}
+        <div class="form-group">
+            <label>Publicação alvo</label>
+            <div class="post-scope-radio">
+                <label>
+                    <input type="radio" name="postScope" value="all" checked onchange="onScopeChange(this.value)">
+                    Todos os posts
+                </label>
+                <label>
+                    <input type="radio" name="postScope" value="specific" onchange="onScopeChange(this.value)">
+                    Publicação específica
+                </label>
             </div>
-
-            {{-- Post --}}
-            <div class="form-group">
-                <label>Publicação alvo</label>
-                <div class="post-scope-radio">
-                    <label>
-                        <input type="radio" name="postScope" value="all" checked onchange="onScopeChange(this.value)">
-                        Todos os posts
-                    </label>
-                    <label>
-                        <input type="radio" name="postScope" value="specific" onchange="onScopeChange(this.value)">
-                        Publicação específica
-                    </label>
-                </div>
-                <div id="postPickerWrap" style="display:none;">
-                    <div id="postGrid" class="post-grid">
-                        <div class="post-grid-placeholder">
-                            <i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite;"></i>
-                        </div>
-                    </div>
-                    <div class="load-more-posts" id="loadMoreWrap" style="display:none;">
-                        <button class="btn-secondary-ig" style="font-size:12px;padding:5px 14px;" onclick="loadMorePosts()">
-                            <i class="bi bi-chevron-down"></i> Carregar mais
-                        </button>
+            <div id="postPickerWrap" style="display:none;">
+                <div id="postGrid" class="post-grid">
+                    <div class="post-grid-placeholder">
+                        <i class="bi bi-arrow-repeat" style="animation:spin 1s linear infinite;"></i>
                     </div>
                 </div>
-                <input type="hidden" id="selectedMediaId" value="">
-                <input type="hidden" id="selectedMediaThumb" value="">
-                <input type="hidden" id="selectedMediaCaption" value="">
-            </div>
-
-            {{-- Keywords --}}
-            <div class="form-group">
-                <label>Palavras-chave <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">(Enter ou vírgula para adicionar)</span></label>
-                <div class="keyword-input-wrap" id="kwWrap"
-                     onclick="document.getElementById('kwInput').focus()">
-                    <input type="text" id="kwInput" class="kw-input" placeholder="Digite uma palavra...">
+                <div class="load-more-posts" id="loadMoreWrap" style="display:none;">
+                    <button class="btn-secondary-ig" style="font-size:12px;padding:5px 14px;" onclick="loadMorePosts()">
+                        <i class="bi bi-chevron-down"></i> Carregar mais
+                    </button>
                 </div>
             </div>
+            <input type="hidden" id="selectedMediaId" value="">
+            <input type="hidden" id="selectedMediaThumb" value="">
+            <input type="hidden" id="selectedMediaCaption" value="">
+        </div>
 
-            {{-- Match type --}}
-            <div class="form-group">
-                <label>Correspondência</label>
-                <div class="match-type-radio">
-                    <label>
-                        <input type="radio" name="matchType" value="any" checked>
-                        Qualquer palavra (OU)
-                    </label>
-                    <label>
-                        <input type="radio" name="matchType" value="all">
-                        Todas as palavras (E)
-                    </label>
-                </div>
-            </div>
-
-            {{-- Reply comment --}}
-            <div class="form-group">
-                <label>
-                    <i class="bi bi-chat-left-text" style="color:#2a84ef;font-size:11px;"></i>
-                    Responder ao comentário
-                    <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">(opcional)</span>
-                </label>
-                <textarea id="replyComment" class="form-control" maxlength="2200"
-                          placeholder="Resposta pública postada no comentário..."
-                          oninput="updateCount('replyComment','countReply',2200)"></textarea>
-                <div class="char-count" id="countReply">0 / 2200</div>
-            </div>
-
-            {{-- DM message --}}
-            <div class="form-group" style="margin-bottom:0;">
-                <label>
-                    <i class="bi bi-envelope-fill" style="color:#2a84ef;font-size:11px;"></i>
-                    Enviar DM
-                    <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">(opcional)</span>
-                </label>
-                <textarea id="dmMessage" class="form-control" maxlength="1000"
-                          placeholder="Mensagem privada enviada no inbox..."
-                          oninput="updateCount('dmMessage','countDm',1000)"></textarea>
-                <div class="char-count" id="countDm">0 / 1000</div>
+        {{-- Keywords --}}
+        <div class="form-group">
+            <label>Palavras-chave <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">(Enter ou vírgula para adicionar)</span></label>
+            <div class="keyword-input-wrap" id="kwWrap"
+                 onclick="document.getElementById('kwInput').focus()">
+                <input type="text" id="kwInput" class="kw-input" placeholder="Digite uma palavra...">
             </div>
         </div>
-        <div class="ig-modal-foot">
-            <button class="btn-secondary-ig" onclick="closeModal()">Cancelar</button>
-            <button class="btn-primary-ig" id="saveBtn" onclick="saveAutomation()">Salvar</button>
+
+        {{-- Match type --}}
+        <div class="form-group">
+            <label>Correspondência</label>
+            <div class="match-type-radio">
+                <label>
+                    <input type="radio" name="matchType" value="any" checked>
+                    Qualquer palavra (OU)
+                </label>
+                <label>
+                    <input type="radio" name="matchType" value="all">
+                    Todas as palavras (E)
+                </label>
+            </div>
+        </div>
+
+        {{-- Reply comment --}}
+        <div class="form-group">
+            <label>
+                <i class="bi bi-chat-left-text" style="color:#2a84ef;font-size:11px;"></i>
+                Responder ao comentário
+                <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">(opcional)</span>
+            </label>
+            <textarea id="replyComment" class="form-control" maxlength="2200"
+                      placeholder="Resposta pública postada no comentário..."
+                      oninput="updateCount('replyComment','countReply',2200)"></textarea>
+            <div class="char-count" id="countReply">0 / 2200</div>
+        </div>
+
+        {{-- DM message --}}
+        <div class="form-group" style="margin-bottom:0;">
+            <label>
+                <i class="bi bi-envelope-fill" style="color:#2a84ef;font-size:11px;"></i>
+                Enviar DM
+                <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">(opcional)</span>
+            </label>
+            <textarea id="dmMessage" class="form-control" maxlength="1000"
+                      placeholder="Mensagem privada enviada no inbox..."
+                      oninput="updateCount('dmMessage','countDm',1000)"></textarea>
+            <div class="char-count" id="countDm">0 / 1000</div>
         </div>
     </div>
-</div>
+    <div class="ig-drawer-foot">
+        <button class="btn-secondary-ig" onclick="closeModal()">Cancelar</button>
+        <button class="btn-primary-ig" id="saveBtn" onclick="saveAutomation()">Salvar</button>
+    </div>
+</aside>
 
 {{-- ── Modal Confirmação de Exclusão ─────────────────────────────── --}}
 <div id="confirmModal" class="ig-confirm-overlay" onclick="if(event.target===this)closeConfirm()">
@@ -698,11 +704,13 @@ function openModal(auto = null) {
     const mt = auto?.match_type ?? 'any';
     document.querySelectorAll('[name="matchType"]').forEach(r => r.checked = (r.value === mt));
 
-    document.getElementById('igModal').classList.add('open');
+    document.getElementById('igOverlay').classList.add('open');
+    document.getElementById('igDrawer').classList.add('open');
 }
 
 function closeModal() {
-    document.getElementById('igModal').classList.remove('open');
+    document.getElementById('igOverlay').classList.remove('open');
+    document.getElementById('igDrawer').classList.remove('open');
     postsLoaded    = false;
     postNextCursor = null;
 }
