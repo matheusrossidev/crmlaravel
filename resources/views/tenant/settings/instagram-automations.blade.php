@@ -394,40 +394,83 @@ textarea.form-control { resize: vertical; min-height: 68px; }
 }
 .dm-img-preview.show { display: block; }
 
-/* button chips inside a block */
-.dm-btn-wrap {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    padding: 6px 8px;
+/* ── DM WYSIWYG editor ───────────────────────────── */
+.dm-wysiwyg-wrap {
     border: 1.5px solid #e8eaf0;
-    border-radius: 8px;
-    min-height: 36px;
-    cursor: text;
-    margin-top: 6px;
-    transition: border-color .15s;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color .15s, box-shadow .15s;
 }
-.dm-btn-wrap:focus-within { border-color: #2a84ef; box-shadow: 0 0 0 3px rgba(42,132,239,.1); }
-.dm-btn-chip {
-    background: #dbeafe;
-    color: #1d4ed8;
-    border-radius: 20px;
-    padding: 2px 8px 2px 10px;
-    font-size: 12px;
-    font-weight: 500;
+.dm-wysiwyg-wrap:focus-within {
+    border-color: #2a84ef;
+    box-shadow: 0 0 0 3px rgba(42,132,239,.1);
+}
+.dm-wysiwyg-toolbar {
     display: flex;
     align-items: center;
-    gap: 3px;
+    justify-content: space-between;
+    padding: 5px 10px;
+    background: #f8f9fb;
+    border-bottom: 1px solid #e8eaf0;
+    gap: 8px;
+}
+.dm-wysiwyg-hint {
+    font-size: 11px;
+    color: #9ca3af;
+    flex: 1;
+}
+.dm-char-count {
+    font-size: 11px;
+    color: #9ca3af;
     white-space: nowrap;
+    transition: color .15s;
 }
-.dm-btn-chip button {
-    background: none; border: none; cursor: pointer;
-    color: #1d4ed8; padding: 0; font-size: 12px; line-height: 1;
+.dm-char-count.warn  { color: #f59e0b; }
+.dm-char-count.limit { color: #ef4444; }
+.dm-wysiwyg-editor {
+    min-height: 80px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 10px 12px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #1a1d23;
+    outline: none;
+    word-break: break-word;
+    font-family: inherit;
+    -webkit-user-modify: read-write-plaintext-only;
 }
-.dm-btn-input {
-    border: none; outline: none;
-    font-size: 12.5px; flex: 1; min-width: 80px;
-    background: transparent; padding: 2px 0;
+.dm-wysiwyg-editor:empty::before {
+    content: attr(data-placeholder);
+    color: #c4c9d4;
+    pointer-events: none;
+    display: block;
+}
+.dm-preview-wrap {
+    background: #111827;
+    padding: 10px 12px;
+    border-top: 1px solid #1f2937;
+}
+.dm-preview-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: #6b7280;
+    margin-bottom: 6px;
+}
+.dm-preview-bubble {
+    display: inline-block;
+    background: #374151;
+    color: #f9fafb;
+    border-radius: 18px 18px 4px 18px;
+    padding: 9px 13px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    max-width: 92%;
+    word-break: break-word;
+    white-space: pre-wrap;
+    min-height: 20px;
 }
 .dm-add-btns {
     display: flex;
@@ -1003,17 +1046,73 @@ function updateCount(inputId, countId, max) {
 }
 
 // ── DM Sequence Builder ───────────────────────────────────────────────────
+
+/* Extrai texto puro (com \n) de um elemento contenteditable */
+function getEditorText(el) {
+    let text = '';
+    function walk(node) {
+        if (node.nodeType === 3) {
+            text += node.textContent;
+        } else if (node.nodeName === 'BR') {
+            text += '\n';
+        } else if (node.nodeName === 'DIV' || node.nodeName === 'P') {
+            if (text.length > 0 && !text.endsWith('\n')) text += '\n';
+            node.childNodes.forEach(walk);
+        } else {
+            node.childNodes.forEach(walk);
+        }
+    }
+    el.childNodes.forEach(walk);
+    return text.replace(/\n+$/, '');
+}
+
+/* Define texto num contenteditable preservando \n como <br> */
+function setEditorText(el, text) {
+    el.innerHTML = '';
+    if (!text) return;
+    text.split('\n').forEach((line, i) => {
+        if (i > 0) el.appendChild(document.createElement('br'));
+        if (line) el.appendChild(document.createTextNode(line));
+    });
+}
+
+/* Atualiza contador de caracteres e prévia */
+function onDmEditorInput(idx) {
+    const el = document.getElementById(`dmEditor-${idx}`);
+    if (!el) return;
+    const text = getEditorText(el);
+    dmBlocks[idx].text = text.substring(0, 1000);
+    const count = document.getElementById(`dmCharCount-${idx}`);
+    if (count) {
+        count.textContent = `${text.length}/1000`;
+        count.className = 'dm-char-count' + (text.length > 950 ? ' limit' : text.length > 850 ? ' warn' : '');
+    }
+    updateDmPreview(idx, dmBlocks[idx].text);
+}
+
+/* Renderiza prévia estilo Instagram DM */
+function updateDmPreview(idx, text) {
+    const bubble = document.getElementById(`dmPreview-${idx}`);
+    if (!bubble) return;
+    if (!text) {
+        bubble.innerHTML = '<span style="color:#4b5563;font-style:italic;font-size:12px;">Prévia aparecerá aqui...</span>';
+        return;
+    }
+    const escaped = escHtml(text);
+    // Destacar links em azul na prévia
+    const withLinks = escaped.replace(/(https?:\/\/[^\s<]+)/g, '<span style="color:#60a5fa;text-decoration:underline;">$1</span>');
+    bubble.innerHTML = withLinks.replace(/\n/g, '<br>');
+}
+
 function loadDmMessages(auto) {
     if (auto && auto.dm_messages && auto.dm_messages.length > 0) {
         dmBlocks = auto.dm_messages.map(m => ({
-            type:    m.type    ?? 'text',
-            text:    m.text    ?? '',
-            url:     m.url     ?? '',
-            buttons: Array.isArray(m.buttons) ? [...m.buttons] : [],
+            type: m.type ?? 'text',
+            text: m.text ?? '',
+            url:  m.url  ?? '',
         }));
     } else if (auto && auto.dm_message) {
-        // Legacy: convert single dm_message to first text block
-        dmBlocks = [{ type: 'text', text: auto.dm_message, url: '', buttons: [] }];
+        dmBlocks = [{ type: 'text', text: auto.dm_message, url: '' }];
     } else {
         dmBlocks = [];
     }
@@ -1021,43 +1120,13 @@ function loadDmMessages(auto) {
 }
 
 function addDmBlock(type) {
-    dmBlocks.push({ type, text: '', url: '', buttons: [] });
+    dmBlocks.push({ type, text: '', url: '' });
     renderDmBuilder();
 }
 
 function removeDmBlock(idx) {
     dmBlocks.splice(idx, 1);
     renderDmBuilder();
-}
-
-function addDmButton(idx) {
-    const wrap  = document.getElementById(`dmBtnWrap-${idx}`);
-    const input = document.getElementById(`dmBtnInput-${idx}`);
-    if (!wrap || !input) return;
-    const val = input.value.trim().substring(0, 20);
-    if (!val) return;
-    if (dmBlocks[idx].buttons.length >= 13) { alert('Máximo de 13 botões.'); return; }
-    dmBlocks[idx].buttons.push(val);
-    input.value = '';
-    renderDmBtnChips(idx);
-}
-
-function removeDmButton(idx, bi) {
-    dmBlocks[idx].buttons.splice(bi, 1);
-    renderDmBtnChips(idx);
-}
-
-function renderDmBtnChips(idx) {
-    const wrap  = document.getElementById(`dmBtnWrap-${idx}`);
-    const input = document.getElementById(`dmBtnInput-${idx}`);
-    if (!wrap || !input) return;
-    wrap.querySelectorAll('.dm-btn-chip').forEach(c => c.remove());
-    (dmBlocks[idx].buttons || []).forEach((btn, bi) => {
-        const chip = document.createElement('span');
-        chip.className = 'dm-btn-chip';
-        chip.innerHTML = `${escHtml(btn)}<button type="button" onclick="removeDmButton(${idx},${bi})">×</button>`;
-        wrap.insertBefore(chip, input);
-    });
 }
 
 function renderDmBuilder() {
@@ -1087,47 +1156,57 @@ function renderDmBuilder() {
                     <span class="dm-block-type"><i class="bi bi-chat-left-text" style="color:#2a84ef;"></i> Texto</span>
                     <button type="button" class="btn-icon danger" onclick="removeDmBlock(${idx})"><i class="bi bi-trash"></i></button>
                 </div>
-                <div class="dm-block-body">
-                    <textarea class="form-control" id="dmText-${idx}" rows="3"
-                              maxlength="1000" placeholder="Mensagem de texto... (links são clicáveis automaticamente)"
-                              oninput="dmBlocks[${idx}].text=this.value">${escHtml(block.text)}</textarea>
-                    <div style="margin-top:8px;">
-                        <label style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">
-                            Botões de resposta rápida <span style="font-weight:400;text-transform:none;color:#9ca3af;">(opcional, max 13)</span>
-                        </label>
-                        <div class="dm-btn-wrap" id="dmBtnWrap-${idx}"
-                             onclick="document.getElementById('dmBtnInput-${idx}').focus()">
-                            <input type="text" class="dm-btn-input" id="dmBtnInput-${idx}"
-                                   maxlength="20" placeholder="Adicionar botão (Enter)">
+                <div class="dm-block-body" style="padding:0;">
+                    <div class="dm-wysiwyg-wrap">
+                        <div class="dm-wysiwyg-toolbar">
+                            <span class="dm-wysiwyg-hint">Links ficam clicáveis automaticamente</span>
+                            <span class="dm-char-count" id="dmCharCount-${idx}">0/1000</span>
+                        </div>
+                        <div class="dm-wysiwyg-editor"
+                             id="dmEditor-${idx}"
+                             contenteditable="true"
+                             data-placeholder="Escreva sua mensagem..."
+                             oninput="onDmEditorInput(${idx})"></div>
+                        <div class="dm-preview-wrap">
+                            <div class="dm-preview-label">Prévia Instagram DM</div>
+                            <div class="dm-preview-bubble" id="dmPreview-${idx}"><span style="color:#4b5563;font-style:italic;font-size:12px;">Prévia aparecerá aqui...</span></div>
                         </div>
                     </div>
                 </div>`;
         }
         container.appendChild(div);
 
-        // Render existing button chips
         if (block.type === 'text') {
-            renderDmBtnChips(idx);
-            // Bind enter key on button input
-            const btnInput = document.getElementById(`dmBtnInput-${idx}`);
-            if (btnInput) {
-                btnInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' || e.key === ',') {
+            const editorEl = document.getElementById(`dmEditor-${idx}`);
+            if (editorEl) {
+                // Bloquear paste formatado — aceitar apenas texto puro
+                editorEl.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+                    document.execCommand('insertText', false, text);
+                });
+                // Bloquear Enter nativo que cria <div> — forçar <br>
+                editorEl.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
                         e.preventDefault();
-                        addDmButton(idx);
+                        document.execCommand('insertLineBreak');
                     }
                 });
-                btnInput.addEventListener('blur', function() {
-                    if (this.value.trim()) addDmButton(idx);
-                });
+                // Carregar texto existente
+                if (block.text) {
+                    setEditorText(editorEl, block.text);
+                    updateDmPreview(idx, block.text);
+                    const count = document.getElementById(`dmCharCount-${idx}`);
+                    if (count) count.textContent = `${block.text.length}/1000`;
+                }
             }
         }
     });
 }
 
 function updateImgPreview(idx) {
-    const url   = document.getElementById(`dmUrl-${idx}`)?.value;
-    const prev  = document.getElementById(`dmImgPrev-${idx}`);
+    const url  = document.getElementById(`dmUrl-${idx}`)?.value;
+    const prev = document.getElementById(`dmImgPrev-${idx}`);
     if (!prev) return;
     if (url) {
         prev.src = url;
@@ -1140,11 +1219,14 @@ function updateImgPreview(idx) {
 
 function serializeDmMessages() {
     return dmBlocks
-        .map(b => {
+        .map((b, idx) => {
             if (b.type === 'image') {
                 return b.url.trim() ? { type: 'image', url: b.url.trim() } : null;
             }
-            return b.text.trim() ? { type: 'text', text: b.text.trim(), buttons: b.buttons } : null;
+            // Ler do editor para garantir conteúdo mais recente
+            const el   = document.getElementById(`dmEditor-${idx}`);
+            const text = el ? getEditorText(el).trim() : b.text.trim();
+            return text ? { type: 'text', text } : null;
         })
         .filter(Boolean);
 }

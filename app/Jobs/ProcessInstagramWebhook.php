@@ -452,11 +452,7 @@ class ProcessInstagramWebhook implements ShouldQueue
                         if ($type === 'image' && ! empty($msg['url'])) {
                             $service->sendImageAttachment($fromId, $msg['url']);
                         } elseif ($type === 'text' && ! empty($msg['text'])) {
-                            if (! empty($msg['buttons'])) {
-                                $service->sendMessageWithButtons($fromId, $msg['text'], $msg['buttons']);
-                            } else {
-                                $service->sendMessage($fromId, $msg['text']);
-                            }
+                            $service->sendMessage($fromId, $msg['text']);
                         }
                     } catch (\Throwable $e) {
                         Log::channel('instagram')->error('Falha ao enviar DM (sequência)', [
