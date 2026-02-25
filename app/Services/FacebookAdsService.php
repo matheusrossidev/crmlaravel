@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 
 class FacebookAdsService
 {
-    private const GRAPH_URL = 'https://graph.facebook.com/v19.0';
+    private const GRAPH_URL = 'https://graph.facebook.com/v21.0';
 
     public function sync(OAuthConnection $conn): void
     {

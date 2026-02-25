@@ -76,11 +76,11 @@ x-app-env: &app-env
   # OAuth
   FACEBOOK_CLIENT_ID: ""
   FACEBOOK_CLIENT_SECRET: ""
-  FACEBOOK_REDIRECT_URI: https://app.syncro.chat/oauth/facebook/callback
-  FACEBOOK_API_VERSION: v19.0
+  FACEBOOK_REDIRECT_URI: https://app.syncro.chat/configuracoes/integracoes/facebook/callback
+  FACEBOOK_API_VERSION: v21.0
   GOOGLE_CLIENT_ID: ""
   GOOGLE_CLIENT_SECRET: ""
-  GOOGLE_REDIRECT_URI: https://app.syncro.chat/oauth/google/callback
+  GOOGLE_REDIRECT_URI: https://app.syncro.chat/configuracoes/integracoes/google/callback
   GOOGLE_DEVELOPER_TOKEN: ""
   GOOGLE_ADS_API_VERSION: v16
   WHATSAPP_VERIFY_TOKEN: plataforma360_whatsapp_verify
