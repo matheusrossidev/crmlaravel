@@ -1159,10 +1159,17 @@ function toggleSubmenu(id) {
 </script>
 
 @php
-    $trialExpired = auth()->check()
-        && auth()->user()->tenant?->status === 'trial'
-        && auth()->user()->tenant?->trial_ends_at !== null
-        && auth()->user()->tenant->trial_ends_at->isPast();
+    $trialExpired = false;
+    if (auth()->check() && !auth()->user()->isSuperAdmin()) {
+        $__tenant = auth()->user()->tenant;
+        if ($__tenant
+            && $__tenant->status === 'trial'
+            && $__tenant->trial_ends_at !== null
+            && $__tenant->trial_ends_at->isPast()
+        ) {
+            $trialExpired = true;
+        }
+    }
 @endphp
 
 @if($trialExpired)
