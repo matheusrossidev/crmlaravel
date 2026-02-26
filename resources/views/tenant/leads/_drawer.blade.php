@@ -365,6 +365,43 @@
     }
     .drawer-add-note-btn:hover { background: #dbeafe; }
     .drawer-add-note-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* Toggle switch para campos checkbox */
+    .cf-toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border: 1.5px solid #e8eaf0;
+        border-radius: 9px;
+        background: #fafafa;
+        cursor: pointer;
+        transition: border-color .15s;
+        user-select: none;
+    }
+    .cf-toggle-row:hover { border-color: #3B82F6; }
+    .cf-toggle {
+        width: 40px;
+        height: 22px;
+        border-radius: 99px;
+        background: #d1d5db;
+        position: relative;
+        flex-shrink: 0;
+        transition: background .2s;
+    }
+    .cf-toggle.on { background: #3B82F6; }
+    .cf-toggle-thumb {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,.25);
+        transition: transform .2s;
+    }
+    .cf-toggle.on .cf-toggle-thumb { transform: translateX(18px); }
 </style>
 
 @php
@@ -903,11 +940,13 @@ function buildFieldHtml(def, currentValue) {
             ).join('') + `</div>`;
 
     } else if (def.field_type === 'checkbox') {
-        const checked = val === true || val === 1 || val === '1' ? 'checked' : '';
-        inputHtml = `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-            <input type="checkbox" id="${id}" ${checked} style="width:16px;height:16px;">
+        const isOn = val === true || val === 1 || val === '1' || val === true;
+        inputHtml = `<div class="cf-toggle-row" onclick="this.querySelector('.cf-toggle').classList.toggle('on')">
             <span style="font-size:13px;color:#374151;">${escapeHtml(def.label)}</span>
-        </label>`;
+            <div class="cf-toggle${isOn ? ' on' : ''}" id="${id}">
+                <div class="cf-toggle-thumb"></div>
+            </div>
+        </div>`;
 
     } else if (def.field_type === 'number' || def.field_type === 'currency') {
         const step = def.field_type === 'currency' ? '0.01' : 'any';
@@ -972,7 +1011,7 @@ function collectCustomFields() {
 
         if (def.field_type === 'checkbox') {
             const el = document.getElementById(id);
-            result[def.name] = el ? el.checked : false;
+            result[def.name] = el ? el.classList.contains('on') : false;
 
         } else if (def.field_type === 'multiselect') {
             const checked = Array.from(container.querySelectorAll(`.cf-multi-${def.name}:checked`)).map(el => el.value);
