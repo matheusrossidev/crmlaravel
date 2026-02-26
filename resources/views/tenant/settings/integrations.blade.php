@@ -317,6 +317,7 @@
     <div class="integrations-grid">
 
         {{-- ─── Facebook Ads ─────────────────────────────────────────────── --}}
+        @if(auth()->user()->isSuperAdmin())
         <div class="integration-card">
             <div class="integration-header">
                 <div class="integration-logo facebook">f</div>
@@ -370,8 +371,34 @@
                 </div>
             </div>
         </div>
+        @else
+        <div class="integration-card" style="opacity:.55;pointer-events:none;">
+            <div class="integration-header">
+                <div class="integration-logo facebook">f</div>
+                <div class="integration-title">
+                    <h3>Facebook Ads</h3>
+                    <p>Sincroniza campanhas, métricas e gastos</p>
+                </div>
+                <span class="conn-badge" style="background:#f3f4f6;color:#9ca3af;">Em breve</span>
+            </div>
+            <div class="integration-body">
+                <ul class="integration-features">
+                    <li>Importa campanhas e conjuntos de anúncios</li>
+                    <li>Sincroniza métricas de alcance, cliques e gastos</li>
+                    <li>Atribui leads automaticamente às campanhas de origem</li>
+                    <li>Atualização automática a cada hora</li>
+                </ul>
+                <div class="integration-actions">
+                    <button class="btn-connect" disabled style="cursor:not-allowed;">
+                        <i class="bi bi-facebook"></i> Em breve
+                    </button>
+                </div>
+            </div>
+        </div>
+        @endif
 
         {{-- ─── Google Ads ───────────────────────────────────────────────── --}}
+        @if(auth()->user()->isSuperAdmin())
         <div class="integration-card">
             <div class="integration-header">
                 <div class="integration-logo google">G</div>
@@ -425,6 +452,31 @@
                 </div>
             </div>
         </div>
+        @else
+        <div class="integration-card" style="opacity:.55;pointer-events:none;">
+            <div class="integration-header">
+                <div class="integration-logo google">G</div>
+                <div class="integration-title">
+                    <h3>Google Ads</h3>
+                    <p>Sincroniza campanhas, métricas e gastos</p>
+                </div>
+                <span class="conn-badge" style="background:#f3f4f6;color:#9ca3af;">Em breve</span>
+            </div>
+            <div class="integration-body">
+                <ul class="integration-features">
+                    <li>Importa campanhas de Search, Display e Shopping</li>
+                    <li>Sincroniza impressões, cliques e custo por conversão</li>
+                    <li>Atribui leads automaticamente às campanhas de origem</li>
+                    <li>Atualização automática a cada hora</li>
+                </ul>
+                <div class="integration-actions">
+                    <button class="btn-connect" disabled style="cursor:not-allowed;">
+                        <i class="bi bi-google"></i> Em breve
+                    </button>
+                </div>
+            </div>
+        </div>
+        @endif
 
         {{-- ─── WhatsApp ─────────────────────────────────────────────────── --}}
         <div class="integration-card">

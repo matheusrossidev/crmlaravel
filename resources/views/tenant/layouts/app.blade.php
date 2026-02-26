@@ -648,12 +648,14 @@
             <span class="nav-label">Contatos</span>
         </a>
 
+        @if(auth()->user()->isSuperAdmin())
         <a href="{{ route('campaigns.index') }}"
            class="nav-item {{ request()->routeIs('campaigns*') ? 'active' : '' }}"
            title="Campanhas">
             <i class="bi bi-megaphone nav-icon"></i>
             <span class="nav-label">Campanhas</span>
         </a>
+        @endif
 
         <a href="{{ route('chats.index') }}"
            class="nav-item {{ request()->routeIs('chats.*') ? 'active' : '' }}"
