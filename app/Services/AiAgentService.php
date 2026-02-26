@@ -134,6 +134,20 @@ class AiAgentService
             $lines[] = "- Mova para PERDIDO SOMENTE se o cliente recusar o serviço de forma explícita.";
             $lines[] = "- Se o cliente demonstrar INTERESSE em contratar → avance para a próxima etapa intermediária, NUNCA para PERDIDO.";
             $lines[] = "- Em caso de dúvida sobre qual etapa usar → mantenha a etapa atual (actions: []).";
+
+            // Calcular próxima etapa intermediária sugerida
+            $currentIdx = array_search(true, array_column($stages, 'current'));
+            $nextStage  = ($currentIdx !== false
+                           && isset($stages[$currentIdx + 1])
+                           && ! $stages[$currentIdx + 1]['is_won']
+                           && ! $stages[$currentIdx + 1]['is_lost'])
+                ? $stages[$currentIdx + 1]
+                : null;
+            if ($nextStage) {
+                $lines[] = "PRÓXIMA ETAPA SUGERIDA (se o cliente demonstrar interesse/avançar): "
+                         . "{$nextStage['name']} (use stage_id: {$nextStage['id']})";
+            }
+            $lines[] = "IMPORTANTE: use apenas os stage_ids listados acima. Se em dúvida, NÃO inclua set_stage nas actions.";
             $lines[] = "--- FIM DO CONTROLE DE FUNIL ---";
         }
 
@@ -166,7 +180,7 @@ INTENTINSTR;
         // ── Formato JSON obrigatório quando há pipeline, tags ou intent notify ─
         if (! empty($stages) || ! empty($availTags) || $enableIntentNotify) {
             $intentExample = $enableIntentNotify
-                ? "\n    {\"type\": \"notify_intent\", \"intent\": \"buy\", \"context\": \"cliente confirmou interesse em contratar\"}"
+                ? "\n    {\"type\": \"notify_intent\", \"intent\": \"buy\", \"context\": \"cliente confirmou interesse em contratar\"},"
                 : '';
             $lines[] = <<<JSONINSTR
 
@@ -175,11 +189,16 @@ FORMATO DE RESPOSTA OBRIGATÓRIO — responda APENAS com JSON válido, sem markd
   "reply": "sua resposta ao cliente aqui",
   "actions": [
     {"type": "set_stage", "stage_id": <id_numérico>},
-    {"type": "add_tags", "tags": ["tag1", "tag2"]}$intentExample
+    {"type": "add_tags", "tags": ["tag1", "tag2"]},$intentExample
+    {"type": "assign_human"}
   ]
 }
 Se não precisar de ações, use "actions": [].
 NUNCA inclua texto fora do JSON.
+Ações disponíveis:
+- set_stage: mova o lead para uma etapa do funil (use o stage_id correto da lista acima).
+- add_tags: adicione tags à conversa/lead.
+- assign_human: use quando o cliente pedir explicitamente para falar com uma pessoa ou quando você não conseguir responder. Inclua essa action junto com a resposta de transferência.
 JSONINSTR;
         }
 

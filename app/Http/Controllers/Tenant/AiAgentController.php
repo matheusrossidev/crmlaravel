@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\AiAgent;
 use App\Models\AiAgentKnowledgeFile;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -26,8 +27,9 @@ class AiAgentController extends Controller
     {
         $agent          = new AiAgent();
         $knowledgeFiles = collect();
+        $users          = $this->tenantUsers();
 
-        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles'));
+        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles', 'users'));
     }
 
     public function store(Request $request): JsonResponse|\Illuminate\Http\RedirectResponse
@@ -57,8 +59,9 @@ class AiAgentController extends Controller
     public function edit(AiAgent $agent): View
     {
         $knowledgeFiles = $agent->knowledgeFiles()->orderBy('created_at')->get();
+        $users          = $this->tenantUsers();
 
-        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles'));
+        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles', 'users'));
     }
 
     public function update(Request $request, AiAgent $agent): \Illuminate\Http\RedirectResponse
@@ -260,6 +263,13 @@ class AiAgentController extends Controller
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    private function tenantUsers(): \Illuminate\Database\Eloquent\Collection
+    {
+        return User::where('tenant_id', auth()->user()->tenant_id)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+    }
+
     private function validated(Request $request): array
     {
         $data = $request->validate([
@@ -287,6 +297,7 @@ class AiAgentController extends Controller
             'enable_pipeline_tool'   => 'nullable|boolean',
             'enable_tags_tool'       => 'nullable|boolean',
             'enable_intent_notify'   => 'nullable|boolean',
+            'transfer_to_user_id'    => 'nullable|integer|exists:users,id',
             'followup_enabled'       => 'nullable|boolean',
             'followup_delay_minutes' => 'nullable|integer|min:5|max:1440',
             'followup_max_count'     => 'nullable|integer|min:1|max:10',
@@ -300,6 +311,7 @@ class AiAgentController extends Controller
         $data['enable_tags_tool']      = $request->boolean('enable_tags_tool');
         $data['enable_intent_notify']  = $request->boolean('enable_intent_notify');
         $data['followup_enabled']      = $request->boolean('followup_enabled');
+        $data['transfer_to_user_id']   = $request->input('transfer_to_user_id') ?: null;
 
         return $data;
     }

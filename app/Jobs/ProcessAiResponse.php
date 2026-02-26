@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Events\AiIntentDetected;
+use App\Events\WhatsappConversationUpdated;
 use App\Http\Controllers\Tenant\AiConfigurationController;
+use App\Models\AiAgent;
 use App\Models\AiIntentSignal;
 use App\Models\Lead;
 use App\Models\WhatsappConversation;
@@ -274,6 +276,8 @@ class ProcessAiResponse implements ShouldQueue
                 $this->applyAddTags($conv, (array) ($action['tags'] ?? []));
             } elseif ($type === 'notify_intent') {
                 $this->applyNotifyIntent($conv, $action);
+            } elseif ($type === 'assign_human') {
+                $this->applyAssignHuman($conv, $agent);
             }
         }
 
@@ -336,6 +340,33 @@ class ProcessAiResponse implements ShouldQueue
             'conversation_id' => $conv->id,
             'intent_type'     => $intentType,
             'signal_id'       => $signal->id,
+        ]);
+    }
+
+    private function applyAssignHuman(WhatsappConversation $conv, AiAgent $agent): void
+    {
+        $update = ['ai_agent_id' => null];
+        if ($agent->transfer_to_user_id) {
+            $update['assigned_user_id'] = $agent->transfer_to_user_id;
+        }
+
+        WhatsappConversation::withoutGlobalScope('tenant')
+            ->where('id', $conv->id)
+            ->update($update);
+
+        $conv->refresh();
+
+        try {
+            WhatsappConversationUpdated::dispatch($conv, $conv->tenant_id);
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->warning('AI: falha ao broadcast assign_human', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        Log::channel('whatsapp')->info('AI: conversa transferida para humano', [
+            'conversation_id'  => $conv->id,
+            'transfer_to_user' => $agent->transfer_to_user_id,
         ]);
     }
 

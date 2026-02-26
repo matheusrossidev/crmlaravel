@@ -1322,9 +1322,19 @@ $pageIcon = 'chat-dots';
         return `<a href="https://wa.me/${waNum}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">${fmt}</a>`;
     }
 
+    function instagramLink(username) {
+        const clean = (username || '').replace(/^@/, '').trim();
+        if (!clean) return '';
+        return `<a href="https://www.instagram.com/${clean}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">@${clean}</a>`;
+    }
+
     // Define innerHTML formatado + salva raw em data-raw (para o campo de edição)
     function setPhoneDisplay(el, phone) {
-        el.innerHTML = phone ? phoneLink(phone) : '';
+        if (activeConvChannel === 'instagram') {
+            el.innerHTML = instagramLink(phone);
+        } else {
+            el.innerHTML = phone ? phoneLink(phone) : '';
+        }
         el.dataset.raw = phone || '';
     }
 
@@ -1471,6 +1481,14 @@ $pageIcon = 'chat-dots';
 
             channel.listen('.whatsapp.conversation', data => {
                 updateConvInSidebar(data);
+                if (data.assigned_user_id && data.assigned_user_id == CURRENT_USER_ID) {
+                    const name = data.contact_name || data.phone || 'Contato';
+                    toastr.info(
+                        `Conversa de <b>${escHtml(name)}</b> foi atribuída a você`,
+                        'Nova atribuição',
+                        { timeOut: 8000, closeButton: true, progressBar: true }
+                    );
+                }
             });
 
             channel.listen('.instagram.message', data => {
@@ -1489,6 +1507,14 @@ $pageIcon = 'chat-dots';
 
             channel.listen('.instagram.conversation', data => {
                 updateConvInSidebar(data);
+                if (data.assigned_user_id && data.assigned_user_id == CURRENT_USER_ID) {
+                    const name = data.contact_name || 'Contato Instagram';
+                    toastr.info(
+                        `Conversa de <b>${escHtml(name)}</b> foi atribuída a você`,
+                        'Nova atribuição',
+                        { timeOut: 8000, closeButton: true, progressBar: true }
+                    );
+                }
             });
 
             // Use optional chaining — connector.pusher might not exist for all Echo drivers

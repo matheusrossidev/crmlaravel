@@ -557,6 +557,21 @@
                     </div>
                 </div>
                 <input type="hidden" name="enable_intent_notify" id="intentNotifyInput" value="{{ ($agent->enable_intent_notify ?? false) ? '1' : '0' }}">
+
+                {{-- Usuário de transferência --}}
+                <div style="margin-top:16px;">
+                    <label class="form-label fw-semibold" style="font-size:13px;">Atribuir conversa a (ao transferir)</label>
+                    <select name="transfer_to_user_id" class="form-select form-select-sm" style="max-width:320px;">
+                        <option value="">— Nenhum (sem atribuição automática) —</option>
+                        @foreach($users as $u)
+                            <option value="{{ $u->id }}"
+                                {{ old('transfer_to_user_id', $agent->transfer_to_user_id ?? '') == $u->id ? 'selected' : '' }}>
+                                {{ $u->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <div class="form-text" style="font-size:11px;color:#9ca3af;">Quando o agente usar "assign_human", a conversa será atribuída a este usuário e o IA desativado.</div>
+                </div>
             </div>
         </div>
 

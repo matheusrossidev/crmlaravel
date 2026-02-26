@@ -48,6 +48,7 @@ class InstagramConversationUpdated implements ShouldBroadcastNow
             'last_message_body' => $latest?->body ?? ($latest ? '[' . $latest->type . ']' : null),
             'last_message_type' => $latest?->type,
             'assigned_user'     => $c->assignedUser?->name,
+            'assigned_user_id'  => $c->assigned_user_id,
             'tags'              => $c->tags ?? [],
         ];
     }

@@ -23,6 +23,7 @@ class AiAgent extends Model
         'enable_pipeline_tool', 'enable_tags_tool', 'enable_intent_notify',
         'followup_enabled', 'followup_delay_minutes', 'followup_max_count',
         'followup_hour_start', 'followup_hour_end',
+        'transfer_to_user_id',
     ];
 
     protected $casts = [
