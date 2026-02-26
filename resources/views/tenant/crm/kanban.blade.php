@@ -388,6 +388,45 @@
     }
     .filter-clear:hover { background: #fee2e2; color: #ef4444; }
 
+    /* ── Filtro Responsável multi-select ──────────────────────────────────── */
+    .resp-filter-wrap { position: relative; }
+    .resp-filter-btn {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+    }
+    .resp-dropdown {
+        display: none;
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        background: #fff;
+        border: 1.5px solid #e8eaf0;
+        border-radius: 10px;
+        box-shadow: 0 4px 16px rgba(0,0,0,.1);
+        padding: 6px 10px;
+        min-width: 200px;
+        z-index: 200;
+        max-height: 260px;
+        overflow-y: auto;
+    }
+    .resp-dropdown.open { display: block; }
+    .resp-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 4px;
+        font-size: 13px;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: background .1s;
+    }
+    .resp-option:hover { background: #f0f7ff; }
+    .resp-option input[type=checkbox] { cursor: pointer; accent-color: #3B82F6; }
+
     /* ── Empty state (sem pipelines) ─────────────────────────────────────── */
     .pipeline-empty-state {
         display: flex;
@@ -574,7 +613,7 @@
     @if(request('pipeline_id'))
     <input type="hidden" name="pipeline_id" value="{{ request('pipeline_id') }}">
     @endif
-    <div class="kanban-filter-bar{{ request()->hasAny(['source','date_from','date_to','campaign_id','tag']) ? ' visible' : '' }}" id="filterBar">
+    <div class="kanban-filter-bar{{ request()->hasAny(['source','date_from','date_to','campaign_id','tag','responsible']) ? ' visible' : '' }}" id="filterBar">
         <select name="source" class="filter-control" onchange="this.form.submit()">
             <option value="">Todas as origens</option>
             @foreach(['manual','api','facebook','google','instagram','whatsapp','indicacao','site'] as $src)
@@ -601,9 +640,38 @@
         <input type="date" name="date_from" class="filter-control" value="{{ request('date_from') }}" title="Data de">
         <input type="date" name="date_to"   class="filter-control" value="{{ request('date_to') }}"   title="Data até">
 
+        {{-- Multi-select: Responsável --}}
+        @php $selectedResp = (array) request('responsible', []); @endphp
+        <div class="resp-filter-wrap">
+            <button type="button" class="filter-control resp-filter-btn" id="respDropBtn" onclick="toggleRespDrop(event)">
+                <i class="bi bi-person"></i> Responsável
+                @if(count($selectedResp) > 0)
+                <span style="display:inline-flex;align-items:center;justify-content:center;
+                             width:16px;height:16px;border-radius:50%;background:#3B82F6;
+                             color:#fff;font-size:10px;font-weight:700;margin-left:3px;">
+                    {{ count($selectedResp) }}
+                </span>
+                @endif
+            </button>
+            <div class="resp-dropdown" id="respDropdown">
+                <label class="resp-option">
+                    <input type="checkbox" name="responsible[]" value="ai"
+                           {{ in_array('ai', $selectedResp) ? 'checked' : '' }}>
+                    <i class="bi bi-robot" style="color:#8b5cf6;"></i> Agente IA
+                </label>
+                @foreach($users as $u)
+                <label class="resp-option">
+                    <input type="checkbox" name="responsible[]" value="{{ $u->id }}"
+                           {{ in_array((string)$u->id, array_map('strval', $selectedResp)) ? 'checked' : '' }}>
+                    {{ $u->name }}
+                </label>
+                @endforeach
+            </div>
+        </div>
+
         <button type="submit" class="btn-primary-sm" style="padding:6px 14px;">Aplicar</button>
 
-        @if(request()->hasAny(['source','date_from','date_to','campaign_id','tag']))
+        @if(request()->hasAny(['source','date_from','date_to','campaign_id','tag','responsible']))
         <a href="{{ route('crm.kanban', request()->only('pipeline_id')) }}" class="filter-clear">
             <i class="bi bi-x"></i> Limpar
         </a>
@@ -1618,6 +1686,19 @@ async function confirmImport() {
 
 document.getElementById('modalImport')?.addEventListener('click', function(e) {
     if (e.target === this) closeImportModal();
+});
+
+// ── Filtro Responsável multi-select ──────────────────────────────────────────
+function toggleRespDrop(e) {
+    e.stopPropagation();
+    document.getElementById('respDropdown').classList.toggle('open');
+}
+
+document.addEventListener('click', e => {
+    const wrap = document.querySelector('.resp-filter-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('respDropdown')?.classList.remove('open');
+    }
 });
 </script>
 @endpush

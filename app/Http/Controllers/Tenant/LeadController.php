@@ -28,7 +28,7 @@ class LeadController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Lead::with(['stage', 'pipeline', 'campaign', 'assignedTo'])
+        $query = Lead::with(['stage', 'pipeline', 'campaign', 'assignedTo', 'whatsappConversation.aiAgent'])
             ->orderByDesc('created_at');
 
         if ($search = $request->get('search')) {
@@ -59,6 +59,14 @@ class LeadController extends Controller
             $query->whereJsonContains('tags', $tag);
         }
 
+        if ($assignedTo = $request->get('assigned_to')) {
+            if ($assignedTo === 'ai') {
+                $query->whereHas('whatsappConversation', fn ($q) => $q->whereNotNull('ai_agent_id'));
+            } else {
+                $query->where('assigned_to', $assignedTo);
+            }
+        }
+
         $leads   = $query->paginate(15)->withQueryString();
         $stages  = PipelineStage::whereHas('pipeline', fn ($q) => $q->where('tenant_id', auth()->user()->tenant_id))
             ->orderBy('position')
@@ -74,7 +82,11 @@ class LeadController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        return view('tenant.leads.index', compact('leads', 'stages', 'pipelines', 'campaigns', 'sources', 'customFieldDefs'));
+        $users = User::where('tenant_id', auth()->user()->tenant_id)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('tenant.leads.index', compact('leads', 'stages', 'pipelines', 'campaigns', 'sources', 'customFieldDefs', 'users'));
     }
 
     public function store(Request $request): JsonResponse
@@ -83,6 +95,7 @@ class LeadController extends Controller
             'name'        => 'required|string|max:255',
             'phone'       => 'nullable|string|max:20',
             'email'       => 'nullable|email|max:191',
+            'company'     => 'nullable|string|max:191',
             'value'       => 'nullable|numeric|min:0',
             'source'      => 'nullable|string|max:100',
             'tags'        => 'nullable|array',
@@ -202,6 +215,7 @@ class LeadController extends Controller
             'name'        => 'required|string|max:255',
             'phone'       => 'nullable|string|max:20',
             'email'       => 'nullable|email|max:191',
+            'company'     => 'nullable|string|max:191',
             'value'       => 'nullable|numeric|min:0',
             'source'      => 'nullable|string|max:100',
             'tags'        => 'nullable|array',
@@ -327,6 +341,7 @@ class LeadController extends Controller
             'name'          => $lead->name,
             'phone'         => $lead->phone,
             'email'         => $lead->email,
+            'company'       => $lead->company,
             'value'         => $lead->value,
             'value_fmt'     => $lead->value ? 'R$ ' . number_format((float) $lead->value, 2, ',', '.') : null,
             'source'        => $lead->source,

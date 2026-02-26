@@ -5,7 +5,7 @@
 
 @section('topbar_actions')
 <div class="topbar-actions" style="gap:8px;">
-    <form method="GET" action="{{ route('leads.index') }}" id="filterForm" style="display:flex;align-items:center;">
+    <form method="GET" action="{{ route('leads.index') }}" id="filterForm" style="display:flex;align-items:center;gap:8px;">
         <div style="position:relative;">
             <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:13px;"></i>
             <input type="text"
@@ -15,6 +15,15 @@
                    style="padding:7px 12px 7px 30px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:13px;font-family:inherit;outline:none;width:220px;background:#fafafa;"
                    id="searchInput">
         </div>
+        <select name="assigned_to" class="filter-select" onchange="this.form.submit()" title="Filtrar por responsável">
+            <option value="">Todos os responsáveis</option>
+            <option value="ai" {{ request('assigned_to') === 'ai' ? 'selected' : '' }}>🤖 Agente IA</option>
+            @foreach($users as $u)
+            <option value="{{ $u->id }}" {{ request('assigned_to') == $u->id ? 'selected' : '' }}>
+                {{ $u->name }}
+            </option>
+            @endforeach
+        </select>
     </form>
 
     <a href="{{ route('leads.export') }}"
@@ -186,6 +195,32 @@
         font-family: inherit;
     }
     .btn-secondary-sm:hover { background: #f0f4ff; border-color: #dbeafe; color: #3B82F6; }
+
+    .resp-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 10.5px;
+        font-weight: 600;
+        color: #6b7280;
+        background: #f0f2f7;
+        border-radius: 99px;
+        padding: 2px 7px;
+        margin-top: 4px;
+    }
+
+    .filter-select {
+        padding: 7px 10px;
+        border: 1.5px solid #e8eaf0;
+        border-radius: 9px;
+        font-size: 13px;
+        font-family: inherit;
+        outline: none;
+        background: #fafafa;
+        color: #374151;
+        cursor: pointer;
+    }
+    .filter-select:focus { border-color: #3B82F6; background: #fff; }
 </style>
 @endpush
 
@@ -222,6 +257,12 @@
                         </div>
                         @if($lead->pipeline)
                         <small>{{ $lead->pipeline->name }}</small>
+                        @endif
+                        @php $resp = $lead->assignedTo?->name ?? $lead->whatsappConversation?->aiAgent?->name; @endphp
+                        @if($resp)
+                        <span class="resp-badge">
+                            <i class="bi bi-person-fill"></i> {{ Str::limit($resp, 18) }}
+                        </span>
                         @endif
                     </td>
                     <td>

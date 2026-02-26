@@ -18,6 +18,7 @@ use App\Models\LostSaleReason;
 use App\Models\Sale;
 use App\Models\Pipeline;
 use App\Models\PipelineStage;
+use App\Models\User;
 use App\Models\WhatsappTag;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -66,6 +67,20 @@ class KanbanController extends Controller
 
                 if ($tag = $request->get('tag')) {
                     $query->whereJsonContains('tags', $tag);
+                }
+
+                $responsible = $request->get('responsible', []);
+                if (!empty($responsible)) {
+                    $query->where(function ($q) use ($responsible) {
+                        $userIds = array_values(array_filter($responsible, fn ($r) => is_numeric($r)));
+                        $hasAi   = in_array('ai', $responsible);
+                        if ($userIds) {
+                            $q->whereIn('assigned_to', $userIds);
+                        }
+                        if ($hasAi) {
+                            $q->orWhereHas('whatsappConversation', fn ($wq) => $wq->whereNotNull('ai_agent_id'));
+                        }
+                    });
                 }
 
                 $leads = $query->get();
@@ -138,7 +153,11 @@ class KanbanController extends Controller
 
         $availableTags = $configuredTags->concat($extraTags);
 
-        return view('tenant.crm.kanban', compact('pipelines', 'pipeline', 'stages', 'campaigns', 'lostReasons', 'customFieldDefs', 'availableTags'));
+        $users = User::where('tenant_id', auth()->user()->tenant_id)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('tenant.crm.kanban', compact('pipelines', 'pipeline', 'stages', 'campaigns', 'lostReasons', 'customFieldDefs', 'availableTags', 'users'));
     }
 
     public function updateStage(Request $request, Lead $lead): JsonResponse
