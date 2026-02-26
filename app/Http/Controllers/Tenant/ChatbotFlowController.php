@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ChatbotFlow;
 use App\Models\ChatbotFlowEdge;
 use App\Models\ChatbotFlowNode;
+use App\Models\CustomFieldDefinition;
 use App\Models\Pipeline;
 use App\Models\User;
 use App\Models\WhatsappTag;
@@ -70,23 +71,36 @@ class ChatbotFlowController extends Controller
             ->values()
             ->all();
 
+        $customFieldDefs = CustomFieldDefinition::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'name', 'label', 'field_type', 'options_json'])
+            ->map(fn ($d) => [
+                'name'       => $d->name,
+                'label'      => $d->label,
+                'field_type' => $d->field_type,
+                'options'    => $d->options_json ?? [],
+            ])
+            ->values()
+            ->all();
+
         $builderData = [
-            'flow'         => [
+            'flow'            => [
                 'id'               => $flow->id,
                 'name'             => $flow->name,
                 'is_active'        => $flow->is_active,
                 'variables'        => $flow->variables ?? [],
                 'trigger_keywords' => $flow->trigger_keywords ?? [],
             ],
-            'nodes'        => $nodes->values()->all(),
-            'edges'        => $edges->values()->all(),
-            'saveUrl'      => route('chatbot.flows.graph', $flow),
-            'pipelinesUrl' => route('chatbot.flows.pipelines'),
-            'uploadUrl'    => route('chatbot.flows.upload-image'),
-            'toggleUrl'    => route('chatbot.flows.toggle', $flow),
-            'csrfToken'    => csrf_token(),
-            'tags'         => $tags,
-            'users'        => $users,
+            'nodes'           => $nodes->values()->all(),
+            'edges'           => $edges->values()->all(),
+            'saveUrl'         => route('chatbot.flows.graph', $flow),
+            'pipelinesUrl'    => route('chatbot.flows.pipelines'),
+            'uploadUrl'       => route('chatbot.flows.upload-image'),
+            'toggleUrl'       => route('chatbot.flows.toggle', $flow),
+            'csrfToken'       => csrf_token(),
+            'tags'            => $tags,
+            'users'           => $users,
+            'customFieldDefs' => $customFieldDefs,
         ];
 
         return view('tenant.chatbot.edit', compact('flow', 'builderData'));
@@ -426,6 +440,7 @@ class ChatbotFlowController extends Controller
                         'close_conversation' => '🔒 Conversa encerrada',
                         'save_variable'      => '💾 Variável salva: ' . ($cfg['variable'] ?? ''),
                         'send_webhook'       => '🔗 Webhook: ' . ($cfg['url'] ?? ''),
+                        'set_custom_field'   => '📝 Campo preenchido: ' . ($cfg['field_label'] ?? ($cfg['field_name'] ?? '')),
                         default              => '⚙️ Ação: ' . $type,
                     };
                     $messages[] = ['type' => 'system', 'content' => $label];

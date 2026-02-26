@@ -37,13 +37,14 @@ const NODE_TYPES_CONFIG = {
 };
 
 const ACTION_TYPES = [
-    { value: 'change_stage',       label: 'Trocar etapa do funil'  },
-    { value: 'add_tag',            label: 'Adicionar tag'           },
-    { value: 'remove_tag',         label: 'Remover tag'             },
-    { value: 'assign_human',       label: 'Transferir para humano'  },
-    { value: 'close_conversation', label: 'Fechar conversa'         },
-    { value: 'save_variable',      label: 'Salvar variável'         },
-    { value: 'send_webhook',       label: 'Enviar Webhook (HTTP)'   },
+    { value: 'change_stage',       label: 'Trocar etapa do funil'          },
+    { value: 'add_tag',            label: 'Adicionar tag'                   },
+    { value: 'remove_tag',         label: 'Remover tag'                     },
+    { value: 'assign_human',       label: 'Transferir para humano'          },
+    { value: 'close_conversation', label: 'Fechar conversa'                 },
+    { value: 'save_variable',      label: 'Salvar variável'                 },
+    { value: 'send_webhook',       label: 'Enviar Webhook (HTTP)'           },
+    { value: 'set_custom_field',   label: 'Preencher campo personalizado'   },
 ];
 
 const SYSTEM_VARS_META = [
@@ -883,7 +884,7 @@ function ConditionForm({ data, update, allVars }) {
     );
 }
 
-function ActionForm({ data, update, pipelines, allVars, tags, users }) {
+function ActionForm({ data, update, pipelines, allVars, tags, users, customFieldDefs }) {
     const [selectedPipeline, setSelectedPipeline] = useState(null);
     useEffect(() => {
         if (data.pipeline_id && pipelines.length) {
@@ -987,6 +988,79 @@ function ActionForm({ data, update, pipelines, allVars, tags, users }) {
                 </>
             )}
 
+            {data.type === 'set_custom_field' && (
+                <>
+                    <FieldGroup label="Campo personalizado">
+                        <select
+                            style={field.input}
+                            value={data.field_name || ''}
+                            onChange={e => {
+                                const def = (customFieldDefs || []).find(d => d.name === e.target.value);
+                                update('field_name', e.target.value);
+                                update('field_label', def ? def.label : '');
+                                update('field_type', def ? def.field_type : '');
+                                update('value', '');
+                            }}
+                        >
+                            <option value="">Selecione um campo…</option>
+                            {(customFieldDefs || []).map(d => (
+                                <option key={d.name} value={d.name}>{d.label}</option>
+                            ))}
+                        </select>
+                        {(!customFieldDefs || customFieldDefs.length === 0) && (
+                            <p style={{ fontSize: 11, color: '#9ca3af', margin: '4px 0 0' }}>
+                                Nenhum campo personalizado cadastrado.
+                            </p>
+                        )}
+                    </FieldGroup>
+                    {data.field_name && (() => {
+                        const def = (customFieldDefs || []).find(d => d.name === data.field_name);
+                        const ft  = def?.field_type || 'text';
+                        const opts = def?.options || [];
+                        if ((ft === 'select' || ft === 'multiselect') && opts.length > 0) {
+                            return (
+                                <FieldGroup label="Valor">
+                                    <select style={field.input} value={data.value || ''} onChange={e => update('value', e.target.value)}>
+                                        <option value="">Selecione…</option>
+                                        {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                                    </select>
+                                </FieldGroup>
+                            );
+                        }
+                        if (ft === 'boolean' || ft === 'checkbox') {
+                            return (
+                                <FieldGroup label="Valor">
+                                    <select style={field.input} value={data.value || ''} onChange={e => update('value', e.target.value)}>
+                                        <option value="">Selecione…</option>
+                                        <option value="true">Sim</option>
+                                        <option value="false">Não</option>
+                                    </select>
+                                </FieldGroup>
+                            );
+                        }
+                        if (ft === 'number' || ft === 'currency' || ft === 'percent') {
+                            return (
+                                <FieldGroup label="Valor">
+                                    <input type="number" style={field.input} value={data.value || ''} onChange={e => update('value', e.target.value)} placeholder="0" />
+                                </FieldGroup>
+                            );
+                        }
+                        if (ft === 'date') {
+                            return (
+                                <FieldGroup label="Valor">
+                                    <input type="date" style={field.input} value={data.value || ''} onChange={e => update('value', e.target.value)} />
+                                </FieldGroup>
+                            );
+                        }
+                        return (
+                            <FieldGroup label="Valor">
+                                <input style={field.input} value={data.value || ''} onChange={e => update('value', e.target.value)} placeholder="Valor ou {{variavel}}" />
+                            </FieldGroup>
+                        );
+                    })()}
+                </>
+            )}
+
             {data.type === 'send_webhook' && (
                 <>
                     <FieldGroup label="Método">
@@ -1077,7 +1151,7 @@ function EndForm({ data, update, textareaRef, saveCursor }) {
     );
 }
 
-function NodePanel({ node, onUpdate, onDelete, variables, pipelines, tags, users }) {
+function NodePanel({ node, onUpdate, onDelete, variables, pipelines, tags, users, customFieldDefs }) {
     const [data, setData] = useState(node.data);
     const cfg = NODE_TYPES_CONFIG[node.type] || NODE_TYPES_CONFIG.message;
     const textareaRef  = useRef(null);
@@ -1175,7 +1249,7 @@ function NodePanel({ node, onUpdate, onDelete, variables, pipelines, tags, users
                 {node.type === 'message'   && <MessageForm data={data} update={update} textareaRef={textareaRef} saveCursor={saveCursor} />}
                 {node.type === 'input'     && <InputForm   data={data} update={update} textareaRef={textareaRef} saveCursor={saveCursor} variables={variables} />}
                 {node.type === 'condition' && <ConditionForm data={data} update={update} allVars={allVars} />}
-                {node.type === 'action'    && <ActionForm data={data} update={update} pipelines={pipelines} allVars={allVars} tags={tags} users={users} />}
+                {node.type === 'action'    && <ActionForm data={data} update={update} pipelines={pipelines} allVars={allVars} tags={tags} users={users} customFieldDefs={customFieldDefs} />}
                 {node.type === 'delay'     && <DelayForm data={data} update={update} />}
                 {node.type === 'end'       && <EndForm data={data} update={update} textareaRef={textareaRef} saveCursor={saveCursor} />}
 
@@ -1471,8 +1545,9 @@ function ChatbotBuilder() {
     const [variables, setVariables] = useState(cfg.flow?.variables || []);
     const [triggerKeywords, setTriggerKeywords] = useState(cfg.flow?.trigger_keywords || []);
     const [pipelines, setPipelines] = useState([]);
-    const tags  = cfg.tags  || [];
-    const users = cfg.users || [];
+    const tags            = cfg.tags            || [];
+    const users           = cfg.users           || [];
+    const customFieldDefs = cfg.customFieldDefs || [];
     const [isActive, setIsActive] = useState(!!cfg.flow?.is_active);
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState('');
@@ -1730,6 +1805,7 @@ function ChatbotBuilder() {
                             pipelines={pipelines}
                             tags={tags}
                             users={users}
+                            customFieldDefs={customFieldDefs}
                         />
                     </div>
                 )}

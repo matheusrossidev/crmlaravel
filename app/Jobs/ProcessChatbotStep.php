@@ -6,6 +6,8 @@ namespace App\Jobs;
 
 use App\Models\ChatbotFlowEdge;
 use App\Models\ChatbotFlowNode;
+use App\Models\CustomFieldDefinition;
+use App\Models\CustomFieldValue;
 use App\Models\Lead;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappMessage;
@@ -311,6 +313,19 @@ class ProcessChatbotStep
             case 'send_webhook':
                 $vars = $this->executeSendWebhook($config, $vars, $conv->id);
                 break;
+
+            case 'set_custom_field':
+                $fieldName  = (string) ($config['field_name'] ?? '');
+                $fieldValue = ChatbotVariableService::interpolate((string) ($config['value'] ?? ''), $vars);
+                if ($fieldName && $conv->lead_id) {
+                    $this->setChatbotCustomField($conv->lead_id, $fieldName, $fieldValue);
+                    Log::channel('whatsapp')->info('Chatbot: campo personalizado preenchido', [
+                        'lead_id'    => $conv->lead_id,
+                        'field_name' => $fieldName,
+                        'value'      => $fieldValue,
+                    ]);
+                }
+                break;
         }
 
         return $vars;
@@ -461,6 +476,39 @@ class ProcessChatbotStep
             ->where('id', $conv->id)
             ->update(['tags' => json_encode($tags)]);
         $conv->tags = $tags;
+    }
+
+    private function setChatbotCustomField(int $leadId, string $fieldName, string $value): void
+    {
+        $def = CustomFieldDefinition::withoutGlobalScope('tenant')
+            ->where('name', $fieldName)
+            ->first();
+
+        if (! $def) {
+            Log::channel('whatsapp')->warning('Chatbot: campo personalizado não encontrado', ['name' => $fieldName]);
+            return;
+        }
+
+        $col = match (true) {
+            in_array($def->field_type, ['number', 'currency', 'percent'], true) => 'value_number',
+            $def->field_type === 'date'                                          => 'value_date',
+            in_array($def->field_type, ['boolean', 'checkbox'], true)           => 'value_boolean',
+            in_array($def->field_type, ['select', 'multiselect'], true)         => 'value_json',
+            default                                                              => 'value_text',
+        };
+
+        $typed = match ($col) {
+            'value_number'  => is_numeric($value) ? (float) $value : null,
+            'value_date'    => $value !== '' ? $value : null,
+            'value_boolean' => in_array(strtolower($value), ['1', 'true', 'sim', 'yes'], true),
+            'value_json'    => [$value],
+            default         => $value,
+        };
+
+        CustomFieldValue::withoutGlobalScope('tenant')->updateOrCreate(
+            ['lead_id' => $leadId, 'field_id' => $def->id],
+            ['tenant_id' => $def->tenant_id, $col => $typed],
+        );
     }
 
     private function executeSendWebhook(array $config, array $vars, int $convId): array
