@@ -87,13 +87,28 @@ class ProcessWahaWebhook implements ShouldQueue
             $from = $recipientFrom ?? $msg['to'] ?? $msg['chatId'] ?? $from;
         }
 
-        // Ignorar status/stories do WhatsApp (from = status@broadcast ou broadcast)
-        if (str_contains($from, 'broadcast') || str_contains($from, 'status@')) {
-            Log::channel('whatsapp')->debug('Ignorado: status broadcast', ['from' => $from, 'event' => $event]);
+        // Ignorar: Status/Stories (@broadcast), Canais (@newsletter) e mensagens de sistema
+        if (
+            str_contains($from, 'broadcast')   ||
+            str_contains($from, 'status@')     ||
+            str_contains($from, '@newsletter')
+        ) {
+            Log::channel('whatsapp')->debug('Ignorado: status/canal/broadcast', ['from' => $from, 'event' => $event]);
             return;
         }
 
         $isGroup = str_contains($from, '@g.us');
+
+        // Ignorar grupos de anúncio de Comunidade (announce = true no payload)
+        if ($isGroup) {
+            $isAnnounce = ! empty($msg['metadata']['announce'])
+                       || ! empty($msg['_data']['announce'])
+                       || ! empty($msg['_data']['Info']['Announce']);
+            if ($isAnnounce) {
+                Log::channel('whatsapp')->debug('Ignorado: grupo de anúncio de Comunidade', ['from' => $from]);
+                return;
+            }
+        }
 
         // Mensagens fromMe: podem ser (a) enviadas pelo CRM — já no banco, ignorar;
         // ou (b) enviadas diretamente do celular — salvar como outbound.
@@ -237,28 +252,28 @@ class ProcessWahaWebhook implements ShouldQueue
         // Para grupos: contact_name = nome do grupo; sender_name = quem enviou a mensagem.
         // Para 1:1: contact_name = nome do contato; sender_name = null.
         if ($isGroup) {
-            $contactName = $msg['chatName']
+            // Fontes do nome do grupo — por ordem de confiabilidade
+            $contactName = $msg['chatName']                    // maioria dos engines
+                ?? $msg['metadata']['subject']                 // GOWS/NOWEB: campo correto
                 ?? $msg['_data']['Info']['Subject']
                 ?? $msg['_data']['Info']['GroupName']
                 ?? $msg['_data']['Info']['Name']
-                ?? $msg['_data']['Info']['Chat']
                 ?? null;
-            // Se for JID, descarta (não é nome legível)
+
+            // Descartar se for JID (ex: "1234@g.us") em vez de nome legível
             if ($contactName && str_contains($contactName, '@')) {
                 $contactName = null;
             }
-            // Se o payload não trouxe o nome, buscar via WAHA API
+
+            // Fallback: buscar via GET /api/{session}/groups/{id} (retorna 'subject')
             if (! $contactName) {
                 try {
                     $wahaForGroup = new \App\Services\WahaService($instance->session_name);
                     $groupInfo    = $wahaForGroup->getGroupInfo($from);
-                    $contactName  = $groupInfo['subject']
-                        ?? $groupInfo['name']
-                        ?? $groupInfo['groupName']
-                        ?? $groupInfo['title']
-                        ?? null;
+                    $contactName  = $groupInfo['subject'] ?? $groupInfo['name'] ?? null;
                 } catch (\Throwable) {}
             }
+
             $messageSenderName = $msg['_data']['Info']['PushName']
                 ?? $msg['_data']['notifyName']
                 ?? $msg['notifyName']

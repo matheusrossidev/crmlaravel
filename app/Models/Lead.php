@@ -15,7 +15,7 @@ class Lead extends Model
     use BelongsToTenant;
 
     protected $fillable = [
-        'tenant_id', 'name', 'phone', 'email', 'value',
+        'tenant_id', 'name', 'phone', 'email', 'company', 'value',
         'source', 'tags', 'pipeline_id', 'stage_id',
         'assigned_to', 'campaign_id', 'created_by', 'notes',
         'instagram_username', 'exclude_from_pipeline',

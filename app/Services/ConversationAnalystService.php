@@ -82,6 +82,7 @@ CAMPOS PERSONALIZADOS:
 
 LEAD ATUAL:
 - Nome: {$lead->name}
+- Empresa: {$lead->company}
 - Etapa atual: {$stageStr}
 - Tags existentes: {$tagsStr}
 - Email: {$lead->email}

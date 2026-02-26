@@ -746,6 +746,13 @@ $pageIcon = 'person-badge';
                 </div>
             </div>
 
+            @if($lead->company)
+            <div class="lp-info-row">
+                <div class="lp-info-icon"><i class="bi bi-building"></i></div>
+                <div class="lp-info-val">{{ $lead->company }}</div>
+            </div>
+            @endif
+
             @if($lead->instagram_username)
             <div class="lp-info-row">
                 <div class="lp-info-icon"><i class="bi bi-instagram"></i></div>
