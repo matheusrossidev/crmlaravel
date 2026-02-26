@@ -27,32 +27,33 @@ class WhatsappMessageController extends Controller
 
         $waha = new WahaService($instance->session_name);
 
-        // Derive chatId from the original JID stored in waha_message_id history.
-        // Format: "{true|false}_{jid}_{messageId}" — e.g. "false_36576092528787@lid_3EB0xxx"
-        // Using the original JID avoids @lid vs @c.us confusion for GOWS engine.
-        $chatId    = null;
-        $sampleId  = WhatsappMessage::where('conversation_id', $conversation->id)
-            ->whereNotNull('waha_message_id')
-            ->where('direction', 'inbound')
-            ->latest('sent_at')
-            ->value('waha_message_id');
+        // ── Build chatId ──────────────────────────────────────────────────────
+        // Groups always use @g.us (phone stores only the numeric group ID).
+        // Individual contacts: derive from waha_message_id history to preserve
+        // @lid for GOWS engine; fallback to phone@c.us if no history exists.
+        $rawPhone = ltrim((string) preg_replace('/[:@\s].+$/', '', $conversation->phone), '+');
 
-        if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
-            $jid = $m[1]; // "36576092528787@lid", "556192008997@c.us", or "120363...@g.us"
-            if (str_ends_with($jid, '@lid')) {
-                $chatId = preg_replace('/[:@].+$/', '', $jid) . '@lid';
-            } elseif (str_ends_with($jid, '@g.us')) {
-                $chatId = preg_replace('/[:@].+$/', '', $jid) . '@g.us';
-            } else {
-                $chatId = preg_replace('/[:@].+$/', '', $jid) . '@c.us';
+        if ($conversation->is_group) {
+            $chatId = $rawPhone . '@g.us';
+        } else {
+            $chatId   = null;
+            $sampleId = WhatsappMessage::where('conversation_id', $conversation->id)
+                ->whereNotNull('waha_message_id')
+                ->where('direction', 'inbound')
+                ->latest('sent_at')
+                ->value('waha_message_id');
+
+            // Format: "{true|false}_{jid}_{messageId}" e.g. "false_36576092528787@lid_3EB0xxx"
+            if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
+                $jid = $m[1]; // "36576092528787@lid" or "556192008997@c.us"
+                if (str_ends_with($jid, '@lid')) {
+                    $chatId = preg_replace('/[:@].+$/', '', $jid) . '@lid';
+                } else {
+                    $chatId = preg_replace('/[:@].+$/', '', $jid) . '@c.us';
+                }
             }
-        }
 
-        // Fallback: build from stored phone (works for correctly normalised phones)
-        if (! $chatId) {
-            $rawPhone = ltrim((string) preg_replace('/[:@\s].+$/', '', $conversation->phone), '+');
-            $suffix   = $conversation->is_group ? '@g.us' : '@c.us';
-            $chatId   = $rawPhone . $suffix;
+            $chatId ??= $rawPhone . '@c.us';
         }
 
         $wahaMessageId = null;
