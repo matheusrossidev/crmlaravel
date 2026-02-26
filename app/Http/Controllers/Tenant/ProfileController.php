@@ -77,4 +77,29 @@ class ProfileController extends Controller
             'message'    => 'Foto atualizada com sucesso.',
         ]);
     }
+
+    public function uploadWorkspaceLogo(Request $request): JsonResponse
+    {
+        $request->validate([
+            'logo' => 'required|image|max:2048',
+        ]);
+
+        $user   = auth()->user();
+        $tenant = $user->tenant;
+
+        abort_unless($tenant && $user->isAdmin(), 403);
+
+        $file = $request->file('logo');
+        $path = 'workspace-logos/' . $tenant->id . '.' . $file->extension();
+
+        Storage::disk('public')->putFileAs('workspace-logos', $file, $tenant->id . '.' . $file->extension());
+
+        $tenant->update(['logo' => Storage::disk('public')->url($path)]);
+
+        return response()->json([
+            'success'   => true,
+            'logo_url'  => $tenant->logo,
+            'message'   => 'Logo do workspace atualizado com sucesso.',
+        ]);
+    }
 }

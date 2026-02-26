@@ -1,7 +1,7 @@
-@extends('tenant.layouts.app')
+@extends('master.layouts.app')
 @php
-    $title    = 'Painel Master — Empresas';
-    $pageIcon = 'shield-check';
+    $title    = 'Empresas';
+    $pageIcon = 'building';
 @endphp
 
 @push('styles')
@@ -52,6 +52,8 @@
     .status-active     { background: #f0fdf4; color: #16a34a; }
     .status-inactive   { background: #fef9c3; color: #a16207; }
     .status-suspended  { background: #fef2f2; color: #dc2626; }
+    .status-trial      { background: #fff7ed; color: #c2410c; }
+    .status-partner    { background: #f5f3ff; color: #7c3aed; }
 
     .plan-badge {
         display: inline-flex; align-items: center;
@@ -202,7 +204,7 @@
                     </td>
                     <td>
                         <span class="status-badge status-{{ $tenant->status }}">
-                            {{ ['active'=>'Ativo','inactive'=>'Inativo','suspended'=>'Suspenso'][$tenant->status] ?? ucfirst($tenant->status) }}
+                            {{ ['active'=>'Ativo','inactive'=>'Inativo','suspended'=>'Suspenso','trial'=>'Trial','partner'=>'Parceiro'][$tenant->status] ?? ucfirst($tenant->status) }}
                         </span>
                     </td>
                     <td><span class="plan-badge">{{ $tenant->plan }}</span></td>
@@ -268,12 +270,27 @@
         </div>
         <div class="form-group">
             <label>Plano</label>
-            <select class="form-control" id="tenantPlan">
-                <option value="free">Free</option>
-                <option value="starter">Starter</option>
-                <option value="pro" selected>Pro</option>
-                <option value="enterprise">Enterprise</option>
+            <select class="form-control" id="tenantPlan" onchange="onPlanChange()">
+                @foreach($plans as $p)
+                <option value="{{ $p->name }}"
+                        data-trial="{{ $p->trial_days ?? '' }}"
+                        data-label="{{ $p->display_name }}"
+                        {{ $p->name === 'trial' ? 'selected' : '' }}>
+                    {{ $p->display_name }}
+                    @if($p->trial_days !== null)
+                        ({{ $p->trial_days }} dias trial)
+                    @elseif($p->price_monthly > 0)
+                        — R$ {{ number_format($p->price_monthly, 2, ',', '.') }}/mês
+                    @endif
+                </option>
+                @endforeach
             </select>
+        </div>
+        <div class="form-group" id="trialInfoBadge" style="display:none;">
+            <div style="background:#fff7ed;border:1px solid #fdba74;border-radius:9px;padding:10px 14px;font-size:12.5px;color:#c2410c;">
+                <i class="bi bi-clock-history"></i>
+                <span id="trialInfoText"></span>
+            </div>
         </div>
     </div>
     <div class="drawer-footer">
@@ -292,7 +309,25 @@ const csrf     = document.querySelector('meta[name=csrf-token]').content;
 function openDrawer() {
     document.getElementById('drawerOverlay').classList.add('open');
     document.getElementById('drawer').classList.add('open');
+    onPlanChange();
     setTimeout(() => document.getElementById('tenantName').focus(), 80);
+}
+
+function onPlanChange() {
+    const sel     = document.getElementById('tenantPlan');
+    const opt     = sel.options[sel.selectedIndex];
+    const trial   = opt?.dataset?.trial;
+    const badge   = document.getElementById('trialInfoBadge');
+    const text    = document.getElementById('trialInfoText');
+    if (trial !== '' && trial !== undefined && parseInt(trial) > 0) {
+        text.textContent = ` Empresa criada com ${trial} dias de trial gratuito.`;
+        badge.style.display = 'block';
+    } else if (trial === '0') {
+        text.textContent = ' Plano gratuito sem expiração de trial.';
+        badge.style.display = 'block';
+    } else {
+        badge.style.display = 'none';
+    }
 }
 function closeDrawer() {
     document.getElementById('drawerOverlay').classList.remove('open');

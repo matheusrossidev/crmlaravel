@@ -10,17 +10,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Tenant extends Model
 {
     protected $fillable = [
-        'name', 'slug', 'plan', 'status', 'settings_json',
+        'name', 'slug', 'logo', 'plan', 'status', 'trial_ends_at', 'settings_json',
         'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields', 'api_rate_limit',
     ];
 
     protected $casts = [
         'settings_json' => 'array',
-        'max_users' => 'integer',
-        'max_leads' => 'integer',
+        'trial_ends_at' => 'datetime',
+        'max_users'     => 'integer',
+        'max_leads'     => 'integer',
         'max_pipelines' => 'integer',
         'max_custom_fields' => 'integer',
-        'api_rate_limit' => 'integer',
+        'api_rate_limit'    => 'integer',
     ];
 
     public function users(): HasMany

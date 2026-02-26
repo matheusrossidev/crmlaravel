@@ -244,6 +244,43 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Logo do Workspace (admin only) --}}
+            @if(auth()->user()->isAdmin())
+            <div class="profile-card">
+                <div class="profile-card-header">
+                    <i class="bi bi-building" style="color:#3B82F6;"></i>
+                    Identidade Visual
+                </div>
+                <div class="profile-card-body">
+                    <div class="avatar-wrap">
+                        <div class="avatar-preview" id="logoPreview"
+                             style="border-radius:12px;background:linear-gradient(135deg,#3B82F6,#2563EB);">
+                            @if(auth()->user()->tenant?->logo)
+                                <img src="{{ auth()->user()->tenant->logo }}" alt="Logo" id="logoImg"
+                                     style="width:100%;height:100%;object-fit:cover;border-radius:12px;">
+                            @else
+                                <span id="logoInitial" style="font-size:32px;">
+                                    {{ strtoupper(substr(auth()->user()->tenant?->name ?? 'W', 0, 1)) }}
+                                </span>
+                            @endif
+                        </div>
+
+                        <label class="avatar-upload-zone" for="logoFile">
+                            <i class="bi bi-cloud-upload" style="font-size:22px;color:#9ca3af;"></i>
+                            <div style="font-size:13px;font-weight:600;color:#374151;margin-top:6px;">
+                                Clique para enviar o logo
+                            </div>
+                            <div class="upload-hint">JPG, PNG ou WebP · máx. 2MB</div>
+                            <input type="file" id="logoFile" accept="image/*">
+                        </label>
+                    </div>
+                    <p style="font-size:11.5px;color:#9ca3af;margin-top:10px;text-align:center;">
+                        Aparece no menu lateral para todos os usuários do workspace.
+                    </p>
+                </div>
+            </div>
+            @endif
         </div>
 
     </div>
@@ -255,6 +292,7 @@
 const profileUrl  = "{{ route('settings.profile.update') }}";
 const passwordUrl = "{{ route('settings.profile.password') }}";
 const avatarUrl   = "{{ route('settings.profile.avatar') }}";
+const logoUrl     = "{{ route('settings.workspace.logo') }}";
 
 // ── Perfil ────────────────────────────────────────────────
 document.getElementById('formProfile').addEventListener('submit', async function(e) {
@@ -354,6 +392,45 @@ document.getElementById('avatarFile').addEventListener('change', async function(
         }
     } catch { toastr.error('Erro de conexão.'); }
 });
+
+// ── Logo do Workspace ─────────────────────────────────────
+const logoFileInput = document.getElementById('logoFile');
+if (logoFileInput) {
+    logoFileInput.addEventListener('change', async function() {
+        const file = this.files[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            toastr.error('Arquivo muito grande. Máximo 2MB.');
+            return;
+        }
+
+        const fd = new FormData();
+        fd.append('logo', file);
+        fd.append('_token', document.querySelector('meta[name=csrf-token]').content);
+
+        try {
+            const res = await fetch(logoUrl, { method: 'POST', body: fd, headers: { 'Accept': 'application/json' } });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                toastr.success(data.message ?? 'Logo atualizado!');
+                // Atualiza preview
+                const preview = document.getElementById('logoPreview');
+                preview.style.background = 'transparent';
+                preview.innerHTML = `<img src="${data.logo_url}?t=${Date.now()}" alt="Logo"
+                    style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`;
+                // Atualiza workspace-avatar no sidebar
+                document.querySelectorAll('.workspace-avatar').forEach(el => {
+                    el.style.background = 'transparent';
+                    el.innerHTML = `<img src="${data.logo_url}?t=${Date.now()}"
+                        style="width:100%;height:100%;object-fit:cover;border-radius:8px;" alt="">`;
+                });
+            } else {
+                toastr.error(data.message ?? 'Erro ao enviar logo.');
+            }
+        } catch { toastr.error('Erro de conexão.'); }
+    });
+}
 
 // ── Helpers ───────────────────────────────────────────────
 function clearErrors(ids) {

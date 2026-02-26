@@ -9,6 +9,7 @@ use App\Events\WhatsappConversationUpdated;
 use App\Http\Controllers\Tenant\AiConfigurationController;
 use App\Models\AiAgent;
 use App\Models\AiIntentSignal;
+use App\Models\AiUsageLog;
 use App\Models\Lead;
 use App\Models\WhatsappConversation;
 use App\Services\AiAgentService;
@@ -199,7 +200,7 @@ class ProcessAiResponse implements ShouldQueue
         $extraTokens = (! empty($stages) || ! empty($availTags)) ? 300 : 0;
         $maxTokens   = $maxLength + 200 + $extraTokens;
 
-        $reply = AiConfigurationController::callLlm(
+        $llmResult = AiConfigurationController::callLlm(
             provider:  $provider,
             apiKey:    $apiKey,
             model:     $model,
@@ -208,7 +209,27 @@ class ProcessAiResponse implements ShouldQueue
             system:    $system,
         );
 
-        $reply = trim($reply);
+        $reply    = trim($llmResult['reply']);
+        $llmUsage = $llmResult['usage'];
+
+        // ── Registrar uso de tokens ───────────────────────────────────────────
+        try {
+            AiUsageLog::create([
+                'tenant_id'         => $conv->tenant_id,
+                'conversation_id'   => $conv->id,
+                'model'             => $model,
+                'provider'          => $provider,
+                'tokens_prompt'     => $llmUsage['prompt'] ?? 0,
+                'tokens_completion' => $llmUsage['completion'] ?? 0,
+                'tokens_total'      => $llmUsage['total'] ?? 0,
+                'type'              => 'chat',
+            ]);
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->warning('AI job: falha ao registrar uso de tokens', [
+                'conversation_id' => $this->conversationId,
+                'error'           => $e->getMessage(),
+            ]);
+        }
 
         if ($reply === '') {
             Log::channel('whatsapp')->warning('AI job: LLM retornou resposta vazia', [
@@ -264,7 +285,7 @@ class ProcessAiResponse implements ShouldQueue
                 $stageId  = (int) ($action['stage_id'] ?? 0);
                 $validIds = array_column($stages, 'id');
                 if (! empty($stages) && $stageId > 0 && in_array($stageId, $validIds, true)) {
-                    $this->applySetStage($conv, $stageId);
+                    $this->applySetStage($conv, $stageId, $agent, $stages);
                 } else {
                     Log::channel('whatsapp')->warning('AI: set_stage ignorado — id inválido ou ferramenta desativada', [
                         'conversation_id' => $conv->id,
@@ -273,9 +294,9 @@ class ProcessAiResponse implements ShouldQueue
                     ]);
                 }
             } elseif ($type === 'add_tags') {
-                $this->applyAddTags($conv, (array) ($action['tags'] ?? []));
+                $this->applyAddTags($conv, (array) ($action['tags'] ?? []), $agent);
             } elseif ($type === 'notify_intent') {
-                $this->applyNotifyIntent($conv, $action);
+                $this->applyNotifyIntent($conv, $action, $agent);
             } elseif ($type === 'assign_human') {
                 $this->applyAssignHuman($conv, $agent);
             }
@@ -296,7 +317,7 @@ class ProcessAiResponse implements ShouldQueue
 
     // ── Ações ─────────────────────────────────────────────────────────────────
 
-    private function applySetStage(WhatsappConversation $conv, int $stageId): void
+    private function applySetStage(WhatsappConversation $conv, int $stageId, AiAgent $agent, array $stages): void
     {
         if (! $conv->lead_id || $stageId <= 0) return;
 
@@ -304,14 +325,20 @@ class ProcessAiResponse implements ShouldQueue
             ->where('id', $conv->lead_id)
             ->update(['stage_id' => $stageId]);
 
+        $stageName = collect($stages)->firstWhere('id', $stageId)['name'] ?? "id:{$stageId}";
+
         Log::channel('whatsapp')->info('AI: lead movido de etapa', [
             'conversation_id' => $conv->id,
+            'contact_name'    => $conv->contact_name ?? $conv->phone,
+            'phone'           => $conv->phone,
+            'agent_name'      => $agent->name,
             'lead_id'         => $conv->lead_id,
             'new_stage_id'    => $stageId,
+            'stage_name'      => $stageName,
         ]);
     }
 
-    private function applyNotifyIntent(WhatsappConversation $conv, array $action): void
+    private function applyNotifyIntent(WhatsappConversation $conv, array $action, AiAgent $agent): void
     {
         $validTypes = ['buy', 'schedule', 'close', 'interest'];
         $intentType = in_array($action['intent'] ?? '', $validTypes, true)
@@ -338,6 +365,9 @@ class ProcessAiResponse implements ShouldQueue
 
         Log::channel('whatsapp')->info('AI: sinal de intenção detectado', [
             'conversation_id' => $conv->id,
+            'contact_name'    => $conv->contact_name ?? $conv->phone,
+            'phone'           => $conv->phone,
+            'agent_name'      => $agent->name,
             'intent_type'     => $intentType,
             'signal_id'       => $signal->id,
         ]);
@@ -366,11 +396,14 @@ class ProcessAiResponse implements ShouldQueue
 
         Log::channel('whatsapp')->info('AI: conversa transferida para humano', [
             'conversation_id'  => $conv->id,
+            'contact_name'     => $conv->contact_name ?? $conv->phone,
+            'phone'            => $conv->phone,
+            'agent_name'       => $agent->name,
             'transfer_to_user' => $agent->transfer_to_user_id,
         ]);
     }
 
-    private function applyAddTags(WhatsappConversation $conv, array $newTags): void
+    private function applyAddTags(WhatsappConversation $conv, array $newTags, AiAgent $agent): void
     {
         if (empty($newTags)) return;
 
@@ -384,6 +417,9 @@ class ProcessAiResponse implements ShouldQueue
 
         Log::channel('whatsapp')->info('AI: tags adicionadas', [
             'conversation_id' => $conv->id,
+            'contact_name'    => $conv->contact_name ?? $conv->phone,
+            'phone'           => $conv->phone,
+            'agent_name'      => $agent->name,
             'tags_added'      => $newTags,
             'tags_total'      => $merged,
         ]);

@@ -1,4 +1,4 @@
-@extends('tenant.layouts.app')
+@extends('master.layouts.app')
 
 @php
     $title    = 'Config. Inteligencia Artificial';

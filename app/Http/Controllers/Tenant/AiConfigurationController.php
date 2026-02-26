@@ -58,26 +58,27 @@ class AiConfigurationController extends Controller
         ]);
 
         try {
-            $response = $this->callLlm(
+            $result = $this->callLlm(
                 provider: $request->input('llm_provider'),
                 apiKey:   $request->input('llm_api_key'),
                 model:    $request->input('llm_model'),
                 messages: [['role' => 'user', 'content' => 'Responda apenas: "OK"']],
             );
 
-            return response()->json(['success' => true, 'response' => $response]);
+            return response()->json(['success' => true, 'response' => $result['reply']]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
     }
 
     /**
-     * Chama o LLM e retorna a resposta em texto.
+     * Chama o LLM e retorna array com 'reply' (texto) e 'usage' (tokens).
      *
      * @param array $messages  Mensagens no formato OpenAI [{role, content}].
      *                         Content pode ser string (texto) ou array de blocos
      *                         multimodal [{type:'image_url',...}, {type:'text',...}].
      * @param string $system   System prompt (passado como parâmetro separado para cada provider).
+     * @return array{reply: string, usage: array{prompt: int, completion: int, total: int}}
      */
     public static function callLlm(
         string $provider,
@@ -86,7 +87,7 @@ class AiConfigurationController extends Controller
         array  $messages,
         int    $maxTokens = 1000,
         string $system = '',
-    ): string {
+    ): array {
         return match ($provider) {
             'openai'    => self::callOpenAi($apiKey, $model, $messages, $maxTokens, $system),
             'anthropic' => self::callAnthropic($apiKey, $model, $messages, $maxTokens, $system),
@@ -95,7 +96,7 @@ class AiConfigurationController extends Controller
         };
     }
 
-    private static function callOpenAi(string $apiKey, string $model, array $messages, int $maxTokens, string $system): string
+    private static function callOpenAi(string $apiKey, string $model, array $messages, int $maxTokens, string $system): array
     {
         // Prepend system message se fornecido (e não já presente no array)
         if ($system !== '' && (empty($messages) || $messages[0]['role'] !== 'system')) {
@@ -113,10 +114,16 @@ class AiConfigurationController extends Controller
             throw new \RuntimeException('OpenAI erro: ' . ($response->json('error.message') ?? $response->status()));
         }
 
-        return $response->json('choices.0.message.content') ?? '';
+        $prompt     = (int) ($response->json('usage.prompt_tokens') ?? 0);
+        $completion = (int) ($response->json('usage.completion_tokens') ?? 0);
+
+        return [
+            'reply' => $response->json('choices.0.message.content') ?? '',
+            'usage' => ['prompt' => $prompt, 'completion' => $completion, 'total' => $prompt + $completion],
+        ];
     }
 
-    private static function callAnthropic(string $apiKey, string $model, array $messages, int $maxTokens, string $system): string
+    private static function callAnthropic(string $apiKey, string $model, array $messages, int $maxTokens, string $system): array
     {
         // Remove mensagens com role=system do array (Anthropic usa campo separado)
         $filtered = array_values(array_filter($messages, fn ($m) => $m['role'] !== 'system'));
@@ -173,10 +180,16 @@ class AiConfigurationController extends Controller
             throw new \RuntimeException('Anthropic erro: ' . ($response->json('error.message') ?? $response->status()));
         }
 
-        return $response->json('content.0.text') ?? '';
+        $prompt     = (int) ($response->json('usage.input_tokens') ?? 0);
+        $completion = (int) ($response->json('usage.output_tokens') ?? 0);
+
+        return [
+            'reply' => $response->json('content.0.text') ?? '',
+            'usage' => ['prompt' => $prompt, 'completion' => $completion, 'total' => $prompt + $completion],
+        ];
     }
 
-    private static function callGoogle(string $apiKey, string $model, array $messages, int $maxTokens, string $system): string
+    private static function callGoogle(string $apiKey, string $model, array $messages, int $maxTokens, string $system): array
     {
         // Filtrar system messages
         $filtered = array_values(array_filter($messages, fn ($m) => $m['role'] !== 'system'));
@@ -231,6 +244,12 @@ class AiConfigurationController extends Controller
             throw new \RuntimeException('Google erro: ' . ($response->json('error.message') ?? $response->status()));
         }
 
-        return $response->json('candidates.0.content.parts.0.text') ?? '';
+        $prompt     = (int) ($response->json('usageMetadata.promptTokenCount') ?? 0);
+        $completion = (int) ($response->json('usageMetadata.candidatesTokenCount') ?? 0);
+
+        return [
+            'reply' => $response->json('candidates.0.content.parts.0.text') ?? '',
+            'usage' => ['prompt' => $prompt, 'completion' => $completion, 'total' => $prompt + $completion],
+        ];
     }
 }

@@ -613,7 +613,12 @@
     {{-- Workspace --}}
     <div class="workspace-selector" title="{{ auth()->user()->tenant?->name ?? 'Minha Empresa' }}">
         <div class="workspace-avatar">
-            {{ strtoupper(substr(auth()->user()->tenant?->name ?? 'P', 0, 1)) }}
+            @if(auth()->user()->tenant?->logo)
+                <img src="{{ auth()->user()->tenant->logo }}"
+                     style="width:100%;height:100%;object-fit:cover;border-radius:8px;" alt="">
+            @else
+                {{ strtoupper(substr(auth()->user()->tenant?->name ?? 'P', 0, 1)) }}
+            @endif
         </div>
         <span class="workspace-name nav-label">{{ auth()->user()->tenant?->name ?? 'Minha Empresa' }}</span>
         <i class="bi bi-chevron-expand workspace-chevron nav-label" style="color:#9ca3af;font-size:12px;flex-shrink:0;"></i>
@@ -813,55 +818,56 @@
     {{-- Slot para ações da página (botões, filtros, etc) --}}
     @hasSection('topbar_actions')
         @yield('topbar_actions')
-    @else
-        <div class="topbar-actions">
-            <div class="dropdown">
-                <button class="topbar-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside"
-                        id="notif-bell-btn" title="Notificações">
-                    <i class="bi bi-bell"></i>
-                    <span class="badge-num d-none" id="notif-badge-num"></span>
-                </button>
-                <div class="dropdown-menu dropdown-menu-end shadow" id="notif-panel"
-                     style="width:340px;max-height:420px;overflow-y:auto;border-radius:12px;padding:0;">
-                    <div style="padding:12px 16px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1;">
-                        <span style="font-weight:700;font-size:13px;">Sinais de Intenção</span>
-                        <button onclick="markAllIntentRead()" type="button" class="btn btn-link btn-sm p-0"
-                                style="font-size:11px;text-decoration:none;color:#6b7280;">Marcar todas lidas</button>
-                    </div>
-                    <div id="notif-list">
-                        <div style="padding:24px;text-align:center;color:#9ca3af;font-size:12px;">Nenhuma notificação</div>
-                    </div>
+    @endif
+
+    {{-- Bell de notificações + avatar — sempre visíveis --}}
+    <div class="topbar-actions">
+        <div class="dropdown">
+            <button class="topbar-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                    id="notif-bell-btn" title="Notificações">
+                <i class="bi bi-bell"></i>
+                <span class="badge-num d-none" id="notif-badge-num"></span>
+            </button>
+            <div class="dropdown-menu dropdown-menu-end shadow" id="notif-panel"
+                 style="width:340px;max-height:420px;overflow-y:auto;border-radius:12px;padding:0;">
+                <div style="padding:12px 16px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1;">
+                    <span style="font-weight:700;font-size:13px;">Notificações</span>
+                    <button onclick="markAllIntentRead()" type="button" class="btn btn-link btn-sm p-0"
+                            style="font-size:11px;text-decoration:none;color:#6b7280;">Marcar todas lidas</button>
                 </div>
-            </div>
-            <div class="dropdown">
-                <div class="user-avatar" style="width:36px;height:36px;border-radius:9px;cursor:pointer;overflow:hidden;"
-                     data-bs-toggle="dropdown">
-                    @if(auth()->user()->avatar)
-                        <img src="{{ auth()->user()->avatar }}" alt="{{ auth()->user()->name }}"
-                             style="width:100%;height:100%;object-fit:cover;">
-                    @else
-                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                    @endif
+                <div id="notif-list">
+                    <div style="padding:24px;text-align:center;color:#9ca3af;font-size:12px;">Nenhuma notificação</div>
                 </div>
-                <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width:180px;border-radius:10px;">
-                    <li class="px-3 py-2">
-                        <div style="font-size:13px;font-weight:600;">{{ auth()->user()->name }}</div>
-                        <div style="font-size:11px;color:#9ca3af;">{{ auth()->user()->email }}</div>
-                    </li>
-                    <li><hr class="dropdown-divider my-1"></li>
-                    <li><a class="dropdown-item" href="{{ route('settings.profile') }}"><i class="bi bi-person me-2"></i>Perfil</a></li>
-                    <li>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit" class="dropdown-item text-danger">
-                                <i class="bi bi-box-arrow-right me-2"></i>Sair
-                            </button>
-                        </form>
-                    </li>
-                </ul>
             </div>
         </div>
-    @endif
+        <div class="dropdown">
+            <div class="user-avatar" style="width:36px;height:36px;border-radius:9px;cursor:pointer;overflow:hidden;"
+                 data-bs-toggle="dropdown">
+                @if(auth()->user()->avatar)
+                    <img src="{{ auth()->user()->avatar }}" alt="{{ auth()->user()->name }}"
+                         style="width:100%;height:100%;object-fit:cover;">
+                @else
+                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                @endif
+            </div>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width:180px;border-radius:10px;">
+                <li class="px-3 py-2">
+                    <div style="font-size:13px;font-weight:600;">{{ auth()->user()->name }}</div>
+                    <div style="font-size:11px;color:#9ca3af;">{{ auth()->user()->email }}</div>
+                </li>
+                <li><hr class="dropdown-divider my-1"></li>
+                <li><a class="dropdown-item" href="{{ route('settings.profile') }}"><i class="bi bi-person me-2"></i>Perfil</a></li>
+                <li>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="dropdown-item text-danger">
+                            <i class="bi bi-box-arrow-right me-2"></i>Sair
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
 </header>
 
 {{-- ===== CONTEÚDO PRINCIPAL ===== --}}
@@ -1119,21 +1125,70 @@ function toggleSubmenu(id) {
     // Escutar evento em tempo real via WebSocket
     document.addEventListener('DOMContentLoaded', function () {
         if (window.Echo) {
-            window.Echo.private('tenant.{{ auth()->user()->tenant_id }}')
-                .listen('.ai.intent', function (data) {
-                    const icon = ICONS[data.intent_type] || '⭐';
-                    if (window.toastr) {
-                        toastr.info(
-                            `${icon} <b>${data.contact_name}</b>: ${data.context}`,
-                            'Sinal de Intenção',
-                            { timeOut: 8000, closeButton: true, progressBar: true, escapeHtml: false }
-                        );
-                    }
-                    loadIntentSignals();
-                });
+            const channel = window.Echo.private('tenant.{{ auth()->user()->tenant_id }}');
+
+            channel.listen('.ai.intent', function (data) {
+                const icon = ICONS[data.intent_type] || '⭐';
+                if (window.toastr) {
+                    toastr.info(
+                        `${icon} <b>${data.contact_name}</b>: ${data.context}`,
+                        'Sinal de Intenção',
+                        { timeOut: 8000, closeButton: true, progressBar: true, escapeHtml: false }
+                    );
+                }
+                loadIntentSignals();
+            });
+
+            channel.listen('.master.notification', function (data) {
+                if (!window.toastr) return;
+                const typeMap = {
+                    info:    { fn: 'info',    title: 'Notificação' },
+                    warning: { fn: 'warning', title: 'Aviso' },
+                    alert:   { fn: 'error',   title: 'Alerta Importante' },
+                };
+                const t = typeMap[data.type] || typeMap.info;
+                toastr[t.fn](
+                    `<b>${data.title}</b><br><small>${data.body}</small>`,
+                    t.title,
+                    { timeOut: 12000, closeButton: true, progressBar: true, escapeHtml: false }
+                );
+            });
         }
     });
 })();
 </script>
+
+@php
+    $trialExpired = auth()->check()
+        && auth()->user()->tenant?->status === 'trial'
+        && auth()->user()->tenant?->trial_ends_at !== null
+        && auth()->user()->tenant->trial_ends_at->isPast();
+@endphp
+
+@if($trialExpired)
+{{-- Modal bloqueante de trial expirado — não pode ser fechado --}}
+<div id="trialExpiredOverlay" style="position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:24px;">
+    <div style="background:#fff;border-radius:20px;width:100%;max-width:460px;padding:40px 36px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+        <div style="width:72px;height:72px;border-radius:20px;background:#fff7ed;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+            <i class="bi bi-clock-history" style="font-size:32px;color:#f97316;"></i>
+        </div>
+        <div style="display:inline-block;background:#fff7ed;color:#f97316;border:1px solid #fdba74;border-radius:20px;font-size:12px;font-weight:700;padding:4px 14px;margin-bottom:16px;text-transform:uppercase;letter-spacing:.04em;">
+            Trial Expirado
+        </div>
+        <h2 style="font-size:20px;font-weight:700;color:#1a1d23;margin:0 0 12px;">Seu período gratuito encerrou</h2>
+        <p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0 0 28px;">
+            O trial gratuito da conta <strong>{{ auth()->user()->tenant->name }}</strong> expirou.<br>
+            Entre em contato com o suporte para ativar um plano e continuar usando a plataforma.
+        </p>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" style="display:inline-flex;align-items:center;gap:8px;padding:11px 28px;background:transparent;color:#6b7280;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;">
+                <i class="bi bi-box-arrow-right"></i> Sair da conta
+            </button>
+        </form>
+    </div>
+</div>
+@endif
+
 </body>
 </html>

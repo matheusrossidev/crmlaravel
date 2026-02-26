@@ -18,8 +18,28 @@ class TenantMiddleware
 
         $user = auth()->user();
 
-        if (!$user->isSuperAdmin() && !$user->tenant_id) {
+        if ($user->isSuperAdmin()) {
+            return $next($request);
+        }
+
+        if (!$user->tenant_id) {
             abort(403, 'Usuário sem tenant associado.');
+        }
+
+        $tenant = $user->tenant;
+
+        if ($tenant) {
+            // Conta suspensa ou inativa → página de bloqueio
+            if (in_array($tenant->status, ['suspended', 'inactive'], true)) {
+                // Permitir logout
+                if ($request->routeIs('logout')) {
+                    return $next($request);
+                }
+                return redirect()->route('account.suspended');
+            }
+
+            // Trial expirado → modal bloqueante exibido no layout (sem redirect)
+            // O modal em app.blade.php detecta a situação e bloqueia a interface
         }
 
         return $next($request);

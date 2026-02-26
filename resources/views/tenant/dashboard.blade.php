@@ -11,13 +11,6 @@
     <button class="topbar-btn" onclick="openCustomize()" title="Personalizar dashboard">
         <i class="bi bi-sliders"></i>
     </button>
-    <button class="topbar-btn" title="Notificações">
-        <i class="bi bi-bell"></i>
-    </button>
-    <a href="{{ route('leads.index') }}" class="btn-primary-sm">
-        <i class="bi bi-plus-lg"></i>
-        Novo Lead
-    </a>
 </div>
 @endsection
 
@@ -315,6 +308,41 @@
     @media (max-width: 820px) {
         .mid-grid { grid-template-columns: 1fr; }
     }
+
+    /* ── Modal: botões ─────────────────────────────────────────────────── */
+    .btn-clear {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 18px;
+        background: transparent;
+        color: #6b7280;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 9px;
+        font-size: 13.5px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .15s, border-color .15s, color .15s;
+    }
+    .btn-clear:hover {
+        background: #f3f4f6;
+        border-color: #d1d5db;
+        color: #374151;
+    }
+    .btn-apply {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 22px;
+        background: #3B82F6;
+        color: #fff;
+        border: none;
+        border-radius: 9px;
+        font-size: 13.5px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .15s;
+    }
+    .btn-apply:hover { background: #2563EB; }
+    .btn-apply:disabled { background: #93c5fd; cursor: not-allowed; }
 </style>
 @endpush
 

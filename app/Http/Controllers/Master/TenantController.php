@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Master;
 
 use App\Http\Controllers\Controller;
 use App\Models\Lead;
+use App\Models\PlanDefinition;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -23,26 +24,41 @@ class TenantController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('master.tenants.index', compact('tenants'));
+        $plans = PlanDefinition::where('is_active', true)
+            ->orderBy('price_monthly')
+            ->get(['id', 'name', 'display_name', 'price_monthly', 'trial_days']);
+
+        return view('master.tenants.index', compact('tenants', 'plans'));
     }
 
     public function store(Request $request): JsonResponse
     {
+        $planNames = PlanDefinition::where('is_active', true)->pluck('name')->toArray();
+
         $request->validate([
             'name'     => 'required|string|max:100',
             'email'    => 'required|email|max:150|unique:users,email',
             'password' => 'required|string|min:8',
-            'plan'     => 'required|in:free,starter,pro,enterprise',
+            'plan'     => ['required', 'string', 'in:' . implode(',', $planNames)],
         ]);
 
         $slug = Str::slug($request->input('name')) . '-' . Str::random(6);
 
-        $tenant = DB::transaction(function () use ($request, $slug) {
+        // Determinar status e trial_ends_at a partir da definição do plano
+        $planDef      = PlanDefinition::where('name', $request->input('plan'))->first();
+        $trialDays    = $planDef?->trial_days;
+        $status       = ($trialDays !== null && $trialDays > 0) ? 'trial' : 'active';
+        $trialEndsAt  = ($trialDays !== null && $trialDays > 0)
+            ? now()->addDays($trialDays)
+            : null;
+
+        $tenant = DB::transaction(function () use ($request, $slug, $status, $trialEndsAt) {
             $tenant = Tenant::create([
-                'name'   => $request->input('name'),
-                'slug'   => $slug,
-                'plan'   => $request->input('plan'),
-                'status' => 'active',
+                'name'          => $request->input('name'),
+                'slug'          => $slug,
+                'plan'          => $request->input('plan'),
+                'status'        => $status,
+                'trial_ends_at' => $trialEndsAt,
             ]);
 
             User::create([
@@ -83,20 +99,24 @@ class TenantController extends Controller
             'lost'   => Lead::forTenant($tenant->id)->whereNotNull('lost_at')->count(),
         ];
 
-        return view('master.tenants.show', compact('tenant', 'users', 'leadsStats'));
+        $plans = PlanDefinition::orderBy('price_monthly')
+            ->get(['id', 'name', 'display_name', 'price_monthly', 'trial_days']);
+
+        return view('master.tenants.show', compact('tenant', 'users', 'leadsStats', 'plans'));
     }
 
     public function update(Request $request, Tenant $tenant): JsonResponse
     {
         $request->validate([
-            'status'       => 'required|in:active,inactive,suspended',
-            'plan'         => 'required|in:free,starter,pro,enterprise',
-            'max_users'    => 'nullable|integer|min:0',
-            'max_leads'    => 'nullable|integer|min:0',
-            'max_pipelines'=> 'nullable|integer|min:0',
+            'status'        => 'required|in:active,inactive,suspended,trial,partner',
+            'plan'          => 'required|in:free,starter,pro,enterprise,partner',
+            'trial_ends_at' => 'nullable|date',
+            'max_users'     => 'nullable|integer|min:0',
+            'max_leads'     => 'nullable|integer|min:0',
+            'max_pipelines' => 'nullable|integer|min:0',
         ]);
 
-        $tenant->update($request->only('status', 'plan', 'max_users', 'max_leads', 'max_pipelines'));
+        $tenant->update($request->only('status', 'plan', 'trial_ends_at', 'max_users', 'max_leads', 'max_pipelines'));
 
         return response()->json(['success' => true, 'message' => 'Empresa atualizada.']);
     }

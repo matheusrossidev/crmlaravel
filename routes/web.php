@@ -1,7 +1,13 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Master\DashboardController as MasterDashboardController;
+use App\Http\Controllers\Master\LogController as MasterLogController;
+use App\Http\Controllers\Master\NotificationController as MasterNotificationController;
+use App\Http\Controllers\Master\PlanController as MasterPlanController;
+use App\Http\Controllers\Master\SystemController as MasterSystemController;
 use App\Http\Controllers\Master\TenantController as MasterTenantController;
+use App\Http\Controllers\Master\UsageController as MasterUsageController;
 use App\Http\Controllers\Master\UserController as MasterUserController;
 use App\Http\Controllers\Tenant\ApiKeyController;
 use App\Http\Controllers\Tenant\CampaignController;
@@ -42,6 +48,12 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
+
+// Páginas de bloqueio de conta (auth required, tenant NOT required)
+Route::middleware('auth')->group(function () {
+    Route::view('/conta/suspensa', 'tenant.account.suspended')->name('account.suspended');
+    Route::view('/conta/trial-expirado', 'tenant.account.trial-expired')->name('trial.expired');
+});
 
 // Páginas públicas (sem autenticação)
 Route::view('/politica-de-privacidade', 'public.privacy')->name('privacy');
@@ -187,7 +199,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::get('perfil',         [ProfileController::class, 'index'])->name('profile');
         Route::put('perfil',         [ProfileController::class, 'update'])->name('profile.update');
         Route::put('perfil/senha',   [ProfileController::class, 'updatePassword'])->name('profile.password');
-        Route::post('perfil/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
+        Route::post('perfil/avatar',         [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
+        Route::post('workspace/logo',        [ProfileController::class, 'uploadWorkspaceLogo'])->name('workspace.logo');
 
         // Usuários (admin+)
         Route::get('usuarios',            [UserController::class, 'index'])->name('users');
@@ -233,19 +246,46 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
 // ── Master (super_admin only) ──────────────────────────────────────────────────
 Route::middleware(['auth', 'super_admin'])->prefix('master')->name('master.')->group(function () {
+
+    // Dashboard
+    Route::get('',                                     [MasterDashboardController::class, 'index'])->name('dashboard');
+
+    // Empresas (tenants)
     Route::get('empresas',             [MasterTenantController::class, 'index'])->name('tenants');
     Route::post('empresas',            [MasterTenantController::class, 'store'])->name('tenants.store');
     Route::get('empresas/{tenant}',    [MasterTenantController::class, 'show'])->name('tenants.show');
     Route::put('empresas/{tenant}',    [MasterTenantController::class, 'update'])->name('tenants.update');
     Route::delete('empresas/{tenant}', [MasterTenantController::class, 'destroy'])->name('tenants.destroy');
 
-    // Gerenciamento de usuários por tenant
+    // Usuários por tenant
     Route::post('empresas/{tenant}/usuarios',          [MasterUserController::class, 'store'])->name('tenants.users.store');
     Route::put('empresas/{tenant}/usuarios/{user}',    [MasterUserController::class, 'update'])->name('tenants.users.update');
     Route::delete('empresas/{tenant}/usuarios/{user}', [MasterUserController::class, 'destroy'])->name('tenants.users.destroy');
 
+    // Planos
+    Route::get('planos',                               [MasterPlanController::class, 'index'])->name('plans');
+    Route::post('planos',                              [MasterPlanController::class, 'store'])->name('plans.store');
+    Route::put('planos/{plan}',                        [MasterPlanController::class, 'update'])->name('plans.update');
+    Route::delete('planos/{plan}',                     [MasterPlanController::class, 'destroy'])->name('plans.destroy');
+
+    // Uso de tokens IA
+    Route::get('uso',                                  [MasterUsageController::class, 'index'])->name('usage');
+    Route::get('uso/{tenant}',                         [MasterUsageController::class, 'show'])->name('usage.show');
+
+    // Logs
+    Route::get('logs',                                 [MasterLogController::class, 'index'])->name('logs');
+    Route::get('logs/content',                         [MasterLogController::class, 'content'])->name('logs.content');
+
+    // Sistema
+    Route::get('sistema',                              [MasterSystemController::class, 'index'])->name('system');
+    Route::get('sistema/stats',                        [MasterSystemController::class, 'stats'])->name('system.stats');
+
+    // Notificações
+    Route::get('notificacoes',                         [MasterNotificationController::class, 'index'])->name('notifications');
+    Route::post('notificacoes',                        [MasterNotificationController::class, 'store'])->name('notifications.store');
+
 });
-// Nota: configuração LLM (provider/api_key/model) agora via ENV: LLM_PROVIDER, LLM_API_KEY, LLM_MODEL
+// Configuração LLM (provider/api_key/model) via ENV: LLM_PROVIDER, LLM_API_KEY, LLM_MODEL
 
 // ── Webhook público WAHA (sem autenticação) ───────────────────────────────────
 Route::post('/webhook/whatsapp', [WhatsappWebhookController::class, 'handle'])

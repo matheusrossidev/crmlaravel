@@ -1,7 +1,7 @@
-@extends('tenant.layouts.app')
+@extends('master.layouts.app')
 @php
     $title    = 'Empresa: ' . $tenant->name;
-    $pageIcon = 'buildings';
+    $pageIcon = 'building';
 @endphp
 
 @push('styles')
@@ -94,6 +94,8 @@
     .status-active     { background: #f0fdf4; color: #16a34a; }
     .status-inactive   { background: #fef9c3; color: #a16207; }
     .status-suspended  { background: #fef2f2; color: #dc2626; }
+    .status-trial      { background: #fff7ed; color: #c2410c; }
+    .status-partner    { background: #f5f3ff; color: #7c3aed; }
 
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 12.5px; font-weight: 600; color: #374151; margin-bottom: 6px; }
@@ -292,6 +294,19 @@
                         <span class="meta-label">Status</span>
                         <span class="status-badge status-{{ $tenant->status }}">{{ ucfirst($tenant->status) }}</span>
                     </div>
+                    @if($tenant->trial_ends_at)
+                    <div class="meta-row">
+                        <span class="meta-label">Trial até</span>
+                        <span class="meta-value {{ $tenant->trial_ends_at->isPast() ? 'style=color:#dc2626;font-weight:600' : '' }}">
+                            {{ $tenant->trial_ends_at->format('d/m/Y H:i') }}
+                            @if($tenant->trial_ends_at->isPast())
+                                <span style="color:#dc2626;font-size:11px;">(expirado)</span>
+                            @else
+                                <span style="color:#16a34a;font-size:11px;">({{ $tenant->trial_ends_at->diffForHumans() }})</span>
+                            @endif
+                        </span>
+                    </div>
+                    @endif
                     <div class="meta-row">
                         <span class="meta-label">Plano</span>
                         <span class="meta-value">{{ ucfirst($tenant->plan) }}</span>
@@ -313,17 +328,27 @@
                         <label>Status</label>
                         <select class="form-control" id="editStatus">
                             <option value="active"    {{ $tenant->status === 'active'    ? 'selected' : '' }}>Ativo</option>
+                            <option value="trial"     {{ $tenant->status === 'trial'     ? 'selected' : '' }}>Trial</option>
+                            <option value="partner"   {{ $tenant->status === 'partner'   ? 'selected' : '' }}>Parceiro</option>
                             <option value="inactive"  {{ $tenant->status === 'inactive'  ? 'selected' : '' }}>Inativo</option>
                             <option value="suspended" {{ $tenant->status === 'suspended' ? 'selected' : '' }}>Suspenso</option>
                         </select>
                     </div>
+                    <div class="form-group" id="trialDateGroup">
+                        <label>Data de expiração do trial</label>
+                        <input type="datetime-local" class="form-control" id="editTrialEndsAt"
+                               value="{{ $tenant->trial_ends_at ? $tenant->trial_ends_at->format('Y-m-d\TH:i') : '' }}">
+                        <small style="color:#9ca3af;">Deixe vazio para sem expiração. Só aplicado no status Trial.</small>
+                    </div>
                     <div class="form-group">
                         <label>Plano</label>
                         <select class="form-control" id="editPlan">
-                            <option value="free"       {{ $tenant->plan === 'free'       ? 'selected' : '' }}>Free</option>
-                            <option value="starter"    {{ $tenant->plan === 'starter'    ? 'selected' : '' }}>Starter</option>
-                            <option value="pro"        {{ $tenant->plan === 'pro'        ? 'selected' : '' }}>Pro</option>
-                            <option value="enterprise" {{ $tenant->plan === 'enterprise' ? 'selected' : '' }}>Enterprise</option>
+                            @foreach($plans as $p)
+                            <option value="{{ $p->name }}" {{ $tenant->plan === $p->name ? 'selected' : '' }}>
+                                {{ $p->display_name }}
+                                @if($p->price_monthly > 0) — R$ {{ number_format($p->price_monthly, 2, ',', '.') }}/mês @endif
+                            </option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="form-group">
@@ -406,11 +431,12 @@ async function updateTenant() {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
             body: JSON.stringify({
-                status:        document.getElementById('editStatus').value,
-                plan:          document.getElementById('editPlan').value,
-                max_users:     parseInt(document.getElementById('editMaxUsers').value) || 0,
-                max_leads:     parseInt(document.getElementById('editMaxLeads').value) || 0,
-                max_pipelines: parseInt(document.getElementById('editMaxPipelines').value) || 0,
+                status:          document.getElementById('editStatus').value,
+                plan:            document.getElementById('editPlan').value,
+                trial_ends_at:   document.getElementById('editTrialEndsAt').value || null,
+                max_users:       parseInt(document.getElementById('editMaxUsers').value) || 0,
+                max_leads:       parseInt(document.getElementById('editMaxLeads').value) || 0,
+                max_pipelines:   parseInt(document.getElementById('editMaxPipelines').value) || 0,
             }),
         });
         const data = await res.json();
