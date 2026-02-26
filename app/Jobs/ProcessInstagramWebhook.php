@@ -138,7 +138,30 @@ class ProcessInstagramWebhook implements ShouldQueue
         [$type, $mediaUrl] = $this->extractMedia($messageData);
         $body = $messageData['text'] ?? null;
 
-        // Salvar mensagem (UNIQUE em ig_message_id previne duplicatas)
+        // Fix fuso: converter timestamp UTC para o timezone da aplicação antes de salvar
+        $sentAt = $timestamp
+            ? \Carbon\Carbon::createFromTimestampMs((int) $timestamp)->setTimezone(config('app.timezone'))
+            : now();
+
+        // Fix duplicata: se fromMe com body de texto, verificar se foi enviado via CRM
+        // (plataforma salva com ig_message_id = null — apenas atualizar o ID em vez de criar novo)
+        if ($isFromMe && $msgId && $body) {
+            $existing = InstagramMessage::withoutGlobalScope('tenant')
+                ->where('conversation_id', $conversation->id)
+                ->where('direction', 'outbound')
+                ->whereNull('ig_message_id')
+                ->where('body', $body)
+                ->where('sent_at', '>=', now()->subMinutes(5))
+                ->first();
+
+            if ($existing) {
+                $existing->update(['ig_message_id' => $msgId, 'ack' => 'delivered']);
+                Log::channel('instagram')->debug('fromMe: ig_message_id atualizado', ['mid' => $msgId]);
+                return;
+            }
+        }
+
+        // Salvar mensagem (UNIQUE em ig_message_id previne duplicatas de webhook retry)
         $message = null;
         try {
             $message = InstagramMessage::withoutGlobalScope('tenant')->create([
@@ -150,9 +173,7 @@ class ProcessInstagramWebhook implements ShouldQueue
                 'body'            => $body,
                 'media_url'       => $mediaUrl,
                 'ack'             => 'delivered',
-                'sent_at'         => $timestamp
-                    ? \Carbon\Carbon::createFromTimestampMs((int) $timestamp)
-                    : now(),
+                'sent_at'         => $sentAt,
             ]);
         } catch (\Illuminate\Database\QueryException $e) {
             // Apenas UNIQUE violations (1062) devem ser silenciadas
