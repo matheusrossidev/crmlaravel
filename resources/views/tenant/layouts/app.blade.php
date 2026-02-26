@@ -350,6 +350,20 @@
             border: 1.5px solid #fff;
         }
 
+        .badge-num {
+            position: absolute;
+            top: 4px; right: 4px;
+            background: #EF4444; color: #fff;
+            border-radius: 10px; font-size: 9px; font-weight: 700;
+            min-width: 16px; height: 16px; line-height: 16px;
+            padding: 0 4px; text-align: center;
+            border: 1.5px solid #fff;
+        }
+
+        .notif-item:hover { background: #f9fafb; }
+        .notif-item.unread { background: #eff6ff; }
+        .notif-item.unread:hover { background: #dbeafe; }
+
         .btn-primary-sm {
             display: inline-flex;
             align-items: center;
@@ -801,10 +815,24 @@
         @yield('topbar_actions')
     @else
         <div class="topbar-actions">
-            <button class="topbar-btn" title="Notificações">
-                <i class="bi bi-bell"></i>
-                <span class="badge-dot"></span>
-            </button>
+            <div class="dropdown">
+                <button class="topbar-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                        id="notif-bell-btn" title="Notificações">
+                    <i class="bi bi-bell"></i>
+                    <span class="badge-num d-none" id="notif-badge-num"></span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end shadow" id="notif-panel"
+                     style="width:340px;max-height:420px;overflow-y:auto;border-radius:12px;padding:0;">
+                    <div style="padding:12px 16px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1;">
+                        <span style="font-weight:700;font-size:13px;">Sinais de Intenção</span>
+                        <button onclick="markAllIntentRead()" type="button" class="btn btn-link btn-sm p-0"
+                                style="font-size:11px;text-decoration:none;color:#6b7280;">Marcar todas lidas</button>
+                    </div>
+                    <div id="notif-list">
+                        <div style="padding:24px;text-align:center;color:#9ca3af;font-size:12px;">Nenhuma notificação</div>
+                    </div>
+                </div>
+            </div>
             <div class="dropdown">
                 <div class="user-avatar" style="width:36px;height:36px;border-radius:9px;cursor:pointer;overflow:hidden;"
                      data-bs-toggle="dropdown">
@@ -1005,6 +1033,107 @@ function toggleSubmenu(id) {
     menu.style.display = isOpen ? 'none' : '';
     if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
+</script>
+
+<script>
+// ── Notification Bell (Intent Signals) ──────────────────────────────────────
+(function () {
+    const LIST_URL    = '{{ route("ai.intent-signals.list") }}';
+    const READ_ALL    = '{{ route("ai.intent-signals.read-all") }}';
+    const CSRF        = '{{ csrf_token() }}';
+    const ICONS       = { buy: '🛒', schedule: '📅', close: '🤝', interest: '⭐' };
+    const CONV_BASE   = '{{ rtrim(url("/"), "/") }}';
+
+    function updateBadge(count) {
+        const num = document.getElementById('notif-badge-num');
+        if (!num) return;
+        if (count > 0) {
+            num.classList.remove('d-none');
+            num.textContent = count > 99 ? '99+' : count;
+        } else {
+            num.classList.add('d-none');
+        }
+    }
+
+    function renderList(signals) {
+        const el = document.getElementById('notif-list');
+        if (!el) return;
+        if (!signals || !signals.length) {
+            el.innerHTML = '<div style="padding:24px;text-align:center;color:#9ca3af;font-size:12px;">Nenhuma notificação</div>';
+            return;
+        }
+        el.innerHTML = signals.map(s => {
+            const icon    = ICONS[s.intent_type] || '⭐';
+            const unread  = !s.read_at ? 'unread' : '';
+            const convBtn = s.conversation_id
+                ? `<a href="${CONV_BASE}/whatsapp?conv=${s.conversation_id}"
+                      class="btn btn-link btn-sm p-0" style="font-size:11px;text-decoration:none;flex-shrink:0;"
+                      onclick="event.stopPropagation()">Ver</a>`
+                : '';
+            return `<div class="notif-item ${unread}" data-id="${s.id}"
+                        style="padding:10px 16px;border-bottom:1px solid #f3f4f6;cursor:pointer;"
+                        onclick="markIntentRead(${s.id}, this)">
+                      <div style="display:flex;align-items:flex-start;gap:10px;">
+                        <span style="font-size:18px;flex-shrink:0;margin-top:1px;">${icon}</span>
+                        <div style="flex:1;min-width:0;">
+                          <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.contact_name}</div>
+                          <div style="font-size:11px;color:#6b7280;margin:2px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${s.context}</div>
+                          <div style="font-size:10px;color:#9ca3af;">${s.time_ago}</div>
+                        </div>
+                        ${convBtn}
+                      </div>
+                    </div>`;
+        }).join('');
+    }
+
+    window.loadIntentSignals = function () {
+        fetch(LIST_URL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(r => r.json())
+            .then(data => {
+                updateBadge(data.unread_count);
+                renderList(data.signals);
+            })
+            .catch(() => {});
+    };
+
+    window.markIntentRead = function (id, el) {
+        fetch(`/ia/sinais/${id}/lida`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+        }).then(() => {
+            el.classList.remove('unread');
+            loadIntentSignals();
+        }).catch(() => {});
+    };
+
+    window.markAllIntentRead = function () {
+        fetch(READ_ALL, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+        }).then(() => loadIntentSignals()).catch(() => {});
+    };
+
+    // Carregar ao iniciar
+    loadIntentSignals();
+
+    // Escutar evento em tempo real via WebSocket
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.Echo) {
+            window.Echo.private('tenant.{{ auth()->user()->tenant_id }}')
+                .listen('.ai.intent', function (data) {
+                    const icon = ICONS[data.intent_type] || '⭐';
+                    if (window.toastr) {
+                        toastr.info(
+                            `${icon} <b>${data.contact_name}</b>: ${data.context}`,
+                            'Sinal de Intenção',
+                            { timeOut: 8000, closeButton: true, progressBar: true, escapeHtml: false }
+                        );
+                    }
+                    loadIntentSignals();
+                });
+        }
+    });
+})();
 </script>
 </body>
 </html>

@@ -24,8 +24,9 @@ class AiAgentService
      */
     public function buildSystemPrompt(
         AiAgent $agent,
-        array   $stages    = [],
-        array   $availTags = [],
+        array   $stages             = [],
+        array   $availTags          = [],
+        bool    $enableIntentNotify = false,
     ): string {
         $objective = match ($agent->objective) {
             'sales'   => 'vendas',
@@ -78,6 +79,7 @@ class AiAgentService
         $lines[] = "- Adapte o comprimento das respostas ao contexto: respostas curtas para confirmações, mais detalhadas para dúvidas.";
         $lines[] = "- NUNCA use frases genéricas como 'Claro, posso ajudar com isso!' sem complementar com algo específico.";
         $lines[] = "- Incorpore sua personalidade de {$agent->name} nas respostas — você não é um bot genérico.";
+        $lines[] = "- Quando a resposta contiver mais de uma ideia ou uma pergunta após uma declaração, separe-as com quebra de linha dupla (parágrafo separado).";
 
         if (! empty($agent->conversation_stages)) {
             $lines[] = "\nEtapas da conversa:";
@@ -146,16 +148,34 @@ class AiAgentService
 
         $lines[] = "\nResponda sempre em {$agent->language}. Seja conciso (máximo {$agent->max_message_length} caracteres por mensagem).";
 
-        // ── Formato JSON obrigatório quando há pipeline ou tags ───────────────
-        if (! empty($stages) || ! empty($availTags)) {
-            $lines[] = <<<'JSONINSTR'
+        // ── Detecção de intenção de compra/agendamento ────────────────────────
+        if ($enableIntentNotify) {
+            $lines[] = <<<'INTENTINSTR'
+
+--- DETECÇÃO DE INTENÇÃO ---
+Quando o contato demonstrar intenção CLARA e EXPLÍCITA de:
+- Comprar, contratar ou adquirir o produto/serviço → intent: "buy"
+- Agendar reunião, demonstração, visita ou ligação → intent: "schedule"
+- Fechar negócio ou confirmar contratação → intent: "close"
+Use a ação: {"type": "notify_intent", "intent": "buy|schedule|close", "context": "resumo em 1 frase do que o cliente disse"}
+NÃO use notify_intent para interesse vago ou curiosidade — apenas intenção clara e explícita.
+--- FIM DA DETECÇÃO DE INTENÇÃO ---
+INTENTINSTR;
+        }
+
+        // ── Formato JSON obrigatório quando há pipeline, tags ou intent notify ─
+        if (! empty($stages) || ! empty($availTags) || $enableIntentNotify) {
+            $intentExample = $enableIntentNotify
+                ? "\n    {\"type\": \"notify_intent\", \"intent\": \"buy\", \"context\": \"cliente confirmou interesse em contratar\"}"
+                : '';
+            $lines[] = <<<JSONINSTR
 
 FORMATO DE RESPOSTA OBRIGATÓRIO — responda APENAS com JSON válido, sem markdown:
 {
   "reply": "sua resposta ao cliente aqui",
   "actions": [
     {"type": "set_stage", "stage_id": <id_numérico>},
-    {"type": "add_tags", "tags": ["tag1", "tag2"]}
+    {"type": "add_tags", "tags": ["tag1", "tag2"]}$intentExample
   ]
 }
 Se não precisar de ações, use "actions": [].
@@ -213,42 +233,63 @@ JSONINSTR;
     }
 
     /**
-     * Divide uma resposta longa em múltiplas mensagens por parágrafos/sentenças.
+     * Divide uma resposta em múltiplas mensagens para envio sequencial humanizado.
+     *
+     * Estratégia:
+     * 1. Dividir por qualquer sequência de newlines (\n+ em vez de apenas \n{2,})
+     * 2. Agrupar partes curtas consecutivas para não gerar mensagens minúsculas
+     * 3. Se resultado for 1 bloco único E length > maxLength → split ao redor do ponto médio
      */
     public function splitIntoMessages(string $text, int $maxLength): array
     {
-        // Dividir por parágrafos (quebra dupla de linha)
-        $parts = preg_split('/\n{2,}/', $text);
+        // 1. Dividir por qualquer newline (simples ou duplo)
+        $parts = preg_split('/\n+/', $text);
         $parts = array_values(array_filter(array_map('trim', $parts)));
 
-        if (count($parts) <= 1) {
-            return $parts ?: [$text];
+        if (count($parts) > 1) {
+            // Agrupar partes curtas consecutivas para não gerar mensagens de 1-2 palavras
+            $messages = [];
+            $current  = '';
+            foreach ($parts as $part) {
+                $candidate = $current !== '' ? $current . "\n" . $part : $part;
+                if ($current !== '' && mb_strlen($candidate) > $maxLength) {
+                    $messages[] = trim($current);
+                    $current    = $part;
+                } else {
+                    $current = $candidate;
+                }
+            }
+            if ($current !== '') {
+                $messages[] = trim($current);
+            }
+            return array_values(array_filter($messages));
         }
 
-        // Se algum parágrafo for longo demais, dividir por sentença
-        $messages = [];
-        foreach ($parts as $part) {
-            if (mb_strlen($part) <= $maxLength) {
-                $messages[] = $part;
-            } else {
-                $sentences = preg_split('/(?<=[.!?])\s+/', $part, -1, PREG_SPLIT_NO_EMPTY);
-                $current   = '';
-                foreach ($sentences as $sentence) {
-                    $candidate = $current ? $current . ' ' . $sentence : $sentence;
-                    if (mb_strlen($candidate) > $maxLength && $current !== '') {
-                        $messages[] = trim($current);
-                        $current    = $sentence;
-                    } else {
-                        $current = $candidate;
+        // 2. Texto único sem newlines: se excede maxLength → split ao redor do ponto médio
+        if (mb_strlen($text) > $maxLength) {
+            $sentences = preg_split('/(?<=[.!?])\s+/', $text, -1, PREG_SPLIT_NO_EMPTY);
+            if (count($sentences) > 1) {
+                $mid     = (int) (mb_strlen($text) / 2);
+                $acc     = 0;
+                $splitAt = 0;
+                foreach ($sentences as $i => $s) {
+                    $acc += mb_strlen($s) + 1;
+                    if ($acc >= $mid) {
+                        $splitAt = $i + 1;
+                        break;
                     }
                 }
-                if ($current !== '') {
-                    $messages[] = trim($current);
+                if ($splitAt > 0 && $splitAt < count($sentences)) {
+                    return array_filter([
+                        trim(implode(' ', array_slice($sentences, 0, $splitAt))),
+                        trim(implode(' ', array_slice($sentences, $splitAt))),
+                    ]);
                 }
             }
         }
 
-        return array_values(array_filter($messages));
+        // 3. Fallback: texto como mensagem única
+        return [$text];
     }
 
     /**

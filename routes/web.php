@@ -16,6 +16,7 @@ use App\Http\Controllers\Tenant\ProfileController;
 use App\Http\Controllers\Tenant\ReportController;
 use App\Http\Controllers\Tenant\UserController;
 use App\Http\Controllers\Tenant\AiAgentController;
+use App\Http\Controllers\Tenant\AiIntentSignalController;
 use App\Http\Controllers\Tenant\ChatbotFlowController;
 use App\Http\Controllers\Tenant\WhatsappController;
 use App\Http\Controllers\Tenant\WhatsappMessageController;
@@ -205,6 +206,14 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::post('tags',             [WhatsappTagController::class, 'store'])->name('tags.store');
         Route::put('tags/{tag}',        [WhatsappTagController::class, 'update'])->name('tags.update');
         Route::delete('tags/{tag}',     [WhatsappTagController::class, 'destroy'])->name('tags.destroy');
+    });
+
+    // Sinais de intenção do Agente IA
+    Route::prefix('ia/sinais')->name('ai.intent-signals.')->group(function () {
+        Route::get('',                   [AiIntentSignalController::class, 'list'])->name('list');
+        Route::post('{signal}/lida',     [AiIntentSignalController::class, 'markRead'])->name('read');
+        Route::post('marcar-todas',      [AiIntentSignalController::class, 'markAllRead'])->name('read-all');
+        Route::get('nao-lidas/contagem', [AiIntentSignalController::class, 'unreadCount'])->name('unread-count');
     });
 
     // Agentes de IA

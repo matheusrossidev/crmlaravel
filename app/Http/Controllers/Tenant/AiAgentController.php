@@ -286,6 +286,7 @@ class AiAgentController extends Controller
             'auto_assign'            => 'nullable|boolean',
             'enable_pipeline_tool'   => 'nullable|boolean',
             'enable_tags_tool'       => 'nullable|boolean',
+            'enable_intent_notify'   => 'nullable|boolean',
             'followup_enabled'       => 'nullable|boolean',
             'followup_delay_minutes' => 'nullable|integer|min:5|max:1440',
             'followup_max_count'     => 'nullable|integer|min:1|max:10',
@@ -297,6 +298,7 @@ class AiAgentController extends Controller
         $data['auto_assign']           = $request->boolean('auto_assign');
         $data['enable_pipeline_tool']  = $request->boolean('enable_pipeline_tool');
         $data['enable_tags_tool']      = $request->boolean('enable_tags_tool');
+        $data['enable_intent_notify']  = $request->boolean('enable_intent_notify');
         $data['followup_enabled']      = $request->boolean('followup_enabled');
 
         return $data;

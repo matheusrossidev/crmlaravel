@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Events\AiIntentDetected;
 use App\Http\Controllers\Tenant\AiConfigurationController;
+use App\Models\AiIntentSignal;
 use App\Models\Lead;
 use App\Models\WhatsappConversation;
 use App\Services\AiAgentService;
@@ -177,8 +179,9 @@ class ProcessAiResponse implements ShouldQueue
         }
 
         // ── Montar prompt e histórico ─────────────────────────────────────────
-        $service = new AiAgentService();
-        $system  = $service->buildSystemPrompt($agent, $stages, $availTags);
+        $service            = new AiAgentService();
+        $enableIntentNotify = (bool) ($agent->enable_intent_notify ?? false);
+        $system             = $service->buildSystemPrompt($agent, $stages, $availTags, $enableIntentNotify);
         $history = $service->buildHistory($conv, limit: 50);
 
         if (empty($history)) {
@@ -212,9 +215,9 @@ class ProcessAiResponse implements ShouldQueue
             return;
         }
 
-        // ── Parsear JSON de ações (quando pipeline/tags disponíveis) ─────────
+        // ── Parsear JSON de ações (quando pipeline/tags/intent disponíveis) ──
         $actions = [];
-        if (! empty($stages) || ! empty($availTags)) {
+        if (! empty($stages) || ! empty($availTags) || $enableIntentNotify) {
             // Remover markdown code blocks se o LLM os incluiu
             $clean = preg_replace('/```(?:json)?\s*([\s\S]*?)```/i', '$1', $reply);
             $clean = trim($clean ?? $reply);
@@ -269,6 +272,8 @@ class ProcessAiResponse implements ShouldQueue
                 }
             } elseif ($type === 'add_tags') {
                 $this->applyAddTags($conv, (array) ($action['tags'] ?? []));
+            } elseif ($type === 'notify_intent') {
+                $this->applyNotifyIntent($conv, $action);
             }
         }
 
@@ -299,6 +304,38 @@ class ProcessAiResponse implements ShouldQueue
             'conversation_id' => $conv->id,
             'lead_id'         => $conv->lead_id,
             'new_stage_id'    => $stageId,
+        ]);
+    }
+
+    private function applyNotifyIntent(WhatsappConversation $conv, array $action): void
+    {
+        $validTypes = ['buy', 'schedule', 'close', 'interest'];
+        $intentType = in_array($action['intent'] ?? '', $validTypes, true)
+            ? $action['intent']
+            : 'interest';
+
+        $signal = AiIntentSignal::withoutGlobalScope('tenant')->create([
+            'tenant_id'       => $conv->tenant_id,
+            'ai_agent_id'     => $conv->ai_agent_id,
+            'conversation_id' => $conv->id,
+            'contact_name'    => $conv->contact_name ?? $conv->phone,
+            'phone'           => $conv->phone,
+            'intent_type'     => $intentType,
+            'context'         => mb_substr((string) ($action['context'] ?? ''), 0, 500),
+        ]);
+
+        try {
+            AiIntentDetected::dispatch($signal, $conv->tenant_id);
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->warning('AI: falha ao broadcast intent signal', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        Log::channel('whatsapp')->info('AI: sinal de intenção detectado', [
+            'conversation_id' => $conv->id,
+            'intent_type'     => $intentType,
+            'signal_id'       => $signal->id,
         ]);
     }
 

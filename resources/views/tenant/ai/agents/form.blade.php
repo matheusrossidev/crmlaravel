@@ -545,6 +545,18 @@
                     </div>
                 </div>
                 <input type="hidden" name="enable_tags_tool" id="tagsToolInput" value="{{ ($agent->enable_tags_tool ?? false) ? '1' : '0' }}">
+
+                {{-- Toggle enable_intent_notify --}}
+                <div class="toggle-wrap" style="margin-top:12px;" onclick="toggleIntentNotify()">
+                    <div class="toggle-switch {{ ($agent->enable_intent_notify ?? false) ? 'on' : '' }}" id="intentNotifySwitch"></div>
+                    <div style="margin-left:10px;">
+                        <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="intentNotifyLabel">
+                            {{ ($agent->enable_intent_notify ?? false) ? 'Detecção de Intenção Ativada' : 'Detecção de Intenção Desativada' }}
+                        </div>
+                        <div style="font-size:11px;color:#9ca3af;">Notifica quando o agente identificar sinais claros de intenção de compra, agendamento ou fechamento</div>
+                    </div>
+                </div>
+                <input type="hidden" name="enable_intent_notify" id="intentNotifyInput" value="{{ ($agent->enable_intent_notify ?? false) ? '1' : '0' }}">
             </div>
         </div>
 
@@ -853,6 +865,16 @@ function toggleTagsTool() {
     input.value = isOn ? '0' : '1';
     sw.classList.toggle('on', !isOn);
     label.textContent = isOn ? 'Atribuição de Tags Desativada' : 'Atribuição de Tags Ativada';
+}
+
+function toggleIntentNotify() {
+    const sw    = document.getElementById('intentNotifySwitch');
+    const input = document.getElementById('intentNotifyInput');
+    const label = document.getElementById('intentNotifyLabel');
+    const isOn  = input.value === '1';
+    input.value = isOn ? '0' : '1';
+    sw.classList.toggle('on', !isOn);
+    label.textContent = isOn ? 'Detecção de Intenção Desativada' : 'Detecção de Intenção Ativada';
 }
 
 function toggleFollowup() {
