@@ -1,8 +1,9 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title = 'CRM';
-    $pageIcon = 'kanban';
+    $title       = 'CRM';
+    $pageIcon    = 'kanban';
+    $tagColorMap = [];
 @endphp
 
 @section('topbar_actions')

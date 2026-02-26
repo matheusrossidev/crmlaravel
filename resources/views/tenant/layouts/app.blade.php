@@ -731,7 +731,9 @@
                     <i class="bi bi-plugin nav-icon" style="font-size:14px;"></i>
                     <span class="nav-label">Integrações</span>
                 </a>
-                @php($igConnected = auth()->check() && \App\Models\InstagramInstance::where('status', 'connected')->exists())
+                @php
+                    $igConnected = auth()->check() && \App\Models\InstagramInstance::where('status', 'connected')->exists();
+                @endphp
                 @if($igConnected)
                 <a href="{{ route('settings.ig-automations.index') }}"
                    class="nav-subitem {{ request()->routeIs('settings.ig-automations*') ? 'active' : '' }}">
