@@ -228,19 +228,20 @@ class ProcessInstagramWebhook implements ShouldQueue
                     'igsid' => $igsid,
                     'body'  => $profile['body'] ?? null,
                 ]);
-                return ['name' => null, 'username' => null];
+                return ['name' => null, 'username' => null, 'picture' => null];
             }
 
             return [
-                'name'     => $profile['name']     ?? null,
-                'username' => $profile['username'] ?? null,
+                'name'     => $profile['name']        ?? null,
+                'username' => $profile['username']    ?? null,
+                'picture'  => $profile['profile_pic'] ?? null,
             ];
         } catch (\Throwable $e) {
             Log::channel('instagram')->warning('Exceção ao buscar perfil do contato', [
                 'igsid' => $igsid,
                 'error' => $e->getMessage(),
             ]);
-            return ['name' => null, 'username' => null];
+            return ['name' => null, 'username' => null, 'picture' => null];
         }
     }
 
@@ -254,22 +255,30 @@ class ProcessInstagramWebhook implements ShouldQueue
             ->first();
 
         if ($conversation) {
-            // Se conversa já existe mas sem nome/username (falha anterior), tentar atualizar
-            if (! $conversation->contact_name && ! $conversation->contact_username) {
-                $profile = $this->fetchContactProfile($instance, $igsid);
-                if ($profile['name'] || $profile['username']) {
+            // Se conversa já existe mas sem nome/username ou sem foto, tentar atualizar
+            $needsName    = ! $conversation->contact_name && ! $conversation->contact_username;
+            $needsPicture = $conversation->contact_picture_url === null;
+
+            if ($needsName || $needsPicture) {
+                $profile     = $this->fetchContactProfile($instance, $igsid);
+                $igUpdates   = [];
+                if ($needsName && ($profile['name'] || $profile['username'])) {
+                    $igUpdates['contact_name']     = $profile['name'];
+                    $igUpdates['contact_username'] = $profile['username'];
+                }
+                if ($needsPicture && $profile['picture']) {
+                    $igUpdates['contact_picture_url'] = $profile['picture'];
+                }
+                if ($igUpdates) {
                     InstagramConversation::withoutGlobalScope('tenant')
                         ->where('id', $conversation->id)
-                        ->update([
-                            'contact_name'     => $profile['name'],
-                            'contact_username' => $profile['username'],
-                        ]);
-                    $conversation->contact_name     = $profile['name'];
-                    $conversation->contact_username = $profile['username'];
+                        ->update($igUpdates);
+                    foreach ($igUpdates as $k => $v) {
+                        $conversation->$k = $v;
+                    }
                     Log::channel('instagram')->info('Perfil do contato atualizado', [
                         'conversation_id' => $conversation->id,
-                        'name'            => $profile['name'],
-                        'username'        => $profile['username'],
+                        'fields'          => array_keys($igUpdates),
                     ]);
                 }
             }
@@ -280,7 +289,7 @@ class ProcessInstagramWebhook implements ShouldQueue
         $profile         = $this->fetchContactProfile($instance, $igsid);
         $contactName     = $profile['name'];
         $contactUsername = $profile['username'];
-        $pictureUrl      = null; // profile_picture_url não disponível via IGSID endpoint
+        $pictureUrl      = $profile['picture'];
 
         $conversation = InstagramConversation::withoutGlobalScope('tenant')->create([
             'tenant_id'           => $instance->tenant_id,

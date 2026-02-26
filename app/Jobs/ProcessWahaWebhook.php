@@ -276,7 +276,9 @@ class ProcessWahaWebhook implements ShouldQueue
             $pictureUrl = null;
             try {
                 $wahaForPic = new \App\Services\WahaService($instance->session_name);
-                $pictureUrl = $wahaForPic->getContactPicture($from);
+                $pictureUrl = $isGroup
+                    ? $wahaForPic->getGroupPicture($from)
+                    : $wahaForPic->getContactPicture($from);
             } catch (\Throwable) {}
 
             $conversation = WhatsappConversation::withoutGlobalScope('tenant')->create([
@@ -325,6 +327,31 @@ class ProcessWahaWebhook implements ShouldQueue
                 'conversation_id' => $conversation->id,
                 'phone'           => $phone,
             ]);
+
+            // Atualizar foto/nome se ausentes (retry a cada mensagem até preencher)
+            $convUpdates = [];
+            if ($conversation->contact_picture_url === null) {
+                try {
+                    $wahaForPic  = new \App\Services\WahaService($instance->session_name);
+                    $pic         = $isGroup
+                        ? $wahaForPic->getGroupPicture($from)
+                        : $wahaForPic->getContactPicture($from);
+                    if ($pic) {
+                        $convUpdates['contact_picture_url'] = $pic;
+                    }
+                } catch (\Throwable) {}
+            }
+            if ($isGroup && empty($conversation->contact_name) && $contactName) {
+                $convUpdates['contact_name'] = $contactName;
+            }
+            if ($convUpdates) {
+                WhatsappConversation::withoutGlobalScope('tenant')
+                    ->where('id', $conversation->id)
+                    ->update($convUpdates);
+                foreach ($convUpdates as $k => $v) {
+                    $conversation->$k = $v;
+                }
+            }
         }
 
         // Vincular a conversa a um Lead — apenas para conversas individuais (não grupos)

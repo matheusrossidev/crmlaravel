@@ -527,9 +527,16 @@ class ProcessChatbotStep
                 }
             }
 
+            // Auto-inject Content-Type: application/json for methods with body
+            $hasBody = $body !== '' && in_array($method, ['POST', 'PUT', 'PATCH'], true);
+            $headersNorm = array_change_key_case($headers, CASE_LOWER);
+            if ($hasBody && ! isset($headersNorm['content-type'])) {
+                $headers['Content-Type'] = 'application/json';
+            }
+
             $response = Http::withHeaders($headers)
                 ->timeout(10)
-                ->send($method, $url, ['body' => $body]);
+                ->send($method, $url, $hasBody ? ['body' => $body] : []);
 
             $saveResponseTo = $config['save_response_to'] ?? null;
             if ($saveResponseTo && ! str_starts_with($saveResponseTo, '$')) {

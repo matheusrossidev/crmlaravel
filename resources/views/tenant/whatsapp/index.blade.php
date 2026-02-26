@@ -1001,6 +1001,7 @@ $pageIcon = 'chat-dots';
                             @if($conv->latestMessage)
                             @if($conv->latestMessage->type === 'image') 📷 Imagem
                             @elseif($conv->latestMessage->type === 'audio') 🎵 Áudio
+                            @elseif($conv->latestMessage->type === 'document') 📎 {{ $conv->latestMessage->media_filename ?? 'Arquivo' }}
                             @elseif($conv->latestMessage->type === 'note') 🔒 Nota interna
                             @else {{ Str::limit($conv->latestMessage->body ?? '', 40) }}
                             @endif
@@ -1093,8 +1094,12 @@ $pageIcon = 'chat-dots';
 
             <div class="wa-compose-row" id="normalRow">
                 <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="sendImage(this)">
+                <input type="file" id="docInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.csv" style="display:none;" onchange="sendDocument(this)">
                 <button class="wa-btn-icon" onclick="document.getElementById('fileInput').click()" title="Enviar imagem">
                     <i class="bi bi-image"></i>
+                </button>
+                <button class="wa-btn-icon" onclick="document.getElementById('docInput').click()" title="Enviar documento">
+                    <i class="bi bi-paperclip"></i>
                 </button>
                 <button class="wa-btn-icon" id="btnMic" onclick="startRecording()" title="Gravar áudio">
                     <i class="bi bi-mic"></i>
@@ -1805,6 +1810,10 @@ $pageIcon = 'chat-dots';
             if (msg.body) bubble.innerHTML += `<div style="margin-top:6px;font-size:13px;">${escHtml(msg.body)}</div>`;
         } else if (msg.type === 'audio' && msg.media_url) {
             bubble.innerHTML = `<div class="wa-audio"><i class="bi bi-mic-fill" style="color:#3b82f6;margin-right:4px;"></i>Áudio<audio controls src="${msg.media_url}"></audio></div>`;
+        } else if (msg.type === 'document' && msg.media_url) {
+            const fname = escHtml(msg.media_filename || 'Arquivo');
+            bubble.innerHTML = `<a href="${msg.media_url}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none;"><i class="bi bi-file-earmark-text" style="font-size:20px;color:#3b82f6;flex-shrink:0;"></i><span style="word-break:break-all;">${fname}</span><i class="bi bi-download" style="margin-left:4px;font-size:13px;flex-shrink:0;"></i></a>`;
+            if (msg.body) bubble.innerHTML += `<div style="margin-top:4px;font-size:12px;color:#6b7280;">${escHtml(msg.body)}</div>`;
         } else {
             bubble.textContent = msg.body || '';
         }
@@ -1928,6 +1937,32 @@ $pageIcon = 'chat-dots';
             appendMessages([data.message]);
         } else {
             toastr.error(data.error || 'Erro ao enviar imagem');
+        }
+
+        input.value = '';
+    }
+
+    async function sendDocument(input) {
+        if (!activeConvId || !input.files[0]) return;
+
+        const formData = new FormData();
+        formData.append('type', 'document');
+        formData.append('file', input.files[0]);
+
+        const res = await fetch(`${convBaseUrl(activeConvId)}/messages`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': CSRF,
+                'Accept': 'application/json'
+            },
+            body: formData,
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            appendMessages([data.message]);
+        } else {
+            toastr.error(data.error || 'Erro ao enviar arquivo');
         }
 
         input.value = '';
@@ -2450,6 +2485,7 @@ $pageIcon = 'chat-dots';
 
         const preview = conv.last_message_type === 'image' ? '📷 Imagem' :
             conv.last_message_type === 'audio' ? '🎵 Áudio' :
+            conv.last_message_type === 'document' ? '📎 Arquivo' :
             conv.last_message_type === 'note' ? '🔒 Nota' :
             (conv.last_message_body || '').substring(0, 40);
 

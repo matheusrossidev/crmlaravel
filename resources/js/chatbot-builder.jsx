@@ -1084,9 +1084,121 @@ function ActionForm({ data, update, pipelines, allVars, tags, users, customField
                             </div>
                         ))}
                     </div>
-                    <FieldGroup label="Body (JSON)">
-                        <textarea style={{ ...field.input, height: 90, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }} value={data.body || ''} onChange={e => update('body', e.target.value)} placeholder={'{"nome": "{{nome}}"}'} />
-                    </FieldGroup>
+                    {/* Body builder */}
+                    {(() => {
+                        const isGet      = (data.method || 'POST') === 'GET';
+                        const rawMode    = data.body_raw_mode || false;
+                        const bodyFields = data.body_fields || [];
+
+                        const fieldsToJson = (fields) => {
+                            const obj = {};
+                            fields.forEach(bf => { if (bf.key.trim()) obj[bf.key.trim()] = bf.value; });
+                            return JSON.stringify(obj, null, 2);
+                        };
+
+                        const addBodyField = () => {
+                            const next = [...bodyFields, { key: '', value: '' }];
+                            update({ body_fields: next, body: fieldsToJson(next) });
+                        };
+
+                        const updateBodyField = (i, k, v) => {
+                            const next = bodyFields.map((bf, idx) => idx === i ? { ...bf, [k]: v } : bf);
+                            update({ body_fields: next, body: fieldsToJson(next) });
+                        };
+
+                        const removeBodyField = (i) => {
+                            const next = bodyFields.filter((_, idx) => idx !== i);
+                            update({ body_fields: next, body: fieldsToJson(next) });
+                        };
+
+                        const quickVars = [
+                            { key: 'nome',     value: '{{$contact_name}}'  },
+                            { key: 'telefone', value: '{{$contact_phone}}' },
+                        ];
+
+                        const toggleRaw = () => {
+                            if (!rawMode) {
+                                update('body_raw_mode', true);
+                            } else {
+                                try {
+                                    const parsed = JSON.parse(data.body || '{}');
+                                    const fields = Object.entries(parsed).map(([k, v]) => ({ key: k, value: String(v) }));
+                                    update({ body_raw_mode: false, body_fields: fields });
+                                } catch {
+                                    update('body_raw_mode', false);
+                                }
+                            }
+                        };
+
+                        return (
+                            <div style={{ marginBottom: 14 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                    <label style={field.label}>Body {!isGet ? '(JSON)' : ''}</label>
+                                    {!isGet && (
+                                        <button
+                                            onClick={toggleRaw}
+                                            style={{ ...field.smallBtn, background: rawMode ? '#dbeafe' : '#f3f4f6', color: rawMode ? '#1d4ed8' : '#374151' }}
+                                        >
+                                            {rawMode ? '⚡ Campos' : '{ } JSON Raw'}
+                                        </button>
+                                    )}
+                                </div>
+                                {isGet ? (
+                                    <div style={{ fontSize: 11, color: '#9ca3af', padding: '4px 0' }}>
+                                        GET não possui body. Passe parâmetros na URL: <code style={{ background: '#f1f5f9', padding: '1px 4px', borderRadius: 3 }}>?chave={'{{variavel}}'}</code>
+                                    </div>
+                                ) : rawMode ? (
+                                    <textarea
+                                        style={{ ...field.input, height: 110, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }}
+                                        value={data.body || ''}
+                                        onChange={e => update('body', e.target.value)}
+                                        placeholder={'{\n  "nome": "{{nome}}",\n  "telefone": "{{$contact_phone}}"\n}'}
+                                    />
+                                ) : (
+                                    <>
+                                        {bodyFields.map((bf, i) => (
+                                            <div key={i} style={{ display: 'flex', gap: 4, marginBottom: 4, alignItems: 'center' }}>
+                                                <input
+                                                    style={{ ...field.input, flex: '1 1 80px', fontFamily: 'monospace', fontSize: 12 }}
+                                                    value={bf.key}
+                                                    onChange={e => updateBodyField(i, 'key', e.target.value)}
+                                                    placeholder="campo"
+                                                />
+                                                <span style={{ color: '#9ca3af', fontSize: 13, flexShrink: 0 }}>:</span>
+                                                <input
+                                                    style={{ ...field.input, flex: '2 1 100px', fontSize: 12 }}
+                                                    value={bf.value}
+                                                    onChange={e => updateBodyField(i, 'value', e.target.value)}
+                                                    placeholder="valor ou {{variavel}}"
+                                                />
+                                                <button onClick={() => removeBodyField(i)} style={{ ...field.smallBtn, padding: '4px 8px', flexShrink: 0 }}>×</button>
+                                            </div>
+                                        ))}
+                                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+                                            <button onClick={addBodyField} style={field.smallBtn}>+ Campo</button>
+                                            {quickVars.map(qv => (
+                                                <button
+                                                    key={qv.key}
+                                                    onClick={() => {
+                                                        const next = [...bodyFields, { key: qv.key, value: qv.value }];
+                                                        update({ body_fields: next, body: fieldsToJson(next) });
+                                                    }}
+                                                    style={{ ...field.smallBtn, fontSize: 10, color: '#6366f1' }}
+                                                >
+                                                    + {qv.key}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {bodyFields.length > 0 && (
+                                            <div style={{ marginTop: 6, padding: '6px 8px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'monospace', fontSize: 11, color: '#475569', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                                                {data.body || '{}'}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        );
+                    })()}
                     <FieldGroup label="Salvar resposta em variável">
                         <input style={field.input} value={data.save_response_to || ''} onChange={e => update('save_response_to', e.target.value)} placeholder="webhook_result" />
                     </FieldGroup>
@@ -1160,7 +1272,9 @@ function NodePanel({ node, onUpdate, onDelete, variables, pipelines, tags, users
     useEffect(() => { setData(node.data); }, [node.id]);
 
     const update = (f, v) => {
-        const nd = { ...data, [f]: v };
+        const nd = (typeof f === 'object' && f !== null && !Array.isArray(f))
+            ? { ...data, ...f }
+            : { ...data, [f]: v };
         setData(nd);
         onUpdate(node.id, nd);
     };

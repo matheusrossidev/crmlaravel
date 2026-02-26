@@ -621,7 +621,6 @@
             @endif
         </div>
         <span class="workspace-name nav-label">{{ auth()->user()->tenant?->name ?? 'Minha Empresa' }}</span>
-        <i class="bi bi-chevron-expand workspace-chevron nav-label" style="color:#9ca3af;font-size:12px;flex-shrink:0;"></i>
     </div>
 
     {{-- Nav: Geral --}}

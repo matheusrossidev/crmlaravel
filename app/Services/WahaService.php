@@ -140,6 +140,22 @@ class WahaService
         }
     }
 
+    /**
+     * Fetch group picture URL using the dedicated group endpoint.
+     * GET /api/{session}/groups/{id}/picture → {"url": "..."}
+     * Returns null if unavailable or private.
+     */
+    public function getGroupPicture(string $groupJid): ?string
+    {
+        try {
+            $groupId = rawurlencode($groupJid);
+            $result  = $this->get("/api/{$this->session}/groups/{$groupId}/picture");
+            return $result['url'] ?? null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     // ── Send Messages ─────────────────────────────────────────────────────────
 
     public function sendText(string $chatId, string $text): array
@@ -210,6 +226,26 @@ class WahaService
             'chatId'  => $chatId,
             'file'    => ['data' => "data:{$mimeType};base64,{$base64}", 'mimetype' => $mimeType],
             'convert' => true,
+        ]);
+    }
+
+    /**
+     * Send a file/document by uploading content directly to WAHA (base64).
+     * Endpoint: POST /api/sendFile
+     * Supports PDF, Word, Excel, ZIP, etc.
+     */
+    public function sendFileBase64(string $chatId, string $filePath, string $mimeType, string $filename, string $caption = ''): array
+    {
+        $base64 = base64_encode(file_get_contents($filePath));
+        return $this->post('/api/sendFile', [
+            'session' => $this->session,
+            'chatId'  => $chatId,
+            'file'    => [
+                'data'     => "data:{$mimeType};base64,{$base64}",
+                'mimetype' => $mimeType,
+                'filename' => $filename,
+            ],
+            'caption' => $caption,
         ]);
     }
 

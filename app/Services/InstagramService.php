@@ -82,9 +82,8 @@ class InstagramService
      */
     public function getProfile(string $igsid): array
     {
-        // profile_picture_url não está disponível para IGSIDs via Graph API de mensagens
         return $this->get("/{$igsid}", [
-            'fields' => 'name,username',
+            'fields' => 'name,username,profile_pic',
         ]);
     }
 

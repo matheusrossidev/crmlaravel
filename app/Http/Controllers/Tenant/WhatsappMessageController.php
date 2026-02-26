@@ -88,6 +88,14 @@ class WhatsappMessageController extends Controller
                 return response()->json(['error' => 'Falha ao enviar áudio no WhatsApp: ' . ($result['body'] ?? 'erro desconhecido')], 422);
             }
             $wahaMessageId = $result['id'] ?? null;
+        } elseif ($type === 'document' && $request->hasFile('file')) {
+            [$storagePath, $mediaMime, $mediaFilename, $mediaUrl] = $this->handleUpload($request, 'docs');
+            $absolutePath = storage_path('app/public/' . $storagePath);
+            $result       = $waha->sendFileBase64($chatId, $absolutePath, $mediaMime, $mediaFilename, $body);
+            if (isset($result['error'])) {
+                return response()->json(['error' => 'Falha ao enviar arquivo no WhatsApp: ' . ($result['body'] ?? 'erro desconhecido')], 422);
+            }
+            $wahaMessageId = $result['id'] ?? null;
         } else {
             return response()->json(['error' => 'Tipo inválido ou arquivo ausente'], 422);
         }
