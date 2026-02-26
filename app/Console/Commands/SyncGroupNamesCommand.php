@@ -47,7 +47,9 @@ class SyncGroupNamesCommand extends Command
 
         foreach ($conversations as $conv) {
             try {
-                $info = $waha->getGroupInfo($conv->phone);
+                // Garante o sufixo @g.us que a API do WAHA exige
+                $jid  = str_contains($conv->phone, '@') ? $conv->phone : $conv->phone . '@g.us';
+                $info = $waha->getGroupInfo($jid);
                 $name = $info['subject'] ?? $info['name'] ?? null;
 
                 if ($name) {
