@@ -663,7 +663,7 @@ $pageIcon = 'person-badge';
                 <i class="bi bi-instagram"></i>
                 <p>Nenhuma conversa Instagram vinculada a este lead.</p>
                 @if($lead->instagram_username)
-                <p style="font-size:12px;margin-top:4px;">Username: <strong>@{{ $lead->instagram_username }}</strong></p>
+                <p style="font-size:12px;margin-top:4px;">Username: <strong>{{ $lead->instagram_username }}</strong></p>
                 @endif
             </div>
             @else
@@ -751,7 +751,7 @@ $pageIcon = 'person-badge';
                 <div class="lp-info-icon"><i class="bi bi-instagram"></i></div>
                 <div class="lp-info-val">
                     <a href="https://instagram.com/{{ ltrim($lead->instagram_username,'@') }}" target="_blank">
-                        @{{ ltrim($lead->instagram_username,'@') }}
+                        {{ ltrim($lead->instagram_username,'@') }}
                     </a>
                 </div>
             </div>
