@@ -27,6 +27,7 @@ use App\Http\Controllers\Tenant\ChatbotFlowController;
 use App\Http\Controllers\Tenant\WhatsappController;
 use App\Http\Controllers\Tenant\WhatsappMessageController;
 use App\Http\Controllers\Tenant\WhatsappTagController;
+use App\Http\Controllers\Tenant\AiAnalystController;
 use App\Http\Controllers\Tenant\InstagramAutomationController;
 use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -146,7 +147,17 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::post('/instagram-conversations/{conversation}/read',    [WhatsappController::class, 'markReadInstagram'])->name('ig-conversations.read');
         Route::post  ('/instagram-conversations/{conversation}/messages',[WhatsappController::class, 'sendInstagramMessage'])->name('ig-conversations.messages');
         Route::delete('/instagram-conversations/{conversation}',         [WhatsappController::class, 'destroyInstagram'])->name('ig-conversations.destroy');
+
+        // AI Analyst — sugestões por conversa
+        Route::get ('{conversation}/analyst-suggestions',             [AiAnalystController::class, 'index'])->name('analyst.index');
+        Route::post('{conversation}/analyst-suggestions/approve-all', [AiAnalystController::class, 'approveAll'])->name('analyst.approve-all');
+        Route::post('{conversation}/analyze',                         [AiAnalystController::class, 'trigger'])->name('analyst.trigger');
     });
+
+    // AI Analyst — ações globais por sugestão
+    Route::post('/analyst-suggestions/{suggestion}/approve', [AiAnalystController::class, 'approve'])->name('analyst.approve');
+    Route::post('/analyst-suggestions/{suggestion}/reject',  [AiAnalystController::class, 'reject'])->name('analyst.reject');
+    Route::get ('/analyst-suggestions/pending-count',        [AiAnalystController::class, 'pendingCount'])->name('analyst.pending-count');
 
     // Chatbot Builder
     Route::prefix('chatbot/fluxos')->name('chatbot.flows.')->group(function () {

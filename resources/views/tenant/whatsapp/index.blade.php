@@ -1273,6 +1273,22 @@ $pageIcon = 'chat-dots';
         </div>
         @endif
 
+        {{-- IA Analista — Sugestões --}}
+        <div class="wa-details-section" id="analystSection" style="display:none;">
+            <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
+                <span><i class="bi bi-robot" style="margin-right:4px;color:#10b981;"></i> Sugestões da IA</span>
+                <button onclick="triggerAnalysis()" id="analyzeBtn" type="button"
+                        style="background:none;border:none;padding:0;font-size:11px;color:#10b981;cursor:pointer;font-weight:600;">
+                    Analisar ▶
+                </button>
+            </div>
+            <div id="analystList" style="margin-top:6px;"></div>
+            <button id="approveAllBtn" onclick="approveAllSuggestions()" type="button"
+                    style="display:none;width:100%;margin-top:6px;padding:5px 8px;background:#10b981;color:#fff;border:none;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600;">
+                ✅ Aprovar todas
+            </button>
+        </div>
+
         <div class="wa-details-section">
             <div class="wa-details-label">Status</div>
             <div class="wa-details-value" id="detailsStatus"></div>
@@ -1733,6 +1749,9 @@ $pageIcon = 'chat-dots';
 
         // Renderiza painel de lead
         renderLeadPanel(data.lead);
+
+        // Carrega sugestões da IA para esta conversa
+        loadAnalystSuggestions(convId);
 
         // Avança o anchor do poll para agora, evitando que o próximo poll re-entregue
         // mensagens do histórico já renderizadas pelo openConversation.
@@ -2574,6 +2593,137 @@ $pageIcon = 'chat-dots';
             openConversation(parseInt(openId), el);
         }
     })();
+
+    // ── IA Analista — Sugestões ────────────────────────────────────────────────
+    const ANALYST_BASE  = '{{ rtrim(url("/chats"), "/") }}';
+    const ANALYST_CSRF  = '{{ csrf_token() }}';
+    const TYPE_ICONS    = { stage_change: '📊', add_tag: '🏷️', add_note: '📝', fill_field: '📋', update_lead: '✏️' };
+
+    function loadAnalystSuggestions(convId) {
+        const section = document.getElementById('analystSection');
+        if (!section) return;
+
+        fetch(`${ANALYST_BASE}/${convId}/analyst-suggestions`, {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => renderAnalystSuggestions(data.suggestions || []))
+        .catch(() => {});
+    }
+
+    function renderAnalystSuggestions(suggestions) {
+        const section      = document.getElementById('analystSection');
+        const list         = document.getElementById('analystList');
+        const approveAllBtn = document.getElementById('approveAllBtn');
+        if (!section || !list) return;
+
+        section.style.display = '';
+
+        if (!suggestions.length) {
+            list.innerHTML = '<div style="font-size:11px;color:#9ca3af;padding:4px 0;">Nenhuma sugestão pendente.</div>';
+            approveAllBtn.style.display = 'none';
+            return;
+        }
+
+        list.innerHTML = suggestions.map(s => {
+            const icon  = TYPE_ICONS[s.type] || '💡';
+            const label = buildSuggestionLabel(s);
+            const reason = s.reason ? `<div style="font-size:10px;color:#6b7280;margin:2px 0 4px;">"${escHtml(s.reason)}"</div>` : '';
+            return `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px;margin-bottom:6px;">
+                      <div style="font-size:11px;font-weight:600;color:#065f46;">${icon} ${escHtml(label)}</div>
+                      ${reason}
+                      <div style="display:flex;gap:6px;margin-top:4px;">
+                        <button onclick="approveSuggestion(${s.id}, this)" type="button"
+                                style="flex:1;padding:3px 0;background:#10b981;color:#fff;border:none;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;">
+                          ✅ Aprovar
+                        </button>
+                        <button onclick="rejectSuggestion(${s.id}, this)" type="button"
+                                style="flex:1;padding:3px 0;background:#f3f4f6;color:#374151;border:none;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;">
+                          ✗ Rejeitar
+                        </button>
+                      </div>
+                    </div>`;
+        }).join('');
+
+        approveAllBtn.style.display = suggestions.length > 1 ? '' : 'none';
+    }
+
+    function buildSuggestionLabel(s) {
+        const p = s.payload || {};
+        switch (s.type) {
+            case 'stage_change': return `Mover para "${p.stage_name || 'etapa'}"`;
+            case 'add_tag':      return `Tag: "${p.tag}"`;
+            case 'add_note':     return `Nota: ${(p.note || '').substring(0, 60)}${(p.note||'').length > 60 ? '…' : ''}`;
+            case 'fill_field':   return `Campo "${p.label || p.name}": ${p.value}`;
+            case 'update_lead':  return `Atualizar ${p.field}: ${p.value}`;
+            default:             return s.type_label || s.type;
+        }
+    }
+
+    function approveSuggestion(id, btn) {
+        btn.disabled = true;
+        fetch(`/analyst-suggestions/${id}/approve`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': ANALYST_CSRF, 'Accept': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(() => {
+            if (window.toastr) toastr.success('Sugestão aplicada!', '', { timeOut: 2000 });
+            loadAnalystSuggestions(activeConvId);
+            if (window.loadIntentSignals) loadIntentSignals();
+        })
+        .catch(() => { btn.disabled = false; });
+    }
+
+    function rejectSuggestion(id, btn) {
+        btn.disabled = true;
+        fetch(`/analyst-suggestions/${id}/reject`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': ANALYST_CSRF, 'Accept': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(() => {
+            loadAnalystSuggestions(activeConvId);
+            if (window.loadIntentSignals) loadIntentSignals();
+        })
+        .catch(() => { btn.disabled = false; });
+    }
+
+    function approveAllSuggestions() {
+        if (!activeConvId) return;
+        const btn = document.getElementById('approveAllBtn');
+        if (btn) btn.disabled = true;
+        fetch(`${ANALYST_BASE}/${activeConvId}/analyst-suggestions/approve-all`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': ANALYST_CSRF, 'Accept': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (window.toastr) toastr.success(`${data.approved} sugestão(ões) aplicada(s)!`, '', { timeOut: 3000 });
+            loadAnalystSuggestions(activeConvId);
+            if (window.loadIntentSignals) loadIntentSignals();
+        })
+        .catch(() => { if (btn) btn.disabled = false; });
+    }
+
+    function triggerAnalysis() {
+        if (!activeConvId) return;
+        const btn = document.getElementById('analyzeBtn');
+        if (btn) { btn.textContent = '⏳ Analisando...'; btn.disabled = true; }
+        fetch(`${ANALYST_BASE}/${activeConvId}/analyze`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': ANALYST_CSRF, 'Accept': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            renderAnalystSuggestions(data.suggestions || []);
+            if (window.loadIntentSignals) loadIntentSignals();
+        })
+        .catch(() => {})
+        .finally(() => {
+            if (btn) { btn.textContent = 'Analisar ▶'; btn.disabled = false; }
+        });
+    }
 </script>
 <style>
     @keyframes spin {

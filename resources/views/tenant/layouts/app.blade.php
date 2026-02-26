@@ -1045,13 +1045,14 @@ function toggleSubmenu(id) {
 </script>
 
 <script>
-// ── Notification Bell (Intent Signals) ──────────────────────────────────────
+// ── Notification Bell (Intent Signals + AI Analyst) ──────────────────────────
 (function () {
-    const LIST_URL    = '{{ route("ai.intent-signals.list") }}';
-    const READ_ALL    = '{{ route("ai.intent-signals.read-all") }}';
-    const CSRF        = '{{ csrf_token() }}';
-    const ICONS       = { buy: '🛒', schedule: '📅', close: '🤝', interest: '⭐' };
-    const CONV_BASE   = '{{ rtrim(url("/"), "/") }}';
+    const LIST_URL      = '{{ route("ai.intent-signals.list") }}';
+    const READ_ALL      = '{{ route("ai.intent-signals.read-all") }}';
+    const ANALYST_URL   = '{{ route("analyst.pending-count") }}';
+    const CSRF          = '{{ csrf_token() }}';
+    const ICONS         = { buy: '🛒', schedule: '📅', close: '🤝', interest: '⭐' };
+    const CONV_BASE     = '{{ rtrim(url("/"), "/") }}';
 
     function updateBadge(count) {
         const num = document.getElementById('notif-badge-num');
@@ -1064,14 +1065,11 @@ function toggleSubmenu(id) {
         }
     }
 
-    function renderList(signals) {
+    function renderList(signals, analystItems) {
         const el = document.getElementById('notif-list');
         if (!el) return;
-        if (!signals || !signals.length) {
-            el.innerHTML = '<div style="padding:24px;text-align:center;color:#9ca3af;font-size:12px;">Nenhuma notificação</div>';
-            return;
-        }
-        el.innerHTML = signals.map(s => {
+
+        const intentHtml = (signals && signals.length) ? signals.map(s => {
             const icon    = ICONS[s.intent_type] || '⭐';
             const unread  = !s.read_at ? 'unread' : '';
             const convBtn = s.conversation_id
@@ -1092,17 +1090,47 @@ function toggleSubmenu(id) {
                         ${convBtn}
                       </div>
                     </div>`;
-        }).join('');
+        }).join('') : '';
+
+        const TYPE_ICONS_BELL = { stage_change: '📊', add_tag: '🏷️', add_note: '📝', fill_field: '📋', update_lead: '✏️' };
+        const analystHtml = (analystItems && analystItems.length) ? [
+            `<div style="padding:6px 16px 4px;font-size:10px;font-weight:700;color:#10b981;letter-spacing:.5px;background:#f0fdf4;border-bottom:1px solid #bbf7d0;">🤖 SUGESTÕES DA IA</div>`,
+            ...analystItems.map(s => {
+                const icon = TYPE_ICONS_BELL[s.type] || '🤖';
+                const convLink = s.conversation_id
+                    ? `<a href="${CONV_BASE}/chats?open=${s.conversation_id}" style="font-size:11px;color:#10b981;text-decoration:none;flex-shrink:0;" onclick="event.stopPropagation()">Ver</a>`
+                    : '';
+                return `<div style="padding:8px 16px;border-bottom:1px solid #f3f4f6;">
+                          <div style="display:flex;align-items:flex-start;gap:8px;">
+                            <span style="font-size:16px;flex-shrink:0;">${icon}</span>
+                            <div style="flex:1;min-width:0;">
+                              <div style="font-size:12px;font-weight:600;color:#065f46;">${s.lead_name}</div>
+                              <div style="font-size:11px;color:#6b7280;">${s.type_label}</div>
+                              <div style="font-size:10px;color:#9ca3af;">${s.time_ago}</div>
+                            </div>
+                            ${convLink}
+                          </div>
+                        </div>`;
+            })
+        ].join('') : '';
+
+        if (!intentHtml && !analystHtml) {
+            el.innerHTML = '<div style="padding:24px;text-align:center;color:#9ca3af;font-size:12px;">Nenhuma notificação</div>';
+            return;
+        }
+
+        el.innerHTML = analystHtml + intentHtml;
     }
 
     window.loadIntentSignals = function () {
-        fetch(LIST_URL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(r => r.json())
-            .then(data => {
-                updateBadge(data.unread_count);
-                renderList(data.signals);
-            })
-            .catch(() => {});
+        Promise.all([
+            fetch(LIST_URL,    { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => ({ signals: [], unread_count: 0 })),
+            fetch(ANALYST_URL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => ({ count: 0, recent: [] })),
+        ]).then(([intentData, analystData]) => {
+            const total = (intentData.unread_count || 0) + (analystData.count || 0);
+            updateBadge(total);
+            renderList(intentData.signals || [], analystData.recent || []);
+        });
     };
 
     window.markIntentRead = function (id, el) {
