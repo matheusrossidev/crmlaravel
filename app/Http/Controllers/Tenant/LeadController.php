@@ -243,7 +243,14 @@ class LeadController extends Controller
 
     public function destroy(Lead $lead): JsonResponse
     {
-        $lead->delete();
+        // Arquiva o lead: remove do funil/pipeline mas mantém o contato.
+        // Evita que contatos de membros da equipe ou descartados reapareçam
+        // automaticamente no Kanban ao enviar uma nova mensagem.
+        $lead->update([
+            'stage_id'              => null,
+            'pipeline_id'           => null,
+            'exclude_from_pipeline' => true,
+        ]);
 
         return response()->json(['success' => true]);
     }

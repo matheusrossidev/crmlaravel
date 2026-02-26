@@ -18,11 +18,12 @@ class Lead extends Model
         'tenant_id', 'name', 'phone', 'email', 'value',
         'source', 'tags', 'pipeline_id', 'stage_id',
         'assigned_to', 'campaign_id', 'created_by', 'notes',
-        'instagram_username',
+        'instagram_username', 'exclude_from_pipeline',
     ];
 
     protected $casts = [
-        'tags'       => 'array',
+        'tags'                  => 'array',
+        'exclude_from_pipeline' => 'boolean',
         'value'      => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
