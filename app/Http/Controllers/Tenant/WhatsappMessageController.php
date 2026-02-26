@@ -38,11 +38,11 @@ class WhatsappMessageController extends Controller
             ->value('waha_message_id');
 
         if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
-            $jid = $m[1]; // "36576092528787@lid" or "556192008997@c.us"
-            // @lid contacts: keep @lid so GOWS can route correctly
-            // @c.us / @s.whatsapp.net: normalize to phone@c.us
+            $jid = $m[1]; // "36576092528787@lid", "556192008997@c.us", or "120363...@g.us"
             if (str_ends_with($jid, '@lid')) {
                 $chatId = preg_replace('/[:@].+$/', '', $jid) . '@lid';
+            } elseif (str_ends_with($jid, '@g.us')) {
+                $chatId = preg_replace('/[:@].+$/', '', $jid) . '@g.us';
             } else {
                 $chatId = preg_replace('/[:@].+$/', '', $jid) . '@c.us';
             }
@@ -51,7 +51,8 @@ class WhatsappMessageController extends Controller
         // Fallback: build from stored phone (works for correctly normalised phones)
         if (! $chatId) {
             $rawPhone = ltrim((string) preg_replace('/[:@\s].+$/', '', $conversation->phone), '+');
-            $chatId   = $rawPhone . '@c.us';
+            $suffix   = $conversation->is_group ? '@g.us' : '@c.us';
+            $chatId   = $rawPhone . $suffix;
         }
 
         $wahaMessageId = null;
