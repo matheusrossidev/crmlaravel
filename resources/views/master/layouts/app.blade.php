@@ -400,6 +400,53 @@
 toastr.options = { positionClass: 'toast-top-right', timeOut: 4000, progressBar: true, closeButton: true };
 </script>
 
+{{-- Confirm Modal --}}
+<div id="confirmModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,.5);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:16px;width:100%;max-width:440px;margin:16px;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,.18);">
+        <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:#FEF2F2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="bi bi-exclamation-triangle-fill" style="color:#EF4444;font-size:20px;"></i>
+            </div>
+            <div style="flex:1;min-width:0;">
+                <h5 id="confirmModalTitle" style="font-size:16px;font-weight:700;color:#111827;margin:0 0 6px;"></h5>
+                <p id="confirmModalMessage" style="font-size:14px;color:#6b7280;margin:0 0 10px;line-height:1.5;"></p>
+                <p style="font-size:12px;color:#EF4444;font-weight:500;margin:0;display:flex;align-items:center;gap:5px;">
+                    <i class="bi bi-shield-exclamation"></i> Esta ação é irreversível e não pode ser desfeita.
+                </p>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:24px;">
+            <button id="confirmModalCancel" type="button"
+                style="padding:9px 20px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#374151;font-size:13px;font-weight:500;cursor:pointer;">
+                Cancelar
+            </button>
+            <button id="confirmModalConfirm" type="button"
+                style="padding:9px 20px;border-radius:8px;border:none;background:#EF4444;color:#fff;font-size:13px;font-weight:600;cursor:pointer;min-width:100px;">
+                Confirmar
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+window.confirmAction = function ({ title = 'Confirmar ação', message = '', confirmText = 'Confirmar', onConfirm }) {
+    const modal = document.getElementById('confirmModal');
+    document.getElementById('confirmModalTitle').textContent   = title;
+    document.getElementById('confirmModalMessage').innerHTML   = message;
+    document.getElementById('confirmModalConfirm').textContent = confirmText;
+    modal.style.display = 'flex';
+
+    const close = () => { modal.style.display = 'none'; };
+    document.getElementById('confirmModalCancel').onclick  = close;
+    document.getElementById('confirmModalConfirm').onclick = () => { close(); onConfirm(); };
+    modal.onclick = (e) => { if (e.target === modal) close(); };
+};
+
+window.escapeHtml = function (str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+};
+</script>
+
 @stack('scripts')
 
 </body>
