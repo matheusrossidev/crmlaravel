@@ -1104,12 +1104,24 @@ $pageIcon = 'chat-dots';
                 <button class="wa-btn-icon" id="btnMic" onclick="startRecording()" title="Gravar áudio">
                     <i class="bi bi-mic"></i>
                 </button>
-                <div class="wa-textarea-wrap">
+                <button class="wa-btn-icon" id="btnQuickMsgs" onclick="openQmModal()" title="Mensagens rápidas">
+                    <i class="bi bi-lightning-charge-fill" style="color:#f59e0b;"></i>
+                </button>
+                <div class="wa-textarea-wrap" style="position:relative;">
+                    {{-- Popup de mensagens rápidas --}}
+                    <div id="quickMsgPopup" style="display:none;position:absolute;bottom:calc(100% + 8px);left:0;
+                         width:340px;background:#fff;border:1px solid #e8eaf0;border-radius:12px;
+                         box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:1000;max-height:280px;overflow-y:auto;">
+                        <div style="padding:8px 10px;border-bottom:1px solid #f0f2f7;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">
+                            Mensagens Rápidas
+                        </div>
+                        <div id="quickMsgList"></div>
+                    </div>
                     <textarea class="wa-textarea"
                         id="messageInput"
-                        placeholder="Digite uma mensagem..."
+                        placeholder="Digite uma mensagem ou / para mensagens rápidas..."
                         rows="1"
-                        oninput="autoResize(this)"></textarea>
+                        oninput="autoResize(this);handleQmTrigger(this)"></textarea>
                 </div>
                 <button class="wa-btn-send" id="btnSend" onclick="sendMessage()" title="Enviar">
                     <i class="bi bi-send"></i>
@@ -1313,6 +1325,90 @@ $pageIcon = 'chat-dots';
         <div class="del-modal-footer">
             <button class="btn-del-cancel" onclick="document.getElementById('delConvModal').classList.remove('open')">Cancelar</button>
             <button class="btn-del-confirm" onclick="_doDeleteConversation()">Excluir</button>
+        </div>
+    </div>
+</div>
+
+{{-- Modal de Mensagens Rápidas --}}
+<div id="qmModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1050;"
+     onclick="if(event.target===this)closeQmModal()">
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+                background:#fff;border-radius:16px;width:560px;max-width:95vw;
+                max-height:90vh;display:flex;flex-direction:column;overflow:hidden;
+                box-shadow:0 20px 60px rgba(0,0,0,.2);">
+        {{-- Header --}}
+        <div style="padding:18px 22px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+            <div style="font-size:15px;font-weight:700;color:#1a1d23;display:flex;align-items:center;gap:8px;">
+                <i class="bi bi-lightning-charge-fill" style="color:#f59e0b;"></i>
+                Mensagens Rápidas
+            </div>
+            <button onclick="closeQmModal()" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;line-height:1;">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        {{-- Body --}}
+        <div style="flex:1;overflow-y:auto;padding:16px 22px;" id="qmModalBody">
+            {{-- Lista de mensagens rápidas --}}
+            <div id="qmList" style="margin-bottom:14px;"></div>
+
+            {{-- Formulário add/edit --}}
+            <div id="qmForm" style="display:none;border:1.5px solid #e8eaf0;border-radius:12px;padding:16px;background:#fafafa;">
+                <input type="hidden" id="qmEditId" value="">
+                <div style="margin-bottom:10px;">
+                    <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">
+                        Título <span style="color:#ef4444;">*</span>
+                    </label>
+                    <input type="text" id="qmTitle" maxlength="100" placeholder="Ex: Boas-vindas, Horário de atendimento..."
+                           style="width:100%;padding:8px 12px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:13.5px;
+                                  font-family:inherit;outline:none;box-sizing:border-box;background:#fff;">
+                </div>
+                <div style="margin-bottom:10px;">
+                    <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">
+                        Mensagem <span style="color:#ef4444;">*</span>
+                    </label>
+                    {{-- Toolbar de formatação WhatsApp --}}
+                    <div style="display:flex;gap:4px;margin-bottom:6px;">
+                        <button type="button" onclick="qmFormat('bold')" title="Negrito (*texto*)"
+                                style="padding:4px 9px;border:1.5px solid #e8eaf0;border-radius:6px;background:#fff;
+                                       font-size:12px;font-weight:700;cursor:pointer;">B</button>
+                        <button type="button" onclick="qmFormat('italic')" title="Itálico (_texto_)"
+                                style="padding:4px 9px;border:1.5px solid #e8eaf0;border-radius:6px;background:#fff;
+                                       font-size:12px;font-style:italic;cursor:pointer;">I</button>
+                        <button type="button" onclick="qmFormat('strike')" title="Tachado (~texto~)"
+                                style="padding:4px 9px;border:1.5px solid #e8eaf0;border-radius:6px;background:#fff;
+                                       font-size:12px;text-decoration:line-through;cursor:pointer;">S</button>
+                        <button type="button" onclick="qmFormat('mono')" title="Monoespaçado (`texto`)"
+                                style="padding:4px 9px;border:1.5px solid #e8eaf0;border-radius:6px;background:#fff;
+                                       font-size:12px;font-family:monospace;cursor:pointer;">&lt;/&gt;</button>
+                    </div>
+                    <textarea id="qmBody" rows="5" maxlength="2000" placeholder="Digite a mensagem..."
+                              style="width:100%;padding:9px 12px;border:1.5px solid #e8eaf0;border-radius:9px;
+                                     font-size:13.5px;font-family:inherit;resize:vertical;
+                                     outline:none;box-sizing:border-box;background:#fff;min-height:100px;"></textarea>
+                    <div style="font-size:11px;color:#9ca3af;text-align:right;margin-top:2px;">
+                        Use *negrito*, _itálico_, ~tachado~, `mono`
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                    <button type="button" onclick="cancelQmForm()"
+                            style="padding:8px 16px;border:1.5px solid #e8eaf0;border-radius:8px;background:#fff;
+                                   font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;">Cancelar</button>
+                    <button type="button" onclick="saveQm()"
+                            style="padding:8px 18px;border:none;border-radius:8px;background:#3B82F6;
+                                   color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Salvar</button>
+                </div>
+            </div>
+        </div>
+
+        {{-- Footer --}}
+        <div style="padding:14px 22px;border-top:1px solid #f0f2f7;flex-shrink:0;">
+            <button type="button" onclick="showQmForm()"
+                    style="width:100%;padding:9px;background:#f0f7ff;color:#3B82F6;
+                           border:1.5px dashed #3B82F6;border-radius:9px;
+                           font-size:13.5px;font-weight:600;cursor:pointer;">
+                <i class="bi bi-plus-lg"></i> Nova mensagem rápida
+            </button>
         </div>
     </div>
 </div>
@@ -2723,6 +2819,227 @@ $pageIcon = 'chat-dots';
         .finally(() => {
             if (btn) { btn.textContent = 'Analisar ▶'; btn.disabled = false; }
         });
+    }
+
+    // ── Mensagens Rápidas ─────────────────────────────────────────────────────
+    let _quickMsgs = {!! json_encode($quickMessages ?? []) !!};
+    const QM_BASE  = '{{ route("chats.quick-messages.index") }}';
+    let _qmSelectedIdx = -1;
+
+    // ── Popup "/" ─────────────────────────────────────────────────────────────
+    function handleQmTrigger(textarea) {
+        const val = textarea.value;
+        if (val.startsWith('/')) {
+            const query = val.slice(1).toLowerCase();
+            const filtered = _quickMsgs.filter(m =>
+                m.title.toLowerCase().includes(query) ||
+                m.body.toLowerCase().includes(query)
+            );
+            renderQmPopup(filtered);
+            document.getElementById('quickMsgPopup').style.display = 'block';
+        } else {
+            closeQmPopup();
+        }
+    }
+
+    function renderQmPopup(items) {
+        const list = document.getElementById('quickMsgList');
+        _qmSelectedIdx = -1;
+        if (!items.length) {
+            list.innerHTML = '<div style="padding:12px 14px;font-size:13px;color:#9ca3af;">Nenhuma mensagem encontrada</div>';
+            return;
+        }
+        list.innerHTML = items.map((m, i) => `
+            <div class="qm-popup-item" data-idx="${i}" onclick="insertQm(${m.id})"
+                 style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f7f8fa;transition:background .1s;">
+                <div style="font-size:13px;font-weight:700;color:#1a1d23;">${escapeHtml(m.title)}</div>
+                <div style="font-size:12px;color:#6b7280;margin-top:2px;
+                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px;">
+                    ${escapeHtml(m.body.substring(0, 80))}${m.body.length > 80 ? '…' : ''}
+                </div>
+            </div>`
+        ).join('');
+        // hover styles
+        list.querySelectorAll('.qm-popup-item').forEach(el => {
+            el.addEventListener('mouseenter', () => el.style.background = '#f0f7ff');
+            el.addEventListener('mouseleave', () => {
+                if (parseInt(el.dataset.idx) !== _qmSelectedIdx) el.style.background = '';
+            });
+        });
+    }
+
+    function closeQmPopup() {
+        document.getElementById('quickMsgPopup').style.display = 'none';
+        _qmSelectedIdx = -1;
+    }
+
+    function insertQm(id) {
+        const msg = _quickMsgs.find(m => m.id === id);
+        if (!msg) return;
+        const textarea = document.getElementById('messageInput');
+        textarea.value = msg.body;
+        autoResize(textarea);
+        textarea.focus();
+        closeQmPopup();
+    }
+
+    // Keyboard nav dentro do popup
+    document.getElementById('messageInput')?.addEventListener('keydown', e => {
+        const popup = document.getElementById('quickMsgPopup');
+        if (popup.style.display === 'none') return;
+        const items = popup.querySelectorAll('.qm-popup-item');
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            _qmSelectedIdx = Math.min(_qmSelectedIdx + 1, items.length - 1);
+            items.forEach((el, i) => el.style.background = i === _qmSelectedIdx ? '#f0f7ff' : '');
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            _qmSelectedIdx = Math.max(_qmSelectedIdx - 1, 0);
+            items.forEach((el, i) => el.style.background = i === _qmSelectedIdx ? '#f0f7ff' : '');
+        } else if (e.key === 'Enter' && _qmSelectedIdx >= 0) {
+            e.preventDefault();
+            items[_qmSelectedIdx]?.click();
+        } else if (e.key === 'Escape') {
+            closeQmPopup();
+        }
+    });
+
+    // Fechar popup ao clicar fora
+    document.addEventListener('click', e => {
+        const popup = document.getElementById('quickMsgPopup');
+        const textarea = document.getElementById('messageInput');
+        const btn = document.getElementById('btnQuickMsgs');
+        if (!popup?.contains(e.target) && e.target !== textarea && e.target !== btn) {
+            closeQmPopup();
+        }
+    });
+
+    // ── Modal de gerenciamento ────────────────────────────────────────────────
+    function openQmModal() {
+        renderQmModalList();
+        document.getElementById('qmModalOverlay').style.display = 'block';
+    }
+
+    function closeQmModal() {
+        document.getElementById('qmModalOverlay').style.display = 'none';
+        cancelQmForm();
+    }
+
+    function renderQmModalList() {
+        const list = document.getElementById('qmList');
+        if (!_quickMsgs.length) {
+            list.innerHTML = '<p style="text-align:center;color:#9ca3af;font-size:13px;padding:12px 0;">Nenhuma mensagem rápida cadastrada ainda.</p>';
+            return;
+        }
+        list.innerHTML = _quickMsgs.map(m => `
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f0f2f7;">
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:13.5px;font-weight:700;color:#1a1d23;">${escapeHtml(m.title)}</div>
+                    <div style="font-size:12.5px;color:#6b7280;margin-top:2px;white-space:pre-wrap;word-break:break-word;max-height:60px;overflow:hidden;">
+                        ${escapeHtml(m.body.substring(0, 120))}${m.body.length > 120 ? '…' : ''}
+                    </div>
+                </div>
+                <div style="display:flex;gap:5px;flex-shrink:0;margin-top:2px;">
+                    <button onclick="editQm(${m.id})" title="Editar"
+                            style="width:28px;height:28px;border:1px solid #e8eaf0;border-radius:7px;
+                                   background:#fff;color:#6b7280;cursor:pointer;font-size:13px;
+                                   display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button onclick="deleteQm(${m.id})" title="Excluir"
+                            style="width:28px;height:28px;border:1px solid #fecaca;border-radius:7px;
+                                   background:#fff;color:#ef4444;cursor:pointer;font-size:13px;
+                                   display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                </div>
+            </div>`
+        ).join('');
+    }
+
+    function showQmForm(msg = null) {
+        const form = document.getElementById('qmForm');
+        document.getElementById('qmEditId').value = msg ? msg.id : '';
+        document.getElementById('qmTitle').value  = msg ? msg.title : '';
+        document.getElementById('qmBody').value   = msg ? msg.body  : '';
+        form.style.display = 'block';
+        setTimeout(() => document.getElementById('qmTitle').focus(), 50);
+    }
+
+    function cancelQmForm() {
+        document.getElementById('qmForm').style.display = 'none';
+        document.getElementById('qmEditId').value = '';
+        document.getElementById('qmTitle').value  = '';
+        document.getElementById('qmBody').value   = '';
+    }
+
+    function editQm(id) {
+        const msg = _quickMsgs.find(m => m.id === id);
+        if (msg) showQmForm(msg);
+    }
+
+    async function saveQm() {
+        const id    = document.getElementById('qmEditId').value;
+        const title = document.getElementById('qmTitle').value.trim();
+        const body  = document.getElementById('qmBody').value.trim();
+        if (!title) { document.getElementById('qmTitle').focus(); return; }
+        if (!body)  { document.getElementById('qmBody').focus();  return; }
+
+        const url    = id ? `${QM_BASE}/${id}` : QM_BASE;
+        const method = id ? 'PUT' : 'POST';
+
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+                body: JSON.stringify({ title, body }),
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error();
+
+            if (id) {
+                const idx = _quickMsgs.findIndex(m => m.id === parseInt(id));
+                if (idx >= 0) _quickMsgs[idx] = data.message;
+            } else {
+                _quickMsgs.push(data.message);
+            }
+            cancelQmForm();
+            renderQmModalList();
+        } catch {
+            alert('Erro ao salvar mensagem rápida.');
+        }
+    }
+
+    async function deleteQm(id) {
+        if (!confirm('Excluir esta mensagem rápida?')) return;
+        try {
+            const res = await fetch(`${QM_BASE}/${id}`, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error();
+            _quickMsgs = _quickMsgs.filter(m => m.id !== id);
+            renderQmModalList();
+        } catch {
+            alert('Erro ao excluir mensagem rápida.');
+        }
+    }
+
+    // ── Formatação WhatsApp no textarea do modal ──────────────────────────────
+    function qmFormat(type) {
+        const ta = document.getElementById('qmBody');
+        const start = ta.selectionStart;
+        const end   = ta.selectionEnd;
+        const sel   = ta.value.substring(start, end);
+        const markers = { bold: '*', italic: '_', strike: '~', mono: '`' };
+        const m = markers[type];
+        if (!m) return;
+        const wrapped = sel ? `${m}${sel}${m}` : `${m}${m}`;
+        ta.value = ta.value.substring(0, start) + wrapped + ta.value.substring(end);
+        const newPos = sel ? start + wrapped.length : start + 1;
+        ta.setSelectionRange(newPos, newPos);
+        ta.focus();
     }
 </script>
 <style>

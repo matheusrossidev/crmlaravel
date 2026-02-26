@@ -28,6 +28,7 @@ use App\Http\Controllers\Tenant\WhatsappController;
 use App\Http\Controllers\Tenant\WhatsappMessageController;
 use App\Http\Controllers\Tenant\WhatsappTagController;
 use App\Http\Controllers\Tenant\AiAnalystController;
+use App\Http\Controllers\Tenant\QuickMessageController;
 use App\Http\Controllers\Tenant\InstagramAutomationController;
 use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -152,6 +153,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::get ('{conversation}/analyst-suggestions',             [AiAnalystController::class, 'index'])->name('analyst.index');
         Route::post('{conversation}/analyst-suggestions/approve-all', [AiAnalystController::class, 'approveAll'])->name('analyst.approve-all');
         Route::post('{conversation}/analyze',                         [AiAnalystController::class, 'trigger'])->name('analyst.trigger');
+
+        // Mensagens Rápidas
+        Route::get   ('/quick-messages',      [QuickMessageController::class, 'index'])->name('quick-messages.index');
+        Route::post  ('/quick-messages',      [QuickMessageController::class, 'store'])->name('quick-messages.store');
+        Route::put   ('/quick-messages/{qm}', [QuickMessageController::class, 'update'])->name('quick-messages.update');
+        Route::delete('/quick-messages/{qm}', [QuickMessageController::class, 'destroy'])->name('quick-messages.destroy');
     });
 
     // AI Analyst — ações globais por sugestão

@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
+use App\Models\WhatsappQuickMessage;
 use App\Models\WhatsappTag;
 use App\Services\InstagramService;
 use Illuminate\Http\JsonResponse;
@@ -83,7 +84,12 @@ class WhatsappController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'igConversations', 'allConversations', 'users', 'pipelines', 'whatsappTags', 'aiAgents', 'chatbotFlows'));
+        $quickMessages = WhatsappQuickMessage::orderBy('sort_order')
+            ->orderBy('title')
+            ->get(['id', 'title', 'body'])
+            ->toArray();
+
+        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'igConversations', 'allConversations', 'users', 'pipelines', 'whatsappTags', 'aiAgents', 'chatbotFlows', 'quickMessages'));
     }
 
     // ── Instagram Conversations ───────────────────────────────────────────────
