@@ -302,20 +302,23 @@ class AiAgentController extends Controller
             'enable_tags_tool'       => 'nullable|boolean',
             'enable_intent_notify'   => 'nullable|boolean',
             'transfer_to_user_id'    => 'nullable|integer|exists:users,id',
-            'followup_enabled'       => 'nullable|boolean',
-            'followup_delay_minutes' => 'nullable|integer|min:5|max:1440',
-            'followup_max_count'     => 'nullable|integer|min:1|max:10',
-            'followup_hour_start'    => 'nullable|integer|min:0|max:23',
-            'followup_hour_end'      => 'nullable|integer|min:1|max:23',
+            'followup_enabled'           => 'nullable|boolean',
+            'followup_delay_minutes'     => 'nullable|integer|min:5|max:1440',
+            'followup_max_count'         => 'nullable|integer|min:1|max:10',
+            'followup_hour_start'        => 'nullable|integer|min:0|max:23',
+            'followup_hour_end'          => 'nullable|integer|min:1|max:23',
+            'enable_calendar_tool'       => 'nullable|boolean',
+            'calendar_tool_instructions' => 'nullable|string|max:2000',
         ]);
 
-        $data['is_active']             = $request->boolean('is_active');
-        $data['auto_assign']           = $request->boolean('auto_assign');
-        $data['enable_pipeline_tool']  = $request->boolean('enable_pipeline_tool');
-        $data['enable_tags_tool']      = $request->boolean('enable_tags_tool');
-        $data['enable_intent_notify']  = $request->boolean('enable_intent_notify');
-        $data['followup_enabled']      = $request->boolean('followup_enabled');
-        $data['transfer_to_user_id']   = $request->input('transfer_to_user_id') ?: null;
+        $data['is_active']              = $request->boolean('is_active');
+        $data['auto_assign']            = $request->boolean('auto_assign');
+        $data['enable_pipeline_tool']   = $request->boolean('enable_pipeline_tool');
+        $data['enable_tags_tool']       = $request->boolean('enable_tags_tool');
+        $data['enable_intent_notify']   = $request->boolean('enable_intent_notify');
+        $data['followup_enabled']       = $request->boolean('followup_enabled');
+        $data['enable_calendar_tool']   = $request->boolean('enable_calendar_tool');
+        $data['transfer_to_user_id']    = $request->input('transfer_to_user_id') ?: null;
 
         return $data;
     }

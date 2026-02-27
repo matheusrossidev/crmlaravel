@@ -32,6 +32,7 @@ use App\Http\Controllers\Tenant\AiAnalystController;
 use App\Http\Controllers\Tenant\QuickMessageController;
 use App\Http\Controllers\Tenant\AutomationController;
 use App\Http\Controllers\Tenant\BillingController;
+use App\Http\Controllers\Tenant\CalendarController;
 use App\Http\Controllers\Tenant\InstagramAutomationController;
 use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -80,6 +81,15 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('cobranca/checkout', [BillingController::class, 'showCheckout'])->name('billing.checkout');
     Route::post('cobranca/assinar',  [BillingController::class, 'subscribe'])->name('billing.subscribe');
     Route::post('cobranca/cancelar', [BillingController::class, 'cancel'])->name('billing.cancel');
+
+    // Agenda (Google Calendar)
+    Route::prefix('agenda')->name('calendar.')->group(function () {
+        Route::get('/',                [CalendarController::class, 'index'])->name('index');
+        Route::get('/eventos',         [CalendarController::class, 'events'])->name('events');
+        Route::post('/eventos',        [CalendarController::class, 'store'])->name('store');
+        Route::put('/eventos/{id}',    [CalendarController::class, 'update'])->name('update');
+        Route::delete('/eventos/{id}', [CalendarController::class, 'destroy'])->name('destroy');
+    });
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/inicio', [DashboardController::class, 'index'])->name('inicio');

@@ -11,8 +11,10 @@ use App\Models\AiAgent;
 use App\Models\AiIntentSignal;
 use App\Models\AiUsageLog;
 use App\Models\Lead;
+use App\Models\OAuthConnection;
 use App\Models\WhatsappConversation;
 use App\Services\AiAgentService;
+use App\Services\GoogleCalendarService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -181,10 +183,38 @@ class ProcessAiResponse implements ShouldQueue
                 ->toArray();
         }
 
+        // ── Carregar eventos de agenda — apenas se ferramenta habilitada ──────
+        $calendarEvents = [];
+        $calendarService = null;
+        if ($agent->enable_calendar_tool) {
+            $calendarConn = OAuthConnection::withoutGlobalScope('tenant')
+                ->where('tenant_id', $conv->tenant_id)
+                ->where('platform', 'google')
+                ->where('status', 'active')
+                ->first();
+            if ($calendarConn) {
+                $scopes = (array) ($calendarConn->scopes_json ?? []);
+                if (in_array('https://www.googleapis.com/auth/calendar', $scopes, true)) {
+                    try {
+                        $calendarService = new GoogleCalendarService($calendarConn);
+                        $calendarEvents  = $calendarService->listEvents(
+                            now()->toIso8601String(),
+                            now()->addDays(7)->toIso8601String(),
+                        );
+                    } catch (\Throwable $e) {
+                        Log::channel('whatsapp')->warning('AI job: falha ao carregar eventos de agenda', [
+                            'conversation_id' => $this->conversationId,
+                            'error'           => $e->getMessage(),
+                        ]);
+                    }
+                }
+            }
+        }
+
         // ── Montar prompt e histórico ─────────────────────────────────────────
         $service            = new AiAgentService();
         $enableIntentNotify = (bool) ($agent->enable_intent_notify ?? false);
-        $system             = $service->buildSystemPrompt($agent, $stages, $availTags, $enableIntentNotify);
+        $system             = $service->buildSystemPrompt($agent, $stages, $availTags, $enableIntentNotify, $calendarEvents);
         $history = $service->buildHistory($conv, limit: 50);
 
         if (empty($history)) {
@@ -238,9 +268,9 @@ class ProcessAiResponse implements ShouldQueue
             return;
         }
 
-        // ── Parsear JSON de ações (quando pipeline/tags/intent disponíveis) ──
+        // ── Parsear JSON de ações (quando pipeline/tags/intent/calendar disponíveis) ──
         $actions = [];
-        if (! empty($stages) || ! empty($availTags) || $enableIntentNotify) {
+        if (! empty($stages) || ! empty($availTags) || $enableIntentNotify || $agent->enable_calendar_tool) {
             // Remover markdown code blocks se o LLM os incluiu
             $clean = preg_replace('/```(?:json)?\s*([\s\S]*?)```/i', '$1', $reply);
             $clean = trim($clean ?? $reply);
@@ -299,6 +329,10 @@ class ProcessAiResponse implements ShouldQueue
                 $this->applyNotifyIntent($conv, $action, $agent);
             } elseif ($type === 'assign_human') {
                 $this->applyAssignHuman($conv, $agent);
+            } elseif (in_array($type, ['calendar_create', 'calendar_reschedule', 'calendar_cancel', 'calendar_list'], true)) {
+                if ($calendarService !== null) {
+                    $this->applyCalendarAction($conv, $action, $calendarService);
+                }
             }
         }
 
@@ -423,5 +457,70 @@ class ProcessAiResponse implements ShouldQueue
             'tags_added'      => $newTags,
             'tags_total'      => $merged,
         ]);
+    }
+
+    private function applyCalendarAction(
+        WhatsappConversation $conv,
+        array $action,
+        GoogleCalendarService $calendarService,
+    ): void {
+        $type = $action['type'] ?? '';
+
+        try {
+            switch ($type) {
+                case 'calendar_create':
+                    $event = $calendarService->createEvent([
+                        'title'       => $action['title']       ?? 'Evento',
+                        'start'       => $action['start']       ?? now()->addHour()->format('Y-m-d\TH:i'),
+                        'end'         => $action['end']         ?? now()->addHours(2)->format('Y-m-d\TH:i'),
+                        'description' => $action['description'] ?? '',
+                        'location'    => $action['location']    ?? '',
+                    ]);
+                    Log::channel('whatsapp')->info('AI calendar: evento criado', [
+                        'conversation_id' => $conv->id,
+                        'event_id'        => $event['id'] ?? null,
+                        'title'           => $action['title'] ?? '',
+                    ]);
+                    break;
+
+                case 'calendar_reschedule':
+                    $eventId = $action['event_id'] ?? '';
+                    if ($eventId) {
+                        $calendarService->updateEvent($eventId, [
+                            'start' => $action['start'] ?? '',
+                            'end'   => $action['end']   ?? '',
+                        ]);
+                        Log::channel('whatsapp')->info('AI calendar: evento reagendado', [
+                            'conversation_id' => $conv->id,
+                            'event_id'        => $eventId,
+                        ]);
+                    }
+                    break;
+
+                case 'calendar_cancel':
+                    $eventId = $action['event_id'] ?? '';
+                    if ($eventId) {
+                        $calendarService->deleteEvent($eventId);
+                        Log::channel('whatsapp')->info('AI calendar: evento cancelado', [
+                            'conversation_id' => $conv->id,
+                            'event_id'        => $eventId,
+                        ]);
+                    }
+                    break;
+
+                case 'calendar_list':
+                    // calendar_list é apenas informativo — o agente já recebe os eventos no system prompt
+                    Log::channel('whatsapp')->debug('AI calendar: calendar_list solicitado (já no contexto)', [
+                        'conversation_id' => $conv->id,
+                    ]);
+                    break;
+            }
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->error('AI calendar: falha ao executar ação de agenda', [
+                'conversation_id' => $conv->id,
+                'action_type'     => $type,
+                'error'           => $e->getMessage(),
+            ]);
+        }
     }
 }

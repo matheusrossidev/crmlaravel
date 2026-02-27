@@ -21,6 +21,7 @@ class AiAgent extends Model
         'max_message_length', 'response_delay_seconds', 'response_wait_seconds',
         'channel', 'is_active', 'auto_assign',
         'enable_pipeline_tool', 'enable_tags_tool', 'enable_intent_notify',
+        'enable_calendar_tool', 'calendar_tool_instructions',
         'followup_enabled', 'followup_delay_minutes', 'followup_max_count',
         'followup_hour_start', 'followup_hour_end',
         'transfer_to_user_id',

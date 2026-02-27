@@ -663,6 +663,13 @@
             <i class="bi bi-chat-dots nav-icon"></i>
             <span class="nav-label">Chats</span>
         </a>
+
+        <a href="{{ route('calendar.index') }}"
+           class="nav-item {{ request()->routeIs('calendar.*') ? 'active' : '' }}"
+           title="Agenda">
+            <i class="bi bi-calendar3 nav-icon"></i>
+            <span class="nav-label">Agenda</span>
+        </a>
     </nav>
 
     {{-- Nav: Gerenciamento --}}

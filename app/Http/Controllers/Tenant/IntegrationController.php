@@ -92,6 +92,7 @@ class IntegrationController extends Controller
                 'email',
                 'profile',
                 'https://www.googleapis.com/auth/adwords',
+                'https://www.googleapis.com/auth/calendar',
             ])
             ->with(['access_type' => 'offline', 'prompt' => 'consent'])
             ->redirect();
@@ -118,7 +119,7 @@ class IntegrationController extends Controller
                 'token_expires_at'   => $user->expiresIn
                     ? now()->addSeconds((int) $user->expiresIn)
                     : now()->addHour(),
-                'scopes_json'        => ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/adwords'],
+                'scopes_json'        => ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/adwords', 'https://www.googleapis.com/auth/calendar'],
                 'status'             => 'active',
             ]
         );

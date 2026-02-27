@@ -27,6 +27,7 @@ class AiAgentService
         array   $stages             = [],
         array   $availTags          = [],
         bool    $enableIntentNotify = false,
+        array   $calendarEvents     = [],
     ): string {
         $objective = match ($agent->objective) {
             'sales'   => 'vendas',
@@ -162,6 +163,46 @@ class AiAgentService
 
         $lines[] = "\nResponda sempre em {$agent->language}. Seja conciso (máximo {$agent->max_message_length} caracteres por mensagem).";
 
+        // ── Ferramenta de Agenda (Google Calendar) ────────────────────────────
+        if ($agent->enable_calendar_tool) {
+            $lines[] = "\n--- FERRAMENTA DE AGENDA (Google Calendar) ---";
+
+            if ($agent->calendar_tool_instructions) {
+                $lines[] = "Instruções específicas:\n{$agent->calendar_tool_instructions}";
+            }
+
+            if (! empty($calendarEvents)) {
+                $lines[] = "\nCompromissos agendados (próximos 7 dias):";
+                foreach ($calendarEvents as $ev) {
+                    $start = $ev['start'] ?? '';
+                    $end   = $ev['end']   ?? '';
+                    $title = $ev['title'] ?? 'Sem título';
+                    $loc   = $ev['location'] ?? '';
+                    $line  = "- [{$start} → {$end}] {$title}";
+                    if ($loc) $line .= " | Local: {$loc}";
+                    if (! empty($ev['id'])) $line .= " (id: {$ev['id']})";
+                    $lines[] = $line;
+                }
+            } else {
+                $lines[] = "Nenhum compromisso agendado nos próximos 7 dias.";
+            }
+
+            $lines[] = <<<'CALINSTR'
+
+AÇÕES DE AGENDA disponíveis (use APENAS quando o usuário pedir explicitamente):
+- calendar_create: Criar um novo evento.
+  {"type":"calendar_create","title":"...","start":"YYYY-MM-DDTHH:MM","end":"YYYY-MM-DDTHH:MM","description":"...","location":"..."}
+- calendar_reschedule: Reagendar um evento existente (use o id do evento).
+  {"type":"calendar_reschedule","event_id":"...","start":"YYYY-MM-DDTHH:MM","end":"YYYY-MM-DDTHH:MM"}
+- calendar_cancel: Cancelar/excluir um evento existente.
+  {"type":"calendar_cancel","event_id":"..."}
+- calendar_list: Listar eventos de uma data específica.
+  {"type":"calendar_list","date":"YYYY-MM-DD"}
+REGRAS: Confirme sempre com o usuário antes de criar/alterar/cancelar um evento. Use os ids exatos listados acima.
+--- FIM DA FERRAMENTA DE AGENDA ---
+CALINSTR;
+        }
+
         // ── Detecção de intenção de compra/agendamento ────────────────────────
         if ($enableIntentNotify) {
             $lines[] = <<<'INTENTINSTR'
@@ -177,10 +218,16 @@ NÃO use notify_intent para interesse vago ou curiosidade — apenas intenção 
 INTENTINSTR;
         }
 
-        // ── Formato JSON obrigatório quando há pipeline, tags ou intent notify ─
-        if (! empty($stages) || ! empty($availTags) || $enableIntentNotify) {
+        // ── Formato JSON obrigatório quando há pipeline, tags, intent ou calendar ─
+        if (! empty($stages) || ! empty($availTags) || $enableIntentNotify || $agent->enable_calendar_tool) {
             $intentExample = $enableIntentNotify
                 ? "\n    {\"type\": \"notify_intent\", \"intent\": \"buy\", \"context\": \"cliente confirmou interesse em contratar\"},"
+                : '';
+            $calendarExample = $agent->enable_calendar_tool
+                ? "\n    {\"type\": \"calendar_create\", \"title\": \"Reunião\", \"start\": \"YYYY-MM-DDTHH:MM\", \"end\": \"YYYY-MM-DDTHH:MM\"},"
+                : '';
+            $calendarActions = $agent->enable_calendar_tool
+                ? "\n- calendar_create / calendar_reschedule / calendar_cancel / calendar_list: ações de agenda (ver instruções acima)."
                 : '';
             $lines[] = <<<JSONINSTR
 
@@ -189,7 +236,7 @@ FORMATO DE RESPOSTA OBRIGATÓRIO — responda APENAS com JSON válido, sem markd
   "reply": "sua resposta ao cliente aqui",
   "actions": [
     {"type": "set_stage", "stage_id": <id_numérico>},
-    {"type": "add_tags", "tags": ["tag1", "tag2"]},$intentExample
+    {"type": "add_tags", "tags": ["tag1", "tag2"]},$intentExample$calendarExample
     {"type": "assign_human"}
   ]
 }
@@ -198,7 +245,7 @@ NUNCA inclua texto fora do JSON.
 Ações disponíveis:
 - set_stage: mova o lead para uma etapa do funil (use o stage_id correto da lista acima).
 - add_tags: adicione tags à conversa/lead.
-- assign_human: use quando o cliente pedir explicitamente para falar com uma pessoa ou quando você não conseguir responder. Inclua essa action junto com a resposta de transferência.
+- assign_human: use quando o cliente pedir explicitamente para falar com uma pessoa ou quando você não conseguir responder. Inclua essa action junto com a resposta de transferência.$calendarActions
 JSONINSTR;
         }
 

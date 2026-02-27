@@ -478,6 +478,69 @@
         </div>
         @endif
 
+        {{-- ─── Google Calendar ──────────────────────────────────────────── --}}
+        @php
+            $calendarScope = 'https://www.googleapis.com/auth/calendar';
+            $hasCalendar   = $google && $google->status === 'active'
+                             && in_array($calendarScope, (array) ($google->scopes_json ?? []), true);
+            $needsReconnect = $google && $google->status === 'active' && !$hasCalendar;
+        @endphp
+        <div class="integration-card">
+            <div class="integration-header">
+                <div class="integration-logo google">G</div>
+                <div class="integration-title">
+                    <h3>Google Calendar</h3>
+                    <p>Agenda integrada — crie e gerencie eventos direto no CRM</p>
+                </div>
+                @if($hasCalendar)
+                    <span class="conn-badge conn-active">Conectado</span>
+                @elseif($needsReconnect)
+                    <span class="conn-badge conn-expired">Reconectar</span>
+                @else
+                    <span class="conn-badge conn-none">Desconectado</span>
+                @endif
+            </div>
+            <div class="integration-body">
+                <ul class="integration-features">
+                    <li>Visualize e gerencie seus eventos diretamente no CRM</li>
+                    <li>Crie, edite e exclua eventos com arrastar e soltar</li>
+                    <li>O Agente de IA pode marcar reuniões automaticamente</li>
+                    <li>Sincronização bidirecional com o Google Calendar</li>
+                </ul>
+
+                @if($hasCalendar && $google)
+                <div class="conn-detail">
+                    <strong>{{ $google->platform_user_name ?? 'Conta conectada' }}</strong><br>
+                    <span>Agenda habilitada para o Agente de IA</span>
+                </div>
+                @elseif($needsReconnect)
+                <div class="conn-detail" style="color:#b45309;">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Google conectado, mas sem permissão de agenda. Reconecte para habilitar.
+                </div>
+                @else
+                <div class="conn-detail" style="color:#9ca3af;">
+                    Conecte sua conta Google para acessar o Google Calendar.
+                </div>
+                @endif
+
+                <div class="integration-actions">
+                    @if($hasCalendar)
+                        <a href="{{ route('calendar.index') }}" class="btn-sync" style="text-decoration:none;">
+                            <i class="bi bi-calendar3"></i> Abrir Agenda
+                        </a>
+                        <button class="btn-disconnect" onclick="disconnectPlatform('google', this)">
+                            <i class="bi bi-x-circle"></i> Desconectar
+                        </button>
+                    @else
+                        <a href="{{ route('settings.integrations.google.redirect') }}" class="btn-connect">
+                            <i class="bi bi-google"></i> {{ $needsReconnect ? 'Reconectar Google' : 'Conectar Google' }}
+                        </a>
+                    @endif
+                </div>
+            </div>
+        </div>
+
         {{-- ─── WhatsApp ─────────────────────────────────────────────────── --}}
         <div class="integration-card">
             <div class="integration-header">

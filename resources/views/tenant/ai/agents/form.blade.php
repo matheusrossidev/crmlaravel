@@ -558,6 +558,35 @@
                 </div>
                 <input type="hidden" name="enable_intent_notify" id="intentNotifyInput" value="{{ ($agent->enable_intent_notify ?? false) ? '1' : '0' }}">
 
+                {{-- Toggle enable_calendar_tool --}}
+                <div class="toggle-wrap" style="margin-top:12px;" onclick="toggleCalendarTool()">
+                    <div class="toggle-switch {{ ($agent->enable_calendar_tool ?? false) ? 'on' : '' }}" id="calendarToolSwitch"></div>
+                    <div style="margin-left:10px;">
+                        <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="calendarToolLabel">
+                            {{ ($agent->enable_calendar_tool ?? false) ? 'Agenda Google Calendar Ativada' : 'Agenda Google Calendar Desativada' }}
+                        </div>
+                        <div style="font-size:11px;color:#9ca3af;">O agente pode criar, reagendar e cancelar eventos no Google Calendar conforme a conversa</div>
+                    </div>
+                </div>
+                <input type="hidden" name="enable_calendar_tool" id="calendarToolInput" value="{{ ($agent->enable_calendar_tool ?? false) ? '1' : '0' }}">
+
+                {{-- Instruções de agenda (visível só quando habilitado) --}}
+                <div id="calendarToolOptions" style="{{ ($agent->enable_calendar_tool ?? false) ? '' : 'display:none' }}">
+                    <div style="margin-top:12px;">
+                        <label class="form-label fw-semibold" style="font-size:13px;">Como o agente deve usar a agenda</label>
+                        <textarea name="calendar_tool_instructions"
+                                  class="form-control"
+                                  rows="4"
+                                  maxlength="2000"
+                                  placeholder="Ex: Quando o usuário pedir para marcar uma reunião, verifique os eventos já agendados e crie o evento. Reuniões têm 1 hora de duração por padrão. Sempre confirme o horário com o usuário antes de criar."
+                                  style="font-size:13px;resize:vertical;">{{ old('calendar_tool_instructions', $agent->calendar_tool_instructions ?? '') }}</textarea>
+                        <div class="form-text" style="font-size:11px;color:#9ca3af;margin-top:4px;">
+                            O agente receberá estas instruções no prompt. Certifique-se de ter conectado o Google Calendar em
+                            <a href="{{ route('settings.integrations') }}" target="_blank" style="color:#0085f3;">Configurações → Integrações</a>.
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Usuário de transferência --}}
                 <div style="margin-top:16px;">
                     <label class="form-label fw-semibold" style="font-size:13px;">Atribuir conversa a (ao transferir)</label>
@@ -890,6 +919,18 @@ function toggleIntentNotify() {
     input.value = isOn ? '0' : '1';
     sw.classList.toggle('on', !isOn);
     label.textContent = isOn ? 'Detecção de Intenção Desativada' : 'Detecção de Intenção Ativada';
+}
+
+function toggleCalendarTool() {
+    const sw      = document.getElementById('calendarToolSwitch');
+    const input   = document.getElementById('calendarToolInput');
+    const label   = document.getElementById('calendarToolLabel');
+    const options = document.getElementById('calendarToolOptions');
+    const isOn    = input.value === '1';
+    input.value = isOn ? '0' : '1';
+    sw.classList.toggle('on', !isOn);
+    label.textContent = isOn ? 'Agenda Google Calendar Desativada' : 'Agenda Google Calendar Ativada';
+    options.style.display = isOn ? 'none' : '';
 }
 
 function toggleFollowup() {
