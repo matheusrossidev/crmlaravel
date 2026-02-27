@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Master;
 
 use App\Http\Controllers\Controller;
+use App\Mail\VerifyEmail;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -21,13 +24,18 @@ class UserController extends Controller
             'role'     => 'required|in:admin,manager,viewer',
         ]);
 
+        $token = Str::random(64);
+
         $user = User::create([
-            'tenant_id' => $tenant->id,
-            'name'      => $data['name'],
-            'email'     => $data['email'],
-            'password'  => $data['password'],
-            'role'      => $data['role'],
+            'tenant_id'          => $tenant->id,
+            'name'               => $data['name'],
+            'email'              => $data['email'],
+            'password'           => $data['password'],
+            'role'               => $data['role'],
+            'verification_token' => $token,
         ]);
+
+        Mail::to($user->email)->send(new VerifyEmail($user, $tenant));
 
         return response()->json([
             'success' => true,
