@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\ResetPassword as ResetPasswordMail;
 use App\Mail\VerifyEmail;
 use App\Mail\WelcomeUser;
+use App\Models\PlanDefinition;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -82,11 +83,15 @@ class AuthController extends Controller
         $token = Str::random(64);
 
         // Cria o tenant
+        $freePlan    = PlanDefinition::where('name', 'free')->first();
+        $trialDays   = $freePlan?->trial_days ?? 14;
+
         $tenant = Tenant::create([
-            'name'   => $data['tenant_name'],
-            'slug'   => Str::slug($data['tenant_name']) . '-' . Str::random(4),
-            'plan'   => 'free',
-            'status' => 'trial',
+            'name'          => $data['tenant_name'],
+            'slug'          => Str::slug($data['tenant_name']) . '-' . Str::random(4),
+            'plan'          => 'free',
+            'status'        => 'trial',
+            'trial_ends_at' => now()->addDays($trialDays),
         ]);
 
         // Cria o usuário admin — email não verificado ainda

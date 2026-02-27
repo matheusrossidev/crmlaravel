@@ -2,9 +2,14 @@
 
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\PipelineController;
+use App\Http\Controllers\AsaasWebhookController;
 use App\Http\Controllers\InstagramWebhookController;
 use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
+
+// ── Webhook Asaas (público, sem autenticação) ─────────────────────────────
+Route::post('/webhook/asaas', [AsaasWebhookController::class, 'handle'])
+    ->name('asaas.webhook');
 
 // ── Webhook WAHA (público, sem autenticação) ──────────────────────────────
 Route::post('/webhook/waha', [WhatsappWebhookController::class, 'handle'])

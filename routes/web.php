@@ -31,6 +31,7 @@ use App\Http\Controllers\Tenant\WhatsappTagController;
 use App\Http\Controllers\Tenant\AiAnalystController;
 use App\Http\Controllers\Tenant\QuickMessageController;
 use App\Http\Controllers\Tenant\AutomationController;
+use App\Http\Controllers\Tenant\BillingController;
 use App\Http\Controllers\Tenant\InstagramAutomationController;
 use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -75,6 +76,11 @@ Route::view('/termos-de-uso', 'public.terms')->name('terms');
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'tenant'])->group(function () {
+    // Cobrança / Checkout
+    Route::get('cobranca/checkout', [BillingController::class, 'showCheckout'])->name('billing.checkout');
+    Route::post('cobranca/assinar',  [BillingController::class, 'subscribe'])->name('billing.subscribe');
+    Route::post('cobranca/cancelar', [BillingController::class, 'cancel'])->name('billing.cancel');
+
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/inicio', [DashboardController::class, 'index'])->name('inicio');
     Route::post('/dashboard/config', [DashboardController::class, 'saveConfig'])->name('dashboard.config');
@@ -247,6 +253,9 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::post('tags',             [WhatsappTagController::class, 'store'])->name('tags.store');
         Route::put('tags/{tag}',        [WhatsappTagController::class, 'update'])->name('tags.update');
         Route::delete('tags/{tag}',     [WhatsappTagController::class, 'destroy'])->name('tags.destroy');
+
+        // Cobrança
+        Route::get('cobranca', [BillingController::class, 'index'])->name('billing');
 
         // Automações
         Route::get('automacoes',                        [AutomationController::class, 'index'])->name('automations');

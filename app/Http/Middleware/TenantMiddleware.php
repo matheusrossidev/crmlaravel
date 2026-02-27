@@ -31,15 +31,28 @@ class TenantMiddleware
         if ($tenant) {
             // Conta suspensa ou inativa → página de bloqueio
             if (in_array($tenant->status, ['suspended', 'inactive'], true)) {
-                // Permitir logout
-                if ($request->routeIs('logout')) {
+                // Permitir logout e rotas de billing para regularização
+                if ($request->routeIs('logout', 'billing.checkout', 'billing.subscribe')) {
                     return $next($request);
                 }
                 return redirect()->route('account.suspended');
             }
 
-            // Trial expirado → modal bloqueante exibido no layout (sem redirect)
-            // O modal em app.blade.php detecta a situação e bloqueia a interface
+            if (!$tenant->isExemptFromBilling()) {
+                // Trial expirado sem assinatura ativa → redireciona para checkout
+                if ($tenant->isTrialExpired() && !$tenant->hasActiveSubscription()) {
+                    if (!$request->routeIs('billing.checkout', 'billing.subscribe', 'logout', 'account.suspended')) {
+                        return redirect()->route('billing.checkout');
+                    }
+                }
+
+                // Assinatura overdue/inactive → redireciona para página de cobrança
+                if (in_array($tenant->subscription_status, ['overdue', 'inactive'], true)) {
+                    if (!$request->routeIs('billing.checkout', 'billing.subscribe', 'settings.billing', 'billing.cancel', 'logout')) {
+                        return redirect()->route('settings.billing');
+                    }
+                }
+            }
         }
 
         return $next($request);

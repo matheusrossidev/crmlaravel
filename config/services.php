@@ -60,4 +60,10 @@ return [
         'webhook_verify_token' => env('INSTAGRAM_WEBHOOK_VERIFY_TOKEN', 'plataforma360_instagram_verify_2026'),
     ],
 
+    'asaas' => [
+        'url'           => env('ASAAS_API_URL', 'https://sandbox.asaas.com/api/v3'),
+        'key'           => env('ASAAS_API_KEY'),
+        'webhook_token' => env('ASAAS_WEBHOOK_TOKEN'),
+    ],
+
 ];

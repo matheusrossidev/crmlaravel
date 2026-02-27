@@ -752,6 +752,11 @@
                     <i class="bi bi-lightning-charge nav-icon" style="font-size:14px;"></i>
                     <span class="nav-label">Automações</span>
                 </a>
+                <a href="{{ route('settings.billing') }}"
+                   class="nav-subitem {{ request()->routeIs('settings.billing', 'billing.*') ? 'active' : '' }}">
+                    <i class="bi bi-credit-card nav-icon" style="font-size:14px;"></i>
+                    <span class="nav-label">Cobrança</span>
+                </a>
                 <a href="{{ route('settings.api-keys') }}"
                    class="nav-subitem {{ request()->routeIs('settings.api-keys*') ? 'active' : '' }}">
                     <i class="bi bi-key nav-icon" style="font-size:14px;"></i>
