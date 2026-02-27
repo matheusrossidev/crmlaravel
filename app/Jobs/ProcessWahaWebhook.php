@@ -378,8 +378,21 @@ class ProcessWahaWebhook implements ShouldQueue
                     }
                 } catch (\Throwable) {}
             }
-            if ($isGroup && empty($conversation->contact_name) && $contactName) {
-                $convUpdates['contact_name'] = $contactName;
+            if ($isGroup && empty($conversation->contact_name)) {
+                $resolvedGroupName = $contactName; // nome extraído do payload (pode ser null)
+
+                if (! $resolvedGroupName) {
+                    // Payload não trouxe nome → tentar buscar via WAHA API
+                    try {
+                        $wahaRetry         = new \App\Services\WahaService($instance->session_name);
+                        $retryInfo         = $wahaRetry->getGroupInfo($from);
+                        $resolvedGroupName = $retryInfo['subject'] ?? $retryInfo['name'] ?? null;
+                    } catch (\Throwable) {}
+                }
+
+                if ($resolvedGroupName) {
+                    $convUpdates['contact_name'] = $resolvedGroupName;
+                }
             }
             if ($convUpdates) {
                 WhatsappConversation::withoutGlobalScope('tenant')
