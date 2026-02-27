@@ -87,13 +87,23 @@ class ProcessWahaWebhook implements ShouldQueue
             $from = $recipientFrom ?? $msg['to'] ?? $msg['chatId'] ?? $from;
         }
 
-        // Ignorar: Status/Stories (@broadcast), Canais (@newsletter) e mensagens de sistema
+        // Ignorar: Status/Stories (@broadcast), Canais (@newsletter) e mensagens de sistema.
+        // Verifica tanto $from quanto $chatId: quando alguém visualiza/reage a um Status,
+        // WAHA envia from=JID_real_do_contato mas chatId=status@broadcast — sem checar chatId
+        // o guard não filtraria e criaria uma conversa errada.
+        $chatId = $msg['chatId'] ?? '';
         if (
-            str_contains($from, 'broadcast')   ||
-            str_contains($from, 'status@')     ||
-            str_contains($from, '@newsletter')
+            str_contains($from,   'broadcast')   ||
+            str_contains($from,   'status@')      ||
+            str_contains($from,   '@newsletter')  ||
+            str_contains($chatId, 'broadcast')    ||
+            str_contains($chatId, '@newsletter')
         ) {
-            Log::channel('whatsapp')->debug('Ignorado: status/canal/broadcast', ['from' => $from, 'event' => $event]);
+            Log::channel('whatsapp')->debug('Ignorado: status/canal/broadcast', [
+                'from'   => $from,
+                'chatId' => $chatId,
+                'event'  => $event,
+            ]);
             return;
         }
 
@@ -279,10 +289,22 @@ class ProcessWahaWebhook implements ShouldQueue
                 ?? $msg['notifyName']
                 ?? null;
         } else {
-            $contactName = $msg['_data']['Info']['PushName']
-                ?? $msg['_data']['notifyName']
-                ?? $msg['notifyName']
-                ?? null;
+            if ($isFromMe) {
+                // pushName em mensagens fromMe = nome da conta conectada (não do cliente).
+                // Buscar o nome real via WAHA /api/contacts, que retorna o nome da agenda.
+                $contactName = null;
+                try {
+                    $wahaForContact = new \App\Services\WahaService($instance->session_name);
+                    $contactInfo    = $wahaForContact->getContactInfo($from);
+                    $contactName    = $contactInfo['name'] ?? $contactInfo['pushName'] ?? null;
+                } catch (\Throwable) {}
+            } else {
+                // Mensagem recebida do cliente → pushName é o nome do próprio cliente.
+                $contactName = $msg['_data']['Info']['PushName']
+                    ?? $msg['_data']['notifyName']
+                    ?? $msg['notifyName']
+                    ?? null;
+            }
             $messageSenderName = null;
         }
 
