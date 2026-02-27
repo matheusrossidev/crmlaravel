@@ -76,6 +76,7 @@
         align-items: baseline;
         gap: 7px;
         flex-wrap: wrap;
+        flex-direction: column;
     }
     .stat-value {
         font-size: 22px;
