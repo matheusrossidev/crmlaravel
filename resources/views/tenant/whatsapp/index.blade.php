@@ -549,9 +549,13 @@ $pageIcon = 'chat-dots';
     }
 
     .wa-msg.outbound .wa-bubble {
-        background: #dbeafe;
+        background: #3b82f6;
         border-radius: 12px 2px 12px 12px;
+        color: #fff;
     }
+
+    .wa-msg.outbound .wa-msg-meta { color: rgba(255,255,255,.65); }
+    .wa-msg.outbound .wa-ack.read i { color: rgba(255,255,255,.9); }
 
     .wa-msg.note .wa-bubble {
         background: #fef9c3;
@@ -640,14 +644,85 @@ $pageIcon = 'chat-dots';
         display: block;
     }
 
-    /* Áudio */
-    .wa-audio {
-        max-width: 240px;
+    /* ── Custom Audio Player ── */
+    .wa-audio-player {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        background: #fff;
+        border-radius: 10px;
+        padding: 10px 12px;
+        min-width: 220px;
+        max-width: 280px;
+        box-shadow: 0 1px 3px rgba(0,0,0,.08);
     }
 
-    .wa-audio audio {
-        width: 100%;
-        margin-top: 4px;
+    .ap-top-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .ap-play-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #3b82f6;
+        border: none;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        font-size: 14px;
+        transition: background .15s;
+    }
+    .ap-play-btn:hover { background: #2563eb; }
+    .ap-play-btn i { pointer-events: none; }
+
+    .ap-waveform {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        height: 32px;
+        cursor: pointer;
+    }
+
+    .ap-bar {
+        flex: 1;
+        border-radius: 2px;
+        background: #d1d5db;
+        transition: background .1s;
+        min-height: 4px;
+    }
+
+    .ap-bar.played { background: #3b82f6; }
+
+    @keyframes ap-pulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.5; }
+    }
+    .ap-bar.playing { animation: ap-pulse .8s ease-in-out infinite; }
+
+    .ap-bottom-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding-left: 44px;
+    }
+
+    .ap-timer {
+        font-size: 11px;
+        font-weight: 600;
+        color: #6b7280;
+        min-width: 28px;
+    }
+
+    .ap-label {
+        font-size: 10.5px;
+        color: #9ca3af;
     }
 
     /* ── Footer de composição ── */
@@ -1924,7 +1999,21 @@ $pageIcon = 'chat-dots';
             bubble.innerHTML = `<img src="${msg.media_url}" class="wa-img-thumb" onclick="window.open('${msg.media_url}','_blank')" alt="Imagem">`;
             if (msg.body) bubble.innerHTML += `<div style="margin-top:6px;font-size:13px;">${escHtml(msg.body)}</div>`;
         } else if (msg.type === 'audio' && msg.media_url) {
-            bubble.innerHTML = `<div class="wa-audio"><i class="bi bi-mic-fill" style="color:#3b82f6;margin-right:4px;"></i>Áudio<audio controls src="${msg.media_url}"></audio></div>`;
+            const apBars = Array.from({length: 28}, () => {
+                const h = 4 + Math.floor(Math.random() * 22);
+                return `<div class="ap-bar" style="height:${h}px"></div>`;
+            }).join('');
+            bubble.innerHTML = `<div class="wa-audio-player" data-src="${msg.media_url}">
+                <div class="ap-top-row">
+                    <button class="ap-play-btn" onclick="apToggle(this)"><i class="bi bi-play-fill"></i></button>
+                    <div class="ap-waveform" onclick="apSeek(this,event)">${apBars}</div>
+                </div>
+                <div class="ap-bottom-row">
+                    <span class="ap-timer">0:00</span>
+                    <span class="ap-label">Áudio</span>
+                </div>
+                <audio preload="metadata" src="${msg.media_url}" style="display:none;"></audio>
+            </div>`;
         } else if (msg.type === 'document' && msg.media_url) {
             const fname = escHtml(msg.media_filename || 'Arquivo');
             bubble.innerHTML = `<a href="${msg.media_url}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none;"><i class="bi bi-file-earmark-text" style="font-size:20px;color:#3b82f6;flex-shrink:0;"></i><span style="word-break:break-all;">${fname}</span><i class="bi bi-download" style="margin-left:4px;font-size:13px;flex-shrink:0;"></i></a>`;
@@ -2128,6 +2217,59 @@ $pageIcon = 'chat-dots';
         } catch (e) {
             toastr.error('Permissão de microfone negada.');
         }
+    }
+
+    /* ── Custom Audio Player ── */
+    function apToggle(btn) {
+        const player = btn.closest('.wa-audio-player');
+        const audio  = player.querySelector('audio');
+        const icon   = btn.querySelector('i');
+
+        if (audio.paused) {
+            // Pausa todos os outros players
+            document.querySelectorAll('.wa-audio-player audio').forEach(a => {
+                if (a !== audio) {
+                    a.pause();
+                    const ob = a.closest('.wa-audio-player').querySelector('.ap-play-btn i');
+                    ob.className = 'bi bi-play-fill';
+                    a.closest('.wa-audio-player').querySelectorAll('.ap-bar').forEach(b => b.classList.remove('playing'));
+                }
+            });
+            audio.play();
+            icon.className = 'bi bi-pause-fill';
+            player.querySelectorAll('.ap-bar').forEach(b => b.classList.add('playing'));
+            audio.ontimeupdate = () => apUpdateProgress(player, audio);
+            audio.onended = () => {
+                icon.className = 'bi bi-play-fill';
+                player.querySelectorAll('.ap-bar').forEach(b => b.classList.remove('playing', 'played'));
+                player.querySelector('.ap-timer').textContent = '0:00';
+            };
+        } else {
+            audio.pause();
+            icon.className = 'bi bi-play-fill';
+            player.querySelectorAll('.ap-bar').forEach(b => b.classList.remove('playing'));
+        }
+    }
+
+    function apSeek(waveformEl, e) {
+        const player = waveformEl.closest('.wa-audio-player');
+        const audio  = player.querySelector('audio');
+        if (!audio.duration) return;
+        const rect = waveformEl.getBoundingClientRect();
+        const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        audio.currentTime = pct * audio.duration;
+        apUpdateProgress(player, audio);
+    }
+
+    function apUpdateProgress(player, audio) {
+        if (!audio.duration) return;
+        const pct    = audio.currentTime / audio.duration;
+        const bars   = player.querySelectorAll('.ap-bar');
+        const cutoff = Math.floor(pct * bars.length);
+        bars.forEach((b, i) => b.classList.toggle('played', i < cutoff));
+        const m = Math.floor(audio.currentTime / 60);
+        const s = Math.floor(audio.currentTime % 60);
+        player.querySelector('.ap-timer').textContent = `${m}:${s.toString().padStart(2, '0')}`;
     }
 
     function cancelRecording() {

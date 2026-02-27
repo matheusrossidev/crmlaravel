@@ -50,7 +50,7 @@
         .auth-form-wrap {
             width: 100%;
             max-width: 360px;
-            text-align: center;
+            text-align: left;
         }
 
         .icon-wrap {
@@ -114,7 +114,6 @@
 
         /* Footer link */
         .auth-footer-link {
-            text-align: center;
             font-size: 13.5px;
             color: #6b7280;
         }
@@ -225,10 +224,6 @@
         </div>
 
         <div class="auth-form-wrap">
-
-            <div class="icon-wrap">
-                <i class="bi bi-envelope-check"></i>
-            </div>
 
             <h2 class="auth-form-title">Verifique seu email</h2>
             <p class="auth-form-sub">
