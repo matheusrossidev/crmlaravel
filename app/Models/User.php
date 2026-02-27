@@ -18,6 +18,7 @@ class User extends Authenticatable
     protected $fillable = [
         'tenant_id', 'name', 'email', 'password', 'role',
         'is_super_admin', 'avatar', 'last_login_at', 'dashboard_config',
+        'email_verified_at', 'verification_token',
     ];
 
     protected $hidden = [

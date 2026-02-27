@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seu período de teste está acabando — Syncro</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #f4f4f5;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px;
+      color: #1f2937;
+      padding: 40px 16px;
+    }
+    .wrapper { max-width: 600px; margin: 0 auto; }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+    }
+    .header {
+      background: linear-gradient(135deg, #0085f3 0%, #006fd6 100%);
+      padding: 40px 40px 36px;
+      text-align: center;
+    }
+    .header .logo-text { font-size: 28px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+    .header .logo-dot { color: #93c5fd; }
+    /* Countdown */
+    .countdown {
+      margin: 24px auto 0;
+      display: inline-block;
+      background: rgba(255,255,255,.15);
+      border-radius: 12px;
+      padding: 16px 32px;
+    }
+    .countdown .days { font-size: 52px; font-weight: 800; color: #fff; line-height: 1; }
+    .countdown .label { font-size: 14px; color: #bfdbfe; margin-top: 4px; }
+    /* Body */
+    .body { padding: 40px; }
+    .greeting { font-size: 22px; font-weight: 700; color: #111827; margin-bottom: 12px; }
+    .text { color: #6b7280; line-height: 1.6; margin-bottom: 20px; }
+    /* Warning box */
+    .warning {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-left: 4px solid #f97316;
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 14px;
+      color: #7c2d12;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+    /* Features list */
+    .features { margin: 0 0 28px; padding: 0; list-style: none; }
+    .features li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: #374151;
+      padding: 8px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .features li:last-child { border-bottom: none; }
+    .features li .check { color: #0085f3; font-size: 16px; }
+    /* CTA */
+    .btn-wrap { text-align: center; margin: 28px 0 12px; }
+    .btn {
+      display: inline-block;
+      background: #0085f3;
+      color: #fff !important;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 15px;
+      padding: 14px 40px;
+      border-radius: 8px;
+    }
+    .btn-secondary {
+      display: block;
+      text-align: center;
+      font-size: 13px;
+      color: #0085f3;
+      text-decoration: none;
+      margin-top: 12px;
+    }
+    hr { border: none; border-top: 1px solid #f3f4f6; margin: 32px 0; }
+    .footer { padding: 0 40px 36px; }
+    .footer-text { font-size: 12px; color: #9ca3af; line-height: 1.7; text-align: center; }
+    .footer-text a { color: #9ca3af; text-decoration: underline; }
+    .footer-links { text-align: center; margin-top: 12px; }
+    .footer-links a { font-size: 12px; color: #9ca3af; text-decoration: none; margin: 0 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+
+      <!-- Header -->
+      <div class="header">
+        <img src="../public/images/logo-white.png" alt="Syncro" style="height:44px; width:auto; display:block; margin:0 auto 24px;" />
+        <div class="countdown">
+          <div class="days">3</div>
+          <div class="label">dias restantes no trial</div>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="body">
+        <p class="greeting">Seu período de teste está acabando</p>
+        <p class="text">
+          Olá, <strong>João Silva</strong>! Seu período de teste gratuito na Syncro
+          encerra em <strong>3 dias</strong>, no dia <strong>02/03/2025</strong>.
+          Não perca o acesso a tudo que você já configurou.
+        </p>
+
+        <div class="warning">
+          ⚠️ Após o encerramento do trial, sua conta será suspensa e você perderá acesso
+          ao painel até a ativação de um plano.
+          <strong>Seus dados ficam salvos por 30 dias.</strong>
+        </div>
+
+        <p class="text" style="font-weight:600; color:#1f2937;">O que você perde ao não assinar:</p>
+        <ul class="features">
+          <li><span class="check">✦</span> Acesso ao CRM Kanban e seus leads cadastrados</li>
+          <li><span class="check">✦</span> Integração com WhatsApp e histórico de mensagens</li>
+          <li><span class="check">✦</span> Relatórios e dashboards de performance</li>
+          <li><span class="check">✦</span> Automações e disparos configurados</li>
+          <li><span class="check">✦</span> Múltiplos usuários e times</li>
+        </ul>
+
+        <div class="btn-wrap">
+          <a href="#" class="btn">Assinar agora e manter acesso</a>
+        </div>
+        <a href="#" class="btn-secondary">Ver planos e preços</a>
+
+        <hr />
+
+        <p class="text" style="font-size:14px; margin-bottom:0;">
+          Ficou com alguma dúvida sobre os planos? Fale com a gente em
+          <a href="mailto:suporte@syncro.chat" style="color:#0085f3;">suporte@syncro.chat</a> —
+          teremos prazer em ajudar.
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p class="footer-text">
+          Syncro Plataforma · Rua Exemplo, 123, São Paulo - SP<br/>
+          Você está recebendo este email porque seu período de teste está encerrando em <a href="#">app.syncro.chat</a>
+        </p>
+        <div class="footer-links">
+          <a href="#">Central de ajuda</a>
+          <a href="#">Descadastrar</a>
+          <a href="#">Política de privacidade</a>
+        </div>
+      </div>
+
+    </div>
+    <p style="text-align:center; font-size:12px; color:#9ca3af; margin-top:20px;">
+      © 2025 Syncro. Todos os direitos reservados.
+    </p>
+  </div>
+</body>
+</html>

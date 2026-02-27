@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirme seu email — Syncro</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #f4f4f5;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px;
+      color: #1f2937;
+      padding: 40px 16px;
+    }
+    .wrapper { max-width: 600px; margin: 0 auto; }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+    }
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #0085f3 0%, #006fd6 100%);
+      padding: 36px 40px 32px;
+      text-align: center;
+    }
+    .header .logo-text {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+    .header .logo-dot { color: #93c5fd; }
+    .header .tagline {
+      color: #93c5fd;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    /* Icon */
+    .icon-wrap {
+      margin: 32px auto 0;
+      width: 64px; height: 64px;
+      background: rgba(255,255,255,.15);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-wrap svg { width: 32px; height: 32px; fill: #fff; }
+    /* Body */
+    .body { padding: 40px; }
+    .greeting { font-size: 22px; font-weight: 700; color: #111827; margin-bottom: 12px; }
+    .text { color: #6b7280; line-height: 1.6; margin-bottom: 20px; }
+    /* CTA */
+    .btn-wrap { text-align: center; margin: 32px 0; }
+    .btn {
+      display: inline-block;
+      background: #0085f3;
+      color: #fff !important;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 15px;
+      padding: 14px 40px;
+      border-radius: 8px;
+      letter-spacing: 0.2px;
+    }
+    .btn:hover { background: #006fd6; }
+    /* Link fallback */
+    .link-fallback {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+      word-break: break-all;
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 24px;
+    }
+    .link-fallback a { color: #0085f3; text-decoration: none; }
+    .expiry {
+      text-align: center;
+      font-size: 13px;
+      color: #9ca3af;
+      margin-top: 20px;
+    }
+    .expiry span { color: #374151; font-weight: 600; }
+    /* Divider */
+    hr { border: none; border-top: 1px solid #f3f4f6; margin: 32px 0; }
+    /* Footer */
+    .footer { padding: 0 40px 36px; }
+    .footer-text {
+      font-size: 12px;
+      color: #9ca3af;
+      line-height: 1.7;
+      text-align: center;
+    }
+    .footer-text a { color: #9ca3af; text-decoration: underline; }
+    .footer-links { text-align: center; margin-top: 12px; }
+    .footer-links a {
+      font-size: 12px;
+      color: #9ca3af;
+      text-decoration: none;
+      margin: 0 8px;
+    }
+    .footer-links a:hover { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+
+      <!-- Header -->
+      <div class="header">
+        <img src="../public/images/logo-white.png" alt="Syncro" style="height:44px; width:auto;" />
+        <div class="icon-wrap">
+          <!-- Envelope check icon -->
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 4H4C2.9 4 2 4.9 2 6v12c0 1.1.9 2 2 2h10.09c-.06-.33-.09-.66-.09-1 0-3.31 2.69-6 6-6 .34 0 .67.03 1 .09V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2zm4.5 9.5L23 19l-2.75 2.75L18.5 20l-1.5 1.5 2.75 2.75L23 22l3.5-3.5-1.5-1.5z" opacity=".3"/>
+            <path d="M20 4H4C2.9 4 2 4.9 2 6v12c0 1.1.9 2 2 2h10.09c-.06-.33-.09-.66-.09-1 0-3.31 2.69-6 6-6 .34 0 .67.03 1 .09V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2zm4.5 9.5L23 19l-2.75 2.75L18.5 20l-1.5 1.5 2.75 2.75L23 22l3.5-3.5-1.5-1.5z"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="body">
+        <p class="greeting">Confirme seu endereço de email</p>
+        <p class="text">
+          Olá, <strong>João Silva</strong>! Bem-vindo à Syncro.
+          Para ativar sua conta e começar a usar a plataforma, confirme seu endereço de email clicando no botão abaixo.
+        </p>
+
+        <div class="btn-wrap">
+          <a href="#" class="btn">Confirmar meu email</a>
+        </div>
+
+        <p class="expiry">Este link expira em <span>48 horas</span>.</p>
+
+        <div class="link-fallback">
+          <strong>Não conseguiu clicar no botão?</strong> Copie e cole o link abaixo no seu navegador:<br/><br/>
+          <a href="#">https://app.syncro.chat/verify-email/abc123def456xyz789...</a>
+        </div>
+
+        <hr />
+
+        <p class="text" style="font-size:14px;">
+          Se você não criou uma conta na Syncro, pode ignorar este email com segurança.
+          Nenhuma ação será tomada.
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p class="footer-text">
+          Syncro Plataforma · Rua Exemplo, 123, São Paulo - SP<br/>
+          Você está recebendo este email porque se cadastrou em <a href="#">app.syncro.chat</a>
+        </p>
+        <div class="footer-links">
+          <a href="#">Central de ajuda</a>
+          <a href="#">Descadastrar</a>
+          <a href="#">Política de privacidade</a>
+        </div>
+      </div>
+
+    </div>
+    <!-- Pre-footer note -->
+    <p style="text-align:center; font-size:12px; color:#9ca3af; margin-top:20px;">
+      © 2025 Syncro. Todos os direitos reservados.
+    </p>
+  </div>
+</body>
+</html>

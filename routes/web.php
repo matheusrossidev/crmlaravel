@@ -46,7 +46,13 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->name('register.post');
     Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
     Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
+    Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 });
+
+// Verificação de email e cadastro pendente (sem middleware guest para evitar loop)
+Route::get('/verify-email/{token}', [AuthController::class, 'verifyEmail'])->name('verify.email');
+Route::get('/cadastro-pendente', fn() => view('auth.pending'))->name('register.pending');
 
 Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth')

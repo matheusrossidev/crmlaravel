@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bem-vindo à Syncro!</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #f4f4f5;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px;
+      color: #1f2937;
+      padding: 40px 16px;
+    }
+    .wrapper { max-width: 600px; margin: 0 auto; }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+    }
+    /* Hero header */
+    .header {
+      background: linear-gradient(135deg, #0085f3 0%, #006fd6 100%);
+      padding: 48px 40px 40px;
+      text-align: center;
+    }
+    .header .logo-text { font-size: 28px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+    .header .logo-dot { color: #93c5fd; }
+    .header .hero-emoji { font-size: 52px; display: block; margin: 20px 0 16px; }
+    .header .hero-title { font-size: 26px; font-weight: 800; color: #fff; line-height: 1.3; }
+    .header .hero-sub { color: #bfdbfe; font-size: 15px; margin-top: 8px; }
+    /* Body */
+    .body { padding: 40px; }
+    .greeting { font-size: 20px; font-weight: 700; color: #111827; margin-bottom: 12px; }
+    .text { color: #6b7280; line-height: 1.6; margin-bottom: 20px; }
+    /* Steps */
+    .steps { margin: 28px 0; }
+    .step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 16px;
+      border-radius: 10px;
+      background: #eff6ff;
+      border: 1px solid #dbeafe;
+      margin-bottom: 12px;
+    }
+    .step-num {
+      background: #0085f3;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-content h4 { font-size: 15px; font-weight: 600; color: #1f2937; margin-bottom: 2px; }
+    .step-content p { font-size: 13px; color: #6b7280; line-height: 1.5; }
+    /* CTA */
+    .btn-wrap { text-align: center; margin: 32px 0 16px; }
+    .btn {
+      display: inline-block;
+      background: #0085f3;
+      color: #fff !important;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 15px;
+      padding: 14px 40px;
+      border-radius: 8px;
+    }
+    .trial-badge {
+      text-align: center;
+      font-size: 13px;
+      color: #059669;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+    hr { border: none; border-top: 1px solid #f3f4f6; margin: 32px 0; }
+    /* Support */
+    .support {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+    }
+    .support p { font-size: 14px; color: #6b7280; }
+    .support a { color: #0085f3; font-weight: 600; text-decoration: none; }
+    /* Footer */
+    .footer { padding: 0 40px 36px; }
+    .footer-text { font-size: 12px; color: #9ca3af; line-height: 1.7; text-align: center; }
+    .footer-text a { color: #9ca3af; text-decoration: underline; }
+    .footer-links { text-align: center; margin-top: 12px; }
+    .footer-links a { font-size: 12px; color: #9ca3af; text-decoration: none; margin: 0 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+
+      <!-- Header -->
+      <div class="header">
+        <img src="../public/images/logo-white.png" alt="Syncro" style="height:44px; width:auto;" />
+        <span class="hero-emoji">🎉</span>
+        <div class="hero-title">Sua conta está ativa!</div>
+        <div class="hero-sub">Email confirmado com sucesso</div>
+      </div>
+
+      <!-- Body -->
+      <div class="body">
+        <p class="greeting">Bem-vindo, João Silva!</p>
+        <p class="text">
+          Sua conta na empresa <strong>Agência Demo</strong> foi ativada com sucesso.
+          Você tem acesso a todos os recursos da plataforma durante seu período de teste.
+        </p>
+
+        <!-- Steps -->
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <h4>Configure seu pipeline de vendas</h4>
+              <p>Crie etapas personalizadas para organizar seus leads do jeito que faz sentido para o seu negócio.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <h4>Importe seus contatos</h4>
+              <p>Suba uma planilha Excel com seus leads existentes ou adicione manualmente pelo CRM.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <h4>Conecte seu WhatsApp</h4>
+              <p>Integre o WhatsApp Business para receber e responder mensagens direto no painel.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-wrap">
+          <a href="#" class="btn">Acessar minha conta</a>
+        </div>
+        <p class="trial-badge">✅ 14 dias de teste grátis — sem cartão de crédito</p>
+
+        <hr />
+
+        <div class="support">
+          <p>Ficou com alguma dúvida? Estamos aqui para ajudar.</p>
+          <p style="margin-top:8px;">
+            Fale conosco em <a href="mailto:suporte@syncro.chat">suporte@syncro.chat</a>
+            ou acesse a <a href="#">Central de Ajuda</a>
+          </p>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p class="footer-text">
+          Syncro Plataforma · Rua Exemplo, 123, São Paulo - SP<br/>
+          Você está recebendo este email porque confirmou seu cadastro em <a href="#">app.syncro.chat</a>
+        </p>
+        <div class="footer-links">
+          <a href="#">Central de ajuda</a>
+          <a href="#">Descadastrar</a>
+          <a href="#">Política de privacidade</a>
+        </div>
+      </div>
+
+    </div>
+    <p style="text-align:center; font-size:12px; color:#9ca3af; margin-top:20px;">
+      © 2025 Syncro. Todos os direitos reservados.
+    </p>
+  </div>
+</body>
+</html>
