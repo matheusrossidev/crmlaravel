@@ -366,7 +366,7 @@ class ProcessInstagramWebhook implements ShouldQueue
             return null;
         }
 
-        if (! $pipeline->auto_create_lead || ! $pipeline->auto_create_from_instagram) {
+        if ($pipeline->auto_create_lead === false || $pipeline->auto_create_from_instagram === false) {
             return null; // Auto-criação via Instagram desativada para este pipeline
         }
 
