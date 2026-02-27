@@ -189,7 +189,7 @@
                         <button class="btn-icon" title="Definir como padrão" onclick="setDefaultPipeline({{ $pipeline->id }}, '{{ addslashes($pipeline->name) }}', '{{ $pipeline->color }}')">
                             <i class="bi bi-star{{ $pipeline->is_default ? '-fill' : '' }}" style="{{ $pipeline->is_default ? 'color:#f59e0b;' : '' }}"></i>
                         </button>
-                        <button class="btn-icon" title="Editar" onclick="openEditPipeline({{ $pipeline->id }}, '{{ addslashes($pipeline->name) }}', '{{ $pipeline->color }}')">
+                        <button class="btn-icon" title="Editar" onclick="openEditPipeline({{ $pipeline->id }}, '{{ addslashes($pipeline->name) }}', '{{ $pipeline->color }}', {{ $pipeline->auto_create_lead ? 'true' : 'false' }}, {{ $pipeline->auto_create_from_whatsapp ? 'true' : 'false' }}, {{ $pipeline->auto_create_from_instagram ? 'true' : 'false' }})">
                             <i class="bi bi-pencil"></i>
                         </button>
                         <button class="btn-icon danger" title="Excluir" onclick="deletePipeline({{ $pipeline->id }}, this)">
@@ -298,6 +298,32 @@
             <div class="color-row">
                 <input type="color" id="pipelineColor" class="color-input" value="#3B82F6">
                 <input type="text" id="pipelineColorText" class="form-control" value="#3B82F6" placeholder="#3B82F6" style="flex:1;">
+            </div>
+        </div>
+        <div class="form-group" style="margin-top:14px;">
+            <label class="form-label" style="margin-bottom:8px;">Auto-criar lead</label>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <label class="toggle">
+                    <input type="checkbox" id="autoCreateLead" checked onchange="toggleChannelToggles()">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span style="font-size:12px;color:#374151;">Criar lead ao receber mensagem</span>
+            </div>
+            <div id="channelToggles" style="display:flex;gap:16px;padding-left:4px;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <label class="toggle">
+                        <input type="checkbox" id="autoCreateWhatsapp" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span style="font-size:12px;color:#6b7280;"><i class="bi bi-whatsapp" style="color:#25D366;"></i> WhatsApp</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <label class="toggle">
+                        <input type="checkbox" id="autoCreateInstagram" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span style="font-size:12px;color:#6b7280;"><i class="bi bi-instagram" style="color:#E1306C;"></i> Instagram</span>
+                </div>
             </div>
         </div>
         <div class="modal-footer">
@@ -422,13 +448,24 @@ document.getElementById('btnNovoPipeline').addEventListener('click', () => {
     setTimeout(() => document.getElementById('pipelineName').focus(), 100);
 });
 
-function openEditPipeline(id, name, color) {
+function openEditPipeline(id, name, color, autoCreate = true, autoWa = true, autoIg = true) {
     document.getElementById('modalPipelineTitle').textContent = 'Editar Funil';
     document.getElementById('pipelineId').value = id;
     document.getElementById('pipelineName').value = name;
     document.getElementById('pipelineColor').value = color;
     document.getElementById('pipelineColorText').value = color;
+    document.getElementById('autoCreateLead').checked = autoCreate;
+    document.getElementById('autoCreateWhatsapp').checked = autoWa;
+    document.getElementById('autoCreateInstagram').checked = autoIg;
+    toggleChannelToggles();
     document.getElementById('modalPipeline').classList.add('open');
+}
+
+function toggleChannelToggles() {
+    const enabled = document.getElementById('autoCreateLead').checked;
+    document.getElementById('channelToggles').style.opacity = enabled ? '1' : '.4';
+    document.getElementById('autoCreateWhatsapp').disabled = !enabled;
+    document.getElementById('autoCreateInstagram').disabled = !enabled;
 }
 
 function closePipelineModal() { document.getElementById('modalPipeline').classList.remove('open'); }
@@ -456,7 +493,12 @@ async function savePipeline() {
         const res  = await fetch(url, {
             method,
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-            body: JSON.stringify({ name, color })
+            body: JSON.stringify({
+                name, color,
+                auto_create_lead:           document.getElementById('autoCreateLead').checked,
+                auto_create_from_whatsapp:  document.getElementById('autoCreateWhatsapp').checked,
+                auto_create_from_instagram: document.getElementById('autoCreateInstagram').checked,
+            })
         });
         const data = await res.json();
         if (!data.success) { alert(data.message || 'Erro ao salvar.'); return; }
@@ -485,7 +527,7 @@ function buildPipelineCard(p) {
             <span class="pipeline-name">${escapeHtml(p.name)}</span>
             <div class="pipeline-actions" onclick="event.stopPropagation()">
                 <button class="btn-icon" onclick="setDefaultPipeline(${p.id},'${escapeJs(p.name)}','${p.color}')"><i class="bi bi-star"></i></button>
-                <button class="btn-icon" onclick="openEditPipeline(${p.id},'${escapeJs(p.name)}','${p.color}')"><i class="bi bi-pencil"></i></button>
+                <button class="btn-icon" onclick="openEditPipeline(${p.id},'${escapeJs(p.name)}','${p.color}',${p.auto_create_lead !== false},${p.auto_create_from_whatsapp !== false},${p.auto_create_from_instagram !== false})"><i class="bi bi-pencil"></i></button>
                 <button class="btn-icon danger" onclick="deletePipeline(${p.id},this)"><i class="bi bi-trash"></i></button>
                 <i class="bi bi-chevron-down" style="font-size:13px;color:#9ca3af;transition:transform .2s;" id="chevron-${p.id}"></i>
             </div>

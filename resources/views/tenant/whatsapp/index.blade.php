@@ -1207,7 +1207,7 @@ $pageIcon = 'chat-dots';
     </div>
 
     {{-- Painel de detalhes --}}
-    <div class="wa-details open" id="detailsPanel">
+    <div class="wa-details" id="detailsPanel">
         <div class="wa-details-section">
             <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
                 Contato
@@ -1316,7 +1316,35 @@ $pageIcon = 'chat-dots';
 
         <div class="wa-details-section" id="noLeadSection" style="display:none;">
             <div class="wa-details-label">Lead</div>
-            <div style="font-size:12px;color:#9ca3af;">Sem lead vinculado</div>
+            <div id="noLeadDefault">
+                <div style="font-size:12px;color:#9ca3af;margin-bottom:8px;">Sem lead vinculado</div>
+                <button onclick="showCreateLeadForm()"
+                    style="width:100%;padding:6px 10px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
+                    <i class="bi bi-plus-lg"></i> Criar lead na pipeline
+                </button>
+            </div>
+            <div id="createLeadForm" style="display:none;">
+                <select id="createLeadPipeline" onchange="onCreateLeadPipelineChange()"
+                    class="wa-textarea" style="min-height:unset;height:34px;padding:5px 8px;font-size:12px;margin-bottom:6px;">
+                    @foreach($pipelines as $p)
+                    <option value="{{ $p->id }}" data-stages="{{ $p->stages->toJson() }}">{{ $p->name }}</option>
+                    @endforeach
+                </select>
+                <select id="createLeadStage"
+                    class="wa-textarea" style="min-height:unset;height:34px;padding:5px 8px;font-size:12px;margin-bottom:8px;">
+                    <option value="">Selecionar estágio...</option>
+                </select>
+                <div style="display:flex;gap:6px;">
+                    <button onclick="cancelCreateLead()"
+                        style="flex:1;padding:6px;background:#f3f4f6;color:#374151;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
+                        Cancelar
+                    </button>
+                    <button onclick="doCreateLead()"
+                        style="flex:1;padding:6px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
+                        Criar
+                    </button>
+                </div>
+            </div>
         </div>
 
         <div class="wa-details-section">
@@ -1811,6 +1839,7 @@ $pageIcon = 'chat-dots';
         activeConvId = convId;
         activeConvChannel = el.dataset.channel || 'whatsapp';
 
+        document.getElementById('detailsPanel').classList.add('open');
         document.querySelectorAll('.wa-conv-item').forEach(i => i.classList.remove('active'));
         el.classList.add('active');
 
@@ -2438,6 +2467,67 @@ $pageIcon = 'chat-dots';
 
         // Popula stages do pipeline selecionado
         populateStages(lead.pipeline_id, lead.stage_id);
+    }
+
+    // ── Criar lead a partir do chat ───────────────────────────────────────────────
+    function showCreateLeadForm() {
+        document.getElementById('noLeadDefault').style.display = 'none';
+        document.getElementById('createLeadForm').style.display = '';
+        onCreateLeadPipelineChange();
+    }
+
+    function cancelCreateLead() {
+        document.getElementById('createLeadForm').style.display = 'none';
+        document.getElementById('noLeadDefault').style.display = '';
+    }
+
+    function onCreateLeadPipelineChange() {
+        const sel = document.getElementById('createLeadPipeline');
+        const stages = JSON.parse(sel.selectedOptions[0]?.dataset.stages || '[]');
+        const stageSel = document.getElementById('createLeadStage');
+        stageSel.innerHTML = '<option value="">Selecionar estágio...</option>';
+        stages.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.name;
+            stageSel.appendChild(opt);
+        });
+        if (stages.length) stageSel.value = stages[0].id;
+    }
+
+    async function doCreateLead() {
+        const pipelineId = document.getElementById('createLeadPipeline').value;
+        const stageId    = document.getElementById('createLeadStage').value;
+        if (!pipelineId || !stageId || !activeConvId) return;
+
+        const contactName  = document.getElementById('detailsName')?.textContent?.trim() || 'Contato';
+        const contactPhone = document.getElementById('detailsPhone')?.textContent?.trim() || null;
+
+        const createRes = await fetch(LEAD_STORE, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
+            body: JSON.stringify({
+                name: contactName,
+                phone: contactPhone,
+                pipeline_id: parseInt(pipelineId),
+                stage_id: parseInt(stageId),
+                source: activeConvChannel,
+            }),
+        });
+        const lead = await createRes.json();
+        if (!lead.id) return;
+
+        const linkUrl = activeConvChannel === 'instagram'
+            ? `/chats/instagram-conversations/${activeConvId}/link-lead`
+            : `/chats/conversations/${activeConvId}/link-lead`;
+        await fetch(linkUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
+            body: JSON.stringify({ lead_id: lead.id }),
+        });
+
+        renderLeadPanel(lead);
+        cancelCreateLead();
     }
 
     function populateStages(pipelineId, selectedStageId = null) {

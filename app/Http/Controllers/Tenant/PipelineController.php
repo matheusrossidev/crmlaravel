@@ -25,12 +25,18 @@ class PipelineController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'  => 'required|string|max:100',
-            'color' => 'required|string|max:20',
+            'name'                       => 'required|string|max:100',
+            'color'                      => 'required|string|max:20',
+            'auto_create_lead'           => 'nullable|boolean',
+            'auto_create_from_whatsapp'  => 'nullable|boolean',
+            'auto_create_from_instagram' => 'nullable|boolean',
         ]);
 
-        $data['sort_order'] = Pipeline::max('sort_order') + 1;
-        $data['is_default'] = false;
+        $data['sort_order']                  = Pipeline::max('sort_order') + 1;
+        $data['is_default']                  = false;
+        $data['auto_create_lead']            = $data['auto_create_lead'] ?? true;
+        $data['auto_create_from_whatsapp']   = $data['auto_create_from_whatsapp'] ?? true;
+        $data['auto_create_from_instagram']  = $data['auto_create_from_instagram'] ?? true;
 
         $pipeline = Pipeline::create($data);
         $pipeline->load('stages');
@@ -41,9 +47,12 @@ class PipelineController extends Controller
     public function update(Request $request, Pipeline $pipeline): JsonResponse
     {
         $data = $request->validate([
-            'name'       => 'required|string|max:100',
-            'color'      => 'required|string|max:20',
-            'is_default' => 'boolean',
+            'name'                       => 'required|string|max:100',
+            'color'                      => 'required|string|max:20',
+            'is_default'                 => 'boolean',
+            'auto_create_lead'           => 'nullable|boolean',
+            'auto_create_from_whatsapp'  => 'nullable|boolean',
+            'auto_create_from_instagram' => 'nullable|boolean',
         ]);
 
         if (!empty($data['is_default'])) {

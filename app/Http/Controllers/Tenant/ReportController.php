@@ -50,13 +50,15 @@ class ReportController extends Controller
         // 1. VISÃO GERAL
         // ══════════════════════════════════════════════════════════════════════
 
-        $leadQuery = fn () => Lead::whereBetween('created_at', [$dateFrom, $dateTo])
+        $leadQuery = fn () => Lead::where('exclude_from_pipeline', false)
+            ->whereBetween('created_at', [$dateFrom, $dateTo])
             ->when($filterCampaign, fn ($q) => $q->where('campaign_id', $filterCampaign))
             ->when($filterPipeline, fn ($q) => $q->where('pipeline_id', $filterPipeline))
             ->when($filterUser,     fn ($q) => $q->where('assigned_to', $filterUser));
 
         $totalLeads  = $leadQuery()->count();
-        $prevLeads   = Lead::whereBetween('created_at', [$prevFrom, $prevTo])
+        $prevLeads   = Lead::where('exclude_from_pipeline', false)
+            ->whereBetween('created_at', [$prevFrom, $prevTo])
             ->when($filterCampaign, fn ($q) => $q->where('campaign_id', $filterCampaign))
             ->when($filterPipeline, fn ($q) => $q->where('pipeline_id', $filterPipeline))
             ->when($filterUser,     fn ($q) => $q->where('assigned_to', $filterUser))
@@ -119,7 +121,8 @@ class ReportController extends Controller
                 $spend       = (float) $spends->sum('spend');
                 $impressions = (int)   $spends->sum('impressions');
                 $clicks      = (int)   $spends->sum('clicks');
-                $leadsCount  = Lead::where('campaign_id', $campaign->id)
+                $leadsCount  = Lead::where('exclude_from_pipeline', false)
+                    ->where('campaign_id', $campaign->id)
                     ->whereBetween('created_at', [$dateFrom, $dateTo])->count();
                 $revenue     = (float) (Sale::where('campaign_id', $campaign->id)
                     ->whereBetween('closed_at', [$dateFrom, $dateTo])->sum('value') ?? 0);
@@ -150,12 +153,14 @@ class ReportController extends Controller
             ->get()
             ->map(function (Pipeline $pipeline) use ($dateFrom, $dateTo) {
                 $stagesData = $pipeline->stages->map(function ($stage) use ($dateFrom, $dateTo) {
-                    $avgDays = Lead::where('stage_id', $stage->id)
+                    $avgDays = Lead::where('exclude_from_pipeline', false)
+                        ->where('stage_id', $stage->id)
                         ->selectRaw('AVG(DATEDIFF(NOW(), updated_at)) as avg_d')
                         ->value('avg_d');
                     return [
                         'stage'    => $stage,
-                        'count'    => Lead::where('stage_id', $stage->id)
+                        'count'    => Lead::where('exclude_from_pipeline', false)
+                            ->where('stage_id', $stage->id)
                             ->whereBetween('created_at', [$dateFrom, $dateTo])
                             ->count(),
                         'avg_days' => $avgDays !== null ? (int) round((float) $avgDays) : null,
@@ -314,12 +319,14 @@ class ReportController extends Controller
         // 7. ORIGEM × CONVERSÃO
         // ══════════════════════════════════════════════════════════════════════
 
-        $sourceConversion = Lead::whereBetween('created_at', [$dateFrom, $dateTo])
+        $sourceConversion = Lead::where('exclude_from_pipeline', false)
+            ->whereBetween('created_at', [$dateFrom, $dateTo])
             ->selectRaw('COALESCE(source, "manual") as src, COUNT(*) as total')
             ->groupBy('src')
             ->get()
             ->map(function ($row) use ($dateFrom, $dateTo) {
-                $leadIds = Lead::whereBetween('created_at', [$dateFrom, $dateTo])
+                $leadIds = Lead::where('exclude_from_pipeline', false)
+                    ->whereBetween('created_at', [$dateFrom, $dateTo])
                     ->whereRaw('COALESCE(source, "manual") = ?', [$row->src])
                     ->pluck('id');
                 $vendas  = Sale::whereIn('lead_id', $leadIds)

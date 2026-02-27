@@ -29,6 +29,7 @@ class LeadController extends Controller
     public function index(Request $request): View
     {
         $query = Lead::with(['stage', 'pipeline', 'campaign', 'assignedTo', 'whatsappConversation.aiAgent'])
+            ->where(fn ($q) => $q->where('exclude_from_pipeline', false)->orWhereNull('exclude_from_pipeline'))
             ->orderByDesc('created_at');
 
         if ($search = $request->get('search')) {

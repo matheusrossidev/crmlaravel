@@ -710,6 +710,10 @@ class ProcessWahaWebhook implements ShouldQueue
             return null; // Tenant sem pipeline configurado — não cria lead
         }
 
+        if (! $pipeline->auto_create_lead || ! $pipeline->auto_create_from_whatsapp) {
+            return null; // Auto-criação via WhatsApp desativada para este pipeline
+        }
+
         $stage = $pipeline->stages()->orderBy('position')->first();
 
         if (! $stage) {

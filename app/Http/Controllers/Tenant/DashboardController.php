@@ -35,11 +35,13 @@ class DashboardController extends Controller
         $visibleCards = $dashConfig['cards'] ?? self::AVAILABLE_CARDS;
         $visibleCards = array_values(array_intersect($visibleCards, self::AVAILABLE_CARDS));
         // ── Métricas principais ────────────────────────────────────────────
-        $leadsThisMonth = Lead::whereMonth('created_at', now()->month)
+        $leadsThisMonth = Lead::where('exclude_from_pipeline', false)
+            ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->count();
 
-        $leadsLastMonth = Lead::whereMonth('created_at', now()->subMonth()->month)
+        $leadsLastMonth = Lead::where('exclude_from_pipeline', false)
+            ->whereMonth('created_at', now()->subMonth()->month)
             ->whereYear('created_at', now()->subMonth()->year)
             ->count();
 
@@ -71,7 +73,7 @@ class DashboardController extends Controller
             ->count();
 
         // Taxa de conversão geral (vendas totais / leads totais)
-        $totalLeads     = Lead::count();
+        $totalLeads     = Lead::where('exclude_from_pipeline', false)->count();
         $wonTotal       = Sale::count();
         $conversionRate = $totalLeads > 0 ? round($wonTotal / $totalLeads * 100, 1) : 0;
 
@@ -111,7 +113,8 @@ class DashboardController extends Controller
             $m             = now()->copy()->subMonths($i);
             $monthLabels[] = ucfirst($m->translatedFormat('M/y'));
 
-            $leadsPerMonth[] = Lead::whereYear('created_at', $m->year)
+            $leadsPerMonth[] = Lead::where('exclude_from_pipeline', false)
+                ->whereYear('created_at', $m->year)
                 ->whereMonth('created_at', $m->month)
                 ->count();
 
@@ -124,7 +127,8 @@ class DashboardController extends Controller
         $daysInMonth = now()->daysInMonth;
         $dayLabels   = range(1, $daysInMonth);
 
-        $rawBySourceDay = Lead::selectRaw('DAY(created_at) as day, source, COUNT(*) as total')
+        $rawBySourceDay = Lead::where('exclude_from_pipeline', false)
+            ->selectRaw('DAY(created_at) as day, source, COUNT(*) as total')
             ->whereYear('created_at', now()->year)
             ->whereMonth('created_at', now()->month)
             ->groupBy('day', 'source')
@@ -143,7 +147,8 @@ class DashboardController extends Controller
         )->values()->all();
 
         // ── Leads por origem (top 6) ───────────────────────────────────────
-        $leadsBySource = Lead::selectRaw('source, count(*) as total')
+        $leadsBySource = Lead::where('exclude_from_pipeline', false)
+            ->selectRaw('source, count(*) as total')
             ->whereNotNull('source')
             ->where('source', '!=', '')
             ->groupBy('source')
@@ -161,7 +166,7 @@ class DashboardController extends Controller
             foreach ($pipeline->stages as $stage) {
                 $stagesWithCount[] = [
                     'name'  => $stage->name,
-                    'count' => Lead::where('stage_id', $stage->id)->count(),
+                    'count' => Lead::where('exclude_from_pipeline', false)->where('stage_id', $stage->id)->count(),
                     'color' => $stage->color,
                 ];
             }

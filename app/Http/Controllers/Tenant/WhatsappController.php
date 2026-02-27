@@ -351,6 +351,20 @@ class WhatsappController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function linkLead(WhatsappConversation $conversation, Request $request): JsonResponse
+    {
+        $request->validate(['lead_id' => 'required|integer']);
+        $conversation->update(['lead_id' => $request->lead_id]);
+        return response()->json(['success' => true]);
+    }
+
+    public function linkLeadInstagram(\App\Models\InstagramConversation $conversation, Request $request): JsonResponse
+    {
+        $request->validate(['lead_id' => 'required|integer']);
+        $conversation->update(['lead_id' => $request->lead_id]);
+        return response()->json(['success' => true]);
+    }
+
     public function updateContact(WhatsappConversation $conversation, Request $request): JsonResponse
     {
         $data = [];
