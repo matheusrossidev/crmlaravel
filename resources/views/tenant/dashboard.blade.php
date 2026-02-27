@@ -436,10 +436,10 @@
     {{-- ── Row 2: Gráfico Leads + Ações Rápidas ──────────────────────── --}}
     <div class="mid-grid">
 
-        {{-- Novos Leads (6 meses) --}}
+        {{-- Novos Leads (mês atual) --}}
         <div class="content-card">
             <div class="content-card-header">
-                <h3><i class="bi bi-bar-chart"></i> Novos Leads — Últimos 6 Meses</h3>
+                <h3><i class="bi bi-bar-chart"></i> Novos Leads — {{ ucfirst(now()->translatedFormat('F \d\e Y')) }}</h3>
                 <a href="{{ route('leads.index') }}" class="card-link">
                     Ver todos <i class="bi bi-arrow-right"></i>
                 </a>
