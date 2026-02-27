@@ -278,14 +278,15 @@ textarea.form-control { resize: vertical; min-height: 68px; }
 
 .post-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-    max-height: 200px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    max-height: 360px;
     overflow-y: auto;
+    padding-right: 4px;
 }
 .post-grid-item {
     position: relative;
-    border-radius: 7px;
+    border-radius: 8px;
     overflow: hidden;
     cursor: pointer;
     border: 2px solid transparent;
