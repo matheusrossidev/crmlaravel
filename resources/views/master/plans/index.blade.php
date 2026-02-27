@@ -27,6 +27,7 @@
                     <th>Usuários</th>
                     <th>Leads</th>
                     <th>Pipelines</th>
+                    <th>Campos</th>
                     <th>IA</th>
                     <th>Status</th>
                     <th></th>
@@ -48,6 +49,7 @@
                     <td>{{ $plan->features_json['max_users'] ?? '—' }}</td>
                     <td>{{ $plan->features_json['max_leads'] ?? '—' }}</td>
                     <td>{{ $plan->features_json['max_pipelines'] ?? '—' }}</td>
+                    <td>{{ $plan->features_json['max_custom_fields'] ?? '—' }}</td>
                     <td>
                         @if($plan->features_json['ai_agents'] ?? false)
                             <i class="bi bi-check-circle-fill" style="color:#10B981;"></i>
@@ -127,6 +129,10 @@
                 <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Max pipelines</label>
                 <input type="number" id="fMaxPipelines" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
             </div>
+            <div>
+                <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Max campos personalizados</label>
+                <input type="number" id="fMaxCustomFields" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
+            </div>
         </div>
         <div style="margin-bottom:14px;">
             <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Tokens IA/mês</label>
@@ -186,6 +192,7 @@ function openNewPlan() {
     document.getElementById('fMaxUsers').value = '5';
     document.getElementById('fMaxLeads').value = '1000';
     document.getElementById('fMaxPipelines').value = '3';
+    document.getElementById('fMaxCustomFields').value = '10';
     document.getElementById('fAiTokens').value = '500000';
     document.getElementById('fAiAgents').checked = true;
     document.getElementById('fInstagram').checked = false;
@@ -204,9 +211,10 @@ function editPlan(id, plan) {
     document.getElementById('planPrice').value = plan.price_monthly;
     document.getElementById('planTrialDays').value = (plan.trial_days !== null && plan.trial_days !== undefined) ? plan.trial_days : '';
     const f = plan.features_json || {};
-    document.getElementById('fMaxUsers').value    = f.max_users ?? 5;
-    document.getElementById('fMaxLeads').value    = f.max_leads ?? 1000;
-    document.getElementById('fMaxPipelines').value = f.max_pipelines ?? 3;
+    document.getElementById('fMaxUsers').value       = f.max_users ?? 5;
+    document.getElementById('fMaxLeads').value       = f.max_leads ?? 1000;
+    document.getElementById('fMaxPipelines').value   = f.max_pipelines ?? 3;
+    document.getElementById('fMaxCustomFields').value = f.max_custom_fields ?? 10;
     document.getElementById('fAiTokens').value    = f.ai_tokens_monthly ?? 0;
     document.getElementById('fAiAgents').checked   = !!f.ai_agents;
     document.getElementById('fInstagram').checked  = !!f.instagram;
@@ -231,6 +239,7 @@ async function savePlan() {
             max_users:          parseInt(document.getElementById('fMaxUsers').value) || 0,
             max_leads:          parseInt(document.getElementById('fMaxLeads').value) || 0,
             max_pipelines:      parseInt(document.getElementById('fMaxPipelines').value) || 0,
+            max_custom_fields:  parseInt(document.getElementById('fMaxCustomFields').value) || 0,
             ai_tokens_monthly:  parseInt(document.getElementById('fAiTokens').value) || 0,
             ai_agents:          document.getElementById('fAiAgents').checked,
             instagram:          document.getElementById('fInstagram').checked,

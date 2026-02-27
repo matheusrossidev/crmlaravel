@@ -366,6 +366,11 @@
                         <input type="number" class="form-control" id="editMaxPipelines"
                                value="{{ $tenant->max_pipelines ?? 0 }}" min="0">
                     </div>
+                    <div class="form-group">
+                        <label>Máx. campos personalizados <small style="color:#9ca3af;">(0 = ilimitado)</small></label>
+                        <input type="number" class="form-control" id="editMaxCustomFields"
+                               value="{{ $tenant->max_custom_fields ?? 0 }}" min="0">
+                    </div>
                     <button class="btn-save" id="btnUpdateTenant" onclick="updateTenant()">
                         <i class="bi bi-check2"></i> Salvar alterações
                     </button>
@@ -434,9 +439,10 @@ async function updateTenant() {
                 status:          document.getElementById('editStatus').value,
                 plan:            document.getElementById('editPlan').value,
                 trial_ends_at:   document.getElementById('editTrialEndsAt').value || null,
-                max_users:       parseInt(document.getElementById('editMaxUsers').value) || 0,
-                max_leads:       parseInt(document.getElementById('editMaxLeads').value) || 0,
-                max_pipelines:   parseInt(document.getElementById('editMaxPipelines').value) || 0,
+                max_users:          parseInt(document.getElementById('editMaxUsers').value) || 0,
+                max_leads:          parseInt(document.getElementById('editMaxLeads').value) || 0,
+                max_pipelines:      parseInt(document.getElementById('editMaxPipelines').value) || 0,
+                max_custom_fields:  parseInt(document.getElementById('editMaxCustomFields').value) || 0,
             }),
         });
         const data = await res.json();

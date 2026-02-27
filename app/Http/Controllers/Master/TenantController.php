@@ -111,12 +111,13 @@ class TenantController extends Controller
             'status'        => 'required|in:active,inactive,suspended,trial,partner',
             'plan'          => 'required|in:free,starter,pro,enterprise,partner',
             'trial_ends_at' => 'nullable|date',
-            'max_users'     => 'nullable|integer|min:0',
-            'max_leads'     => 'nullable|integer|min:0',
-            'max_pipelines' => 'nullable|integer|min:0',
+            'max_users'          => 'nullable|integer|min:0',
+            'max_leads'          => 'nullable|integer|min:0',
+            'max_pipelines'      => 'nullable|integer|min:0',
+            'max_custom_fields'  => 'nullable|integer|min:0',
         ]);
 
-        $tenant->update($request->only('status', 'plan', 'trial_ends_at', 'max_users', 'max_leads', 'max_pipelines'));
+        $tenant->update($request->only('status', 'plan', 'trial_ends_at', 'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields'));
 
         return response()->json(['success' => true, 'message' => 'Empresa atualizada.']);
     }
