@@ -352,7 +352,7 @@ class AutomationEngine
 
         $instance = WhatsappInstance::withoutGlobalScope('tenant')
             ->where('tenant_id', $automation->tenant_id)
-            ->where('status', 'WORKING')
+            ->where('status', 'connected')
             ->first();
 
         if (! $instance) {

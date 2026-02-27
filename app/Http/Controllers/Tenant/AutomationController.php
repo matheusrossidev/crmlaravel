@@ -40,7 +40,7 @@ class AutomationController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        $wahaConnected = WhatsappInstance::where('status', 'WORKING')->exists();
+        $wahaConnected = WhatsappInstance::where('status', 'connected')->exists();
 
         $whatsappTags = WhatsappTag::orderBy('name')->get(['id', 'name', 'color']);
 
