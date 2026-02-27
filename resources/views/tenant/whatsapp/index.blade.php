@@ -1206,7 +1206,7 @@ $pageIcon = 'chat-dots';
     </div>
 
     {{-- Painel de detalhes --}}
-    <div class="wa-details" id="detailsPanel">
+    <div class="wa-details open" id="detailsPanel">
         <div class="wa-details-section">
             <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
                 Contato
