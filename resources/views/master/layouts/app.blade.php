@@ -330,6 +330,10 @@
            class="m-nav-item {{ request()->routeIs('master.system*') ? 'active' : '' }}">
             <i class="bi bi-cpu"></i> Sistema
         </a>
+        <a href="{{ route('master.toolbox') }}"
+           class="m-nav-item {{ request()->routeIs('master.toolbox*') ? 'active' : '' }}">
+            <i class="bi bi-tools"></i> Ferramentas
+        </a>
 
         <div class="m-nav-group">
             <div class="m-nav-group-label">Comunicação</div>

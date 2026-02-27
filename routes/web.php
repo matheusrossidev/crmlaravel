@@ -7,6 +7,7 @@ use App\Http\Controllers\Master\NotificationController as MasterNotificationCont
 use App\Http\Controllers\Master\PlanController as MasterPlanController;
 use App\Http\Controllers\Master\SystemController as MasterSystemController;
 use App\Http\Controllers\Master\TenantController as MasterTenantController;
+use App\Http\Controllers\Master\ToolboxController as MasterToolboxController;
 use App\Http\Controllers\Master\UsageController as MasterUsageController;
 use App\Http\Controllers\Master\UserController as MasterUserController;
 use App\Http\Controllers\Tenant\ApiKeyController;
@@ -301,6 +302,10 @@ Route::middleware(['auth', 'super_admin'])->prefix('master')->name('master.')->g
     // Notificações
     Route::get('notificacoes',                         [MasterNotificationController::class, 'index'])->name('notifications');
     Route::post('notificacoes',                        [MasterNotificationController::class, 'store'])->name('notifications.store');
+
+    // Ferramentas
+    Route::get ('ferramentas',        [MasterToolboxController::class, 'index'])->name('toolbox');
+    Route::post('ferramentas/{tool}', [MasterToolboxController::class, 'run'])->name('toolbox.run');
 
 });
 // Configuração LLM (provider/api_key/model) via ENV: LLM_PROVIDER, LLM_API_KEY, LLM_MODEL
