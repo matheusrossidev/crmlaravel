@@ -378,6 +378,10 @@
                 <a href="{{ route('register') }}">Crie uma conta e teste gratuitamente</a>
             </div>
 
+            <div class="auth-footer-link" style="margin-top: 12px;">
+                <a href="{{ route('password.request') }}">Esqueceu sua senha?</a>
+            </div>
+
         </div>
     </div>
 
