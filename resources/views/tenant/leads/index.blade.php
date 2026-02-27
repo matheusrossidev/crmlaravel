@@ -258,10 +258,9 @@
                         @if($lead->pipeline)
                         <small>{{ $lead->pipeline->name }}</small>
                         @endif
-                        @php $resp = $lead->assignedTo?->name ?? $lead->whatsappConversation?->aiAgent?->name; @endphp
-                        @if($resp)
+                        @if($lead->assignedTo?->name ?? $lead->whatsappConversation?->aiAgent?->name)
                         <span class="resp-badge">
-                            <i class="bi bi-person-fill"></i> {{ Str::limit($resp, 18) }}
+                            <i class="bi bi-person-fill"></i> {{ Str::limit($lead->assignedTo?->name ?? $lead->whatsappConversation?->aiAgent?->name, 18) }}
                         </span>
                         @endif
                     </td>
