@@ -582,7 +582,7 @@
                                   style="font-size:13px;resize:vertical;">{{ old('calendar_tool_instructions', $agent->calendar_tool_instructions ?? '') }}</textarea>
                         <div class="form-text" style="font-size:11px;color:#9ca3af;margin-top:4px;">
                             O agente receberá estas instruções no prompt. Certifique-se de ter conectado o Google Calendar em
-                            <a href="{{ route('settings.integrations') }}" target="_blank" style="color:#0085f3;">Configurações → Integrações</a>.
+                            <a href="{{ route('settings.integrations.index') }}" target="_blank" style="color:#0085f3;">Configurações → Integrações</a>.
                         </div>
                     </div>
                 </div>

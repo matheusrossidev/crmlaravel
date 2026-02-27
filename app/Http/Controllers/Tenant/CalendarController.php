@@ -33,7 +33,7 @@ class CalendarController extends Controller
         $conn = $this->getConnection();
 
         if (! $conn || ! $this->hasCalendarScope($conn)) {
-            return redirect()->route('settings.integrations')
+            return redirect()->route('settings.integrations.index')
                 ->with('info', 'Conecte sua conta Google com permissão de Agenda para usar este recurso.');
         }
 
