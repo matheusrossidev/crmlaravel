@@ -280,9 +280,6 @@ textarea.form-control { resize: vertical; min-height: 68px; }
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
-    max-height: 360px;
-    overflow-y: auto;
-    padding-right: 4px;
 }
 .post-grid-item {
     position: relative;
