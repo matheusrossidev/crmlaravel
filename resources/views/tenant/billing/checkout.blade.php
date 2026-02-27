@@ -34,15 +34,15 @@
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
-            padding: 48px 64px;
+            padding: 40px 64px;
             min-width: 0;
             overflow-y: auto;
         }
 
         .auth-brand {
             width: 100%;
-            max-width: 400px;
-            margin-bottom: 32px;
+            max-width: 460px;
+            margin-bottom: 28px;
         }
 
         .auth-brand img {
@@ -52,14 +52,14 @@
 
         .auth-form-wrap {
             width: 100%;
-            max-width: 400px;
+            max-width: 460px;
         }
 
         .auth-form-title {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 700;
             color: #1a1d23;
-            margin: 0 0 6px;
+            margin: 0 0 4px;
         }
 
         .auth-form-sub {
@@ -68,23 +68,108 @@
             margin: 0 0 24px;
         }
 
-        /* Plan card */
-        .plan-card {
-            background: linear-gradient(135deg, #0085f3 0%, #006fd6 100%);
-            border-radius: 12px;
-            padding: 18px 22px;
-            color: #fff;
+        /* ── Plan selector ── */
+        .plan-selector-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin: 0 0 12px;
+        }
+
+        .plan-selector-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
             margin-bottom: 24px;
+        }
+
+        .plan-option-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: border-color .15s, box-shadow .15s, background .15s;
+            position: relative;
+            user-select: none;
+        }
+
+        .plan-option-card:hover {
+            border-color: #93c5fd;
+            box-shadow: 0 2px 8px rgba(0,133,243,.08);
+        }
+
+        .plan-option-card.selected {
+            border-color: #0085f3;
+            background: #eff6ff;
+            box-shadow: 0 2px 12px rgba(0,133,243,.15);
+        }
+
+        .plan-option-check {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 20px;
+            height: 20px;
+            background: #0085f3;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .plan-option-card.selected .plan-option-check {
+            display: flex;
+        }
+
+        .plan-option-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1a1d23;
+            margin-bottom: 4px;
+            padding-right: 26px;
+        }
+
+        .plan-option-price {
+            font-size: 18px;
+            font-weight: 800;
+            color: #0085f3;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .plan-option-price span {
+            font-size: 12px;
+            font-weight: 500;
+            color: #9ca3af;
+        }
+
+        .plan-option-features {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .plan-option-feat {
+            font-size: 11.5px;
+            color: #4b5563;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            gap: 5px;
         }
-        .plan-card-name  { font-size: 15px; font-weight: 700; }
-        .plan-card-sub   { font-size: 12px; color: #bfdbfe; margin-top: 3px; }
-        .plan-card-price .amount { font-size: 24px; font-weight: 800; line-height: 1; }
-        .plan-card-price .period { font-size: 11px; color: #bfdbfe; text-align: right; margin-top: 2px; }
 
-        /* Section label */
+        .plan-option-feat::before {
+            content: '✓';
+            color: #10b981;
+            font-weight: 700;
+            font-size: 10px;
+        }
+
+        /* ── Section label ── */
         .section-label {
             font-size: 11px;
             font-weight: 700;
@@ -257,6 +342,8 @@
             .auth-right { display: none; }
             .auth-left  { flex: none; width: 100%; padding: 40px 24px; }
         }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -271,19 +358,41 @@
 
         <div class="auth-form-wrap">
 
-            <h2 class="auth-form-title">Assinar Syncro</h2>
-            <p class="auth-form-sub">Acesso completo à plataforma, cobrado mensalmente.</p>
+            <h2 class="auth-form-title">Escolha seu plano</h2>
+            <p class="auth-form-sub">Acesso completo à plataforma, cobrado mensalmente. Cancele quando quiser.</p>
 
-            {{-- Plano --}}
-            <div class="plan-card">
-                <div>
-                    <div class="plan-card-name">{{ $plan?->display_name ?? 'Plano Syncro' }}</div>
-                    <div class="plan-card-sub">Renovação mensal automática</div>
+            {{-- Seletor de planos --}}
+            <input type="hidden" id="selectedPlan" value="{{ $plan?->name ?? ($plans->first()?->name ?? '') }}">
+
+            <p class="plan-selector-label">Selecione o plano</p>
+
+            <div class="plan-selector-grid" id="planSelectorGrid">
+                @foreach($plans as $p)
+                @php
+                    $isSelected = ($plan?->name === $p->name) || ($loop->first && !$plan);
+                    $pFeatures  = $p->features_json['features_list'] ?? [];
+                @endphp
+                <div class="plan-option-card {{ $isSelected ? 'selected' : '' }}"
+                     data-plan-name="{{ $p->name }}"
+                     data-plan-price="{{ number_format($p->price_monthly, 2, ',', '.') }}"
+                     onclick="selectPlan(this)">
+                    <div class="plan-option-check">✓</div>
+                    <div class="plan-option-name">{{ $p->display_name }}</div>
+                    <div class="plan-option-price">
+                        R$ {{ number_format($p->price_monthly, 2, ',', '.') }}<span>/mês</span>
+                    </div>
+                    @if(count($pFeatures) > 0)
+                    <div class="plan-option-features">
+                        @foreach(array_slice($pFeatures, 0, 3) as $feat)
+                            <div class="plan-option-feat">{{ $feat }}</div>
+                        @endforeach
+                        @if(count($pFeatures) > 3)
+                            <div style="font-size:11px;color:#9ca3af;margin-top:2px;">+{{ count($pFeatures) - 3 }} mais</div>
+                        @endif
+                    </div>
+                    @endif
                 </div>
-                <div class="plan-card-price">
-                    <div class="amount">R$ {{ number_format($plan?->price_monthly ?? 0, 2, ',', '.') }}</div>
-                    <div class="period">por mês</div>
-                </div>
+                @endforeach
             </div>
 
             {{-- Alertas --}}
@@ -295,6 +404,8 @@
                 <i class="bi bi-exclamation-circle-fill"></i>
                 <span id="alertErrorMsg"></span>
             </div>
+
+            <hr class="divider" style="margin-top:8px;">
 
             {{-- Dados do titular --}}
             <p class="section-label">Dados do titular</p>
@@ -395,7 +506,7 @@
 
             <button class="btn-submit" id="btnSubscribe" onclick="doSubscribe()">
                 <i class="bi bi-shield-lock-fill"></i>
-                Assinar — R$ {{ number_format($plan?->price_monthly ?? 0, 2, ',', '.') }}/mês
+                <span id="btnLabel">Assinar — R$ {{ number_format($plan?->price_monthly ?? ($plans->first()?->price_monthly ?? 0), 2, ',', '.') }}/mês</span>
             </button>
 
             <div class="secure-badge">
@@ -416,6 +527,18 @@
 </div>
 
 <script>
+// ── Plan selector ──
+function selectPlan(card) {
+    document.querySelectorAll('.plan-option-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+
+    const planName  = card.dataset.planName;
+    const planPrice = card.dataset.planPrice;
+    document.getElementById('selectedPlan').value = planName;
+    document.getElementById('btnLabel').textContent = 'Assinar — R$ ' + planPrice + '/mês';
+}
+
+// ── Input masks ──
 document.getElementById('cardNumber').addEventListener('input', function() {
     let v = this.value.replace(/\D/g, '').substring(0, 16);
     this.value = v.replace(/(.{4})/g, '$1 ').trim();
@@ -443,6 +566,7 @@ document.getElementById('cpfCnpj').addEventListener('input', function() {
     this.value = v;
 });
 
+// ── Validation ──
 function setErr(id, show) {
     document.getElementById(id).style.display = show ? 'block' : 'none';
 }
@@ -472,17 +596,22 @@ function validate() {
     return ok;
 }
 
+// ── Submit ──
 async function doSubscribe() {
     if (!validate()) return;
 
-    const btn = document.getElementById('btnSubscribe');
+    const btn      = document.getElementById('btnSubscribe');
+    const btnLabel = document.getElementById('btnLabel');
+    const origLabel = btnLabel.textContent;
+
     btn.disabled = true;
-    btn.innerHTML = '<span style="width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;"></span> Processando...';
+    btnLabel.innerHTML = '<span style="width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;"></span>Processando...';
 
     document.getElementById('alertSuccess').style.display = 'none';
     document.getElementById('alertError').style.display = 'none';
 
     const payload = {
+        plan_name:      document.getElementById('selectedPlan').value,
         holder_name:    document.getElementById('holderName').value.trim(),
         cpf_cnpj:       document.getElementById('cpfCnpj').value.trim(),
         email:          document.getElementById('billingEmail').value.trim(),
@@ -514,18 +643,15 @@ async function doSubscribe() {
             document.getElementById('alertErrorMsg').textContent = data.message ?? 'Erro ao processar assinatura.';
             document.getElementById('alertError').style.display = 'flex';
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-shield-lock-fill"></i> Assinar — R$ {{ number_format($plan?->price_monthly ?? 0, 2, ',', '.') }}/mês';
+            btnLabel.textContent = origLabel;
         }
     } catch (e) {
         document.getElementById('alertErrorMsg').textContent = 'Erro de conexão. Tente novamente.';
         document.getElementById('alertError').style.display = 'flex';
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-shield-lock-fill"></i> Assinar — R$ {{ number_format($plan?->price_monthly ?? 0, 2, ',', '.') }}/mês';
+        btnLabel.textContent = origLabel;
     }
 }
 </script>
-<style>
-@keyframes spin { to { transform: rotate(360deg); } }
-</style>
 </body>
 </html>

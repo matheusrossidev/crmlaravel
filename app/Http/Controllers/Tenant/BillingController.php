@@ -34,14 +34,19 @@ class BillingController extends Controller
             return redirect()->route('dashboard');
         }
 
-        $plan = PlanDefinition::where('name', $tenant->plan)->first();
+        $plan  = PlanDefinition::where('name', $tenant->plan)->first();
+        $plans = PlanDefinition::where('is_active', true)
+            ->where('price_monthly', '>', 0)
+            ->orderBy('price_monthly')
+            ->get();
 
-        return view('tenant.billing.checkout', compact('tenant', 'plan'));
+        return view('tenant.billing.checkout', compact('tenant', 'plan', 'plans'));
     }
 
     public function subscribe(Request $request): JsonResponse
     {
         $data = $request->validate([
+            'plan_name'     => 'nullable|string|max:50',
             'holder_name'   => 'required|string|max:100',
             'cpf_cnpj'      => 'required|string|max:18',
             'card_number'   => 'required|string|size:16',
@@ -56,7 +61,11 @@ class BillingController extends Controller
 
         $tenant = auth()->user()->tenant;
         $user   = auth()->user();
-        $plan   = PlanDefinition::where('name', $tenant->plan)->first();
+
+        $planName = $data['plan_name'] ?? $tenant->plan;
+        $plan = PlanDefinition::where('name', $planName)
+            ->where('is_active', true)
+            ->first();
 
         if (!$plan || $plan->price_monthly <= 0) {
             return response()->json(['success' => false, 'message' => 'Plano inválido ou gratuito.'], 422);
@@ -117,6 +126,7 @@ class BillingController extends Controller
             };
 
             $tenant->update([
+                'plan'                  => $plan->name,
                 'asaas_subscription_id' => $subscription['id'],
                 'subscription_status'   => $subscriptionStatus,
                 'status'                => $subscriptionStatus === 'active' ? 'active' : $tenant->status,

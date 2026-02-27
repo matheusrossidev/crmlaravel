@@ -29,6 +29,7 @@
                     <th>Pipelines</th>
                     <th>Campos</th>
                     <th>IA</th>
+                    <th>Features</th>
                     <th>Status</th>
                     <th></th>
                 </tr>
@@ -58,6 +59,14 @@
                         @endif
                     </td>
                     <td>
+                        @php $fl = $plan->features_json['features_list'] ?? []; @endphp
+                        @if(count($fl) > 0)
+                            <span style="background:#eff6ff;color:#2563eb;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600;">{{ count($fl) }} itens</span>
+                        @else
+                            <span style="color:#9ca3af;font-size:12px;">—</span>
+                        @endif
+                    </td>
+                    <td>
                         @if($plan->is_active)
                             <span class="m-badge m-badge-active">Ativo</span>
                         @else
@@ -83,7 +92,7 @@
 
 {{-- Modal --}}
 <div id="planModal" style="display:none;position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,.4);align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:16px;width:520px;max-width:95vw;padding:28px;box-shadow:0 8px 48px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto;">
+    <div style="background:#fff;border-radius:16px;width:560px;max-width:95vw;padding:28px;box-shadow:0 8px 48px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
             <h3 id="planModalTitle" style="font-size:16px;font-weight:700;margin:0;">Plano</h3>
             <button onclick="closePlanModal()" style="background:none;border:none;cursor:pointer;font-size:22px;color:#9ca3af;">×</button>
@@ -153,6 +162,30 @@
             </label>
         </div>
 
+        {{-- Repeater de funcionalidades visíveis --}}
+        <div style="border-top:1px solid #f3f4f6;padding-top:18px;margin-bottom:20px;">
+            <div style="font-size:12.5px;font-weight:600;color:#374151;margin-bottom:4px;">
+                Funcionalidades visíveis no card
+            </div>
+            <div style="font-size:11.5px;color:#9ca3af;margin-bottom:12px;">
+                Textos que aparecem nos cards de plano para o usuário (ex: "Até 5 usuários", "Suporte prioritário")
+            </div>
+
+            <div id="featuresList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
+
+            <div style="display:flex;gap:8px;">
+                <input type="text" id="featureInput"
+                    placeholder="ex: Até 5 usuários"
+                    style="flex:1;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-size:13px;"
+                    onkeydown="if(event.key==='Enter'){event.preventDefault();addFeature();}"
+                >
+                <button type="button" onclick="addFeature()"
+                    style="padding:8px 14px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">
+                    + Adicionar
+                </button>
+            </div>
+        </div>
+
         <div style="display:flex;gap:10px;justify-content:flex-end;">
             <button onclick="closePlanModal()" class="btn-clear">Cancelar</button>
             <button onclick="savePlan()" class="btn-apply" id="btnSavePlan">Salvar</button>
@@ -168,6 +201,16 @@
 .btn-clear:hover { background:#f3f4f6; }
 .btn-apply { display:inline-flex;align-items:center;padding:8px 22px;background:#3B82F6;color:#fff;border:none;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;transition:.15s; }
 .btn-apply:hover { background:#2563EB; }
+.feature-item {
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    background:#f9fafb;border:1px solid #e5e7eb;border-radius:7px;padding:6px 10px;
+    font-size:13px;color:#374151;
+}
+.feature-item .feat-remove {
+    background:none;border:none;cursor:pointer;color:#9ca3af;font-size:16px;line-height:1;padding:0 2px;
+    transition:color .15s;
+}
+.feature-item .feat-remove:hover { color:#ef4444; }
 </style>
 @endpush
 
@@ -179,9 +222,44 @@ const ROUTE_UPDATE = (id) => `/master/planos/${id}`;
 const ROUTE_DELETE = (id) => `/master/planos/${id}`;
 
 let editingId = null;
+let featuresList = [];
+
+function renderFeaturesList() {
+    const container = document.getElementById('featuresList');
+    container.innerHTML = '';
+    featuresList.forEach((feat, idx) => {
+        const div = document.createElement('div');
+        div.className = 'feature-item';
+        div.innerHTML = `
+            <span>✓ ${escapeHtml(feat)}</span>
+            <button class="feat-remove" onclick="removeFeature(${idx})" title="Remover">×</button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function addFeature() {
+    const input = document.getElementById('featureInput');
+    const val = input.value.trim();
+    if (!val) return;
+    featuresList.push(val);
+    input.value = '';
+    renderFeaturesList();
+    input.focus();
+}
+
+function removeFeature(idx) {
+    featuresList.splice(idx, 1);
+    renderFeaturesList();
+}
 
 function openNewPlan() {
     editingId = null;
+    featuresList = [];
     document.getElementById('planModalTitle').textContent = 'Novo Plano';
     document.getElementById('planId').value = '';
     document.getElementById('planName').value = '';
@@ -198,11 +276,16 @@ function openNewPlan() {
     document.getElementById('fInstagram').checked = false;
     document.getElementById('fChatbot').checked = false;
     document.getElementById('fIsActive').checked = true;
+    document.getElementById('featureInput').value = '';
+    renderFeaturesList();
     showModal();
 }
 
 function editPlan(id, plan) {
     editingId = id;
+    featuresList = (plan.features_json && Array.isArray(plan.features_json.features_list))
+        ? [...plan.features_json.features_list]
+        : [];
     document.getElementById('planModalTitle').textContent = 'Editar Plano: ' + plan.display_name;
     document.getElementById('planId').value = id;
     document.getElementById('planName').value = plan.name;
@@ -220,6 +303,8 @@ function editPlan(id, plan) {
     document.getElementById('fInstagram').checked  = !!f.instagram;
     document.getElementById('fChatbot').checked    = !!f.chatbot;
     document.getElementById('fIsActive').checked   = !!plan.is_active;
+    document.getElementById('featureInput').value = '';
+    renderFeaturesList();
     showModal();
 }
 
@@ -244,6 +329,7 @@ async function savePlan() {
             ai_agents:          document.getElementById('fAiAgents').checked,
             instagram:          document.getElementById('fInstagram').checked,
             chatbot:            document.getElementById('fChatbot').checked,
+            features_list:      featuresList,
         },
     };
 
