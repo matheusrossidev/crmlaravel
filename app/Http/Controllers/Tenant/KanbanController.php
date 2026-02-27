@@ -20,6 +20,7 @@ use App\Models\Pipeline;
 use App\Models\PipelineStage;
 use App\Models\User;
 use App\Models\WhatsappTag;
+use App\Services\AutomationEngine;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -214,6 +215,19 @@ class KanbanController extends Controller
                     'lost_by'     => auth()->id(),
                 ]);
             }
+
+            // Automações de etapa
+            try {
+                $engine  = new AutomationEngine();
+                $baseCtx = ['tenant_id' => auth()->user()->tenant_id, 'lead' => $lead->fresh(), 'stage_new' => $newStage, 'stage_old_id' => $oldStageId];
+                $engine->run('lead_stage_changed', $baseCtx);
+                if ($newStage?->is_won) {
+                    $engine->run('lead_won', $baseCtx);
+                }
+                if ($newStage?->is_lost) {
+                    $engine->run('lead_lost', $baseCtx);
+                }
+            } catch (\Throwable) {}
         }
 
         return response()->json(['success' => true, 'lead_id' => $lead->id]);

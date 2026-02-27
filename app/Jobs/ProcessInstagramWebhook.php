@@ -13,6 +13,7 @@ use App\Models\InstagramInstance;
 use App\Models\InstagramMessage;
 use App\Models\Lead;
 use App\Models\Pipeline;
+use App\Services\AutomationEngine;
 use App\Services\InstagramService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -213,6 +214,22 @@ class ProcessInstagramWebhook implements ShouldQueue
         } catch (\Throwable $e) {
             Log::channel('instagram')->error('Broadcast FALHOU', ['error' => $e->getMessage()]);
         }
+
+        // Automação: mensagem recebida (apenas inbound)
+        if (! $isFromMe) {
+            try {
+                $leadForEngine = $conversation->lead_id
+                    ? Lead::withoutGlobalScope('tenant')->find($conversation->lead_id)
+                    : null;
+                (new AutomationEngine())->run('message_received', [
+                    'tenant_id'    => $instance->tenant_id,
+                    'channel'      => 'instagram',
+                    'message'      => $message,
+                    'conversation' => $conversation,
+                    'lead'         => $leadForEngine,
+                ]);
+            } catch (\Throwable) {}
+        }
     }
 
     private function fetchContactProfile(InstagramInstance $instance, string $igsid): array
@@ -335,7 +352,18 @@ class ProcessInstagramWebhook implements ShouldQueue
             InstagramConversation::withoutGlobalScope('tenant')
                 ->where('id', $conversation->id)
                 ->update(['lead_id' => $lead->id]);
+            $conversation->lead_id = $lead->id;
         }
+
+        // Automação: nova conversa Instagram criada
+        try {
+            (new AutomationEngine())->run('conversation_created', [
+                'tenant_id'    => $instance->tenant_id,
+                'channel'      => 'instagram',
+                'conversation' => $conversation,
+                'lead'         => $lead,
+            ]);
+        } catch (\Throwable) {}
 
         return $conversation;
     }

@@ -30,6 +30,7 @@ use App\Http\Controllers\Tenant\WhatsappMessageController;
 use App\Http\Controllers\Tenant\WhatsappTagController;
 use App\Http\Controllers\Tenant\AiAnalystController;
 use App\Http\Controllers\Tenant\QuickMessageController;
+use App\Http\Controllers\Tenant\AutomationController;
 use App\Http\Controllers\Tenant\InstagramAutomationController;
 use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -246,6 +247,13 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::post('tags',             [WhatsappTagController::class, 'store'])->name('tags.store');
         Route::put('tags/{tag}',        [WhatsappTagController::class, 'update'])->name('tags.update');
         Route::delete('tags/{tag}',     [WhatsappTagController::class, 'destroy'])->name('tags.destroy');
+
+        // Automações
+        Route::get('automacoes',                        [AutomationController::class, 'index'])->name('automations');
+        Route::post('automacoes',                       [AutomationController::class, 'store'])->name('automations.store');
+        Route::put('automacoes/{automation}',           [AutomationController::class, 'update'])->name('automations.update');
+        Route::delete('automacoes/{automation}',        [AutomationController::class, 'destroy'])->name('automations.destroy');
+        Route::patch('automacoes/{automation}/toggle',  [AutomationController::class, 'toggle'])->name('automations.toggle');
     });
 
     // Sinais de intenção do Agente IA

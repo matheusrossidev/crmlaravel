@@ -15,6 +15,7 @@ use App\Models\Pipeline;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
+use App\Services\AutomationEngine;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -370,6 +371,16 @@ class ProcessWahaWebhook implements ShouldQueue
                 }
             }
 
+            // Automação: nova conversa criada
+            try {
+                (new AutomationEngine())->run('conversation_created', [
+                    'tenant_id'    => $instance->tenant_id,
+                    'channel'      => 'whatsapp',
+                    'conversation' => $conversation,
+                    'lead'         => null,
+                ]);
+            } catch (\Throwable) {}
+
         } else {
             Log::channel('whatsapp')->info('Conversa encontrada', [
                 'conversation_id' => $conversation->id,
@@ -591,6 +602,20 @@ class ProcessWahaWebhook implements ShouldQueue
                     'file'            => $e->getFile() . ':' . $e->getLine(),
                 ]);
             }
+        }
+
+        // Automação: mensagem recebida (apenas inbound, individuais)
+        if (! $isFromMe && ! $isGroup) {
+            try {
+                $leadForEngine = isset($lead) ? $lead : Lead::withoutGlobalScope('tenant')->find($conversation->lead_id);
+                (new AutomationEngine())->run('message_received', [
+                    'tenant_id'    => $instance->tenant_id,
+                    'channel'      => 'whatsapp',
+                    'message'      => $message,
+                    'conversation' => $conversation,
+                    'lead'         => $leadForEngine,
+                ]);
+            } catch (\Throwable) {}
         }
     }
 

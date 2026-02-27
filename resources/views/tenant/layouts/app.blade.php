@@ -747,6 +747,11 @@
                     <i class="bi bi-tag nav-icon" style="font-size:14px;"></i>
                     <span class="nav-label">Tags</span>
                 </a>
+                <a href="{{ route('settings.automations') }}"
+                   class="nav-subitem {{ request()->routeIs('settings.automations*') ? 'active' : '' }}">
+                    <i class="bi bi-lightning-charge nav-icon" style="font-size:14px;"></i>
+                    <span class="nav-label">Automações</span>
+                </a>
                 <a href="{{ route('settings.api-keys') }}"
                    class="nav-subitem {{ request()->routeIs('settings.api-keys*') ? 'active' : '' }}">
                     <i class="bi bi-key nav-icon" style="font-size:14px;"></i>

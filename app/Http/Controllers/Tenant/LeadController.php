@@ -18,6 +18,7 @@ use App\Models\Pipeline;
 use App\Models\PipelineStage;
 use App\Models\User;
 use App\Models\WhatsappConversation;
+use App\Services\AutomationEngine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -120,6 +121,14 @@ class LeadController extends Controller
             'performed_by' => auth()->id(),
             'created_at'   => now(),
         ]);
+
+        // Automação: lead criado
+        try {
+            (new AutomationEngine())->run('lead_created', [
+                'tenant_id' => auth()->user()->tenant_id,
+                'lead'      => $lead,
+            ]);
+        } catch (\Throwable) {}
 
         $lead->load(['stage', 'pipeline', 'campaign', 'assignedTo']);
 
