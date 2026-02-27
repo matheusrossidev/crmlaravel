@@ -21,6 +21,15 @@
 
 @push('styles')
 <style>
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+.section-title    { font-size: 15px; font-weight: 700; color: #1a1d23; }
+.section-subtitle { font-size: 13px; color: #9ca3af; margin-top: 3px; }
+
 .at-wrap {
     background: #fff;
     border: 1px solid #e8eaf0;
