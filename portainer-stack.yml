@@ -45,9 +45,10 @@ x-app-env: &app-env
   REDIS_HOST: redis
   REDIS_PASSWORD: "null"
   REDIS_PORT: "6379"
-  MAIL_MAILER: log
-  MAIL_FROM_ADDRESS: noreply@plataforma360.com.br
-  MAIL_FROM_NAME: "Plataforma 360"
+  MAIL_MAILER: resend
+  MAIL_FROM_ADDRESS: "noreply@syncro.chat"
+  MAIL_FROM_NAME: "Syncro"
+  RESEND_API_KEY: "COLE_AQUI_SUA_RESEND_API_KEY"
   # Reverb — WebSocket server
   REVERB_APP_ID: "crm-app"
   REVERB_APP_KEY: "crm-reverb-key"
