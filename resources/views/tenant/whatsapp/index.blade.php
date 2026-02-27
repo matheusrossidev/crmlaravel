@@ -1075,6 +1075,7 @@ $pageIcon = 'chat-dots';
                         <span class="wa-conv-preview">
                             @if($conv->latestMessage)
                             @if($conv->latestMessage->type === 'image') 📷 Imagem
+                            @elseif($conv->latestMessage->type === 'share') 📷 Publicação
                             @elseif($conv->latestMessage->type === 'audio') 🎵 Áudio
                             @elseif($conv->latestMessage->type === 'document') 📎 {{ $conv->latestMessage->media_filename ?? 'Arquivo' }}
                             @elseif($conv->latestMessage->type === 'note') 🔒 Nota interna
@@ -2018,6 +2019,17 @@ $pageIcon = 'chat-dots';
             const fname = escHtml(msg.media_filename || 'Arquivo');
             bubble.innerHTML = `<a href="${msg.media_url}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none;"><i class="bi bi-file-earmark-text" style="font-size:20px;color:#3b82f6;flex-shrink:0;"></i><span style="word-break:break-all;">${fname}</span><i class="bi bi-download" style="margin-left:4px;font-size:13px;flex-shrink:0;"></i></a>`;
             if (msg.body) bubble.innerHTML += `<div style="margin-top:4px;font-size:12px;color:#6b7280;">${escHtml(msg.body)}</div>`;
+        } else if (msg.type === 'share') {
+            let inner = '';
+            if (msg.media_url) {
+                inner += `<img src="${msg.media_url}" class="wa-img-thumb" onclick="window.open('${escHtml(msg.media_url)}','_blank')" alt="Publicação" onerror="this.style.display='none'">`;
+            }
+            const postLink = escHtml(msg.body || '');
+            if (postLink) {
+                inner += `<div style="margin-top:6px;font-size:12px;"><i class="bi bi-instagram" style="color:#e1306c;margin-right:4px;"></i><a href="${postLink}" target="_blank" rel="noopener" style="color:inherit;">Ver publicação</a></div>`;
+            }
+            if (!inner) inner = '<span style="color:#6b7280;font-style:italic;">📷 Publicação compartilhada</span>';
+            bubble.innerHTML = inner;
         } else {
             bubble.textContent = msg.body || '';
         }
@@ -2740,10 +2752,11 @@ $pageIcon = 'chat-dots';
         // Update picture attribute whenever we have fresh data
         if (conv.contact_picture) el.dataset.picture = conv.contact_picture;
 
-        const preview = conv.last_message_type === 'image' ? '📷 Imagem' :
-            conv.last_message_type === 'audio' ? '🎵 Áudio' :
-            conv.last_message_type === 'document' ? '📎 Arquivo' :
-            conv.last_message_type === 'note' ? '🔒 Nota' :
+        const preview = conv.last_message_type === 'image'    ? '📷 Imagem'     :
+            conv.last_message_type === 'share'    ? '📷 Publicação' :
+            conv.last_message_type === 'audio'    ? '🎵 Áudio'      :
+            conv.last_message_type === 'document' ? '📎 Arquivo'    :
+            conv.last_message_type === 'note'     ? '🔒 Nota'       :
             (conv.last_message_body || '').substring(0, 40);
 
         const convDisplayName = conv.contact_name || (conv.is_group ? 'Grupo' : conv.phone);

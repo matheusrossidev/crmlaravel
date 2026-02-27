@@ -135,8 +135,8 @@ class ProcessInstagramWebhook implements ShouldQueue
             return;
         }
 
-        [$type, $mediaUrl] = $this->extractMedia($messageData);
-        $body = $messageData['text'] ?? null;
+        [$type, $mediaUrl, $shareUrl] = $this->extractMedia($messageData);
+        $body = $messageData['text'] ?? ($type === 'share' ? $shareUrl : null);
 
         // Fix fuso: converter timestamp UTC para o timezone da aplicação antes de salvar
         $sentAt = $timestamp
@@ -394,7 +394,6 @@ class ProcessInstagramWebhook implements ShouldQueue
             foreach ($messageData['attachments'] as $attachment) {
                 $type    = $attachment['type'] ?? 'image';
                 $payload = $attachment['payload'] ?? [];
-                $url     = $payload['url'] ?? null;
 
                 $mappedType = match ($type) {
                     'image'    => 'image',
@@ -402,14 +401,23 @@ class ProcessInstagramWebhook implements ShouldQueue
                     'video'    => 'video',
                     'file'     => 'document',
                     'sticker'  => 'sticker',
+                    'share'    => 'share',
                     default    => 'image',
                 };
 
-                return [$mappedType, $url];
+                // Publicações compartilhadas: thumbnail_url é a imagem renderizável;
+                // payload['url'] é a URL do post Instagram (para o link)
+                if ($type === 'share') {
+                    $displayUrl = $payload['thumbnail_url'] ?? null;
+                    $postUrl    = $payload['url'] ?? null;
+                    return ['share', $displayUrl, $postUrl];
+                }
+
+                return [$mappedType, $payload['url'] ?? null, null];
             }
         }
 
-        return ['text', null];
+        return ['text', null, null];
     }
 
     // ── Comment Automation ────────────────────────────────────────────────────
