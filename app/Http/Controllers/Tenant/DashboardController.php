@@ -120,24 +120,27 @@ class DashboardController extends Controller
                 ->sum('value');
         }
 
-        // ── Leads por origem × mês (stacked bar) ──────────────────────────
-        $sixMonths = collect(range(5, 0))->map(fn($i) => now()->copy()->subMonths($i)->startOfMonth());
+        // ── Gráfico de leads: dias do mês atual por origem ────────────────
+        $daysInMonth = now()->daysInMonth;
+        $dayLabels   = range(1, $daysInMonth);
 
-        $rawBySource = Lead::selectRaw("DATE_FORMAT(created_at, '%m/%Y') as month, source, COUNT(*) as total")
-            ->where('created_at', '>=', now()->copy()->subMonths(5)->startOfMonth())
-            ->groupBy('month', 'source')
+        $rawBySourceDay = Lead::selectRaw('DAY(created_at) as day, source, COUNT(*) as total')
+            ->whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->groupBy('day', 'source')
             ->get();
 
-        $srcKeys = $rawBySource->pluck('source')->unique()->filter()->values();
-        $leadsPerMonthBySource = [];
-        foreach ($srcKeys as $src) {
-            $leadsPerMonthBySource[$src] = $sixMonths->map(function ($month) use ($rawBySource, $src) {
-                return (int) $rawBySource
-                    ->where('source', $src)
-                    ->where('month', $month->format('m/Y'))
-                    ->sum('total');
-            })->values()->all();
+        $srcKeysDay = $rawBySourceDay->pluck('source')->unique()->filter()->values();
+        $leadsPerDayBySource = [];
+        foreach ($srcKeysDay as $src) {
+            $leadsPerDayBySource[(string) $src] = collect($dayLabels)->map(
+                fn($day) => (int) $rawBySourceDay->where('source', $src)->where('day', $day)->sum('total')
+            )->values()->all();
         }
+
+        $leadsPerDay = collect($dayLabels)->map(
+            fn($day) => (int) $rawBySourceDay->where('day', $day)->sum('total')
+        )->values()->all();
 
         // ── Leads por origem (top 6) ───────────────────────────────────────
         $leadsBySource = Lead::selectRaw('source, count(*) as total')
@@ -184,7 +187,9 @@ class DashboardController extends Controller
             'leadsPerMonth',
             'salesPerMonth',
             'leadsBySource',
-            'leadsPerMonthBySource',
+            'dayLabels',
+            'leadsPerDay',
+            'leadsPerDayBySource',
             'stagesWithCount',
             'pipeline',
             'maxStageCount',

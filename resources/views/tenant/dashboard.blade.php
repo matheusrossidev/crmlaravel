@@ -630,7 +630,9 @@
     const salesPerMonth          = @json($salesPerMonth);
     const origLabels             = @json(array_keys($leadsBySource));
     const origData               = @json(array_values($leadsBySource));
-    const leadsPerMonthBySource  = {!! json_encode($leadsPerMonthBySource) !!};
+    const dayLabels              = @json($dayLabels);
+    const leadsPerDay            = @json($leadsPerDay);
+    const leadsPerDayBySource    = {!! json_encode($leadsPerDayBySource) !!};
 
     const SOURCE_COLORS = {
         'whatsapp':  '#25D366',
@@ -652,41 +654,51 @@
         font: { family: "'Inter', sans-serif" },
     };
 
-    // ── Novos Leads (stacked bar por origem) ───────────────────────────
-    const sourceNames = Object.keys(leadsPerMonthBySource);
-    const datasets = sourceNames.length > 0
+    // ── Novos Leads (stacked bar por origem — mês atual, por dia) ──────
+    const sourceNames = Object.keys(leadsPerDayBySource);
+    const rawDatasets = sourceNames.length > 0
         ? sourceNames.map((src, i) => ({
             label: src.charAt(0).toUpperCase() + src.slice(1),
-            data: leadsPerMonthBySource[src],
+            data: leadsPerDayBySource[src],
             backgroundColor: sourceColor(src, i),
-            borderWidth: 2,
-            borderColor: '#ffffff',
-            borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
+            borderWidth: 0,
             borderSkipped: false,
             stack: 'leads',
+            barPercentage: 0.9,
+            categoryPercentage: 1.0,
         }))
         : [{
             label: 'Leads',
-            data: leadsPerMonth,
-            backgroundColor: '#3B82F6',
-            borderRadius: 6,
+            data: leadsPerDay,
+            backgroundColor: '#0085f3',
+            borderWidth: 0,
             borderSkipped: false,
+            barPercentage: 0.9,
+            categoryPercentage: 1.0,
         }];
+
+    // Arredondar topo do último segmento e base do primeiro
+    const leadsDatasets = rawDatasets.map((ds, i) => ({
+        ...ds,
+        borderRadius: {
+            topLeft:     i === rawDatasets.length - 1 ? 5 : 0,
+            topRight:    i === rawDatasets.length - 1 ? 5 : 0,
+            bottomLeft:  i === 0 ? 5 : 0,
+            bottomRight: i === 0 ? 5 : 0,
+        },
+    }));
 
     new Chart(document.getElementById('chartLeads'), {
         type: 'bar',
-        data: { labels: monthLabels, datasets },
+        data: { labels: dayLabels, datasets: leadsDatasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    display: sourceNames.length > 0,
-                    position: 'bottom',
-                    labels: { boxWidth: 10, padding: 12, font: { size: 11 } },
-                },
+                legend: { display: false },
                 tooltip: {
                     callbacks: {
+                        title: (items) => 'Dia ' + items[0].label,
                         footer: (items) => {
                             const total = items.reduce((s, i) => s + i.parsed.y, 0);
                             return 'Total: ' + total + ' lead(s)';
@@ -695,7 +707,7 @@
                 }
             },
             scales: {
-                x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
+                x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 16 } },
                 y: { stacked: true, beginAtZero: true, ticks: { precision: 0, font: { size: 11 } }, grid: { color: '#f0f2f7' } },
             },
         }
