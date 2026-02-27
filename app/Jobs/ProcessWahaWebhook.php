@@ -76,15 +76,26 @@ class ProcessWahaWebhook implements ShouldQueue
         $isFromMe = ! empty($msg['fromMe']);
 
         // Para mensagens fromMe, 'from' é o JID do nosso celular conectado.
-        // O parceiro da conversa está no campo 'to' ou embutido no message ID:
-        // formato "true_{contactJID}_{msgId}" — extraímos o contactJID.
+        // O parceiro da conversa está em chatId / to ou embutido no message ID.
+        // No GOWS engine, msgs enviadas do celular têm msg_id="true_{account_lid}_{id}",
+        // codificando o LID da CONTA (não o JID do cliente). chatId e to têm o JID
+        // correto do cliente. Preferir chatId/to quando disponíveis e não forem @lid.
         if ($isFromMe) {
-            $recipientFrom = null;
             $msgId         = $msg['id'] ?? '';
+            $recipientFrom = null;
             if (preg_match('/^true_(.+@[\w.]+)_/', $msgId, $m)) {
-                $recipientFrom = $m[1]; // ex: "36576092528787@lid" ou "556192008997@c.us"
+                $recipientFrom = $m[1];
             }
-            $from = $recipientFrom ?? $msg['to'] ?? $msg['chatId'] ?? $from;
+            $chatIdCandidate = $msg['chatId'] ?? '';
+            $toCandidate     = $msg['to']     ?? '';
+            if ($chatIdCandidate && ! str_ends_with($chatIdCandidate, '@lid')) {
+                $from = $chatIdCandidate;
+            } elseif ($toCandidate && ! str_ends_with($toCandidate, '@lid')) {
+                $from = $toCandidate;
+            } else {
+                // Ambos @lid ou ausentes: usar recipientFrom do msg_id como fallback
+                $from = $recipientFrom ?? $toCandidate ?? $chatIdCandidate ?? $from;
+            }
         }
 
         // Ignorar: Status/Stories (@broadcast), Canais (@newsletter) e mensagens de sistema.
