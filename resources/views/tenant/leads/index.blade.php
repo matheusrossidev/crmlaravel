@@ -310,7 +310,7 @@
         @if($leads->hasPages())
         <div class="pagination-wrap">
             <span>{{ $leads->firstItem() }}–{{ $leads->lastItem() }} de {{ $leads->total() }} leads</span>
-            {{ $leads->links() }}
+            {{ $leads->links('pagination::bootstrap-5') }}
         </div>
         @endif
     </div>
