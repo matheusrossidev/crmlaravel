@@ -103,7 +103,7 @@ class AiFollowUpCommand extends Command
             $system = $this->buildFollowUpPrompt($agent);
 
             try {
-                $raw = AiConfigurationController::callLlm(
+                $llmResult = AiConfigurationController::callLlm(
                     provider:  $provider,
                     apiKey:    $apiKey,
                     model:     $model,
@@ -111,6 +111,7 @@ class AiFollowUpCommand extends Command
                     maxTokens: 300,
                     system:    $system,
                 );
+                $raw = $llmResult['reply'] ?? '';
             } catch (\Throwable $e) {
                 Log::channel('whatsapp')->error('AI follow-up: LLM falhou', [
                     'conversation_id' => $conv->id,

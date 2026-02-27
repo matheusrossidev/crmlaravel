@@ -117,13 +117,15 @@ class AiAgentController extends Controller
         );
 
         try {
-            $reply = AiConfigurationController::callLlm(
+            $result = AiConfigurationController::callLlm(
                 provider:  $provider,
                 apiKey:    $apiKey,
                 model:     $model,
                 messages:  $messages,
                 maxTokens: $agent->max_message_length + 200,
             );
+
+            $reply = $result['reply'] ?? '';
 
             // Trunca se necessário
             if (mb_strlen($reply) > $agent->max_message_length) {
@@ -252,13 +254,15 @@ class AiAgentController extends Controller
             ],
         ];
 
-        return AiConfigurationController::callLlm(
+        $result = AiConfigurationController::callLlm(
             provider:  $provider,
             apiKey:    $apiKey,
             model:     $model,
             messages:  $messages,
             maxTokens: 2000,
         );
+
+        return $result['reply'] ?? '';
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
