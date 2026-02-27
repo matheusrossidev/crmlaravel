@@ -19,11 +19,9 @@ use Illuminate\View\View;
 
 class AutomationController extends Controller
 {
-    public function index(): View
+    private function loadFormData(): array
     {
         $tenantId = auth()->user()->tenant_id;
-
-        $automations = Automation::orderByDesc('created_at')->get();
 
         $pipelines = Pipeline::with(['stages' => fn ($q) => $q->orderBy('position')])
             ->orderBy('sort_order')
@@ -44,7 +42,6 @@ class AutomationController extends Controller
 
         $wahaConnected = WhatsappInstance::where('status', 'WORKING')->exists();
 
-        // Tags dinâmicas: WhatsappTags (formais) + tags existentes nos leads
         $whatsappTags = WhatsappTag::orderBy('name')->get(['id', 'name', 'color']);
 
         $leadTags = Lead::withoutGlobalScope('tenant')
@@ -57,7 +54,6 @@ class AutomationController extends Controller
             ->sort()
             ->values();
 
-        // Origens distintas dos leads
         $leadSources = Lead::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
             ->whereNotNull('source')
@@ -66,9 +62,29 @@ class AutomationController extends Controller
             ->orderBy('source')
             ->pluck('source');
 
-        return view('tenant.settings.automations', compact(
-            'automations', 'pipelines', 'users', 'aiAgents', 'chatbotFlows',
-            'wahaConnected', 'whatsappTags', 'leadTags', 'leadSources'
+        return compact('pipelines', 'users', 'aiAgents', 'chatbotFlows', 'wahaConnected', 'whatsappTags', 'leadTags', 'leadSources');
+    }
+
+    public function index(): View
+    {
+        $automations = Automation::orderByDesc('created_at')->get();
+
+        return view('tenant.settings.automations', array_merge(
+            ['automations' => $automations],
+            $this->loadFormData()
+        ));
+    }
+
+    public function create(): View
+    {
+        return view('tenant.settings.automation-form', $this->loadFormData());
+    }
+
+    public function edit(Automation $automation): View
+    {
+        return view('tenant.settings.automation-form', array_merge(
+            ['automation' => $automation],
+            $this->loadFormData()
         ));
     }
 

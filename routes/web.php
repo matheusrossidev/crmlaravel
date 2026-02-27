@@ -250,6 +250,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
         // Automações
         Route::get('automacoes',                        [AutomationController::class, 'index'])->name('automations');
+        Route::get('automacoes/criar',                  [AutomationController::class, 'create'])->name('automations.create');
+        Route::get('automacoes/{automation}/editar',    [AutomationController::class, 'edit'])->name('automations.edit');
         Route::post('automacoes',                       [AutomationController::class, 'store'])->name('automations.store');
         Route::put('automacoes/{automation}',           [AutomationController::class, 'update'])->name('automations.update');
         Route::delete('automacoes/{automation}',        [AutomationController::class, 'destroy'])->name('automations.destroy');
