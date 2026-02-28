@@ -4,8 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ?? 'Master' }} — Admin</title>
+    <title>{{ $title ?? 'Syncro CRM' }} — Admin</title>
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
+
+    {{-- Open Graph / Social Sharing --}}
+    <meta property="og:type"         content="website">
+    <meta property="og:site_name"    content="Syncro CRM">
+    <meta property="og:title"        content="Syncro CRM — Gestão de Clientes e Atendimento via WhatsApp">
+    <meta property="og:description"  content="CRM completo com atendimento automático via WhatsApp, agente de IA, funil de vendas e agenda integrada. Gerencie leads e converta mais com menos esforço.">
+    <meta property="og:image"        content="{{ asset('images/shared-image.jpg') }}">
+    <meta property="og:image:width"  content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:url"          content="{{ url()->current() }}">
+    <meta name="twitter:card"        content="summary_large_image">
+    <meta name="twitter:title"       content="Syncro CRM — Gestão de Clientes e Atendimento via WhatsApp">
+    <meta name="twitter:description" content="CRM completo com atendimento automático via WhatsApp, agente de IA, funil de vendas e agenda integrada. Gerencie leads e converta mais com menos esforço.">
+    <meta name="twitter:image"       content="{{ asset('images/shared-image.jpg') }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
