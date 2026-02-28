@@ -198,7 +198,12 @@ AÇÕES DE AGENDA disponíveis (use APENAS quando o usuário pedir explicitament
   {"type":"calendar_cancel","event_id":"..."}
 - calendar_list: Listar eventos de uma data específica.
   {"type":"calendar_list","date":"YYYY-MM-DD"}
-REGRAS: Confirme sempre com o usuário antes de criar/alterar/cancelar um evento. Use os ids exatos listados acima.
+
+REGRAS CRÍTICAS:
+1. O sistema executa a ação INSTANTANEAMENTE junto com sua resposta. NÃO diga "Um momento", "Vou verificar" ou "Aguarde" — isso cria expectativa de uma segunda mensagem que NUNCA virá.
+2. Quando incluir uma ação de agenda no JSON, na "reply" já confirme como CONCLUÍDO. Exemplo: "Reunião agendada para amanhã às 10h! ✓"
+3. Se o usuário já informou data e hora, execute diretamente sem pedir confirmação novamente.
+4. Use os ids exatos dos eventos listados acima ao reagendar ou cancelar.
 --- FIM DA FERRAMENTA DE AGENDA ---
 CALINSTR;
         }
