@@ -204,6 +204,7 @@ REGRAS CRÍTICAS:
 2. Quando incluir uma ação de agenda no JSON, na "reply" já confirme como CONCLUÍDO. Exemplo: "Reunião agendada para amanhã às 10h! ✓"
 3. Se o usuário já informou data e hora, execute diretamente sem pedir confirmação novamente.
 4. Use os ids exatos dos eventos listados acima ao reagendar ou cancelar.
+5. No campo "description" do calendar_create, descreva o CONTEXTO da reunião: motivo, assunto, o que será discutido. Os dados de contato do cliente serão adicionados automaticamente — não é necessário incluí-los.
 --- FIM DA FERRAMENTA DE AGENDA ---
 CALINSTR;
         }

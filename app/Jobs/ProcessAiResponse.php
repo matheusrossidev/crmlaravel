@@ -142,24 +142,25 @@ class ProcessAiResponse implements ShouldQueue
             'model'           => $model,
         ]);
 
-        // ── Carregar pipeline stages — apenas se ferramenta habilitada ──────────
+        // ── Carregar lead — para pipeline e/ou calendar tool ─────────────────
+        $lead   = null;
         $stages = [];
-        if ($agent->enable_pipeline_tool && $conv->lead_id) {
+        if ($conv->lead_id && ($agent->enable_pipeline_tool || $agent->enable_calendar_tool)) {
             $lead = Lead::withoutGlobalScope('tenant')
                 ->with('stage.pipeline.stages')
                 ->find($conv->lead_id);
-            if ($lead && $lead->stage && $lead->stage->pipeline) {
-                $stages = $lead->stage->pipeline->stages
-                    ->map(fn ($s) => [
-                        'id'      => $s->id,
-                        'name'    => $s->name,
-                        'current' => $s->id === $lead->stage_id,
-                        'is_won'  => (bool) $s->is_won,
-                        'is_lost' => (bool) $s->is_lost,
-                    ])
-                    ->values()
-                    ->toArray();
-            }
+        }
+        if ($agent->enable_pipeline_tool && $lead?->stage && $lead?->stage?->pipeline) {
+            $stages = $lead->stage->pipeline->stages
+                ->map(fn ($s) => [
+                    'id'      => $s->id,
+                    'name'    => $s->name,
+                    'current' => $s->id === $lead->stage_id,
+                    'is_won'  => (bool) $s->is_won,
+                    'is_lost' => (bool) $s->is_lost,
+                ])
+                ->values()
+                ->toArray();
         }
 
         // ── Carregar tags existentes — apenas se ferramenta habilitada ─────────
@@ -331,7 +332,7 @@ class ProcessAiResponse implements ShouldQueue
                 $this->applyAssignHuman($conv, $agent);
             } elseif (in_array($type, ['calendar_create', 'calendar_reschedule', 'calendar_cancel', 'calendar_list'], true)) {
                 if ($calendarService !== null) {
-                    $this->applyCalendarAction($conv, $action, $calendarService);
+                    $this->applyCalendarAction($conv, $action, $calendarService, $lead ?? null);
                 }
             }
         }
@@ -463,18 +464,40 @@ class ProcessAiResponse implements ShouldQueue
         WhatsappConversation $conv,
         array $action,
         GoogleCalendarService $calendarService,
+        ?Lead $lead = null,
     ): void {
         $type = $action['type'] ?? '';
 
         try {
             switch ($type) {
                 case 'calendar_create':
+                    $agentDesc = $action['description'] ?? '';
+
+                    $contactLines = [];
+                    if ($lead) {
+                        if ($lead->name)    $contactLines[] = "Nome: {$lead->name}";
+                        if ($lead->phone)   $contactLines[] = "Telefone: {$lead->phone}";
+                        if ($lead->email)   $contactLines[] = "Email: {$lead->email}";
+                        if ($lead->company) $contactLines[] = "Empresa: {$lead->company}";
+                    } elseif ($conv->contact_name || $conv->phone) {
+                        if ($conv->contact_name) $contactLines[] = "Nome: {$conv->contact_name}";
+                        if ($conv->phone)        $contactLines[] = "Telefone: {$conv->phone}";
+                    }
+
+                    $description = $agentDesc;
+                    if (! empty($contactLines)) {
+                        $contactBlock = implode("\n", $contactLines);
+                        $description  = $agentDesc
+                            ? $agentDesc . "\n\n---\n" . $contactBlock
+                            : $contactBlock;
+                    }
+
                     $event = $calendarService->createEvent([
-                        'title'       => $action['title']       ?? 'Evento',
-                        'start'       => $action['start']       ?? now()->addHour()->format('Y-m-d\TH:i'),
-                        'end'         => $action['end']         ?? now()->addHours(2)->format('Y-m-d\TH:i'),
-                        'description' => $action['description'] ?? '',
-                        'location'    => $action['location']    ?? '',
+                        'title'       => $action['title']    ?? 'Evento',
+                        'start'       => $action['start']    ?? now()->addHour()->format('Y-m-d\TH:i'),
+                        'end'         => $action['end']      ?? now()->addHours(2)->format('Y-m-d\TH:i'),
+                        'description' => $description,
+                        'location'    => $action['location'] ?? '',
                     ]);
                     Log::channel('whatsapp')->info('AI calendar: evento criado', [
                         'conversation_id' => $conv->id,
