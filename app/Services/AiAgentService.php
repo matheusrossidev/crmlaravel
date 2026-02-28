@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Events\WhatsappConversationUpdated;
 use App\Events\WhatsappMessageCreated;
 use App\Models\AiAgent;
+use App\Models\Lead;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
@@ -28,6 +29,7 @@ class AiAgentService
         array   $availTags          = [],
         bool    $enableIntentNotify = false,
         array   $calendarEvents     = [],
+        ?Lead   $lead               = null,
     ): string {
         $objective = match ($agent->objective) {
             'sales'   => 'vendas',
@@ -171,6 +173,20 @@ class AiAgentService
                 $lines[] = "Instruções específicas:\n{$agent->calendar_tool_instructions}";
             }
 
+            // Contexto do contato — e-mail pré-preenchido se disponível
+            $contactCtx = [];
+            if ($lead) {
+                if ($lead->name)  $contactCtx[] = "Nome: {$lead->name}";
+                if ($lead->email) {
+                    $contactCtx[] = "E-mail: {$lead->email} ← USE ESTE para o convite (não pergunte novamente)";
+                } else {
+                    $contactCtx[] = "E-mail: não cadastrado → PERGUNTE ao contato antes de criar o evento";
+                }
+            }
+            if (! empty($contactCtx)) {
+                $lines[] = "Dados do contato desta conversa: " . implode(' | ', $contactCtx);
+            }
+
             if (! empty($calendarEvents)) {
                 $lines[] = "\nCompromissos agendados (próximos 7 dias):";
                 foreach ($calendarEvents as $ev) {
@@ -184,27 +200,44 @@ class AiAgentService
                     $lines[] = $line;
                 }
             } else {
-                $lines[] = "Nenhum compromisso agendado nos próximos 7 dias.";
+                $lines[] = "\nNenhum compromisso agendado nos próximos 7 dias.";
             }
 
             $lines[] = <<<'CALINSTR'
 
-AÇÕES DE AGENDA disponíveis (use APENAS quando o usuário pedir explicitamente):
-- calendar_create: Criar um novo evento.
-  {"type":"calendar_create","title":"...","start":"YYYY-MM-DDTHH:MM","end":"YYYY-MM-DDTHH:MM","description":"...","location":"..."}
-- calendar_reschedule: Reagendar um evento existente (use o id do evento).
-  {"type":"calendar_reschedule","event_id":"...","start":"YYYY-MM-DDTHH:MM","end":"YYYY-MM-DDTHH:MM"}
-- calendar_cancel: Cancelar/excluir um evento existente.
-  {"type":"calendar_cancel","event_id":"..."}
-- calendar_list: Listar eventos de uma data específica.
-  {"type":"calendar_list","date":"YYYY-MM-DD"}
+ARQUITETURA — LEIA ANTES DE AGIR:
+Os eventos listados acima foram carregados AUTOMATICAMENTE antes desta resposta.
+Você NÃO precisa fazer nenhuma busca externa — já tem todos os dados necessários.
+As ações calendar_create/reschedule/cancel executam JUNTO com sua reply, não depois.
+Sua mensagem atual é DEFINITIVA — não haverá uma próxima mensagem sua para "confirmar".
 
-REGRAS CRÍTICAS:
-1. O sistema executa a ação INSTANTANEAMENTE junto com sua resposta. NÃO diga "Um momento", "Vou verificar" ou "Aguarde" — isso cria expectativa de uma segunda mensagem que NUNCA virá.
-2. Quando incluir uma ação de agenda no JSON, na "reply" já confirme como CONCLUÍDO. Exemplo: "Reunião agendada para amanhã às 10h! ✓"
-3. Se o usuário já informou data e hora, execute diretamente sem pedir confirmação novamente.
-4. Use os ids exatos dos eventos listados acima ao reagendar ou cancelar.
-5. No campo "description" do calendar_create, descreva o CONTEXTO da reunião: motivo, assunto, o que será discutido. Os dados de contato do cliente serão adicionados automaticamente — não é necessário incluí-los.
+FLUXO OBRIGATÓRIO para criar um evento (siga EXATAMENTE esta ordem):
+PASSO 1 — Se não sabe a data e/ou horário → pergunte ao usuário.
+PASSO 2 — Se não tem o e-mail do convidado (e não está em "Dados do contato" acima) → PERGUNTE o e-mail.
+PASSO 3 — Se já tem data, horário E e-mail → inclua calendar_create nas actions E confirme CONCLUÍDO na reply.
+NUNCA pule o PASSO 2. O e-mail é OBRIGATÓRIO para enviar o convite ao participante.
+
+PALAVRAS/FRASES ABSOLUTAMENTE PROIBIDAS:
+✗ "Um momento"     ✗ "Vou verificar"     ✗ "Aguarde"
+✗ "Deixa eu checar"     ✗ "Vou consultar a agenda"
+✗ "Vou agendar agora" sem incluir a action calendar_create no JSON
+✗ Qualquer frase que sugira que você vai fazer algo DEPOIS desta mensagem
+
+EXEMPLO CORRETO DO FLUXO:
+→ Usuário: "quero marcar uma reunião amanhã às 10h"
+→ Agente: {"reply": "Claro! Qual é o seu e-mail para eu enviar o convite?", "actions": []}
+→ Usuário: "fulano@empresa.com"
+→ Agente: {"reply": "Reunião agendada para amanhã às 10h! ✓ O convite será enviado para fulano@empresa.com.", "actions": [{"type":"calendar_create","title":"Reunião","start":"YYYY-MM-DDTHH:00","end":"YYYY-MM-DDTHH:00","description":"Reunião solicitada pelo contato","attendees":"fulano@empresa.com"}]}
+
+SCHEMA DAS AÇÕES:
+- calendar_create: {"type":"calendar_create","title":"...","start":"YYYY-MM-DDTHH:MM","end":"YYYY-MM-DDTHH:MM","description":"contexto da reunião","location":"...","attendees":"email@dominio.com"}
+- calendar_reschedule: {"type":"calendar_reschedule","event_id":"id_do_evento","start":"YYYY-MM-DDTHH:MM","end":"YYYY-MM-DDTHH:MM"}
+- calendar_cancel: {"type":"calendar_cancel","event_id":"id_do_evento"}
+
+REGRAS FINAIS:
+- Duração padrão: se não informada → 1 hora (end = start + 1h).
+- Use os ids EXATOS dos eventos listados acima ao reagendar/cancelar.
+- No "description" descreva o motivo/contexto da reunião.
 --- FIM DA FERRAMENTA DE AGENDA ---
 CALINSTR;
         }
@@ -230,7 +263,7 @@ INTENTINSTR;
                 ? "\n    {\"type\": \"notify_intent\", \"intent\": \"buy\", \"context\": \"cliente confirmou interesse em contratar\"},"
                 : '';
             $calendarExample = $agent->enable_calendar_tool
-                ? "\n    {\"type\": \"calendar_create\", \"title\": \"Reunião\", \"start\": \"YYYY-MM-DDTHH:MM\", \"end\": \"YYYY-MM-DDTHH:MM\"},"
+                ? "\n    {\"type\": \"calendar_create\", \"title\": \"Reunião\", \"start\": \"YYYY-MM-DDTHH:MM\", \"end\": \"YYYY-MM-DDTHH:MM\", \"attendees\": \"email@dominio.com\"},"
                 : '';
             $calendarActions = $agent->enable_calendar_tool
                 ? "\n- calendar_create / calendar_reschedule / calendar_cancel / calendar_list: ações de agenda (ver instruções acima)."

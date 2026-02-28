@@ -115,8 +115,22 @@ class GoogleCalendarService
             'end'         => ['dateTime' => $data['end'],   'timeZone' => config('app.timezone', 'America/Sao_Paulo')],
         ];
 
+        // Convidados (attendees) — envia convite por e-mail quando presente
+        $hasAttendees = false;
+        if (! empty($data['attendees'])) {
+            $raw   = is_array($data['attendees']) ? $data['attendees'] : [$data['attendees']];
+            $emails = array_values(array_filter(array_map('trim', $raw)));
+            if (! empty($emails)) {
+                $payload['attendees'] = array_map(fn ($e) => ['email' => $e], $emails);
+                $hasAttendees = true;
+            }
+        }
+
+        $url = self::BASE . '/calendars/' . self::CALENDAR_ID . '/events'
+             . ($hasAttendees ? '?sendUpdates=all' : '');
+
         $response = Http::withToken($this->token())
-            ->post(self::BASE . '/calendars/' . self::CALENDAR_ID . '/events', $payload);
+            ->post($url, $payload);
 
         if (! $response->successful()) {
             Log::error('GoogleCalendarService::createEvent falhou', ['body' => $response->body()]);

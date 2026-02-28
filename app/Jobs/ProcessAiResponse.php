@@ -215,7 +215,7 @@ class ProcessAiResponse implements ShouldQueue
         // ── Montar prompt e histórico ─────────────────────────────────────────
         $service            = new AiAgentService();
         $enableIntentNotify = (bool) ($agent->enable_intent_notify ?? false);
-        $system             = $service->buildSystemPrompt($agent, $stages, $availTags, $enableIntentNotify, $calendarEvents);
+        $system             = $service->buildSystemPrompt($agent, $stages, $availTags, $enableIntentNotify, $calendarEvents, $lead);
         $history = $service->buildHistory($conv, limit: 50);
 
         if (empty($history)) {
@@ -493,11 +493,12 @@ class ProcessAiResponse implements ShouldQueue
                     }
 
                     $event = $calendarService->createEvent([
-                        'title'       => $action['title']    ?? 'Evento',
-                        'start'       => $action['start']    ?? now()->addHour()->format('Y-m-d\TH:i'),
-                        'end'         => $action['end']      ?? now()->addHours(2)->format('Y-m-d\TH:i'),
+                        'title'       => $action['title']     ?? 'Evento',
+                        'start'       => $action['start']     ?? now()->addHour()->format('Y-m-d\TH:i'),
+                        'end'         => $action['end']       ?? now()->addHours(2)->format('Y-m-d\TH:i'),
                         'description' => $description,
-                        'location'    => $action['location'] ?? '',
+                        'location'    => $action['location']  ?? '',
+                        'attendees'   => $action['attendees'] ?? '',
                     ]);
                     Log::channel('whatsapp')->info('AI calendar: evento criado', [
                         'conversation_id' => $conv->id,
