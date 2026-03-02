@@ -62,20 +62,22 @@ class GoogleCalendarService
     // ── Calendar API ────────────────────────────────────────────────────────
 
     /**
-     * Garante que a string de data seja RFC3339 válida (exigido pelo Google Calendar API).
-     * FullCalendar pode enviar datas sem fuso (ex: "2026-03-01T00:00:00") ou só data (ex: "2026-03-01").
+     * Converte qualquer string de data para RFC3339 UTC ("Z") exigido pelo Google Calendar API.
+     * Motivo: quando o offset de fuso (ex: -03:00) é passado via query string pelo HTTP client,
+     * o ":" do offset fica URL-encoded como "%3A" e a API do Google retorna 400.
+     * Solução: sempre normalizar para UTC antes de enviar.
      */
     private function toRfc3339(string $date): string
     {
-        // Date-only (YYYY-MM-DD) → adicionar tempo UTC
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-            return $date . 'T00:00:00Z';
+        try {
+            return \Carbon\Carbon::parse($date)->utc()->format('Y-m-d\TH:i:s\Z');
+        } catch (\Throwable) {
+            // Fallback se Carbon não conseguir parsear
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+                return $date . 'T00:00:00Z';
+            }
+            return $date;
         }
-        // Datetime sem timezone → adicionar Z (UTC)
-        if (! preg_match('/[Z]$/', $date) && ! preg_match('/[+-]\d{2}:\d{2}$/', $date)) {
-            return $date . 'Z';
-        }
-        return $date;
     }
 
     /**
@@ -94,7 +96,8 @@ class GoogleCalendarService
             ]);
 
         if (! $response->successful()) {
-            throw new \RuntimeException('Erro ao listar eventos: ' . $response->status());
+            $detail = $response->json('error.message') ?? $response->body();
+            throw new \RuntimeException('Erro ao listar eventos: ' . $response->status() . ' — ' . $detail);
         }
 
         return collect($response->json('items', []))
