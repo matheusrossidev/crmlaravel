@@ -23,7 +23,10 @@ class TenantMiddleware
         }
 
         if (!$user->tenant_id) {
-            abort(403, 'Usuário sem tenant associado.');
+            auth()->logout();
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
+            return redirect()->route('login')->withErrors(['email' => 'Sua conta não está associada a nenhuma empresa. Entre em contato com o suporte.']);
         }
 
         $tenant = $user->tenant;
