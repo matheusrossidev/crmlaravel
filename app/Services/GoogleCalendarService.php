@@ -173,16 +173,35 @@ class GoogleCalendarService
 
         $tz = config('app.timezone', 'America/Sao_Paulo');
 
-        $payload = array_merge($current, array_filter([
+        $updates = array_filter([
             'summary'     => $data['title']       ?? null,
             'description' => $data['description'] ?? null,
             'location'    => $data['location']    ?? null,
             'start'       => isset($data['start']) ? ['dateTime' => $data['start'], 'timeZone' => $tz] : null,
             'end'         => isset($data['end'])   ? ['dateTime' => $data['end'],   'timeZone' => $tz] : null,
-        ], fn ($v) => $v !== null));
+        ], fn ($v) => $v !== null);
 
-        $response = Http::withToken($this->token())
-            ->put(self::BASE . '/calendars/' . self::CALENDAR_ID . '/events/' . $eventId, $payload);
+        $payload = array_merge($current, $updates);
+
+        // Suporte a convidados no update
+        $hasAttendees = false;
+        if (array_key_exists('attendees', $data)) {
+            if (! empty($data['attendees'])) {
+                $raw    = is_array($data['attendees']) ? $data['attendees'] : [$data['attendees']];
+                $emails = array_values(array_filter(array_map('trim', $raw)));
+                if (! empty($emails)) {
+                    $payload['attendees'] = array_map(fn ($e) => ['email' => $e], $emails);
+                    $hasAttendees = true;
+                }
+            } else {
+                $payload['attendees'] = [];
+            }
+        }
+
+        $url = self::BASE . '/calendars/' . self::CALENDAR_ID . '/events/' . $eventId
+             . ($hasAttendees ? '?sendUpdates=all' : '');
+
+        $response = Http::withToken($this->token())->put($url, $payload);
 
         if (! $response->successful()) {
             throw new \RuntimeException('Erro ao atualizar evento: ' . ($response->json('error.message') ?? $response->status()));

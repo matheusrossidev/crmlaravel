@@ -294,80 +294,21 @@
 }
 .ev-popup-row i { color: #9ca3af; margin-top: 1px; flex-shrink: 0; font-size: 13px; }
 
-/* ── Create/Edit Modal ───────────────────────────────────────────────────── */
-.cal-modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 1055;
-    background: rgba(0,0,0,.4);
-    align-items: center;
-    justify-content: center;
-}
-.cal-modal-overlay.open { display: flex; }
-.cal-modal {
-    background: #fff;
-    border-radius: 16px;
-    width: 480px;
-    max-width: 95vw;
-    padding: 28px;
-    box-shadow: 0 8px 48px rgba(0,0,0,.2);
-    max-height: 90vh;
-    overflow-y: auto;
-    animation: popIn .15s ease;
-}
-.cal-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-.cal-modal-title { font-size: 16px; font-weight: 700; color: #1a1d23; margin: 0; }
-.cal-modal-close { background: none; border: none; cursor: pointer; font-size: 22px; color: #9ca3af; padding: 0; line-height: 1; }
-.cal-modal-close:hover { color: #374151; }
-.cal-fg { margin-bottom: 14px; }
-.cal-fg label { display: block; font-size: 12.5px; font-weight: 600; color: #374151; margin-bottom: 5px; }
+/* ── Drawer inputs ───────────────────────────────────────────────────────── */
 .cal-inp {
     width: 100%;
     padding: 9px 12px;
-    border: 1.5px solid #e5e7eb;
-    border-radius: 9px;
-    font-size: 13.5px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
     font-family: inherit;
     color: #1a1d23;
     outline: none;
-    transition: border-color .15s, box-shadow .15s;
-    background: #fafafa;
     box-sizing: border-box;
+    transition: border-color .15s, box-shadow .15s;
+    background: #fff;
 }
-.cal-inp:focus { border-color: #0085f3; background: #fff; box-shadow: 0 0 0 3px rgba(0,133,243,.1); }
-.cal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.cal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; }
-.btn-cal-cancel {
-    padding: 8px 18px; background: transparent; color: #6b7280; border: 1.5px solid #e5e7eb;
-    border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer;
-}
-.btn-cal-cancel:hover { background: #f3f4f6; }
-.btn-cal-save {
-    padding: 8px 22px; background: #0085f3; color: #fff; border: none; border-radius: 9px;
-    font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s;
-}
-.btn-cal-save:hover { background: #0070d1; }
-.btn-cal-delete {
-    padding: 8px 16px; background: transparent; color: #ef4444; border: 1.5px solid #fecaca;
-    border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; margin-right: auto;
-}
-.btn-cal-delete:hover { background: #fef2f2; }
-.cal-error {
-    display: none;
-    background: #fef2f2;
-    color: #991b1b;
-    border: 1px solid #fecaca;
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 13px;
-    margin-bottom: 12px;
-}
+.cal-inp:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
 </style>
 @endpush
 
@@ -413,50 +354,122 @@
     <div id="popupBody"></div>
 </div>
 
-{{-- ── Create / Edit Modal ─────────────────────────────────────────────── --}}
-<div class="cal-modal-overlay" id="calModal">
-    <div class="cal-modal">
-        <div class="cal-modal-header">
-            <h3 class="cal-modal-title" id="calModalTitle">Novo Evento</h3>
-            <button class="cal-modal-close" onclick="closeModal()">×</button>
-        </div>
+{{-- ── Overlay do drawer ────────────────────────────────────────────────── --}}
+<div id="calDrawerOverlay" onclick="closeCalDrawer()" style="
+    display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,.35); z-index:1049;
+    transition:opacity .25s;
+"></div>
 
+{{-- ── Drawer de evento ─────────────────────────────────────────────────── --}}
+<aside id="calDrawer" style="
+    position:fixed; top:0; right:0;
+    width:480px; max-width:100vw; height:100vh;
+    background:#fff;
+    box-shadow:-4px 0 32px rgba(0,0,0,.12);
+    z-index:1050;
+    display:flex; flex-direction:column;
+    transform:translateX(100%);
+    transition:transform .25s cubic-bezier(.4,0,.2,1);
+    overflow:hidden;
+">
+    {{-- Header --}}
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:20px 24px;border-bottom:1px solid #e2e8f0;flex-shrink:0">
+        <h3 id="calDrawerTitle" style="font-size:16px;font-weight:600;color:#0f172a;margin:0">Novo Evento</h3>
+        <button onclick="closeCalDrawer()" style="
+            background:none;border:none;cursor:pointer;
+            color:#94a3b8;font-size:22px;line-height:1;padding:4px;
+        ">×</button>
+    </div>
+
+    {{-- Body (scrollable) --}}
+    <div style="flex:1;overflow-y:auto;padding:22px 24px">
         <input type="hidden" id="calEventId">
 
-        <div class="cal-fg">
-            <label>Título <span style="color:#ef4444">*</span></label>
+        {{-- Título --}}
+        <div style="margin-bottom:18px">
+            <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">
+                Título <span style="color:#ef4444">*</span>
+            </label>
             <input type="text" class="cal-inp" id="calTitle" placeholder="Ex: Reunião com cliente">
         </div>
-        <div class="cal-row">
-            <div class="cal-fg">
-                <label>Início</label>
+
+        {{-- Data/Hora --}}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+            <div>
+                <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Início</label>
                 <input type="datetime-local" class="cal-inp" id="calStart">
             </div>
-            <div class="cal-fg">
-                <label>Fim</label>
+            <div>
+                <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Fim</label>
                 <input type="datetime-local" class="cal-inp" id="calEnd">
             </div>
         </div>
-        <div class="cal-fg">
-            <label>Local</label>
-            <input type="text" class="cal-inp" id="calLocation" placeholder="Ex: Google Meet, Escritório…">
-        </div>
-        <div class="cal-fg">
-            <label>Descrição</label>
-            <textarea class="cal-inp" id="calDescription" rows="3" placeholder="Observações sobre o evento…"></textarea>
+
+        {{-- Local --}}
+        <div style="margin-bottom:18px">
+            <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">
+                <i class="bi bi-geo-alt" style="margin-right:4px;color:#9ca3af"></i>Local
+            </label>
+            <input type="text" class="cal-inp" id="calLocation" placeholder="Ex: Google Meet, Sala de reunião…">
         </div>
 
-        <div class="cal-error" id="calError"></div>
-
-        <div class="cal-footer">
-            <button class="btn-cal-delete" id="btnCalDelete" onclick="deleteEvent()" style="display:none">
-                <i class="bi bi-trash3"></i> Excluir
-            </button>
-            <button class="btn-cal-cancel" onclick="closeModal()">Cancelar</button>
-            <button class="btn-cal-save"   id="btnCalSave"   onclick="saveEvent()">Salvar</button>
+        {{-- Convidados --}}
+        <div style="margin-bottom:18px">
+            <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">
+                <i class="bi bi-person-plus" style="margin-right:4px;color:#9ca3af"></i>Convidados
+            </label>
+            <div id="calAttendeeTags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+            <div style="display:flex;gap:8px">
+                <input type="email" class="cal-inp" id="calAttendeeInput" placeholder="email@exemplo.com"
+                       style="flex:1"
+                       onkeydown="if(event.key==='Enter'){event.preventDefault();addCalAttendee()}">
+                <button type="button" onclick="addCalAttendee()" style="
+                    padding:9px 14px;background:#f1f5f9;border:1px solid #e2e8f0;
+                    border-radius:8px;font-size:13px;font-weight:500;color:#374151;
+                    cursor:pointer;white-space:nowrap;flex-shrink:0;
+                "><i class="bi bi-plus"></i> Adicionar</button>
+            </div>
+            <p style="margin:6px 0 0;font-size:12px;color:#94a3b8">
+                Os convidados receberão um convite por e-mail do Google Calendar.
+            </p>
         </div>
+
+        {{-- Descrição --}}
+        <div style="margin-bottom:18px">
+            <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">
+                <i class="bi bi-card-text" style="margin-right:4px;color:#9ca3af"></i>Descrição
+            </label>
+            <textarea class="cal-inp" id="calDescription" rows="4"
+                      placeholder="Observações sobre o evento…"
+                      style="resize:vertical"></textarea>
+        </div>
+
+        <div id="calError" style="display:none;background:#fef2f2;border:1px solid #fecaca;
+             color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px"></div>
     </div>
-</div>
+
+    {{-- Footer --}}
+    <div style="display:flex;align-items:center;gap:10px;
+                padding:16px 24px;border-top:1px solid #e2e8f0;flex-shrink:0">
+        <button id="btnCalDelete" onclick="deleteEvent()" style="
+            display:none;margin-right:auto;
+            padding:8px 14px;background:#fff;border:1px solid #fecaca;
+            color:#dc2626;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;
+        "><i class="bi bi-trash3" style="margin-right:4px"></i>Excluir</button>
+        <button onclick="closeCalDrawer()" style="
+            padding:8px 20px;background:#f1f5f9;border:1px solid #e2e8f0;
+            color:#374151;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;
+        ">Cancelar</button>
+        <button id="btnCalSave" onclick="saveEvent()" style="
+            padding:8px 24px;background:#0085f3;border:none;
+            color:#fff;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;
+            transition:background .15s;
+        ">Salvar</button>
+    </div>
+</aside>
+
 @endsection
 
 @push('scripts')
@@ -486,6 +499,7 @@ let currentEventId  = null;
 let popupEvent      = null;
 let cachedEvents    = [];
 let eventDateSet    = new Set();
+let calAttendees    = [];
 
 // ── PT-BR helpers ─────────────────────────────────────────────────────────
 const MONTHS_LONG  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -587,7 +601,6 @@ document.addEventListener('DOMContentLoaded', () => {
             week:   'Semana',
             day:    'Dia',
         },
-        // PT-BR month/day names
         locale: 'pt-br',
         firstDay: 0,
 
@@ -607,14 +620,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     fail(data.error);
                     return;
                 }
-                // Add colors
                 const colored = data.map(e => ({
                     ...e,
                     backgroundColor: eventColor(e.id || e.title || ''),
                     borderColor:     eventColor(e.id || e.title || ''),
                     textColor:       '#fff',
                 }));
-                // Cache
                 cachedEvents = data;
                 eventDateSet = new Set(data.map(e => (e.start||'').substr(0,10)).filter(Boolean));
                 renderMiniCal();
@@ -648,6 +659,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', e => {
         if (!document.getElementById('evPopup').contains(e.target)) closePopup();
     });
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { closeCalDrawer(); closePopup(); }
+    });
 });
 
 // ── Event Popup ───────────────────────────────────────────────────────────
@@ -663,14 +678,18 @@ function showPopup(event, jsEvent) {
         const e = event.end ? fmtDT(event.end) : null;
         body += row('bi-clock', s + (e ? ' → ' + e : ''));
     }
-    const loc  = event.extendedProps?.location || '';
-    const desc = event.extendedProps?.description || '';
+    const loc       = event.extendedProps?.location    || '';
+    const desc      = event.extendedProps?.description || '';
+    const attendees = event.extendedProps?.attendees   || [];
     if (loc)  body += row('bi-geo-alt', esc(loc));
+    if (attendees.length) {
+        const emails = attendees.map(a => esc(a.email || a)).join(', ');
+        body += row('bi-people', emails);
+    }
     if (desc) body += row('bi-card-text', `<span style="white-space:pre-line">${esc(desc.substring(0,250))}${desc.length>250?'…':''}</span>`);
 
     document.getElementById('popupBody').innerHTML = body;
 
-    // Position
     const popup = document.getElementById('evPopup');
     popup.classList.add('open');
     popup.style.display = 'block';
@@ -712,37 +731,94 @@ function esc(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// ── Modal helpers ─────────────────────────────────────────────────────────
+// ── Drawer helpers ────────────────────────────────────────────────────────
+function openCalDrawer() {
+    document.getElementById('calDrawerOverlay').style.display = 'block';
+    document.getElementById('calDrawer').style.transform = 'translateX(0)';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeCalDrawer() {
+    document.getElementById('calDrawerOverlay').style.display = 'none';
+    document.getElementById('calDrawer').style.transform = 'translateX(100%)';
+    document.body.style.overflow = '';
+}
+
+// Alias para compatibilidade com chamadas existentes
+function closeModal() { closeCalDrawer(); }
+
+// ── Create / Edit ─────────────────────────────────────────────────────────
 function openCreateModal(start, end) {
     currentEventId = null;
-    document.getElementById('calModalTitle').textContent = 'Novo Evento';
-    document.getElementById('calEventId').value          = '';
-    document.getElementById('calTitle').value            = '';
-    document.getElementById('calStart').value            = start ? toDTL(start) : '';
-    document.getElementById('calEnd').value              = end   ? toDTL(end)   : (start ? toDTL(addHour(start)) : '');
-    document.getElementById('calLocation').value         = '';
-    document.getElementById('calDescription').value      = '';
-    document.getElementById('btnCalDelete').style.display = 'none';
+    calAttendees   = [];
+    document.getElementById('calDrawerTitle').textContent    = 'Novo Evento';
+    document.getElementById('calEventId').value              = '';
+    document.getElementById('calTitle').value                = '';
+    document.getElementById('calStart').value                = start ? toDTL(start) : '';
+    document.getElementById('calEnd').value                  = end   ? toDTL(end)   : (start ? toDTL(addHour(start)) : '');
+    document.getElementById('calLocation').value             = '';
+    document.getElementById('calDescription').value          = '';
+    document.getElementById('calAttendeeInput').value        = '';
+    document.getElementById('btnCalDelete').style.display    = 'none';
+    renderAttendeeTags();
     hideErr();
-    document.getElementById('calModal').classList.add('open');
-    setTimeout(() => document.getElementById('calTitle').focus(), 80);
+    openCalDrawer();
+    setTimeout(() => document.getElementById('calTitle').focus(), 300);
 }
 
 function openEditModal(event) {
     currentEventId = event.id;
-    document.getElementById('calModalTitle').textContent = 'Editar Evento';
-    document.getElementById('calEventId').value  = event.id;
-    document.getElementById('calTitle').value    = event.title || '';
-    document.getElementById('calStart').value    = event.start ? toDTL(event.start.toISOString()) : '';
-    document.getElementById('calEnd').value      = event.end   ? toDTL(event.end.toISOString())   : '';
-    document.getElementById('calLocation').value    = event.extendedProps?.location    || '';
-    document.getElementById('calDescription').value = event.extendedProps?.description || '';
-    document.getElementById('btnCalDelete').style.display = 'inline-flex';
+    const rawAttendees = event.extendedProps?.attendees || [];
+    calAttendees = rawAttendees.map(a => (typeof a === 'string' ? a : a.email)).filter(Boolean);
+
+    document.getElementById('calDrawerTitle').textContent    = 'Editar Evento';
+    document.getElementById('calEventId').value              = event.id;
+    document.getElementById('calTitle').value                = event.title || '';
+    document.getElementById('calStart').value                = event.start ? toDTL(event.start.toISOString()) : '';
+    document.getElementById('calEnd').value                  = event.end   ? toDTL(event.end.toISOString())   : '';
+    document.getElementById('calLocation').value             = event.extendedProps?.location    || '';
+    document.getElementById('calDescription').value          = event.extendedProps?.description || '';
+    document.getElementById('calAttendeeInput').value        = '';
+    document.getElementById('btnCalDelete').style.display    = 'inline-flex';
+    renderAttendeeTags();
     hideErr();
-    document.getElementById('calModal').classList.add('open');
+    openCalDrawer();
 }
 
-function closeModal() { document.getElementById('calModal').classList.remove('open'); }
+// ── Attendees ─────────────────────────────────────────────────────────────
+function addCalAttendee() {
+    const input = document.getElementById('calAttendeeInput');
+    const email = input.value.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+    if (calAttendees.includes(email)) { input.value = ''; return; }
+    calAttendees.push(email);
+    input.value = '';
+    renderAttendeeTags();
+}
+
+function removeCalAttendee(email) {
+    calAttendees = calAttendees.filter(e => e !== email);
+    renderAttendeeTags();
+}
+
+function renderAttendeeTags() {
+    const container = document.getElementById('calAttendeeTags');
+    if (!calAttendees.length) { container.innerHTML = ''; return; }
+    container.innerHTML = calAttendees.map(email => `
+        <span style="display:inline-flex;align-items:center;gap:4px;
+                     background:#eff6ff;border:1px solid #bfdbfe;
+                     color:#1d4ed8;border-radius:20px;padding:3px 10px;font-size:12px;
+                     font-family:inherit">
+            <i class="bi bi-envelope" style="font-size:11px;opacity:.7"></i>
+            ${esc(email)}
+            <button type="button" onclick="removeCalAttendee(${JSON.stringify(email)})"
+                    style="background:none;border:none;cursor:pointer;color:#93c5fd;
+                           font-size:15px;line-height:1;padding:0;margin-left:2px">×</button>
+        </span>
+    `).join('');
+}
+
+// ── Error helpers ─────────────────────────────────────────────────────────
 function hideErr()    { const e = document.getElementById('calError'); e.style.display = 'none'; e.textContent = ''; }
 function showErr(msg) { const e = document.getElementById('calError'); e.textContent = msg; e.style.display = 'block'; }
 
@@ -772,10 +848,11 @@ async function saveEvent() {
                 end:         toISO(end),
                 location:    document.getElementById('calLocation').value.trim(),
                 description: document.getElementById('calDescription').value.trim(),
+                attendees:   calAttendees.join(','),
             }),
         });
         const data = await res.json();
-        if (data.success) { closeModal(); calendar.refetchEvents(); }
+        if (data.success) { closeCalDrawer(); calendar.refetchEvents(); }
         else showErr(data.message || 'Erro ao salvar evento.');
     } catch { showErr('Erro de conexão. Tente novamente.'); }
 
@@ -791,7 +868,7 @@ async function deleteEvent() {
             method: 'DELETE', headers: { 'X-CSRF-TOKEN': CSRF, Accept: 'application/json' },
         });
         const data = await res.json();
-        if (data.success) { closeModal(); calendar.refetchEvents(); }
+        if (data.success) { closeCalDrawer(); calendar.refetchEvents(); }
         else showErr(data.message || 'Erro ao excluir.');
     } catch { showErr('Erro de conexão.'); }
 }
@@ -816,10 +893,5 @@ function toDTL(iso) {
 }
 function toISO(dtl) { return new Date(dtl).toISOString(); }
 function addHour(iso) { const d = new Date(iso); d.setHours(d.getHours()+1); return d.toISOString(); }
-
-// Close modal on outside click
-document.getElementById('calModal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-});
 </script>
 @endpush

@@ -69,6 +69,7 @@ class CalendarController extends Controller
             'end'         => 'required|string',
             'description' => 'nullable|string|max:5000',
             'location'    => 'nullable|string|max:500',
+            'attendees'   => 'nullable|string|max:5000',
         ]);
 
         $conn = $this->getConnection();
@@ -93,6 +94,7 @@ class CalendarController extends Controller
             'end'         => 'nullable|string',
             'description' => 'nullable|string|max:5000',
             'location'    => 'nullable|string|max:500',
+            'attendees'   => 'nullable|string|max:5000',
         ]);
 
         $conn = $this->getConnection();
