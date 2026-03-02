@@ -397,6 +397,12 @@
                 <a href="{{ route('password.request') }}">Esqueceu sua senha?</a>
             </div>
 
+            <div class="auth-footer-link" style="margin-top: 24px; font-size: 12px; color: #9ca3af;">
+                <a href="{{ route('privacy') }}" target="_blank" style="color: #9ca3af;">Política de Privacidade</a>
+                &nbsp;·&nbsp;
+                <a href="{{ route('terms') }}" target="_blank" style="color: #9ca3af;">Termos de Uso</a>
+            </div>
+
         </div>
     </div>
 
