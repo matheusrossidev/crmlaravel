@@ -66,6 +66,7 @@ class Tenant extends Model
             DB::table('webhook_configs')->where('tenant_id', $id)->delete();
 
             // ── CRM ───────────────────────────────────────────────
+            DB::table('scheduled_messages')->where('tenant_id', $id)->delete();
             DB::table('lead_events')->where('tenant_id', $id)->delete();
             DB::table('lead_notes')->where('tenant_id', $id)->delete();
             DB::table('custom_field_values')->where('tenant_id', $id)->delete();

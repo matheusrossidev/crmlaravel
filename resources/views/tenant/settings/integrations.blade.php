@@ -440,8 +440,9 @@
             </div>
         </div>
 
-        {{-- ─── Instagram — Em breve (aguardando aprovação Meta) ─────────── --}}
-        <div class="integration-card" style="opacity:.6;pointer-events:none;">
+        {{-- ─── Instagram (somente super admin) ──────────────────────────── --}}
+        @if(auth()->user()->isSuperAdmin())
+        <div class="integration-card">
             <div class="integration-header">
                 <div class="integration-logo instagram">
                     <i class="bi bi-instagram" style="font-size:20px;"></i>
@@ -450,7 +451,13 @@
                     <h3>Instagram</h3>
                     <p>Chat de mensagens diretas (DMs)</p>
                 </div>
-                <span class="conn-badge" style="background:#fef3c7;color:#92400e;">Em breve</span>
+                @if($instagram && $instagram->status === 'connected')
+                    <span class="conn-badge conn-active">Conectado</span>
+                @elseif($instagram)
+                    <span class="conn-badge conn-expired">Reconectar</span>
+                @else
+                    <span class="conn-badge conn-none">Desconectado</span>
+                @endif
             </div>
             <div class="integration-body">
                 <ul class="integration-features">
@@ -459,19 +466,33 @@
                     <li>Criação automática de leads a partir de DMs</li>
                     <li>Histórico completo de conversas</li>
                 </ul>
-                <div class="conn-detail" style="color:#9ca3af;">
-                    Aguardando aprovação do aplicativo pelo Meta.
+                @if($instagram)
+                <div class="conn-detail">
+                    <strong>{{ $instagram->username ?? 'Conta conectada' }}</strong><br>
+                    <span>Conectado {{ $instagram->updated_at?->diffForHumans() ?? '' }}</span>
                 </div>
+                @else
+                <div class="conn-detail" style="color:#9ca3af;">
+                    Nenhuma conta conectada.
+                </div>
+                @endif
                 <div class="integration-actions">
-                    <button class="btn-coming-soon" disabled>
-                        <i class="bi bi-clock"></i> Em breve
-                    </button>
+                    @if($instagram)
+                        <button class="btn-disconnect" onclick="disconnectInstagram(this)">
+                            <i class="bi bi-x-circle"></i> Desconectar
+                        </button>
+                    @else
+                        <a href="{{ route('settings.integrations.instagram.redirect') }}" class="btn-connect">
+                            <i class="bi bi-instagram"></i> Conectar Instagram
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
+        @endif
 
-        {{-- ─── Facebook Ads ─────────────────────────────────────────────── --}}
-        @if(auth()->user()->isAdmin())
+        {{-- ─── Facebook Ads (somente super admin) ───────────────────────── --}}
+        @if(auth()->user()->isSuperAdmin())
         <div class="integration-card">
             <div class="integration-header">
                 <div class="integration-logo facebook">f</div>
@@ -494,7 +515,6 @@
                     <li>Atribui leads automaticamente às campanhas de origem</li>
                     <li>Atualização automática a cada hora</li>
                 </ul>
-
                 @if($facebook)
                 <div class="conn-detail">
                     <strong>{{ $facebook->platform_user_name ?? 'Conta conectada' }}</strong><br>
@@ -508,7 +528,6 @@
                     Nenhuma conta conectada.
                 </div>
                 @endif
-
                 <div class="integration-actions">
                     @if($facebook && in_array($facebook->status, ['active', 'expired']))
                         <button class="btn-sync" onclick="syncNow('facebook', this)">
@@ -525,34 +544,10 @@
                 </div>
             </div>
         </div>
-        @else
-        <div class="integration-card" style="opacity:.55;pointer-events:none;">
-            <div class="integration-header">
-                <div class="integration-logo facebook">f</div>
-                <div class="integration-title">
-                    <h3>Facebook Ads</h3>
-                    <p>Sincroniza campanhas, métricas e gastos</p>
-                </div>
-                <span class="conn-badge" style="background:#f3f4f6;color:#9ca3af;">Somente Admin</span>
-            </div>
-            <div class="integration-body">
-                <ul class="integration-features">
-                    <li>Importa campanhas e conjuntos de anúncios</li>
-                    <li>Sincroniza métricas de alcance, cliques e gastos</li>
-                    <li>Atribui leads automaticamente às campanhas de origem</li>
-                    <li>Atualização automática a cada hora</li>
-                </ul>
-                <div class="integration-actions">
-                    <button class="btn-coming-soon" disabled>
-                        <i class="bi bi-lock"></i> Apenas administradores
-                    </button>
-                </div>
-            </div>
-        </div>
         @endif
 
-        {{-- ─── Google Ads ───────────────────────────────────────────────── --}}
-        @if(auth()->user()->isAdmin())
+        {{-- ─── Google Ads (somente super admin) ─────────────────────────── --}}
+        @if(auth()->user()->isSuperAdmin())
         <div class="integration-card">
             <div class="integration-header">
                 <div class="integration-logo google">G</div>
@@ -575,7 +570,6 @@
                     <li>Atribui leads automaticamente às campanhas de origem</li>
                     <li>Atualização automática a cada hora</li>
                 </ul>
-
                 @if($google)
                 <div class="conn-detail">
                     <strong>{{ $google->platform_user_name ?? 'Conta conectada' }}</strong><br>
@@ -589,7 +583,6 @@
                     Nenhuma conta conectada.
                 </div>
                 @endif
-
                 <div class="integration-actions">
                     @if($google && in_array($google->status, ['active', 'expired']))
                         <button class="btn-sync" onclick="syncNow('google', this)">
@@ -603,30 +596,6 @@
                             <i class="bi bi-google"></i> Conectar Google
                         </a>
                     @endif
-                </div>
-            </div>
-        </div>
-        @else
-        <div class="integration-card" style="opacity:.55;pointer-events:none;">
-            <div class="integration-header">
-                <div class="integration-logo google">G</div>
-                <div class="integration-title">
-                    <h3>Google Ads</h3>
-                    <p>Sincroniza campanhas, métricas e gastos</p>
-                </div>
-                <span class="conn-badge" style="background:#f3f4f6;color:#9ca3af;">Somente Admin</span>
-            </div>
-            <div class="integration-body">
-                <ul class="integration-features">
-                    <li>Importa campanhas de Search, Display e Shopping</li>
-                    <li>Sincroniza impressões, cliques e custo por conversão</li>
-                    <li>Atribui leads automaticamente às campanhas de origem</li>
-                    <li>Atualização automática a cada hora</li>
-                </ul>
-                <div class="integration-actions">
-                    <button class="btn-coming-soon" disabled>
-                        <i class="bi bi-lock"></i> Apenas administradores
-                    </button>
                 </div>
             </div>
         </div>

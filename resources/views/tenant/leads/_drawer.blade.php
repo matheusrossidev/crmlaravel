@@ -165,6 +165,24 @@
             <div id="eventsList" style="display:flex;flex-direction:column;gap:0;"></div>
         </div>
 
+        {{-- Agendamentos (só na edição) --}}
+        <div id="drawerScheduledSection" style="display:none;margin-top:22px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div class="drawer-section-label" style="margin-bottom:0;">Agendamentos Pendentes</div>
+                <button type="button" id="drawerSchedBtn"
+                        style="font-size:12px;font-weight:600;color:#3b82f6;background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px;">
+                    <i class="bi bi-plus-lg"></i> Agendar
+                </button>
+            </div>
+            <div id="drawerScheduledList" style="display:flex;flex-direction:column;gap:6px;"></div>
+            <div id="drawerScheduledViewAll" style="display:none;margin-top:8px;text-align:right;">
+                <a id="drawerScheduledLink" href="#" target="_blank"
+                   style="font-size:12px;color:#3b82f6;text-decoration:none;">
+                    Ver todos <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
     </div>
 
     {{-- Footer com ações --}}
@@ -441,6 +459,8 @@ const LEAD_TAGS        = {!! json_encode($_configuredTagsJson) !!};
 const LEAD_NOTE_STORE  = '{{ route('leads.notes.store',   ['lead' => '__ID__']) }}';
 const LEAD_NOTE_DEL    = '{{ route('leads.notes.destroy', ['lead' => '__LEAD__', 'note' => '__NOTE__']) }}';
 const LEAD_PROFILE     = '{{ route('leads.profile',       ['lead' => '__ID__']) }}';
+const DRAWER_SCHED_INDEX   = '{{ route('leads.scheduled.index',   ['lead' => '__ID__']) }}';
+const DRAWER_SCHED_DESTROY = '{{ route('leads.scheduled.destroy', ['lead' => '__ID__', 'scheduled' => '__SID__']) }}';
 
 // ── Tag input logic ───────────────────────────────────────────────────────
 let _currentTags = [];
@@ -656,6 +676,9 @@ function populateDrawer(res) {
             </div>`).join('');
         document.getElementById('eventsSection').style.display = '';
     }
+
+    // Agendamentos
+    loadDrawerScheduled(lead.id);
 }
 
 // ── Carregar etapas no select quando pipeline muda ────────────────────────
@@ -1070,5 +1093,54 @@ function removeCfFile(fieldName, hiddenId) {
     if (fileInput) fileInput.value = '';
     const statusEl = document.getElementById(`cf_status_${fieldName}`);
     if (statusEl) statusEl.innerHTML = '';
+}
+
+// ── Drawer: Agendamentos ──────────────────────────────────────────────────
+async function loadDrawerScheduled(leadId) {
+    const url = DRAWER_SCHED_INDEX.replace('__ID__', leadId);
+    try {
+        const res  = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        const data = await res.json();
+        const items = (data.data || []).filter(s => s.status === 'pending');
+
+        const section  = document.getElementById('drawerScheduledSection');
+        const list     = document.getElementById('drawerScheduledList');
+        const viewAll  = document.getElementById('drawerScheduledViewAll');
+        const viewLink = document.getElementById('drawerScheduledLink');
+        const btn      = document.getElementById('drawerSchedBtn');
+
+        section.style.display = '';
+        if (btn) btn.onclick = () => openDrawerSchedModal(leadId);
+
+        if (!items.length) {
+            list.innerHTML = '<span style="font-size:12px;color:#9ca3af;">Nenhum agendamento pendente.</span>';
+            if (viewAll) viewAll.style.display = 'none';
+        } else {
+            const typeIcons = { text: 'bi-chat-text', image: 'bi-image', document: 'bi-file-earmark' };
+            list.innerHTML = items.slice(0, 3).map(s => `
+                <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#fafafa;border:1px solid #f0f2f7;border-radius:8px;">
+                    <i class="bi ${typeIcons[s.type] || 'bi-chat'}" style="color:#3b82f6;font-size:13px;flex-shrink:0;"></i>
+                    <span style="flex:1;min-width:0;font-size:12px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        ${escapeHtml(s.body || s.media_filename || 'Arquivo')}
+                    </span>
+                    <span style="font-size:11px;color:#9ca3af;white-space:nowrap;">${escapeHtml(s.send_at_human || '')}</span>
+                </div>`).join('');
+
+            if (viewAll) viewAll.style.display = items.length > 3 ? '' : 'none';
+            if (viewLink) viewLink.href = LEAD_PROFILE.replace('__ID__', leadId);
+        }
+    } catch (_) {
+        // silently fail — não bloqueante
+    }
+}
+
+function openDrawerSchedModal(leadId) {
+    if (typeof openScheduleModal === 'function') {
+        // Estamos na show page — usa o modal já existente
+        openScheduleModal();
+    } else {
+        // Outras páginas (kanban, index) → redireciona para a show page
+        window.location.href = LEAD_PROFILE.replace('__ID__', leadId);
+    }
 }
 </script>

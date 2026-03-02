@@ -34,6 +34,7 @@ use App\Http\Controllers\Tenant\AutomationController;
 use App\Http\Controllers\Tenant\BillingController;
 use App\Http\Controllers\Tenant\CalendarController;
 use App\Http\Controllers\Tenant\OnboardingController;
+use App\Http\Controllers\Tenant\ScheduledMessageController;
 use App\Http\Controllers\Tenant\InstagramAutomationController;
 use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -130,6 +131,11 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     // Lead profile page
     Route::get('/contatos/{lead}/perfil', [LeadController::class, 'showPage'])->name('leads.profile');
+
+    // Mensagens agendadas
+    Route::get   ('/contatos/{lead}/mensagens-agendadas',            [ScheduledMessageController::class, 'index'])  ->name('leads.scheduled.index');
+    Route::post  ('/contatos/{lead}/mensagens-agendadas',            [ScheduledMessageController::class, 'store'])  ->name('leads.scheduled.store');
+    Route::delete('/contatos/{lead}/mensagens-agendadas/{scheduled}',[ScheduledMessageController::class, 'destroy'])->name('leads.scheduled.destroy');
 
     // Relatórios
     Route::get('/relatorios', [ReportController::class, 'index'])->name('reports.index');

@@ -32,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule) {
         $schedule->command('billing:check-trials')->dailyAt('06:00');
+        $schedule->command('whatsapp:send-scheduled')->everyMinute()->withoutOverlapping();
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

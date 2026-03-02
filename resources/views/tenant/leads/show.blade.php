@@ -429,6 +429,191 @@ $pageIcon = 'person-badge';
     text-transform: uppercase;
     letter-spacing: .04em;
 }
+
+/* ── Scheduled Messages ── */
+.lp-sm-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid #f0f2f7;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    background: #fafafa;
+}
+.lp-sm-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #3b82f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+.lp-sm-body { flex: 1; min-width: 0; }
+.lp-sm-preview {
+    font-size: 13px;
+    color: #374151;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 5px;
+}
+.lp-sm-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 11.5px;
+    color: #9ca3af;
+}
+.lp-sm-badge {
+    padding: 1px 7px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+}
+.lp-sm-cancel {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #d1d5db;
+    font-size: 13px;
+    padding: 4px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    transition: color .15s;
+}
+.lp-sm-cancel:hover { color: #ef4444; }
+
+/* ── Schedule Modal ── */
+.sched-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.sched-modal {
+    background: #fff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.18);
+    overflow: hidden;
+}
+.sched-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid #f0f2f7;
+}
+.sched-modal-title { font-size: 15px; font-weight: 700; color: #1a1d23; }
+.sched-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    color: #9ca3af;
+    padding: 4px;
+    line-height: 1;
+    border-radius: 4px;
+    transition: color .15s;
+}
+.sched-modal-close:hover { color: #374151; }
+.sched-modal-body { padding: 22px; max-height: 65vh; overflow-y: auto; }
+.sched-form-group { margin-bottom: 16px; }
+.sched-form-label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 6px;
+}
+.sched-form-select,
+.sched-form-input,
+.sched-form-textarea {
+    width: 100%;
+    border: 1.5px solid #e8eaf0;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 13.5px;
+    font-family: inherit;
+    color: #1a1d23;
+    outline: none;
+    transition: border-color .15s;
+    box-sizing: border-box;
+    background: #fff;
+}
+.sched-form-select:focus,
+.sched-form-input:focus,
+.sched-form-textarea:focus { border-color: #3b82f6; }
+.sched-form-textarea { resize: vertical; min-height: 90px; }
+.sched-type-radios { display: flex; gap: 10px; }
+.sched-type-radio {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1.5px solid #e8eaf0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    transition: all .15s;
+    user-select: none;
+}
+.sched-type-radio:has(input:checked) {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    color: #3b82f6;
+}
+.sched-type-radio input { display: none; }
+.sched-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 22px;
+    border-top: 1px solid #f0f2f7;
+}
+.sched-btn-cancel {
+    padding: 9px 18px;
+    border: 1.5px solid #e8eaf0;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all .15s;
+}
+.sched-btn-cancel:hover { background: #f9fafb; }
+.sched-btn-submit {
+    padding: 9px 22px;
+    background: #3b82f6;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background .15s;
+}
+.sched-btn-submit:hover { background: #2563eb; }
+.sched-btn-submit:disabled { background: #93c5fd; cursor: not-allowed; }
 </style>
 @endpush
 
@@ -528,6 +713,12 @@ $pageIcon = 'person-badge';
                 @endif
             </button>
             @endif
+            <button class="lp-tab-btn" data-tab="scheduled">
+                <i class="bi bi-clock"></i> Agendamentos
+                @if($scheduledMessages->where('status', 'pending')->count() > 0)
+                <span style="background:#fff7ed;color:#f59e0b;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">{{ $scheduledMessages->where('status', 'pending')->count() }}</span>
+                @endif
+            </button>
         </div>
 
         {{-- ── Tab: Notas ── --}}
@@ -713,6 +904,64 @@ $pageIcon = 'person-badge';
         </div>
         @endif
 
+        {{-- ── Tab: Agendamentos ── --}}
+        <div class="lp-tab-panel" id="tab-scheduled">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <span style="font-size:13px;color:#6b7280;">{{ $scheduledMessages->count() }} mensagem(ns) agendada(s)</span>
+                <button onclick="openScheduleModal()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#eff6ff;color:#3b82f6;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">
+                    <i class="bi bi-plus-lg"></i> Agendar Mensagem
+                </button>
+            </div>
+            <div id="scheduledList">
+                @php
+                    $smStatusLabels = ['pending'=>'Pendente','sent'=>'Enviada','failed'=>'Falhou','cancelled'=>'Cancelada'];
+                    $smStatusStyles = [
+                        'pending'   => 'background:#fff7ed;color:#f59e0b;',
+                        'sent'      => 'background:#f0fdf4;color:#10b981;',
+                        'failed'    => 'background:#fef2f2;color:#ef4444;',
+                        'cancelled' => 'background:#f9fafb;color:#6b7280;',
+                    ];
+                    $smTypeIcons = ['text'=>'bi-chat-text','image'=>'bi-image','document'=>'bi-file-earmark'];
+                @endphp
+                @forelse($scheduledMessages as $sm)
+                <div class="lp-sm-card" id="sm-{{ $sm->id }}">
+                    <div class="lp-sm-icon">
+                        <i class="bi {{ $smTypeIcons[$sm->type] ?? 'bi-chat' }}"></i>
+                    </div>
+                    <div class="lp-sm-body">
+                        <div class="lp-sm-preview">
+                            @if($sm->body) {{ \Illuminate\Support\Str::limit($sm->body, 80) }}
+                            @elseif($sm->media_filename) {{ $sm->media_filename }}
+                            @else <em style="opacity:.5;">Sem conteúdo</em>
+                            @endif
+                        </div>
+                        <div class="lp-sm-meta">
+                            <span class="lp-sm-badge" style="{{ $smStatusStyles[$sm->status] ?? '' }}">
+                                {{ $smStatusLabels[$sm->status] ?? $sm->status }}
+                            </span>
+                            <span>{{ $sm->send_at->translatedFormat('d/m/Y \à\s H:i') }}</span>
+                            @if($sm->error)
+                            <span style="color:#ef4444;" title="{{ $sm->error }}">
+                                <i class="bi bi-exclamation-circle"></i> {{ \Illuminate\Support\Str::limit($sm->error, 50) }}
+                            </span>
+                            @endif
+                        </div>
+                    </div>
+                    @if($sm->status === 'pending')
+                    <button class="lp-sm-cancel" onclick="cancelScheduled({{ $sm->id }})" title="Cancelar agendamento">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                    @endif
+                </div>
+                @empty
+                <div id="scheduledEmpty" style="text-align:center;padding:40px 20px;color:#9ca3af;">
+                    <i class="bi bi-clock" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
+                    Nenhuma mensagem agendada.
+                </div>
+                @endforelse
+            </div>
+        </div>
+
     </div>{{-- end left col --}}
 
     {{-- ── Right: Info card ── --}}
@@ -875,6 +1124,68 @@ $pageIcon = 'person-badge';
 {{-- Drawer compartilhado (para edição) --}}
 @include('tenant.leads._drawer', ['pipelines' => $pipelines, 'customFieldDefs' => $cfDefs])
 
+{{-- ── Modal: Agendar Mensagem ── --}}
+<div id="schedModal" class="sched-overlay" style="display:none;" onclick="if(event.target===this)closeScheduleModal()">
+    <div class="sched-modal">
+        <div class="sched-modal-header">
+            <span class="sched-modal-title"><i class="bi bi-clock" style="margin-right:6px;"></i>Agendar Mensagem</span>
+            <button class="sched-modal-close" onclick="closeScheduleModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="sched-modal-body">
+            @if($quickMessages->isNotEmpty())
+            <div class="sched-form-group">
+                <label class="sched-form-label">Modelo de mensagem rápida (opcional)</label>
+                <select id="schedQuickMsg" class="sched-form-select" onchange="applyQuickMessage(this.value)">
+                    <option value="">— Selecionar modelo —</option>
+                    @foreach($quickMessages as $qm)
+                    <option value="{{ $qm->id }}" data-body="{{ e($qm->body) }}">{{ $qm->title }}</option>
+                    @endforeach
+                </select>
+            </div>
+            @endif
+            <div class="sched-form-group">
+                <label class="sched-form-label">Tipo de mensagem</label>
+                <div class="sched-type-radios">
+                    <label class="sched-type-radio">
+                        <input type="radio" name="schedType" value="text" checked onchange="onSchedTypeChange()">
+                        <i class="bi bi-chat-text"></i> Texto
+                    </label>
+                    <label class="sched-type-radio">
+                        <input type="radio" name="schedType" value="image" onchange="onSchedTypeChange()">
+                        <i class="bi bi-image"></i> Imagem
+                    </label>
+                    <label class="sched-type-radio">
+                        <input type="radio" name="schedType" value="document" onchange="onSchedTypeChange()">
+                        <i class="bi bi-file-earmark"></i> Documento
+                    </label>
+                </div>
+            </div>
+            <div class="sched-form-group" id="schedBodyGroup">
+                <label class="sched-form-label">Mensagem</label>
+                <textarea id="schedBody" class="sched-form-textarea" placeholder="Digite a mensagem..."></textarea>
+            </div>
+            <div class="sched-form-group" id="schedFileGroup" style="display:none;">
+                <label class="sched-form-label">Arquivo</label>
+                <input type="file" id="schedFile" class="sched-form-input" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt">
+            </div>
+            <div class="sched-form-group" id="schedCaptionGroup" style="display:none;">
+                <label class="sched-form-label">Legenda (opcional)</label>
+                <input type="text" id="schedCaption" class="sched-form-input" placeholder="Legenda para o arquivo...">
+            </div>
+            <div class="sched-form-group">
+                <label class="sched-form-label">Data e hora do envio</label>
+                <input type="datetime-local" id="schedSendAt" class="sched-form-input">
+            </div>
+        </div>
+        <div class="sched-modal-footer">
+            <button class="sched-btn-cancel" onclick="closeScheduleModal()">Cancelar</button>
+            <button class="sched-btn-submit" id="schedSubmitBtn" onclick="submitSchedule()">
+                <i class="bi bi-clock"></i> Agendar Envio
+            </button>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -897,6 +1208,164 @@ window.onLeadSaved = function(lead, isNew) {
 window.onLeadDeleted = function() {
     window.location.href = '{{ route('leads.index') }}';
 };
+
+// ── Scheduled Messages ────────────────────────────────────────────────────
+const SCHED_STORE   = '{{ route('leads.scheduled.store',   ['lead' => $lead->id]) }}';
+const SCHED_INDEX   = '{{ route('leads.scheduled.index',   ['lead' => $lead->id]) }}';
+const SCHED_DESTROY = '{{ route('leads.scheduled.destroy', ['lead' => $lead->id, 'scheduled' => '__ID__']) }}';
+
+function openScheduleModal() {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 2);
+    const pad = n => String(n).padStart(2, '0');
+    const min = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    document.getElementById('schedSendAt').min = min;
+    document.getElementById('schedSendAt').value = '';
+    document.getElementById('schedModal').style.display = 'flex';
+}
+
+function closeScheduleModal() {
+    document.getElementById('schedModal').style.display = 'none';
+    document.getElementById('schedBody').value = '';
+    const fi = document.getElementById('schedFile');
+    if (fi) fi.value = '';
+    document.getElementById('schedCaption').value = '';
+    const qm = document.getElementById('schedQuickMsg');
+    if (qm) qm.value = '';
+    document.querySelector('input[name="schedType"][value="text"]').checked = true;
+    onSchedTypeChange();
+}
+
+function onSchedTypeChange() {
+    const type = document.querySelector('input[name="schedType"]:checked')?.value || 'text';
+    document.getElementById('schedBodyGroup').style.display    = type === 'text' ? '' : 'none';
+    document.getElementById('schedFileGroup').style.display    = type !== 'text' ? '' : 'none';
+    document.getElementById('schedCaptionGroup').style.display = type !== 'text' ? '' : 'none';
+}
+
+function applyQuickMessage(id) {
+    const sel = document.getElementById('schedQuickMsg');
+    const opt = sel ? sel.options[sel.selectedIndex] : null;
+    if (id && opt) {
+        document.getElementById('schedBody').value = opt.dataset.body || '';
+        document.querySelector('input[name="schedType"][value="text"]').checked = true;
+        onSchedTypeChange();
+    }
+}
+
+async function submitSchedule() {
+    const type    = document.querySelector('input[name="schedType"]:checked')?.value || 'text';
+    const body    = document.getElementById('schedBody').value.trim();
+    const sendAt  = document.getElementById('schedSendAt').value;
+    const fileEl  = document.getElementById('schedFile');
+    const caption = document.getElementById('schedCaption').value.trim();
+
+    if (!sendAt) { alert('Informe a data e hora do envio.'); return; }
+    if (type === 'text' && !body) { alert('Digite a mensagem.'); return; }
+    if (type !== 'text' && (!fileEl || !fileEl.files.length)) { alert('Selecione um arquivo.'); return; }
+
+    const fd = new FormData();
+    fd.append('type', type);
+    fd.append('send_at', sendAt);
+    if (type === 'text') {
+        fd.append('body', body);
+    } else {
+        fd.append('file', fileEl.files[0]);
+        if (caption) fd.append('body', caption);
+    }
+
+    const btn = document.getElementById('schedSubmitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Agendando...';
+
+    try {
+        const res  = await fetch(SCHED_STORE, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
+            body: fd,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || data.message || 'Erro ao agendar.');
+        closeScheduleModal();
+        await reloadScheduledList();
+        if (typeof toastr !== 'undefined') toastr.success('Mensagem agendada com sucesso!');
+    } catch (e) {
+        alert('Erro: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-clock"></i> Agendar Envio';
+    }
+}
+
+async function cancelScheduled(id) {
+    if (!confirm('Cancelar este agendamento?')) return;
+    const url = SCHED_DESTROY.replace('__ID__', id);
+    try {
+        const res  = await fetch(url, {
+            method: 'DELETE',
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro ao cancelar.');
+        document.getElementById('sm-' + id)?.remove();
+        if (!document.querySelector('#scheduledList .lp-sm-card')) {
+            document.getElementById('scheduledList').innerHTML =
+                `<div id="scheduledEmpty" style="text-align:center;padding:40px 20px;color:#9ca3af;">
+                    <i class="bi bi-clock" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
+                    Nenhuma mensagem agendada.
+                </div>`;
+        }
+    } catch (e) {
+        alert('Erro: ' + e.message);
+    }
+}
+
+async function reloadScheduledList() {
+    const res  = await fetch(SCHED_INDEX, { headers: { 'Accept': 'application/json' } });
+    const data = await res.json();
+    const items = data.data || [];
+    const list  = document.getElementById('scheduledList');
+    const statusLabels = { pending: 'Pendente', sent: 'Enviada', failed: 'Falhou', cancelled: 'Cancelada' };
+    const statusStyles = {
+        pending:   'background:#fff7ed;color:#f59e0b;',
+        sent:      'background:#f0fdf4;color:#10b981;',
+        failed:    'background:#fef2f2;color:#ef4444;',
+        cancelled: 'background:#f9fafb;color:#6b7280;',
+    };
+    const typeIcons = { text: 'bi-chat-text', image: 'bi-image', document: 'bi-file-earmark' };
+
+    if (!items.length) {
+        list.innerHTML = `<div id="scheduledEmpty" style="text-align:center;padding:40px 20px;color:#9ca3af;">
+            <i class="bi bi-clock" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
+            Nenhuma mensagem agendada.</div>`;
+    } else {
+        list.innerHTML = items.map(s => `
+            <div class="lp-sm-card" id="sm-${s.id}">
+                <div class="lp-sm-icon"><i class="bi ${typeIcons[s.type] || 'bi-chat'}"></i></div>
+                <div class="lp-sm-body">
+                    <div class="lp-sm-preview">${escapeHtml(s.body || s.media_filename || 'Sem conteúdo')}</div>
+                    <div class="lp-sm-meta">
+                        <span class="lp-sm-badge" style="${statusStyles[s.status] || ''}">${statusLabels[s.status] || s.status}</span>
+                        <span>${escapeHtml(s.send_at_human || '')}</span>
+                        ${s.error ? `<span style="color:#ef4444;" title="${escapeHtml(s.error)}"><i class="bi bi-exclamation-circle"></i> ${escapeHtml(s.error.substring(0, 50))}</span>` : ''}
+                    </div>
+                </div>
+                ${s.status === 'pending' ? `<button class="lp-sm-cancel" onclick="cancelScheduled(${s.id})" title="Cancelar"><i class="bi bi-x-lg"></i></button>` : ''}
+            </div>`).join('');
+    }
+
+    // Atualiza badge da aba
+    const pending = items.filter(s => s.status === 'pending').length;
+    const tabBtn  = document.querySelector('[data-tab="scheduled"]');
+    const badge   = tabBtn?.querySelector('span');
+    if (pending > 0) {
+        const html = `<span style="background:#fff7ed;color:#f59e0b;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">${pending}</span>`;
+        if (badge) badge.outerHTML = html;
+        else if (tabBtn) tabBtn.insertAdjacentHTML('beforeend', html);
+    } else if (badge) {
+        badge.remove();
+    }
+}
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
 document.querySelectorAll('.lp-tab-btn').forEach(btn => {
