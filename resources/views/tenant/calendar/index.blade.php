@@ -602,7 +602,11 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .then(r => r.json())
             .then(data => {
-                if (data.error) { fail(data.error); return; }
+                if (data.error) {
+                    toastr.error('Erro ao carregar agenda: ' + data.error, 'Calendário');
+                    fail(data.error);
+                    return;
+                }
                 // Add colors
                 const colored = data.map(e => ({
                     ...e,
@@ -617,7 +621,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderUpcoming(data);
                 ok(colored);
             })
-            .catch(fail);
+            .catch(err => {
+                toastr.error('Não foi possível conectar ao Google Calendar. Verifique a integração nas configurações.', 'Calendário');
+                fail(err);
+            });
         },
 
         dateClick(info) {

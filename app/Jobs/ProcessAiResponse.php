@@ -308,6 +308,7 @@ class ProcessAiResponse implements ShouldQueue
         }
 
         // ── Aplicar ações de pipeline e tags ─────────────────────────────────
+        $extraMessages = [];
         foreach ($actions as $action) {
             $type = $action['type'] ?? '';
 
@@ -332,7 +333,10 @@ class ProcessAiResponse implements ShouldQueue
                 $this->applyAssignHuman($conv, $agent);
             } elseif (in_array($type, ['calendar_create', 'calendar_reschedule', 'calendar_cancel', 'calendar_list'], true)) {
                 if ($calendarService !== null) {
-                    $this->applyCalendarAction($conv, $action, $calendarService, $lead ?? null);
+                    $extra = $this->applyCalendarAction($conv, $action, $calendarService, $lead ?? null);
+                    if ($extra !== null) {
+                        $extraMessages[] = $extra;
+                    }
                 }
             }
         }
@@ -340,6 +344,10 @@ class ProcessAiResponse implements ShouldQueue
         // ── Dividir em mensagens e enviar com delay ───────────────────────────
         $delay    = max(1, $agent->response_delay_seconds ?? 2);
         $messages = $service->splitIntoMessages($reply, $maxLength);
+
+        foreach ($extraMessages as $extra) {
+            $messages[] = $extra;
+        }
 
         Log::channel('whatsapp')->info('AI job: enviando resposta', [
             'conversation_id' => $this->conversationId,
@@ -465,7 +473,7 @@ class ProcessAiResponse implements ShouldQueue
         array $action,
         GoogleCalendarService $calendarService,
         ?Lead $lead = null,
-    ): void {
+    ): ?string {
         $type = $action['type'] ?? '';
 
         try {
@@ -492,9 +500,10 @@ class ProcessAiResponse implements ShouldQueue
                             : $contactBlock;
                     }
 
+                    $startStr = $action['start'] ?? now()->addHour()->format('Y-m-d\TH:i');
                     $event = $calendarService->createEvent([
                         'title'       => $action['title']     ?? 'Evento',
-                        'start'       => $action['start']     ?? now()->addHour()->format('Y-m-d\TH:i'),
+                        'start'       => $startStr,
                         'end'         => $action['end']       ?? now()->addHours(2)->format('Y-m-d\TH:i'),
                         'description' => $description,
                         'location'    => $action['location']  ?? '',
@@ -505,7 +514,10 @@ class ProcessAiResponse implements ShouldQueue
                         'event_id'        => $event['id'] ?? null,
                         'title'           => $action['title'] ?? '',
                     ]);
-                    break;
+                    $dateFormatted = \Carbon\Carbon::parse($startStr)
+                        ->setTimezone(config('app.timezone', 'America/Sao_Paulo'))
+                        ->format('d/m/Y \à\s H:i');
+                    return "✅ Evento criado com sucesso!\n📅 {$dateFormatted}\n📌 " . ($action['title'] ?? 'Evento');
 
                 case 'calendar_reschedule':
                     $eventId = $action['event_id'] ?? '';
@@ -519,7 +531,7 @@ class ProcessAiResponse implements ShouldQueue
                             'event_id'        => $eventId,
                         ]);
                     }
-                    break;
+                    return null;
 
                 case 'calendar_cancel':
                     $eventId = $action['event_id'] ?? '';
@@ -530,14 +542,17 @@ class ProcessAiResponse implements ShouldQueue
                             'event_id'        => $eventId,
                         ]);
                     }
-                    break;
+                    return null;
 
                 case 'calendar_list':
                     // calendar_list é apenas informativo — o agente já recebe os eventos no system prompt
                     Log::channel('whatsapp')->debug('AI calendar: calendar_list solicitado (já no contexto)', [
                         'conversation_id' => $conv->id,
                     ]);
-                    break;
+                    return null;
+
+                default:
+                    return null;
             }
         } catch (\Throwable $e) {
             Log::channel('whatsapp')->error('AI calendar: falha ao executar ação de agenda', [
@@ -545,6 +560,7 @@ class ProcessAiResponse implements ShouldQueue
                 'action_type'     => $type,
                 'error'           => $e->getMessage(),
             ]);
+            return '⚠️ Não foi possível criar o evento no Google Calendar. Verifique se a integração com o Google está ativa nas configurações.';
         }
     }
 }

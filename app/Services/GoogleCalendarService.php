@@ -62,6 +62,23 @@ class GoogleCalendarService
     // ── Calendar API ────────────────────────────────────────────────────────
 
     /**
+     * Garante que a string de data seja RFC3339 válida (exigido pelo Google Calendar API).
+     * FullCalendar pode enviar datas sem fuso (ex: "2026-03-01T00:00:00") ou só data (ex: "2026-03-01").
+     */
+    private function toRfc3339(string $date): string
+    {
+        // Date-only (YYYY-MM-DD) → adicionar tempo UTC
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return $date . 'T00:00:00Z';
+        }
+        // Datetime sem timezone → adicionar Z (UTC)
+        if (! preg_match('/[Z]$/', $date) && ! preg_match('/[+-]\d{2}:\d{2}$/', $date)) {
+            return $date . 'Z';
+        }
+        return $date;
+    }
+
+    /**
      * Lista eventos no range [timeMin, timeMax].
      * Retorna array de eventos com id, title, start, end, description, location.
      */
@@ -69,8 +86,8 @@ class GoogleCalendarService
     {
         $response = Http::withToken($this->token())
             ->get(self::BASE . '/calendars/' . self::CALENDAR_ID . '/events', [
-                'timeMin'      => $timeMin,
-                'timeMax'      => $timeMax,
+                'timeMin'      => $this->toRfc3339($timeMin),
+                'timeMax'      => $this->toRfc3339($timeMax),
                 'singleEvents' => true,
                 'orderBy'      => 'startTime',
                 'maxResults'   => 250,
