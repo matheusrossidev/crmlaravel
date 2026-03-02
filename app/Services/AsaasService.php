@@ -109,28 +109,43 @@ class AsaasService
 
     private function handleResponse(Response $response, string $method, string $path): array
     {
-        $body = $response->json() ?? [];
+        $body   = $response->json() ?? [];
+        $status = $response->status();
 
         if ($response->failed()) {
-            $errorMsg = $this->extractErrorMessage($body);
+            $errorMsg = $this->extractErrorMessage($body, $status);
             \Log::error("AsaasService {$method} {$path} falhou", [
-                'status' => $response->status(),
+                'status' => $status,
                 'body'   => $body,
+                'raw'    => $response->body(),
             ]);
-            throw new \RuntimeException($errorMsg, $response->status());
+            throw new \RuntimeException($errorMsg, $status);
         }
 
         return $body;
     }
 
-    private function extractErrorMessage(array $body): string
+    private function extractErrorMessage(array $body, int $status = 0): string
     {
         // Asaas retorna erros em body.errors[].description ou body.description
         if (!empty($body['errors'])) {
             $messages = array_column($body['errors'], 'description');
-            return implode(' | ', array_filter($messages)) ?: 'Erro desconhecido no Asaas';
+            $joined   = implode(' | ', array_filter($messages));
+            return $joined ?: "Erro no Asaas (HTTP {$status})";
         }
 
-        return $body['description'] ?? $body['message'] ?? 'Erro desconhecido no Asaas';
+        if (!empty($body['description'])) return $body['description'];
+        if (!empty($body['message']))     return $body['message'];
+
+        // Body vazio geralmente indica chave de API inválida ou corrompida
+        if (empty($body)) {
+            return match ($status) {
+                401 => 'Chave de API Asaas inválida ou não autorizada (HTTP 401). Verifique ASAAS_API_KEY no Portainer.',
+                403 => 'Acesso negado pela API Asaas (HTTP 403).',
+                default => "Erro no Asaas (HTTP {$status}) — resposta vazia.",
+            };
+        }
+
+        return "Erro no Asaas (HTTP {$status}): " . json_encode($body);
     }
 }
