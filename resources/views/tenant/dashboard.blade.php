@@ -16,20 +16,38 @@
 
 @push('styles')
 <style>
-    /* ── Greeting ─────────────────────────────────────────────────────── */
-    .greeting {
-        margin-bottom: 24px;
+    /* ── Welcome Banner ────────────────────────────────────────────────── */
+    .welcome-banner {
+        margin-bottom: 20px;
     }
-    .greeting h1 {
+
+    .welcome-banner-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: #9ca3af;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .welcome-banner-title {
         font-size: 22px;
         font-weight: 700;
         color: #1a1d23;
         margin: 0 0 4px;
+        line-height: 1.3;
     }
-    .greeting p {
-        font-size: 14px;
+
+    .welcome-banner-sub {
+        font-size: 13.5px;
         color: #6b7280;
         margin: 0;
+        line-height: 1.55;
+    }
+
+    @media (max-width: 640px) {
+        .welcome-banner-title { font-size: 18px; }
     }
 
     /* ── Stat Cards ───────────────────────────────────────────────────── */
@@ -350,10 +368,11 @@
 @section('content')
 <div class="page-container">
 
-    {{-- Saudação --}}
-    <div class="greeting">
-        <h1>Olá, {{ auth()->user()->name }} 👋</h1>
-        <p>Aqui está um resumo do seu negócio em {{ now()->translatedFormat('F Y') }}.</p>
+    {{-- Welcome Banner --}}
+    <div class="welcome-banner">
+        <span class="welcome-banner-label">{{ now()->translatedFormat('l, d \d\e F') }}</span>
+        <h1 class="welcome-banner-title">Bem-vindo de volta, {{ auth()->user()->name }}.</h1>
+        <p class="welcome-banner-sub">Acompanhe seus leads, pipeline de vendas e conversas — tudo em um só lugar.</p>
     </div>
 
     {{-- ── Row 1: Stat Cards ─────────────────────────────────────────── --}}
@@ -479,10 +498,6 @@
                     <a href="{{ route('crm.kanban') }}" class="quick-action">
                         <div class="qa-icon"><i class="bi bi-kanban"></i></div>
                         Ver Kanban
-                    </a>
-                    <a href="{{ route('campaigns.index') }}" class="quick-action">
-                        <div class="qa-icon"><i class="bi bi-megaphone"></i></div>
-                        Campanhas
                     </a>
                     <a href="{{ route('settings.pipelines') }}" class="quick-action">
                         <div class="qa-icon"><i class="bi bi-funnel"></i></div>
