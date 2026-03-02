@@ -909,8 +909,9 @@ async function submitOnboarding() {
         if (avatarFile) formData.append('avatar', avatarFile);
 
         const resp = await fetch('{{ route('onboarding.complete') }}', {
-            method: 'POST',
-            body:   formData,
+            method:  'POST',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body:    formData,
         });
 
         // Lê como texto primeiro para poder inspecionar em caso de erro HTML
