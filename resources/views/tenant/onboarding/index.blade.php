@@ -888,11 +888,17 @@ function buildPreview(niche) {
 async function submitOnboarding() {
     const btn     = document.getElementById('btnFinish');
     const spinner = document.getElementById('submitSpinner');
-    const text    = document.getElementById('btnFinishText');
+    const btnText = document.getElementById('btnFinishText');
 
-    btn.disabled       = true;
+    const resetBtn = () => {
+        btn.disabled          = false;
+        spinner.style.display = 'none';
+        btnText.style.display = '';
+    };
+
+    btn.disabled          = true;
     spinner.style.display = 'block';
-    text.style.display    = 'none';
+    btnText.style.display = 'none';
 
     try {
         const formData = new FormData();
@@ -907,7 +913,19 @@ async function submitOnboarding() {
             body:   formData,
         });
 
-        const json = await resp.json();
+        // Lê como texto primeiro para poder inspecionar em caso de erro HTML
+        const rawText = await resp.text();
+
+        let json;
+        try {
+            json = JSON.parse(rawText);
+        } catch (_) {
+            // Servidor retornou HTML (erro 500, redirect, etc.)
+            console.error('[Onboarding] Resposta não-JSON (HTTP ' + resp.status + '):', rawText.substring(0, 800));
+            showError('Erro do servidor (HTTP ' + resp.status + '). Verifique o console para detalhes.');
+            resetBtn();
+            return;
+        }
 
         if (json.success) {
             window.location.href = json.redirect;
@@ -916,15 +934,12 @@ async function submitOnboarding() {
                 ? Object.values(json.errors).flat().join(' ')
                 : (json.message || 'Ocorreu um erro. Tente novamente.');
             showError(msgs);
-            btn.disabled          = false;
-            spinner.style.display = 'none';
-            text.style.display    = '';
+            resetBtn();
         }
     } catch (e) {
+        console.error('[Onboarding] Fetch error:', e);
         showError('Erro de conexão. Verifique sua internet e tente novamente.');
-        btn.disabled          = false;
-        spinner.style.display = 'none';
-        text.style.display    = '';
+        resetBtn();
     }
 }
 

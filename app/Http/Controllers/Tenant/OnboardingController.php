@@ -44,30 +44,45 @@ class OnboardingController extends Controller
         $user   = auth()->user();
         $tenant = $user->tenant;
 
-        // 1. Atualizar nome da empresa
-        $tenant->update(['name' => $data['company_name']]);
+        try {
+            // 1. Atualizar nome da empresa
+            $tenant->update(['name' => $data['company_name']]);
 
-        // 2. Upload logo
-        if ($request->hasFile('logo')) {
-            $file     = $request->file('logo');
-            $filename = $tenant->id . '.' . $file->extension();
-            Storage::disk('public')->putFileAs('workspace-logos', $file, $filename);
-            $tenant->update(['logo' => Storage::disk('public')->url('workspace-logos/' . $filename)]);
+            // 2. Upload logo
+            if ($request->hasFile('logo')) {
+                $file     = $request->file('logo');
+                $filename = $tenant->id . '.' . $file->extension();
+                Storage::disk('public')->putFileAs('workspace-logos', $file, $filename);
+                $tenant->update(['logo' => Storage::disk('public')->url('workspace-logos/' . $filename)]);
+            }
+
+            // 3. Upload avatar do usuário
+            if ($request->hasFile('avatar')) {
+                $file     = $request->file('avatar');
+                $filename = $user->id . '.' . $file->extension();
+                Storage::disk('public')->putFileAs('avatars', $file, $filename);
+                $user->update(['avatar' => Storage::disk('public')->url('avatars/' . $filename)]);
+            }
+
+            // 4. Criar pipeline + etapas + tags + motivos com base no nicho
+            $this->seedNicheData($tenant, $data['niche']);
+
+            // 5. Marcar onboarding como concluído
+            $tenant->update(['onboarding_completed_at' => now()]);
+
+        } catch (\Throwable $e) {
+            \Log::error('OnboardingController::complete falhou', [
+                'tenant_id' => $tenant->id,
+                'niche'     => $data['niche'],
+                'error'     => $e->getMessage(),
+                'trace'     => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao salvar: ' . $e->getMessage(),
+            ], 500);
         }
-
-        // 3. Upload avatar do usuário
-        if ($request->hasFile('avatar')) {
-            $file     = $request->file('avatar');
-            $filename = $user->id . '.' . $file->extension();
-            Storage::disk('public')->putFileAs('avatars', $file, $filename);
-            $user->update(['avatar' => Storage::disk('public')->url('avatars/' . $filename)]);
-        }
-
-        // 4. Criar pipeline + etapas + tags + motivos com base no nicho
-        $this->seedNicheData($tenant, $data['niche']);
-
-        // 5. Marcar onboarding como concluído
-        $tenant->update(['onboarding_completed_at' => now()]);
 
         return response()->json(['success' => true, 'redirect' => route('dashboard')]);
     }
