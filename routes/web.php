@@ -81,6 +81,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     // Onboarding (primeiro acesso)
     Route::get('onboarding',           [OnboardingController::class, 'show'])->name('onboarding.show');
     Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
+    Route::post('onboarding/skip',     [OnboardingController::class, 'skip'])->name('onboarding.skip');
 
     // Cobrança / Checkout
     Route::get('cobranca/checkout', [BillingController::class, 'showCheckout'])->name('billing.checkout');

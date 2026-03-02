@@ -32,6 +32,17 @@ class OnboardingController extends Controller
         ]);
     }
 
+    public function skip(): RedirectResponse
+    {
+        $tenant = auth()->user()->tenant;
+
+        if ($tenant && $tenant->onboarding_completed_at === null) {
+            $tenant->update(['onboarding_completed_at' => now()]);
+        }
+
+        return redirect()->route('dashboard');
+    }
+
     public function complete(Request $request): JsonResponse
     {
         $data = $request->validate([

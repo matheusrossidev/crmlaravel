@@ -36,6 +36,7 @@
             padding: 48px 64px;
             min-width: 0;
             overflow-y: auto;
+            position: relative;
         }
 
         .onb-brand {
@@ -427,6 +428,108 @@
 
         .alert-error.show { display: block; }
 
+        /* ── Skip button ── */
+        .onb-skip {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            font-size: 13px;
+            color: #9CA3AF;
+            text-decoration: none;
+            font-weight: 500;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: color .2s;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .onb-skip:hover {
+            color: #6B7280;
+            background: #F3F4F6;
+        }
+
+        /* ── Skip confirm modal ── */
+        .skip-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .skip-modal-backdrop.show {
+            display: flex;
+        }
+
+        .skip-modal {
+            background: #fff;
+            border-radius: 16px;
+            padding: 32px;
+            width: 100%;
+            max-width: 400px;
+            margin: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,.15);
+        }
+
+        .skip-modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .skip-modal-body {
+            font-size: 14px;
+            color: #6B7280;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .skip-modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-skip-cancel {
+            flex: 1;
+            padding: 10px;
+            border: 1.5px solid #E5E7EB;
+            border-radius: 10px;
+            background: #fff;
+            color: #374151;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: border-color .2s;
+        }
+
+        .btn-skip-cancel:hover { border-color: #9CA3AF; }
+
+        .btn-skip-confirm {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            background: #F3F4F6;
+            color: #374151;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .2s;
+        }
+
+        .btn-skip-confirm:hover { background: #E5E7EB; }
+
         /* ── Responsive ── */
         @media (max-width: 900px) {
             .onb-right { display: none; }
@@ -444,6 +547,12 @@
 
     <!-- ── Lado esquerdo: wizard ── -->
     <div class="onb-left">
+
+        <!-- Botão pular -->
+        <button class="onb-skip" onclick="openSkipModal()" title="Pular configuração">
+            Pular <i class="bi bi-skip-forward"></i>
+        </button>
+
         <div class="onb-brand">
             <img src="{{ asset('images/logo-dark.png') }}" alt="Syncro" onerror="this.style.display='none'">
         </div>
@@ -661,6 +770,26 @@
     </div>
 
 </div><!-- /onb-wrapper -->
+
+<!-- Modal de confirmação para pular onboarding -->
+<div class="skip-modal-backdrop" id="skipModal" onclick="closeSkipModal(event)">
+    <div class="skip-modal">
+        <div class="skip-modal-title">Pular configuração?</div>
+        <div class="skip-modal-body">
+            Você pode montar seu funil e configurar tags manualmente depois em <strong>Configurações</strong>.<br><br>
+            Esta tela não vai aparecer novamente.
+        </div>
+        <div class="skip-modal-actions">
+            <button class="btn-skip-cancel" onclick="closeSkipModal()">Voltar</button>
+            <form method="POST" action="{{ route('onboarding.skip') }}" style="flex:1;">
+                @csrf
+                <button type="submit" class="btn-skip-confirm" style="width:100%;">
+                    Sim, pular
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
 
 <script>
 const NICHE_DATA = {
@@ -953,6 +1082,16 @@ function showError(msg) {
 
 function hideError() {
     document.getElementById('alertError').classList.remove('show');
+}
+
+function openSkipModal() {
+    document.getElementById('skipModal').classList.add('show');
+}
+
+function closeSkipModal(e) {
+    if (!e || e.target === document.getElementById('skipModal')) {
+        document.getElementById('skipModal').classList.remove('show');
+    }
 }
 
 // Drag-and-drop for logo zone
