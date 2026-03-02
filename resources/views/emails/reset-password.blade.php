@@ -37,7 +37,6 @@
                 <td style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;">
                   <table cellpadding="0" cellspacing="0">
                     <tr>
-                      <td style="font-size:18px;padding-right:10px;vertical-align:top;">⏱️</td>
                       <td style="font-size:13px;color:#92400e;line-height:1.5;">
                         <strong>Atenção:</strong> Este link é válido por apenas <strong>15 minutos</strong>.
                         Após esse prazo, você precisará solicitar um novo link.

@@ -14,8 +14,7 @@
         <tr>
           <td style="background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);padding:48px 40px 40px;text-align:center;">
             <img src="{{ url('/images/logo-white.png') }}" alt="Syncro" style="height:44px;width:auto;display:block;margin:0 auto;" />
-            <div style="font-size:52px;margin:20px 0 16px;display:block;">⏳</div>
-            <div style="font-size:26px;font-weight:800;color:#fff;line-height:1.3;">
+            <div style="font-size:26px;font-weight:800;color:#fff;line-height:1.3;margin-top:20px;">
               @if($daysLeft === 1)
                 Último dia de trial!
               @else

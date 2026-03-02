@@ -14,8 +14,7 @@
         <tr>
           <td style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);padding:48px 40px 40px;text-align:center;">
             <img src="{{ url('/images/logo-white.png') }}" alt="Syncro" style="height:44px;width:auto;display:block;margin:0 auto;" />
-            <div style="font-size:52px;margin:20px 0 16px;display:block;">✅</div>
-            <div style="font-size:26px;font-weight:800;color:#fff;line-height:1.3;">Assinatura confirmada!</div>
+            <div style="font-size:26px;font-weight:800;color:#fff;line-height:1.3;margin-top:20px;">Assinatura confirmada!</div>
             <div style="color:#d1fae5;font-size:15px;margin-top:8px;">Seu acesso está totalmente liberado</div>
           </td>
         </tr>
@@ -34,7 +33,7 @@
             </p>
 
             <div style="background:#ecfdf5;border:1px solid #d1fae5;border-radius:8px;padding:20px;margin-bottom:28px;text-align:center;">
-              <p style="font-size:15px;color:#065f46;font-weight:600;margin:0;">🎉 Bem-vindo ao time Syncro!</p>
+              <p style="font-size:15px;color:#065f46;font-weight:600;margin:0;">Bem-vindo ao time Syncro!</p>
               <p style="font-size:13px;color:#047857;margin:8px 0 0;">A cobrança é mensal e renovada automaticamente.</p>
             </div>
 

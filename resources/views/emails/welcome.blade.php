@@ -14,8 +14,7 @@
         <tr>
           <td style="background:linear-gradient(135deg,#0085f3 0%,#006fd6 100%);padding:48px 40px 40px;text-align:center;">
             <img src="{{ url('/images/logo-white.png') }}" alt="Syncro" style="height:44px;width:auto;display:block;margin:0 auto;" />
-            <div style="font-size:52px;margin:20px 0 16px;display:block;">🎉</div>
-            <div style="font-size:26px;font-weight:800;color:#fff;line-height:1.3;">Sua conta está ativa!</div>
+            <div style="font-size:26px;font-weight:800;color:#fff;line-height:1.3;margin-top:20px;">Sua conta está ativa!</div>
             <div style="color:#bfdbfe;font-size:15px;margin-top:8px;">Email confirmado com sucesso</div>
           </td>
         </tr>
@@ -94,7 +93,7 @@
             </table>
 
             <p style="text-align:center;font-size:13px;color:#059669;font-weight:600;margin:0 0 32px;">
-              ✅ 14 dias de teste grátis — sem cartão de crédito
+              14 dias de teste grátis — sem cartão de crédito
             </p>
 
             <hr style="border:none;border-top:1px solid #f3f4f6;margin:0 0 24px;" />
