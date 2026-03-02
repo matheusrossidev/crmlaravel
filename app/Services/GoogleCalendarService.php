@@ -67,6 +67,11 @@ class GoogleCalendarService
      * o ":" do offset fica URL-encoded como "%3A" e a API do Google retorna 400.
      * Solução: sempre normalizar para UTC antes de enviar.
      */
+    private function normalizeDateTimeLocal(string $date): string
+    {
+        return \Carbon\Carbon::parse($date)->format('Y-m-d\TH:i:s');
+    }
+
     private function toRfc3339(string $date): string
     {
         try {
@@ -131,8 +136,8 @@ class GoogleCalendarService
             'summary'     => $data['title'],
             'description' => $data['description'] ?? '',
             'location'    => $data['location'] ?? '',
-            'start'       => ['dateTime' => $data['start'], 'timeZone' => config('app.timezone', 'America/Sao_Paulo')],
-            'end'         => ['dateTime' => $data['end'],   'timeZone' => config('app.timezone', 'America/Sao_Paulo')],
+            'start'       => ['dateTime' => $this->normalizeDateTimeLocal($data['start']), 'timeZone' => config('app.timezone', 'America/Sao_Paulo')],
+            'end'         => ['dateTime' => $this->normalizeDateTimeLocal($data['end']),   'timeZone' => config('app.timezone', 'America/Sao_Paulo')],
         ];
 
         // Convidados (attendees) — envia convite por e-mail quando presente
@@ -177,8 +182,8 @@ class GoogleCalendarService
             'summary'     => $data['title']       ?? null,
             'description' => $data['description'] ?? null,
             'location'    => $data['location']    ?? null,
-            'start'       => isset($data['start']) ? ['dateTime' => $data['start'], 'timeZone' => $tz] : null,
-            'end'         => isset($data['end'])   ? ['dateTime' => $data['end'],   'timeZone' => $tz] : null,
+            'start'       => isset($data['start']) ? ['dateTime' => $this->normalizeDateTimeLocal($data['start']), 'timeZone' => $tz] : null,
+            'end'         => isset($data['end'])   ? ['dateTime' => $this->normalizeDateTimeLocal($data['end']),   'timeZone' => $tz] : null,
         ], fn ($v) => $v !== null);
 
         $payload = array_merge($current, $updates);
