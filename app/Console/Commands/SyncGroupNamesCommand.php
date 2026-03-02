@@ -16,56 +16,66 @@ class SyncGroupNamesCommand extends Command
 
     public function handle(): int
     {
-        $instance = WhatsappInstance::first();
+        // withoutGlobalScope para ignorar filtro de tenant e buscar todas as instâncias
+        $instances = WhatsappInstance::withoutGlobalScope('tenant')
+            ->where('status', 'connected')
+            ->get();
 
-        if (! $instance || $instance->status !== 'connected') {
-            $this->error('Nenhuma instância WhatsApp conectada.');
+        if ($instances->isEmpty()) {
+            $this->error('Nenhuma instância WhatsApp conectada encontrada.');
             return self::FAILURE;
         }
 
-        $query = WhatsappConversation::withoutGlobalScope('tenant')
-            ->where('is_group', true);
+        $this->info("Instâncias conectadas: {$instances->count()}");
 
-        if (! $this->option('all')) {
-            $query->where(function ($q) {
-                $q->whereNull('contact_name')->orWhere('contact_name', '');
-            });
-        }
-
-        $conversations = $query->get();
-
-        if ($conversations->isEmpty()) {
-            $this->info('Nenhum grupo para atualizar.');
-            return self::SUCCESS;
-        }
-
-        $this->info("Atualizando {$conversations->count()} grupo(s)...");
-
-        $waha    = new WahaService($instance->session_name);
         $updated = 0;
         $errors  = 0;
 
-        foreach ($conversations as $conv) {
-            try {
-                // Garante o sufixo @g.us que a API do WAHA exige
-                $jid  = str_contains($conv->phone, '@') ? $conv->phone : $conv->phone . '@g.us';
-                $info = $waha->getGroupInfo($jid);
-                $name = $info['Name'] ?? $info['subject'] ?? $info['name'] ?? null;
+        foreach ($instances as $instance) {
+            $this->line("\n[Tenant {$instance->tenant_id}] Sessão: {$instance->session_name}");
 
-                if ($name) {
-                    $conv->update(['contact_name' => $name]);
-                    $this->line("  ✓ {$conv->phone} → {$name}");
-                    $updated++;
-                } else {
-                    $this->warn("  ? {$conv->phone} — sem nome na resposta");
+            $query = WhatsappConversation::withoutGlobalScope('tenant')
+                ->where('is_group', true)
+                ->where('tenant_id', $instance->tenant_id);
+
+            if (! $this->option('all')) {
+                $query->where(function ($q) {
+                    $q->whereNull('contact_name')->orWhere('contact_name', '');
+                });
+            }
+
+            $conversations = $query->get();
+
+            if ($conversations->isEmpty()) {
+                $this->info('  Nenhum grupo para atualizar neste tenant.');
+                continue;
+            }
+
+            $this->info("  {$conversations->count()} grupo(s) para atualizar...");
+
+            $waha = new WahaService($instance->session_name);
+
+            foreach ($conversations as $conv) {
+                try {
+                    $jid  = str_contains($conv->phone, '@') ? $conv->phone : $conv->phone . '@g.us';
+                    $info = $waha->getGroupInfo($jid);
+                    $name = $info['Name'] ?? $info['subject'] ?? $info['name'] ?? null;
+
+                    if ($name) {
+                        $conv->update(['contact_name' => $name]);
+                        $this->line("  ✓ {$conv->phone} → {$name}");
+                        $updated++;
+                    } else {
+                        $this->warn("  ? {$conv->phone} — sem nome na resposta");
+                    }
+                } catch (\Throwable $e) {
+                    $this->error("  ✗ {$conv->phone} — {$e->getMessage()}");
+                    $errors++;
                 }
-            } catch (\Throwable $e) {
-                $this->error("  ✗ {$conv->phone} — {$e->getMessage()}");
-                $errors++;
             }
         }
 
-        $this->info("Concluído: {$updated} atualizado(s), {$errors} erro(s).");
+        $this->info("\nConcluído: {$updated} atualizado(s), {$errors} erro(s).");
         return self::SUCCESS;
     }
 }
