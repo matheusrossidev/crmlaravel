@@ -30,7 +30,7 @@ class ScheduledMessageController extends Controller
         $data = $request->validate([
             'type'             => 'required|in:text,image,document',
             'body'             => 'nullable|string|max:4000',
-            'file'             => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt|max:10240',
+            'file'             => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt|max:25600',
             'send_at'          => 'required|date|after:now',
             'quick_message_id' => 'nullable|integer|exists:whatsapp_quick_messages,id',
         ], [
@@ -38,7 +38,7 @@ class ScheduledMessageController extends Controller
             'type.in'             => 'Tipo inválido.',
             'body.max'            => 'A mensagem pode ter no máximo 4000 caracteres.',
             'file.mimes'          => 'Formato de arquivo não suportado.',
-            'file.max'            => 'O arquivo pode ter no máximo 10 MB.',
+            'file.max'            => 'O arquivo pode ter no máximo 25 MB.',
             'send_at.required'    => 'Informe a data e hora do envio.',
             'send_at.after'       => 'A data de envio deve ser no futuro.',
         ]);

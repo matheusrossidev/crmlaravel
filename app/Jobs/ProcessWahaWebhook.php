@@ -292,7 +292,7 @@ class ProcessWahaWebhook implements ShouldQueue
                 try {
                     $wahaForGroup = new \App\Services\WahaService($instance->session_name);
                     $groupInfo    = $wahaForGroup->getGroupInfo($from);
-                    $contactName  = $groupInfo['subject'] ?? $groupInfo['name'] ?? null;
+                    $contactName  = $groupInfo['Name'] ?? $groupInfo['subject'] ?? $groupInfo['name'] ?? null;
                 } catch (\Throwable) {}
             }
 
@@ -408,7 +408,7 @@ class ProcessWahaWebhook implements ShouldQueue
                     try {
                         $wahaRetry         = new \App\Services\WahaService($instance->session_name);
                         $retryInfo         = $wahaRetry->getGroupInfo($from);
-                        $resolvedGroupName = $retryInfo['subject'] ?? $retryInfo['name'] ?? null;
+                        $resolvedGroupName = $retryInfo['Name'] ?? $retryInfo['subject'] ?? $retryInfo['name'] ?? null;
                     } catch (\Throwable) {}
                 }
 
