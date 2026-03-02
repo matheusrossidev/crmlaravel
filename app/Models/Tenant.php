@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class Tenant extends Model
 {
@@ -27,6 +28,72 @@ class Tenant extends Model
         'max_custom_fields'  => 'integer',
         'api_rate_limit'     => 'integer',
     ];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Tenant $tenant): void {
+            $id = $tenant->id;
+
+            // ── WhatsApp ──────────────────────────────────────────
+            DB::table('whatsapp_messages')->where('tenant_id', $id)->delete();
+            DB::table('whatsapp_conversations')->where('tenant_id', $id)->delete();
+            DB::table('whatsapp_instances')->where('tenant_id', $id)->delete();
+            DB::table('whatsapp_tags')->where('tenant_id', $id)->delete();
+            DB::table('whatsapp_quick_messages')->where('tenant_id', $id)->delete();
+
+            // ── Instagram ─────────────────────────────────────────
+            DB::table('instagram_messages')->where('tenant_id', $id)->delete();
+            DB::table('instagram_conversations')->where('tenant_id', $id)->delete();
+            DB::table('instagram_instances')->where('tenant_id', $id)->delete();
+            DB::table('instagram_automations')->where('tenant_id', $id)->delete();
+
+            // ── Chatbot ───────────────────────────────────────────
+            DB::table('chatbot_flow_nodes')->where('tenant_id', $id)->delete();
+            DB::table('chatbot_flow_edges')->where('tenant_id', $id)->delete();
+            DB::table('chatbot_flows')->where('tenant_id', $id)->delete();
+
+            // ── IA ────────────────────────────────────────────────
+            DB::table('ai_agent_knowledge_files')->where('tenant_id', $id)->delete();
+            DB::table('ai_agents')->where('tenant_id', $id)->delete();
+            DB::table('ai_configurations')->where('tenant_id', $id)->delete();
+            DB::table('ai_usage_logs')->where('tenant_id', $id)->delete();
+            DB::table('ai_analyst_suggestions')->where('tenant_id', $id)->delete();
+            DB::table('ai_intent_signals')->where('tenant_id', $id)->delete();
+
+            // ── Automações / Integrações ──────────────────────────
+            DB::table('automations')->where('tenant_id', $id)->delete();
+            DB::table('oauth_connections')->where('tenant_id', $id)->delete();
+            DB::table('webhook_configs')->where('tenant_id', $id)->delete();
+
+            // ── CRM ───────────────────────────────────────────────
+            DB::table('lead_events')->where('tenant_id', $id)->delete();
+            DB::table('lead_notes')->where('tenant_id', $id)->delete();
+            DB::table('custom_field_values')->where('tenant_id', $id)->delete();
+            DB::table('custom_field_definitions')->where('tenant_id', $id)->delete();
+            DB::table('lost_sales')->where('tenant_id', $id)->delete();
+            DB::table('lost_sale_reasons')->where('tenant_id', $id)->delete();
+            DB::table('sales')->where('tenant_id', $id)->delete();
+            DB::table('ad_spends')->where('tenant_id', $id)->delete();
+            DB::table('campaigns')->where('tenant_id', $id)->delete();
+            DB::table('leads')->where('tenant_id', $id)->delete();
+
+            // ── Pipelines (stages não têm tenant_id direto) ───────
+            DB::table('pipeline_stages')
+                ->whereIn('pipeline_id', DB::table('pipelines')->where('tenant_id', $id)->pluck('id'))
+                ->delete();
+            DB::table('pipelines')->where('tenant_id', $id)->delete();
+
+            // ── Misc ──────────────────────────────────────────────
+            DB::table('api_keys')->where('tenant_id', $id)->delete();
+            DB::table('master_notifications')->where('tenant_id', $id)->delete();
+            DB::table('audit_logs')->where('tenant_id', $id)->delete();
+            DB::table('site_events')->where('tenant_id', $id)->delete();
+            DB::table('site_visits')->where('tenant_id', $id)->delete();
+
+            // ── Usuários (por último — FK com cascadeOnDelete) ────
+            DB::table('users')->where('tenant_id', $id)->delete();
+        });
+    }
 
     public function isExemptFromBilling(): bool
     {
