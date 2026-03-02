@@ -440,8 +440,7 @@
             </div>
         </div>
 
-        {{-- ─── Instagram (somente super admin) ──────────────────────────── --}}
-        @if(auth()->user()->isSuperAdmin())
+        {{-- ─── Instagram ──────────────────────────────────────────────── --}}
         <div class="integration-card">
             <div class="integration-header">
                 <div class="integration-logo instagram">
@@ -489,7 +488,6 @@
                 </div>
             </div>
         </div>
-        @endif
 
         {{-- ─── Facebook Ads (somente super admin) ───────────────────────── --}}
         @if(auth()->user()->isSuperAdmin())
