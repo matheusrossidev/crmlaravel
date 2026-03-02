@@ -413,35 +413,6 @@
             object-fit: cover;
         }
 
-        .onb-right-overlay {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(17,24,39,.55) 0%, rgba(59,130,246,.3) 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-end;
-            padding: 48px;
-        }
-
-        .onb-right-quote {
-            max-width: 360px;
-            text-align: center;
-        }
-
-        .onb-right-quote p {
-            font-size: 18px;
-            font-weight: 600;
-            color: #fff;
-            line-height: 1.5;
-            margin-bottom: 12px;
-        }
-
-        .onb-right-quote span {
-            font-size: 13px;
-            color: rgba(255,255,255,.7);
-        }
-
         /* ── Error alert ── */
         .alert-error {
             background: #FEF2F2;
@@ -687,12 +658,6 @@
     <!-- ── Lado direito: imagem ── -->
     <div class="onb-right">
         <img src="{{ asset('images/split-screen-onboarding.jpg') }}" alt="Onboarding">
-        <div class="onb-right-overlay">
-            <div class="onb-right-quote">
-                <p>"Em minutos, seu CRM estará pronto para fechar mais negócios."</p>
-                <span>Syncro — Plataforma 360 de Marketing</span>
-            </div>
-        </div>
     </div>
 
 </div><!-- /onb-wrapper -->
