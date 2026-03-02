@@ -5,6 +5,10 @@ echo "=============================="
 echo "  CRM — Starting up"
 echo "=============================="
 
+# Garantir que o storage seja gravável pelo www-data
+# (volumes Docker podem ser criados pelo daemon como root)
+chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+
 # Detectar se este container é o app principal (php-fpm) ou um worker
 CMD_ARG="${1:-}"
 IS_APP=false
