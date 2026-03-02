@@ -437,13 +437,26 @@
     {{-- ── Row 2: Gráfico Leads + Ações Rápidas ──────────────────────── --}}
     <div class="mid-grid">
 
-        {{-- Novos Leads (mês atual) --}}
+        {{-- Novos Leads --}}
         <div class="content-card">
             <div class="content-card-header">
-                <h3><i class="bi bi-bar-chart"></i> Novos Leads — {{ ucfirst(now()->translatedFormat('F \d\e Y')) }}</h3>
-                <a href="{{ route('leads.index') }}" class="card-link">
-                    Ver todos <i class="bi bi-arrow-right"></i>
-                </a>
+                <h3><i class="bi bi-people"></i> Leads</h3>
+                <div style="display:flex;align-items:center;gap:20px;">
+                    <div style="display:flex;gap:20px;">
+                        <div>
+                            <div style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Novos</div>
+                            <div style="font-size:16px;font-weight:700;color:#1a1d23;">{{ array_sum($leadsPerMonth) }}</div>
+                        </div>
+                        <div style="width:1px;background:#f0f2f7;"></div>
+                        <div>
+                            <div style="font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">
+                                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6366f1;margin-right:4px;vertical-align:middle;"></span>Esse Mês
+                            </div>
+                            <div style="font-size:16px;font-weight:700;color:#1a1d23;">{{ $leadsThisMonth }}</div>
+                        </div>
+                    </div>
+                    <a href="{{ route('leads.index') }}" class="card-link">Ver todos <i class="bi bi-arrow-right"></i></a>
+                </div>
             </div>
             <div class="content-card-body">
                 <div class="chart-wrap">
@@ -590,7 +603,22 @@
         {{-- Evolução de Vendas --}}
         <div class="content-card">
             <div class="content-card-header">
-                <h3><i class="bi bi-currency-dollar"></i> Evolução de Vendas</h3>
+                <h3><i class="bi bi-currency-dollar"></i> Vendas</h3>
+                <div style="display:flex;align-items:center;gap:20px;">
+                    <div style="display:flex;gap:20px;">
+                        <div>
+                            <div style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">12 meses</div>
+                            <div style="font-size:16px;font-weight:700;color:#1a1d23;">R$ {{ number_format(array_sum($salesPerMonth), 0, ',', '.') }}</div>
+                        </div>
+                        <div style="width:1px;background:#f0f2f7;"></div>
+                        <div>
+                            <div style="font-size:10px;color:#10b981;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">
+                                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;margin-right:4px;vertical-align:middle;"></span>Esse Mês
+                            </div>
+                            <div style="font-size:16px;font-weight:700;color:#1a1d23;">R$ {{ number_format($totalSales, 0, ',', '.') }}</div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="content-card-body">
                 <div class="sales-chart-wrap">
@@ -655,64 +683,104 @@
         font: { family: "'Inter', sans-serif" },
     };
 
-    // ── Novos Leads (stacked bar por origem — mês atual, por dia) ──────
-    const sourceNames = Object.keys(leadsPerDayBySource);
-    const rawDatasets = sourceNames.length > 0
-        ? sourceNames.map((src, i) => ({
-            label: src.charAt(0).toUpperCase() + src.slice(1),
-            data: leadsPerDayBySource[src],
-            backgroundColor: sourceColor(src, i),
-            borderWidth: 0,
-            borderSkipped: false,
-            stack: 'leads',
-            barPercentage: 0.9,
-            categoryPercentage: 1.0,
-        }))
-        : [{
-            label: 'Leads',
-            data: leadsPerDay,
-            backgroundColor: '#0085f3',
-            borderWidth: 0,
-            borderSkipped: false,
-            barPercentage: 0.9,
-            categoryPercentage: 1.0,
-        }];
+    // ── Plugin: crosshair vertical no hover ───────────────────────────
+    const crosshairPlugin = {
+        id: 'crosshair',
+        afterDraw(chart) {
+            if (!chart.tooltip?._active?.length) return;
+            const ctx = chart.ctx;
+            const x   = chart.tooltip._active[0].element.x;
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(x, chart.chartArea.top);
+            ctx.lineTo(x, chart.chartArea.bottom);
+            ctx.lineWidth   = 1.5;
+            ctx.strokeStyle = 'rgba(59,130,246,0.25)';
+            ctx.setLineDash([5, 4]);
+            ctx.stroke();
+            ctx.restore();
+        }
+    };
 
-    // Arredondar topo do último segmento e base do primeiro
-    const leadsDatasets = rawDatasets.map((ds, i) => ({
-        ...ds,
-        borderRadius: {
-            topLeft:     i === rawDatasets.length - 1 ? 5 : 0,
-            topRight:    i === rawDatasets.length - 1 ? 5 : 0,
-            bottomLeft:  i === 0 ? 5 : 0,
-            bottomRight: i === 0 ? 5 : 0,
-        },
-    }));
+    const crosshairGreen = {
+        id: 'crosshairGreen',
+        afterDraw(chart) {
+            if (!chart.tooltip?._active?.length) return;
+            const ctx = chart.ctx;
+            const x   = chart.tooltip._active[0].element.x;
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(x, chart.chartArea.top);
+            ctx.lineTo(x, chart.chartArea.bottom);
+            ctx.lineWidth   = 1.5;
+            ctx.strokeStyle = 'rgba(16,185,129,0.25)';
+            ctx.setLineDash([5, 4]);
+            ctx.stroke();
+            ctx.restore();
+        }
+    };
 
-    new Chart(document.getElementById('chartLeads'), {
-        type: 'bar',
-        data: { labels: dayLabels, datasets: leadsDatasets },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        title: (items) => 'Dia ' + items[0].label,
-                        footer: (items) => {
-                            const total = items.reduce((s, i) => s + i.parsed.y, 0);
-                            return 'Total: ' + total + ' lead(s)';
+    // ── Novos Leads — área suave (12 meses) ───────────────────────────
+    (function () {
+        const canvas = document.getElementById('chartLeads');
+        const ctx    = canvas.getContext('2d');
+        const grad   = ctx.createLinearGradient(0, 0, 0, 260);
+        grad.addColorStop(0, 'rgba(59,130,246,0.28)');
+        grad.addColorStop(1, 'rgba(59,130,246,0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            plugins: [crosshairPlugin],
+            data: {
+                labels: monthLabels,
+                datasets: [{
+                    label: 'Leads',
+                    data: leadsPerMonth,
+                    fill: true,
+                    backgroundColor: grad,
+                    borderColor: '#3B82F6',
+                    borderWidth: 2.5,
+                    tension: 0.45,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#3B82F6',
+                    pointHoverBorderWidth: 2.5,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1a1d23',
+                        titleColor: '#9ca3af',
+                        bodyColor: '#fff',
+                        padding: 10,
+                        callbacks: {
+                            title: items => items[0].label,
+                            label: ctx  => ` ${ctx.parsed.y} lead(s)`,
                         }
                     }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { font: { size: 11 }, color: '#9ca3af' },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f0f2f7', drawBorder: false },
+                        border: { display: false },
+                        ticks: { precision: 0, font: { size: 11 }, color: '#9ca3af' },
+                    }
                 }
-            },
-            scales: {
-                x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 16 } },
-                y: { stacked: true, beginAtZero: true, ticks: { precision: 0, font: { size: 11 } }, grid: { color: '#f0f2f7' } },
-            },
-        }
-    });
+            }
+        });
+    }());
 
     // ── Leads por Origem ───────────────────────────────────────────────
     if (document.getElementById('chartOrigin')) {
@@ -742,43 +810,71 @@
         });
     }
 
-    // ── Evolução de Vendas ─────────────────────────────────────────────
-    new Chart(document.getElementById('chartSales'), {
-        type: 'bar',
-        data: {
-            labels: monthLabels,
-            datasets: [{
-                label: 'Vendas (R$)',
-                data: salesPerMonth,
-                backgroundColor: '#10B981',
-                borderRadius: 6,
-                borderSkipped: false,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => ` R$ ${ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
-                    }
-                }
+    // ── Evolução de Vendas — área suave (12 meses) ────────────────────
+    (function () {
+        const canvas = document.getElementById('chartSales');
+        const ctx    = canvas.getContext('2d');
+        const grad   = ctx.createLinearGradient(0, 0, 0, 180);
+        grad.addColorStop(0, 'rgba(16,185,129,0.28)');
+        grad.addColorStop(1, 'rgba(16,185,129,0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            plugins: [crosshairGreen],
+            data: {
+                labels: monthLabels,
+                datasets: [{
+                    label: 'Vendas',
+                    data: salesPerMonth,
+                    fill: true,
+                    backgroundColor: grad,
+                    borderColor: '#10B981',
+                    borderWidth: 2.5,
+                    tension: 0.45,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#10B981',
+                    pointHoverBorderWidth: 2.5,
+                }]
             },
-            scales: {
-                x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-                y: {
-                    beginAtZero: true,
-                    grid: { color: '#f0f2f7' },
-                    ticks: {
-                        font: { size: 11 },
-                        callback: v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0 })
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1a1d23',
+                        titleColor: '#9ca3af',
+                        bodyColor: '#fff',
+                        padding: 10,
+                        callbacks: {
+                            title: items => items[0].label,
+                            label: ctx  => ` R$ ${ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`,
+                        }
                     }
                 },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { font: { size: 11 }, color: '#9ca3af' },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f0f2f7', drawBorder: false },
+                        border: { display: false },
+                        ticks: {
+                            font: { size: 11 },
+                            color: '#9ca3af',
+                            callback: v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0 }),
+                        }
+                    }
+                }
             }
-        }
-    });
+        });
+    }());
 }());
 
 // ── Stat Cards: compact format + count-up animation ────────────────────────
