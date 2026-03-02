@@ -55,6 +55,17 @@ class TenantMiddleware
             }
         }
 
+        // Onboarding obrigatório para admins na primeira vez
+        if (
+            $tenant &&
+            $tenant->onboarding_completed_at === null &&
+            ! $request->routeIs('onboarding.*') &&
+            ! $request->routeIs('logout') &&
+            $user->isAdmin()
+        ) {
+            return redirect()->route('onboarding.show');
+        }
+
         return $next($request);
     }
 }

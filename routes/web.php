@@ -33,6 +33,7 @@ use App\Http\Controllers\Tenant\QuickMessageController;
 use App\Http\Controllers\Tenant\AutomationController;
 use App\Http\Controllers\Tenant\BillingController;
 use App\Http\Controllers\Tenant\CalendarController;
+use App\Http\Controllers\Tenant\OnboardingController;
 use App\Http\Controllers\Tenant\InstagramAutomationController;
 use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -77,6 +78,10 @@ Route::view('/termos-de-uso', 'public.terms')->name('terms');
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'tenant'])->group(function () {
+    // Onboarding (primeiro acesso)
+    Route::get('onboarding',           [OnboardingController::class, 'show'])->name('onboarding.show');
+    Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
+
     // Cobrança / Checkout
     Route::get('cobranca/checkout', [BillingController::class, 'showCheckout'])->name('billing.checkout');
     Route::post('cobranca/assinar',  [BillingController::class, 'subscribe'])->name('billing.subscribe');
