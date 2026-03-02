@@ -489,7 +489,7 @@
                         <div id="logoPlaceholder">
                             <div class="upload-icon"><i class="bi bi-image"></i></div>
                             <p class="upload-text"><span>Clique para enviar</span> ou arraste aqui</p>
-                            <p style="font-size:12px;color:#D1D5DB;margin-top:4px">PNG, JPG até 2 MB</p>
+                            <p style="font-size:12px;color:#D1D5DB;margin-top:4px">PNG, JPG até 10 MB</p>
                         </div>
                     </div>
                 </div>
@@ -608,7 +608,7 @@
                             <p style="font-size:12px;color:#9CA3AF;">Clique para<br>adicionar foto</p>
                         </div>
                     </div>
-                    <p style="font-size:13px;color:#6B7280;text-align:center;">PNG, JPG até 2 MB — opcional</p>
+                    <p style="font-size:13px;color:#6B7280;text-align:center;">PNG, JPG até 10 MB — opcional</p>
                 </div>
 
                 <div class="onb-nav">

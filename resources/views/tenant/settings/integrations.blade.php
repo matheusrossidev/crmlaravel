@@ -316,167 +316,66 @@
 
     <div class="integrations-grid">
 
-        {{-- ─── Facebook Ads ─────────────────────────────────────────────── --}}
-        @if(auth()->user()->isSuperAdmin())
+        {{-- ─── WhatsApp ─────────────────────────────────────────────────── --}}
         <div class="integration-card">
             <div class="integration-header">
-                <div class="integration-logo facebook">f</div>
-                <div class="integration-title">
-                    <h3>Facebook Ads</h3>
-                    <p>Sincroniza campanhas, métricas e gastos</p>
+                <div class="integration-logo whatsapp">
+                    <i class="bi bi-whatsapp" style="font-size:20px;"></i>
                 </div>
-                @if($facebook && $facebook->status === 'active')
+                <div class="integration-title">
+                    <h3>WhatsApp Business</h3>
+                    <p>Receba e envie mensagens direto do CRM</p>
+                </div>
+                @if($whatsapp && $whatsapp->status === 'connected')
                     <span class="conn-badge conn-active">Conectado</span>
-                @elseif($facebook && $facebook->status === 'expired')
-                    <span class="conn-badge conn-expired">Token expirado</span>
+                @elseif($whatsapp && $whatsapp->status === 'qr')
+                    <span class="conn-badge conn-expired">Aguardando QR</span>
                 @else
                     <span class="conn-badge conn-none">Desconectado</span>
                 @endif
             </div>
             <div class="integration-body">
                 <ul class="integration-features">
-                    <li>Importa campanhas e conjuntos de anúncios</li>
-                    <li>Sincroniza métricas de alcance, cliques e gastos</li>
-                    <li>Atribui leads automaticamente às campanhas de origem</li>
-                    <li>Atualização automática a cada hora</li>
+                    <li>Receba e envie mensagens direto do CRM</li>
+                    <li>Chatbot com fluxo visual de automação</li>
+                    <li>Agente de IA para atendimento automático</li>
+                    <li>Transcrição de áudios via IA</li>
                 </ul>
 
-                @if($facebook)
+                @if($whatsapp && $whatsapp->status === 'connected')
                 <div class="conn-detail">
-                    <strong>{{ $facebook->platform_user_name ?? 'Conta conectada' }}</strong><br>
-                    <span>
-                        Último sync:
-                        {{ $facebook->last_sync_at ? $facebook->last_sync_at->diffForHumans() : 'Nunca' }}
-                    </span>
+                    <strong>{{ $whatsapp->display_name ?? $whatsapp->phone_number ?? 'Número conectado' }}</strong><br>
+                    <span>Conectado {{ $whatsapp->updated_at?->diffForHumans() ?? '' }}</span>
                 </div>
                 @else
                 <div class="conn-detail" style="color:#9ca3af;">
-                    Nenhuma conta conectada.
+                    Nenhum número conectado.
                 </div>
                 @endif
 
                 <div class="integration-actions">
-                    @if($facebook && in_array($facebook->status, ['active', 'expired']))
-                        <button class="btn-sync" onclick="syncNow('facebook', this)">
-                            <i class="bi bi-arrow-clockwise"></i> Sincronizar agora
-                        </button>
-                        <button class="btn-disconnect" onclick="disconnectPlatform('facebook', this)">
+                    @if($whatsapp && $whatsapp->status === 'connected')
+                        <button class="btn-disconnect" onclick="disconnectWhatsapp(this)">
                             <i class="bi bi-x-circle"></i> Desconectar
                         </button>
+                        <button id="btnImportHistory" class="btn-connect" style="background:#6366f1;" onclick="importWhatsappHistory(this)">
+                            <i class="bi bi-clock-history"></i> Importar histórico
+                        </button>
+                    @elseif($whatsapp && $whatsapp->status === 'qr')
+                        <button class="btn-connect" onclick="openWaModal(true)">
+                            <i class="bi bi-qr-code"></i> Ver QR Code
+                        </button>
+                        <button class="btn-disconnect" onclick="disconnectWhatsapp(this)">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </button>
                     @else
-                        <a href="{{ route('settings.integrations.facebook.redirect') }}" class="btn-connect">
-                            <i class="bi bi-facebook"></i> Conectar Facebook
-                        </a>
+                        <button class="btn-connect" onclick="startWhatsappConnect(this)">
+                            <i class="bi bi-whatsapp"></i> Conectar WhatsApp
+                        </button>
                     @endif
                 </div>
             </div>
         </div>
-        @else
-        <div class="integration-card" style="opacity:.55;pointer-events:none;">
-            <div class="integration-header">
-                <div class="integration-logo facebook">f</div>
-                <div class="integration-title">
-                    <h3>Facebook Ads</h3>
-                    <p>Sincroniza campanhas, métricas e gastos</p>
-                </div>
-                <span class="conn-badge" style="background:#f3f4f6;color:#9ca3af;">Em breve</span>
-            </div>
-            <div class="integration-body">
-                <ul class="integration-features">
-                    <li>Importa campanhas e conjuntos de anúncios</li>
-                    <li>Sincroniza métricas de alcance, cliques e gastos</li>
-                    <li>Atribui leads automaticamente às campanhas de origem</li>
-                    <li>Atualização automática a cada hora</li>
-                </ul>
-                <div class="integration-actions">
-                    <button class="btn-connect" disabled style="cursor:not-allowed;">
-                        <i class="bi bi-facebook"></i> Em breve
-                    </button>
-                </div>
-            </div>
-        </div>
-        @endif
-
-        {{-- ─── Google Ads ───────────────────────────────────────────────── --}}
-        @if(auth()->user()->isSuperAdmin())
-        <div class="integration-card">
-            <div class="integration-header">
-                <div class="integration-logo google">G</div>
-                <div class="integration-title">
-                    <h3>Google Ads</h3>
-                    <p>Sincroniza campanhas, métricas e gastos</p>
-                </div>
-                @if($google && $google->status === 'active')
-                    <span class="conn-badge conn-active">Conectado</span>
-                @elseif($google && $google->status === 'expired')
-                    <span class="conn-badge conn-expired">Token expirado</span>
-                @else
-                    <span class="conn-badge conn-none">Desconectado</span>
-                @endif
-            </div>
-            <div class="integration-body">
-                <ul class="integration-features">
-                    <li>Importa campanhas de Search, Display e Shopping</li>
-                    <li>Sincroniza impressões, cliques e custo por conversão</li>
-                    <li>Atribui leads automaticamente às campanhas de origem</li>
-                    <li>Atualização automática a cada hora</li>
-                </ul>
-
-                @if($google)
-                <div class="conn-detail">
-                    <strong>{{ $google->platform_user_name ?? 'Conta conectada' }}</strong><br>
-                    <span>
-                        Último sync:
-                        {{ $google->last_sync_at ? $google->last_sync_at->diffForHumans() : 'Nunca' }}
-                    </span>
-                </div>
-                @else
-                <div class="conn-detail" style="color:#9ca3af;">
-                    Nenhuma conta conectada.
-                </div>
-                @endif
-
-                <div class="integration-actions">
-                    @if($google && in_array($google->status, ['active', 'expired']))
-                        <button class="btn-sync" onclick="syncNow('google', this)">
-                            <i class="bi bi-arrow-clockwise"></i> Sincronizar agora
-                        </button>
-                        <button class="btn-disconnect" onclick="disconnectPlatform('google', this)">
-                            <i class="bi bi-x-circle"></i> Desconectar
-                        </button>
-                    @else
-                        <a href="{{ route('settings.integrations.google.redirect') }}" class="btn-connect">
-                            <i class="bi bi-google"></i> Conectar Google
-                        </a>
-                    @endif
-                </div>
-            </div>
-        </div>
-        @else
-        <div class="integration-card" style="opacity:.55;pointer-events:none;">
-            <div class="integration-header">
-                <div class="integration-logo google">G</div>
-                <div class="integration-title">
-                    <h3>Google Ads</h3>
-                    <p>Sincroniza campanhas, métricas e gastos</p>
-                </div>
-                <span class="conn-badge" style="background:#f3f4f6;color:#9ca3af;">Em breve</span>
-            </div>
-            <div class="integration-body">
-                <ul class="integration-features">
-                    <li>Importa campanhas de Search, Display e Shopping</li>
-                    <li>Sincroniza impressões, cliques e custo por conversão</li>
-                    <li>Atribui leads automaticamente às campanhas de origem</li>
-                    <li>Atualização automática a cada hora</li>
-                </ul>
-                <div class="integration-actions">
-                    <button class="btn-connect" disabled style="cursor:not-allowed;">
-                        <i class="bi bi-google"></i> Em breve
-                    </button>
-                </div>
-            </div>
-        </div>
-        @endif
 
         {{-- ─── Google Calendar ──────────────────────────────────────────── --}}
         @php
@@ -541,69 +440,8 @@
             </div>
         </div>
 
-        {{-- ─── WhatsApp ─────────────────────────────────────────────────── --}}
-        <div class="integration-card">
-            <div class="integration-header">
-                <div class="integration-logo whatsapp">
-                    <i class="bi bi-whatsapp" style="font-size:20px;"></i>
-                </div>
-                <div class="integration-title">
-                    <h3>WhatsApp Business</h3>
-                    <p>Receba e envie mensagens direto do CRM</p>
-                </div>
-                @if($whatsapp && $whatsapp->status === 'connected')
-                    <span class="conn-badge conn-active">Conectado</span>
-                @elseif($whatsapp && $whatsapp->status === 'qr')
-                    <span class="conn-badge conn-expired">Aguardando QR</span>
-                @else
-                    <span class="conn-badge conn-none">Desconectado</span>
-                @endif
-            </div>
-            <div class="integration-body">
-                <ul class="integration-features">
-                    <li>Receba e envie mensagens direto do CRM</li>
-                    <li>Chatbot com fluxo visual de automação</li>
-                    <li>Agente de IA para atendimento automático</li>
-                    <li>Transcrição de áudios via IA</li>
-                </ul>
-
-                @if($whatsapp && $whatsapp->status === 'connected')
-                <div class="conn-detail">
-                    <strong>{{ $whatsapp->display_name ?? $whatsapp->phone_number ?? 'Número conectado' }}</strong><br>
-                    <span>Conectado {{ $whatsapp->updated_at?->diffForHumans() ?? '' }}</span>
-                </div>
-                @else
-                <div class="conn-detail" style="color:#9ca3af;">
-                    Nenhum número conectado.
-                </div>
-                @endif
-
-                <div class="integration-actions">
-                    @if($whatsapp && $whatsapp->status === 'connected')
-                        <button class="btn-disconnect" onclick="disconnectWhatsapp(this)">
-                            <i class="bi bi-x-circle"></i> Desconectar
-                        </button>
-                        <button id="btnImportHistory" class="btn-connect" style="background:#6366f1;" onclick="importWhatsappHistory(this)">
-                            <i class="bi bi-clock-history"></i> Importar histórico
-                        </button>
-                    @elseif($whatsapp && $whatsapp->status === 'qr')
-                        <button class="btn-connect" onclick="openWaModal(true)">
-                            <i class="bi bi-qr-code"></i> Ver QR Code
-                        </button>
-                        <button class="btn-disconnect" onclick="disconnectWhatsapp(this)">
-                            <i class="bi bi-x-circle"></i> Cancelar
-                        </button>
-                    @else
-                        <button class="btn-connect" onclick="startWhatsappConnect(this)">
-                            <i class="bi bi-whatsapp"></i> Conectar WhatsApp
-                        </button>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        {{-- ─── Instagram ────────────────────────────────────────────────── --}}
-        <div class="integration-card">
+        {{-- ─── Instagram — Em breve (aguardando aprovação Meta) ─────────── --}}
+        <div class="integration-card" style="opacity:.6;pointer-events:none;">
             <div class="integration-header">
                 <div class="integration-logo instagram">
                     <i class="bi bi-instagram" style="font-size:20px;"></i>
@@ -612,11 +450,7 @@
                     <h3>Instagram</h3>
                     <p>Chat de mensagens diretas (DMs)</p>
                 </div>
-                @if($instagram && $instagram->status === 'connected')
-                    <span class="conn-badge conn-active">Conectado</span>
-                @else
-                    <span class="conn-badge conn-none">Desconectado</span>
-                @endif
+                <span class="conn-badge" style="background:#fef3c7;color:#92400e;">Em breve</span>
             </div>
             <div class="integration-body">
                 <ul class="integration-features">
@@ -625,14 +459,49 @@
                     <li>Criação automática de leads a partir de DMs</li>
                     <li>Histórico completo de conversas</li>
                 </ul>
+                <div class="conn-detail" style="color:#9ca3af;">
+                    Aguardando aprovação do aplicativo pelo Meta.
+                </div>
+                <div class="integration-actions">
+                    <button class="btn-coming-soon" disabled>
+                        <i class="bi bi-clock"></i> Em breve
+                    </button>
+                </div>
+            </div>
+        </div>
 
-                @if($instagram && $instagram->status === 'connected')
+        {{-- ─── Facebook Ads ─────────────────────────────────────────────── --}}
+        @if(auth()->user()->isAdmin())
+        <div class="integration-card">
+            <div class="integration-header">
+                <div class="integration-logo facebook">f</div>
+                <div class="integration-title">
+                    <h3>Facebook Ads</h3>
+                    <p>Sincroniza campanhas, métricas e gastos</p>
+                </div>
+                @if($facebook && $facebook->status === 'active')
+                    <span class="conn-badge conn-active">Conectado</span>
+                @elseif($facebook && $facebook->status === 'expired')
+                    <span class="conn-badge conn-expired">Token expirado</span>
+                @else
+                    <span class="conn-badge conn-none">Desconectado</span>
+                @endif
+            </div>
+            <div class="integration-body">
+                <ul class="integration-features">
+                    <li>Importa campanhas e conjuntos de anúncios</li>
+                    <li>Sincroniza métricas de alcance, cliques e gastos</li>
+                    <li>Atribui leads automaticamente às campanhas de origem</li>
+                    <li>Atualização automática a cada hora</li>
+                </ul>
+
+                @if($facebook)
                 <div class="conn-detail">
-                    @if($instagram->profile_picture_url)
-                        <img src="{{ $instagram->profile_picture_url }}" alt="" style="width:28px;height:28px;border-radius:50%;margin-right:8px;vertical-align:middle;">
-                    @endif
-                    <strong>{{ $instagram->username ?? 'Conta conectada' }}</strong><br>
-                    <span>Conectado {{ $instagram->updated_at?->diffForHumans() ?? '' }}</span>
+                    <strong>{{ $facebook->platform_user_name ?? 'Conta conectada' }}</strong><br>
+                    <span>
+                        Último sync:
+                        {{ $facebook->last_sync_at ? $facebook->last_sync_at->diffForHumans() : 'Nunca' }}
+                    </span>
                 </div>
                 @else
                 <div class="conn-detail" style="color:#9ca3af;">
@@ -641,18 +510,127 @@
                 @endif
 
                 <div class="integration-actions">
-                    @if($instagram && $instagram->status === 'connected')
-                        <button class="btn-disconnect" onclick="disconnectInstagram(this)">
+                    @if($facebook && in_array($facebook->status, ['active', 'expired']))
+                        <button class="btn-sync" onclick="syncNow('facebook', this)">
+                            <i class="bi bi-arrow-clockwise"></i> Sincronizar agora
+                        </button>
+                        <button class="btn-disconnect" onclick="disconnectPlatform('facebook', this)">
                             <i class="bi bi-x-circle"></i> Desconectar
                         </button>
                     @else
-                        <a href="{{ route('settings.integrations.instagram.redirect') }}" class="btn-connect" style="background:#dc2743;">
-                            <i class="bi bi-instagram"></i> Conectar Instagram
+                        <a href="{{ route('settings.integrations.facebook.redirect') }}" class="btn-connect">
+                            <i class="bi bi-facebook"></i> Conectar Facebook
                         </a>
                     @endif
                 </div>
             </div>
         </div>
+        @else
+        <div class="integration-card" style="opacity:.55;pointer-events:none;">
+            <div class="integration-header">
+                <div class="integration-logo facebook">f</div>
+                <div class="integration-title">
+                    <h3>Facebook Ads</h3>
+                    <p>Sincroniza campanhas, métricas e gastos</p>
+                </div>
+                <span class="conn-badge" style="background:#f3f4f6;color:#9ca3af;">Somente Admin</span>
+            </div>
+            <div class="integration-body">
+                <ul class="integration-features">
+                    <li>Importa campanhas e conjuntos de anúncios</li>
+                    <li>Sincroniza métricas de alcance, cliques e gastos</li>
+                    <li>Atribui leads automaticamente às campanhas de origem</li>
+                    <li>Atualização automática a cada hora</li>
+                </ul>
+                <div class="integration-actions">
+                    <button class="btn-coming-soon" disabled>
+                        <i class="bi bi-lock"></i> Apenas administradores
+                    </button>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        {{-- ─── Google Ads ───────────────────────────────────────────────── --}}
+        @if(auth()->user()->isAdmin())
+        <div class="integration-card">
+            <div class="integration-header">
+                <div class="integration-logo google">G</div>
+                <div class="integration-title">
+                    <h3>Google Ads</h3>
+                    <p>Sincroniza campanhas, métricas e gastos</p>
+                </div>
+                @if($google && $google->status === 'active')
+                    <span class="conn-badge conn-active">Conectado</span>
+                @elseif($google && $google->status === 'expired')
+                    <span class="conn-badge conn-expired">Token expirado</span>
+                @else
+                    <span class="conn-badge conn-none">Desconectado</span>
+                @endif
+            </div>
+            <div class="integration-body">
+                <ul class="integration-features">
+                    <li>Importa campanhas de Search, Display e Shopping</li>
+                    <li>Sincroniza impressões, cliques e custo por conversão</li>
+                    <li>Atribui leads automaticamente às campanhas de origem</li>
+                    <li>Atualização automática a cada hora</li>
+                </ul>
+
+                @if($google)
+                <div class="conn-detail">
+                    <strong>{{ $google->platform_user_name ?? 'Conta conectada' }}</strong><br>
+                    <span>
+                        Último sync:
+                        {{ $google->last_sync_at ? $google->last_sync_at->diffForHumans() : 'Nunca' }}
+                    </span>
+                </div>
+                @else
+                <div class="conn-detail" style="color:#9ca3af;">
+                    Nenhuma conta conectada.
+                </div>
+                @endif
+
+                <div class="integration-actions">
+                    @if($google && in_array($google->status, ['active', 'expired']))
+                        <button class="btn-sync" onclick="syncNow('google', this)">
+                            <i class="bi bi-arrow-clockwise"></i> Sincronizar agora
+                        </button>
+                        <button class="btn-disconnect" onclick="disconnectPlatform('google', this)">
+                            <i class="bi bi-x-circle"></i> Desconectar
+                        </button>
+                    @else
+                        <a href="{{ route('settings.integrations.google.redirect') }}" class="btn-connect">
+                            <i class="bi bi-google"></i> Conectar Google
+                        </a>
+                    @endif
+                </div>
+            </div>
+        </div>
+        @else
+        <div class="integration-card" style="opacity:.55;pointer-events:none;">
+            <div class="integration-header">
+                <div class="integration-logo google">G</div>
+                <div class="integration-title">
+                    <h3>Google Ads</h3>
+                    <p>Sincroniza campanhas, métricas e gastos</p>
+                </div>
+                <span class="conn-badge" style="background:#f3f4f6;color:#9ca3af;">Somente Admin</span>
+            </div>
+            <div class="integration-body">
+                <ul class="integration-features">
+                    <li>Importa campanhas de Search, Display e Shopping</li>
+                    <li>Sincroniza impressões, cliques e custo por conversão</li>
+                    <li>Atribui leads automaticamente às campanhas de origem</li>
+                    <li>Atualização automática a cada hora</li>
+                </ul>
+                <div class="integration-actions">
+                    <button class="btn-coming-soon" disabled>
+                        <i class="bi bi-lock"></i> Apenas administradores
+                    </button>
+                </div>
+            </div>
+        </div>
+        @endif
 
     </div>
 

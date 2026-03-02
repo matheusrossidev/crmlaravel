@@ -37,8 +37,8 @@ class OnboardingController extends Controller
         $data = $request->validate([
             'company_name' => 'required|string|max:150',
             'niche'        => 'required|string|max:80',
-            'logo'         => 'nullable|image|max:2048',
-            'avatar'       => 'nullable|image|max:2048',
+            'logo'         => 'nullable|image|max:10240',
+            'avatar'       => 'nullable|image|max:10240',
         ]);
 
         $user   = auth()->user();
