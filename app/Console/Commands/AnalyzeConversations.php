@@ -28,7 +28,7 @@ class AnalyzeConversations extends Command
             ->orderByDesc('last_message_at')
             ->limit(30)
             ->get()
-            ->filter(fn ($c) => ($c->tenant?->settings_json['ai_analyst_enabled'] ?? true) !== false);
+            ->filter(fn ($c) => ($c->tenant?->settings_json['ai_analyst_enabled'] ?? false) === true);
 
         foreach ($conversations as $conv) {
             AnalyzeConversation::dispatch($conv->id);

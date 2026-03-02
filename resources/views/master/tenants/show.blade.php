@@ -374,7 +374,7 @@
                     <div class="form-group">
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;font-size:13px;">
                             <input type="checkbox" id="editAiAnalyst"
-                                   {{ ($tenant->settings_json['ai_analyst_enabled'] ?? true) ? 'checked' : '' }}
+                                   {{ ($tenant->settings_json['ai_analyst_enabled'] ?? false) ? 'checked' : '' }}
                                    style="width:16px;height:16px;cursor:pointer;">
                             IA Analista ativa
                         </label>

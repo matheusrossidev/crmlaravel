@@ -92,11 +92,19 @@ class TenantController extends Controller
             ->orderBy('name')
             ->get();
 
+        $totalLeads = Lead::forTenant($tenant->id)->count();
+        $wonLeads   = Lead::forTenant($tenant->id)
+            ->whereHas('stage', fn ($q) => $q->where('is_won', true))
+            ->count();
+        $lostLeads  = Lead::forTenant($tenant->id)
+            ->whereHas('stage', fn ($q) => $q->where('is_lost', true))
+            ->count();
+
         $leadsStats = [
-            'total'  => Lead::forTenant($tenant->id)->count(),
-            'active' => Lead::forTenant($tenant->id)->whereNull('won_at')->whereNull('lost_at')->count(),
-            'won'    => Lead::forTenant($tenant->id)->whereNotNull('won_at')->count(),
-            'lost'   => Lead::forTenant($tenant->id)->whereNotNull('lost_at')->count(),
+            'total'  => $totalLeads,
+            'active' => $totalLeads - $wonLeads - $lostLeads,
+            'won'    => $wonLeads,
+            'lost'   => $lostLeads,
         ];
 
         $plans = PlanDefinition::orderBy('price_monthly')

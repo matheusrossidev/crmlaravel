@@ -43,6 +43,7 @@
     }
     .tenants-table tr:last-child td { border-bottom: none; }
     .tenants-table tr:hover td { background: #fafbfc; }
+    .tenants-table tbody tr { cursor: pointer; }
 
     .status-badge {
         display: inline-flex; align-items: center; gap: 4px;
@@ -197,7 +198,8 @@
             </thead>
             <tbody>
                 @foreach($tenants as $tenant)
-                <tr id="tenant-row-{{ $tenant->id }}">
+                <tr id="tenant-row-{{ $tenant->id }}"
+                    onclick="rowClick(event, '{{ route('master.tenants.show', $tenant) }}')">
                     <td>
                         <div style="font-weight:600;color:#1a1d23;">{{ $tenant->name }}</div>
                         <div style="font-size:11px;color:#9ca3af;">{{ $tenant->slug }}</div>
@@ -220,7 +222,10 @@
                     </td>
                     <td style="font-size:12px;color:#9ca3af;">{{ $tenant->created_at->format('d/m/Y') }}</td>
                     <td style="text-align:right;">
-                        <button class="btn-icon danger" title="Excluir empresa"
+                        <a href="{{ route('master.tenants.show', $tenant) }}" class="btn-icon" title="Ver / editar empresa" style="text-decoration:none;">
+                            <i class="bi bi-pencil-square"></i>
+                        </a>
+                        <button class="btn-icon danger" title="Excluir empresa" style="margin-left:6px;"
                             onclick="deleteTenant({{ $tenant->id }}, '{{ addslashes($tenant->name) }}')">
                             <i class="bi bi-trash3"></i>
                         </button>
@@ -304,6 +309,12 @@
 @push('scripts')
 <script>
 const storeUrl = "{{ route('master.tenants.store') }}";
+
+function rowClick(e, url) {
+    // Ignorar clique nos botões de ação (última coluna)
+    if (e.target.closest('button') || e.target.closest('a')) return;
+    window.location.href = url;
+}
 const csrf     = document.querySelector('meta[name=csrf-token]').content;
 
 function openDrawer() {
