@@ -485,7 +485,7 @@
     function goStep(n, skipValidation) {
         if (!skipValidation && !validateStep(currentStep)) return;
 
-        // Oculta o banner de erro ao navegar (cada step tem seu próprio @error inline)
+        // Oculta o banner de erro ao navegar (cada step tem seu próprio bloco de erro inline)
         const errorBanner = document.querySelector('.auth-error');
         if (errorBanner) errorBanner.style.display = 'none';
 
