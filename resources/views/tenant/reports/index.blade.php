@@ -1039,15 +1039,36 @@ const chartLeads = @json($chartLeads);
 const sourceLabels = @json($srcLabels);
 const sourceData   = @json($srcData);
 
-// ── Gráfico: Leads por dia (linha) ────────────────────────────────────────
+// ── Plugin: crosshair vertical ────────────────────────────────────────────
+const crosshairPlugin = {
+    id: 'crosshair',
+    afterDraw(chart) {
+        if (!chart.tooltip?._active?.length) return;
+        const ctx = chart.ctx;
+        const x   = chart.tooltip._active[0].element.x;
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x, chart.chartArea.top);
+        ctx.lineTo(x, chart.chartArea.bottom);
+        ctx.lineWidth   = 1.5;
+        ctx.strokeStyle = 'rgba(59,130,246,0.25)';
+        ctx.setLineDash([5, 4]);
+        ctx.stroke();
+        ctx.restore();
+    }
+};
+
+// ── Gráfico: Leads por dia — área suave ───────────────────────────────────
 (function () {
-    const ctx = document.getElementById('chartLeadsByDay');
-    if (!ctx || !window.Chart) return;
-    const grad = ctx.getContext('2d').createLinearGradient(0, 0, 0, 260);
-    grad.addColorStop(0, 'rgba(59,130,246,0.35)');
+    const canvas = document.getElementById('chartLeadsByDay');
+    if (!canvas || !window.Chart) return;
+    const ctx  = canvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 180);
+    grad.addColorStop(0, 'rgba(59,130,246,0.28)');
     grad.addColorStop(1, 'rgba(59,130,246,0.00)');
     new Chart(ctx, {
         type: 'line',
+        plugins: [crosshairPlugin],
         data: {
             labels: chartDates,
             datasets: [{
@@ -1056,19 +1077,44 @@ const sourceData   = @json($srcData);
                 borderColor: '#3B82F6',
                 backgroundColor: grad,
                 borderWidth: 2.5,
-                pointRadius: chartDates.length > 30 ? 0 : 3,
-                pointBackgroundColor: '#3B82F6',
+                tension: 0.45,
                 fill: true,
-                stepped: 'after',
+                pointRadius: 0,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: '#3B82F6',
+                pointHoverBorderWidth: 2.5,
             }],
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1a1d23',
+                    titleColor: '#9ca3af',
+                    bodyColor: '#fff',
+                    padding: 10,
+                    callbacks: {
+                        title: items => items[0].label,
+                        label: ctx  => ` ${ctx.parsed.y} lead(s)`,
+                    }
+                }
+            },
             scales: {
-                x: { grid: { display: false }, ticks: { font: { size: 11 }, maxTicksLimit: 10 } },
-                y: { beginAtZero: true, ticks: { font: { size: 11 }, precision: 0 } },
+                x: {
+                    grid: { display: false },
+                    border: { display: false },
+                    ticks: { font: { size: 11 }, color: '#9ca3af', maxTicksLimit: 12 },
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#f0f2f7', drawBorder: false },
+                    border: { display: false },
+                    ticks: { font: { size: 11 }, color: '#9ca3af', precision: 0 },
+                },
             },
         },
     });
@@ -1076,9 +1122,9 @@ const sourceData   = @json($srcData);
 
 // ── Gráfico: Leads por origem (barra horizontal) ──────────────────────────
 (function () {
-    const ctx = document.getElementById('chartLeadsBySource');
-    if (!ctx || !window.Chart) return;
-    new Chart(ctx, {
+    const canvas = document.getElementById('chartLeadsBySource');
+    if (!canvas || !window.Chart) return;
+    new Chart(canvas, {
         type: 'bar',
         data: {
             labels: sourceLabels,
@@ -1086,7 +1132,7 @@ const sourceData   = @json($srcData);
                 label: 'Leads',
                 data: sourceData,
                 backgroundColor: sourceLabels.map((src, i) => sourceColor(src, i)),
-                borderRadius: 6,
+                borderRadius: 8,
                 borderSkipped: false,
             }],
         },
@@ -1094,10 +1140,30 @@ const sourceData   = @json($srcData);
             indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1a1d23',
+                    titleColor: '#9ca3af',
+                    bodyColor: '#fff',
+                    padding: 10,
+                    callbacks: {
+                        label: ctx => ` ${ctx.parsed.x} lead(s)`,
+                    }
+                }
+            },
             scales: {
-                x: { beginAtZero: true, ticks: { font: { size: 11 }, precision: 0 } },
-                y: { grid: { display: false }, ticks: { font: { size: 11 } } },
+                x: {
+                    beginAtZero: true,
+                    grid: { color: '#f0f2f7', drawBorder: false },
+                    border: { display: false },
+                    ticks: { font: { size: 11 }, color: '#9ca3af', precision: 0 },
+                },
+                y: {
+                    grid: { display: false },
+                    border: { display: false },
+                    ticks: { font: { size: 11 }, color: '#374151' },
+                },
             },
         },
     });
