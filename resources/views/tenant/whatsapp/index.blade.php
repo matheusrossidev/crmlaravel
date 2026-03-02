@@ -1392,16 +1392,16 @@ $pageIcon = 'chat-dots';
         {{-- IA Analista — Sugestões --}}
         <div class="wa-details-section" id="analystSection" style="display:none;">
             <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
-                <span><i class="bi bi-robot" style="margin-right:4px;color:#10b981;"></i> Sugestões da IA</span>
+                <span><i class="bi bi-robot" style="margin-right:4px;color:#0085f3;"></i> Sugestões da IA</span>
                 <button onclick="triggerAnalysis()" id="analyzeBtn" type="button"
-                        style="background:none;border:none;padding:0;font-size:11px;color:#10b981;cursor:pointer;font-weight:600;">
+                        style="background:none;border:none;padding:0;font-size:11px;color:#0085f3;cursor:pointer;font-weight:600;">
                     Analisar ▶
                 </button>
             </div>
             <div id="analystList" style="margin-top:6px;"></div>
             <button id="approveAllBtn" onclick="approveAllSuggestions()" type="button"
-                    style="display:none;width:100%;margin-top:6px;padding:5px 8px;background:#10b981;color:#fff;border:none;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600;">
-                ✅ Aprovar todas
+                    style="display:none;width:100%;margin-top:6px;padding:5px 8px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600;">
+                <i class="bi bi-check-all"></i> Aprovar todas
             </button>
         </div>
 
@@ -2938,7 +2938,7 @@ $pageIcon = 'chat-dots';
     // ── IA Analista — Sugestões ────────────────────────────────────────────────
     const ANALYST_BASE  = '{{ rtrim(url("/chats"), "/") }}';
     const ANALYST_CSRF  = '{{ csrf_token() }}';
-    const TYPE_ICONS    = { stage_change: '📊', add_tag: '🏷️', add_note: '📝', fill_field: '📋', update_lead: '✏️' };
+    const TYPE_ICONS    = { stage_change: 'bi-arrow-right-circle', add_tag: 'bi-tag', add_note: 'bi-journal-text', fill_field: 'bi-input-cursor-text', update_lead: 'bi-person-gear' };
 
     function loadAnalystSuggestions(convId) {
         const section = document.getElementById('analystSection');
@@ -2967,20 +2967,20 @@ $pageIcon = 'chat-dots';
         }
 
         list.innerHTML = suggestions.map(s => {
-            const icon  = TYPE_ICONS[s.type] || '💡';
+            const icon  = TYPE_ICONS[s.type] || 'bi-lightbulb';
             const label = buildSuggestionLabel(s);
             const reason = s.reason ? `<div style="font-size:10px;color:#6b7280;margin:2px 0 4px;">"${escHtml(s.reason)}"</div>` : '';
-            return `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px;margin-bottom:6px;">
-                      <div style="font-size:11px;font-weight:600;color:#065f46;">${icon} ${escHtml(label)}</div>
+            return `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px;margin-bottom:6px;">
+                      <div style="font-size:11px;font-weight:600;color:#1e40af;"><i class="bi ${icon}"></i> ${escHtml(label)}</div>
                       ${reason}
                       <div style="display:flex;gap:6px;margin-top:4px;">
                         <button onclick="approveSuggestion(${s.id}, this)" type="button"
-                                style="flex:1;padding:3px 0;background:#10b981;color:#fff;border:none;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;">
-                          ✅ Aprovar
+                                style="flex:1;padding:3px 0;background:#0085f3;color:#fff;border:none;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;">
+                          <i class="bi bi-check-lg"></i> Aprovar
                         </button>
                         <button onclick="rejectSuggestion(${s.id}, this)" type="button"
                                 style="flex:1;padding:3px 0;background:#f3f4f6;color:#374151;border:none;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;">
-                          ✗ Rejeitar
+                          <i class="bi bi-x-lg"></i> Rejeitar
                         </button>
                       </div>
                     </div>`;

@@ -258,6 +258,20 @@
         <span class="tool-badge badge-green">Relatório</span>
     </div>
 
+    {{-- 9. Verificar Conta de Usuário --}}
+    <div class="tool-card" onclick="openTool('check-user-account')">
+        <div class="tool-card-header">
+            <div class="tool-icon" style="background:#eff6ff;">
+                <i class="bi bi-person-check" style="color:#3B82F6;"></i>
+            </div>
+            <div class="tool-info">
+                <h6>Verificar Conta de Usuário</h6>
+                <p>Exibe o status de verificação de email de um usuário e permite reenviar o email de confirmação.</p>
+            </div>
+        </div>
+        <span class="tool-badge badge-blue">Conta</span>
+    </div>
+
 </div>
 
 {{-- ── MODAL ──────────────────────────────────────────────────────────────── --}}
@@ -370,6 +384,16 @@ var USERS   = <?php echo json_encode($users->toArray()); ?>;
             iconBg: '#f0fdf4',
             params: [
                 { name: 'tenant_id', label: 'Tenant', type: 'select-tenant', required: true },
+            ],
+        },
+        'check-user-account': {
+            label: 'Verificar Conta de Usuário',
+            iconHtml: '<i class="bi bi-person-check" style="color:#3B82F6;"></i>',
+            iconBg: '#eff6ff',
+            params: [
+                { name: 'tenant_id',    label: 'Tenant', type: 'select-tenant', required: true },
+                { name: 'user_id',      label: 'Usuário', type: 'select-user', required: true },
+                { name: 'resend_email', label: 'Reenviar email de verificação (apenas se não verificado)', type: 'checkbox' },
             ],
         },
     };

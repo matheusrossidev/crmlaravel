@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class ToolboxController extends Controller
@@ -29,6 +30,7 @@ class ToolboxController extends Controller
         'wa-status',
         'close-conversations',
         'export-tenant-stats',
+        'check-user-account',
     ];
 
     public function index(): View
@@ -320,6 +322,48 @@ class ToolboxController extends Controller
             "  Status             : {$tenant->status}",
             "  Trial ends at      : " . ($tenant->trial_ends_at?->format('d/m/Y') ?? 'N/A'),
         ];
+
+        return response()->json(['success' => true, 'lines' => $lines]);
+    }
+
+    private function checkUserAccount(Request $request): JsonResponse
+    {
+        $userId = $request->input('user_id');
+        $resend = (bool) $request->input('resend_email', false);
+
+        if (! $userId) {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] Selecione um usuário.']]);
+        }
+
+        $user = User::find($userId);
+
+        if (! $user) {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] Usuário não encontrado.']]);
+        }
+
+        $tenant   = Tenant::find($user->tenant_id);
+        $verified = $user->email_verified_at
+            ? '✓ Verificado em ' . $user->email_verified_at->format('d/m/Y H:i')
+            : '✗ NÃO VERIFICADO';
+
+        $lines = [
+            "=== Conta: {$user->name} ===",
+            "  Email    : {$user->email}",
+            "  Tenant   : " . ($tenant?->name ?? 'N/A'),
+            "  Status   : {$verified}",
+            "  Criado em: " . $user->created_at->format('d/m/Y H:i'),
+        ];
+
+        if ($resend) {
+            if ($user->email_verified_at) {
+                $lines[] = 'Email já verificado — reenvio não necessário.';
+            } elseif (! $user->verification_token || ! $tenant) {
+                $lines[] = '[ERRO] Sem token de verificação ou tenant associado. Não foi possível reenviar.';
+            } else {
+                Mail::to($user->email)->send(new \App\Mail\VerifyEmail($user, $tenant));
+                $lines[] = "Email de verificação reenviado para {$user->email}.";
+            }
+        }
 
         return response()->json(['success' => true, 'lines' => $lines]);
     }

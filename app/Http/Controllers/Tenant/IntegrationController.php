@@ -19,6 +19,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -160,7 +161,7 @@ class IntegrationController extends Controller
     public function connectWhatsapp(): JsonResponse
     {
         $tenant  = auth()->user()->tenant;
-        $session = 'tenant_' . $tenant->id;
+        $session = Str::slug($tenant->name, '_') . '_' . $tenant->id;
 
         try {
             $instance = WhatsappInstance::firstOrCreate(

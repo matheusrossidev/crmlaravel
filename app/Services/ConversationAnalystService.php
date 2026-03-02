@@ -241,7 +241,10 @@ PROMPT;
     {
         $existing = AiAnalystSuggestion::withoutGlobalScope('tenant')
             ->where('conversation_id', $conv->id)
-            ->where('status', 'pending')
+            ->where(function ($q) {
+                $q->where('status', 'pending')
+                  ->orWhere('updated_at', '>=', now()->subHours(24));
+            })
             ->get();
 
         foreach ($items as $item) {
@@ -252,6 +255,7 @@ PROMPT;
                 'add_tag'      => $existing->where('type', 'add_tag')
                     ->filter(fn ($s) => ($s->payload['tag'] ?? '') === ($item['payload']['tag'] ?? ''))
                     ->isNotEmpty(),
+                'add_note'     => $existing->where('type', 'add_note')->isNotEmpty(),
                 'fill_field'   => $existing->where('type', 'fill_field')
                     ->filter(fn ($s) => ($s->payload['name'] ?? '') === ($item['payload']['name'] ?? ''))
                     ->isNotEmpty(),
