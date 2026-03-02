@@ -91,6 +91,11 @@ class AiAnalystController extends Controller
      */
     public function trigger(WhatsappConversation $conversation): JsonResponse
     {
+        $settings = Auth::user()->tenant?->settings_json ?? [];
+        if (($settings['ai_analyst_enabled'] ?? true) === false) {
+            return response()->json(['suggestions' => [], 'disabled' => true]);
+        }
+
         AnalyzeConversation::dispatchSync($conversation->id, force: true);
 
         $suggestions = AiAnalystSuggestion::forConversation($conversation->id)

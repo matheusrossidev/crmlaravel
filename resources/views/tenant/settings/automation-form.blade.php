@@ -380,6 +380,9 @@
                 <div class="af-block-item action" onclick="addActionBlock('send_whatsapp_message')">
                     <span class="af-block-icon"><i class="bi bi-whatsapp"></i></span>Enviar msg WhatsApp
                 </div>
+                <div class="af-block-item action" onclick="addActionBlock('schedule_whatsapp_message')">
+                    <span class="af-block-icon"><i class="bi bi-clock"></i></span>Agendar msg WhatsApp
+                </div>
             </div>
         </div>
 
@@ -632,7 +635,8 @@ const ACTION_META = {
     assign_ai_agent:       { icon:'bi-robot',             label:'Atribuir agente de IA' },
     assign_chatbot_flow:   { icon:'bi-diagram-3',         label:'Atribuir chatbot' },
     close_conversation:    { icon:'bi-lock',              label:'Fechar conversa' },
-    send_whatsapp_message: { icon:'bi-whatsapp',          label:'Enviar msg WhatsApp' },
+    send_whatsapp_message:     { icon:'bi-whatsapp', label:'Enviar msg WhatsApp' },
+    schedule_whatsapp_message: { icon:'bi-clock',    label:'Agendar msg WhatsApp' },
 };
 
 function addActionBlock(type, prefill) {
@@ -726,6 +730,24 @@ function buildActionBody(type, idx, prefill) {
         if (!WAHA_CONNECTED) return `<p style="font-size:12px;color:#f59e0b;margin:0;"><i class="bi bi-exclamation-triangle me-1"></i>Nenhuma instância WhatsApp conectada.</p>`;
         return `<label>Mensagem <small style="font-weight:400;color:#9ca3af;">(${MSG_VARS_HINT})</small></label>
             <textarea class="form-control" id="aval-${idx}" rows="2" placeholder="Digite a mensagem...">${h(prefill.message||'')}</textarea>`;
+    }
+    if (type === 'schedule_whatsapp_message') {
+        if (!WAHA_CONNECTED) return `<p style="font-size:12px;color:#f59e0b;margin:0;"><i class="bi bi-exclamation-triangle me-1"></i>Nenhuma instância WhatsApp conectada.</p>`;
+        return `<label>Mensagem <small style="font-weight:400;color:#9ca3af;">(${MSG_VARS_HINT})</small></label>
+            <textarea class="form-control" id="aval-${idx}" rows="2" placeholder="Digite a mensagem...">${h(prefill.message||'')}</textarea>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+                <div style="flex:1;">
+                    <label>Enviar após</label>
+                    <input type="number" class="form-control" id="adelay-${idx}" min="1" max="365" value="${prefill.delay_value||1}">
+                </div>
+                <div style="flex:1;">
+                    <label>Unidade</label>
+                    <select class="form-control" id="adelayunit-${idx}">
+                        <option value="hours" ${prefill.delay_unit==='hours'?'selected':''}>Horas</option>
+                        <option value="days"  ${prefill.delay_unit==='days'||!prefill.delay_unit?'selected':''}>Dias</option>
+                    </select>
+                </div>
+            </div>`;
     }
     return '';
 }
@@ -893,6 +915,12 @@ function saveAutomation() {
         } else if (type === 'send_whatsapp_message') {
             config.message = (document.getElementById(`aval-${idx}`)?.value || '').trim();
             if (!config.message) { toastr.warning('Informe a mensagem.'); err = true; return; }
+        } else if (type === 'schedule_whatsapp_message') {
+            config.message = (document.getElementById(`aval-${idx}`)?.value || '').trim();
+            if (!config.message) { toastr.warning('Informe a mensagem para agendar.'); err = true; return; }
+            config.delay_value = parseInt(document.getElementById(`adelay-${idx}`)?.value || '1');
+            config.delay_unit  = document.getElementById(`adelayunit-${idx}`)?.value || 'days';
+            if (config.delay_value < 1) { toastr.warning('O delay deve ser ao menos 1.'); err = true; return; }
         }
         actions.push({ type, config });
     });

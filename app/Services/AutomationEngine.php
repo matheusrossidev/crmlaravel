@@ -11,6 +11,7 @@ use App\Models\InstagramConversation;
 use App\Models\Lead;
 use App\Models\LeadNote;
 use App\Models\PipelineStage;
+use App\Models\ScheduledMessage;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
 use Illuminate\Support\Facades\Log;
@@ -187,7 +188,8 @@ class AutomationEngine
             'assign_ai_agent'     => $this->actionAssignAiAgent($config, $ctx),
             'assign_chatbot_flow' => $this->actionAssignChatbotFlow($config, $ctx),
             'close_conversation'  => $this->actionCloseConversation($ctx),
-            'send_whatsapp_message'=> $this->actionSendWhatsappMessage($config, $ctx, $automation),
+            'send_whatsapp_message'         => $this->actionSendWhatsappMessage($config, $ctx, $automation),
+            'schedule_whatsapp_message'     => $this->actionScheduleWhatsappMessage($config, $ctx),
             default               => null,
         };
     }
@@ -371,6 +373,43 @@ class AutomationEngine
                 'error'           => $e->getMessage(),
             ]);
         }
+    }
+
+    private function actionScheduleWhatsappMessage(array $config, array $ctx): void
+    {
+        $lead = $this->resolveLead($ctx);
+        if (! $lead || empty($config['message'])) {
+            return;
+        }
+
+        // Encontrar a conversa WhatsApp do lead
+        $conv = $ctx['conversation'] instanceof WhatsappConversation
+            ? $ctx['conversation']
+            : WhatsappConversation::withoutGlobalScope('tenant')
+                ->where('tenant_id', $lead->tenant_id)
+                ->where('lead_id', $lead->id)
+                ->latest('last_message_at')
+                ->first();
+
+        if (! $conv) {
+            return;
+        }
+
+        $delayValue = max(1, (int) ($config['delay_value'] ?? 1));
+        $delayUnit  = ($config['delay_unit'] ?? 'days') === 'hours' ? 'hours' : 'days';
+        $sendAt     = now()->add($delayValue, $delayUnit);
+        $body       = $this->interpolate((string) $config['message'], $ctx);
+
+        ScheduledMessage::create([
+            'tenant_id'       => $lead->tenant_id,
+            'lead_id'         => $lead->id,
+            'conversation_id' => $conv->id,
+            'created_by'      => null,
+            'type'            => 'text',
+            'body'            => $body,
+            'send_at'         => $sendAt,
+            'status'          => 'pending',
+        ]);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────────

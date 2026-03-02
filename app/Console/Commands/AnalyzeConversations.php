@@ -16,7 +16,9 @@ class AnalyzeConversations extends Command
     public function handle(): int
     {
         // Últimas 30 conversas abertas que têm mensagem nova desde a última análise
+        // Filtra tenants com IA analista desativada (settings_json['ai_analyst_enabled'] = false)
         $conversations = WhatsappConversation::withoutGlobalScope('tenant')
+            ->with('tenant')
             ->where('status', 'open')
             ->whereNotNull('lead_id')
             ->where(function ($q) {
@@ -25,7 +27,8 @@ class AnalyzeConversations extends Command
             })
             ->orderByDesc('last_message_at')
             ->limit(30)
-            ->get();
+            ->get()
+            ->filter(fn ($c) => ($c->tenant?->settings_json['ai_analyst_enabled'] ?? true) !== false);
 
         foreach ($conversations as $conv) {
             AnalyzeConversation::dispatch($conv->id);

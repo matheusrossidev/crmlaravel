@@ -115,9 +115,16 @@ class TenantController extends Controller
             'max_leads'          => 'nullable|integer|min:0',
             'max_pipelines'      => 'nullable|integer|min:0',
             'max_custom_fields'  => 'nullable|integer|min:0',
+            'ai_analyst_enabled' => 'nullable|boolean',
         ]);
 
-        $tenant->update($request->only('status', 'plan', 'trial_ends_at', 'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields'));
+        $settings = $tenant->settings_json ?? [];
+        $settings['ai_analyst_enabled'] = $request->boolean('ai_analyst_enabled');
+
+        $tenant->update(array_merge(
+            $request->only('status', 'plan', 'trial_ends_at', 'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields'),
+            ['settings_json' => $settings]
+        ));
 
         return response()->json(['success' => true, 'message' => 'Empresa atualizada.']);
     }

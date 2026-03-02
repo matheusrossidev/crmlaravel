@@ -371,6 +371,15 @@
                         <input type="number" class="form-control" id="editMaxCustomFields"
                                value="{{ $tenant->max_custom_fields ?? 0 }}" min="0">
                     </div>
+                    <div class="form-group">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;font-size:13px;">
+                            <input type="checkbox" id="editAiAnalyst"
+                                   {{ ($tenant->settings_json['ai_analyst_enabled'] ?? true) ? 'checked' : '' }}
+                                   style="width:16px;height:16px;cursor:pointer;">
+                            IA Analista ativa
+                        </label>
+                        <small style="color:#9ca3af;display:block;margin-top:2px;">Analisa conversas a cada 30 min e gera sugestões automáticas para os leads.</small>
+                    </div>
                     <button class="btn-save" id="btnUpdateTenant" onclick="updateTenant()">
                         <i class="bi bi-check2"></i> Salvar alterações
                     </button>
@@ -443,6 +452,7 @@ async function updateTenant() {
                 max_leads:          parseInt(document.getElementById('editMaxLeads').value) || 0,
                 max_pipelines:      parseInt(document.getElementById('editMaxPipelines').value) || 0,
                 max_custom_fields:  parseInt(document.getElementById('editMaxCustomFields').value) || 0,
+                ai_analyst_enabled: document.getElementById('editAiAnalyst').checked,
             }),
         });
         const data = await res.json();
