@@ -78,6 +78,17 @@ class AuthController extends Controller
             'name'        => 'required|string|max:255',
             'email'       => 'required|email|unique:users,email',
             'password'    => 'required|string|min:8|confirmed',
+        ], [
+            'tenant_name.required' => 'Informe o nome da empresa.',
+            'tenant_name.max'      => 'O nome da empresa pode ter no máximo 255 caracteres.',
+            'name.required'        => 'Informe seu nome.',
+            'name.max'             => 'O nome pode ter no máximo 255 caracteres.',
+            'email.required'       => 'Informe seu e-mail.',
+            'email.email'          => 'Informe um e-mail válido.',
+            'email.unique'         => 'Este e-mail já está cadastrado. Tente fazer login.',
+            'password.required'    => 'Crie uma senha.',
+            'password.min'         => 'A senha deve ter pelo menos 8 caracteres.',
+            'password.confirmed'   => 'As senhas não conferem.',
         ]);
 
         $token = Str::random(64);

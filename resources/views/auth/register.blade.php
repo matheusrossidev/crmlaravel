@@ -485,6 +485,10 @@
     function goStep(n, skipValidation) {
         if (!skipValidation && !validateStep(currentStep)) return;
 
+        // Oculta o banner de erro ao navegar (cada step tem seu próprio @error inline)
+        const errorBanner = document.querySelector('.auth-error');
+        if (errorBanner) errorBanner.style.display = 'none';
+
         // Salva valor atual nos hidden inputs e chips
         if (currentStep === 1) {
             const v = document.getElementById('d-tenant').value.trim();
