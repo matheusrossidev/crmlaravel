@@ -90,7 +90,7 @@ class GoogleCalendarService
             ->get(self::BASE . '/calendars/' . self::CALENDAR_ID . '/events', [
                 'timeMin'      => $this->toRfc3339($timeMin),
                 'timeMax'      => $this->toRfc3339($timeMax),
-                'singleEvents' => true,
+                'singleEvents' => 'true',
                 'orderBy'      => 'startTime',
                 'maxResults'   => 250,
             ]);
