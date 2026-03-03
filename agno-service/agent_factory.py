@@ -137,18 +137,19 @@ def _build_tools(
     conversation_id: int | None,
 ) -> list:
     tools = []
+    tenant_id: int = config.get("tenant_id", 0)
 
     if lead_id:
         if config.get("enable_pipeline_tool") and pipeline_stages:
             from tools.pipeline_tools import make_pipeline_tools
-            tools.extend(make_pipeline_tools(lead_id, pipeline_stages))
+            tools.extend(make_pipeline_tools(lead_id, pipeline_stages, tenant_id))
 
         if config.get("enable_tags_tool") and available_tags:
             from tools.tag_tools import make_tag_tools
-            tools.extend(make_tag_tools(lead_id, available_tags))
+            tools.extend(make_tag_tools(lead_id, available_tags, tenant_id))
 
         if config.get("enable_intent_notify") and conversation_id:
             from tools.notify_tools import make_notify_tools
-            tools.extend(make_notify_tools(lead_id, conversation_id))
+            tools.extend(make_notify_tools(lead_id, conversation_id, tenant_id))
 
     return tools

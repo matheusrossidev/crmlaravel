@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AgnoInternalMiddleware;
 use App\Http\Middleware\ApiKeyMiddleware;
 use App\Http\Middleware\SuperAdminMiddleware;
 use App\Http\Middleware\TenantMiddleware;
@@ -25,9 +26,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Request::HEADER_X_FORWARDED_PREFIX);
 
         $middleware->alias([
-            'tenant' => TenantMiddleware::class,
-            'super_admin' => SuperAdminMiddleware::class,
-            'api_key' => ApiKeyMiddleware::class,
+            'tenant'        => TenantMiddleware::class,
+            'super_admin'   => SuperAdminMiddleware::class,
+            'api_key'       => ApiKeyMiddleware::class,
+            'agno_internal' => AgnoInternalMiddleware::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {

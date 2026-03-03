@@ -10,8 +10,8 @@ def _headers() -> dict:
     return {"X-Agno-Token": LARAVEL_TOKEN, "Accept": "application/json"}
 
 
-def make_notify_tools(lead_id: int, conversation_id: int) -> list:
-    """Return notification/transfer tools bound to a specific lead and conversation."""
+def make_notify_tools(lead_id: int, conversation_id: int, tenant_id: int) -> list:
+    """Return notification/transfer tools bound to a specific conversation."""
 
     @tool
     def notify_human_intent(intent: str, reason: str = "") -> str:
@@ -21,13 +21,13 @@ def make_notify_tools(lead_id: int, conversation_id: int) -> list:
         conseguir resolver o problema com as informações disponíveis.
 
         Args:
-            intent: A intenção detectada (ex: "comprar", "falar com atendente", "reclamação grave")
+            intent: A intenção detectada (ex: "buy", "schedule", "close", "interest")
             reason: Contexto adicional sobre o motivo
         """
         try:
             r = httpx.post(
-                f"{LARAVEL_URL}/api/v1/conversations/{conversation_id}/notify-intent",
-                json={"intent": intent, "reason": reason, "lead_id": lead_id},
+                f"{LARAVEL_URL}/api/internal/agno/conversations/{conversation_id}/notify-intent",
+                json={"intent": intent, "reason": reason, "lead_id": lead_id, "tenant_id": tenant_id},
                 headers=_headers(),
                 timeout=10,
             )
@@ -46,8 +46,8 @@ def make_notify_tools(lead_id: int, conversation_id: int) -> list:
         """
         try:
             r = httpx.post(
-                f"{LARAVEL_URL}/api/v1/conversations/{conversation_id}/transfer",
-                json={"lead_id": lead_id},
+                f"{LARAVEL_URL}/api/internal/agno/conversations/{conversation_id}/transfer",
+                json={"tenant_id": tenant_id},
                 headers=_headers(),
                 timeout=10,
             )

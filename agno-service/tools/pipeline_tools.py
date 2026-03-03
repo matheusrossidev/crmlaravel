@@ -10,7 +10,7 @@ def _headers() -> dict:
     return {"X-Agno-Token": LARAVEL_TOKEN, "Accept": "application/json"}
 
 
-def make_pipeline_tools(lead_id: int, pipeline_stages: list[dict]) -> list:
+def make_pipeline_tools(lead_id: int, pipeline_stages: list[dict], tenant_id: int) -> list:
     """Return a list of pipeline tools bound to a specific lead_id."""
 
     stages_info = "\n".join(
@@ -28,8 +28,8 @@ def make_pipeline_tools(lead_id: int, pipeline_stages: list[dict]) -> list:
         """
         try:
             r = httpx.put(
-                f"{LARAVEL_URL}/api/v1/leads/{lead_id}/stage",
-                json={"stage_id": stage_id},
+                f"{LARAVEL_URL}/api/internal/agno/leads/{lead_id}/stage",
+                json={"stage_id": stage_id, "tenant_id": tenant_id},
                 headers=_headers(),
                 timeout=10,
             )

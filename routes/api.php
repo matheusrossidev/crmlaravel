@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AgnoToolsController;
 use App\Http\Controllers\Api\CampaignController;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\PipelineController;
@@ -29,6 +30,14 @@ Route::post('/webhook/instagram', [InstagramWebhookController::class, 'handle'])
 | Exemplo: X-API-Key: crm_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 |
 */
+
+// ── Rotas internas do Agno (X-Agno-Token) ────────────────────────────────
+Route::prefix('internal/agno')->middleware(['agno_internal'])->group(function () {
+    Route::put ('leads/{leadId}/stage',      [AgnoToolsController::class, 'setStage']);
+    Route::post('leads/{leadId}/tags',       [AgnoToolsController::class, 'addTag']);
+    Route::post('conversations/{convId}/notify-intent', [AgnoToolsController::class, 'notifyIntent']);
+    Route::post('conversations/{convId}/transfer',      [AgnoToolsController::class, 'transferToHuman']);
+});
 
 Route::prefix('v1')->middleware(['api_key'])->group(function () {
 

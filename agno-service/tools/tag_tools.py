@@ -10,7 +10,7 @@ def _headers() -> dict:
     return {"X-Agno-Token": LARAVEL_TOKEN, "Accept": "application/json"}
 
 
-def make_tag_tools(lead_id: int, available_tags: list[str]) -> list:
+def make_tag_tools(lead_id: int, available_tags: list[str], tenant_id: int) -> list:
     """Return tag tools bound to a specific lead_id."""
 
     tags_info = ", ".join(available_tags) if available_tags else "(nenhuma tag disponível)"
@@ -25,8 +25,8 @@ def make_tag_tools(lead_id: int, available_tags: list[str]) -> list:
         """
         try:
             r = httpx.post(
-                f"{LARAVEL_URL}/api/v1/leads/{lead_id}/tags",
-                json={"tag_name": tag_name},
+                f"{LARAVEL_URL}/api/internal/agno/leads/{lead_id}/tags",
+                json={"tag_name": tag_name, "tenant_id": tenant_id},
                 headers=_headers(),
                 timeout=10,
             )
