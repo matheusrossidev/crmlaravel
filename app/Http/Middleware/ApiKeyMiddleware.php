@@ -34,7 +34,7 @@ class ApiKeyMiddleware
         }
 
         $tenant = Tenant::find($apiKey->tenant_id);
-        if (!$tenant || $tenant->status !== 'active') {
+        if (!$tenant || !in_array($tenant->status, ['active', 'trial'], true)) {
             return response()->json(['message' => 'Conta inativa.'], 403);
         }
 
