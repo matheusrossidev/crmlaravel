@@ -177,8 +177,9 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::put('/conversations/{conversation}/assign',    [WhatsappController::class, 'assign'])->name('conversations.assign');
         Route::put('/conversations/{conversation}/status',    [WhatsappController::class, 'updateStatus'])->name('conversations.status');
         Route::put('/conversations/{conversation}/lead',      [WhatsappController::class, 'updateLead'])->name('conversations.lead');
-        Route::put('/conversations/{conversation}/link-lead', [WhatsappController::class, 'linkLead'])->name('conversations.link-lead');
-        Route::put('/conversations/{conversation}/contact',   [WhatsappController::class, 'updateContact'])->name('conversations.contact');
+        Route::put('/conversations/{conversation}/link-lead',   [WhatsappController::class, 'linkLead'])->name('conversations.link-lead');
+        Route::put('/conversations/{conversation}/unlink-lead',[WhatsappController::class, 'unlinkLead'])->name('conversations.unlink-lead');
+        Route::put('/conversations/{conversation}/contact',    [WhatsappController::class, 'updateContact'])->name('conversations.contact');
         Route::post('/conversations/{conversation}/messages', [WhatsappMessageController::class, 'store'])->name('messages.store');
         Route::post('/conversations/{conversation}/react',    [WhatsappMessageController::class, 'react'])->name('messages.react');
         Route::put('/conversations/{conversation}/ai-agent',      [WhatsappController::class, 'assignAiAgent'])->name('conversations.ai-agent');
@@ -189,7 +190,9 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::post('/instagram-conversations/{conversation}/read',    [WhatsappController::class, 'markReadInstagram'])->name('ig-conversations.read');
         Route::post  ('/instagram-conversations/{conversation}/messages',[WhatsappController::class, 'sendInstagramMessage'])->name('ig-conversations.messages');
         Route::delete('/instagram-conversations/{conversation}',         [WhatsappController::class, 'destroyInstagram'])->name('ig-conversations.destroy');
-        Route::put('/instagram-conversations/{conversation}/link-lead', [WhatsappController::class, 'linkLeadInstagram'])->name('ig-conversations.link-lead');
+        Route::put('/instagram-conversations/{conversation}/link-lead',   [WhatsappController::class, 'linkLeadInstagram'])->name('ig-conversations.link-lead');
+        Route::put('/instagram-conversations/{conversation}/unlink-lead', [WhatsappController::class, 'unlinkLeadInstagram'])->name('ig-conversations.unlink-lead');
+        Route::get ('/leads/search',                                       [WhatsappController::class, 'searchLeads'])->name('leads.search');
 
         // AI Analyst — sugestões por conversa
         Route::get ('{conversation}/analyst-suggestions',             [AiAnalystController::class, 'index'])->name('analyst.index');

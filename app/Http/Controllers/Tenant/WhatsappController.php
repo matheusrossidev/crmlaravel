@@ -365,6 +365,32 @@ class WhatsappController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function unlinkLead(WhatsappConversation $conversation): JsonResponse
+    {
+        $conversation->update(['lead_id' => null]);
+        return response()->json(['success' => true]);
+    }
+
+    public function unlinkLeadInstagram(\App\Models\InstagramConversation $conversation): JsonResponse
+    {
+        $conversation->update(['lead_id' => null]);
+        return response()->json(['success' => true]);
+    }
+
+    public function searchLeads(Request $request): JsonResponse
+    {
+        $q = trim($request->get('q', ''));
+        $leads = \App\Models\Lead::where(function ($query) use ($q) {
+                $query->where('name', 'like', "%{$q}%")
+                      ->orWhere('phone', 'like', "%{$q}%");
+            })
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get(['id', 'name', 'phone']);
+
+        return response()->json(['leads' => $leads]);
+    }
+
     public function updateContact(WhatsappConversation $conversation, Request $request): JsonResponse
     {
         $data = [];

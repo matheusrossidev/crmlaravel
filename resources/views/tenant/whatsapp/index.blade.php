@@ -972,6 +972,34 @@ $pageIcon = 'chat-dots';
         background: #ef4444;
         display: flex;
     }
+
+    /* ── Vincular/Desvincular Lead ────────────────────────────────────── */
+    .unlink-lead-btn {
+        background: none; border: none; cursor: pointer;
+        padding: 2px 0; font-size: 11px; color: #ef4444;
+        display: flex; align-items: center; gap: 3px;
+        font-family: inherit;
+    }
+    .unlink-lead-btn:hover { color: #dc2626; }
+
+    .btn-link-existing {
+        width: 100%; padding: 6px 10px; background: #f9fafb;
+        border: 1.5px dashed #d1d5db; border-radius: 9px;
+        font-size: 12px; color: #374151; cursor: pointer;
+        display: flex; align-items: center; gap: 6px;
+        justify-content: center; font-family: inherit;
+        transition: border-color .15s, color .15s;
+    }
+    .btn-link-existing:hover { border-color: #3b82f6; color: #3b82f6; }
+
+    .lead-search-item {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 6px 10px; border-radius: 7px; cursor: pointer;
+        font-size: 12.5px; transition: background .15s;
+    }
+    .lead-search-item:hover { background: #f3f4f6; }
+    .lead-search-name { font-weight: 600; color: #111827; }
+    .lead-search-phone { font-size: 11px; color: #6b7280; }
 </style>
 @endpush
 
@@ -1291,10 +1319,15 @@ $pageIcon = 'chat-dots';
         <div class="wa-details-section" id="leadSection" style="display:none;">
             <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
                 Lead
-                <a id="leadProfileLink" href="#" target="_blank"
-                    style="font-size:11px;color:#3b82f6;font-weight:600;text-decoration:none;">
-                    Ver perfil →
-                </a>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <a id="leadProfileLink" href="#" target="_blank"
+                        style="font-size:11px;color:#3b82f6;font-weight:600;text-decoration:none;">
+                        Ver perfil →
+                    </a>
+                    <button onclick="unlinkCurrentLead()" class="unlink-lead-btn" title="Desvincular lead desta conversa">
+                        <i class="bi bi-x-circle"></i> Desvincular
+                    </button>
+                </div>
             </div>
             <div id="leadNameDisplay" style="font-size:13px;font-weight:600;color:#1a1d23;margin-bottom:6px;"></div>
             <div class="wa-details-label" style="margin-top:8px;">Pipeline</div>
@@ -1322,6 +1355,22 @@ $pageIcon = 'chat-dots';
                     style="width:100%;padding:6px 10px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
                     <i class="bi bi-plus-lg"></i> Criar lead na pipeline
                 </button>
+                <div style="text-align:center;font-size:11px;color:#9ca3af;margin:6px 0;">ou</div>
+                <button onclick="showLinkExistingLead()" class="btn-link-existing">
+                    <i class="bi bi-search"></i> Vincular lead existente
+                </button>
+                <div id="linkExistingPanel" style="display:none;margin-top:8px;">
+                    <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+                        <input type="text" id="leadSearchInput" placeholder="Buscar por nome ou telefone..."
+                               class="wa-textarea" oninput="onLeadSearch(this.value)"
+                               style="min-height:unset;height:32px;padding:5px 8px;font-size:12px;flex:1;" />
+                        <button onclick="hideLinkExistingLead()" title="Cancelar"
+                            style="width:28px;height:28px;flex-shrink:0;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:7px;cursor:pointer;font-size:13px;color:#6b7280;">
+                            ×
+                        </button>
+                    </div>
+                    <div id="leadSearchResults" style="max-height:160px;overflow-y:auto;border-radius:8px;"></div>
+                </div>
             </div>
             <div id="createLeadForm" style="display:none;">
                 <select id="createLeadPipeline" onchange="onCreateLeadPipelineChange()"
@@ -2479,6 +2528,84 @@ $pageIcon = 'chat-dots';
     function cancelCreateLead() {
         document.getElementById('createLeadForm').style.display = 'none';
         document.getElementById('noLeadDefault').style.display = '';
+    }
+
+    // ── Vincular lead existente ────────────────────────────────────────────
+    function showLinkExistingLead() {
+        document.getElementById('linkExistingPanel').style.display = 'block';
+        document.getElementById('leadSearchInput').focus();
+    }
+
+    function hideLinkExistingLead() {
+        document.getElementById('linkExistingPanel').style.display = 'none';
+        document.getElementById('leadSearchInput').value = '';
+        document.getElementById('leadSearchResults').innerHTML = '';
+    }
+
+    let _leadSearchTimer = null;
+    function onLeadSearch(val) {
+        clearTimeout(_leadSearchTimer);
+        document.getElementById('leadSearchResults').innerHTML = '';
+        if (val.trim().length < 2) return;
+        _leadSearchTimer = setTimeout(() => doLeadSearch(val.trim()), 300);
+    }
+
+    async function doLeadSearch(q) {
+        const res = await fetch(`/chats/leads/search?q=${encodeURIComponent(q)}`, {
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
+        });
+        const data = await res.json();
+        const el = document.getElementById('leadSearchResults');
+        if (!data.leads || !data.leads.length) {
+            el.innerHTML = '<p style="font-size:12px;color:#9ca3af;padding:6px 0;">Nenhum lead encontrado.</p>';
+            return;
+        }
+        el.innerHTML = data.leads.map(l => `
+            <div class="lead-search-item" onclick='linkExistingLead(${l.id}, ${JSON.stringify(l)})'>
+                <span class="lead-search-name">${escapeHtml(l.name)}</span>
+                ${l.phone ? `<span class="lead-search-phone">${escapeHtml(l.phone)}</span>` : ''}
+            </div>
+        `).join('');
+    }
+
+    async function linkExistingLead(leadId, lead) {
+        const url = activeConvChannel === 'instagram'
+            ? `/chats/instagram-conversations/${activeConvId}/link-lead`
+            : `/chats/conversations/${activeConvId}/link-lead`;
+
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
+            body: JSON.stringify({ lead_id: leadId }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            toastr.success(`Lead "${escapeHtml(lead.name)}" vinculado!`);
+            hideLinkExistingLead();
+            renderLeadPanel(lead);
+        } else {
+            toastr.error('Erro ao vincular lead.');
+        }
+    }
+
+    // ── Desvincular lead da conversa ──────────────────────────────────────
+    async function unlinkCurrentLead() {
+        if (!confirm('Desvincular este lead da conversa?')) return;
+        const url = activeConvChannel === 'instagram'
+            ? `/chats/instagram-conversations/${activeConvId}/unlink-lead`
+            : `/chats/conversations/${activeConvId}/unlink-lead`;
+
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
+        });
+        const data = await res.json();
+        if (data.success) {
+            toastr.success('Lead desvinculado.');
+            renderLeadPanel(null);
+        } else {
+            toastr.error('Erro ao desvincular lead.');
+        }
     }
 
     function onCreateLeadPipelineChange() {
