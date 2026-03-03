@@ -2,18 +2,9 @@ import os
 from typing import Any
 
 from agno.agent import Agent
-from agno.storage.postgres import PostgresStorage
 from agno.db.postgres import PostgresDb
 
 PGVECTOR_URL = os.getenv("PGVECTOR_URL", "postgresql://agno:agno@pgvector:5432/agno")
-
-
-def _psycopg_url(url: str) -> str:
-    """SQLAlchemy requires postgresql+psycopg:// for psycopg3 connections."""
-    if "postgresql+psycopg://" in url:
-        return url
-    return url.replace("postgresql://", "postgresql+psycopg://", 1)
-
 
 # In-memory cache: agent_key -> Agent instance
 _agent_cache: dict[str, Agent] = {}
@@ -55,20 +46,16 @@ def get_or_create_agent(
 
     model = _build_model(config)
     tools = _build_tools(config, lead_id, pipeline_stages or [], available_tags or [], conversation_id)
-    db_url = _psycopg_url(PGVECTOR_URL)
 
     agent = Agent(
         agent_id=f"agent_{agent_id}",
         model=model,
         description=_build_instructions(config),
-        # Session storage: persists conversation history across runs
-        storage=PostgresStorage(
-            table_name=f"sessions_{tenant_id}_{agent_id}",
-            db_url=db_url,
+        # PostgresDb persists session history and user memories across runs
+        db=PostgresDb(
+            db_url=PGVECTOR_URL,
+            session_table=f"sessions_{tenant_id}_{agent_id}",
         ),
-        # Long-term memory: extracts and persists user facts between conversations
-        db=PostgresDb(db_url=db_url),
-        update_memory_on_run=True,
         tools=tools if tools else None,
         add_history_to_messages=True,
         num_history_responses=10,
