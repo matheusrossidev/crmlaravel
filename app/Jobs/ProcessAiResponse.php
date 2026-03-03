@@ -12,7 +12,11 @@ use App\Models\AiIntentSignal;
 use App\Models\AiUsageLog;
 use App\Models\Lead;
 use App\Models\OAuthConnection;
+use App\Models\PlanDefinition;
+use App\Models\Tenant;
 use App\Models\WhatsappConversation;
+use App\Models\WhatsappMessage;
+use App\Services\AgnoService;
 use App\Services\AiAgentService;
 use App\Services\GoogleCalendarService;
 use Illuminate\Bus\Queueable;
@@ -96,6 +100,15 @@ class ProcessAiResponse implements ShouldQueue
             Log::channel('whatsapp')->info('AI job: agente inativo ou removido', [
                 'conversation_id' => $this->conversationId,
                 'ai_agent_id'     => $conv->ai_agent_id,
+            ]);
+            return;
+        }
+
+        // ── Verificar cota de tokens do plano ────────────────────────────────
+        if (! $this->checkTokenQuota($conv)) {
+            Log::channel('whatsapp')->warning('AI job: cota de tokens do plano excedida', [
+                'conversation_id' => $this->conversationId,
+                'tenant_id'       => $conv->tenant_id,
             ]);
             return;
         }
@@ -212,106 +225,140 @@ class ProcessAiResponse implements ShouldQueue
             }
         }
 
-        // ── Montar prompt e histórico ─────────────────────────────────────────
-        $service            = new AiAgentService();
-        $enableIntentNotify = (bool) ($agent->enable_intent_notify ?? false);
-        $system             = $service->buildSystemPrompt($agent, $stages, $availTags, $enableIntentNotify, $calendarEvents, $lead);
-        $history = $service->buildHistory($conv, limit: 50);
-
-        if (empty($history)) {
-            Log::channel('whatsapp')->warning('AI job: histórico vazio, abortando', [
-                'conversation_id' => $this->conversationId,
-            ]);
-            return;
-        }
-
-        // ── Chamar o LLM ─────────────────────────────────────────────────────
-        $maxLength = max(200, $agent->max_message_length ?? 500);
-        // Aumentar maxTokens quando esperamos JSON (headers de controle adicionam tokens)
-        $extraTokens = (! empty($stages) || ! empty($availTags)) ? 300 : 0;
-        $maxTokens   = $maxLength + 200 + $extraTokens;
-
-        $llmResult = AiConfigurationController::callLlm(
-            provider:  $provider,
-            apiKey:    $apiKey,
-            model:     $model,
-            messages:  $history,
-            maxTokens: $maxTokens,
-            system:    $system,
-        );
-
-        $reply    = trim($llmResult['reply']);
-        $llmUsage = $llmResult['usage'];
-
-        // ── Registrar uso de tokens ───────────────────────────────────────────
-        try {
-            AiUsageLog::create([
-                'tenant_id'         => $conv->tenant_id,
-                'conversation_id'   => $conv->id,
-                'model'             => $model,
-                'provider'          => $provider,
-                'tokens_prompt'     => $llmUsage['prompt'] ?? 0,
-                'tokens_completion' => $llmUsage['completion'] ?? 0,
-                'tokens_total'      => $llmUsage['total'] ?? 0,
-                'type'              => 'chat',
-            ]);
-        } catch (\Throwable $e) {
-            Log::channel('whatsapp')->warning('AI job: falha ao registrar uso de tokens', [
-                'conversation_id' => $this->conversationId,
-                'error'           => $e->getMessage(),
-            ]);
-        }
-
-        if ($reply === '') {
-            Log::channel('whatsapp')->warning('AI job: LLM retornou resposta vazia', [
-                'conversation_id' => $this->conversationId,
-            ]);
-            return;
-        }
-
-        // ── Parsear JSON de ações (quando pipeline/tags/intent/calendar disponíveis) ──
+        // ── Roteamento: Agno ou LLM direto ───────────────────────────────────
+        $reply   = '';
         $actions = [];
-        if (! empty($stages) || ! empty($availTags) || $enableIntentNotify || $agent->enable_calendar_tool) {
-            // Remover markdown code blocks se o LLM os incluiu
-            $clean = preg_replace('/```(?:json)?\s*([\s\S]*?)```/i', '$1', $reply);
-            $clean = trim($clean ?? $reply);
 
-            // O LLM às vezes adiciona texto antes do JSON — encontrar o primeiro '{'
-            if (! str_starts_with($clean, '{')) {
-                $jsonStart = strpos($clean, '{');
-                if ($jsonStart !== false) {
-                    $clean = substr($clean, $jsonStart);
+        if ($agent->use_agno) {
+            // ── Caminho Agno ──────────────────────────────────────────────────
+            try {
+                $agnoResult = $this->callAgnoService($conv, $agent, $stages, $availTags);
+                $replyBlocks = array_filter(array_map('trim', $agnoResult['reply_blocks'] ?? []));
+                $reply   = implode("\n\n---SPLIT---\n\n", $replyBlocks);
+                $actions = $agnoResult['actions'] ?? [];
+
+                try {
+                    AiUsageLog::create([
+                        'tenant_id'         => $conv->tenant_id,
+                        'conversation_id'   => $conv->id,
+                        'model'             => $agnoResult['model']              ?? 'agno',
+                        'provider'          => $agnoResult['provider']           ?? 'agno',
+                        'tokens_prompt'     => $agnoResult['tokens_prompt']      ?? 0,
+                        'tokens_completion' => $agnoResult['tokens_completion']  ?? 0,
+                        'tokens_total'      => $agnoResult['tokens_total']       ?? 0,
+                        'type'              => 'chat',
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::channel('whatsapp')->warning('AI job (Agno): falha ao registrar tokens', [
+                        'conversation_id' => $this->conversationId,
+                        'error'           => $e->getMessage(),
+                    ]);
                 }
-            }
-
-            $decoded = null;
-            if (str_starts_with($clean, '{')) {
-                $decoded = json_decode($clean, true);
-            }
-
-            if (is_array($decoded) && isset($decoded['reply'])) {
-                $replyRaw = $decoded['reply'] ?? '';
-                if (is_array($replyRaw)) {
-                    // LLM retornou array de blocos — juntar com \n\n para split natural depois
-                    $replyParts = array_values(array_filter(array_map('trim', $replyRaw)));
-                    $reply = implode("\n\n", $replyParts);
-                } else {
-                    $reply = trim((string) $replyRaw);
-                }
-                $actions = (array) ($decoded['actions'] ?? []);
-            } else {
-                Log::channel('whatsapp')->warning('AI job: resposta não era JSON válido, usando texto bruto', [
+            } catch (\Throwable $e) {
+                Log::channel('whatsapp')->error('AI job: Agno falhou, caindo para LLM direto', [
                     'conversation_id' => $this->conversationId,
-                    'raw'             => mb_substr($reply, 0, 300),
+                    'error'           => $e->getMessage(),
+                ]);
+                // Fallback: força o caminho direto abaixo
+                $reply = '';
+            }
+        }
+
+        if (! $agent->use_agno || $reply === '') {
+            // ── Caminho LLM direto (original) ────────────────────────────────
+            $service            = new AiAgentService();
+            $enableIntentNotify = (bool) ($agent->enable_intent_notify ?? false);
+            $system             = $service->buildSystemPrompt($agent, $stages, $availTags, $enableIntentNotify, $calendarEvents, $lead);
+            $history = $service->buildHistory($conv, limit: 50);
+
+            if (empty($history)) {
+                Log::channel('whatsapp')->warning('AI job: histórico vazio, abortando', [
+                    'conversation_id' => $this->conversationId,
+                ]);
+                return;
+            }
+
+            $maxLength   = max(200, $agent->max_message_length ?? 500);
+            $extraTokens = (! empty($stages) || ! empty($availTags)) ? 300 : 0;
+            $maxTokens   = $maxLength + 200 + $extraTokens;
+
+            $llmResult = AiConfigurationController::callLlm(
+                provider:  $provider,
+                apiKey:    $apiKey,
+                model:     $model,
+                messages:  $history,
+                maxTokens: $maxTokens,
+                system:    $system,
+            );
+
+            $reply    = trim($llmResult['reply']);
+            $llmUsage = $llmResult['usage'];
+
+            try {
+                AiUsageLog::create([
+                    'tenant_id'         => $conv->tenant_id,
+                    'conversation_id'   => $conv->id,
+                    'model'             => $model,
+                    'provider'          => $provider,
+                    'tokens_prompt'     => $llmUsage['prompt'] ?? 0,
+                    'tokens_completion' => $llmUsage['completion'] ?? 0,
+                    'tokens_total'      => $llmUsage['total'] ?? 0,
+                    'type'              => 'chat',
+                ]);
+            } catch (\Throwable $e) {
+                Log::channel('whatsapp')->warning('AI job: falha ao registrar uso de tokens', [
+                    'conversation_id' => $this->conversationId,
+                    'error'           => $e->getMessage(),
                 ]);
             }
-        }
 
-        if ($reply === '') {
-            Log::channel('whatsapp')->warning('AI job: reply vazio após parse JSON', [
-                'conversation_id' => $this->conversationId,
-            ]);
-            return;
+            if ($reply === '') {
+                Log::channel('whatsapp')->warning('AI job: LLM retornou resposta vazia', [
+                    'conversation_id' => $this->conversationId,
+                ]);
+                return;
+            }
+
+            // Parsear JSON de ações (quando pipeline/tags/intent/calendar disponíveis)
+            if (! empty($stages) || ! empty($availTags) || $enableIntentNotify || $agent->enable_calendar_tool) {
+                $clean = preg_replace('/```(?:json)?\s*([\s\S]*?)```/i', '$1', $reply);
+                $clean = trim($clean ?? $reply);
+
+                if (! str_starts_with($clean, '{')) {
+                    $jsonStart = strpos($clean, '{');
+                    if ($jsonStart !== false) {
+                        $clean = substr($clean, $jsonStart);
+                    }
+                }
+
+                $decoded = null;
+                if (str_starts_with($clean, '{')) {
+                    $decoded = json_decode($clean, true);
+                }
+
+                if (is_array($decoded) && isset($decoded['reply'])) {
+                    $replyRaw = $decoded['reply'] ?? '';
+                    if (is_array($replyRaw)) {
+                        $replyParts = array_values(array_filter(array_map('trim', $replyRaw)));
+                        $reply = implode("\n\n", $replyParts);
+                    } else {
+                        $reply = trim((string) $replyRaw);
+                    }
+                    $actions = (array) ($decoded['actions'] ?? []);
+                } else {
+                    Log::channel('whatsapp')->warning('AI job: resposta não era JSON válido, usando texto bruto', [
+                        'conversation_id' => $this->conversationId,
+                        'raw'             => mb_substr($reply, 0, 300),
+                    ]);
+                }
+            }
+
+            if ($reply === '') {
+                Log::channel('whatsapp')->warning('AI job: reply vazio após parse JSON', [
+                    'conversation_id' => $this->conversationId,
+                ]);
+                return;
+            }
         }
 
         // ── Aplicar ações de pipeline e tags ─────────────────────────────────
@@ -363,6 +410,78 @@ class ProcessAiResponse implements ShouldQueue
         ]);
 
         $service->sendWhatsappReplies($conv, $messages, $delay);
+    }
+
+    // ── Agno: verificação de cota ─────────────────────────────────────────────
+
+    private function checkTokenQuota(WhatsappConversation $conv): bool
+    {
+        $tenant = Tenant::withoutGlobalScope('tenant')->find($conv->tenant_id);
+        if (! $tenant) return true;
+
+        if (method_exists($tenant, 'isExemptFromBilling') && $tenant->isExemptFromBilling()) {
+            return true;
+        }
+
+        $plan  = PlanDefinition::where('name', $tenant->plan)->first();
+        $limit = (int) ($plan?->features_json['ai_tokens_monthly'] ?? 0);
+
+        if ($limit === 0) return false;   // plano free — sem AI
+
+        $used = (int) AiUsageLog::where('tenant_id', $tenant->id)
+            ->whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->sum('tokens_total');
+
+        return $used < $limit;
+    }
+
+    // ── Agno: chamada ao microsserviço Python ─────────────────────────────────
+
+    private function callAgnoService(
+        WhatsappConversation $conv,
+        AiAgent $agent,
+        array $stages,
+        array $availTags,
+    ): array {
+        $lastMessage = WhatsappMessage::withoutGlobalScope('tenant')
+            ->where('conversation_id', $conv->id)
+            ->where('from_me', false)
+            ->latest()
+            ->first();
+
+        if (! $lastMessage) {
+            return [
+                'reply_blocks'     => [],
+                'actions'          => [],
+                'tokens_prompt'    => 0,
+                'tokens_completion' => 0,
+                'tokens_total'     => 0,
+                'model'            => '',
+                'provider'         => '',
+            ];
+        }
+
+        $agnoResult = app(AgnoService::class)->chat([
+            'agent_id'        => $agent->id,
+            'tenant_id'       => $agent->tenant_id,
+            'conversation_id' => $conv->id,
+            'contact_phone'   => $conv->phone,
+            'message'         => $lastMessage->content ?? '',
+            'history_limit'   => 20,
+            'pipeline_stages' => $stages,
+            'available_tags'  => $availTags,
+        ]);
+
+        // Flatten nested payload in actions to match the existing PHP action executor format.
+        // Agno returns: {"type": "set_stage", "payload": {"stage_id": 3}}
+        // PHP executor expects: {"type": "set_stage", "stage_id": 3}
+        $agnoResult['actions'] = array_map(
+            fn (array $a) => array_merge((array) ($a['payload'] ?? []), ['type' => $a['type'] ?? '']),
+            $agnoResult['actions'] ?? [],
+        );
+
+        return $agnoResult;
     }
 
     // ── Ações ─────────────────────────────────────────────────────────────────

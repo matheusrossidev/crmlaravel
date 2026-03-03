@@ -62,7 +62,21 @@ class AutomationController extends Controller
             ->orderBy('source')
             ->pluck('source');
 
-        return compact('pipelines', 'users', 'aiAgents', 'chatbotFlows', 'wahaConnected', 'whatsappTags', 'leadTags', 'leadSources');
+        $knownSources = ['manual', 'facebook', 'google', 'instagram', 'whatsapp', 'site', 'indicacao', 'outro'];
+        $allLeadSources = collect(array_unique(array_merge($knownSources, $leadSources->toArray())))
+            ->sort()
+            ->values();
+
+        $campaigns = \App\Models\Campaign::orderBy('name')->get(['id', 'name']);
+
+        $dateCustomFields = \App\Models\CustomFieldDefinition::where('is_active', true)
+            ->where('field_type', 'date')
+            ->orderBy('sort_order')
+            ->get(['id', 'name', 'label']);
+
+        return compact('pipelines', 'users', 'aiAgents', 'chatbotFlows', 'wahaConnected',
+                       'whatsappTags', 'leadTags', 'leadSources', 'allLeadSources',
+                       'campaigns', 'dateCustomFields');
     }
 
     public function index(): View
@@ -92,7 +106,7 @@ class AutomationController extends Controller
     {
         $data = $request->validate([
             'name'           => 'required|string|max:100',
-            'trigger_type'   => 'required|string|in:message_received,conversation_created,lead_created,lead_stage_changed,lead_won,lead_lost',
+            'trigger_type'   => 'required|string|in:message_received,conversation_created,lead_created,lead_stage_changed,lead_won,lead_lost,date_field',
             'trigger_config' => 'nullable|array',
             'conditions'     => 'nullable|array',
             'actions'        => 'required|array|min:1',
@@ -109,7 +123,7 @@ class AutomationController extends Controller
     {
         $data = $request->validate([
             'name'           => 'required|string|max:100',
-            'trigger_type'   => 'required|string|in:message_received,conversation_created,lead_created,lead_stage_changed,lead_won,lead_lost',
+            'trigger_type'   => 'required|string|in:message_received,conversation_created,lead_created,lead_stage_changed,lead_won,lead_lost,date_field',
             'trigger_config' => 'nullable|array',
             'conditions'     => 'nullable|array',
             'actions'        => 'required|array|min:1',

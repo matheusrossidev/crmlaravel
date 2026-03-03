@@ -11,8 +11,8 @@
         'stages' => $p->stages->map(fn($s) => ['id' => $s->id, 'name' => $s->name])->values(),
     ])->values();
 
-    $noteVarsHint = '{{contact_name}}, {{phone}}, {{stage}}, {{pipeline}}';
-    $msgVarsHint  = '{{contact_name}}, {{phone}}, {{stage}}';
+    $noteVarsHint = '{{contact_name}}, {{phone}}, {{stage}}, {{pipeline}}, {{birthday}}, {{days_until}}, {{custom_field_label}}';
+    $msgVarsHint  = '{{contact_name}}, {{phone}}, {{stage}}, {{birthday}}, {{days_until}}';
 @endphp
 
 @push('styles')
@@ -323,6 +323,9 @@
                 <div class="af-block-item trigger" onclick="setTrigger('lead_lost')">
                     <span class="af-block-icon"><i class="bi bi-x-circle"></i></span>Lead perdido
                 </div>
+                <div class="af-block-item trigger" onclick="setTrigger('date_field')">
+                    <span class="af-block-icon"><i class="bi bi-calendar-event"></i></span>Data / Aniversário
+                </div>
             </div>
 
             <div class="af-sidebar-divider"></div>
@@ -383,6 +386,12 @@
                 <div class="af-block-item action" onclick="addActionBlock('schedule_whatsapp_message')">
                     <span class="af-block-icon"><i class="bi bi-clock"></i></span>Agendar msg WhatsApp
                 </div>
+                <div class="af-block-item action" onclick="addActionBlock('assign_campaign')">
+                    <span class="af-block-icon"><i class="bi bi-megaphone"></i></span>Atribuir campanha
+                </div>
+                <div class="af-block-item action" onclick="addActionBlock('set_utm_params')">
+                    <span class="af-block-icon"><i class="bi bi-link-45deg"></i></span>Definir parâmetros UTM
+                </div>
             </div>
         </div>
 
@@ -433,7 +442,10 @@ const CHATBOT_FLOWS  = @json($chatbotFlows);
 const WAHA_CONNECTED = {{ $wahaConnected ? 'true' : 'false' }};
 const LEAD_TAGS      = @json($leadTags->values());
 const LEAD_SOURCES   = @json($leadSources->values());
-const WAPP_TAGS      = @json($whatsappTags->pluck('name')->values());
+const WAPP_TAGS           = @json($whatsappTags->pluck('name')->values());
+const DATE_CUSTOM_FIELDS  = @json($dateCustomFields->map(fn($f) => ['id' => $f->id, 'label' => $f->label])->values());
+const ALL_LEAD_SOURCES    = @json($allLeadSources);
+const CAMPAIGNS           = @json($campaigns);
 const NOTE_VARS_HINT = @json($noteVarsHint);
 const MSG_VARS_HINT  = @json($msgVarsHint);
 const AUTOMATION_DATA = {!! $automation_json !!};
@@ -453,6 +465,7 @@ const TRIGGER_META = {
     lead_stage_changed:  { icon:'bi-arrow-right-circle', label:'Lead movido de etapa' },
     lead_won:            { icon:'bi-trophy',             label:'Lead ganho' },
     lead_lost:           { icon:'bi-x-circle',           label:'Lead perdido' },
+    date_field:          { icon:'bi-calendar-event',     label:'Data / Aniversário' },
 };
 
 function setTrigger(type, prefillConfig) {
@@ -523,6 +536,28 @@ function buildTriggerConfig(type, prefill) {
                 <option value="">Qualquer origem</option>${srcOpts}
             </select>`;
     }
+    if (type === 'date_field') {
+        const nativeOpts = `<option value="birthday" ${prefill.date_field==='birthday'?'selected':''}>Aniversário (campo nativo)</option>`;
+        const cfOpts = DATE_CUSTOM_FIELDS
+            .map(f => `<option value="cf:${f.id}" ${prefill.date_field===`cf:${f.id}`?'selected':''}>Campo: ${h(f.label)}</option>`)
+            .join('');
+        const dbVal  = prefill.days_before  ?? 0;
+        const repVal = prefill.repeat_yearly !== undefined ? prefill.repeat_yearly : true;
+        html += `<label>Campo de data</label>
+            <select class="form-select" id="tcDateField">
+                <optgroup label="Campo nativo">${nativeOpts}</optgroup>
+                ${DATE_CUSTOM_FIELDS.length ? `<optgroup label="Campos personalizados">${cfOpts}</optgroup>` : ''}
+            </select>
+            <label style="margin-top:10px;">Dias de antecedência <small style="font-weight:400;color:#9ca3af;">(0 = no próprio dia)</small></label>
+            <input type="number" class="form-control" id="tcDaysBefore"
+                   min="0" max="365" value="${h(String(dbVal))}" style="margin-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+                <input type="checkbox" id="tcRepeatYearly" ${repVal ? 'checked' : ''} style="cursor:pointer;">
+                <label for="tcRepeatYearly" style="margin:0;cursor:pointer;font-weight:500;font-size:13px;color:#374151;">
+                    Repetir anualmente (ex: aniversários)
+                </label>
+            </div>`;
+    }
     if (!html) {
         html = `<p style="font-size:12px;color:#9ca3af;margin:0;">Nenhuma configuração necessária para este gatilho.</p>`;
     }
@@ -588,7 +623,7 @@ function buildConditionBody(field, idx, prefill) {
         </div>`;
     }
     if (field === 'lead_source') {
-        const srcOpts = LEAD_SOURCES.map(s => `<option value="${s}" ${prefill.value===s?'selected':''}>${h(s)}</option>`).join('');
+        const srcOpts = ALL_LEAD_SOURCES.map(s => `<option value="${s}" ${prefill.value===s?'selected':''}>${h(s)}</option>`).join('');
         const opOpts = [['equals','é'],['not_equals','não é']]
             .map(([v,l]) => `<option value="${v}" ${prefill.operator===v?'selected':''}>${l}</option>`).join('');
         return `<div class="row-pair">
@@ -635,8 +670,10 @@ const ACTION_META = {
     assign_ai_agent:       { icon:'bi-robot',             label:'Atribuir agente de IA' },
     assign_chatbot_flow:   { icon:'bi-diagram-3',         label:'Atribuir chatbot' },
     close_conversation:    { icon:'bi-lock',              label:'Fechar conversa' },
-    send_whatsapp_message:     { icon:'bi-whatsapp', label:'Enviar msg WhatsApp' },
-    schedule_whatsapp_message: { icon:'bi-clock',    label:'Agendar msg WhatsApp' },
+    send_whatsapp_message:     { icon:'bi-whatsapp',    label:'Enviar msg WhatsApp' },
+    schedule_whatsapp_message: { icon:'bi-clock',       label:'Agendar msg WhatsApp' },
+    assign_campaign:           { icon:'bi-megaphone',   label:'Atribuir campanha' },
+    set_utm_params:            { icon:'bi-link-45deg',  label:'Definir parâmetros UTM' },
 };
 
 function addActionBlock(type, prefill) {
@@ -698,7 +735,7 @@ function buildActionBody(type, idx, prefill) {
         </div>` + (selPipe ? `<script>setTimeout(()=>{const e=document.getElementById('apipe-${idx}');if(e){e.value=${selPipe};onActPipelineChange(${idx});setTimeout(()=>{const s=document.getElementById('astage-${idx}');if(s)s.value=${prefill.stage_id||0};},60);}},30);<\/script>` : '');
     }
     if (type === 'set_lead_source') {
-        const srcOpts = LEAD_SOURCES.map(s => `<option value="${s}" ${prefill.source===s?'selected':''}>${h(s)}</option>`).join('');
+        const srcOpts = ALL_LEAD_SOURCES.map(s => `<option value="${s}" ${prefill.source===s?'selected':''}>${h(s)}</option>`).join('');
         return `<label>Origem</label><select class="form-select" id="aval-${idx}">
             <option value="">Selecione...</option>${srcOpts}</select>`;
     }
@@ -725,6 +762,26 @@ function buildActionBody(type, idx, prefill) {
     }
     if (type === 'close_conversation') {
         return `<p style="font-size:12px;color:#6b7280;margin:0;"><i class="bi bi-info-circle me-1"></i>A conversa vinculada ao lead será fechada automaticamente.</p>`;
+    }
+    if (type === 'assign_campaign') {
+        if (!CAMPAIGNS.length) return `<p style="font-size:12px;color:#9ca3af;margin:0;">Nenhuma campanha cadastrada.</p>`;
+        const cOpts = CAMPAIGNS.map(c => `<option value="${c.id}" ${prefill.campaign_id==c.id?'selected':''}>${h(c.name)}</option>`).join('');
+        return `<label>Campanha</label><select class="form-select" id="aval-${idx}">
+            <option value="">Selecione...</option>${cOpts}</select>`;
+    }
+    if (type === 'set_utm_params') {
+        const fields = [
+            ['utm_source',   'UTM Source',   'ex: google'],
+            ['utm_medium',   'UTM Medium',   'ex: cpc'],
+            ['utm_campaign', 'UTM Campaign', 'ex: black-friday'],
+            ['utm_term',     'UTM Term',     'ex: crm+software'],
+            ['utm_content',  'UTM Content',  'ex: banner-topo'],
+        ];
+        return fields.map(([name, label, ph]) =>
+            `<label style="margin-top:6px;">${label} <small style="font-weight:400;color:#9ca3af;">(opcional)</small></label>
+            <input type="text" class="form-control utm-field" id="autm_${name}_${idx}"
+                   data-utm="${name}" placeholder="${ph}" value="${h(prefill[name]||'')}">`
+        ).join('') + `<p style="font-size:11px;color:#9ca3af;margin-top:6px;margin-bottom:0;">Deixe em branco os campos que não deseja alterar.</p>`;
     }
     if (type === 'send_whatsapp_message') {
         if (!WAHA_CONNECTED) return `<p style="font-size:12px;color:#f59e0b;margin:0;"><i class="bi bi-exclamation-triangle me-1"></i>Nenhuma instância WhatsApp conectada.</p>`;
@@ -865,6 +922,12 @@ function saveAutomation() {
     const pipeEl = document.getElementById('tcPipeline'); if (pipeEl && pipeEl.value) tc.pipeline_id = parseInt(pipeEl.value);
     const stgEl  = document.getElementById('tcStage');    if (stgEl  && stgEl.value)  tc.stage_id   = parseInt(stgEl.value);
     const srcEl  = document.getElementById('tcSource');   if (srcEl  && srcEl.value)  tc.source     = srcEl.value;
+    const dfEl   = document.getElementById('tcDateField');
+    if (dfEl && dfEl.value) {
+        tc.date_field    = dfEl.value;
+        tc.days_before   = parseInt(document.getElementById('tcDaysBefore')?.value ?? '0', 10) || 0;
+        tc.repeat_yearly = document.getElementById('tcRepeatYearly')?.checked ?? true;
+    }
 
     const conditions = [];
     document.querySelectorAll('[id^="condBody-"]').forEach(body => {
@@ -921,6 +984,16 @@ function saveAutomation() {
             config.delay_value = parseInt(document.getElementById(`adelay-${idx}`)?.value || '1');
             config.delay_unit  = document.getElementById(`adelayunit-${idx}`)?.value || 'days';
             if (config.delay_value < 1) { toastr.warning('O delay deve ser ao menos 1.'); err = true; return; }
+        } else if (type === 'assign_campaign') {
+            config.campaign_id = parseInt(document.getElementById(`aval-${idx}`)?.value || 0);
+            if (!config.campaign_id) { toastr.warning('Selecione a campanha.'); err = true; return; }
+        } else if (type === 'set_utm_params') {
+            document.querySelectorAll(`#actBody-${idx} .utm-field`).forEach(el => {
+                const name = el.dataset.utm;
+                const val  = el.value.trim();
+                if (val) config[name] = val;
+            });
+            if (!Object.keys(config).length) { toastr.warning('Preencha ao menos um campo UTM.'); err = true; return; }
         }
         actions.push({ type, config });
     });

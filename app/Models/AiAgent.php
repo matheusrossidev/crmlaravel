@@ -25,6 +25,7 @@ class AiAgent extends Model
         'followup_enabled', 'followup_delay_minutes', 'followup_max_count',
         'followup_hour_start', 'followup_hour_end',
         'transfer_to_user_id',
+        'use_agno',
     ];
 
     protected $casts = [
@@ -37,11 +38,13 @@ class AiAgent extends Model
         'enable_pipeline_tool'   => 'boolean',
         'enable_tags_tool'       => 'boolean',
         'enable_intent_notify'   => 'boolean',
+        'enable_calendar_tool'   => 'boolean',
         'followup_enabled'       => 'boolean',
         'followup_delay_minutes' => 'integer',
         'followup_max_count'     => 'integer',
         'followup_hour_start'    => 'integer',
         'followup_hour_end'      => 'integer',
+        'use_agno'               => 'boolean',
     ];
 
     public function conversations(): HasMany

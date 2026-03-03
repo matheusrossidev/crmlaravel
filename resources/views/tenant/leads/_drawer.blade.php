@@ -75,6 +75,11 @@
                 <input type="text" id="fCompany" name="company" placeholder="Nome da empresa" class="drawer-input">
             </div>
 
+            <div class="drawer-group">
+                <label>Data de Nascimento</label>
+                <input type="date" id="fBirthday" name="birthday" class="drawer-input">
+            </div>
+
             {{-- Pipeline / Etapa --}}
             <div class="drawer-section-label" style="margin-top:18px;">Pipeline & Etapa</div>
 
@@ -622,8 +627,9 @@ function populateDrawer(res) {
     document.getElementById('fName').value    = lead.name    || '';
     document.getElementById('fPhone').value   = lead.phone   || '';
     document.getElementById('fEmail').value   = lead.email   || '';
-    document.getElementById('fCompany').value = lead.company || '';
-    document.getElementById('fValue').value   = lead.value   || '';
+    document.getElementById('fCompany').value  = lead.company  || '';
+    document.getElementById('fBirthday').value = lead.birthday || '';
+    document.getElementById('fValue').value    = lead.value    || '';
 
     // Notas múltiplas
     renderNotes(lead.notes_list || []);
@@ -799,6 +805,7 @@ document.getElementById('btnSaveLead')?.addEventListener('click', () => {
         phone:         document.getElementById('fPhone').value.trim() || null,
         email:         document.getElementById('fEmail').value.trim() || null,
         company:       document.getElementById('fCompany').value.trim() || null,
+        birthday:      document.getElementById('fBirthday').value || null,
         value:         document.getElementById('fValue').value || null,
         source:        document.getElementById('fSource').value,
         tags:          _currentTags,

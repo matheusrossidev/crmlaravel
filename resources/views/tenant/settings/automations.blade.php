@@ -59,6 +59,7 @@
 .trigger-badge.stage { background: #f3e8ff; color: #7c3aed; }
 .trigger-badge.won   { background: #dcfce7; color: #16a34a; }
 .trigger-badge.lost  { background: #fee2e2; color: #dc2626; }
+.trigger-badge.date  { background: #e0f2fe; color: #0369a1; }
 
 .action-chip {
     display: inline-flex; align-items: center; gap: 4px;

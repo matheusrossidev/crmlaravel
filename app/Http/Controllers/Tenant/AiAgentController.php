@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AiAgent;
 use App\Models\AiAgentKnowledgeFile;
 use App\Models\User;
+use App\Services\AgnoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -46,6 +47,8 @@ class AiAgentController extends Controller
         $data  = $this->validated($request);
         $agent = AiAgent::create($data);
 
+        $this->syncToAgno($agent);
+
         if ($request->expectsJson()) {
             return response()->json([
                 'success'  => true,
@@ -68,6 +71,9 @@ class AiAgentController extends Controller
     {
         $data = $this->validated($request);
         $agent->update($data);
+        $agent->refresh();
+
+        $this->syncToAgno($agent);
 
         return redirect()->route('ai.agents.index')->with('success', 'Agente atualizado.');
     }
@@ -191,6 +197,16 @@ class AiAgentController extends Controller
                 'extracted_text' => $extractedText,
                 'status'         => 'done',
             ]);
+
+            // Indexar no Agno para RAG (se o agente usa Agno)
+            if ($agent->use_agno && $extractedText) {
+                app(AgnoService::class)->indexFile(
+                    $agent->id,
+                    $agent->tenant_id,
+                    $extractedText,
+                    $origName,
+                );
+            }
         } catch (\Throwable $e) {
             Log::error('Knowledge file extraction failed', [
                 'file_id' => $record->id,
@@ -309,6 +325,7 @@ class AiAgentController extends Controller
             'followup_hour_end'          => 'nullable|integer|min:1|max:23',
             'enable_calendar_tool'       => 'nullable|boolean',
             'calendar_tool_instructions' => 'nullable|string|max:2000',
+            'use_agno'                   => 'nullable|boolean',
         ]);
 
         $data['is_active']              = $request->boolean('is_active');
@@ -318,9 +335,37 @@ class AiAgentController extends Controller
         $data['enable_intent_notify']   = $request->boolean('enable_intent_notify');
         $data['followup_enabled']       = $request->boolean('followup_enabled');
         $data['enable_calendar_tool']   = $request->boolean('enable_calendar_tool');
+        $data['use_agno']               = $request->boolean('use_agno');
         $data['transfer_to_user_id']    = $request->input('transfer_to_user_id') ?: null;
 
         return $data;
+    }
+
+    private function syncToAgno(AiAgent $agent): void
+    {
+        if (! $agent->use_agno) {
+            return;
+        }
+
+        app(AgnoService::class)->configureAgent($agent->id, [
+            'tenant_id'            => $agent->tenant_id,
+            'name'                 => $agent->name,
+            'objective'            => $agent->objective,
+            'company_name'         => $agent->company_name ?? '',
+            'industry'             => $agent->industry ?? '',
+            'communication_style'  => $agent->communication_style,
+            'persona_description'  => $agent->persona_description ?? '',
+            'behavior'             => $agent->behavior ?? '',
+            'max_message_length'   => $agent->max_message_length ?? 800,
+            'knowledge_base_text'  => $agent->knowledge_base ?? '',
+            'llm_provider'         => config('ai.provider', 'openai'),
+            'llm_model'            => config('ai.model', 'gpt-4o-mini'),
+            'llm_api_key'          => config('ai.api_key', ''),
+            'enable_pipeline_tool' => (bool) $agent->enable_pipeline_tool,
+            'enable_tags_tool'     => (bool) $agent->enable_tags_tool,
+            'enable_intent_notify' => (bool) $agent->enable_intent_notify,
+            'enable_calendar_tool' => (bool) $agent->enable_calendar_tool,
+        ]);
     }
 
     private function buildSystemPrompt(AiAgent $agent): string

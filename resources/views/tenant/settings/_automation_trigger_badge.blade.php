@@ -6,6 +6,7 @@ $classes = [
     'lead_stage_changed'   => 'stage',
     'lead_won'             => 'won',
     'lead_lost'            => 'lost',
+    'date_field'           => 'date',
 ];
 $icons = [
     'message_received'     => 'bi-chat-dots',
@@ -14,6 +15,7 @@ $icons = [
     'lead_stage_changed'   => 'bi-arrow-right-circle',
     'lead_won'             => 'bi-trophy',
     'lead_lost'            => 'bi-x-circle',
+    'date_field'           => 'bi-calendar-event',
 ];
 $labels = [
     'message_received'     => 'Mensagem recebida',
@@ -22,6 +24,7 @@ $labels = [
     'lead_stage_changed'   => 'Lead movido de etapa',
     'lead_won'             => 'Lead ganho',
     'lead_lost'            => 'Lead perdido',
+    'date_field'           => 'Data / Aniversário',
 ];
 $cls   = $classes[$auto->trigger_type] ?? 'lead';
 $icon  = $icons[$auto->trigger_type]   ?? 'bi-lightning-charge';

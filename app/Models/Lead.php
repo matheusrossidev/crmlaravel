@@ -20,12 +20,14 @@ class Lead extends Model
         'assigned_to', 'campaign_id', 'created_by', 'notes',
         'instagram_username', 'exclude_from_pipeline',
         'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+        'birthday',
     ];
 
     protected $casts = [
         'tags'                  => 'array',
         'exclude_from_pipeline' => 'boolean',
         'value'      => 'decimal:2',
+        'birthday'   => 'date',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

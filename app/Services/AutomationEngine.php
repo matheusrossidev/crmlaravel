@@ -190,6 +190,8 @@ class AutomationEngine
             'close_conversation'  => $this->actionCloseConversation($ctx),
             'send_whatsapp_message'         => $this->actionSendWhatsappMessage($config, $ctx, $automation),
             'schedule_whatsapp_message'     => $this->actionScheduleWhatsappMessage($config, $ctx),
+            'assign_campaign'               => $this->actionAssignCampaign($config, $ctx),
+            'set_utm_params'                => $this->actionSetUtmParams($config, $ctx),
             default               => null,
         };
     }
@@ -412,6 +414,35 @@ class AutomationEngine
         ]);
     }
 
+    private function actionAssignCampaign(array $config, array $ctx): void
+    {
+        $lead = $this->resolveLead($ctx);
+        if (! $lead || empty($config['campaign_id'])) {
+            return;
+        }
+        Lead::withoutGlobalScope('tenant')
+            ->where('id', $lead->id)
+            ->update(['campaign_id' => (int) $config['campaign_id']]);
+    }
+
+    private function actionSetUtmParams(array $config, array $ctx): void
+    {
+        $lead = $this->resolveLead($ctx);
+        if (! $lead) {
+            return;
+        }
+        $fields = [];
+        foreach (['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'] as $col) {
+            if (isset($config[$col]) && $config[$col] !== '') {
+                $fields[$col] = $config[$col];
+            }
+        }
+        if (empty($fields)) {
+            return;
+        }
+        Lead::withoutGlobalScope('tenant')->where('id', $lead->id)->update($fields);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────────
 
     private function resolveLead(array $ctx): ?Lead
@@ -436,11 +467,14 @@ class AutomationEngine
         $stage = $ctx['stage_new'] ?? null;
 
         $vars = [
-            '{{contact_name}}' => $conv?->contact_name ?? $lead?->name ?? '',
-            '{{phone}}'        => $lead?->phone ?? ($conv?->phone ?? ''),
-            '{{lead_name}}'    => $lead?->name ?? '',
-            '{{pipeline}}'     => $lead?->pipeline?->name ?? '',
-            '{{stage}}'        => $stage?->name ?? $lead?->stage?->name ?? '',
+            '{{contact_name}}'    => $conv?->contact_name ?? $lead?->name ?? '',
+            '{{phone}}'           => $lead?->phone ?? ($conv?->phone ?? ''),
+            '{{lead_name}}'       => $lead?->name ?? '',
+            '{{pipeline}}'        => $lead?->pipeline?->name ?? '',
+            '{{stage}}'           => $stage?->name ?? $lead?->stage?->name ?? '',
+            '{{birthday}}'        => isset($ctx['birthday_formatted']) ? $ctx['birthday_formatted'] : ($lead?->birthday?->format('d/m/Y') ?? ''),
+            '{{days_until}}'      => isset($ctx['days_until']) ? (string) $ctx['days_until'] : '',
+            '{{custom_field_label}}' => $ctx['custom_field_label'] ?? '',
         ];
 
         return str_replace(array_keys($vars), array_values($vars), $text);

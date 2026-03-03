@@ -108,6 +108,7 @@ class LeadController extends Controller
             'stage_id'    => 'required|integer|exists:pipeline_stages,id',
             'campaign_id' => 'nullable|integer|exists:campaigns,id',
             'notes'       => 'nullable|string|max:2000',
+            'birthday'    => 'nullable|date',
         ]);
 
         $data['created_by'] = auth()->id();
@@ -242,6 +243,7 @@ class LeadController extends Controller
             'stage_id'    => 'required|integer|exists:pipeline_stages,id',
             'campaign_id' => 'nullable|integer|exists:campaigns,id',
             'notes'       => 'nullable|string|max:2000',
+            'birthday'    => 'nullable|date',
         ]);
 
         $oldStageId = $lead->stage_id;
@@ -379,6 +381,7 @@ class LeadController extends Controller
             'stage_id'      => $lead->stage_id,
             'campaign_id'   => $lead->campaign_id,
             'notes'         => $lead->notes ?? null,
+            'birthday'      => $lead->birthday?->format('Y-m-d'),
             'stage'         => $lead->stage   ? ['id' => $lead->stage->id,    'name' => $lead->stage->name,    'color' => $lead->stage->color]   : null,
             'pipeline'      => $lead->pipeline ? ['id' => $lead->pipeline->id, 'name' => $lead->pipeline->name] : null,
             'campaign'      => $lead->campaign ? ['id' => $lead->campaign->id, 'name' => $lead->campaign->name] : null,
