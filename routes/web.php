@@ -140,8 +140,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     // Relatórios
     Route::get('/relatorios', [ReportController::class, 'index'])->name('reports.index');
 
-    // Campanhas (read-only)
-    Route::get('/campanhas', [CampaignController::class, 'index'])->name('campaigns.index');
+    // Campanhas
+    Route::get   ('/campanhas',                     [CampaignController::class, 'index'])  ->name('campaigns.index');
+    Route::post  ('/campanhas',                     [CampaignController::class, 'store'])  ->name('campaigns.store');
+    Route::put   ('/campanhas/{campaign}',          [CampaignController::class, 'update']) ->name('campaigns.update');
+    Route::delete('/campanhas/{campaign}',          [CampaignController::class, 'destroy'])->name('campaigns.destroy');
+    Route::get   ('/campanhas/relatorios',          [CampaignController::class, 'reports'])->name('campaigns.reports');
 
     // Integrações
     Route::prefix('configuracoes/integracoes')->name('settings.integrations.')->group(function () {

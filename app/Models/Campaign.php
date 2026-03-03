@@ -14,8 +14,10 @@ class Campaign extends Model
     use BelongsToTenant;
 
     protected $fillable = [
-        'tenant_id', 'platform', 'external_id', 'name', 'status',
+        'tenant_id', 'platform', 'external_id', 'name', 'status', 'type', 'campaign_type',
         'objective', 'budget_daily', 'budget_lifetime', 'metrics_json', 'last_sync_at',
+        'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+        'destination_url',
     ];
 
     protected $casts = [

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Campaign;
 use App\Models\CustomFieldDefinition;
 use App\Models\CustomFieldValue;
 use App\Models\Lead;
@@ -21,20 +22,33 @@ class LeadController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'        => 'required|string|max:255',
-            'phone'       => 'nullable|string|max:20',
-            'email'       => 'nullable|email|max:191',
-            'value'       => 'nullable|numeric|min:0',
-            'source'      => 'nullable|string|max:100',
-            'tags'        => 'nullable|array',
-            'tags.*'      => 'string|max:50',
-            'pipeline_id' => 'required|integer|exists:pipelines,id',
-            'stage_id'    => 'required|integer|exists:pipeline_stages,id',
-            'campaign_id' => 'nullable|integer|exists:campaigns,id',
-            'notes'       => 'nullable|string|max:2000',
+            'name'         => 'required|string|max:255',
+            'phone'        => 'nullable|string|max:20',
+            'email'        => 'nullable|email|max:191',
+            'value'        => 'nullable|numeric|min:0',
+            'source'       => 'nullable|string|max:100',
+            'tags'         => 'nullable|array',
+            'tags.*'       => 'string|max:50',
+            'pipeline_id'  => 'required|integer|exists:pipelines,id',
+            'stage_id'     => 'required|integer|exists:pipeline_stages,id',
+            'campaign_id'  => 'nullable|integer|exists:campaigns,id',
+            'notes'        => 'nullable|string|max:2000',
+            'utm_source'   => 'nullable|string|max:100',
+            'utm_medium'   => 'nullable|string|max:100',
+            'utm_campaign' => 'nullable|string|max:200',
+            'utm_term'     => 'nullable|string|max:200',
+            'utm_content'  => 'nullable|string|max:200',
         ]);
 
         $data['created_by'] = auth()->id();
+
+        // Auto-associate campaign by utm_campaign if campaign_id not provided
+        if (empty($data['campaign_id']) && !empty($data['utm_campaign'])) {
+            $matched = Campaign::where('utm_campaign', $data['utm_campaign'])->first();
+            if ($matched) {
+                $data['campaign_id'] = $matched->id;
+            }
+        }
 
         $lead = Lead::create($data);
 
@@ -190,6 +204,11 @@ class LeadController extends Controller
             'stage_id'      => $lead->stage_id,
             'campaign_id'   => $lead->campaign_id,
             'notes'         => $lead->notes,
+            'utm_source'    => $lead->utm_source,
+            'utm_medium'    => $lead->utm_medium,
+            'utm_campaign'  => $lead->utm_campaign,
+            'utm_term'      => $lead->utm_term,
+            'utm_content'   => $lead->utm_content,
             'stage'         => $lead->stage   ? ['id' => $lead->stage->id,    'name' => $lead->stage->name]    : null,
             'pipeline'      => $lead->pipeline ? ['id' => $lead->pipeline->id, 'name' => $lead->pipeline->name] : null,
             'created_at'    => $lead->created_at?->toISOString(),

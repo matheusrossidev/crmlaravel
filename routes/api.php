@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\CampaignController;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\PipelineController;
 use App\Http\Controllers\AsaasWebhookController;
@@ -41,4 +42,10 @@ Route::prefix('v1')->middleware(['api_key'])->group(function () {
 
     // ── Pipelines ──────────────────────────────────────────────────────────
     Route::get('pipelines', [PipelineController::class, 'index']);
+
+    // ── Campaigns ──────────────────────────────────────────────────────────
+    Route::get   ('campaigns',             [CampaignController::class, 'index']);
+    Route::post  ('campaigns',             [CampaignController::class, 'store']);
+    Route::put   ('campaigns/{campaign}',  [CampaignController::class, 'update']);
+    Route::delete('campaigns/{campaign}',  [CampaignController::class, 'destroy']);
 });
