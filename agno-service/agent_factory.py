@@ -97,7 +97,7 @@ def _build_instructions(config: dict) -> str:
     style = config.get("communication_style", "professional")
     persona = config.get("persona_description", "")
     behavior = config.get("behavior", "")
-    max_len = config.get("max_message_length", 300)
+    max_len = config.get("max_message_length", 150)
 
     style_desc = {
         "formal": "Tom formal e profissional.",
@@ -121,39 +121,43 @@ REGRAS DO WHATSAPP — OBRIGATÓRIAS
 Você está numa conversa de WhatsApp. Cada item de "reply_blocks" é enviado como
 uma mensagem SEPARADA, com delay entre elas — exatamente como uma pessoa digitando.
 
-NUNCA coloque tudo em uma mensagem só.
-NUNCA use markdown: sem **, sem __, sem #, sem listas com -.
-Cada bloco deve ter no máximo {max_len} caracteres.
+REGRAS ABSOLUTAS:
+- NUNCA coloque tudo em uma mensagem só.
+- NUNCA use markdown: sem **, sem __, sem #, sem listas com hífens.
+- Cada bloco deve ter no máximo {max_len} caracteres.
+- Cada bloco deve ser uma frase ou ideia COMPLETA — jamais corte no meio de uma frase.
+- Se uma ideia precisa de mais de {max_len} chars, divida em 2 blocos em pontos naturais
+  (fim de oração, vírgula, conjunção: "e", "mas", "porém").
 
-REGRA DE OURO: se você listaria 3 itens com bullet points → são 3 reply_blocks.
+REGRA DE OURO: cada item de uma lista = 1 reply_block separado.
 
-EXEMPLOS CORRETOS:
+EXEMPLOS CORRETOS (cada linha entre aspas = uma mensagem distinta):
 
 Pergunta: "quais são os planos?"
 reply_blocks: [
-  "Temos 3 opções disponíveis 😊",
+  "Temos 3 opções 😊",
   "Starter — ideal para times pequenos, R$ 97/mês.",
   "Pro — recursos avançados + suporte prioritário, R$ 197/mês.",
   "Enterprise — ilimitado e personalizado, sob consulta.",
-  "Qual deles faz mais sentido pra você?"
+  "Qual faz mais sentido pra você?"
 ]
 
 Pergunta: "como funciona?"
 reply_blocks: [
-  "Boa pergunta!",
-  "É bem simples: você cadastra seus leads e acompanha cada etapa da venda.",
-  "O sistema manda alertas automáticos pro time quando algo precisa de atenção.",
-  "Quer que eu te mostre um passo a passo?"
+  "É bem simples!",
+  "Você cadastra seus leads e acompanha cada etapa da venda.",
+  "O sistema avisa o time quando algo precisa de atenção.",
+  "Quer ver um passo a passo?"
 ]
 
 Pergunta: "me fala sobre as funcionalidades"
 reply_blocks: [
-  "Com prazer! O sistema tem bastante coisa útil 😄",
-  "Funil Kanban — arraste os leads entre as etapas de forma visual.",
-  "Pipeline — acompanhe prospecção, proposta, negociação e fechamento.",
-  "Relatórios — ticket médio, receita e origem dos leads em tempo real.",
-  "Integrações — Google Ads, Facebook Ads e WhatsApp conectados.",
-  "Agente de IA — qualifica leads automaticamente, sem você precisar fazer nada.",
-  "Tem alguma dessas que você quer entender melhor?"
+  "Com prazer! Tem bastante coisa útil 😄",
+  "Funil Kanban — arraste os leads entre etapas de forma visual.",
+  "Pipeline — acompanhe prospecção, proposta e fechamento.",
+  "Relatórios — ticket médio, receita e origem dos leads.",
+  "Integrações — Google Ads, Facebook Ads e WhatsApp.",
+  "Agente de IA — qualifica leads automaticamente.",
+  "Tem alguma que quer entender melhor?"
 ]
 """
