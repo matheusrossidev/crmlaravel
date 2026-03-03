@@ -5,7 +5,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 
-from agent_factory import AgnoReply, get_or_create_agent, store_agent_config
+from agent_factory import AgnoReply, get_agent_config, get_or_create_agent, store_agent_config
+from formatter import format_as_whatsapp_blocks
 from schemas import AgentResponse, ChatRequest, ConfigureRequest, IndexFileRequest
 
 
@@ -42,6 +43,20 @@ async def chat(req: ChatRequest) -> AgentResponse:
         )
 
         reply_blocks = _extract_reply_blocks(result)
+
+        # Second-pass formatter: a dedicated LLM call that only splits and
+        # humanizes the text — much more reliable than prompt instructions alone.
+        config = get_agent_config(req.agent_id)
+        if config:
+            raw_text = " ".join(reply_blocks)
+            formatted = await format_as_whatsapp_blocks(
+                text=raw_text,
+                provider=config.get("llm_provider", "openai"),
+                model=config.get("llm_model", "gpt-4o-mini"),
+                api_key=config.get("llm_api_key", ""),
+            )
+            if formatted:
+                reply_blocks = formatted
 
         tokens_prompt = 0
         tokens_completion = 0
