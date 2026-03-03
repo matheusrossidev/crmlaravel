@@ -524,7 +524,12 @@ class ProcessAiResponse implements ShouldQueue
                     $dateFormatted = \Carbon\Carbon::parse($startStr)
                         ->setTimezone(config('app.timezone', 'America/Sao_Paulo'))
                         ->format('d/m/Y \à\s H:i');
-                    return "✅ Evento criado com sucesso!\n📅 {$dateFormatted}\n📌 " . ($action['title'] ?? 'Evento');
+                    $attendee = trim((string) ($action['attendees'] ?? ''));
+                    $msg = "Reunião marcada para {$dateFormatted}!";
+                    if ($attendee) {
+                        $msg .= " O convite foi enviado para {$attendee}.";
+                    }
+                    return $msg;
 
                 case 'calendar_reschedule':
                     $eventId = $action['event_id'] ?? '';
