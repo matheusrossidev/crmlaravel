@@ -488,6 +488,66 @@
                             </div>
                             @endforeach
                             @endif
+
+                            {{-- Campanha & UTM --}}
+                            <div class="bsec-title" style="display:flex;align-items:center;gap:6px;margin-top:10px;">
+                                Campanha & UTM
+                                <span style="font-size:10px;font-weight:400;color:#9ca3af;text-transform:none;letter-spacing:0;">(atribuição automática)</span>
+                            </div>
+
+                            @if($campaigns->count())
+                            <div class="bfield">
+                                <input type="checkbox" id="bld-campaign-on"
+                                       onchange="toggleBldInput('bld-campaign'); updateCreateCurl()">
+                                <span class="bfield-label">campaign_id</span>
+                                <select class="bselect" id="bld-campaign" disabled onchange="updateCreateCurl()">
+                                    <option value="">— Nenhuma —</option>
+                                    @foreach($campaigns as $c)
+                                    <option value="{{ $c->id }}">{{ $c->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @endif
+
+                            <div class="bfield">
+                                <input type="checkbox" id="bld-utm_source-on"
+                                       onchange="toggleBldInput('bld-utm_source'); updateCreateCurl()">
+                                <span class="bfield-label">utm_source</span>
+                                <input type="text" class="binput" id="bld-utm_source"
+                                       value="facebook" oninput="updateCreateCurl()" disabled>
+                            </div>
+
+                            <div class="bfield">
+                                <input type="checkbox" id="bld-utm_medium-on"
+                                       onchange="toggleBldInput('bld-utm_medium'); updateCreateCurl()">
+                                <span class="bfield-label">utm_medium</span>
+                                <input type="text" class="binput" id="bld-utm_medium"
+                                       value="cpc" oninput="updateCreateCurl()" disabled>
+                            </div>
+
+                            <div class="bfield">
+                                <input type="checkbox" id="bld-utm_campaign-on"
+                                       onchange="toggleBldInput('bld-utm_campaign'); updateCreateCurl()">
+                                <span class="bfield-label">utm_campaign</span>
+                                <input type="text" class="binput" id="bld-utm_campaign"
+                                       value="promo-marco" oninput="updateCreateCurl()" disabled>
+                            </div>
+
+                            <div class="bfield">
+                                <input type="checkbox" id="bld-utm_term-on"
+                                       onchange="toggleBldInput('bld-utm_term'); updateCreateCurl()">
+                                <span class="bfield-label">utm_term</span>
+                                <input type="text" class="binput" id="bld-utm_term"
+                                       value="crm software" oninput="updateCreateCurl()" disabled>
+                            </div>
+
+                            <div class="bfield">
+                                <input type="checkbox" id="bld-utm_content-on"
+                                       onchange="toggleBldInput('bld-utm_content'); updateCreateCurl()">
+                                <span class="bfield-label">utm_content</span>
+                                <input type="text" class="binput" id="bld-utm_content"
+                                       value="banner-azul" oninput="updateCreateCurl()" disabled>
+                            </div>
                         </div>
 
                         {{-- Curl preview --}}
@@ -790,6 +850,7 @@ const CSRF            = document.querySelector('meta[name="csrf-token"]')?.conte
 
 const PIPELINES_DATA  = {!! json_encode($pipelines) !!};
 const CUSTOM_FIELDS   = {!! json_encode($customFields) !!};
+const CAMPAIGNS_DATA  = {!! json_encode($campaigns) !!};
 
 // ── Modal nova key ──────────────────────────────────────────────────────────
 function openNewKeyModal() {
@@ -988,6 +1049,20 @@ function buildCreateCurl() {
         }
     });
     if (Object.keys(cf).length) body.custom_fields = cf;
+
+    // campaign_id (optional toggle)
+    if (document.getElementById('bld-campaign-on')?.checked) {
+        const v = document.getElementById('bld-campaign')?.value;
+        if (v) body.campaign_id = parseInt(v);
+    }
+
+    // UTM fields (optional toggles)
+    for (const f of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']) {
+        if (document.getElementById(`bld-${f}-on`)?.checked) {
+            const v = document.getElementById(`bld-${f}`)?.value;
+            if (v) body[f] = v;
+        }
+    }
 
     return formatCurl('POST', 'leads', body);
 }
