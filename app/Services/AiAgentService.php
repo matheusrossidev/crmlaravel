@@ -354,13 +354,19 @@ WAFMT;
      *
      * Estratégia:
      * 1. Limpar formatação markdown via cleanFormatting()
-     * 2. Dividir prioritariamente por parágrafos (\n\n)
-     * 3. Parágrafos > maxLength → subdividir por sentenças
-     * 4. Parágrafos muito curtos (< 60 chars) → agrupar no buffer
+     * 2. Dividir por parágrafos (\n\n) — preserva quebras intencionais do LLM
+     * 3. Para cada parágrafo > sentenceThreshold (250 chars), subdividir por sentenças
+     * 4. Agrupar chunks muito curtos (< 80 chars) com o próximo, respeitando maxLength
+     *
+     * O sentenceThreshold (250) é intencionalmente menor que maxLength (≥200)
+     * para garantir split agressivo mesmo quando o LLM ignora as instruções de \n\n.
      */
     public function splitIntoMessages(string $text, int $maxLength): array
     {
         $text = $this->cleanFormatting($text);
+
+        // Threshold para dividir por sentenças — menor que maxLength para ser mais agressivo
+        $sentenceThreshold = (int) min($maxLength, 250);
 
         // 1. Split por parágrafo (dupla quebra de linha)
         $paragraphs = preg_split('/\n{2,}/', $text);
@@ -370,43 +376,43 @@ WAFMT;
             return [$text];
         }
 
+        // 2. Para cada parágrafo acima do threshold → subdividir em sentenças
+        $chunks = [];
+        foreach ($paragraphs as $para) {
+            if (mb_strlen($para) > $sentenceThreshold) {
+                $sentences = preg_split('/(?<=[.!?])\s+/', $para, -1, PREG_SPLIT_NO_EMPTY);
+                if (count($sentences) > 1) {
+                    $chunk = '';
+                    foreach ($sentences as $s) {
+                        $candidate = $chunk !== '' ? $chunk . ' ' . $s : $s;
+                        if ($chunk !== '' && mb_strlen($candidate) > $sentenceThreshold) {
+                            $chunks[] = trim($chunk);
+                            $chunk    = $s;
+                        } else {
+                            $chunk = $candidate;
+                        }
+                    }
+                    if ($chunk !== '') {
+                        $chunks[] = trim($chunk);
+                    }
+                    continue;
+                }
+            }
+            $chunks[] = $para;
+        }
+
+        // 3. Agrupar chunks muito curtos (< 80 chars) com o próximo (sem exceder maxLength)
         $messages = [];
         $buffer   = '';
-
-        foreach ($paragraphs as $para) {
-            // Parágrafo excede maxLength → dividir por sentenças
-            if (mb_strlen($para) > $maxLength) {
-                if ($buffer !== '') {
-                    $messages[] = $buffer;
-                    $buffer     = '';
-                }
-                $sentences = preg_split('/(?<=[.!?])\s+/', $para, -1, PREG_SPLIT_NO_EMPTY);
-                $chunk = '';
-                foreach ($sentences as $s) {
-                    $candidate = $chunk !== '' ? $chunk . ' ' . $s : $s;
-                    if ($chunk !== '' && mb_strlen($candidate) > $maxLength) {
-                        $messages[] = trim($chunk);
-                        $chunk = $s;
-                    } else {
-                        $chunk = $candidate;
-                    }
-                }
-                if ($chunk !== '') {
-                    $messages[] = trim($chunk);
-                }
-                continue;
-            }
-
-            // Parágrafo normal → tentar agregar no buffer
-            $candidate = $buffer !== '' ? $buffer . "\n" . $para : $para;
-            if ($buffer !== '' && mb_strlen($candidate) > $maxLength) {
+        foreach ($chunks as $chunk) {
+            $candidate = $buffer !== '' ? $buffer . "\n" . $chunk : $chunk;
+            if ($buffer !== '' && mb_strlen($buffer) >= 80 && mb_strlen($candidate) > $maxLength) {
                 $messages[] = $buffer;
-                $buffer     = $para;
+                $buffer     = $chunk;
             } else {
                 $buffer = $candidate;
             }
         }
-
         if ($buffer !== '') {
             $messages[] = $buffer;
         }
