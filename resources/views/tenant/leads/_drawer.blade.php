@@ -448,12 +448,17 @@ $_cfDefsJson = isset($customFieldDefs)
 $_configuredTagsJson = isset($_configuredTags)
     ? $_configuredTags->map(fn($t) => ['name' => $t->name, 'color' => $t->color])->values()->toArray()
     : [];
+
+$_campaignsJson = isset($campaigns)
+    ? $campaigns->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values()->toArray()
+    : [];
 @endphp
 
 <script>
 // ── Dados de pipelines e campos personalizados injetados pelo servidor ────
 const PIPELINES_DATA   = {!! json_encode($_pipelinesJson) !!};
 const CF_DEFS          = {!! json_encode($_cfDefsJson) !!};
+const DRAWER_CAMPAIGNS = {!! json_encode($_campaignsJson) !!};
 const CF_UPLOAD_URL    = '{{ route('leads.cf-upload') }}';
 const LEAD_TAGS        = {!! json_encode($_configuredTagsJson) !!};
 const LEAD_NOTE_STORE  = '{{ route('leads.notes.store',   ['lead' => '__ID__']) }}';
@@ -700,8 +705,15 @@ function populateStages(stages, selectedId = null) {
 
 // ── Carregar campanhas via AJAX (simplificado) ────────────────────────────
 function loadCampaigns(selectedId) {
-    // Campanhas já são carregadas no show() para edição
-    // Para novo lead, o select fica vazio (OK para MVP)
+    const campSel = document.getElementById('fCampaign');
+    campSel.innerHTML = '<option value="">Nenhuma</option>';
+    DRAWER_CAMPAIGNS.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        if (selectedId && c.id == selectedId) opt.selected = true;
+        campSel.appendChild(opt);
+    });
 }
 
 // ── Notas múltiplas ───────────────────────────────────────────────────────
