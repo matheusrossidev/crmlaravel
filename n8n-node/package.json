@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-syncro-crm",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "N8N community node for Syncro CRM — create leads, update stages and manage campaigns",
   "keywords": [
     "n8n-community-node-package"
@@ -15,6 +15,9 @@
     "url": "https://github.com/matheusrossidev/crmlaravel"
   },
   "main": "index.js",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc && copyfiles -u 0 \"nodes/**/*.svg\" dist/",
     "dev": "tsc --watch",
