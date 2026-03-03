@@ -123,6 +123,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::post('/contatos', [LeadController::class, 'store'])->name('leads.store');
     Route::get('/contatos/{lead}', [LeadController::class, 'show'])->name('leads.show');
     Route::put('/contatos/{lead}', [LeadController::class, 'update'])->name('leads.update');
+    Route::delete('/kanban/leads/{lead}', [LeadController::class, 'removeFromPipeline'])->name('leads.kanban-remove');
     Route::delete('/contatos/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
 
     // Lead notes

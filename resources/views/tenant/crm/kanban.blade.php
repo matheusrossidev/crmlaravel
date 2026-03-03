@@ -960,7 +960,7 @@ const STAGE_URL      = @json(route('crm.lead.stage', ['lead' => '__ID__']));
 const LEAD_SHOW      = @json(route('leads.show',   ['lead' => '__ID__']));
 const LEAD_STORE     = @json(route('leads.store'));
 const LEAD_UPD       = @json(route('leads.update', ['lead' => '__ID__']));
-const LEAD_DEL       = @json(route('leads.destroy',['lead' => '__ID__']));
+const LEAD_DEL       = @json(route('leads.kanban-remove',['lead' => '__ID__']));
 const KANBAN_POLL    = @json(route('crm.poll'));
 const CF_ON_CARD     = @json($customFieldDefs->where('show_on_card', true)->values()->map(fn($d) => ['name' => $d->name, 'label' => $d->label])->toArray());
 const TAG_COLORS     = {!! json_encode($tagColorMap) !!};

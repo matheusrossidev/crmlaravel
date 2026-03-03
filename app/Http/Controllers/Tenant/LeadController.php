@@ -273,6 +273,17 @@ class LeadController extends Controller
         return response()->json(['success' => true, 'lead' => $this->formatLead($lead)]);
     }
 
+    public function removeFromPipeline(Lead $lead): JsonResponse
+    {
+        // Remove o lead do Kanban sem arquivá-lo: ele continua aparecendo em Contatos.
+        $lead->update([
+            'stage_id'   => null,
+            'pipeline_id' => null,
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
     public function destroy(Lead $lead): JsonResponse
     {
         // Arquiva o lead: remove do funil/pipeline mas mantém o contato.
