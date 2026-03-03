@@ -272,7 +272,7 @@ INTENTINSTR;
 
 FORMATO DE RESPOSTA OBRIGATÓRIO — responda APENAS com JSON válido, sem markdown:
 {
-  "reply": "sua resposta ao cliente aqui",
+  "reply": "sua resposta — ou array [\"bloco 1\", \"bloco 2\"] para dividir em mensagens distintas",
   "actions": [
     {"type": "set_stage", "stage_id": <id_numérico>},
     {"type": "add_tags", "tags": ["tag1", "tag2"]},$intentExample$calendarExample
@@ -287,6 +287,18 @@ Ações disponíveis:
 - assign_human: use quando o cliente pedir explicitamente para falar com uma pessoa ou quando você não conseguir responder. Inclua essa action junto com a resposta de transferência.$calendarActions
 JSONINSTR;
         }
+
+        $lines[] = <<<'WAFMT'
+
+REGRAS DE FORMATAÇÃO PARA WHATSAPP — OBRIGATÓRIO:
+- NUNCA use markdown: proibido **negrito**, __sublinhado__, ## títulos, ``` código.
+- NUNCA use listas com "-" ou "•" seguidas de múltiplos itens — prefira frases corridas.
+- Se precisar de destaque, escreva em MAIÚSCULAS (ex: IMPORTANTE: ...).
+- Separe cada ideia/bloco em uma mensagem diferente usando LINHA DUPLA (\n\n).
+- Cada bloco deve ter entre 100 e 400 caracteres — evite mensagens muito longas.
+- Escreva como uma pessoa real digitando no WhatsApp: frases curtas e naturais.
+- Se a resposta tiver 2 ou mais ideias distintas, quebre em blocos com linha dupla.
+WAFMT;
 
         return implode("\n", $lines);
     }
@@ -338,63 +350,94 @@ JSONINSTR;
     }
 
     /**
-     * Divide uma resposta em múltiplas mensagens para envio sequencial humanizado.
+     * Divide uma resposta em múltiplas mensagens humanizadas para envio sequencial.
      *
      * Estratégia:
-     * 1. Dividir por qualquer sequência de newlines (\n+ em vez de apenas \n{2,})
-     * 2. Agrupar partes curtas consecutivas para não gerar mensagens minúsculas
-     * 3. Se resultado for 1 bloco único E length > maxLength → split ao redor do ponto médio
+     * 1. Limpar formatação markdown via cleanFormatting()
+     * 2. Dividir prioritariamente por parágrafos (\n\n)
+     * 3. Parágrafos > maxLength → subdividir por sentenças
+     * 4. Parágrafos muito curtos (< 60 chars) → agrupar no buffer
      */
     public function splitIntoMessages(string $text, int $maxLength): array
     {
-        // 1. Dividir por qualquer newline (simples ou duplo)
-        $parts = preg_split('/\n+/', $text);
-        $parts = array_values(array_filter(array_map('trim', $parts)));
+        $text = $this->cleanFormatting($text);
 
-        if (count($parts) > 1) {
-            // Agrupar partes curtas consecutivas para não gerar mensagens de 1-2 palavras
-            $messages = [];
-            $current  = '';
-            foreach ($parts as $part) {
-                $candidate = $current !== '' ? $current . "\n" . $part : $part;
-                if ($current !== '' && mb_strlen($candidate) > $maxLength) {
-                    $messages[] = trim($current);
-                    $current    = $part;
-                } else {
-                    $current = $candidate;
-                }
-            }
-            if ($current !== '') {
-                $messages[] = trim($current);
-            }
-            return array_values(array_filter($messages));
+        // 1. Split por parágrafo (dupla quebra de linha)
+        $paragraphs = preg_split('/\n{2,}/', $text);
+        $paragraphs = array_values(array_filter(array_map('trim', $paragraphs)));
+
+        if (empty($paragraphs)) {
+            return [$text];
         }
 
-        // 2. Texto único sem newlines: se excede maxLength → split ao redor do ponto médio
-        if (mb_strlen($text) > $maxLength) {
-            $sentences = preg_split('/(?<=[.!?])\s+/', $text, -1, PREG_SPLIT_NO_EMPTY);
-            if (count($sentences) > 1) {
-                $mid     = (int) (mb_strlen($text) / 2);
-                $acc     = 0;
-                $splitAt = 0;
-                foreach ($sentences as $i => $s) {
-                    $acc += mb_strlen($s) + 1;
-                    if ($acc >= $mid) {
-                        $splitAt = $i + 1;
-                        break;
+        $messages = [];
+        $buffer   = '';
+
+        foreach ($paragraphs as $para) {
+            // Parágrafo excede maxLength → dividir por sentenças
+            if (mb_strlen($para) > $maxLength) {
+                if ($buffer !== '') {
+                    $messages[] = $buffer;
+                    $buffer     = '';
+                }
+                $sentences = preg_split('/(?<=[.!?])\s+/', $para, -1, PREG_SPLIT_NO_EMPTY);
+                $chunk = '';
+                foreach ($sentences as $s) {
+                    $candidate = $chunk !== '' ? $chunk . ' ' . $s : $s;
+                    if ($chunk !== '' && mb_strlen($candidate) > $maxLength) {
+                        $messages[] = trim($chunk);
+                        $chunk = $s;
+                    } else {
+                        $chunk = $candidate;
                     }
                 }
-                if ($splitAt > 0 && $splitAt < count($sentences)) {
-                    return array_filter([
-                        trim(implode(' ', array_slice($sentences, 0, $splitAt))),
-                        trim(implode(' ', array_slice($sentences, $splitAt))),
-                    ]);
+                if ($chunk !== '') {
+                    $messages[] = trim($chunk);
                 }
+                continue;
+            }
+
+            // Parágrafo normal → tentar agregar no buffer
+            $candidate = $buffer !== '' ? $buffer . "\n" . $para : $para;
+            if ($buffer !== '' && mb_strlen($candidate) > $maxLength) {
+                $messages[] = $buffer;
+                $buffer     = $para;
+            } else {
+                $buffer = $candidate;
             }
         }
 
-        // 3. Fallback: texto como mensagem única
-        return [$text];
+        if ($buffer !== '') {
+            $messages[] = $buffer;
+        }
+
+        $result = array_values(array_filter(array_map('trim', $messages)));
+
+        return $result ?: [$text];
+    }
+
+    /**
+     * Remove formatação markdown do texto para uso no WhatsApp.
+     */
+    private function cleanFormatting(string $text): string
+    {
+        // Remove **negrito** e __sublinhado__ (mantém o texto interno)
+        $text = preg_replace('/\*\*(.+?)\*\*/su', '$1', $text);
+        $text = preg_replace('/__(.+?)__/su', '$1', $text);
+        // Remove *itálico* (asterisco simples)
+        $text = preg_replace('/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/su', '$1', $text);
+        // Remove headers markdown (###, ##, #)
+        $text = preg_replace('/^#{1,6}\s+/mu', '', $text);
+        // Remove marcadores de lista no início de linha (- item / * item)
+        $text = preg_replace('/^[\-\*]\s+/mu', '', $text);
+        // Remove blocos de código (``` ... ```)
+        $text = preg_replace('/```[\s\S]*?```/u', '', $text);
+        // Remove código inline (`code`)
+        $text = preg_replace('/`(.+?)`/u', '$1', $text);
+        // Normaliza múltiplas linhas em branco para no máximo 2
+        $text = preg_replace('/\n{3,}/', "\n\n", $text);
+
+        return trim($text);
     }
 
     /**

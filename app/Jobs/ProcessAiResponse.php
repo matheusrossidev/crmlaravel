@@ -290,7 +290,14 @@ class ProcessAiResponse implements ShouldQueue
             }
 
             if (is_array($decoded) && isset($decoded['reply'])) {
-                $reply   = trim((string) ($decoded['reply'] ?? ''));
+                $replyRaw = $decoded['reply'] ?? '';
+                if (is_array($replyRaw)) {
+                    // LLM retornou array de blocos — juntar com \n\n para split natural depois
+                    $replyParts = array_values(array_filter(array_map('trim', $replyRaw)));
+                    $reply = implode("\n\n", $replyParts);
+                } else {
+                    $reply = trim((string) $replyRaw);
+                }
                 $actions = (array) ($decoded['actions'] ?? []);
             } else {
                 Log::channel('whatsapp')->warning('AI job: resposta não era JSON válido, usando texto bruto', [
@@ -342,7 +349,7 @@ class ProcessAiResponse implements ShouldQueue
         }
 
         // ── Dividir em mensagens e enviar com delay ───────────────────────────
-        $delay    = max(1, $agent->response_delay_seconds ?? 2);
+        $delay    = max(2, $agent->response_delay_seconds ?? 2);
         $messages = $service->splitIntoMessages($reply, $maxLength);
 
         foreach ($extraMessages as $extra) {
