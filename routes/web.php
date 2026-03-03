@@ -5,6 +5,7 @@ use App\Http\Controllers\Master\DashboardController as MasterDashboardController
 use App\Http\Controllers\Master\LogController as MasterLogController;
 use App\Http\Controllers\Master\NotificationController as MasterNotificationController;
 use App\Http\Controllers\Master\PlanController as MasterPlanController;
+use App\Http\Controllers\Master\TokenIncrementPlanController as MasterTokenIncrementPlanController;
 use App\Http\Controllers\Master\SystemController as MasterSystemController;
 use App\Http\Controllers\Master\TenantController as MasterTenantController;
 use App\Http\Controllers\Master\ToolboxController as MasterToolboxController;
@@ -32,6 +33,7 @@ use App\Http\Controllers\Tenant\AiAnalystController;
 use App\Http\Controllers\Tenant\QuickMessageController;
 use App\Http\Controllers\Tenant\AutomationController;
 use App\Http\Controllers\Tenant\BillingController;
+use App\Http\Controllers\Tenant\TokenIncrementController;
 use App\Http\Controllers\Tenant\CalendarController;
 use App\Http\Controllers\Tenant\OnboardingController;
 use App\Http\Controllers\Tenant\ScheduledMessageController;
@@ -287,6 +289,9 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         // Cobrança
         Route::get('cobranca', [BillingController::class, 'index'])->name('billing');
 
+        // Incremento de tokens
+        Route::post('tokens/comprar', [TokenIncrementController::class, 'purchase'])->name('tokens.purchase');
+
         // Automações
         Route::get('automacoes',                        [AutomationController::class, 'index'])->name('automations');
         Route::get('automacoes/criar',                  [AutomationController::class, 'create'])->name('automations.create');
@@ -343,6 +348,12 @@ Route::middleware(['auth', 'super_admin'])->prefix('master')->name('master.')->g
     Route::post('planos',                              [MasterPlanController::class, 'store'])->name('plans.store');
     Route::put('planos/{plan}',                        [MasterPlanController::class, 'update'])->name('plans.update');
     Route::delete('planos/{plan}',                     [MasterPlanController::class, 'destroy'])->name('plans.destroy');
+
+    // Pacotes de incremento de tokens
+    Route::get('token-incrementos',                                                [MasterTokenIncrementPlanController::class, 'index'])->name('token-increments');
+    Route::post('token-incrementos',                                               [MasterTokenIncrementPlanController::class, 'store'])->name('token-increments.store');
+    Route::put('token-incrementos/{tokenIncrementPlan}',                           [MasterTokenIncrementPlanController::class, 'update'])->name('token-increments.update');
+    Route::delete('token-incrementos/{tokenIncrementPlan}',                        [MasterTokenIncrementPlanController::class, 'destroy'])->name('token-increments.destroy');
 
     // Uso de tokens IA
     Route::get('uso',                                  [MasterUsageController::class, 'index'])->name('usage');

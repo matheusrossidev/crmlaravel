@@ -14,7 +14,7 @@ class Tenant extends Model
         'name', 'slug', 'logo', 'plan', 'status', 'trial_ends_at', 'settings_json',
         'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields', 'api_rate_limit',
         'asaas_customer_id', 'asaas_subscription_id', 'subscription_status', 'subscription_ends_at',
-        'onboarding_completed_at',
+        'onboarding_completed_at', 'ai_tokens_exhausted',
     ];
 
     protected $casts = [
@@ -26,7 +26,8 @@ class Tenant extends Model
         'max_leads'          => 'integer',
         'max_pipelines'      => 'integer',
         'max_custom_fields'  => 'integer',
-        'api_rate_limit'     => 'integer',
+        'api_rate_limit'       => 'integer',
+        'ai_tokens_exhausted'  => 'boolean',
     ];
 
     protected static function booted(): void

@@ -12,6 +12,7 @@ use App\Models\AiIntentSignal;
 use App\Models\AiUsageLog;
 use App\Models\Lead;
 use App\Models\OAuthConnection;
+use App\Models\TenantTokenIncrement;
 use App\Models\PlanDefinition;
 use App\Models\Tenant;
 use App\Models\WhatsappConversation;
@@ -419,21 +420,38 @@ class ProcessAiResponse implements ShouldQueue
         $tenant = Tenant::withoutGlobalScope('tenant')->find($conv->tenant_id);
         if (! $tenant) return true;
 
-        if (method_exists($tenant, 'isExemptFromBilling') && $tenant->isExemptFromBilling()) {
-            return true;
-        }
+        if ($tenant->isExemptFromBilling()) return true;
 
-        $plan  = PlanDefinition::where('name', $tenant->plan)->first();
-        $limit = (int) ($plan?->features_json['ai_tokens_monthly'] ?? 0);
+        $plan = PlanDefinition::where('name', $tenant->plan)->first();
+        $base = (int) ($plan?->features_json['ai_tokens_monthly'] ?? 0);
 
-        if ($limit === 0) return false;   // plano free — sem AI
+        if ($base === 0) return false;   // plano free — sem AI
+
+        // Incrementos pagos no mês corrente somam ao limite base
+        $extra = (int) TenantTokenIncrement::where('tenant_id', $tenant->id)
+            ->where('status', 'paid')
+            ->whereYear('paid_at', now()->year)
+            ->whereMonth('paid_at', now()->month)
+            ->sum('tokens_added');
+
+        $limit = $base + $extra;
 
         $used = (int) AiUsageLog::where('tenant_id', $tenant->id)
             ->whereYear('created_at', now()->year)
             ->whereMonth('created_at', now()->month)
             ->sum('tokens_total');
 
-        return $used < $limit;
+        if ($used >= $limit) {
+            // Setar flag de esgotamento para bloquear o frontend
+            if (! $tenant->ai_tokens_exhausted) {
+                Tenant::withoutGlobalScope('tenant')
+                    ->where('id', $tenant->id)
+                    ->update(['ai_tokens_exhausted' => true]);
+            }
+            return false;
+        }
+
+        return true;
     }
 
     // ── Agno: chamada ao microsserviço Python ─────────────────────────────────

@@ -7,6 +7,10 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\AiAgent;
 use App\Models\AiAgentKnowledgeFile;
+use App\Models\AiUsageLog;
+use App\Models\PlanDefinition;
+use App\Models\TenantTokenIncrement;
+use App\Models\TokenIncrementPlan;
 use App\Models\User;
 use App\Services\AgnoService;
 use Illuminate\Http\JsonResponse;
@@ -20,8 +24,30 @@ class AiAgentController extends Controller
     public function index(): View
     {
         $agents = AiAgent::withCount('conversations')->orderByDesc('created_at')->get();
+        $tenant = auth()->user()->tenant;
+        $plan   = PlanDefinition::where('name', $tenant->plan)->first();
 
-        return view('tenant.ai.agents.index', compact('agents'));
+        $tokensUsedMonth = (int) AiUsageLog::where('tenant_id', $tenant->id)
+            ->whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->sum('tokens_total');
+
+        $tokensLimit = (int) ($plan?->features_json['ai_tokens_monthly'] ?? 0);
+
+        $tokenIncrementPlans = TokenIncrementPlan::where('is_active', true)
+            ->orderBy('tokens_amount')
+            ->get();
+
+        $dailyUsage = AiUsageLog::where('tenant_id', $tenant->id)
+            ->where('created_at', '>=', now()->subDays(6)->startOfDay())
+            ->selectRaw('DATE(created_at) as day, SUM(tokens_total) as total')
+            ->groupBy('day')
+            ->orderBy('day')
+            ->get();
+
+        return view('tenant.ai.agents.index', compact(
+            'agents', 'tokensUsedMonth', 'tokensLimit', 'tokenIncrementPlans', 'dailyUsage'
+        ));
     }
 
     public function create(): View

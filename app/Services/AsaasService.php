@@ -70,6 +70,24 @@ class AsaasService
         return $this->get("/subscriptions/{$subscriptionId}/payments");
     }
 
+    /**
+     * Cria uma cobrança avulsa (não-recorrente) no Asaas.
+     * Campos obrigatórios: customer, billingType, value, dueDate
+     * Use externalReference para identificar o pagamento no webhook.
+     */
+    public function createPayment(array $data): array
+    {
+        return $this->post('/payments', $data);
+    }
+
+    /**
+     * Busca uma cobrança avulsa pelo ID.
+     */
+    public function getPayment(string $paymentId): array
+    {
+        return $this->get("/payments/{$paymentId}");
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Helpers HTTP
     // ─────────────────────────────────────────────────────────────────────────

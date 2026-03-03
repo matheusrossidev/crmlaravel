@@ -328,6 +328,10 @@
            class="m-nav-item {{ request()->routeIs('master.plans*') ? 'active' : '' }}">
             <i class="bi bi-layers"></i> Planos
         </a>
+        <a href="{{ route('master.token-increments') }}"
+           class="m-nav-item {{ request()->routeIs('master.token-increments*') ? 'active' : '' }}">
+            <i class="bi bi-coin"></i> Pacotes de Tokens
+        </a>
 
         <div class="m-nav-group">
             <div class="m-nav-group-label">Monitoramento</div>

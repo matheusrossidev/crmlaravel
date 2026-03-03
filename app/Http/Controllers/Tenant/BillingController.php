@@ -7,7 +7,10 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Mail\SubscriptionActivated;
 use App\Mail\SubscriptionCancelled;
+use App\Models\AiUsageLog;
 use App\Models\PlanDefinition;
+use App\Models\TenantTokenIncrement;
+use App\Models\TokenIncrementPlan;
 use App\Services\AsaasService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -23,7 +26,35 @@ class BillingController extends Controller
         $plan   = PlanDefinition::where('name', $tenant->plan)->first();
         $plans  = PlanDefinition::where('is_active', true)->orderBy('price_monthly')->get();
 
-        return view('tenant.settings.billing', compact('tenant', 'plan', 'plans'));
+        $tokenUsedMonth = (int) AiUsageLog::where('tenant_id', $tenant->id)
+            ->whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->sum('tokens_total');
+
+        $tokenLimit = (int) ($plan?->features_json['ai_tokens_monthly'] ?? 0);
+
+        $tokenExtra = (int) TenantTokenIncrement::where('tenant_id', $tenant->id)
+            ->where('status', 'paid')
+            ->whereYear('paid_at', now()->year)
+            ->whereMonth('paid_at', now()->month)
+            ->sum('tokens_added');
+
+        $tokenIncrementPlans = TokenIncrementPlan::where('is_active', true)
+            ->orderBy('tokens_amount')
+            ->get();
+
+        $dailyUsage = AiUsageLog::where('tenant_id', $tenant->id)
+            ->where('created_at', '>=', now()->subDays(6)->startOfDay())
+            ->selectRaw('DATE(created_at) as day, SUM(tokens_total) as total')
+            ->groupBy('day')
+            ->orderBy('day')
+            ->get();
+
+        return view('tenant.settings.billing', compact(
+            'tenant', 'plan', 'plans',
+            'tokenUsedMonth', 'tokenLimit', 'tokenExtra',
+            'tokenIncrementPlans', 'dailyUsage'
+        ));
     }
 
     public function showCheckout(): View|RedirectResponse

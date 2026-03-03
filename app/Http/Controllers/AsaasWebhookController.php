@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\PaymentFailed;
 use App\Models\Tenant;
+use App\Models\TenantTokenIncrement;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Mail;
@@ -49,8 +50,17 @@ class AsaasWebhookController extends Controller
             return;
         }
 
-        $subscriptionId = $payload['payment']['subscription'] ?? null;
+        // Pagamentos de incremento de tokens identificados pelo externalReference
+        $extRef = $payload['payment']['externalReference'] ?? '';
+        if (
+            in_array($event, ['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED'], true)
+            && str_starts_with($extRef, 'token_increment:')
+        ) {
+            $this->handleTokenIncrementPaid($extRef);
+            return;
+        }
 
+        $subscriptionId = $payload['payment']['subscription'] ?? null;
         if (!$subscriptionId) {
             return;
         }
@@ -69,6 +79,29 @@ class AsaasWebhookController extends Controller
             'PAYMENT_DELETED'        => $this->handleSubscriptionInactivated($tenant),
             default                  => null,
         };
+    }
+
+    private function handleTokenIncrementPaid(string $externalReference): void
+    {
+        $incrementId = (int) str_replace('token_increment:', '', $externalReference);
+        $increment   = TenantTokenIncrement::find($incrementId);
+
+        if (! $increment || $increment->status === 'paid') {
+            return;
+        }
+
+        $increment->update(['status' => 'paid', 'paid_at' => now()]);
+
+        // Libera o agente desativado por quota
+        Tenant::withoutGlobalScope('tenant')
+            ->where('id', $increment->tenant_id)
+            ->update(['ai_tokens_exhausted' => false]);
+
+        \Log::info('AsaasWebhook: incremento de tokens confirmado', [
+            'increment_id' => $increment->id,
+            'tenant_id'    => $increment->tenant_id,
+            'tokens_added' => $increment->tokens_added,
+        ]);
     }
 
     private function handlePaymentConfirmed(Tenant $tenant): void

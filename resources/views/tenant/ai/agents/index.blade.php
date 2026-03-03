@@ -7,6 +7,11 @@
 
 @section('topbar_actions')
 <div class="topbar-actions">
+    @if(auth()->user()->tenant->ai_tokens_exhausted)
+    <button onclick="openQuotaModal()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#fff7ed;color:#ea580c;border:1.5px solid #fed7aa;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;">
+        <i class="bi bi-exclamation-triangle-fill"></i> Tokens esgotados — Ver consumo
+    </button>
+    @endif
     <a href="{{ route('ai.agents.create') }}" class="btn-primary-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;">
         <i class="bi bi-plus-lg"></i> Novo Agente
     </a>
@@ -210,6 +215,75 @@
         width: fit-content; transition: color .15s;
     }
     .tcm-reset:hover { color: #ef4444; }
+    /* ── Token Quota Sidebar ── */
+    .qts-backdrop {
+        position: fixed; inset: 0; background: rgba(0,0,0,.18);
+        z-index: 1999; opacity: 0; pointer-events: none;
+        transition: opacity .32s ease;
+    }
+    .qts-backdrop.open { opacity: 1; pointer-events: all; }
+    .qts-sidebar {
+        position: fixed; top: 0; right: 0; width: 400px; max-width: 95vw;
+        height: 100vh; background: #fff;
+        box-shadow: -6px 0 40px rgba(0,0,0,.1);
+        display: flex; flex-direction: column; z-index: 2000;
+        transform: translateX(100%);
+        transition: transform .35s cubic-bezier(.4,0,.2,1);
+        overflow: hidden;
+    }
+    .qts-sidebar.open { transform: translateX(0); }
+    .qts-header {
+        display: flex; align-items: center; gap: 10px;
+        padding: 16px 18px; border-bottom: 1px solid #f0f2f7; flex-shrink: 0;
+    }
+    .qts-header-icon {
+        width: 34px; height: 34px; border-radius: 10px; background: #fff7ed;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; color: #f97316; flex-shrink: 0;
+    }
+    .qts-header-info { flex: 1; min-width: 0; }
+    .qts-header-info h3 { font-size: 13px; font-weight: 700; color: #1a1d23; margin: 0; }
+    .qts-header-info span { font-size: 11px; color: #9ca3af; }
+    .qts-header-btn { background: none; border: none; font-size: 18px; color: #9ca3af; cursor: pointer; padding: 4px 6px; border-radius: 7px; line-height: 1; }
+    .qts-header-btn:hover { background: #f3f4f6; color: #374151; }
+    .qts-body { flex: 1; overflow-y: auto; padding: 20px 18px; }
+    .qts-body::-webkit-scrollbar { width: 4px; }
+    .qts-body::-webkit-scrollbar-track { background: transparent; }
+    .qts-body::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+    .qts-footer { padding: 14px 18px; border-top: 1px solid #f0f2f7; flex-shrink: 0; }
+    .quota-progress-wrap { background:#f3f4f6; border-radius:99px; height:10px; overflow:hidden; margin:8px 0 4px; }
+    .quota-progress-bar  { height:100%; border-radius:99px; background:#ef4444; transition:width .4s; }
+    .quota-label { display:flex; justify-content:space-between; font-size:12px; color:#6b7280; margin-bottom:16px; }
+    .quota-chart-wrap { margin-bottom:16px; }
+    .quota-chart-title { font-size:12px; font-weight:600; color:#6b7280; margin-bottom:8px; }
+    .quota-bar-chart { display:flex; align-items:flex-end; gap:4px; height:52px; }
+    .quota-bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; }
+    .quota-bar { width:100%; border-radius:4px 4px 0 0; background:#bfdbfe; min-height:2px; transition:height .3s; }
+    .quota-bar-label { font-size:9.5px; color:#9ca3af; white-space:nowrap; }
+    .quota-packs { display:flex; flex-direction:column; gap:8px; margin-bottom:4px; }
+    .quota-pack-card {
+        display:flex; align-items:center; justify-content:space-between;
+        border:1.5px solid #e8eaf0; border-radius:11px; padding:12px 14px;
+        cursor:pointer; transition:border-color .15s, background .15s;
+    }
+    .quota-pack-card:hover, .quota-pack-card.selected { border-color:#3B82F6; background:#eff6ff; }
+    .quota-pack-tokens { font-size:14px; font-weight:700; color:#1a1d23; }
+    .quota-pack-name   { font-size:12px; color:#9ca3af; margin-top:1px; }
+    .quota-pack-price  { font-size:15px; font-weight:700; color:#3B82F6; }
+    .quota-pix-wrap { background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:11px; padding:16px; text-align:center; margin-top:14px; }
+    .quota-pix-title { font-size:13px; font-weight:700; color:#15803d; margin-bottom:10px; }
+    .quota-pix-img { max-width:160px; margin:0 auto 10px; display:block; }
+    .quota-pix-code { background:#fff; border:1px solid #d1d5db; border-radius:8px; padding:8px 12px; font-size:11.5px; word-break:break-all; color:#374151; margin-bottom:10px; }
+    .quota-pix-copy { font-size:12px; font-weight:600; color:#3B82F6; cursor:pointer; background:none; border:none; padding:0; }
+    .quota-pix-copy:hover { color:#2563eb; text-decoration:underline; }
+    .quota-btn-buy {
+        width:100%; padding:11px; border-radius:10px; border:none;
+        background:#3B82F6; color:#fff; font-size:14px; font-weight:600;
+        cursor:pointer; transition:background .15s;
+    }
+    .quota-btn-buy:hover { background:#2563eb; }
+    .quota-btn-buy:disabled { opacity:.5; cursor:not-allowed; }
+
     /* ── Delete Confirmation Modal ── */
     .del-modal-overlay {
         display: none; position: fixed; inset: 0;
@@ -277,10 +351,17 @@
                 </div>
 
                 <div class="agent-badges">
+                    @if(auth()->user()->tenant->ai_tokens_exhausted)
+                    <span class="badge" style="background:#fff7ed;color:#ea580c;cursor:pointer;" onclick="openQuotaModal()" title="Clique para ver consumo e comprar tokens">
+                        <i class="bi bi-exclamation-triangle-fill" style="font-size:7px;"></i>
+                        Suspenso — sem tokens
+                    </span>
+                    @else
                     <span class="badge {{ $agent->is_active ? 'badge-active' : 'badge-inactive' }}">
                         <i class="bi bi-circle-fill" style="font-size:7px;"></i>
                         {{ $agent->is_active ? 'Ativo' : 'Inativo' }}
                     </span>
+                    @endif
                     @if($agent->auto_assign)
                     <span class="badge" style="background:#eff6ff;color:#2563eb;">
                         <i class="bi bi-lightning-fill"></i> Auto-assign
@@ -366,6 +447,116 @@
             <button class="btn-del-confirm" onclick="_doDeleteAgent()">Excluir</button>
         </div>
     </div>
+</div>
+
+{{-- Quota Sidebar --}}
+<div class="qts-backdrop" id="qtsBackdrop" onclick="closeQuotaModal()"></div>
+<div class="qts-sidebar" id="qtsSidebar">
+
+    <div class="qts-header">
+        <div class="qts-header-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+        <div class="qts-header-info">
+            <h3>Tokens de IA</h3>
+            <span>Consumo e pacotes de incremento</span>
+        </div>
+        <button class="qts-header-btn" onclick="closeQuotaModal()" title="Fechar"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <div class="qts-body">
+
+        {{-- Aviso --}}
+        <div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;margin-bottom:18px;">
+            <i class="bi bi-exclamation-triangle-fill" style="color:#f97316;font-size:16px;flex-shrink:0;margin-top:1px;"></i>
+            <div>
+                <div style="font-size:13px;font-weight:700;color:#9a3412;margin-bottom:2px;">Quota esgotada este mês</div>
+                <div style="font-size:12px;color:#c2410c;line-height:1.5;">Seu agente foi pausado automaticamente. Adicione mais tokens para reativá-lo.</div>
+            </div>
+        </div>
+
+        {{-- Barra de progresso --}}
+        @php
+            $tokensUsed  = $tokensUsedMonth ?? 0;
+            $tokensLimit = $tokensLimit ?? 0;
+            $pct         = $tokensLimit > 0 ? min(100, round($tokensUsed / $tokensLimit * 100)) : 100;
+        @endphp
+        <div style="margin-bottom:18px;">
+            <div style="font-size:12px;font-weight:600;color:#6b7280;margin-bottom:6px;">Uso do mês atual</div>
+            <div class="quota-progress-wrap">
+                <div class="quota-progress-bar" style="width:{{ $pct }}%"></div>
+            </div>
+            <div class="quota-label">
+                <span>{{ number_format($tokensUsed, 0, ',', '.') }} tokens usados</span>
+                <span>{{ $pct }}% do limite</span>
+            </div>
+            <div style="font-size:11.5px;color:#9ca3af;">Limite: {{ number_format($tokensLimit, 0, ',', '.') }} tokens/mês</div>
+        </div>
+
+        {{-- Gráfico diário --}}
+        @if(isset($dailyUsage) && $dailyUsage->count() > 0)
+        <div class="quota-chart-wrap">
+            <div class="quota-chart-title">Consumo — últimos 7 dias</div>
+            <div class="quota-bar-chart">
+                @php $maxDay = $dailyUsage->max('total') ?: 1; @endphp
+                @foreach($dailyUsage as $day)
+                @php $h = max(2, round($day->total / $maxDay * 48)); @endphp
+                <div class="quota-bar-col">
+                    <div class="quota-bar" style="height:{{ $h }}px;" title="{{ number_format($day->total, 0, ',', '.') }} tokens"></div>
+                    <div class="quota-bar-label">{{ \Carbon\Carbon::parse($day->day)->format('d/m') }}</div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
+        {{-- Pacotes --}}
+        @if(isset($tokenIncrementPlans) && $tokenIncrementPlans->count() > 0)
+        <div style="font-size:12.5px;font-weight:700;color:#374151;margin-bottom:10px;">Escolha um pacote para continuar</div>
+        <div class="quota-packs">
+            @foreach($tokenIncrementPlans as $pack)
+            <div class="quota-pack-card" onclick="selectPack({{ $pack->id }}, this)" data-pack-id="{{ $pack->id }}">
+                <div>
+                    <div class="quota-pack-tokens">+{{ number_format($pack->tokens_amount, 0, ',', '.') }} tokens</div>
+                    <div class="quota-pack-name">{{ $pack->display_name }}</div>
+                </div>
+                <div class="quota-pack-price">R$ {{ number_format($pack->price, 2, ',', '.') }}</div>
+            </div>
+            @endforeach
+        </div>
+
+        {{-- PIX result --}}
+        <div id="quotaPixResult" style="display:none;" class="quota-pix-wrap">
+            <div class="quota-pix-title"><i class="bi bi-qr-code"></i> Pague via PIX</div>
+            <img id="quotaPixImg" class="quota-pix-img" src="" alt="QR Code PIX" style="display:none;">
+            <div id="quotaPixCode" class="quota-pix-code" style="display:none;"></div>
+            <button class="quota-pix-copy" id="quotaPixCopyBtn" style="display:none;" onclick="copyPixCode()">
+                <i class="bi bi-clipboard"></i> Copiar código PIX
+            </button>
+            <div id="quotaPixLink" style="margin-top:8px;display:none;">
+                <a id="quotaPixLinkA" href="#" target="_blank" style="font-size:12.5px;color:#3B82F6;font-weight:600;">
+                    <i class="bi bi-box-arrow-up-right"></i> Abrir fatura
+                </a>
+            </div>
+            <p style="font-size:12px;color:#6b7280;margin-top:10px;margin-bottom:0;">
+                Após o pagamento, seu agente será reativado automaticamente em até 5 minutos.
+            </p>
+        </div>
+
+        @else
+        <p style="font-size:13px;color:#9ca3af;text-align:center;padding:20px 0;">
+            Nenhum pacote disponível no momento.<br>Entre em contato com o suporte.
+        </p>
+        @endif
+
+    </div>
+
+    @if(isset($tokenIncrementPlans) && $tokenIncrementPlans->count() > 0)
+    <div class="qts-footer">
+        <button class="quota-btn-buy" id="quotaBuyBtn" onclick="buyTokens()">
+            <i class="bi bi-lightning-charge-fill"></i> Comprar pacote selecionado
+        </button>
+    </div>
+    @endif
+
 </div>
 @endsection
 
@@ -497,5 +688,94 @@ async function _doDeleteAgent() {
     _deleteAgentBtn?.closest('.agent-card')?.remove();
     toastr.success('Agente excluído.');
 }
+
+/* ── Quota Modal ── */
+let selectedPackId = null;
+
+function openQuotaModal() {
+    selectedPackId = null;
+    const pixResult = document.getElementById('quotaPixResult');
+    if (pixResult) pixResult.style.display = 'none';
+    document.getElementById('qtsBackdrop').classList.add('open');
+    document.getElementById('qtsSidebar').classList.add('open');
+}
+
+function closeQuotaModal() {
+    document.getElementById('qtsBackdrop').classList.remove('open');
+    document.getElementById('qtsSidebar').classList.remove('open');
+}
+
+function selectPack(id, el) {
+    selectedPackId = id;
+    document.querySelectorAll('.quota-pack-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('quotaPixResult').style.display = 'none';
+}
+
+async function buyTokens() {
+    if (!selectedPackId) {
+        toastr.warning('Selecione um pacote antes de continuar.');
+        return;
+    }
+    const btn = document.getElementById('quotaBuyBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processando...';
+
+    try {
+        const res  = await fetch('{{ route("settings.tokens.purchase") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            body: JSON.stringify({ plan_id: selectedPackId }),
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+            toastr.error(data.message || 'Erro ao gerar cobrança.');
+            return;
+        }
+
+        // Exibe resultado PIX
+        const pixWrap = document.getElementById('quotaPixResult');
+        pixWrap.style.display = 'block';
+
+        if (data.pix_code) {
+            const img = document.getElementById('quotaPixImg');
+            img.src = 'data:image/png;base64,' + data.pix_code;
+            img.style.display = 'block';
+        }
+        if (data.pix_key) {
+            const codeEl = document.getElementById('quotaPixCode');
+            codeEl.textContent = data.pix_key;
+            codeEl.style.display = 'block';
+            document.getElementById('quotaPixCopyBtn').style.display = 'inline';
+        }
+        if (data.invoice_url) {
+            const linkWrap = document.getElementById('quotaPixLink');
+            document.getElementById('quotaPixLinkA').href = data.invoice_url;
+            linkWrap.style.display = 'block';
+        }
+
+        toastr.success('Cobrança gerada! Efetue o pagamento via PIX.');
+    } catch {
+        toastr.error('Erro de conexão. Tente novamente.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-lightning-charge-fill"></i> Comprar pacote selecionado';
+    }
+}
+
+function copyPixCode() {
+    const code = document.getElementById('quotaPixCode').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+        toastr.success('Código PIX copiado!');
+    }).catch(() => {
+        toastr.error('Não foi possível copiar automaticamente.');
+    });
+}
+
+@if(auth()->user()->tenant->ai_tokens_exhausted)
+// Abre automaticamente se tokens esgotados
+document.addEventListener('DOMContentLoaded', () => setTimeout(openQuotaModal, 400));
+@endif
 </script>
 @endpush
