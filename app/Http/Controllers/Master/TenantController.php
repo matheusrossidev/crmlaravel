@@ -119,18 +119,19 @@ class TenantController extends Controller
             'status'        => 'required|in:active,inactive,suspended,trial,partner',
             'plan'          => 'required|in:free,starter,pro,enterprise,partner',
             'trial_ends_at' => 'nullable|date',
-            'max_users'          => 'nullable|integer|min:0',
-            'max_leads'          => 'nullable|integer|min:0',
-            'max_pipelines'      => 'nullable|integer|min:0',
-            'max_custom_fields'  => 'nullable|integer|min:0',
-            'ai_analyst_enabled' => 'nullable|boolean',
+            'max_users'                  => 'nullable|integer|min:0',
+            'max_leads'                  => 'nullable|integer|min:0',
+            'max_pipelines'              => 'nullable|integer|min:0',
+            'max_custom_fields'          => 'nullable|integer|min:0',
+            'ai_analyst_enabled'         => 'nullable|boolean',
+            'partner_billing_starts_at'  => 'nullable|date',
         ]);
 
         $settings = $tenant->settings_json ?? [];
         $settings['ai_analyst_enabled'] = $request->boolean('ai_analyst_enabled');
 
         $tenant->update(array_merge(
-            $request->only('status', 'plan', 'trial_ends_at', 'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields'),
+            $request->only('status', 'plan', 'trial_ends_at', 'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields', 'partner_billing_starts_at'),
             ['settings_json' => $settings]
         ));
 

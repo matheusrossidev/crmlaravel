@@ -17,13 +17,15 @@ class Tenant extends Model
         'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields', 'api_rate_limit',
         'asaas_customer_id', 'asaas_subscription_id', 'subscription_status', 'subscription_ends_at',
         'onboarding_completed_at', 'ai_tokens_exhausted', 'referred_by_agency_id',
+        'partner_billing_starts_at',
     ];
 
     protected $casts = [
         'settings_json'           => 'array',
         'trial_ends_at'           => 'datetime',
         'subscription_ends_at'    => 'datetime',
-        'onboarding_completed_at' => 'datetime',
+        'onboarding_completed_at'      => 'datetime',
+        'partner_billing_starts_at'    => 'datetime',
         'max_users'          => 'integer',
         'max_leads'          => 'integer',
         'max_pipelines'      => 'integer',
@@ -107,7 +109,19 @@ class Tenant extends Model
 
     public function isExemptFromBilling(): bool
     {
-        return $this->status === 'partner' && $this->subscription_status === 'active';
+        if (! $this->isPartner()) return false;
+
+        // Parceiro com assinatura ativa → sempre isento
+        if ($this->subscription_status === 'active') return true;
+
+        // Sem data de início de cobrança → master ainda não agendou cobrança
+        if ($this->partner_billing_starts_at === null) return true;
+
+        // Data ainda no futuro → período de graça ainda vigente
+        if ($this->partner_billing_starts_at->isFuture()) return true;
+
+        // Data passou e sem assinatura ativa → cobrança obrigatória
+        return false;
     }
 
     public function isTrialExpired(): bool

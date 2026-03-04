@@ -380,6 +380,29 @@
                         </label>
                         <small style="color:#9ca3af;display:block;margin-top:2px;">Analisa conversas a cada 30 min e gera sugestões automáticas para os leads.</small>
                     </div>
+
+                    {{-- Cobrança do parceiro (só para tenants parceiros) --}}
+                    @if($tenant->isPartner())
+                    <div class="form-group" style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:14px 16px;">
+                        <label style="color:#7c3aed;font-weight:700;font-size:12.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                            <i class="bi bi-calendar-event"></i> Cobrança do Parceiro
+                        </label>
+                        <label style="font-size:12.5px;margin-bottom:6px;">Início da cobrança</label>
+                        <input type="datetime-local" class="form-control" id="editPartnerBillingStartsAt"
+                               value="{{ $tenant->partner_billing_starts_at ? $tenant->partner_billing_starts_at->format('Y-m-d\TH:i') : '' }}">
+                        <small style="color:#9ca3af;display:block;margin-top:6px;">
+                            @if($tenant->partner_billing_starts_at === null)
+                                Sem data definida — parceiro isento de cobrança.
+                            @elseif($tenant->partner_billing_starts_at->isFuture())
+                                Cobrança começa em <strong>{{ $tenant->partner_billing_starts_at->format('d/m/Y') }}</strong>
+                                ({{ $tenant->partner_billing_starts_at->diffForHumans() }}).
+                            @else
+                                Cobrança <strong>ativa desde {{ $tenant->partner_billing_starts_at->format('d/m/Y') }}</strong>.
+                            @endif
+                            Deixe em branco para manter o parceiro isento indefinidamente.
+                        </small>
+                    </div>
+                    @endif
                     <button class="btn-save" id="btnUpdateTenant" onclick="updateTenant()">
                         <i class="bi bi-check2"></i> Salvar alterações
                     </button>
@@ -453,6 +476,7 @@ async function updateTenant() {
                 max_pipelines:      parseInt(document.getElementById('editMaxPipelines').value) || 0,
                 max_custom_fields:  parseInt(document.getElementById('editMaxCustomFields').value) || 0,
                 ai_analyst_enabled: document.getElementById('editAiAnalyst').checked,
+                partner_billing_starts_at: document.getElementById('editPartnerBillingStartsAt')?.value || null,
             }),
         });
         const data = await res.json();
