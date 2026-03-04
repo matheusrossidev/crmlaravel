@@ -12,6 +12,8 @@ use App\Models\InstagramInstance;
 use App\Models\InstagramMessage;
 use App\Models\Pipeline;
 use App\Models\User;
+use App\Models\WebsiteConversation;
+use App\Models\WebsiteMessage;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
@@ -64,7 +66,12 @@ class WhatsappController extends Controller
                 ->get();
         }
 
-        // Unificar e ordenar por data (WhatsApp + Instagram misturados)
+        // Carregar conversas do widget website
+        $websiteConversations = WebsiteConversation::with(['latestMessage', 'lead'])
+            ->orderByDesc('last_message_at')
+            ->get();
+
+        // Unificar e ordenar por data (WhatsApp + Instagram + Website)
         $allConversations = collect();
         foreach ($conversations as $c) {
             $c->_channel = 'whatsapp';
@@ -72,6 +79,10 @@ class WhatsappController extends Controller
         }
         foreach ($igConversations as $c) {
             $c->_channel = 'instagram';
+            $allConversations->push($c);
+        }
+        foreach ($websiteConversations as $c) {
+            $c->_channel = 'website';
             $allConversations->push($c);
         }
         $allConversations = $allConversations->sortByDesc('last_message_at')->values();
@@ -230,6 +241,21 @@ class WhatsappController extends Controller
                         'is_deleted' => false,
                         'sent_at'    => $m->sent_at?->toISOString(),
                     ]);
+            } elseif ($convChannel === 'website') {
+                $newMessages = WebsiteMessage::where('conversation_id', $convId)
+                    ->where('sent_at', '>=', $since)
+                    ->orderBy('sent_at')
+                    ->get()
+                    ->map(fn ($m) => [
+                        'id'         => $m->id,
+                        'direction'  => $m->direction,
+                        'type'       => 'text',
+                        'body'       => $m->content,
+                        'media_url'  => null,
+                        'ack'        => null,
+                        'is_deleted' => false,
+                        'sent_at'    => $m->sent_at?->toISOString(),
+                    ]);
             } else {
                 $newMessages = WhatsappMessage::where('conversation_id', $convId)
                     ->where('created_at', '>=', $since)
@@ -251,7 +277,13 @@ class WhatsappController extends Controller
             ->get()
             ->map(fn ($c) => $this->formatInstagramConversation($c));
 
-        $updatedConvs = $updatedWaConvs->concat($updatedIgConvs)
+        $updatedWebConvs = WebsiteConversation::with(['latestMessage', 'lead'])
+            ->where('last_message_at', '>=', $since)
+            ->orderByDesc('last_message_at')
+            ->get()
+            ->map(fn ($c) => $this->formatWebsiteConversation($c));
+
+        $updatedConvs = $updatedWaConvs->concat($updatedIgConvs)->concat($updatedWebConvs)
             ->sortByDesc('last_message_at')
             ->values();
 
@@ -591,6 +623,108 @@ class WhatsappController extends Controller
             'is_group'          => false,
             'ai_agent_id'       => $c->ai_agent_id,
             'channel'           => 'instagram',
+        ];
+    }
+
+    // ── Website Conversations ─────────────────────────────────────────────────
+
+    public function showWebsite(WebsiteConversation $websiteConversation): JsonResponse
+    {
+        $websiteConversation->load(['lead.pipeline', 'lead.stage']);
+
+        $messages = WebsiteMessage::where('conversation_id', $websiteConversation->id)
+            ->orderBy('sent_at')
+            ->get()
+            ->map(fn ($m) => [
+                'id'         => $m->id,
+                'direction'  => $m->direction,
+                'type'       => 'text',
+                'body'       => $m->content,
+                'media_url'  => null,
+                'ack'        => null,
+                'is_deleted' => false,
+                'sent_at'    => $m->sent_at?->toISOString(),
+            ]);
+
+        $lead = null;
+        if ($websiteConversation->lead) {
+            $l    = $websiteConversation->lead;
+            $lead = [
+                'id'            => $l->id,
+                'name'          => $l->name,
+                'phone'         => $l->phone,
+                'email'         => $l->email,
+                'value'         => $l->value,
+                'pipeline_id'   => $l->pipeline_id,
+                'pipeline_name' => $l->pipeline?->name,
+                'stage_id'      => $l->stage_id,
+                'stage_name'    => $l->stage?->name,
+                'source'        => $l->source,
+            ];
+        }
+
+        return response()->json([
+            'messages'      => $messages,
+            'lead'          => $lead,
+            'contact_name'  => $websiteConversation->contact_name,
+            'contact_email' => $websiteConversation->contact_email,
+            'contact_phone' => $websiteConversation->contact_phone,
+            'status'        => $websiteConversation->status,
+            'channel'       => 'website',
+        ]);
+    }
+
+    public function markReadWebsite(WebsiteConversation $websiteConversation): JsonResponse
+    {
+        $websiteConversation->update(['unread_count' => 0]);
+        return response()->json(['success' => true]);
+    }
+
+    public function updateStatusWebsite(WebsiteConversation $websiteConversation, Request $request): JsonResponse
+    {
+        $status = $request->input('status');
+        if (! in_array($status, ['open', 'closed'])) {
+            return response()->json(['error' => 'Status inválido'], 422);
+        }
+
+        $websiteConversation->update(['status' => $status]);
+        return response()->json(['success' => true]);
+    }
+
+    public function linkLeadWebsite(WebsiteConversation $websiteConversation, Request $request): JsonResponse
+    {
+        $request->validate(['lead_id' => 'required|integer']);
+        $websiteConversation->update(['lead_id' => $request->lead_id]);
+        return response()->json(['success' => true]);
+    }
+
+    public function unlinkLeadWebsite(WebsiteConversation $websiteConversation): JsonResponse
+    {
+        $websiteConversation->update(['lead_id' => null]);
+        return response()->json(['success' => true]);
+    }
+
+    private function formatWebsiteConversation(WebsiteConversation $c): array
+    {
+        $latest = $c->latestMessage;
+        return [
+            'id'                => $c->id,
+            'phone'             => $c->contact_phone ?? $c->visitor_id,
+            'contact_name'      => $c->contact_name ?? ('Visitante #' . substr($c->visitor_id, 0, 8)),
+            'contact_picture'   => null,
+            'contact_email'     => $c->contact_email,
+            'contact_phone'     => $c->contact_phone,
+            'tags'              => [],
+            'status'            => $c->status,
+            'unread_count'      => $c->unread_count,
+            'last_message_at'   => $c->last_message_at?->toISOString(),
+            'last_message_body' => $latest?->content,
+            'last_message_type' => 'text',
+            'assigned_user'     => null,
+            'assigned_user_id'  => null,
+            'is_group'          => false,
+            'ai_agent_id'       => null,
+            'channel'           => 'website',
         ];
     }
 }

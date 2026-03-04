@@ -4,10 +4,17 @@ use App\Http\Controllers\Api\AgnoToolsController;
 use App\Http\Controllers\Api\CampaignController;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\PipelineController;
+use App\Http\Controllers\Api\WebsiteWidgetController;
 use App\Http\Controllers\AsaasWebhookController;
 use App\Http\Controllers\InstagramWebhookController;
 use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
+
+// ── Widget Website (público, sem autenticação) ────────────────────────────
+Route::prefix('widget')->group(function () {
+    Route::get ('{token}/init',    [WebsiteWidgetController::class, 'init']);
+    Route::post('{token}/message', [WebsiteWidgetController::class, 'message']);
+});
 
 // ── Webhook Asaas (público, sem autenticação) ─────────────────────────────
 Route::post('/webhook/asaas', [AsaasWebhookController::class, 'handle'])

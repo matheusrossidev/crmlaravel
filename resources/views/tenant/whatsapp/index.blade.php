@@ -175,6 +175,9 @@ $pageIcon = 'chat-dots';
 
     .wa-channel-tab[data-channel="whatsapp"].active { color: #16a34a; border-bottom-color: #16a34a; }
     .wa-channel-tab[data-channel="instagram"].active { color: #d946ef; border-bottom-color: #d946ef; }
+    .wa-channel-tab[data-channel="website"].active { color: #0085f3; border-bottom-color: #0085f3; }
+    .wa-channel-icon.website { background: #0085f3; }
+    .wa-channel-icon.website i { color: #fff; font-size: 8px; }
 
     .wa-filters {
         display: flex;
@@ -1046,6 +1049,9 @@ $pageIcon = 'chat-dots';
             <button class="wa-channel-tab" data-channel="instagram">
                 <i class="bi bi-instagram"></i> Instagram
             </button>
+            <button class="wa-channel-tab" data-channel="website">
+                <i class="bi bi-globe"></i> Website
+            </button>
         </div>
 
         <div class="wa-filters">
@@ -1059,12 +1065,16 @@ $pageIcon = 'chat-dots';
             @forelse($allConversations as $conv)
             @php
                 $ch      = $conv->_channel;
-                $convName = $ch === 'instagram'
-                    ? ($conv->contact_name ?? $conv->contact_username ?? 'Contato Instagram')
-                    : ($conv->contact_name ?? ($conv->is_group ? 'Grupo' : $conv->phone));
-                $convPhone = $ch === 'instagram'
-                    ? ('@' . ltrim($conv->contact_username ?? '', '@'))
-                    : ($conv->phone ?? '');
+                $convName = match($ch) {
+                    'instagram' => $conv->contact_name ?? $conv->contact_username ?? 'Contato Instagram',
+                    'website'   => $conv->contact_name ?? ('Visitante #' . substr($conv->visitor_id ?? '', 0, 8)),
+                    default     => $conv->contact_name ?? ($conv->is_group ? 'Grupo' : $conv->phone),
+                };
+                $convPhone = match($ch) {
+                    'instagram' => '@' . ltrim($conv->contact_username ?? '', '@'),
+                    'website'   => $conv->contact_phone ?? '',
+                    default     => $conv->phone ?? '',
+                };
                 $avatarLetter = strtoupper(substr($convName, 0, 1));
             @endphp
             <div class="wa-conv-item"
@@ -1088,6 +1098,10 @@ $pageIcon = 'chat-dots';
                     <span class="wa-channel-icon instagram" title="Instagram">
                         <i class="bi bi-instagram"></i>
                     </span>
+                    @elseif($ch === 'website')
+                    <span class="wa-channel-icon website" title="Website">
+                        <i class="bi bi-globe"></i>
+                    </span>
                     @else
                     <span class="wa-channel-icon whatsapp" title="WhatsApp">
                         <i class="bi bi-whatsapp"></i>
@@ -1102,7 +1116,9 @@ $pageIcon = 'chat-dots';
                     <div class="wa-conv-bottom">
                         <span class="wa-conv-preview">
                             @if($conv->latestMessage)
-                            @if($conv->latestMessage->type === 'image') 📷 Imagem
+                            @if($ch === 'website')
+                            {{ Str::limit($conv->latestMessage->content ?? '', 40) }}
+                            @elseif($conv->latestMessage->type === 'image') 📷 Imagem
                             @elseif($conv->latestMessage->type === 'share') 📷 Publicação
                             @elseif($conv->latestMessage->type === 'audio') 🎵 Áudio
                             @elseif($conv->latestMessage->type === 'document') 📎 {{ $conv->latestMessage->media_filename ?? 'Arquivo' }}
@@ -1175,6 +1191,12 @@ $pageIcon = 'chat-dots';
 
         {{-- Mensagens --}}
         <div class="wa-messages" id="messagesContainer" style="display:none;"></div>
+
+        {{-- Aviso somente-leitura para canal website --}}
+        <div id="websiteReadonlyNotice" style="display:none;align-items:center;justify-content:center;gap:8px;padding:14px 16px;background:#f0f9ff;border-top:1px solid #bae6fd;font-size:13px;color:#0369a1;font-family:'Inter',sans-serif;">
+            <i class="bi bi-globe" style="font-size:15px;"></i>
+            Conversa via widget do website — resposta automática pelo chatbot.
+        </div>
 
         {{-- Footer de composição --}}
         <div class="wa-compose-area" id="composeArea" style="display:none;">
@@ -1602,6 +1624,8 @@ $pageIcon = 'chat-dots';
     function setPhoneDisplay(el, phone) {
         if (activeConvChannel === 'instagram') {
             el.innerHTML = instagramLink(phone);
+        } else if (activeConvChannel === 'website') {
+            el.innerHTML = phone ? `<span>${phone}</span>` : '';
         } else {
             el.innerHTML = phone ? phoneLink(phone) : '';
         }
@@ -1618,9 +1642,9 @@ $pageIcon = 'chat-dots';
     }
 
     function convBaseUrl(id) {
-        return activeConvChannel === 'instagram'
-            ? `/chats/instagram-conversations/${id}`
-            : `/chats/conversations/${id}`;
+        if (activeConvChannel === 'instagram') return `/chats/instagram-conversations/${id}`;
+        if (activeConvChannel === 'website')   return `/chats/website-conversations/${id}`;
+        return `/chats/conversations/${id}`;
     }
     let composeMode = 'reply';
     let mediaRecorder = null;
@@ -1902,7 +1926,7 @@ $pageIcon = 'chat-dots';
 
         document.getElementById('chatHeader').style.display = 'flex';
         document.getElementById('messagesContainer').style.display = 'flex';
-        document.getElementById('composeArea').style.display = 'block';
+        // composeArea visibility handled below based on channel
         document.getElementById('noConvPlaceholder').style.display = 'none';
 
         document.getElementById('chatContactName').textContent = name;
@@ -1924,11 +1948,23 @@ $pageIcon = 'chat-dots';
         const channelIcon = document.getElementById('chatChannelIcon');
         if (channelIcon) {
             channelIcon.className = `wa-channel-icon ${channel}`;
-            channelIcon.innerHTML = channel === 'instagram' ?
-                '<i class="bi bi-instagram"></i>' :
-                '<i class="bi bi-whatsapp"></i>';
-            channelIcon.title = channel === 'instagram' ? 'Instagram' : 'WhatsApp';
+            if (channel === 'instagram') {
+                channelIcon.innerHTML = '<i class="bi bi-instagram"></i>';
+                channelIcon.title = 'Instagram';
+            } else if (channel === 'website') {
+                channelIcon.innerHTML = '<i class="bi bi-globe"></i>';
+                channelIcon.title = 'Website';
+            } else {
+                channelIcon.innerHTML = '<i class="bi bi-whatsapp"></i>';
+                channelIcon.title = 'WhatsApp';
+            }
         }
+
+        // Mostrar/ocultar compose area baseado no canal
+        const composeArea = document.getElementById('composeArea');
+        const websiteReadonlyNotice = document.getElementById('websiteReadonlyNotice');
+        if (composeArea) composeArea.style.display = channel === 'website' ? 'none' : 'block';
+        if (websiteReadonlyNotice) websiteReadonlyNotice.style.display = channel === 'website' ? 'flex' : 'none';
 
         await fetch(`${convBaseUrl(convId)}/read`, {
             method: 'POST',
@@ -2571,6 +2607,8 @@ $pageIcon = 'chat-dots';
     async function linkExistingLead(leadId, lead) {
         const url = activeConvChannel === 'instagram'
             ? `/chats/instagram-conversations/${activeConvId}/link-lead`
+            : activeConvChannel === 'website'
+            ? `/chats/website-conversations/${activeConvId}/link-lead`
             : `/chats/conversations/${activeConvId}/link-lead`;
 
         const res = await fetch(url, {
@@ -2593,6 +2631,8 @@ $pageIcon = 'chat-dots';
         if (!confirm('Desvincular este lead da conversa?')) return;
         const url = activeConvChannel === 'instagram'
             ? `/chats/instagram-conversations/${activeConvId}/unlink-lead`
+            : activeConvChannel === 'website'
+            ? `/chats/website-conversations/${activeConvId}/unlink-lead`
             : `/chats/conversations/${activeConvId}/unlink-lead`;
 
         const res = await fetch(url, {
@@ -2646,6 +2686,8 @@ $pageIcon = 'chat-dots';
 
         const linkUrl = activeConvChannel === 'instagram'
             ? `/chats/instagram-conversations/${activeConvId}/link-lead`
+            : activeConvChannel === 'website'
+            ? `/chats/website-conversations/${activeConvId}/link-lead`
             : `/chats/conversations/${activeConvId}/link-lead`;
         await fetch(linkUrl, {
             method: 'PUT',
@@ -2976,15 +3018,20 @@ $pageIcon = 'chat-dots';
             conv.last_message_type === 'note'     ? '🔒 Nota'       :
             (conv.last_message_body || '').substring(0, 40);
 
-        const convDisplayName = conv.contact_name || (conv.is_group ? 'Grupo' : conv.phone);
+        const channel = el.dataset.channel || 'whatsapp';
+        const convDisplayName = conv.contact_name ||
+            (channel === 'website' ? ('Visitante #' + (conv.phone || '').substring(0, 8)) :
+            (conv.is_group ? 'Grupo' : conv.phone));
         const initial = (convDisplayName || '?').charAt(0).toUpperCase();
         const pictureUrl = conv.contact_picture || el.dataset.picture || '';
         const avatarInner = pictureUrl
             ? `<img src="${pictureUrl}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentElement.textContent='${initial}'">`
             : initial;
         const timeAgo = conv.last_message_at ? timeRelative(conv.last_message_at) : '';
-        const channel = el.dataset.channel || 'whatsapp';
-        const chanIcon = channel === 'instagram' ? '<i class="bi bi-instagram"></i>' : '<i class="bi bi-whatsapp"></i>';
+        const chanIcon = channel === 'instagram' ? '<i class="bi bi-instagram"></i>' :
+                         channel === 'website'   ? '<i class="bi bi-globe"></i>' :
+                                                   '<i class="bi bi-whatsapp"></i>';
+        const chanTitle = channel === 'instagram' ? 'Instagram' : channel === 'website' ? 'Website' : 'WhatsApp';
         const unread = conv.unread_count > 0 && conv.id !== activeConvId ?
             `<span class="wa-unread-dot">${conv.unread_count}</span>` : '';
         const tags = (conv.tags || []).map(t => {
@@ -2997,7 +3044,7 @@ $pageIcon = 'chat-dots';
         el.innerHTML = `
         <div class="wa-conv-avatar-wrap">
             <div class="wa-conv-avatar">${avatarInner}</div>
-            <span class="wa-channel-icon ${channel}" title="${channel === 'instagram' ? 'Instagram' : 'WhatsApp'}">${chanIcon}</span>
+            <span class="wa-channel-icon ${channel}" title="${chanTitle}">${chanIcon}</span>
         </div>
         <div class="wa-conv-info">
             <div class="wa-conv-top">

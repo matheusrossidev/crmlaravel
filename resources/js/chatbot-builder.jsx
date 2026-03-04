@@ -37,6 +37,7 @@ const NODE_TYPES_CONFIG = {
 };
 
 const ACTION_TYPES = [
+    { value: 'create_lead',        label: 'Criar Lead'                      },
     { value: 'change_stage',       label: 'Trocar etapa do funil'          },
     { value: 'add_tag',            label: 'Adicionar tag'                   },
     { value: 'remove_tag',         label: 'Remover tag'                     },
@@ -904,6 +905,51 @@ function ActionForm({ data, update, pipelines, allVars, tags, users, customField
                     {ACTION_TYPES.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
                 </select>
             </FieldGroup>
+
+            {data.type === 'create_lead' && (
+                <>
+                    <FieldGroup label="Pipeline + Etapa inicial">
+                        <select style={field.input} value={data.pipeline_id || ''} onChange={e => {
+                            const p = pipelines.find(p => p.id === parseInt(e.target.value));
+                            setSelectedPipeline(p || null);
+                            update('pipeline_id', p ? p.id : null);
+                            update('stage_id', null);
+                        }}>
+                            <option value="">Selecione…</option>
+                            {pipelines.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                    </FieldGroup>
+                    {selectedPipeline && (
+                        <FieldGroup label="Etapa">
+                            <select style={field.input} value={data.stage_id || ''} onChange={e => {
+                                const st = selectedPipeline.stages.find(s => s.id === parseInt(e.target.value));
+                                update('stage_id', st ? st.id : null);
+                            }}>
+                                <option value="">Selecione…</option>
+                                {selectedPipeline.stages.map(st => <option key={st.id} value={st.id}>{st.name}</option>)}
+                            </select>
+                        </FieldGroup>
+                    )}
+                    <FieldGroup label="Variável → Nome do lead">
+                        <select style={field.input} value={data.name_var || ''} onChange={e => update('name_var', e.target.value)}>
+                            <option value="">Não mapear</option>
+                            {allVars.filter(v => !v.startsWith('$')).map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                    </FieldGroup>
+                    <FieldGroup label="Variável → E-mail do lead">
+                        <select style={field.input} value={data.email_var || ''} onChange={e => update('email_var', e.target.value)}>
+                            <option value="">Não mapear</option>
+                            {allVars.filter(v => !v.startsWith('$')).map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                    </FieldGroup>
+                    <FieldGroup label="Variável → Telefone do lead">
+                        <select style={field.input} value={data.phone_var || ''} onChange={e => update('phone_var', e.target.value)}>
+                            <option value="">Não mapear</option>
+                            {allVars.filter(v => !v.startsWith('$')).map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                    </FieldGroup>
+                </>
+            )}
 
             {data.type === 'change_stage' && (
                 <>

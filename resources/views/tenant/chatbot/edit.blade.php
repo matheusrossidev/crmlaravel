@@ -91,6 +91,11 @@
 
     {{-- Ações --}}
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+        @if($flow->channel === 'website' && $flow->website_token)
+        <button type="button" class="builder-btn" onclick="showEmbedCode()" title="Código de incorporação">
+            <i class="bi bi-code-slash"></i> Embed
+        </button>
+        @endif
         <a href="{{ route('chatbot.flows.edit', $flow) }}?settings=1" class="builder-btn">
             <i class="bi bi-gear"></i> Configurações do fluxo
         </a>
@@ -106,9 +111,45 @@
 </div>
 @endsection
 
+@if($flow->channel === 'website' && $flow->website_token)
+{{-- Modal: Código de incorporação --}}
+<div id="embedModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:28px 32px;max-width:560px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.18);font-family:'Inter',sans-serif;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <h2 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0;">Código de Incorporação</h2>
+            <button onclick="closeEmbedModal()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#6b7280;">&times;</button>
+        </div>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:14px;">Cole este código antes do <code>&lt;/body&gt;</code> no seu site:</p>
+        <div style="position:relative;">
+            <textarea id="embedCode" readonly style="width:100%;height:90px;font-family:monospace;font-size:12px;padding:10px 12px;border:1.5px solid #e8eaf0;border-radius:8px;background:#f9fafb;color:#374151;resize:none;box-sizing:border-box;outline:none;">&lt;script src="{{ config('app.url') }}/widget.js" data-token="{{ $flow->website_token }}"&gt;&lt;/script&gt;</textarea>
+            <button onclick="copyEmbed()" id="copyEmbedBtn" style="position:absolute;top:8px;right:8px;padding:4px 10px;background:#0085f3;color:#fff;border:none;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;">Copiar</button>
+        </div>
+        <p style="font-size:11.5px;color:#9ca3af;margin-top:10px;">O widget aparecerá no canto inferior direito do seu site.</p>
+    </div>
+</div>
+@endif
+
 @push('scripts')
 <script>
 window.chatbotBuilderData = {!! json_encode($builderData) !!};
+
+function showEmbedCode() {
+    const m = document.getElementById('embedModal');
+    if (m) { m.style.display = 'flex'; }
+}
+function closeEmbedModal() {
+    const m = document.getElementById('embedModal');
+    if (m) { m.style.display = 'none'; }
+}
+function copyEmbed() {
+    const ta = document.getElementById('embedCode');
+    if (!ta) return;
+    ta.select();
+    document.execCommand('copy');
+    const btn = document.getElementById('copyEmbedBtn');
+    if (btn) { btn.textContent = 'Copiado!'; setTimeout(() => btn.textContent = 'Copiar', 2000); }
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEmbedModal(); });
 </script>
 @vite('resources/js/chatbot-builder.jsx')
 @endpush

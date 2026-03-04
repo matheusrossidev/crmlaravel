@@ -226,7 +226,7 @@
             @php $currentChannel = old('channel', $flow->channel ?? 'whatsapp'); @endphp
             <div class="form-group">
                 <div style="display:flex;gap:10px;">
-                    @foreach([['whatsapp','WhatsApp','whatsapp'],['instagram','Instagram','instagram']] as [$val,$label,$icon])
+                    @foreach([['whatsapp','WhatsApp','whatsapp'],['instagram','Instagram','instagram'],['website','Website','globe']] as [$val,$label,$icon])
                     <label style="flex:1;cursor:pointer;">
                         <input type="radio" name="channel" value="{{ $val }}" {{ $currentChannel === $val ? 'checked' : '' }}
                                style="display:none;" onchange="updateChatbotChannelCards()">

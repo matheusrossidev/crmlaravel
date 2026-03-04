@@ -18,6 +18,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ChatbotFlowController extends Controller
@@ -42,6 +43,9 @@ class ChatbotFlowController extends Controller
         }
 
         $data = $this->validatedFlow($request);
+        if (($data['channel'] ?? '') === 'website') {
+            $data['website_token'] = Str::uuid()->toString();
+        }
         $flow = ChatbotFlow::create($data);
         return redirect()->route('chatbot.flows.edit', $flow)->with('success', 'Fluxo criado! Agora adicione os nós.');
     }
@@ -109,6 +113,9 @@ class ChatbotFlowController extends Controller
     public function update(Request $request, ChatbotFlow $flow): RedirectResponse
     {
         $data = $this->validatedFlow($request);
+        if (($data['channel'] ?? '') === 'website' && ! $flow->website_token) {
+            $data['website_token'] = Str::uuid()->toString();
+        }
         $flow->update($data);
         return redirect()->route('chatbot.flows.edit', $flow)->with('success', 'Fluxo atualizado.');
     }
@@ -306,7 +313,7 @@ class ChatbotFlowController extends Controller
     {
         $data = $request->validate([
             'name'             => 'required|string|max:100',
-            'channel'          => 'required|in:whatsapp,instagram',
+            'channel'          => 'required|in:whatsapp,instagram,website',
             'description'      => 'nullable|string|max:1000',
             'is_active'        => 'boolean',
             'trigger_keywords' => 'nullable|string',
