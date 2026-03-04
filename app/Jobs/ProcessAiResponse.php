@@ -360,6 +360,91 @@ class ProcessAiResponse implements ShouldQueue
                 ]);
                 return;
             }
+
+            // ── Agentic loop: tool calling para calendário ──────────────────────
+            if ($agent->enable_calendar_tool && $calendarService !== null) {
+                $calToolTypes = ['check_calendar_availability', 'calendar_create', 'calendar_reschedule', 'calendar_cancel'];
+                $loopHistory  = $history;
+
+                for ($loopIter = 0; $loopIter < 2; $loopIter++) {
+                    $calActions = array_values(array_filter($actions, fn ($a) => in_array($a['type'] ?? '', $calToolTypes)));
+                    if (empty($calActions)) break;
+
+                    // Executa cada ferramenta e coleta resultados para o LLM
+                    $toolResults = [];
+                    foreach ($calActions as $calAction) {
+                        $toolResults[] = $this->runCalendarTool($calAction, $calendarService, $conv, $lead ?? null);
+                    }
+
+                    // Remove ações de calendário desta iteração
+                    $actions = array_values(array_filter($actions, fn ($a) => ! in_array($a['type'] ?? '', $calToolTypes)));
+
+                    // Injeta turno do assistente + resultado das ferramentas no histórico
+                    $loopHistory[] = ['role' => 'assistant', 'content' => $reply];
+                    $loopHistory[] = ['role' => 'user',      'content' => '[RESULTADO DAS FERRAMENTAS]: ' . implode(' | ', $toolResults)];
+
+                    Log::channel('whatsapp')->info('AI calendar loop: ferramentas executadas', [
+                        'conversation_id' => $this->conversationId,
+                        'iter'            => $loopIter,
+                        'results'         => $toolResults,
+                    ]);
+
+                    // Nova chamada ao LLM com o histórico atualizado
+                    $loopLlmResult = AiConfigurationController::callLlm(
+                        provider:  $provider,
+                        apiKey:    $apiKey,
+                        model:     $model,
+                        messages:  $loopHistory,
+                        maxTokens: $maxTokens,
+                        system:    $system,
+                    );
+
+                    $loopRaw = trim($loopLlmResult['reply']);
+                    if ($loopRaw === '') break;
+
+                    try {
+                        AiUsageLog::create([
+                            'tenant_id'         => $conv->tenant_id,
+                            'conversation_id'   => $conv->id,
+                            'model'             => $model,
+                            'provider'          => $provider,
+                            'tokens_prompt'     => $loopLlmResult['usage']['prompt'] ?? 0,
+                            'tokens_completion' => $loopLlmResult['usage']['completion'] ?? 0,
+                            'tokens_total'      => $loopLlmResult['usage']['total'] ?? 0,
+                            'type'              => 'chat',
+                        ]);
+                    } catch (\Throwable) {}
+
+                    // Re-parse JSON da nova resposta
+                    $loopClean = preg_replace('/```(?:json)?\s*([\s\S]*?)```/i', '$1', $loopRaw);
+                    $loopClean = trim($loopClean ?? $loopRaw);
+                    if (! str_starts_with($loopClean, '{')) {
+                        $jsonStart = strpos($loopClean, '{');
+                        if ($jsonStart !== false) $loopClean = substr($loopClean, $jsonStart);
+                    }
+                    $loopDecoded = null;
+                    if (str_starts_with($loopClean, '{')) {
+                        $loopDecoded = json_decode($loopClean, true);
+                    }
+                    if (is_array($loopDecoded) && isset($loopDecoded['reply'])) {
+                        $loopReplyRaw = $loopDecoded['reply'] ?? '';
+                        if (is_array($loopReplyRaw)) {
+                            $reply = implode("\n\n", array_values(array_filter(array_map('trim', $loopReplyRaw))));
+                        } else {
+                            $reply = trim((string) $loopReplyRaw);
+                        }
+                        // Mescla novas actions (ex: set_stage emitido junto com a resposta final)
+                        $actions = array_merge($actions, (array) ($loopDecoded['actions'] ?? []));
+                    } else {
+                        $reply = $loopRaw;
+                    }
+
+                    if ($reply === '') break;
+                }
+
+                // Garante que ações de calendário não escapem para o executor legado
+                $actions = array_values(array_filter($actions, fn ($a) => ! in_array($a['type'] ?? '', $calToolTypes)));
+            }
         }
 
         // ── Aplicar ações de pipeline e tags ─────────────────────────────────
@@ -710,6 +795,115 @@ class ProcessAiResponse implements ShouldQueue
                 'error'           => $e->getMessage(),
             ]);
             return '⚠️ Não foi possível criar o evento no Google Calendar. Verifique se a integração com o Google está ativa nas configurações.';
+        }
+    }
+
+    /**
+     * Executa uma ferramenta de calendário no loop agentic e retorna
+     * uma string de resultado legível para o LLM.
+     */
+    private function runCalendarTool(
+        array $action,
+        GoogleCalendarService $calendarService,
+        WhatsappConversation $conv,
+        ?Lead $lead = null,
+    ): string {
+        $type = $action['type'] ?? '';
+
+        try {
+            switch ($type) {
+                case 'check_calendar_availability':
+                    $start  = $action['start'] ?? now()->format('Y-m-d\TH:i');
+                    $end    = $action['end']   ?? now()->addHour()->format('Y-m-d\TH:i');
+                    $events = $calendarService->listEvents($start, $end);
+                    if (empty($events)) {
+                        return "Horário disponível: {$start} até {$end} está livre no calendário.";
+                    }
+                    $conflicts = implode(', ', array_map(
+                        fn ($e) => ($e['title'] ?? 'evento') . ' (' . ($e['start'] ?? '') . ')',
+                        $events
+                    ));
+                    return "Horário INDISPONÍVEL: há conflito com — {$conflicts}";
+
+                case 'calendar_create':
+                    $agentDesc    = $action['description'] ?? '';
+                    $contactLines = [];
+                    if ($lead) {
+                        if ($lead->name)    $contactLines[] = "Nome: {$lead->name}";
+                        if ($lead->phone)   $contactLines[] = "Telefone: {$lead->phone}";
+                        if ($lead->email)   $contactLines[] = "Email: {$lead->email}";
+                        if ($lead->company) $contactLines[] = "Empresa: {$lead->company}";
+                    } elseif ($conv->contact_name || $conv->phone) {
+                        if ($conv->contact_name) $contactLines[] = "Nome: {$conv->contact_name}";
+                        if ($conv->phone)        $contactLines[] = "Telefone: {$conv->phone}";
+                    }
+                    $description = $agentDesc;
+                    if (! empty($contactLines)) {
+                        $contactBlock = implode("\n", $contactLines);
+                        $description  = $agentDesc ? $agentDesc . "\n\n---\n" . $contactBlock : $contactBlock;
+                    }
+                    $startStr = $action['start'] ?? now()->addHour()->format('Y-m-d\TH:i');
+                    $event = $calendarService->createEvent([
+                        'title'       => $action['title']     ?? 'Evento',
+                        'start'       => $startStr,
+                        'end'         => $action['end']       ?? now()->addHours(2)->format('Y-m-d\TH:i'),
+                        'description' => $description,
+                        'location'    => $action['location']  ?? '',
+                        'attendees'   => $action['attendees'] ?? '',
+                    ]);
+                    Log::channel('whatsapp')->info('AI calendar (loop): evento criado', [
+                        'conversation_id' => $conv->id,
+                        'event_id'        => $event['id'] ?? null,
+                        'title'           => $action['title'] ?? '',
+                    ]);
+                    $dateFormatted = \Carbon\Carbon::parse($startStr)
+                        ->setTimezone(config('app.timezone', 'America/Sao_Paulo'))
+                        ->format('d/m/Y \à\s H:i');
+                    $attendee = trim((string) ($action['attendees'] ?? ''));
+                    $result   = "Evento criado com sucesso: \"{$action['title']}\" para {$dateFormatted}.";
+                    if ($attendee) $result .= " Convite enviado para {$attendee}.";
+                    return $result;
+
+                case 'calendar_reschedule':
+                    $eventId = $action['event_id'] ?? '';
+                    if ($eventId) {
+                        $calendarService->updateEvent($eventId, [
+                            'start' => $action['start'] ?? '',
+                            'end'   => $action['end']   ?? '',
+                        ]);
+                        $newDate = \Carbon\Carbon::parse($action['start'] ?? '')
+                            ->setTimezone(config('app.timezone', 'America/Sao_Paulo'))
+                            ->format('d/m/Y \à\s H:i');
+                        Log::channel('whatsapp')->info('AI calendar (loop): evento reagendado', [
+                            'conversation_id' => $conv->id,
+                            'event_id'        => $eventId,
+                        ]);
+                        return "Evento reagendado com sucesso para {$newDate}.";
+                    }
+                    return "Erro: event_id não informado para reagendamento.";
+
+                case 'calendar_cancel':
+                    $eventId = $action['event_id'] ?? '';
+                    if ($eventId) {
+                        $calendarService->deleteEvent($eventId);
+                        Log::channel('whatsapp')->info('AI calendar (loop): evento cancelado', [
+                            'conversation_id' => $conv->id,
+                            'event_id'        => $eventId,
+                        ]);
+                        return "Evento cancelado com sucesso (id: {$eventId}).";
+                    }
+                    return "Erro: event_id não informado para cancelamento.";
+
+                default:
+                    return "Ação desconhecida: {$type}";
+            }
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->error('AI calendar (loop): falha ao executar ferramenta', [
+                'conversation_id' => $conv->id,
+                'action_type'     => $type,
+                'error'           => $e->getMessage(),
+            ]);
+            return "Erro ao executar {$type}: " . $e->getMessage();
         }
     }
 }

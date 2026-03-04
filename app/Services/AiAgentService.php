@@ -205,48 +205,43 @@ class AiAgentService
 
             $lines[] = <<<'CALINSTR'
 
-ARQUITETURA — LEIA ANTES DE AGIR:
-Os eventos listados acima foram carregados AUTOMATICAMENTE antes desta resposta.
-Você NÃO precisa fazer nenhuma busca externa — já tem todos os dados necessários.
-As ações calendar_create/reschedule/cancel executam JUNTO com sua reply, na MESMA mensagem.
-Após a ação ser executada, o sistema enviará uma confirmação separada ao usuário.
+FERRAMENTA DE AGENDA — FLUXO EM 2 FASES:
 
-REGRA DE OURO — CRÍTICO:
-SEM calendar_create no JSON → o evento NUNCA é criado no calendário.
-Dizer "vou criar" sem incluir a action = você enganou o usuário.
-Quando tiver todos os dados (data + horário + e-mail): INCLUA a action. O sistema confirma depois.
+FASE 1 — VERIFICAR DISPONIBILIDADE:
+Quando o usuário pedir para verificar um horário ou quiser marcar em data/hora específica:
+• Responda algo curto como "Vou verificar a agenda agora!" ou "Um momento, deixa eu checar!"
+• Inclua na action: check_calendar_availability com start e end do horário solicitado
+• O sistema executará a verificação e retornará o resultado para você
+• Na sua próxima resposta, informe ao usuário se o horário está disponível ou não
 
-FLUXO OBRIGATÓRIO para criar um evento (siga EXATAMENTE esta ordem):
-PASSO 1 — Se não sabe a data e/ou horário → pergunte ao usuário.
-PASSO 2 — Se não tem o e-mail do convidado (e não está em "Dados do contato" acima) → PERGUNTE o e-mail.
-PASSO 3 — Se já tem data, horário E e-mail → inclua calendar_create nas actions E na reply use uma
-           frase CURTA e NEUTRA ("Ótimo!", "Perfeito!", "Anotado!"). NÃO confirme a criação —
-           o sistema enviará a confirmação após criar o evento com sucesso.
-NUNCA pule o PASSO 2. O e-mail é OBRIGATÓRIO para enviar o convite ao participante.
+FASE 2 — CRIAR O EVENTO:
+Quando você tiver: data + horário + e-mail do convidado (pergunte se não tiver):
+• Inclua na action: calendar_create com todos os campos
+• O sistema criará o evento e retornará confirmação (sucesso ou erro)
+• Na sua próxima resposta, confirme ao usuário com data e hora, ou explique o erro
 
-PALAVRAS/FRASES ABSOLUTAMENTE PROIBIDAS no PASSO 3:
-✗ "Um momento"           ✗ "Vou verificar"          ✗ "Aguarde"
-✗ "Deixa eu checar"      ✗ "Vou consultar a agenda"  ✗ "Estou criando"
-✗ "Vou criar o evento"   ✗ "Agora vou agendar"       ✗ "Vou agendar agora"
-✗ "Ficou agendado"       ✗ "Agendei"                 ✗ "Está marcado"
-✗ Qualquer confirmação de que o evento já foi ou será criado — o sistema fará isso
-
-EXEMPLO CORRETO DO FLUXO:
-→ Usuário: "quero marcar uma reunião amanhã às 10h"
-→ Agente: {"reply": "Claro! Qual é o seu e-mail para eu enviar o convite?", "actions": []}
+EXEMPLO DO FLUXO COMPLETO:
+→ Usuário: "quero marcar amanhã às 15h"
+→ Agente: {"reply": "Vou verificar a agenda agora!", "actions": [{"type":"check_calendar_availability","start":"YYYY-MM-DDT15:00","end":"YYYY-MM-DDT16:00"}]}
+→ Sistema retorna: "[RESULTADO DAS FERRAMENTAS]: Horário disponível: ..."
+→ Agente: {"reply": "Amanhã às 15h está disponível! Qual o seu e-mail para o convite?", "actions": []}
 → Usuário: "fulano@empresa.com"
-→ Agente: {"reply": "Ótimo!", "actions": [{"type":"calendar_create","title":"Reunião","start":"YYYY-MM-DDTHH:00","end":"YYYY-MM-DDTHH:01","description":"Reunião solicitada pelo contato","attendees":"fulano@empresa.com"}]}
-→ Sistema: "Reunião marcada para amanhã às 10h! Convite enviado para fulano@empresa.com."
+→ Agente: {"reply": "Perfeito!", "actions": [{"type":"calendar_create","title":"Reunião","start":"YYYY-MM-DDT15:00","end":"YYYY-MM-DDT16:00","description":"Reunião solicitada pelo contato","attendees":"fulano@empresa.com"}]}
+→ Sistema retorna: "[RESULTADO DAS FERRAMENTAS]: Evento criado com sucesso..."
+→ Agente: {"reply": "Reunião marcada para amanhã às 15h! Convite enviado para fulano@empresa.com.", "actions": []}
 
-SCHEMA DAS AÇÕES:
-- calendar_create: {"type":"calendar_create","title":"...","start":"YYYY-MM-DDTHH:MM","end":"YYYY-MM-DDTHH:MM","description":"contexto da reunião","location":"...","attendees":"email@dominio.com"}
-- calendar_reschedule: {"type":"calendar_reschedule","event_id":"id_do_evento","start":"YYYY-MM-DDTHH:MM","end":"YYYY-MM-DDTHH:MM"}
-- calendar_cancel: {"type":"calendar_cancel","event_id":"id_do_evento"}
+REGRAS:
+- O e-mail do convidado é OBRIGATÓRIO para calendar_create — pergunte se não tiver
+- Duração padrão: 1 hora (end = start + 1h) se não informada
+- Nunca confirme a criação antes de receber o resultado do sistema
+- Use os ids EXATOS dos eventos listados acima ao reagendar/cancelar
+- No "description" descreva o motivo/contexto da reunião
 
-REGRAS FINAIS:
-- Duração padrão: se não informada → 1 hora (end = start + 1h).
-- Use os ids EXATOS dos eventos listados acima ao reagendar/cancelar.
-- No "description" descreva o motivo/contexto da reunião.
+SCHEMAS:
+- check_calendar_availability: {"type":"check_calendar_availability","start":"YYYY-MM-DDTHH:MM","end":"YYYY-MM-DDTHH:MM"}
+- calendar_create: {"type":"calendar_create","title":"...","start":"YYYY-MM-DDTHH:MM","end":"YYYY-MM-DDTHH:MM","description":"...","location":"...","attendees":"email@dominio.com"}
+- calendar_reschedule: {"type":"calendar_reschedule","event_id":"id_exato","start":"YYYY-MM-DDTHH:MM","end":"YYYY-MM-DDTHH:MM"}
+- calendar_cancel: {"type":"calendar_cancel","event_id":"id_exato"}
 --- FIM DA FERRAMENTA DE AGENDA ---
 CALINSTR;
         }
