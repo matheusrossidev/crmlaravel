@@ -8,15 +8,21 @@ import Pusher from 'pusher-js';
 window.Pusher = Pusher;
 
 const _rcfg = window.reverbConfig ?? {};
-window.Echo = new Echo({
-    broadcaster: 'reverb',
-    key: _rcfg.key,
-    wsHost: _rcfg.wsHost,
-    wsPort: _rcfg.wsPort ?? 443,
-    wssPort: _rcfg.wssPort ?? 443,
-    forceTLS: _rcfg.forceTLS ?? true,
-    enabledTransports: ['ws', 'wss'],
-});
+if (_rcfg.key) {
+    try {
+        window.Echo = new Echo({
+            broadcaster: 'reverb',
+            key: _rcfg.key,
+            wsHost: _rcfg.wsHost,
+            wsPort: _rcfg.wsPort ?? 443,
+            wssPort: _rcfg.wssPort ?? 443,
+            forceTLS: _rcfg.forceTLS ?? true,
+            enabledTransports: ['ws', 'wss'],
+        });
+    } catch (e) {
+        console.warn('Echo: falha ao inicializar WebSocket.', e.message);
+    }
+}
 
 // jQuery global
 import $ from 'jquery';
