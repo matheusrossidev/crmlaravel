@@ -123,12 +123,22 @@ class TenantController extends Controller
             'max_leads'                  => 'nullable|integer|min:0',
             'max_pipelines'              => 'nullable|integer|min:0',
             'max_custom_fields'          => 'nullable|integer|min:0',
-            'ai_analyst_enabled'         => 'nullable|boolean',
-            'partner_billing_starts_at'  => 'nullable|date',
+            'ai_analyst_enabled'            => 'nullable|boolean',
+            'integration_whatsapp'          => 'nullable|boolean',
+            'integration_google_calendar'   => 'nullable|boolean',
+            'integration_instagram'         => 'nullable|boolean',
+            'integration_facebook_ads'      => 'nullable|boolean',
+            'integration_google_ads'        => 'nullable|boolean',
+            'partner_billing_starts_at'     => 'nullable|date',
         ]);
 
         $settings = $tenant->settings_json ?? [];
-        $settings['ai_analyst_enabled'] = $request->boolean('ai_analyst_enabled');
+        $settings['ai_analyst_enabled']         = $request->boolean('ai_analyst_enabled');
+        $settings['integration_whatsapp']        = $request->boolean('integration_whatsapp');
+        $settings['integration_google_calendar'] = $request->boolean('integration_google_calendar');
+        $settings['integration_instagram']       = $request->boolean('integration_instagram');
+        $settings['integration_facebook_ads']    = $request->boolean('integration_facebook_ads');
+        $settings['integration_google_ads']      = $request->boolean('integration_google_ads');
 
         $tenant->update(array_merge(
             $request->only('status', 'plan', 'trial_ends_at', 'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields', 'partner_billing_starts_at'),

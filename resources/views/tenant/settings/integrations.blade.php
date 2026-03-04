@@ -317,6 +317,7 @@
     <div class="integrations-grid">
 
         {{-- ─── WhatsApp ─────────────────────────────────────────────────── --}}
+        @if($enabledIntegrations['whatsapp'])
         <div class="integration-card">
             <div class="integration-header">
                 <div class="integration-logo whatsapp">
@@ -376,8 +377,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         {{-- ─── Google Calendar ──────────────────────────────────────────── --}}
+        @if($enabledIntegrations['google_calendar'])
         @php
             $calendarScope = 'https://www.googleapis.com/auth/calendar';
             $hasCalendar   = $google && $google->status === 'active'
@@ -439,8 +442,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         {{-- ─── Instagram ──────────────────────────────────────────────── --}}
+        @if($enabledIntegrations['instagram'])
         <div class="integration-card">
             <div class="integration-header">
                 <div class="integration-logo instagram">
@@ -488,9 +493,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
-        {{-- ─── Facebook Ads (somente super admin) ───────────────────────── --}}
-        @if(auth()->user()->isSuperAdmin())
+        {{-- ─── Facebook Ads ───────────────────────────────────────────────── --}}
+        @if($enabledIntegrations['facebook_ads'])
         <div class="integration-card">
             <div class="integration-header">
                 <div class="integration-logo facebook">f</div>
@@ -544,8 +550,8 @@
         </div>
         @endif
 
-        {{-- ─── Google Ads (somente super admin) ─────────────────────────── --}}
-        @if(auth()->user()->isSuperAdmin())
+        {{-- ─── Google Ads ─────────────────────────────────────────────────── --}}
+        @if($enabledIntegrations['google_ads'])
         <div class="integration-card">
             <div class="integration-header">
                 <div class="integration-logo google">G</div>

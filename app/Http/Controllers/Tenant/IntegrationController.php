@@ -36,7 +36,16 @@ class IntegrationController extends Controller
         $whatsapp  = WhatsappInstance::first();
         $instagram = InstagramInstance::first();
 
-        return view('tenant.settings.integrations', compact('facebook', 'google', 'whatsapp', 'instagram'));
+        $s = auth()->user()->tenant->settings_json ?? [];
+        $enabledIntegrations = [
+            'whatsapp'        => $s['integration_whatsapp']        ?? true,
+            'google_calendar' => $s['integration_google_calendar'] ?? true,
+            'instagram'       => $s['integration_instagram']       ?? true,
+            'facebook_ads'    => $s['integration_facebook_ads']    ?? false,
+            'google_ads'      => $s['integration_google_ads']      ?? false,
+        ];
+
+        return view('tenant.settings.integrations', compact('facebook', 'google', 'whatsapp', 'instagram', 'enabledIntegrations'));
     }
 
     // ── Facebook ──────────────────────────────────────────────────────────────

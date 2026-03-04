@@ -381,6 +381,30 @@
                         <small style="color:#9ca3af;display:block;margin-top:2px;">Analisa conversas a cada 30 min e gera sugestões automáticas para os leads.</small>
                     </div>
 
+                    {{-- Integrações visíveis --}}
+                    <div class="form-group" style="margin-top:14px;padding-top:14px;border-top:1px solid #f0f2f7;">
+                        <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
+                            Integrações visíveis
+                        </div>
+                        @php
+                            $si = $tenant->settings_json ?? [];
+                        @endphp
+                        @foreach([
+                            ['key' => 'integration_whatsapp',        'label' => 'WhatsApp Business', 'default' => true],
+                            ['key' => 'integration_google_calendar', 'label' => 'Google Calendar',   'default' => true],
+                            ['key' => 'integration_instagram',       'label' => 'Instagram',          'default' => true],
+                            ['key' => 'integration_facebook_ads',    'label' => 'Facebook Ads',       'default' => false],
+                            ['key' => 'integration_google_ads',      'label' => 'Google Ads',         'default' => false],
+                        ] as $int)
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;font-size:13px;margin-bottom:6px;">
+                                <input type="checkbox" id="edit_{{ $int['key'] }}"
+                                       style="width:16px;height:16px;cursor:pointer;"
+                                       {{ ($si[$int['key']] ?? $int['default']) ? 'checked' : '' }}>
+                                {{ $int['label'] }}
+                            </label>
+                        @endforeach
+                    </div>
+
                     {{-- Cobrança do parceiro (só para tenants parceiros) --}}
                     @if($tenant->isPartner())
                     <div class="form-group" style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:14px 16px;">
@@ -475,8 +499,13 @@ async function updateTenant() {
                 max_leads:          parseInt(document.getElementById('editMaxLeads').value) || 0,
                 max_pipelines:      parseInt(document.getElementById('editMaxPipelines').value) || 0,
                 max_custom_fields:  parseInt(document.getElementById('editMaxCustomFields').value) || 0,
-                ai_analyst_enabled: document.getElementById('editAiAnalyst').checked,
-                partner_billing_starts_at: document.getElementById('editPartnerBillingStartsAt')?.value || null,
+                ai_analyst_enabled:          document.getElementById('editAiAnalyst').checked,
+                integration_whatsapp:        document.getElementById('edit_integration_whatsapp').checked,
+                integration_google_calendar: document.getElementById('edit_integration_google_calendar').checked,
+                integration_instagram:       document.getElementById('edit_integration_instagram').checked,
+                integration_facebook_ads:    document.getElementById('edit_integration_facebook_ads').checked,
+                integration_google_ads:      document.getElementById('edit_integration_google_ads').checked,
+                partner_billing_starts_at:   document.getElementById('editPartnerBillingStartsAt')?.value || null,
             }),
         });
         const data = await res.json();
