@@ -553,7 +553,7 @@ class ProcessAiResponse implements ShouldQueue
     ): array {
         $lastMessage = WhatsappMessage::withoutGlobalScope('tenant')
             ->where('conversation_id', $conv->id)
-            ->where('from_me', false)
+            ->where('direction', 'inbound')
             ->latest()
             ->first();
 

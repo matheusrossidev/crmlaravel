@@ -205,32 +205,43 @@ class AiAgentService
 
             $lines[] = <<<'CALINSTR'
 
-FERRAMENTA DE AGENDA — FLUXO EM 2 FASES:
+FERRAMENTA DE AGENDA — FLUXO EM 3 PASSOS OBRIGATÓRIOS:
 
-FASE 1 — VERIFICAR DISPONIBILIDADE:
-Quando o usuário pedir para verificar um horário ou quiser marcar em data/hora específica:
+PASSO 1 — VERIFICAR DISPONIBILIDADE:
+Quando o usuário pedir para marcar em data/hora específica ou perguntar disponibilidade:
 • Responda algo curto como "Vou verificar a agenda agora!" ou "Um momento, deixa eu checar!"
 • Inclua na action: check_calendar_availability com start e end do horário solicitado
-• O sistema executará a verificação e retornará o resultado para você
-• Na sua próxima resposta, informe ao usuário se o horário está disponível ou não
+• O sistema executará a verificação e retornará o resultado
 
-FASE 2 — CRIAR O EVENTO:
-Quando você tiver: data + horário + e-mail do convidado (pergunte se não tiver):
+PASSO 2 — INFORMAR E PEDIR CONFIRMAÇÃO (OBRIGATÓRIO):
+Após receber o resultado do sistema:
+• Se DISPONÍVEL: informe o horário disponível e PERGUNTE se o usuário confirma o agendamento
+  Exemplo: "O horário das 15h de amanhã está disponível! Confirma o agendamento?"
+• Se INDISPONÍVEL: informe o conflito e sugira outros horários
+• NUNCA emita calendar_create neste passo — aguarde a confirmação explícita do usuário
+• check_calendar_availability e calendar_create JAMAIS aparecem no mesmo JSON
+
+PASSO 3 — CRIAR O EVENTO (só após confirmação explícita):
+Somente quando o usuário disser "sim", "confirma", "pode marcar", "vai lá" ou similar:
+• Colete o e-mail do convidado se ainda não tiver (é OBRIGATÓRIO)
 • Inclua na action: calendar_create com todos os campos
-• O sistema criará o evento e retornará confirmação (sucesso ou erro)
-• Na sua próxima resposta, confirme ao usuário com data e hora, ou explique o erro
+• Aguarde o resultado do sistema e confirme ao usuário
 
 EXEMPLO DO FLUXO COMPLETO:
 → Usuário: "quero marcar amanhã às 15h"
 → Agente: {"reply": "Vou verificar a agenda agora!", "actions": [{"type":"check_calendar_availability","start":"YYYY-MM-DDT15:00","end":"YYYY-MM-DDT16:00"}]}
 → Sistema retorna: "[RESULTADO DAS FERRAMENTAS]: Horário disponível: ..."
-→ Agente: {"reply": "Amanhã às 15h está disponível! Qual o seu e-mail para o convite?", "actions": []}
+→ Agente: {"reply": "Amanhã às 15h está disponível! Confirma o agendamento?", "actions": []}
+→ Usuário: "sim, confirma"
+→ Agente: {"reply": "Ótimo! Qual o seu e-mail para o convite?", "actions": []}
 → Usuário: "fulano@empresa.com"
-→ Agente: {"reply": "Perfeito!", "actions": [{"type":"calendar_create","title":"Reunião","start":"YYYY-MM-DDT15:00","end":"YYYY-MM-DDT16:00","description":"Reunião solicitada pelo contato","attendees":"fulano@empresa.com"}]}
+→ Agente: {"reply": "Agendando agora!", "actions": [{"type":"calendar_create","title":"Reunião","start":"YYYY-MM-DDT15:00","end":"YYYY-MM-DDT16:00","description":"Reunião solicitada pelo contato","attendees":"fulano@empresa.com"}]}
 → Sistema retorna: "[RESULTADO DAS FERRAMENTAS]: Evento criado com sucesso..."
 → Agente: {"reply": "Reunião marcada para amanhã às 15h! Convite enviado para fulano@empresa.com.", "actions": []}
 
-REGRAS:
+REGRAS ABSOLUTAS:
+- NUNCA emita calendar_create sem confirmação explícita do usuário nesta mesma conversa
+- check_calendar_availability e calendar_create NUNCA podem estar no mesmo JSON de actions
 - O e-mail do convidado é OBRIGATÓRIO para calendar_create — pergunte se não tiver
 - Duração padrão: 1 hora (end = start + 1h) se não informada
 - Nunca confirme a criação antes de receber o resultado do sistema
