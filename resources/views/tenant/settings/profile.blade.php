@@ -481,7 +481,7 @@ if (btnLinkAgency) {
 
         btnLinkAgency.disabled = true;
         try {
-            const res = await fetch("{{ route('agency.link') }}", {
+            const res = await fetch("{{ route('settings.agency.link') }}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
