@@ -307,10 +307,16 @@ class ProcessWahaWebhook implements ShouldQueue
             if ($isFromMe) {
                 // pushName em mensagens fromMe = nome da conta conectada (não do cliente).
                 // Buscar o nome real via WAHA /api/contacts, que retorna o nome da agenda.
-                $contactName = null;
+                // Quando $from é @lid, usar RecipientAlt (JID real do destinatário) para a busca.
+                $contactName  = null;
+                $jidForName   = $from;
+                $recipientAlt = $info['RecipientAlt'] ?? '';
+                if (str_ends_with($from, '@lid') && $recipientAlt && ! str_ends_with($recipientAlt, '@lid')) {
+                    $jidForName = $recipientAlt;
+                }
                 try {
                     $wahaForContact = new \App\Services\WahaService($instance->session_name);
-                    $contactInfo    = $wahaForContact->getContactInfo($from);
+                    $contactInfo    = $wahaForContact->getContactInfo($jidForName);
                     $contactName    = $contactInfo['name'] ?? $contactInfo['pushName'] ?? null;
                 } catch (\Throwable) {}
             } else {
@@ -409,8 +415,13 @@ class ProcessWahaWebhook implements ShouldQueue
 
                 if (! $resolvedName) {
                     try {
+                        $jidForName   = $from;
+                        $recipientAlt = $info['RecipientAlt'] ?? '';
+                        if (str_ends_with($from, '@lid') && $recipientAlt && ! str_ends_with($recipientAlt, '@lid')) {
+                            $jidForName = $recipientAlt;
+                        }
                         $wahaContact  = new \App\Services\WahaService($instance->session_name);
-                        $contactInfo  = $wahaContact->getContactInfo($from);
+                        $contactInfo  = $wahaContact->getContactInfo($jidForName);
                         $resolvedName = $contactInfo['name'] ?? $contactInfo['pushName'] ?? null;
                     } catch (\Throwable) {}
                 }
@@ -825,7 +836,8 @@ class ProcessWahaWebhook implements ShouldQueue
         $chatJid    = $info['Chat'] ?? '';
         $candidates = [
             $chatJid,                                                                    // conversation JID — contact in 1:1 chats
-            str_ends_with($chatJid, '@lid') ? ($info['SenderAlt'] ?? '') : '',          // SenderAlt only when Chat is LID (not for groups)
+            str_ends_with($chatJid, '@lid') ? ($info['SenderAlt']    ?? '') : '',       // SenderAlt only when Chat is LID (not for groups)
+            str_ends_with($chatJid, '@lid') ? ($info['RecipientAlt'] ?? '') : '',       // RecipientAlt: real phone in fromMe @lid messages
             $from,                                                                       // pre-processed in handleInbound() for fromMe messages
         ];
 
