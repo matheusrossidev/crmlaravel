@@ -6,7 +6,9 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\AiAgent;
+use App\Models\Campaign;
 use App\Models\ChatbotFlow;
+use App\Models\Lead;
 use App\Models\InstagramConversation;
 use App\Models\InstagramInstance;
 use App\Models\InstagramMessage;
@@ -695,6 +697,34 @@ class WhatsappController extends Controller
     {
         $request->validate(['lead_id' => 'required|integer']);
         $websiteConversation->update(['lead_id' => $request->lead_id]);
+
+        $lead = Lead::withoutGlobalScope('tenant')->find($request->lead_id);
+        if ($lead) {
+            $utmUpdate = array_filter([
+                'utm_source'   => $lead->utm_source   ?: $websiteConversation->utm_source,
+                'utm_medium'   => $lead->utm_medium   ?: $websiteConversation->utm_medium,
+                'utm_campaign' => $lead->utm_campaign ?: $websiteConversation->utm_campaign,
+                'utm_content'  => $lead->utm_content  ?: $websiteConversation->utm_content,
+                'utm_term'     => $lead->utm_term     ?: $websiteConversation->utm_term,
+            ]);
+            if ($utmUpdate) {
+                $lead->update($utmUpdate);
+            }
+
+            if (! $lead->campaign_id && $websiteConversation->utm_campaign) {
+                $campaign = Campaign::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $lead->tenant_id)
+                    ->where(function ($q) use ($websiteConversation) {
+                        $q->whereRaw('LOWER(utm_campaign) = ?', [strtolower($websiteConversation->utm_campaign)])
+                          ->orWhereRaw('LOWER(name) = ?',        [strtolower($websiteConversation->utm_campaign)]);
+                    })
+                    ->first();
+                if ($campaign) {
+                    $lead->update(['campaign_id' => $campaign->id]);
+                }
+            }
+        }
+
         return response()->json(['success' => true]);
     }
 

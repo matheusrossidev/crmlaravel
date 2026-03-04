@@ -679,6 +679,22 @@ function InputForm({ data, update, textareaRef, saveCursor, variables }) {
                     placeholder="Qual é o seu nome?"
                 />
             </FieldGroup>
+            <FieldGroup label="Tipo do campo">
+                <select
+                    style={{ ...field.input, cursor: 'pointer' }}
+                    value={data.field_type || 'text'}
+                    onChange={e => {
+                        update('field_type', e.target.value);
+                        const presets = { phone: 'contact_phone', email: 'contact_email', name: 'contact_name' };
+                        if (presets[e.target.value]) update('save_to', presets[e.target.value]);
+                    }}
+                >
+                    <option value="text">Texto livre</option>
+                    <option value="name">Nome</option>
+                    <option value="email">E-mail</option>
+                    <option value="phone">Telefone (com máscara BR)</option>
+                </select>
+            </FieldGroup>
             <FieldGroup label="Salvar resposta em variável">
                 {variables && variables.length > 0 ? (
                     <select

@@ -387,6 +387,11 @@ class LeadController extends Controller
             'campaign'      => $lead->campaign ? ['id' => $lead->campaign->id, 'name' => $lead->campaign->name] : null,
             'created_at'    => $lead->created_at?->format('d/m/Y H:i'),
             'custom_fields' => $lead->customFields,  // usa o accessor do Model
+            'utm_source'    => $lead->utm_source,
+            'utm_medium'    => $lead->utm_medium,
+            'utm_campaign'  => $lead->utm_campaign,
+            'utm_content'   => $lead->utm_content,
+            'utm_term'      => $lead->utm_term,
         ];
 
         if ($withNotes) {

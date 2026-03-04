@@ -326,6 +326,7 @@ class ChatbotFlowController extends Controller
             'bot_name'         => 'nullable|string|max:100',
             'bot_avatar'       => 'nullable|string|max:500',  // accepts relative paths (/images/...) or full URLs
             'welcome_message'  => 'nullable|string|max:500',
+            'widget_type'      => 'nullable|in:bubble,inline',
         ]);
 
         // Converter campos JSON string → array

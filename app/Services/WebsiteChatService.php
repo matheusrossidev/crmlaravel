@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\ChatbotFlowEdge;
 use App\Models\ChatbotFlowNode;
+use App\Models\Campaign;
 use App\Models\Lead;
 use App\Models\Pipeline;
 use App\Models\WebsiteConversation;
@@ -29,7 +30,7 @@ class WebsiteChatService
         $conv->load(['flow.nodes', 'flow.edges']);
 
         if (! $conv->flow || ! $conv->flow->is_active) {
-            return ['replies' => [], 'buttons' => []];
+            return ['replies' => [], 'buttons' => [], 'input_type' => 'text'];
         }
 
         $flow    = $conv->flow;
@@ -44,7 +45,7 @@ class WebsiteChatService
             $waitingNode = ChatbotFlowNode::withoutGlobalScope('tenant')->find($waitingNodeId);
             if (! $waitingNode) {
                 $this->clearFlow($conv);
-                return ['replies' => [], 'buttons' => []];
+                return ['replies' => [], 'buttons' => [], 'input_type' => 'text'];
             }
 
             $conv->chatbot_node_id = null;
@@ -57,7 +58,7 @@ class WebsiteChatService
 
             if (! $nextNodeId) {
                 $this->persistVars($conv, $vars);
-                return ['replies' => $replies, 'buttons' => []];
+                return ['replies' => $replies, 'buttons' => [], 'input_type' => 'text'];
             }
 
             $currentNode = ChatbotFlowNode::withoutGlobalScope('tenant')->find($nextNodeId);
@@ -86,7 +87,7 @@ class WebsiteChatService
                     }
                     $this->persistVars($conv, $vars);
                     $this->saveOutboundMessages($conv->id, $replies);
-                    return ['replies' => $replies, 'buttons' => $buttons];
+                    return ['replies' => $replies, 'buttons' => $buttons, 'input_type' => $currentNode->config['field_type'] ?? 'text'];
 
                 case 'condition':
                     [$nextId, $vars] = $this->executeCondition($currentNode, $flow->id, $vars);
@@ -113,7 +114,7 @@ class WebsiteChatService
                     $this->persistVars($conv, $vars);
                     $this->clearFlow($conv);
                     $this->saveOutboundMessages($conv->id, $replies);
-                    return ['replies' => $replies, 'buttons' => []];
+                    return ['replies' => $replies, 'buttons' => [], 'input_type' => 'text'];
 
                 default:
                     $nextId      = $this->resolveEdge($flow->id, $currentNode->id, 'default');
@@ -129,7 +130,7 @@ class WebsiteChatService
             Log::warning('WebsiteChatService: limite de iterações atingido', ['conversation_id' => $conv->id]);
         }
 
-        return ['replies' => $replies, 'buttons' => []];
+        return ['replies' => $replies, 'buttons' => [], 'input_type' => 'text'];
     }
 
     // ── Helpers privados ──────────────────────────────────────────────────────
@@ -165,12 +166,14 @@ class WebsiteChatService
 
     private function processInputReply(ChatbotFlowNode $node, int $flowId, string $body, array $vars): array
     {
-        $body   = trim($body);
-        $config = $node->config;
+        $body      = trim($body);
+        $config    = $node->config;
+        $fieldType = $config['field_type'] ?? 'text';
+        $value     = $fieldType === 'phone' ? $this->normalizePhone($body) : $body;
 
         $saveTo = $config['save_to'] ?? null;
         if ($saveTo && ! str_starts_with($saveTo, '$')) {
-            $vars[$saveTo] = $body;
+            $vars[$saveTo] = $value;
         }
 
         foreach ($config['branches'] ?? [] as $branch) {
@@ -284,23 +287,47 @@ class WebsiteChatService
         }
 
         $leadData = array_filter([
-            'tenant_id' => $conv->tenant_id,
-            'name'      => $name ?: ($email ?: $phone),
-            'email'     => $email ?: null,
-            'phone'     => $phone ?: null,
-            'stage_id'  => $stageId,
-            'source'    => 'website',
+            'tenant_id'    => $conv->tenant_id,
+            'name'         => $name ?: ($email ?: $phone),
+            'email'        => $email ?: null,
+            'phone'        => $phone ?: null,
+            'stage_id'     => $stageId,
+            'source'       => 'website',
+            'utm_source'   => $conv->utm_source   ?: null,
+            'utm_medium'   => $conv->utm_medium   ?: null,
+            'utm_campaign' => $conv->utm_campaign ?: null,
+            'utm_content'  => $conv->utm_content  ?: null,
+            'utm_term'     => $conv->utm_term     ?: null,
         ]);
 
         if ($lead) {
             $lead->update(array_filter([
-                'name'     => $name ?: null,
-                'email'    => $email ?: null,
-                'phone'    => $phone ?: null,
-                'stage_id' => $stageId ?: $lead->stage_id,
+                'name'         => $name ?: null,
+                'email'        => $email ?: null,
+                'phone'        => $phone ?: null,
+                'stage_id'     => $stageId ?: $lead->stage_id,
+                'utm_source'   => $lead->utm_source   ?: $conv->utm_source,
+                'utm_medium'   => $lead->utm_medium   ?: $conv->utm_medium,
+                'utm_campaign' => $lead->utm_campaign ?: $conv->utm_campaign,
+                'utm_content'  => $lead->utm_content  ?: $conv->utm_content,
+                'utm_term'     => $lead->utm_term     ?: $conv->utm_term,
             ]));
         } else {
             $lead = Lead::withoutGlobalScope('tenant')->create($leadData);
+
+            // Auto-link campaign by utm_campaign value
+            if ($conv->utm_campaign) {
+                $campaign = Campaign::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $conv->tenant_id)
+                    ->where(function ($q) use ($conv) {
+                        $q->whereRaw('LOWER(utm_campaign) = ?', [strtolower($conv->utm_campaign)])
+                          ->orWhereRaw('LOWER(name) = ?',        [strtolower($conv->utm_campaign)]);
+                    })
+                    ->first();
+                if ($campaign) {
+                    $lead->update(['campaign_id' => $campaign->id]);
+                }
+            }
         }
 
         WebsiteConversation::withoutGlobalScope('tenant')
@@ -321,6 +348,15 @@ class WebsiteChatService
             'conversation_id' => $conv->id,
             'lead_id'         => $lead->id,
         ]);
+    }
+
+    private function normalizePhone(string $raw): string
+    {
+        $digits = preg_replace('/\D/', '', $raw);
+        if (strlen($digits) >= 10 && ! str_starts_with($digits, '55')) {
+            $digits = '55' . $digits;
+        }
+        return $digits;
     }
 
     private function resolveEdge(int $flowId, int $sourceNodeId, string $sourceHandle): ?int

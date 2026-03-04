@@ -24,9 +24,28 @@
         localStorage.setItem(VID_KEY, visitorId);
     }
 
+    // ── UTM params (read once at load time) ──────────────────────────────────────
+    function getUtmParams() {
+        var p = (typeof URLSearchParams !== 'undefined')
+            ? new URLSearchParams(window.location.search)
+            : { get: function() { return null; } };
+        return {
+            utm_source:   p.get('utm_source')   || undefined,
+            utm_medium:   p.get('utm_medium')   || undefined,
+            utm_campaign: p.get('utm_campaign') || undefined,
+            utm_content:  p.get('utm_content')  || undefined,
+            utm_term:     p.get('utm_term')     || undefined,
+            page_url:     window.location.href  || undefined,
+            referrer_url: document.referrer     || undefined,
+        };
+    }
+
+    var utmParams = getUtmParams();
+
     // ── Bot identity (populated from init response) ──────────────────────────────
     var botName   = 'Chat';
     var botAvatar = null;
+    var widgetMode = 'bubble'; // 'bubble' or 'inline'
 
     // ── Inject CSS ───────────────────────────────────────────────────────────────
     var style = document.createElement('style');
@@ -42,9 +61,12 @@
         '#syncro-welcome.visible{opacity:1;transform:translateY(0);}',
         '#syncro-welcome-close{position:absolute;top:6px;right:8px;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:14px;line-height:1;padding:0;}',
 
-        /* Panel */
+        /* Panel — bubble mode */
         '#syncro-panel{position:fixed;bottom:96px;right:24px;width:340px;max-height:540px;border-radius:16px;background:#fff;box-shadow:0 8px 40px rgba(0,0,0,.18);display:none;flex-direction:column;overflow:hidden;z-index:99999;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}',
         '#syncro-panel.open{display:flex;}',
+
+        /* Panel — inline mode overrides */
+        '#syncro-panel.syncro-inline{position:static;bottom:auto;right:auto;width:100%;max-width:100%;height:100%;max-height:100%;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.1);display:flex;}',
 
         /* Header */
         '.syncro-header{background:' + colorPrimary + ';color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;}',
@@ -94,55 +116,84 @@
     ].join('');
     document.head.appendChild(style);
 
-    // ── Build HTML ───────────────────────────────────────────────────────────────
-    var launcher = document.createElement('button');
-    launcher.id  = 'syncro-launcher';
-    launcher.setAttribute('aria-label', 'Abrir chat');
-    launcher.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 2H4C2.9 2 2 2.9 2 4v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>';
-
-    var panel = document.createElement('div');
-    panel.id  = 'syncro-panel';
-    panel.innerHTML = [
-        '<div class="syncro-header" id="syncro-header">',
-        '  <div class="syncro-header-avatar-placeholder" id="syncro-hdr-avatar-wrap">',
-        '    <svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:rgba(255,255,255,0.85)"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>',
-        '  </div>',
-        '  <div class="syncro-header-info">',
-        '    <div class="syncro-header-title" id="syncro-hdr-name">Chat</div>',
-        '    <div class="syncro-header-status">Online agora</div>',
-        '  </div>',
-        '  <button class="syncro-header-close" id="syncro-close" aria-label="Fechar">',
-        '    <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M19 6.4L17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>',
-        '  </button>',
-        '</div>',
-        '<div class="syncro-messages" id="syncro-msgs"></div>',
-        '<div class="syncro-input-row">',
-        '  <input class="syncro-input" id="syncro-input" placeholder="Digite uma mensagem..." autocomplete="off">',
-        '  <button class="syncro-send" id="syncro-send">Enviar</button>',
-        '</div>',
-    ].join('');
-
-    document.body.appendChild(panel);
-    document.body.appendChild(launcher);
+    // ── Build panel HTML (shared between bubble and inline) ──────────────────────
+    function buildPanelHTML() {
+        return [
+            '<div class="syncro-header" id="syncro-header">',
+            '  <div class="syncro-header-avatar-placeholder" id="syncro-hdr-avatar-wrap">',
+            '    <svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:rgba(255,255,255,0.85)"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>',
+            '  </div>',
+            '  <div class="syncro-header-info">',
+            '    <div class="syncro-header-title" id="syncro-hdr-name">Chat</div>',
+            '    <div class="syncro-header-status">Online agora</div>',
+            '  </div>',
+            '  <button class="syncro-header-close" id="syncro-close" aria-label="Fechar" style="display:none;">',
+            '    <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M19 6.4L17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>',
+            '  </button>',
+            '</div>',
+            '<div class="syncro-messages" id="syncro-msgs"></div>',
+            '<div class="syncro-input-row">',
+            '  <input class="syncro-input" id="syncro-input" placeholder="Digite uma mensagem..." autocomplete="off">',
+            '  <button class="syncro-send" id="syncro-send">Enviar</button>',
+            '</div>',
+        ].join('');
+    }
 
     // ── State ────────────────────────────────────────────────────────────────────
     var convId  = null;
     var isOpen  = false;
     var sending = false;
     var welcomeEl = null;
-
-    var msgsEl  = document.getElementById('syncro-msgs');
-    var inputEl = document.getElementById('syncro-input');
-    var sendBtn = document.getElementById('syncro-send');
-    var hdrName = document.getElementById('syncro-hdr-name');
-    var hdrAvatarWrap = document.getElementById('syncro-hdr-avatar-wrap');
+    var panel, launcher;
+    var msgsEl, inputEl, sendBtn, hdrName, hdrAvatarWrap;
+    var inputType = 'text';
 
     // ── Helpers ──────────────────────────────────────────────────────────────────
     function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
 
+    function phoneMask(e) {
+        var v = e.target.value.replace(/\D/g, '').substring(0, 11);
+        if (v.length <= 2)       { /* keep */ }
+        else if (v.length <= 7)  { v = '(' + v.slice(0,2) + ') ' + v.slice(2); }
+        else if (v.length <= 10) { v = '(' + v.slice(0,2) + ') ' + v.slice(2,6) + '-' + v.slice(6); }
+        else                     { v = '(' + v.slice(0,2) + ') ' + v.slice(2,7) + '-' + v.slice(7); }
+        e.target.value = v;
+    }
+
+    function applyInputType(type) {
+        inputType = type || 'text';
+        if (!inputEl) return;
+        if (type === 'phone') {
+            inputEl.type = 'tel';
+            inputEl.placeholder = '(11) 99999-9999';
+            inputEl.setAttribute('inputmode', 'numeric');
+            if (!inputEl._phoneMaskOn) {
+                inputEl._phoneMaskOn = true;
+                inputEl.addEventListener('input', phoneMask);
+            }
+        } else if (type === 'email') {
+            inputEl.type = 'email';
+            inputEl.placeholder = 'seu@email.com';
+            if (inputEl._phoneMaskOn) {
+                inputEl._phoneMaskOn = false;
+                inputEl.removeEventListener('input', phoneMask);
+            }
+        } else {
+            inputEl.type = 'text';
+            inputEl.placeholder = 'Digite uma mensagem...';
+            if (inputEl._phoneMaskOn) {
+                inputEl._phoneMaskOn = false;
+                inputEl.removeEventListener('input', phoneMask);
+            }
+        }
+    }
+
     function typingDelay(text) {
-        // 600ms base + 15ms per char, capped at 1800ms
         return Math.min(600 + text.length * 15, 1800);
+    }
+
+    function escHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
     function appendBubble(text, direction, instant) {
@@ -263,13 +314,22 @@
             hdrAvatarWrap.appendChild(img);
         }
 
-        // Update launcher icon to avatar if present
-        if (botAvatar) {
+        if (launcher && botAvatar) {
             launcher.innerHTML = '<img src="' + botAvatar + '" alt="' + botName + '" style="width:60px;height:60px;border-radius:50%;object-fit:cover;">';
         }
     }
 
-    // ── Welcome bubble ───────────────────────────────────────────────────────────
+    // ── API fetch helper (POST with UTMs) ────────────────────────────────────────
+    function fetchInit() {
+        var body = Object.assign({ visitor_id: visitorId }, utmParams);
+        return fetch(apiBase + '/api/widget/' + token + '/init', {
+            method:  'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body:    JSON.stringify(body),
+        });
+    }
+
+    // ── Welcome bubble (bubble mode only) ────────────────────────────────────────
     function showWelcomeBubble(message) {
         if (isOpen || welcomeEl) return;
 
@@ -290,7 +350,6 @@
 
         document.body.appendChild(welcomeEl);
 
-        // Trigger fade-in
         requestAnimationFrame(function() {
             requestAnimationFrame(function() {
                 welcomeEl.classList.add('visible');
@@ -307,41 +366,33 @@
         }
     }
 
-    function escHtml(s) {
-        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    // ── Init conversation data ───────────────────────────────────────────────────
+    var _initiated      = false;
+    var _prefetchedData = null;
+
+    async function loadConversationData(data) {
+        convId = data.conversation_id;
+        updateBotIdentity(data.bot_name, data.bot_avatar);
+
+        (data.messages || []).forEach(function (m) {
+            appendBubble(m.content, m.direction, true);
+        });
+
+        if ((data.replies || []).length) {
+            await renderReplies(data.replies, data.buttons || [], false);
+            applyInputType(data.input_type);
+        }
     }
 
-    // ── Init conversation ────────────────────────────────────────────────────────
     async function initConversation() {
         try {
-            var res  = await fetch(apiBase + '/api/widget/' + token + '/init?visitor_id=' + visitorId, {
-                headers: { 'Accept': 'application/json' }
-            });
-            var data = await res.json();
-            if (!res.ok) { console.warn('[Widget] init error', data); return; }
-
-            convId = data.conversation_id;
-
-            // Apply bot identity
-            updateBotIdentity(data.bot_name, data.bot_avatar);
-
-            // Render history (instant, no delay)
-            (data.messages || []).forEach(function (m) {
-                appendBubble(m.content, m.direction, true);
-            });
-
-            // Initial bot replies with animation
-            if ((data.replies || []).length) {
-                await renderReplies(data.replies, data.buttons || [], false);
+            var data = _prefetchedData;
+            if (!data) {
+                var res = await fetchInit();
+                data = await res.json();
+                if (!res.ok) { console.warn('[Widget] init error', data); return; }
             }
-
-            // Schedule welcome bubble if no history and message configured
-            if (!data.messages || data.messages.length === 0) {
-                if (data.welcome_message) {
-                    // Store for later — show after 3s from page load
-                    _pendingWelcome = data.welcome_message;
-                }
-            }
+            await loadConversationData(data);
         } catch (e) {
             console.warn('[Widget] init failed', e);
         }
@@ -352,11 +403,14 @@
         var text = inputEl.value.trim();
         if (!text || sending) return;
 
-        // Remove any quick reply buttons
         var btns = document.getElementById('syncro-quick-btns');
         if (btns) btns.remove();
 
+        // Normalize phone to digits only before sending
+        var payload = inputType === 'phone' ? text.replace(/\D/g, '') : text;
+
         inputEl.value = '';
+        applyInputType('text'); // reset mask while waiting
         sending = true;
         sendBtn.disabled = true;
         appendBubble(text, 'inbound', true);
@@ -365,11 +419,12 @@
             var res  = await fetch(apiBase + '/api/widget/' + token + '/message', {
                 method:  'POST',
                 headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ visitor_id: visitorId, message: text }),
+                body:    JSON.stringify({ visitor_id: visitorId, message: payload }),
             });
             var data = await res.json();
 
             await renderReplies(data.replies || [], data.buttons || [], false);
+            applyInputType(data.input_type);
         } catch (e) {
             console.warn('[Widget] send failed', e);
         }
@@ -379,88 +434,135 @@
         inputEl.focus();
     }
 
-    // ── Open / Close ─────────────────────────────────────────────────────────────
-    var _initiated = false;
-    var _pendingWelcome = null;
+    // ── Bubble mode setup ────────────────────────────────────────────────────────
+    function setupBubbleMode() {
+        panel = document.createElement('div');
+        panel.id = 'syncro-panel';
+        panel.innerHTML = buildPanelHTML();
 
-    function openChat() {
-        isOpen = true;
-        panel.classList.add('open');
-        dismissWelcome();
+        launcher = document.createElement('button');
+        launcher.id  = 'syncro-launcher';
+        launcher.setAttribute('aria-label', 'Abrir chat');
+        launcher.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 2H4C2.9 2 2 2.9 2 4v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>';
 
-        if (!_initiated) {
-            _initiated = true;
-            initConversation();
+        document.body.appendChild(panel);
+        document.body.appendChild(launcher);
+
+        msgsEl        = document.getElementById('syncro-msgs');
+        inputEl       = document.getElementById('syncro-input');
+        sendBtn       = document.getElementById('syncro-send');
+        hdrName       = document.getElementById('syncro-hdr-name');
+        hdrAvatarWrap = document.getElementById('syncro-hdr-avatar-wrap');
+
+        // Show close button in bubble mode
+        var closeBtn = document.getElementById('syncro-close');
+        if (closeBtn) closeBtn.style.display = '';
+
+        function openChat() {
+            isOpen = true;
+            panel.classList.add('open');
+            dismissWelcome();
+            if (!_initiated) {
+                _initiated = true;
+                initConversation();
+            }
+            setTimeout(function () { inputEl.focus(); }, 100);
         }
-        setTimeout(function () { inputEl.focus(); }, 100);
-    }
 
-    function closeChat() {
-        isOpen = false;
-        panel.classList.remove('open');
-    }
-
-    // ── Events ───────────────────────────────────────────────────────────────────
-    launcher.addEventListener('click', function () {
-        if (isOpen) { closeChat(); } else { openChat(); }
-    });
-
-    document.getElementById('syncro-close').addEventListener('click', closeChat);
-
-    sendBtn.addEventListener('click', sendMessage);
-
-    inputEl.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
+        function closeChat() {
+            isOpen = false;
+            panel.classList.remove('open');
         }
-    });
 
-    // ── Welcome bubble delayed fetch ─────────────────────────────────────────────
-    // We fetch init data early (after 2.5s) so we have bot_name + welcome_message
-    // without waiting for the user to open the chat.
-    setTimeout(function () {
-        if (_initiated) return; // already opened
-        fetch(apiBase + '/api/widget/' + token + '/init?visitor_id=' + visitorId, {
-            headers: { 'Accept': 'application/json' }
-        }).then(function(res) { return res.json(); }).then(function(data) {
+        launcher.addEventListener('click', function () {
+            if (isOpen) { closeChat(); } else { openChat(); }
+        });
+
+        document.getElementById('syncro-close').addEventListener('click', closeChat);
+        sendBtn.addEventListener('click', sendMessage);
+        inputEl.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        });
+
+        // Pre-fetch after 2.5s for welcome bubble
+        setTimeout(function () {
             if (_initiated) return;
-            updateBotIdentity(data.bot_name, data.bot_avatar);
-            if (data.welcome_message) {
-                showWelcomeBubble(data.welcome_message);
-            }
-            // Pre-store data so initConversation can use it when panel opens
-            _prefetchedData = data;
-        }).catch(function(){});
-    }, 2500);
+            fetchInit()
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (_initiated) return;
+                    updateBotIdentity(data.bot_name, data.bot_avatar);
+                    if (data.welcome_message) {
+                        showWelcomeBubble(data.welcome_message);
+                    }
+                    _prefetchedData = data;
+                }).catch(function(){});
+        }, 2500);
+    }
 
-    var _prefetchedData = null;
-
-    // Override initConversation to use pre-fetched data when available
-    var _originalInit = initConversation;
-    initConversation = async function() {
-        try {
-            var data = _prefetchedData;
-            if (!data) {
-                var res = await fetch(apiBase + '/api/widget/' + token + '/init?visitor_id=' + visitorId, {
-                    headers: { 'Accept': 'application/json' }
-                });
-                data = await res.json();
-                if (!res.ok) { console.warn('[Widget] init error', data); return; }
-            }
-
-            convId = data.conversation_id;
-            updateBotIdentity(data.bot_name, data.bot_avatar);
-
-            (data.messages || []).forEach(function (m) {
-                appendBubble(m.content, m.direction, true);
-            });
-
-            if ((data.replies || []).length) {
-                await renderReplies(data.replies, data.buttons || [], false);
-            }
-        } catch (e) {
-            console.warn('[Widget] init failed', e);
+    // ── Inline mode setup ────────────────────────────────────────────────────────
+    function setupInlineMode() {
+        var container = document.getElementById('syncro-chat');
+        if (!container) {
+            console.warn('[Widget] inline mode: element #syncro-chat not found');
+            return;
         }
-    };
+
+        // Style the container
+        container.style.cssText = 'display:flex;flex-direction:column;width:100%;height:100%;min-height:400px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;';
+
+        panel = document.createElement('div');
+        panel.id = 'syncro-panel';
+        panel.className = 'syncro-inline';
+        panel.innerHTML = buildPanelHTML();
+        panel.style.cssText = 'flex:1;display:flex;flex-direction:column;';
+
+        container.appendChild(panel);
+
+        msgsEl        = document.getElementById('syncro-msgs');
+        inputEl       = document.getElementById('syncro-input');
+        sendBtn       = document.getElementById('syncro-send');
+        hdrName       = document.getElementById('syncro-hdr-name');
+        hdrAvatarWrap = document.getElementById('syncro-hdr-avatar-wrap');
+
+        sendBtn.addEventListener('click', sendMessage);
+        inputEl.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        });
+
+        // Init immediately
+        _initiated = true;
+        initConversation();
+    }
+
+    // ── Bootstrap: detect widget_type from API then render ───────────────────────
+    // We need to know widget_type before rendering (to pick bubble vs inline mode).
+    // For bubble: we do lazy init. For inline: we init immediately.
+    // We do a lightweight pre-fetch first, then set up the correct mode.
+
+    fetchInit()
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            _prefetchedData = data;
+            widgetMode = (data.widget_type === 'inline') ? 'inline' : 'bubble';
+
+            if (widgetMode === 'inline') {
+                setupInlineMode();
+            } else {
+                setupBubbleMode();
+                // The pre-fetched data already loaded; show welcome bubble if applicable
+                updateBotIdentity(data.bot_name, data.bot_avatar);
+                if (data.welcome_message) {
+                    setTimeout(function() {
+                        showWelcomeBubble(data.welcome_message);
+                    }, 3000);
+                }
+            }
+        })
+        .catch(function(e) {
+            console.warn('[Widget] bootstrap fetch failed', e);
+            // Fallback to bubble mode without pre-fetched data
+            setupBubbleMode();
+        });
+
 })();

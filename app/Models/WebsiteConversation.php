@@ -30,6 +30,13 @@ class WebsiteConversation extends Model
         'unread_count',
         'started_at',
         'last_message_at',
+        'utm_source',
+        'utm_medium',
+        'utm_campaign',
+        'utm_content',
+        'utm_term',
+        'page_url',
+        'referrer_url',
     ];
 
     protected $casts = [

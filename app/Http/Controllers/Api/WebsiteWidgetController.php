@@ -15,10 +15,11 @@ use Illuminate\Http\Request;
 class WebsiteWidgetController extends Controller
 {
     /**
-     * GET /api/widget/{token}/init?visitor_id={uuid}
+     * POST /api/widget/{token}/init
      *
      * Initializes or resumes a website chat session.
-     * Returns conversation history and conversation_id.
+     * Body: { visitor_id: string, utm_source?, utm_medium?, utm_campaign?, utm_content?, utm_term?, page_url?, referrer_url? }
+     * Returns conversation history, conversation_id, bot identity, and widget_type.
      */
     public function init(string $token, Request $request): JsonResponse
     {
@@ -31,7 +32,8 @@ class WebsiteWidgetController extends Controller
             return response()->json(['error' => 'Widget not found'], 404);
         }
 
-        $visitorId = (string) $request->query('visitor_id', '');
+        // Accept visitor_id from body (POST) or query string (legacy GET)
+        $visitorId = (string) ($request->input('visitor_id') ?? $request->query('visitor_id', ''));
         if ($visitorId === '') {
             return response()->json(['error' => 'visitor_id is required'], 422);
         }
@@ -45,11 +47,18 @@ class WebsiteWidgetController extends Controller
         if (! $conversation) {
             $isNew = true;
             $conversation = WebsiteConversation::withoutGlobalScope('tenant')->create([
-                'tenant_id'  => $flow->tenant_id,
-                'flow_id'    => $flow->id,
-                'visitor_id' => $visitorId,
-                'status'     => 'open',
-                'started_at' => now(),
+                'tenant_id'    => $flow->tenant_id,
+                'flow_id'      => $flow->id,
+                'visitor_id'   => $visitorId,
+                'status'       => 'open',
+                'started_at'   => now(),
+                'utm_source'   => $this->truncate($request->input('utm_source'),   100),
+                'utm_medium'   => $this->truncate($request->input('utm_medium'),   100),
+                'utm_campaign' => $this->truncate($request->input('utm_campaign'), 150),
+                'utm_content'  => $this->truncate($request->input('utm_content'),  150),
+                'utm_term'     => $this->truncate($request->input('utm_term'),     150),
+                'page_url'     => $this->truncate($request->input('page_url'),     500),
+                'referrer_url' => $this->truncate($request->input('referrer_url'), 500),
             ]);
         }
 
@@ -63,13 +72,15 @@ class WebsiteWidgetController extends Controller
             ]);
 
         // If this is a brand-new conversation, trigger the flow start immediately
-        $replies = [];
-        $buttons = [];
+        $replies   = [];
+        $buttons   = [];
+        $inputType = 'text';
         if ($isNew && $flow->is_active) {
-            $service = new WebsiteChatService();
-            $result  = $service->processMessage($conversation->fresh(), '');
-            $replies = $result['replies'] ?? [];
-            $buttons = $result['buttons'] ?? [];
+            $service   = new WebsiteChatService();
+            $result    = $service->processMessage($conversation->fresh(), '');
+            $replies   = $result['replies'] ?? [];
+            $buttons   = $result['buttons'] ?? [];
+            $inputType = $result['input_type'] ?? 'text';
         }
 
         return response()->json([
@@ -78,10 +89,20 @@ class WebsiteWidgetController extends Controller
             'messages'        => $messages,
             'replies'         => $replies,
             'buttons'         => $buttons,
+            'input_type'      => $inputType,
             'bot_name'        => $flow->bot_name,
             'bot_avatar'      => $flow->bot_avatar,
             'welcome_message' => $flow->welcome_message,
+            'widget_type'     => $flow->widget_type ?? 'bubble',
         ]);
+    }
+
+    private function truncate(?string $value, int $max): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        return mb_substr($value, 0, $max);
     }
 
     /**
@@ -142,6 +163,7 @@ class WebsiteWidgetController extends Controller
         return response()->json([
             'replies'         => $result['replies'] ?? [],
             'buttons'         => $result['buttons'] ?? [],
+            'input_type'      => $result['input_type'] ?? 'text',
             'conversation_id' => $conversation->id,
         ]);
     }

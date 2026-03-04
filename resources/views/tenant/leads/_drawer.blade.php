@@ -164,6 +164,26 @@
 
         </form>
 
+        {{-- Seção UTM / Atribuição (só na edição, preenchida via JS) --}}
+        <div id="drawerUtmSection" style="display:none;margin-top:22px;">
+            <div class="drawer-section-label">Atribuição</div>
+            <div id="drawerUtmGrid" style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px;color:#374151;"></div>
+
+            <div id="drawerCampaignHint" style="display:none;margin-top:10px;padding:8px 12px;
+                 background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:12px;color:#1d4ed8;">
+                <span id="drawerCampaignHintText"></span>
+                <select id="drawerCampaignLinkSelect" style="margin-left:8px;font-size:12px;border:1px solid #bfdbfe;
+                        border-radius:6px;padding:3px 6px;background:#fff;color:#1a1d23;">
+                    <option value="">Selecionar campanha...</option>
+                </select>
+                <button type="button" id="drawerCampaignLinkBtn" onclick="linkCampaignFromHint()"
+                        style="margin-left:6px;padding:3px 10px;background:#0085f3;color:#fff;
+                               border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">
+                    Vincular
+                </button>
+            </div>
+        </div>
+
         {{-- Histórico de eventos (só na edição) --}}
         <div id="eventsSection" style="display:none;margin-top:22px;">
             <div class="drawer-section-label">Histórico</div>
@@ -665,6 +685,9 @@ function populateDrawer(res) {
     }
     campSel.value = lead.campaign_id || '';
 
+    // UTM / Atribuição
+    renderUtmSection(lead, res.campaigns || []);
+
     // Campos personalizados — flatten {name: {label, type, value}} → {name: value}
     const cfDefs = res.custom_field_defs || CF_DEFS;
     const rawCf  = lead.custom_fields || {};
@@ -719,6 +742,61 @@ function loadCampaigns(selectedId) {
         opt.textContent = c.name;
         if (selectedId && c.id == selectedId) opt.selected = true;
         campSel.appendChild(opt);
+    });
+}
+
+// ── UTM / Atribuição ──────────────────────────────────────────────────────
+var _currentLeadId = null;
+
+function renderUtmSection(lead, campaigns) {
+    _currentLeadId = lead.id;
+    const section = document.getElementById('drawerUtmSection');
+    const grid    = document.getElementById('drawerUtmGrid');
+    const hint    = document.getElementById('drawerCampaignHint');
+
+    const labels = { utm_source: 'Fonte', utm_medium: 'Mídia', utm_campaign: 'Campanha', utm_content: 'Conteúdo', utm_term: 'Termo' };
+    const rows = Object.entries(labels).filter(([k]) => lead[k]);
+
+    if (!rows.length) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = '';
+    grid.innerHTML = rows.map(([k, label]) =>
+        `<span style="color:#6b7280;font-weight:600;">${label}</span><span>${escapeHtml(lead[k])}</span>`
+    ).join('');
+
+    // Campaign-link hint
+    if (lead.utm_campaign && !lead.campaign_id) {
+        document.getElementById('drawerCampaignHintText').textContent =
+            `Campanha "${lead.utm_campaign}" não vinculada — vincular agora?`;
+        const sel = document.getElementById('drawerCampaignLinkSelect');
+        sel.innerHTML = '<option value="">Selecionar campanha...</option>';
+        campaigns.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.name;
+            sel.appendChild(opt);
+        });
+        hint.style.display = '';
+    } else {
+        hint.style.display = 'none';
+    }
+}
+
+function linkCampaignFromHint() {
+    const campId = document.getElementById('drawerCampaignLinkSelect').value;
+    if (!campId || !_currentLeadId) return;
+    fetch(LEAD_UPD.replace(':id', _currentLeadId), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+        body: JSON.stringify({ campaign_id: parseInt(campId) }),
+    }).then(r => r.json()).then(data => {
+        if (data.success) {
+            document.getElementById('fCampaign').value = campId;
+            document.getElementById('drawerCampaignHint').style.display = 'none';
+        }
     });
 }
 
