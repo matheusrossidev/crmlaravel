@@ -87,28 +87,35 @@ class AiConfigurationController extends Controller
         array  $messages,
         int    $maxTokens = 1000,
         string $system = '',
+        bool   $forceJson = false,
     ): array {
         return match ($provider) {
-            'openai'    => self::callOpenAi($apiKey, $model, $messages, $maxTokens, $system),
+            'openai'    => self::callOpenAi($apiKey, $model, $messages, $maxTokens, $system, $forceJson),
             'anthropic' => self::callAnthropic($apiKey, $model, $messages, $maxTokens, $system),
-            'google'    => self::callGoogle($apiKey, $model, $messages, $maxTokens, $system),
+            'google'    => self::callGoogle($apiKey, $model, $messages, $maxTokens, $system, $forceJson),
             default     => throw new \RuntimeException("Provider desconhecido: {$provider}"),
         };
     }
 
-    private static function callOpenAi(string $apiKey, string $model, array $messages, int $maxTokens, string $system): array
+    private static function callOpenAi(string $apiKey, string $model, array $messages, int $maxTokens, string $system, bool $forceJson = false): array
     {
         // Prepend system message se fornecido (e não já presente no array)
         if ($system !== '' && (empty($messages) || $messages[0]['role'] !== 'system')) {
             array_unshift($messages, ['role' => 'system', 'content' => $system]);
         }
 
+        $body = [
+            'model'      => $model,
+            'messages'   => $messages,
+            'max_tokens' => $maxTokens,
+        ];
+        // Força JSON estruturado — evita que o modelo retorne texto puro
+        if ($forceJson) {
+            $body['response_format'] = ['type' => 'json_object'];
+        }
+
         $response = \Illuminate\Support\Facades\Http::withToken($apiKey)
-            ->post('https://api.openai.com/v1/chat/completions', [
-                'model'      => $model,
-                'messages'   => $messages,
-                'max_tokens' => $maxTokens,
-            ]);
+            ->post('https://api.openai.com/v1/chat/completions', $body);
 
         if (! $response->successful()) {
             throw new \RuntimeException('OpenAI erro: ' . ($response->json('error.message') ?? $response->status()));
@@ -189,7 +196,7 @@ class AiConfigurationController extends Controller
         ];
     }
 
-    private static function callGoogle(string $apiKey, string $model, array $messages, int $maxTokens, string $system): array
+    private static function callGoogle(string $apiKey, string $model, array $messages, int $maxTokens, string $system, bool $forceJson = false): array
     {
         // Filtrar system messages
         $filtered = array_values(array_filter($messages, fn ($m) => $m['role'] !== 'system'));
@@ -227,9 +234,14 @@ class AiConfigurationController extends Controller
             return ['role' => $role, 'parts' => $parts];
         }, $filtered);
 
+        $genConfig = ['maxOutputTokens' => $maxTokens];
+        if ($forceJson) {
+            $genConfig['responseMimeType'] = 'application/json';
+        }
+
         $body = [
             'contents'         => $contents,
-            'generationConfig' => ['maxOutputTokens' => $maxTokens],
+            'generationConfig' => $genConfig,
         ];
         if ($system !== '') {
             $body['systemInstruction'] = ['parts' => [['text' => $system]]];

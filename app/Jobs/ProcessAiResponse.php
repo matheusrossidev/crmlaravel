@@ -283,6 +283,8 @@ class ProcessAiResponse implements ShouldQueue
             $extraTokens = (! empty($stages) || ! empty($availTags)) ? 300 : 0;
             $maxTokens   = $maxLength + 200 + $extraTokens;
 
+            $needsJson = ! empty($stages) || ! empty($availTags) || $enableIntentNotify || $agent->enable_calendar_tool;
+
             $llmResult = AiConfigurationController::callLlm(
                 provider:  $provider,
                 apiKey:    $apiKey,
@@ -290,6 +292,7 @@ class ProcessAiResponse implements ShouldQueue
                 messages:  $history,
                 maxTokens: $maxTokens,
                 system:    $system,
+                forceJson: $needsJson,
             );
 
             $reply    = trim($llmResult['reply']);
@@ -397,6 +400,7 @@ class ProcessAiResponse implements ShouldQueue
                         messages:  $loopHistory,
                         maxTokens: $maxTokens,
                         system:    $system,
+                        forceJson: true,
                     );
 
                     $loopRaw = trim($loopLlmResult['reply']);
