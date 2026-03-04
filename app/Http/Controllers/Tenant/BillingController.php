@@ -36,9 +36,10 @@ class BillingController extends Controller
             $registerLink = $partnerCode
                 ? url('/register?agency=' . $partnerCode->code)
                 : null;
+            $planDef      = PlanDefinition::where('name', 'partner')->first();
 
             return view('tenant.settings.billing-partner', compact(
-                'tenant', 'partnerCode', 'clientCount', 'partnerSince', 'registerLink'
+                'tenant', 'partnerCode', 'clientCount', 'partnerSince', 'registerLink', 'planDef'
             ));
         }
 

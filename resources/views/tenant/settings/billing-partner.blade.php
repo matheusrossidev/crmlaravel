@@ -241,21 +241,17 @@
                 <div class="partner-since">
                     Parceiro desde <strong>{{ $partnerSince->translatedFormat('d \d\e F \d\e Y') }}</strong>
                 </div>
+                @php $featuresList = $planDef?->features_json['features_list'] ?? []; @endphp
+                @if(count($featuresList))
                 <ul class="benefit-list">
-                    @foreach([
-                        'Usuários ilimitados',
-                        'Leads e pipelines ilimitados',
-                        'Agentes de IA incluídos',
-                        'Sem cobrança mensal',
-                        'Acesso a contas de clientes',
-                        'Tokens de IA ilimitados',
-                    ] as $benefit)
+                    @foreach($featuresList as $benefit)
                     <li>
                         <span class="benefit-check">✓</span>
                         {{ $benefit }}
                     </li>
                     @endforeach
                 </ul>
+                @endif
             </div>
         </div>
 
