@@ -298,9 +298,18 @@
         renderButtons(buttons);
     }
 
+    // Resolve avatar/image paths: relative paths (starting with /) are prefixed with apiBase
+    // so they resolve correctly when the widget is embedded on an external site.
+    function resolveUrl(path) {
+        if (!path) return null;
+        if (/^https?:\/\//i.test(path)) return path;
+        if (path.charAt(0) === '/') return apiBase + path;
+        return path;
+    }
+
     function updateBotIdentity(name, avatar) {
         botName   = name  || 'Chat';
-        botAvatar = avatar || null;
+        botAvatar = resolveUrl(avatar);
 
         hdrName.textContent = botName;
 
@@ -380,8 +389,8 @@
 
         if ((data.replies || []).length) {
             await renderReplies(data.replies, data.buttons || [], false);
-            applyInputType(data.input_type);
         }
+        applyInputType(data.input_type || 'text');
     }
 
     async function initConversation() {
@@ -484,20 +493,13 @@
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
         });
 
-        // Pre-fetch after 2.5s for welcome bubble
+        // Show welcome bubble after 3s using pre-fetched data (no second request)
         setTimeout(function () {
-            if (_initiated) return;
-            fetchInit()
-                .then(function(res) { return res.json(); })
-                .then(function(data) {
-                    if (_initiated) return;
-                    updateBotIdentity(data.bot_name, data.bot_avatar);
-                    if (data.welcome_message) {
-                        showWelcomeBubble(data.welcome_message);
-                    }
-                    _prefetchedData = data;
-                }).catch(function(){});
-        }, 2500);
+            if (_initiated || !_prefetchedData) return;
+            if (_prefetchedData.welcome_message) {
+                showWelcomeBubble(_prefetchedData.welcome_message);
+            }
+        }, 3000);
     }
 
     // ── Inline mode setup ────────────────────────────────────────────────────────
@@ -550,13 +552,8 @@
                 setupInlineMode();
             } else {
                 setupBubbleMode();
-                // The pre-fetched data already loaded; show welcome bubble if applicable
                 updateBotIdentity(data.bot_name, data.bot_avatar);
-                if (data.welcome_message) {
-                    setTimeout(function() {
-                        showWelcomeBubble(data.welcome_message);
-                    }, 3000);
-                }
+                // welcome bubble is shown by the timer inside setupBubbleMode
             }
         })
         .catch(function(e) {
