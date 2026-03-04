@@ -351,7 +351,6 @@ class AiAgentController extends Controller
             'followup_hour_end'          => 'nullable|integer|min:1|max:23',
             'enable_calendar_tool'       => 'nullable|boolean',
             'calendar_tool_instructions' => 'nullable|string|max:2000',
-            'use_agno'                   => 'nullable|boolean',
         ]);
 
         $data['is_active']              = $request->boolean('is_active');
@@ -361,7 +360,7 @@ class AiAgentController extends Controller
         $data['enable_intent_notify']   = $request->boolean('enable_intent_notify');
         $data['followup_enabled']       = $request->boolean('followup_enabled');
         $data['enable_calendar_tool']   = $request->boolean('enable_calendar_tool');
-        $data['use_agno']               = $request->boolean('use_agno');
+        $data['use_agno']               = true; // Todos os agentes usam Agno
         $data['transfer_to_user_id']    = $request->input('transfer_to_user_id') ?: null;
 
         return $data;
