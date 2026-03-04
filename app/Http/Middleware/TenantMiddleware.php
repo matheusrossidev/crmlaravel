@@ -68,6 +68,13 @@ class TenantMiddleware
             }
 
             if (!$tenant->isExemptFromBilling()) {
+                // Parceiro sem assinatura → forçar checkout exclusivo do plano parceiro
+                if ($tenant->isPartner() && $tenant->subscription_status === null) {
+                    if (!$request->routeIs('billing.checkout', 'billing.subscribe', 'logout', 'account.suspended')) {
+                        return redirect()->route('billing.checkout');
+                    }
+                }
+
                 // Trial expirado sem assinatura ativa → redireciona para checkout
                 if ($tenant->isTrialExpired() && !$tenant->hasActiveSubscription()) {
                     if (!$request->routeIs('billing.checkout', 'billing.subscribe', 'logout', 'account.suspended')) {

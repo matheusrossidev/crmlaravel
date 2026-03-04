@@ -107,7 +107,7 @@ class Tenant extends Model
 
     public function isExemptFromBilling(): bool
     {
-        return $this->status === 'partner';
+        return $this->status === 'partner' && $this->subscription_status === 'active';
     }
 
     public function isTrialExpired(): bool

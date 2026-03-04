@@ -85,11 +85,19 @@ class BillingController extends Controller
             return redirect()->route('dashboard');
         }
 
-        $plan  = PlanDefinition::where('name', $tenant->plan)->first();
-        $plans = PlanDefinition::where('is_active', true)
-            ->where('price_monthly', '>', 0)
-            ->orderBy('price_monthly')
-            ->get();
+        $plan = PlanDefinition::where('name', $tenant->plan)->first();
+
+        if ($tenant->isPartner()) {
+            $plans = PlanDefinition::where('name', 'partner')
+                ->where('is_active', true)
+                ->get();
+        } else {
+            $plans = PlanDefinition::where('is_active', true)
+                ->where('price_monthly', '>', 0)
+                ->whereNot('name', 'partner')
+                ->orderBy('price_monthly')
+                ->get();
+        }
 
         return view('tenant.billing.checkout', compact('tenant', 'plan', 'plans'));
     }
@@ -180,7 +188,9 @@ class BillingController extends Controller
                 'plan'                  => $plan->name,
                 'asaas_subscription_id' => $subscription['id'],
                 'subscription_status'   => $subscriptionStatus,
-                'status'                => $subscriptionStatus === 'active' ? 'active' : $tenant->status,
+                'status'                => $subscriptionStatus === 'active'
+                    ? ($tenant->isPartner() ? 'partner' : 'active')
+                    : $tenant->status,
             ]);
 
             // 4. Enviar email se ativo

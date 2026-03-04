@@ -108,7 +108,7 @@ class AsaasWebhookController extends Controller
     {
         $tenant->update([
             'subscription_status' => 'active',
-            'status'              => 'active',
+            'status'              => $tenant->plan === 'partner' ? 'partner' : 'active',
         ]);
         \Log::info("AsaasWebhook: pagamento confirmado para tenant {$tenant->id}");
     }
