@@ -81,7 +81,8 @@ class ProcessWahaWebhook implements ShouldQueue
         // No GOWS engine, msgs enviadas do celular têm msg_id="true_{account_lid}_{id}",
         // codificando o LID da CONTA (não o JID do cliente). chatId e to têm o JID
         // correto do cliente. Preferir chatId/to quando disponíveis e não forem @lid.
-        if ($isFromMe) {
+        // Grupos: 'from' já é o JID do grupo (@g.us) mesmo em mensagens fromMe — não sobrescrever.
+        if ($isFromMe && ! str_contains($from, '@g.us')) {
             $msgId         = $msg['id'] ?? '';
             $recipientFrom = null;
             if (preg_match('/^true_(.+@[\w.]+)_/', $msgId, $m)) {
@@ -287,13 +288,15 @@ class ProcessWahaWebhook implements ShouldQueue
                 $contactName = null;
             }
 
-            // Fallback: buscar via GET /api/{session}/groups/{id} (retorna 'subject')
+            // Fallback: buscar via GET /api/{session}/groups/{id} (retorna 'Name' no GOWS)
             if (! $contactName) {
                 try {
                     $wahaForGroup = new \App\Services\WahaService($instance->session_name);
                     $groupInfo    = $wahaForGroup->getGroupInfo($from);
                     $contactName  = $groupInfo['Name'] ?? $groupInfo['subject'] ?? $groupInfo['name'] ?? null;
-                } catch (\Throwable) {}
+                } catch (\Throwable $e) {
+                    Log::channel('whatsapp')->warning('getGroupInfo falhou (create)', ['from' => $from, 'error' => $e->getMessage()]);
+                }
             }
 
             $messageSenderName = $msg['_data']['Info']['PushName']
@@ -400,16 +403,41 @@ class ProcessWahaWebhook implements ShouldQueue
                     }
                 } catch (\Throwable) {}
             }
+            // Retry nome para contatos individuais sem nome
+            if (! $isGroup && empty($conversation->contact_name)) {
+                $resolvedName = $contactName; // extraído do payload desta mensagem
+
+                if (! $resolvedName) {
+                    try {
+                        $wahaContact  = new \App\Services\WahaService($instance->session_name);
+                        $contactInfo  = $wahaContact->getContactInfo($from);
+                        $resolvedName = $contactInfo['name'] ?? $contactInfo['pushName'] ?? null;
+                    } catch (\Throwable) {}
+                }
+
+                if ($resolvedName) {
+                    $convUpdates['contact_name'] = $resolvedName;
+                    // Atualizar lead vinculado se o nome ainda for o telefone (fallback original)
+                    if ($conversation->lead_id) {
+                        Lead::withoutGlobalScope('tenant')
+                            ->where('id', $conversation->lead_id)
+                            ->where('name', $phone)
+                            ->update(['name' => $resolvedName]);
+                    }
+                }
+            }
             if ($isGroup && empty($conversation->contact_name)) {
                 $resolvedGroupName = $contactName; // nome extraído do payload (pode ser null)
 
                 if (! $resolvedGroupName) {
-                    // Payload não trouxe nome → tentar buscar via WAHA API
+                    // Payload não trouxe nome → tentar buscar via WAHA API (GOWS retorna 'Name')
                     try {
                         $wahaRetry         = new \App\Services\WahaService($instance->session_name);
                         $retryInfo         = $wahaRetry->getGroupInfo($from);
                         $resolvedGroupName = $retryInfo['Name'] ?? $retryInfo['subject'] ?? $retryInfo['name'] ?? null;
-                    } catch (\Throwable) {}
+                    } catch (\Throwable $e) {
+                        Log::channel('whatsapp')->warning('getGroupInfo falhou (retry)', ['from' => $from, 'error' => $e->getMessage()]);
+                    }
                 }
 
                 if ($resolvedGroupName) {
@@ -728,6 +756,19 @@ class ProcessWahaWebhook implements ShouldQueue
             ->where('tenant_id', $tenantId)
             ->where('phone', $phone)
             ->first();
+
+        // Fallback: mesmo contato pode ter sido salvo com formato de phone diferente
+        // (ex: LID numérico vs número real). Verificar via WhatsappConversation vinculada.
+        if (! $lead) {
+            $linkedConv = WhatsappConversation::withoutGlobalScope('tenant')
+                ->where('tenant_id', $tenantId)
+                ->where('phone', $phone)
+                ->whereNotNull('lead_id')
+                ->first();
+            if ($linkedConv) {
+                $lead = Lead::withoutGlobalScope('tenant')->find($linkedConv->lead_id);
+            }
+        }
 
         if ($lead) {
             return $lead;

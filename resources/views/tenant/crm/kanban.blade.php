@@ -984,6 +984,8 @@ document.querySelectorAll('.sortable-zone').forEach(zone => {
         ghostClass:  'sortable-ghost',
         dragClass:   'sortable-drag',
         handle:    '.lead-card',
+        onStart: () => { window._kDragging = true; },
+        onEnd:   () => { setTimeout(() => { window._kDragging = false; }, 50); },
         onAdd(evt) {
             const leadId    = evt.item.dataset.leadId;
             const stageId   = evt.to.dataset.stageId;
@@ -1085,12 +1087,17 @@ function updateCount(stageId, delta) {
     el.textContent = Math.max(0, parseInt(el.textContent) + delta);
 }
 
-// ── Abrir drawer (edição) ao clicar no ícone de lápis ─────────────────────
+// ── Abrir drawer ao clicar no card (ou no nome) ───────────────────────────
 document.addEventListener('click', e => {
+    // Clique no nome (comportamento original)
     const btn = e.target.closest('.btn-open-lead');
-    if (!btn) return;
-    e.stopPropagation();
-    openLeadDrawer(btn.dataset.leadId);
+    if (btn) { e.stopPropagation(); openLeadDrawer(btn.dataset.leadId); return; }
+
+    // Clique em qualquer parte do card — ignorar se foi um drag ou clique em elemento interativo
+    if (window._kDragging) return;
+    if (e.target.closest('button, a, .card-tag-badge, .btn-add-in-col')) return;
+    const card = e.target.closest('.lead-card[data-lead-id]');
+    if (card) openLeadDrawer(card.dataset.leadId);
 });
 
 // ── Botão "Adicionar lead" por coluna ─────────────────────────────────────
