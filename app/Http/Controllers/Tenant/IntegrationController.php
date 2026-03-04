@@ -178,8 +178,9 @@ class IntegrationController extends Controller
 
             if (isset($result['error'])) {
                 if (($result['status'] ?? 0) === 422) {
-                    // Sessão já existe no WAHA — atualiza webhook e (re)inicia
+                    // Sessão já existe no WAHA — para, atualiza webhook e reinicia para gerar QR novo
                     $waha->patchSession($webhookUrl, $webhookSecret);
+                    $waha->stopSession();
                     $waha->startSession();
                 } else {
                     return response()->json([

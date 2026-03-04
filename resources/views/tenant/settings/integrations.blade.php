@@ -639,6 +639,7 @@ const WA_IMPORT_URL       = @json(route('settings.integrations.whatsapp.import')
 const IG_DISCONNECT_URL   = @json(route('settings.integrations.instagram.disconnect'));
 
 let waQrPollInterval = null;
+let waQrNullCount    = 0;
 
 // ── WhatsApp ──────────────────────────────────────────────────────────────────
 
@@ -677,6 +678,7 @@ function openWaModal(skipCreate) {
     document.getElementById('waQrArea').innerHTML = '<i class="bi bi-arrow-clockwise spin" style="font-size:36px;color:#9ca3af;"></i>';
 
     // Iniciar polling do QR
+    waQrNullCount = 0;
     clearInterval(waQrPollInterval);
     pollWaQr();
     waQrPollInterval = setInterval(pollWaQr, 3000);
@@ -702,8 +704,28 @@ async function pollWaQr() {
             st.className = 'connected';
             setTimeout(() => location.reload(), 1800);
         } else if (data.qr_base64) {
+            waQrNullCount = 0;
             document.getElementById('waQrArea').innerHTML = `<img src="data:image/png;base64,${data.qr_base64}" alt="QR Code">`;
             document.getElementById('waQrStatus').textContent = 'Escaneie o código com seu celular';
+        } else if (data.status === 'disconnected' || ++waQrNullCount >= 5) {
+            clearInterval(waQrPollInterval);
+            document.getElementById('waQrArea').innerHTML =
+                '<i class="bi bi-x-circle-fill" style="font-size:48px;color:#ef4444;margin-bottom:12px;display:block;"></i>';
+            const st = document.getElementById('waQrStatus');
+            st.textContent = 'QR Code expirado ou sessão falhou.';
+            if (!document.getElementById('btnWaRetry')) {
+                st.insertAdjacentHTML('afterend',
+                    '<button id="btnWaRetry" style="margin-top:12px;padding:8px 20px;background:#25D366;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;">'
+                    + '<i class="bi bi-arrow-clockwise"></i> Tentar novamente</button>');
+                document.getElementById('btnWaRetry').addEventListener('click', async () => {
+                    document.getElementById('btnWaRetry').remove();
+                    document.getElementById('waQrArea').innerHTML = '<i class="bi bi-arrow-clockwise spin" style="font-size:36px;color:#9ca3af;"></i>';
+                    document.getElementById('waQrStatus').textContent = 'Aguardando QR Code...';
+                    waQrNullCount = 0;
+                    const dummyBtn = { disabled: false, innerHTML: '' };
+                    await startWhatsappConnect(dummyBtn);
+                });
+            }
         }
     } catch (e) {
         // Silenciar erros de polling
