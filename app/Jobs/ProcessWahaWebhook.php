@@ -310,7 +310,7 @@ class ProcessWahaWebhook implements ShouldQueue
                 // Quando $from é @lid, usar RecipientAlt (JID real do destinatário) para a busca.
                 $contactName  = null;
                 $jidForName   = $from;
-                $recipientAlt = $info['RecipientAlt'] ?? '';
+                $recipientAlt = $msg['_data']['Info']['RecipientAlt'] ?? '';
                 if (str_ends_with($from, '@lid') && $recipientAlt && ! str_ends_with($recipientAlt, '@lid')) {
                     $jidForName = $recipientAlt;
                 }
@@ -416,7 +416,7 @@ class ProcessWahaWebhook implements ShouldQueue
                 if (! $resolvedName) {
                     try {
                         $jidForName   = $from;
-                        $recipientAlt = $info['RecipientAlt'] ?? '';
+                        $recipientAlt = $msg['_data']['Info']['RecipientAlt'] ?? '';
                         if (str_ends_with($from, '@lid') && $recipientAlt && ! str_ends_with($recipientAlt, '@lid')) {
                             $jidForName = $recipientAlt;
                         }

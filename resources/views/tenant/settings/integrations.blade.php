@@ -359,9 +359,6 @@
                         <button class="btn-disconnect" onclick="disconnectWhatsapp(this)">
                             <i class="bi bi-x-circle"></i> Desconectar
                         </button>
-                        <button id="btnImportHistory" class="btn-connect" style="background:#6366f1;" onclick="importWhatsappHistory(this)">
-                            <i class="bi bi-clock-history"></i> Importar últimos 5 dias
-                        </button>
                     @elseif($whatsapp && $whatsapp->status === 'qr')
                         <button class="btn-connect" onclick="openWaModal(true)">
                             <i class="bi bi-qr-code"></i> Ver QR Code
