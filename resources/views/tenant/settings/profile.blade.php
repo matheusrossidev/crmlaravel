@@ -245,6 +245,38 @@
                 </div>
             </div>
 
+            {{-- Card: Agência Parceira --}}
+            @php $agencyTenant = auth()->user()->tenant?->referringAgency; @endphp
+            <div class="profile-card">
+                <div class="profile-card-header">
+                    <i class="bi bi-building-check" style="color:#3B82F6;"></i>
+                    Agência Parceira
+                </div>
+                <div class="profile-card-body">
+                    @if($agencyTenant)
+                        <div style="display:flex;align-items:center;gap:10px;padding:6px 0;">
+                            <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:20px;padding:4px 12px;font-size:12.5px;font-weight:600;">
+                                <i class="bi bi-check-circle-fill"></i> Vinculada
+                            </span>
+                            <span style="font-size:13.5px;font-weight:600;color:#1a1d23;">{{ $agencyTenant->name }}</span>
+                        </div>
+                        <p style="font-size:12px;color:#9ca3af;margin:8px 0 0;">Sua conta está associada a esta agência parceira.</p>
+                    @else
+                        <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">Vincule sua conta a uma agência parceira inserindo o código fornecido por ela.</p>
+                        <div style="display:flex;gap:8px;align-items:flex-start;">
+                            <input type="text" id="agencyCodeInput"
+                                   class="form-control" style="font-family:monospace;font-weight:700;letter-spacing:.06em;flex:1;"
+                                   placeholder="AGC-EXEMPLO" maxlength="20"
+                                   oninput="this.value=this.value.toUpperCase()">
+                            <button id="btnLinkAgency" class="btn-save" style="white-space:nowrap;">
+                                <i class="bi bi-link-45deg"></i> Vincular
+                            </button>
+                        </div>
+                        <div class="form-error d-none" id="errAgency" style="margin-top:6px;"></div>
+                    @endif
+                </div>
+            </div>
+
             {{-- Logo do Workspace (admin only) --}}
             @if(auth()->user()->isAdmin())
             <div class="profile-card">
@@ -429,6 +461,45 @@ if (logoFileInput) {
                 toastr.error(data.message ?? 'Erro ao enviar logo.');
             }
         } catch { toastr.error('Erro de conexão.'); }
+    });
+}
+
+// ── Vincular Agência Parceira ──────────────────────────────
+const btnLinkAgency = document.getElementById('btnLinkAgency');
+if (btnLinkAgency) {
+    btnLinkAgency.addEventListener('click', async function() {
+        const code = document.getElementById('agencyCodeInput').value.trim();
+        const errEl = document.getElementById('errAgency');
+        errEl.classList.add('d-none');
+        errEl.textContent = '';
+
+        if (!code) {
+            errEl.textContent = 'Informe o código da agência.';
+            errEl.classList.remove('d-none');
+            return;
+        }
+
+        btnLinkAgency.disabled = true;
+        try {
+            const res = await fetch("{{ route('agency.link') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ agency_code: code }),
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                toastr.success(data.message ?? 'Agência vinculada com sucesso!');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                errEl.textContent = data.message ?? 'Código inválido ou não encontrado.';
+                errEl.classList.remove('d-none');
+            }
+        } catch { toastr.error('Erro de conexão.'); }
+        btnLinkAgency.disabled = false;
     });
 }
 
