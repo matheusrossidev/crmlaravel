@@ -261,13 +261,16 @@ class IntegrationController extends Controller
         ]);
     }
 
-    public function importHistoryWhatsapp(): JsonResponse
+    public function importHistoryWhatsapp(Request $request): JsonResponse
     {
         $instance = WhatsappInstance::first();
 
         if (! $instance || $instance->status !== 'connected') {
             return response()->json(['success' => false, 'message' => 'WhatsApp não está conectado.'], 422);
         }
+
+        $days  = min((int) $request->input('days', 5), 30);
+        $since = $days > 0 ? (int) now()->subDays($days)->timestamp : null;
 
         try {
             $waha             = new WahaService($instance->session_name);
@@ -320,8 +323,8 @@ class IntegrationController extends Controller
                         $importedChats++;
                     }
 
-                    // Buscar mensagens (sem download de mídia, máx 200 por chat)
-                    $msgs = $waha->getChatMessages($chatId, 200, 0, false);
+                    // Buscar mensagens (sem download de mídia, máx 200 por chat, filtrado por data)
+                    $msgs = $waha->getChatMessages($chatId, 200, 0, false, $since);
 
                     if (is_array($msgs) && ! isset($msgs['error'])) {
                         foreach ($msgs as $msg) {
@@ -379,6 +382,7 @@ class IntegrationController extends Controller
 
             Log::info('WhatsApp history import', [
                 'tenant_id'        => $instance->tenant_id,
+                'days'             => $days,
                 'imported_chats'   => $importedChats,
                 'imported_messages'=> $importedMessages,
                 'skipped'          => $skipped,

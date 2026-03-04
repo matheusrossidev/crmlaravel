@@ -268,13 +268,24 @@ class WahaService
         ]);
     }
 
-    public function getChatMessages(string $chatId, int $limit = 50, int $offset = 0, bool $downloadMedia = true): array
-    {
-        return $this->get("/api/{$this->session}/chats/{$chatId}/messages", [
+    public function getChatMessages(
+        string $chatId,
+        int $limit = 50,
+        int $offset = 0,
+        bool $downloadMedia = true,
+        ?int $timestampGte = null,
+    ): array {
+        $params = [
             'limit'         => $limit,
             'offset'        => $offset,
             'downloadMedia' => $downloadMedia ? 'true' : 'false',
-        ]);
+        ];
+
+        if ($timestampGte !== null) {
+            $params['filter.timestamp.gte'] = $timestampGte;
+        }
+
+        return $this->get("/api/{$this->session}/chats/{$chatId}/messages", $params);
     }
 
     // ── Webhook ───────────────────────────────────────────────────────────────

@@ -17,7 +17,8 @@ class WaImportHistoryCommand extends Command
 {
     protected $signature = 'wa:import-history
                             {--limit=100 : Máximo de mensagens a importar por chat}
-                            {--skip-groups : Pular grupos}';
+                            {--skip-groups : Pular grupos}
+                            {--days=0 : Importar apenas mensagens dos últimos N dias (0 = todos)}';
 
     protected $description = 'Importa histórico de conversas e mensagens do WhatsApp via WAHA';
 
@@ -29,6 +30,12 @@ class WaImportHistoryCommand extends Command
     {
         $msgLimit   = (int) $this->option('limit');
         $skipGroups = (bool) $this->option('skip-groups');
+        $days       = (int) $this->option('days');
+        $since      = $days > 0 ? (int) now()->subDays($days)->timestamp : null;
+
+        if ($since !== null) {
+            $this->info("Filtrando mensagens dos últimos {$days} dia(s) (desde " . date('Y-m-d H:i:s', $since) . ')');
+        }
 
         $instances = WhatsappInstance::where('status', 'connected')->get();
 
@@ -39,7 +46,7 @@ class WaImportHistoryCommand extends Command
 
         foreach ($instances as $instance) {
             $this->info("Processando instância: {$instance->session_name} (tenant #{$instance->tenant_id})");
-            $this->importInstance($instance, $msgLimit, $skipGroups);
+            $this->importInstance($instance, $msgLimit, $skipGroups, $since);
         }
 
         $this->newLine();
@@ -50,7 +57,7 @@ class WaImportHistoryCommand extends Command
         );
     }
 
-    private function importInstance(WhatsappInstance $instance, int $msgLimit, bool $skipGroups): void
+    private function importInstance(WhatsappInstance $instance, int $msgLimit, bool $skipGroups, ?int $since): void
     {
         $waha   = new WahaService($instance->session_name);
         $limit  = 50;
@@ -79,14 +86,14 @@ class WaImportHistoryCommand extends Command
                     continue;
                 }
 
-                $this->importChat($waha, $instance, $chat, $msgLimit);
+                $this->importChat($waha, $instance, $chat, $msgLimit, $since);
             }
 
             $offset += $limit;
         } while (count($chats) >= $limit);
     }
 
-    private function importChat(WahaService $waha, WhatsappInstance $instance, array $chat, int $msgLimit): void
+    private function importChat(WahaService $waha, WhatsappInstance $instance, array $chat, int $msgLimit, ?int $since): void
     {
         $chatId      = $chat['id'];
         $isGroup     = (bool) ($chat['isGroup'] ?? false);
@@ -140,7 +147,7 @@ class WaImportHistoryCommand extends Command
 
         do {
             try {
-                $messages = $waha->getChatMessages($chatId, $msgLimit2, $msgOffset, false);
+                $messages = $waha->getChatMessages($chatId, $msgLimit2, $msgOffset, false, $since);
             } catch (\Throwable $e) {
                 $this->warn("  ! Erro ao buscar mensagens de {$chatId}: " . $e->getMessage());
                 break;

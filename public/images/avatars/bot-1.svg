@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs><clipPath id="c1"><circle cx="50" cy="50" r="50"/></clipPath></defs>
+  <circle cx="50" cy="50" r="50" fill="#dbeafe"/>
+  <!-- Body -->
+  <ellipse cx="50" cy="95" rx="32" ry="22" fill="#3b82f6"/>
+  <!-- Head -->
+  <circle cx="50" cy="40" r="20" fill="#fde8c8"/>
+  <!-- Hair -->
+  <path d="M30 36 Q32 16 50 18 Q68 16 70 36 Q68 25 50 26 Q32 25 30 36Z" fill="#92400e"/>
+  <!-- Eyes -->
+  <circle cx="43" cy="38" r="2.5" fill="#1e293b"/>
+  <circle cx="57" cy="38" r="2.5" fill="#1e293b"/>
+  <!-- Smile -->
+  <path d="M43 46 Q50 52 57 46" stroke="#b45309" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+</svg>

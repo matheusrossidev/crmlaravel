@@ -50,8 +50,13 @@ class ChatbotFlowController extends Controller
         return redirect()->route('chatbot.flows.edit', $flow)->with('success', 'Fluxo criado! Agora adicione os nós.');
     }
 
-    public function edit(ChatbotFlow $flow): View
+    public function edit(ChatbotFlow $flow, Request $request): View
     {
+        // Settings mode: render the flow settings form instead of the node builder
+        if ($request->query('settings')) {
+            return view('tenant.chatbot.form', compact('flow'));
+        }
+
         $nodes = $flow->nodes()->get()->map(fn ($n) => [
             'id'       => (string) $n->id,
             'type'     => $n->type,
@@ -318,6 +323,9 @@ class ChatbotFlowController extends Controller
             'is_active'        => 'boolean',
             'trigger_keywords' => 'nullable|string',
             'variables'        => 'nullable|string',
+            'bot_name'         => 'nullable|string|max:100',
+            'bot_avatar'       => 'nullable|string|max:500',  // accepts relative paths (/images/...) or full URLs
+            'welcome_message'  => 'nullable|string|max:500',
         ]);
 
         // Converter campos JSON string → array

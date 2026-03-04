@@ -20,17 +20,22 @@ class WebsiteChatService
      * Processa a mensagem do visitante e retorna as respostas do bot.
      * Retorna array de strings com as mensagens de saída.
      */
+    /**
+     * Processa a mensagem do visitante e retorna um array com replies e buttons.
+     * @return array{replies: string[], buttons: array<array{label: string, value: string}>}
+     */
     public function processMessage(WebsiteConversation $conv, string $inboundBody): array
     {
         $conv->load(['flow.nodes', 'flow.edges']);
 
         if (! $conv->flow || ! $conv->flow->is_active) {
-            return [];
+            return ['replies' => [], 'buttons' => []];
         }
 
-        $flow  = $conv->flow;
-        $vars  = $this->buildVars($conv);
+        $flow    = $conv->flow;
+        $vars    = $this->buildVars($conv);
         $replies = [];
+        $buttons = [];
 
         $waitingNodeId = $conv->chatbot_node_id;
 
@@ -39,7 +44,7 @@ class WebsiteChatService
             $waitingNode = ChatbotFlowNode::withoutGlobalScope('tenant')->find($waitingNodeId);
             if (! $waitingNode) {
                 $this->clearFlow($conv);
-                return [];
+                return ['replies' => [], 'buttons' => []];
             }
 
             $conv->chatbot_node_id = null;
@@ -52,7 +57,7 @@ class WebsiteChatService
 
             if (! $nextNodeId) {
                 $this->persistVars($conv, $vars);
-                return $replies;
+                return ['replies' => $replies, 'buttons' => []];
             }
 
             $currentNode = ChatbotFlowNode::withoutGlobalScope('tenant')->find($nextNodeId);
@@ -75,9 +80,13 @@ class WebsiteChatService
                 case 'input':
                     $this->collectMessage($currentNode, $vars, $replies);
                     $conv->chatbot_node_id = $currentNode->id;
+                    // Gerar botões de quick reply se configurado
+                    if (! empty($currentNode->config['show_buttons'])) {
+                        $buttons = $this->collectButtons($currentNode);
+                    }
                     $this->persistVars($conv, $vars);
                     $this->saveOutboundMessages($conv->id, $replies);
-                    return $replies;
+                    return ['replies' => $replies, 'buttons' => $buttons];
 
                 case 'condition':
                     [$nextId, $vars] = $this->executeCondition($currentNode, $flow->id, $vars);
@@ -104,7 +113,7 @@ class WebsiteChatService
                     $this->persistVars($conv, $vars);
                     $this->clearFlow($conv);
                     $this->saveOutboundMessages($conv->id, $replies);
-                    return $replies;
+                    return ['replies' => $replies, 'buttons' => []];
 
                 default:
                     $nextId      = $this->resolveEdge($flow->id, $currentNode->id, 'default');
@@ -120,7 +129,7 @@ class WebsiteChatService
             Log::warning('WebsiteChatService: limite de iterações atingido', ['conversation_id' => $conv->id]);
         }
 
-        return $replies;
+        return ['replies' => $replies, 'buttons' => []];
     }
 
     // ── Helpers privados ──────────────────────────────────────────────────────
@@ -132,6 +141,26 @@ class WebsiteChatService
             $replies[] = $text;
         }
         // Images are skipped in the text channel (website shows only text for now)
+    }
+
+    /**
+     * Gera array de botões de quick reply a partir das branches do nó input.
+     * Usa o label da branch como texto e o primeiro keyword como valor enviado.
+     *
+     * @return array<array{label: string, value: string}>
+     */
+    private function collectButtons(ChatbotFlowNode $node): array
+    {
+        $buttons = [];
+        foreach ($node->config['branches'] ?? [] as $branch) {
+            $label    = (string) ($branch['label'] ?? '');
+            $keywords = (array) ($branch['keywords'] ?? []);
+            $value    = $keywords[0] ?? $label;
+            if ($label !== '') {
+                $buttons[] = ['label' => $label, 'value' => $value];
+            }
+        }
+        return $buttons;
     }
 
     private function processInputReply(ChatbotFlowNode $node, int $flowId, string $body, array $vars): array

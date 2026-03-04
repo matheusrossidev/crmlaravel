@@ -15,6 +15,7 @@ class ChatbotFlow extends Model
     protected $fillable = [
         'tenant_id', 'name', 'channel', 'website_token', 'description', 'is_active',
         'trigger_keywords', 'variables',
+        'bot_name', 'bot_avatar', 'welcome_message',
     ];
 
     protected $casts = [

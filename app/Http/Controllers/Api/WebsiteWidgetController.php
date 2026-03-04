@@ -64,9 +64,12 @@ class WebsiteWidgetController extends Controller
 
         // If this is a brand-new conversation, trigger the flow start immediately
         $replies = [];
+        $buttons = [];
         if ($isNew && $flow->is_active) {
             $service = new WebsiteChatService();
-            $replies = $service->processMessage($conversation->fresh(), '');
+            $result  = $service->processMessage($conversation->fresh(), '');
+            $replies = $result['replies'] ?? [];
+            $buttons = $result['buttons'] ?? [];
         }
 
         return response()->json([
@@ -74,6 +77,10 @@ class WebsiteWidgetController extends Controller
             'status'          => $conversation->status,
             'messages'        => $messages,
             'replies'         => $replies,
+            'buttons'         => $buttons,
+            'bot_name'        => $flow->bot_name,
+            'bot_avatar'      => $flow->bot_avatar,
+            'welcome_message' => $flow->welcome_message,
         ]);
     }
 
@@ -130,10 +137,11 @@ class WebsiteWidgetController extends Controller
 
         // Process chatbot step
         $service = new WebsiteChatService();
-        $replies = $service->processMessage($conversation->fresh(), $validated['message']);
+        $result  = $service->processMessage($conversation->fresh(), $validated['message']);
 
         return response()->json([
-            'replies'         => $replies,
+            'replies'         => $result['replies'] ?? [],
+            'buttons'         => $result['buttons'] ?? [],
             'conversation_id' => $conversation->id,
         ]);
     }

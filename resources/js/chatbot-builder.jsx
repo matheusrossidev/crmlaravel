@@ -704,6 +704,25 @@ function InputForm({ data, update, textareaRef, saveCursor, variables }) {
                     </div>
                 )}
             </FieldGroup>
+            <FieldGroup label="Botões de resposta rápida (Website)">
+                <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer', marginBottom: 0 }}>
+                    <input
+                        type="checkbox"
+                        checked={!!data.show_buttons}
+                        onChange={e => update('show_buttons', e.target.checked)}
+                        style={{ width: 14, height: 14, cursor: 'pointer' }}
+                    />
+                    <span style={{ fontSize: 12, color: '#374151', fontFamily: "'Inter', sans-serif" }}>
+                        Exibir branches como botões clicáveis (canal Website)
+                    </span>
+                </label>
+                {data.show_buttons && (
+                    <p style={{ fontSize: 11, color: '#6b7280', margin: '6px 0 0', fontFamily: "'Inter', sans-serif" }}>
+                        O <strong>rótulo</strong> de cada branch será o texto do botão.
+                        O primeiro keyword será o valor enviado ao clicar.
+                    </p>
+                )}
+            </FieldGroup>
             <div style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <label style={field.label}>Branches por keyword</label>

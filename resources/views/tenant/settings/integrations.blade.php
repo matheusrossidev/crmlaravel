@@ -360,7 +360,7 @@
                             <i class="bi bi-x-circle"></i> Desconectar
                         </button>
                         <button id="btnImportHistory" class="btn-connect" style="background:#6366f1;" onclick="importWhatsappHistory(this)">
-                            <i class="bi bi-clock-history"></i> Importar histórico
+                            <i class="bi bi-clock-history"></i> Importar últimos 5 dias
                         </button>
                     @elseif($whatsapp && $whatsapp->status === 'qr')
                         <button class="btn-connect" onclick="openWaModal(true)">
@@ -770,7 +770,7 @@ async function disconnectWhatsapp(btn) {
 }
 
 async function importWhatsappHistory(btn) {
-    if (! confirm('Isso irá importar todas as conversas e mensagens anteriores do WhatsApp. Pode levar alguns minutos. Continuar?')) {
+    if (! confirm('Isso irá importar conversas e mensagens dos últimos 5 dias do WhatsApp. Pode levar alguns minutos. Continuar?')) {
         return;
     }
     btn.disabled = true;
@@ -783,7 +783,9 @@ async function importWhatsappHistory(btn) {
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 'Accept': 'application/json',
+                'Content-Type': 'application/json',
             },
+            body: JSON.stringify({ days: 5 }),
         });
         const data = await res.json();
         if (data.success) {

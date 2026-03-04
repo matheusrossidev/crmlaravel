@@ -261,6 +261,71 @@
                     placeholder="Para que serve este fluxo?">{{ old('description', $flow->description) }}</textarea>
             </div>
 
+            {{-- Widget Website --}}
+            <div id="website-settings" style="{{ ($currentChannel === 'website') ? '' : 'display:none;' }}">
+                <div class="form-section-label">Aparência do Widget</div>
+
+                <div class="form-group">
+                    <label>Nome do bot</label>
+                    <input type="text" name="bot_name" class="field-input"
+                        value="{{ old('bot_name', $flow->bot_name) }}"
+                        placeholder="Ex: Ana, Sofia, Assistente...">
+                    <div class="hint">Aparece no cabeçalho do chat.</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Avatar do bot</label>
+                    <input type="hidden" name="bot_avatar" id="bot_avatar_value" value="{{ old('bot_avatar', $flow->bot_avatar) }}">
+
+                    {{-- Grade de avatares pré-definidos --}}
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;" id="avatar-grid">
+                        @php
+                            $predefinedAvatars = [
+                                '/images/avatars/bot-1.svg',
+                                '/images/avatars/bot-2.svg',
+                                '/images/avatars/bot-3.svg',
+                                '/images/avatars/bot-4.svg',
+                                '/images/avatars/bot-5.svg',
+                                '/images/avatars/bot-6.svg',
+                            ];
+                            $currentAvatar = old('bot_avatar', $flow->bot_avatar ?? '');
+                        @endphp
+                        @foreach($predefinedAvatars as $av)
+                        <div class="avatar-option {{ $currentAvatar === $av ? 'selected' : '' }}"
+                             data-url="{{ $av }}"
+                             onclick="selectAvatar('{{ $av }}')"
+                             style="width:52px;height:52px;border-radius:50%;overflow:hidden;cursor:pointer;border:2.5px solid {{ $currentAvatar === $av ? '#3B82F6' : '#e8eaf0' }};transition:border-color .15s;flex-shrink:0;">
+                            <img src="{{ asset($av) }}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;"
+                                 onerror="this.parentElement.style.display='none'">
+                        </div>
+                        @endforeach
+                    </div>
+
+                    {{-- URL personalizada --}}
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <input type="url" id="bot_avatar_custom" class="field-input"
+                            placeholder="Ou cole uma URL de imagem personalizada..."
+                            value="{{ (old('bot_avatar', $flow->bot_avatar ?? '') && !in_array(old('bot_avatar', $flow->bot_avatar ?? ''), $predefinedAvatars)) ? old('bot_avatar', $flow->bot_avatar) : '' }}"
+                            oninput="selectAvatar(this.value)">
+                        @if($currentAvatar)
+                        <img id="bot_avatar_preview" src="{{ asset($currentAvatar) }}" alt="Preview"
+                             style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1.5px solid #e8eaf0;flex-shrink:0;">
+                        @else
+                        <img id="bot_avatar_preview" src="" alt="Preview"
+                             style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1.5px solid #e8eaf0;flex-shrink:0;display:none;">
+                        @endif
+                    </div>
+                    <div class="hint">Escolha um avatar acima ou insira a URL de uma imagem personalizada.</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Mensagem de entrada</label>
+                    <textarea name="welcome_message" class="field-input" rows="2"
+                        placeholder="Olá! 👋 Posso te ajudar?">{{ old('welcome_message', $flow->welcome_message) }}</textarea>
+                    <div class="hint">Aparece como bolinha flutuante acima do botão do chat após 3 segundos. Deixe vazio para desativar.</div>
+                </div>
+            </div>
+
             {{-- Disparo --}}
             <div class="form-section-label">Disparo Automático</div>
 
@@ -337,6 +402,36 @@ function updateChatbotChannelCards() {
     document.querySelectorAll('.chatbot-channel-card').forEach(card => {
         card.classList.toggle('selected', card.dataset.channel === selected);
     });
+    const ws = document.getElementById('website-settings');
+    if (ws) ws.style.display = selected === 'website' ? 'block' : 'none';
+}
+
+function selectAvatar(url) {
+    document.getElementById('bot_avatar_value').value = url;
+
+    // Update grid selection highlight
+    document.querySelectorAll('.avatar-option').forEach(el => {
+        const isSelected = el.dataset.url === url;
+        el.style.borderColor = isSelected ? '#3B82F6' : '#e8eaf0';
+    });
+
+    // Update custom URL field only if not a predefined one
+    const predefined = Array.from(document.querySelectorAll('.avatar-option')).map(el => el.dataset.url);
+    if (!predefined.includes(url)) {
+        const customInput = document.getElementById('bot_avatar_custom');
+        if (customInput && customInput.value !== url) customInput.value = url;
+    }
+
+    // Update live preview
+    const preview = document.getElementById('bot_avatar_preview');
+    if (preview) {
+        if (url) {
+            preview.src = url;
+            preview.style.display = 'block';
+        } else {
+            preview.style.display = 'none';
+        }
+    }
 }
 </script>
 @endpush

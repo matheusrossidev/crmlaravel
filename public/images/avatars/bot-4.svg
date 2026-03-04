@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <circle cx="50" cy="50" r="50" fill="#ede9fe"/>
+  <ellipse cx="50" cy="95" rx="32" ry="22" fill="#7c3aed"/>
+  <circle cx="50" cy="40" r="20" fill="#fde8c8"/>
+  <!-- Short hair male -->
+  <path d="M30 38 Q30 18 50 18 Q70 18 70 38 Q68 26 50 26 Q32 26 30 38Z" fill="#1c1917"/>
+  <circle cx="43" cy="38" r="2.5" fill="#1e293b"/>
+  <circle cx="57" cy="38" r="2.5" fill="#1e293b"/>
+  <path d="M43 46 Q50 52 57 46" stroke="#b45309" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <!-- Glasses -->
+  <rect x="39" y="34" width="10" height="7" rx="3" stroke="#374151" stroke-width="1.5" fill="none"/>
+  <rect x="51" y="34" width="10" height="7" rx="3" stroke="#374151" stroke-width="1.5" fill="none"/>
+  <line x1="49" y1="37" x2="51" y2="37" stroke="#374151" stroke-width="1.5"/>
+</svg>

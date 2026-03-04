@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <circle cx="50" cy="50" r="50" fill="#d1fae5"/>
+  <ellipse cx="50" cy="95" rx="32" ry="22" fill="#10b981"/>
+  <circle cx="50" cy="40" r="20" fill="#fed7aa"/>
+  <!-- Curly hair -->
+  <path d="M30 36 Q32 14 50 16 Q68 14 70 36 Q68 22 50 24 Q32 22 30 36Z" fill="#1c1917"/>
+  <circle cx="35" cy="28" r="5" fill="#1c1917"/>
+  <circle cx="65" cy="28" r="5" fill="#1c1917"/>
+  <circle cx="50" cy="22" r="5" fill="#1c1917"/>
+  <circle cx="43" cy="38" r="2.5" fill="#1e293b"/>
+  <circle cx="57" cy="38" r="2.5" fill="#1e293b"/>
+  <path d="M43 46 Q50 52 57 46" stroke="#92400e" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+</svg>
