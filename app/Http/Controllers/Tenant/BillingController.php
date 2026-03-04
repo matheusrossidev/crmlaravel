@@ -8,7 +8,9 @@ use App\Http\Controllers\Controller;
 use App\Mail\SubscriptionActivated;
 use App\Mail\SubscriptionCancelled;
 use App\Models\AiUsageLog;
+use App\Models\PartnerAgencyCode;
 use App\Models\PlanDefinition;
+use App\Models\Tenant;
 use App\Models\TenantTokenIncrement;
 use App\Models\TokenIncrementPlan;
 use App\Services\AsaasService;
@@ -23,6 +25,23 @@ class BillingController extends Controller
     public function index(): View
     {
         $tenant = auth()->user()->tenant;
+
+        // Página exclusiva para agências parceiras
+        if ($tenant->isPartner()) {
+            $partnerCode  = PartnerAgencyCode::where('tenant_id', $tenant->id)->first();
+            $clientCount  = Tenant::withoutGlobalScope('tenant')
+                ->where('referred_by_agency_id', $tenant->id)
+                ->count();
+            $partnerSince = $partnerCode?->created_at ?? $tenant->created_at;
+            $registerLink = $partnerCode
+                ? url('/register?agency=' . $partnerCode->code)
+                : null;
+
+            return view('tenant.settings.billing-partner', compact(
+                'tenant', 'partnerCode', 'clientCount', 'partnerSince', 'registerLink'
+            ));
+        }
+
         $plan   = PlanDefinition::where('name', $tenant->plan)->first();
         $plans  = PlanDefinition::where('is_active', true)->orderBy('price_monthly')->get();
 

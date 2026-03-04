@@ -30,10 +30,18 @@ class DashboardController extends Controller
 
     public function index(Request $request): View
     {
-        // ── Card visibility config ─────────────────────────────────────────
         $dashConfig   = auth()->user()->dashboard_config ?? [];
         $visibleCards = $dashConfig['cards'] ?? self::AVAILABLE_CARDS;
         $visibleCards = array_values(array_intersect($visibleCards, self::AVAILABLE_CARDS));
+
+        $data                 = $this->buildDashboardData();
+        $data['visibleCards'] = $visibleCards;
+
+        return view('tenant.dashboard', $data);
+    }
+
+    private function buildDashboardData(): array
+    {
         // ── Métricas principais ────────────────────────────────────────────
         $leadsThisMonth = Lead::where('exclude_from_pipeline', false)
             ->whereMonth('created_at', now()->month)
@@ -174,7 +182,7 @@ class DashboardController extends Controller
 
         $maxStageCount = collect($stagesWithCount)->max('count') ?: 1;
 
-        return view('tenant.dashboard', compact(
+        return compact(
             'leadsThisMonth',
             'leadsTrend',
             'totalSales',
@@ -198,7 +206,6 @@ class DashboardController extends Controller
             'stagesWithCount',
             'pipeline',
             'maxStageCount',
-            'visibleCards',
-        ));
+        );
     }
 }

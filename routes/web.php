@@ -32,6 +32,9 @@ use App\Http\Controllers\Tenant\WhatsappTagController;
 use App\Http\Controllers\Tenant\AiAnalystController;
 use App\Http\Controllers\Tenant\QuickMessageController;
 use App\Http\Controllers\Tenant\AutomationController;
+use App\Http\Controllers\Auth\AgencyRegisterController;
+use App\Http\Controllers\Master\PartnerAgencyCodeController as MasterPartnerAgencyCodeController;
+use App\Http\Controllers\Tenant\AgencyAccessController;
 use App\Http\Controllers\Tenant\BillingController;
 use App\Http\Controllers\Tenant\TokenIncrementController;
 use App\Http\Controllers\Tenant\CalendarController;
@@ -51,6 +54,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->name('register.post');
+    Route::get('/cadastro-agencia', [AgencyRegisterController::class, 'show'])->name('agency.register');
+    Route::post('/cadastro-agencia', [AgencyRegisterController::class, 'store'])->name('agency.register.store');
     Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
     Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
     Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
@@ -103,6 +108,11 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/inicio', [DashboardController::class, 'index'])->name('inicio');
     Route::post('/dashboard/config', [DashboardController::class, 'saveConfig'])->name('dashboard.config');
+
+    // Agência parceira — acesso a contas de clientes
+    Route::post('/agencia/acessar/{tenant}',  [AgencyAccessController::class, 'enter'])->name('agency.access.enter');
+    Route::post('/agencia/sair',              [AgencyAccessController::class, 'exit'])->name('agency.access.exit');
+    Route::get('/agencia/meus-clientes',      [AgencyAccessController::class, 'clients'])->name('agency.clients');
 
     // Redireciona /configuracoes para perfil
     Route::get('/configuracoes', fn () => redirect()->route('settings.profile'));
@@ -292,6 +302,9 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         // Incremento de tokens
         Route::post('tokens/comprar', [TokenIncrementController::class, 'purchase'])->name('tokens.purchase');
 
+        // Vínculo de agência parceira para usuários existentes
+        Route::post('agencia-parceira', [AgencyAccessController::class, 'linkCode'])->name('agency.link');
+
         // Automações
         Route::get('automacoes',                        [AutomationController::class, 'index'])->name('automations');
         Route::get('automacoes/criar',                  [AutomationController::class, 'create'])->name('automations.create');
@@ -348,6 +361,13 @@ Route::middleware(['auth', 'super_admin'])->prefix('master')->name('master.')->g
     Route::post('planos',                              [MasterPlanController::class, 'store'])->name('plans.store');
     Route::put('planos/{plan}',                        [MasterPlanController::class, 'update'])->name('plans.update');
     Route::delete('planos/{plan}',                     [MasterPlanController::class, 'destroy'])->name('plans.destroy');
+
+    // Códigos de agências parceiras
+    Route::get('codigos-agencia',                                      [MasterPartnerAgencyCodeController::class, 'index'])->name('agency-codes.index');
+    Route::post('codigos-agencia',                                     [MasterPartnerAgencyCodeController::class, 'store'])->name('agency-codes.store');
+    Route::post('codigos-agencia/gerar',                               [MasterPartnerAgencyCodeController::class, 'generate'])->name('agency-codes.generate');
+    Route::put('codigos-agencia/{partnerAgencyCode}',                  [MasterPartnerAgencyCodeController::class, 'update'])->name('agency-codes.update');
+    Route::delete('codigos-agencia/{partnerAgencyCode}',               [MasterPartnerAgencyCodeController::class, 'destroy'])->name('agency-codes.destroy');
 
     // Pacotes de incremento de tokens
     Route::get('token-incrementos',                                                [MasterTokenIncrementPlanController::class, 'index'])->name('token-increments');

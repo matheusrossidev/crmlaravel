@@ -29,7 +29,33 @@ class TenantMiddleware
             return redirect()->route('login')->withErrors(['email' => 'Sua conta não está associada a nenhuma empresa. Entre em contato com o suporte.']);
         }
 
-        $tenant = $user->tenant;
+        // ── Impersonação de agência parceira ──────────────────────────────
+        $impersonatingId = session('impersonating_tenant_id');
+        if ($impersonatingId) {
+            // Garante que apenas parceiros podem impersonar
+            if (!$user->tenant?->isPartner()) {
+                session()->forget('impersonating_tenant_id');
+                $impersonatingId = null;
+            } else {
+                // Garante que o tenant-alvo pertence a esta agência
+                $targetTenant = \App\Models\Tenant::withoutGlobalScope('tenant')
+                    ->where('id', $impersonatingId)
+                    ->where('referred_by_agency_id', $user->tenant_id)
+                    ->first();
+
+                if (!$targetTenant) {
+                    session()->forget('impersonating_tenant_id');
+                    $impersonatingId = null;
+                } else {
+                    // Injeta o tenant ativo no container para o BelongsToTenant trait
+                    app()->instance('active_tenant_id', (int) $impersonatingId);
+                }
+            }
+        }
+
+        $tenant = $impersonatingId
+            ? \App\Models\Tenant::withoutGlobalScope('tenant')->find($impersonatingId)
+            : $user->tenant;
 
         if ($tenant) {
             // Conta suspensa ou inativa → página de bloqueio

@@ -12,14 +12,20 @@ trait BelongsToTenant
     {
         static::addGlobalScope('tenant', function (Builder $builder) {
             if (auth()->check()) {
-                // Always filter by tenant_id. Super admin with tenant_id=null gets 0 → sees nothing.
-                $builder->where($builder->getModel()->getTable() . '.tenant_id', auth()->user()->tenant_id ?? 0);
+                // Se há uma impersonação ativa (agência acessando conta de cliente), usar esse tenant_id
+                $tenantId = app()->has('active_tenant_id')
+                    ? app('active_tenant_id')
+                    : (auth()->user()->tenant_id ?? 0);
+
+                $builder->where($builder->getModel()->getTable() . '.tenant_id', $tenantId);
             }
         });
 
         static::creating(function ($model) {
             if (auth()->check() && !$model->tenant_id) {
-                $model->tenant_id = auth()->user()->tenant_id;
+                $model->tenant_id = app()->has('active_tenant_id')
+                    ? app('active_tenant_id')
+                    : auth()->user()->tenant_id;
             }
         });
     }

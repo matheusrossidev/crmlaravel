@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\DB;
 
 class Tenant extends Model
@@ -14,7 +16,7 @@ class Tenant extends Model
         'name', 'slug', 'logo', 'plan', 'status', 'trial_ends_at', 'settings_json',
         'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields', 'api_rate_limit',
         'asaas_customer_id', 'asaas_subscription_id', 'subscription_status', 'subscription_ends_at',
-        'onboarding_completed_at', 'ai_tokens_exhausted',
+        'onboarding_completed_at', 'ai_tokens_exhausted', 'referred_by_agency_id',
     ];
 
     protected $casts = [
@@ -27,7 +29,8 @@ class Tenant extends Model
         'max_pipelines'      => 'integer',
         'max_custom_fields'  => 'integer',
         'api_rate_limit'       => 'integer',
-        'ai_tokens_exhausted'  => 'boolean',
+        'ai_tokens_exhausted'    => 'boolean',
+        'referred_by_agency_id'  => 'integer',
     ];
 
     protected static function booted(): void
@@ -97,6 +100,11 @@ class Tenant extends Model
         });
     }
 
+    public function isPartner(): bool
+    {
+        return $this->plan === 'partner' || $this->status === 'partner';
+    }
+
     public function isExemptFromBilling(): bool
     {
         return $this->status === 'partner';
@@ -137,5 +145,23 @@ class Tenant extends Model
     public function apiKeys(): HasMany
     {
         return $this->hasMany(ApiKey::class);
+    }
+
+    /** Código de parceiro atribuído a esta agência (só agências têm este registro) */
+    public function partnerAgencyCode(): HasOne
+    {
+        return $this->hasOne(PartnerAgencyCode::class);
+    }
+
+    /** Agência que indicou este tenant */
+    public function referringAgency(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class, 'referred_by_agency_id');
+    }
+
+    /** Clientes que esta agência indicou (só faz sentido para tenants parceiros) */
+    public function referredClients(): HasMany
+    {
+        return $this->hasMany(Tenant::class, 'referred_by_agency_id');
     }
 }

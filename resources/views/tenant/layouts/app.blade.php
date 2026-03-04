@@ -149,6 +149,32 @@
         }
 
         /* Workspace selector */
+        .workspace-selector-wrap { position: relative; }
+        .workspace-dropdown {
+            display: none;
+            position: absolute;
+            left: 14px; right: 14px; top: calc(100% + 4px);
+            background: #fff;
+            border: 1px solid #e8eaf0;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.12);
+            z-index: 200;
+            overflow: hidden;
+        }
+        .workspace-dropdown.open { display: block; }
+        .workspace-dd-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; cursor: pointer; font-size: 13px; color: #1a1d23;
+            transition: background .1s;
+        }
+        .workspace-dd-item:hover { background: #f0f4ff; }
+        .workspace-dd-item.active { background: #eff6ff; font-weight: 600; color: #1d4ed8; }
+        .workspace-dd-divider { border: none; border-top: 1px solid #f3f4f6; margin: 4px 0; }
+        .workspace-dd-avatar {
+            width: 24px; height: 24px; border-radius: 6px; background: #2a84ef;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0;
+        }
         .workspace-selector {
             margin: 12px 14px;
             padding: 10px 12px;
@@ -626,16 +652,86 @@
     </div>
 
     {{-- Workspace --}}
-    <div class="workspace-selector" title="{{ auth()->user()->tenant?->name ?? 'Minha Empresa' }}">
-        <div class="workspace-avatar">
-            @if(auth()->user()->tenant?->logo)
-                <img src="{{ auth()->user()->tenant->logo }}"
-                     style="width:100%;height:100%;object-fit:cover;border-radius:8px;" alt="">
-            @else
-                {{ strtoupper(substr(auth()->user()->tenant?->name ?? 'P', 0, 1)) }}
+    @php
+        $authTenant      = auth()->user()->tenant;
+        $isPartnerUser   = $authTenant?->isPartner();
+        $impersonatingId = session('impersonating_tenant_id');
+        $activeTenant    = $impersonatingId
+            ? \App\Models\Tenant::withoutGlobalScope('tenant')->find($impersonatingId)
+            : $authTenant;
+        $partnerClients  = $isPartnerUser
+            ? \App\Models\Tenant::withoutGlobalScope('tenant')
+                ->where('referred_by_agency_id', $authTenant->id)
+                ->orderBy('name')
+                ->get(['id', 'name', 'logo'])
+            : collect();
+    @endphp
+
+    <div class="workspace-selector-wrap">
+        <div class="workspace-selector {{ $isPartnerUser ? 'ws-partner' : '' }}"
+             title="{{ $activeTenant?->name ?? 'Minha Empresa' }}"
+             @if($isPartnerUser) onclick="toggleWorkspaceDropdown(event)" style="cursor:pointer;" @endif>
+            <div class="workspace-avatar">
+                @if($activeTenant?->logo)
+                    <img src="{{ $activeTenant->logo }}"
+                         style="width:100%;height:100%;object-fit:cover;border-radius:8px;" alt="">
+                @else
+                    {{ strtoupper(substr($activeTenant?->name ?? 'P', 0, 1)) }}
+                @endif
+            </div>
+            <span class="workspace-name nav-label">{{ $activeTenant?->name ?? 'Minha Empresa' }}</span>
+            @if($isPartnerUser)
+                <i class="bi bi-chevron-expand nav-label" id="wsChevron"
+                   style="font-size:12px;color:#9ca3af;margin-left:auto;"></i>
             @endif
         </div>
-        <span class="workspace-name nav-label">{{ auth()->user()->tenant?->name ?? 'Minha Empresa' }}</span>
+
+        @if($isPartnerUser)
+        <div class="workspace-dropdown" id="workspaceDropdown">
+            {{-- Própria conta --}}
+            <div class="workspace-dd-item {{ !$impersonatingId ? 'active' : '' }}"
+                 onclick="switchWorkspace(null)">
+                <div class="workspace-dd-avatar" style="background:#7C3AED;">
+                    {{ strtoupper(substr($authTenant->name ?? 'P', 0, 1)) }}
+                </div>
+                <div style="min-width:0;">
+                    <div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        {{ $authTenant->name }}
+                    </div>
+                    <div style="font-size:11px;color:#9ca3af;">Minha conta</div>
+                </div>
+                @if(!$impersonatingId)<i class="bi bi-check2" style="margin-left:auto;color:#7C3AED;"></i>@endif
+            </div>
+
+            @if($partnerClients->isNotEmpty())
+            <hr class="workspace-dd-divider">
+            <div style="padding:6px 14px 4px;font-size:10.5px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;">
+                Clientes
+            </div>
+            @foreach($partnerClients as $client)
+            <div class="workspace-dd-item {{ (int)$impersonatingId === (int)$client->id ? 'active' : '' }}"
+                 onclick="switchWorkspace({{ $client->id }})">
+                <div class="workspace-dd-avatar" style="background:#3B82F6;">
+                    {{ strtoupper(substr($client->name, 0, 1)) }}
+                </div>
+                <div style="min-width:0;">
+                    <div style="font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        {{ $client->name }}
+                    </div>
+                </div>
+                @if((int)$impersonatingId === (int)$client->id)
+                    <i class="bi bi-check2" style="margin-left:auto;color:#3B82F6;"></i>
+                @endif
+            </div>
+            @endforeach
+            @else
+            <hr class="workspace-dd-divider">
+            <div style="padding:12px 14px;font-size:12.5px;color:#9ca3af;text-align:center;">
+                Nenhum cliente vinculado ainda.
+            </div>
+            @endif
+        </div>
+        @endif
     </div>
 
     {{-- Nav: Geral --}}
@@ -905,6 +1001,28 @@
 
 {{-- ===== CONTEÚDO PRINCIPAL ===== --}}
 <main class="main-content" id="mainContent">
+    @if(session('impersonating_tenant_id'))
+    @php $impTarget = \App\Models\Tenant::withoutGlobalScope('tenant')->find(session('impersonating_tenant_id')); @endphp
+    @if($impTarget)
+    <div style="background:#FEF3C7;border-bottom:2px solid #F59E0B;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:13.5px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <i class="bi bi-eye-fill" style="color:#D97706;font-size:16px;"></i>
+            <span style="color:#92400E;">
+                Você está acessando a conta de
+                <strong style="color:#78350F;">{{ $impTarget->name }}</strong>
+                como agência parceira.
+            </span>
+        </div>
+        <form method="POST" action="{{ route('agency.access.exit') }}" style="margin:0;">
+            @csrf
+            <button type="submit"
+                    style="background:#D97706;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;">
+                <i class="bi bi-box-arrow-right me-1"></i> Sair e voltar para minha conta
+            </button>
+        </form>
+    </div>
+    @endif
+    @endif
     @yield('content')
 </main>
 
@@ -1061,6 +1179,41 @@ window.escapeHtml = (t) => {
 
 @stack('scripts')
 <script>
+// ── Workspace selector (agência parceira) ────────────────────────────────────
+function toggleWorkspaceDropdown(e) {
+    e.stopPropagation();
+    const dd = document.getElementById('workspaceDropdown');
+    if (!dd) return;
+    dd.classList.toggle('open');
+}
+function switchWorkspace(tenantId) {
+    const form   = document.createElement('form');
+    form.method  = 'POST';
+    form.style.display = 'none';
+
+    if (tenantId) {
+        form.action = `/agencia/acessar/${tenantId}`;
+    } else {
+        form.action = '{{ route('agency.access.exit') }}';
+    }
+
+    const csrf = document.createElement('input');
+    csrf.type  = 'hidden';
+    csrf.name  = '_token';
+    csrf.value = document.querySelector('meta[name="csrf-token"]').content;
+    form.appendChild(csrf);
+
+    document.body.appendChild(form);
+    form.submit();
+}
+document.addEventListener('click', function (e) {
+    const dd = document.getElementById('workspaceDropdown');
+    if (dd && !dd.closest('.workspace-selector-wrap')?.contains(e.target)) {
+        dd.classList.remove('open');
+    }
+});
+// ─────────────────────────────────────────────────────────────────────────────
+
 function toggleSubmenu(id) {
     // No modo colapsado, o flyout é controlado por CSS (:hover); não faz nada via JS
     if (document.getElementById('sidebar')?.classList.contains('sidebar--collapsed')) return;

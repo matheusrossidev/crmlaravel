@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\AgencyReferralNotification;
 use App\Mail\ResetPassword as ResetPasswordMail;
 use App\Mail\VerifyEmail;
 use App\Mail\WelcomeUser;
+use App\Models\PartnerAgencyCode;
 use App\Models\PlanDefinition;
 use App\Models\Tenant;
 use App\Models\User;
@@ -74,10 +76,11 @@ class AuthController extends Controller
     public function register(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'tenant_name' => 'required|string|max:255',
-            'name'        => 'required|string|max:255',
-            'email'       => 'required|email|unique:users,email',
-            'password'    => 'required|string|min:8|confirmed',
+            'tenant_name'  => 'required|string|max:255',
+            'name'         => 'required|string|max:255',
+            'email'        => 'required|email|unique:users,email',
+            'password'     => 'required|string|min:8|confirmed',
+            'agency_code'  => 'nullable|string|max:20',
         ], [
             'tenant_name.required' => 'Informe o nome da empresa.',
             'tenant_name.max'      => 'O nome da empresa pode ter no máximo 255 caracteres.',
@@ -93,16 +96,26 @@ class AuthController extends Controller
 
         $token = Str::random(64);
 
+        // Resolver código de agência parceira (opcional)
+        $agencyCode = null;
+        if (!empty($data['agency_code'])) {
+            $agencyCode = PartnerAgencyCode::where('code', strtoupper($data['agency_code']))
+                ->where('is_active', true)
+                ->whereNotNull('tenant_id')
+                ->first();
+        }
+
         // Cria o tenant
-        $freePlan    = PlanDefinition::where('name', 'free')->first();
-        $trialDays   = $freePlan?->trial_days ?? 14;
+        $freePlan  = PlanDefinition::where('name', 'free')->first();
+        $trialDays = $freePlan?->trial_days ?? 14;
 
         $tenant = Tenant::create([
-            'name'          => $data['tenant_name'],
-            'slug'          => Str::slug($data['tenant_name']) . '-' . Str::random(4),
-            'plan'          => 'free',
-            'status'        => 'trial',
-            'trial_ends_at' => now()->addDays($trialDays),
+            'name'                  => $data['tenant_name'],
+            'slug'                  => Str::slug($data['tenant_name']) . '-' . Str::random(4),
+            'plan'                  => 'free',
+            'status'                => 'trial',
+            'trial_ends_at'         => now()->addDays($trialDays),
+            'referred_by_agency_id' => $agencyCode?->tenant_id,
         ]);
 
         // Cria o usuário admin — email não verificado ainda
@@ -121,6 +134,26 @@ class AuthController extends Controller
             Mail::to($user->email)->send(new VerifyEmail($user, $tenant));
         } catch (\Throwable $e) {
             \Log::warning('Falha ao enviar email de verificação', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        }
+
+        // Notifica a agência parceira sobre o novo cliente indicado
+        if ($agencyCode?->tenant_id) {
+            try {
+                $agencyTenant     = Tenant::find($agencyCode->tenant_id);
+                $agencyAdminUser  = $agencyTenant?->users()->where('role', 'admin')->first();
+                $totalClients     = Tenant::where('referred_by_agency_id', $agencyCode->tenant_id)->count();
+
+                if ($agencyAdminUser && $agencyTenant) {
+                    Mail::to($agencyAdminUser->email)->send(
+                        new AgencyReferralNotification($agencyAdminUser, $agencyTenant, $tenant, $totalClients)
+                    );
+                }
+            } catch (\Throwable $e) {
+                \Log::warning('Falha ao notificar agência sobre novo cliente', [
+                    'agency_tenant_id' => $agencyCode->tenant_id,
+                    'error'            => $e->getMessage(),
+                ]);
+            }
         }
 
         return redirect()->route('register.pending')

@@ -423,6 +423,27 @@
                                    autocomplete="new-password">
                         </div>
                     </div>
+                    {{-- Código de agência parceira (opcional) --}}
+                    <div id="agency-code-wrap" style="margin-bottom:16px;">
+                        <button type="button" onclick="toggleAgencyCode()" id="agency-toggle-btn"
+                                style="background:none;border:none;padding:0;font-size:12.5px;color:#6b7280;cursor:pointer;display:flex;align-items:center;gap:5px;">
+                            <i class="bi bi-building" id="agency-toggle-icon"></i>
+                            <span id="agency-toggle-text">Tem um código de agência parceira?</span>
+                        </button>
+                        <div id="agency-code-field" style="display:none;margin-top:10px;">
+                            <div class="input-wrap">
+                                <i class="bi bi-building"></i>
+                                <input type="text" id="agency_code" name="agency_code"
+                                       class="form-control" placeholder="Ex: AGC-EXEMPLO"
+                                       style="font-family:monospace;font-weight:600;letter-spacing:.04em;"
+                                       value="{{ old('agency_code', request('agency')) }}"
+                                       maxlength="20"
+                                       oninput="this.value=this.value.toUpperCase()">
+                            </div>
+                            <div style="font-size:11.5px;color:#9ca3af;margin-top:4px;">Código fornecido pela sua agência parceira.</div>
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn-submit">
                         <i class="bi bi-rocket-takeoff"></i>
                         Criar minha conta
@@ -538,6 +559,27 @@
         }
         return true;
     }
+
+    function toggleAgencyCode() {
+        const field  = document.getElementById('agency-code-field');
+        const icon   = document.getElementById('agency-toggle-icon');
+        const text   = document.getElementById('agency-toggle-text');
+        const isOpen = field.style.display !== 'none';
+        field.style.display = isOpen ? 'none' : 'block';
+        icon.className = isOpen ? 'bi bi-building' : 'bi bi-x-circle';
+        text.textContent = isOpen ? 'Tem um código de agência parceira?' : 'Remover código de agência';
+        if (!isOpen) document.getElementById('agency_code').focus();
+    }
+
+    // Auto-expand if pre-filled from URL or old()
+    (function () {
+        const input = document.getElementById('agency_code');
+        if (input && input.value.trim()) {
+            document.getElementById('agency-code-field').style.display = 'block';
+            document.getElementById('agency-toggle-icon').className = 'bi bi-x-circle';
+            document.getElementById('agency-toggle-text').textContent = 'Remover código de agência';
+        }
+    })();
 </script>
 </body>
 </html>
