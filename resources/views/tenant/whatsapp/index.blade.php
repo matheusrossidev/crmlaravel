@@ -1882,8 +1882,10 @@ $pageIcon = 'chat-dots';
         document.querySelectorAll('.wa-conv-item').forEach(item => {
             let visible = true;
 
-            // Canal
-            if (activeChannelTab !== 'all') {
+            // Canal — website só aparece na tab "website", nunca em "all"
+            if (activeChannelTab === 'all') {
+                if (item.dataset.channel === 'website') visible = false;
+            } else {
                 visible = item.dataset.channel === activeChannelTab;
             }
 
