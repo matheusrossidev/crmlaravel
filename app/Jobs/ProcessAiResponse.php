@@ -499,12 +499,7 @@ class ProcessAiResponse implements ShouldQueue
         // ── Dividir em mensagens e enviar com delay ───────────────────────────
         $delay = max(1, $agent->response_delay_seconds ?? 1);
 
-        // Agno já retorna reply_blocks pré-separados — usar direto
-        if (count($replyBlocks) > 1) {
-            $messages = array_map(fn ($b) => $service->cleanFormatting($b), $replyBlocks);
-        } else {
-            $messages = $service->splitIntoMessages($reply, $maxLength);
-        }
+        $messages = $service->splitIntoMessages($reply, $maxLength);
 
         foreach ($extraMessages as $extra) {
             $messages[] = $extra;

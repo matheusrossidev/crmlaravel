@@ -379,6 +379,7 @@ WAFMT;
     public function splitIntoMessages(string $text, int $maxLength): array
     {
         $text = $this->cleanFormatting($text);
+        $text = str_replace("\r\n", "\n", $text);
 
         // Threshold para dividir por sentenças — menor que maxLength para ser mais agressivo
         $sentenceThreshold = (int) min($maxLength, 250);
@@ -386,6 +387,12 @@ WAFMT;
         // 1. Split por parágrafo (dupla quebra de linha)
         $paragraphs = preg_split('/\n{2,}/', $text);
         $paragraphs = array_values(array_filter(array_map('trim', $paragraphs)));
+
+        // Fallback: se resultou em 1 bloco e tem \n simples, split por \n
+        if (count($paragraphs) <= 1 && str_contains($text, "\n")) {
+            $paragraphs = explode("\n", $text);
+            $paragraphs = array_values(array_filter(array_map('trim', $paragraphs)));
+        }
 
         if (empty($paragraphs)) {
             return [$text];
