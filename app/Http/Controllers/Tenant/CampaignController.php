@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Models\Lead;
+use App\Models\Pipeline;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,12 +30,14 @@ class CampaignController extends Controller
               ->orWhereNotNull('leads.utm_campaign');
         };
 
-        // ── UTM Breakdown (agrupamento por utm_source + utm_medium + utm_campaign)
+        // ── UTM Breakdown (agrupamento por utm_source + utm_medium + utm_campaign + utm_term + utm_content)
         $utmBreakdown = Lead::query()
             ->select([
                 DB::raw('COALESCE(leads.utm_source, "(direto)") as utm_source'),
                 DB::raw('COALESCE(leads.utm_medium, "(direto)") as utm_medium'),
                 DB::raw('COALESCE(leads.utm_campaign, "(direto)") as utm_campaign'),
+                DB::raw('COALESCE(leads.utm_term, "") as utm_term'),
+                DB::raw('COALESCE(leads.utm_content, "") as utm_content'),
                 DB::raw('COUNT(DISTINCT leads.id) as leads_count'),
                 DB::raw('COUNT(DISTINCT sales.id) as conversions'),
                 DB::raw('COALESCE(SUM(sales.value), 0) as revenue'),
@@ -42,9 +45,9 @@ class CampaignController extends Controller
             ->leftJoin('sales', 'sales.lead_id', '=', 'leads.id')
             ->where('leads.created_at', '>=', $since)
             ->where($utmFilter)
-            ->groupBy('utm_source', 'utm_medium', 'utm_campaign')
+            ->groupBy('utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content')
             ->orderByDesc('leads_count')
-            ->limit(100)
+            ->limit(200)
             ->get()
             ->map(function ($row) {
                 $leads = (int) $row->leads_count;
@@ -53,6 +56,8 @@ class CampaignController extends Controller
                     'utm_source'   => $row->utm_source,
                     'utm_medium'   => $row->utm_medium,
                     'utm_campaign' => $row->utm_campaign,
+                    'utm_term'     => $row->utm_term,
+                    'utm_content'  => $row->utm_content,
                     'leads'        => $leads,
                     'conversions'  => $conv,
                     'revenue'      => (float) $row->revenue,
@@ -168,39 +173,309 @@ class CampaignController extends Controller
         $source   = $request->get('source');
         $medium   = $request->get('medium');
         $campaign = $request->get('campaign');
+        $term     = $request->get('term');
+        $content  = $request->get('content');
         $days     = (int) $request->get('days', 30);
         $since    = Carbon::now()->subDays($days)->startOfDay();
 
         $query = Lead::with(['stage', 'pipeline'])
             ->where('created_at', '>=', $since);
 
-        if ($source && $source !== '(direto)') {
-            $query->where('utm_source', $source);
-        } elseif ($source === '(direto)') {
-            $query->whereNull('utm_source');
+        foreach (['source' => $source, 'medium' => $medium, 'campaign' => $campaign] as $col => $val) {
+            if ($val && $val !== '(direto)') {
+                $query->where("utm_{$col}", $val);
+            } elseif ($val === '(direto)') {
+                $query->whereNull("utm_{$col}");
+            }
         }
-        if ($medium && $medium !== '(direto)') {
-            $query->where('utm_medium', $medium);
-        } elseif ($medium === '(direto)') {
-            $query->whereNull('utm_medium');
+        if ($term !== null && $term !== '') {
+            $query->where('utm_term', $term);
         }
-        if ($campaign && $campaign !== '(direto)') {
-            $query->where('utm_campaign', $campaign);
-        } elseif ($campaign === '(direto)') {
-            $query->whereNull('utm_campaign');
+        if ($content !== null && $content !== '') {
+            $query->where('utm_content', $content);
         }
 
         $leads = $query->orderByDesc('created_at')->limit(50)->get()->map(fn (Lead $l) => [
-            'id'         => $l->id,
-            'name'       => $l->name,
-            'email'      => $l->email,
-            'phone'      => $l->phone,
-            'created_at' => $l->created_at?->format('d/m/Y H:i'),
-            'stage'      => $l->stage?->name,
-            'pipeline'   => $l->pipeline?->name,
+            'id'          => $l->id,
+            'name'        => $l->name,
+            'email'       => $l->email,
+            'phone'       => $l->phone,
+            'created_at'  => $l->created_at?->format('d/m/Y H:i'),
+            'stage'       => $l->stage?->name,
+            'pipeline'    => $l->pipeline?->name,
+            'utm_id'      => $l->utm_id,
+            'utm_term'    => $l->utm_term,
+            'utm_content' => $l->utm_content,
         ]);
 
         return response()->json(['leads' => $leads]);
+    }
+
+    // ── GET /campanhas/analytics (AJAX) ────────────────────────────────────────
+    public function analytics(Request $request): JsonResponse
+    {
+        $days    = (int) $request->get('days', 30);
+        $since   = Carbon::now()->subDays($days)->startOfDay();
+        $section = $request->get('section', 'dimension');
+        $dim     = $request->get('dimension', 'source');
+
+        $utmFilter = function ($q) {
+            $q->whereNotNull('leads.utm_source')
+              ->orWhereNotNull('leads.utm_medium')
+              ->orWhereNotNull('leads.utm_campaign');
+        };
+
+        return match ($section) {
+            'dimension'  => $this->analyticsByDimension($since, $dim, $utmFilter),
+            'comparison' => $this->analyticsComparison($request, $since, $utmFilter),
+            'funnel'     => $this->analyticsFunnel($since, $dim, $utmFilter),
+            'trends'     => $this->analyticsTrends($request, $since, $dim, $utmFilter),
+            'roi'        => $this->analyticsRoi($since),
+            default      => response()->json(['error' => 'Invalid section'], 400),
+        };
+    }
+
+    private function resolveUtmColumn(string $dim): string
+    {
+        return match ($dim) {
+            'source'   => 'utm_source',
+            'medium'   => 'utm_medium',
+            'campaign' => 'utm_campaign',
+            'term'     => 'utm_term',
+            'content'  => 'utm_content',
+            default    => 'utm_source',
+        };
+    }
+
+    private function analyticsByDimension(Carbon $since, string $dim, \Closure $utmFilter): JsonResponse
+    {
+        $col = $this->resolveUtmColumn($dim);
+
+        $data = Lead::query()
+            ->select([
+                DB::raw("COALESCE(leads.{$col}, '(vazio)') as dimension_value"),
+                DB::raw('COUNT(DISTINCT leads.id) as leads_count'),
+                DB::raw('COUNT(DISTINCT sales.id) as conversions'),
+                DB::raw('COALESCE(SUM(sales.value), 0) as revenue'),
+            ])
+            ->leftJoin('sales', 'sales.lead_id', '=', 'leads.id')
+            ->where('leads.created_at', '>=', $since)
+            ->where($utmFilter)
+            ->groupBy('dimension_value')
+            ->orderByDesc('leads_count')
+            ->limit(50)
+            ->get()
+            ->map(function ($row) {
+                $leads = (int) $row->leads_count;
+                $conv  = (int) $row->conversions;
+                return [
+                    'value'       => $row->dimension_value,
+                    'leads'       => $leads,
+                    'conversions' => $conv,
+                    'revenue'     => (float) $row->revenue,
+                    'conv_rate'   => $leads > 0 ? round($conv / $leads * 100, 1) : 0,
+                ];
+            });
+
+        return response()->json(['data' => $data, 'dimension' => $dim]);
+    }
+
+    private function analyticsComparison(Request $request, Carbon $since, \Closure $utmFilter): JsonResponse
+    {
+        $dim    = $request->get('dimension', 'source');
+        $valueA = $request->get('a', '');
+        $valueB = $request->get('b', '');
+        $col    = $this->resolveUtmColumn($dim);
+
+        $buildStats = function (string $val) use ($col, $since, $utmFilter) {
+            $q = Lead::query()
+                ->select([
+                    DB::raw('COUNT(DISTINCT leads.id) as leads_count'),
+                    DB::raw('COUNT(DISTINCT sales.id) as conversions'),
+                    DB::raw('COALESCE(SUM(sales.value), 0) as revenue'),
+                    DB::raw('AVG(TIMESTAMPDIFF(HOUR, leads.created_at, sales.closed_at)) as avg_hours_to_conv'),
+                ])
+                ->leftJoin('sales', 'sales.lead_id', '=', 'leads.id')
+                ->where('leads.created_at', '>=', $since)
+                ->where($utmFilter)
+                ->where("leads.{$col}", $val)
+                ->first();
+
+            $leads = (int) ($q->leads_count ?? 0);
+            $conv  = (int) ($q->conversions ?? 0);
+            return [
+                'value'          => $val,
+                'leads'          => $leads,
+                'conversions'    => $conv,
+                'revenue'        => (float) ($q->revenue ?? 0),
+                'conv_rate'      => $leads > 0 ? round($conv / $leads * 100, 1) : 0,
+                'avg_hours_conv' => $q->avg_hours_to_conv ? round((float) $q->avg_hours_to_conv, 1) : null,
+            ];
+        };
+
+        // Listar valores disponíveis para os dropdowns
+        $values = Lead::query()
+            ->select(DB::raw("DISTINCT COALESCE(leads.{$col}, '(vazio)') as val"))
+            ->where('leads.created_at', '>=', $since)
+            ->where($utmFilter)
+            ->orderBy('val')
+            ->limit(100)
+            ->pluck('val');
+
+        $result = ['values' => $values];
+        if ($valueA !== '' && $valueB !== '') {
+            $result['a'] = $buildStats($valueA);
+            $result['b'] = $buildStats($valueB);
+        }
+
+        return response()->json($result);
+    }
+
+    private function analyticsFunnel(Carbon $since, string $dim, \Closure $utmFilter): JsonResponse
+    {
+        $col = $this->resolveUtmColumn($dim);
+
+        $data = Lead::query()
+            ->select([
+                DB::raw("COALESCE(leads.{$col}, '(vazio)') as dimension_value"),
+                'pipeline_stages.name as stage_name',
+                'pipeline_stages.position',
+                DB::raw('COUNT(leads.id) as lead_count'),
+            ])
+            ->join('pipeline_stages', 'pipeline_stages.id', '=', 'leads.stage_id')
+            ->where('leads.created_at', '>=', $since)
+            ->where($utmFilter)
+            ->groupBy('dimension_value', 'pipeline_stages.id', 'pipeline_stages.name', 'pipeline_stages.position')
+            ->orderBy('dimension_value')
+            ->orderBy('pipeline_stages.position')
+            ->get();
+
+        $matrix = [];
+        $stages = [];
+        foreach ($data as $row) {
+            $matrix[$row->dimension_value][$row->stage_name] = (int) $row->lead_count;
+            if (!isset($stages[$row->stage_name])) {
+                $stages[$row->stage_name] = (int) $row->position;
+            }
+        }
+        asort($stages);
+
+        return response()->json([
+            'matrix'    => $matrix,
+            'stages'    => array_keys($stages),
+            'dimension' => $dim,
+        ]);
+    }
+
+    private function analyticsTrends(Request $request, Carbon $since, string $dim, \Closure $utmFilter): JsonResponse
+    {
+        $granularity = $request->get('granularity', 'weekly');
+        $col         = $this->resolveUtmColumn($dim);
+        $topN        = (int) $request->get('top', 5);
+
+        $dateFormat = match ($granularity) {
+            'daily'   => '%Y-%m-%d',
+            'monthly' => '%Y-%m',
+            default   => '%x-%v',
+        };
+
+        $displayFormat = match ($granularity) {
+            'daily'   => '%d/%m',
+            'monthly' => '%m/%Y',
+            default   => '%d/%m',
+        };
+
+        $topValues = Lead::query()
+            ->select(DB::raw("COALESCE(leads.{$col}, '(vazio)') as dim_val"), DB::raw('COUNT(*) as cnt'))
+            ->where('leads.created_at', '>=', $since)
+            ->where($utmFilter)
+            ->groupBy('dim_val')
+            ->orderByDesc('cnt')
+            ->limit($topN)
+            ->pluck('dim_val');
+
+        $trends = Lead::query()
+            ->select([
+                DB::raw("COALESCE(leads.{$col}, '(vazio)') as dim_val"),
+                DB::raw("DATE_FORMAT(leads.created_at, '{$dateFormat}') as period"),
+                DB::raw("MIN(DATE_FORMAT(leads.created_at, '{$displayFormat}')) as period_label"),
+                DB::raw('COUNT(*) as lead_count'),
+            ])
+            ->where('leads.created_at', '>=', $since)
+            ->where($utmFilter)
+            ->whereIn(DB::raw("COALESCE(leads.{$col}, '(vazio)')"), $topValues)
+            ->groupBy('dim_val', 'period')
+            ->orderBy('period')
+            ->get()
+            ->groupBy('dim_val');
+
+        $allPeriods = $trends->flatten()->pluck('period')->unique()->sort()->values();
+        $labels     = $allPeriods->map(function ($p) use ($trends) {
+            foreach ($trends as $rows) {
+                $match = $rows->firstWhere('period', $p);
+                if ($match) return $match->period_label;
+            }
+            return $p;
+        })->toArray();
+
+        $colors   = ['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#EC4899','#14B8A6'];
+        $datasets = [];
+        $i        = 0;
+        foreach ($trends as $dimVal => $rows) {
+            $byPeriod = $rows->keyBy('period');
+            $color    = $colors[$i % count($colors)];
+            $datasets[] = [
+                'label'           => (string) $dimVal,
+                'data'            => $allPeriods->map(fn ($p) => (int) ($byPeriod[$p]->lead_count ?? 0))->toArray(),
+                'borderColor'     => $color,
+                'backgroundColor' => $color . '20',
+                'tension'         => 0.3,
+                'fill'            => false,
+            ];
+            $i++;
+        }
+
+        return response()->json(['labels' => $labels, 'datasets' => $datasets]);
+    }
+
+    private function analyticsRoi(Carbon $since): JsonResponse
+    {
+        $data = Campaign::query()
+            ->select([
+                'campaigns.id', 'campaigns.name', 'campaigns.type',
+                DB::raw('COUNT(DISTINCT leads.id) as leads_count'),
+                DB::raw('COUNT(DISTINCT sales.id) as conversions'),
+                DB::raw('COALESCE(SUM(DISTINCT sales.value), 0) as revenue'),
+                DB::raw('COALESCE(SUM(ad_spends.spend), 0) as total_spend'),
+            ])
+            ->leftJoin('leads', fn ($j) => $j->on('leads.campaign_id', '=', 'campaigns.id')
+                ->where('leads.created_at', '>=', $since))
+            ->leftJoin('sales', 'sales.campaign_id', '=', 'campaigns.id')
+            ->leftJoin('ad_spends', fn ($j) => $j->on('ad_spends.campaign_id', '=', 'campaigns.id')
+                ->where('ad_spends.date', '>=', $since))
+            ->groupBy('campaigns.id', 'campaigns.name', 'campaigns.type')
+            ->orderByDesc('revenue')
+            ->get()
+            ->map(function ($c) {
+                $spend   = (float) $c->total_spend;
+                $revenue = (float) $c->revenue;
+                $leads   = (int) $c->leads_count;
+                $conv    = (int) $c->conversions;
+                return [
+                    'name'        => $c->name,
+                    'type'        => $c->type,
+                    'leads'       => $leads,
+                    'conversions' => $conv,
+                    'spend'       => $spend,
+                    'revenue'     => $revenue,
+                    'roas'        => $spend > 0 ? round($revenue / $spend, 2) : null,
+                    'cpa'         => $conv > 0 ? round($spend / $conv, 2) : null,
+                    'cpl'         => $leads > 0 ? round($spend / $leads, 2) : null,
+                    'roi_pct'     => $spend > 0 ? round(($revenue - $spend) / $spend * 100, 1) : null,
+                ];
+            });
+
+        return response()->json(['data' => $data]);
     }
 
     // ── POST /campanhas ───────────────────────────────────────────────────────

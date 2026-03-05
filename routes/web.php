@@ -108,6 +108,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/inicio', [DashboardController::class, 'index'])->name('inicio');
     Route::post('/dashboard/config', [DashboardController::class, 'saveConfig'])->name('dashboard.config');
+    Route::get('/dashboard/leads-chart', [DashboardController::class, 'leadsChart'])->name('dashboard.leads-chart');
 
     // Agência parceira — acesso a contas de clientes
     Route::post('/agencia/acessar/{tenant}',  [AgencyAccessController::class, 'enter'])->name('agency.access.enter');
@@ -160,6 +161,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::delete('/campanhas/{campaign}',          [CampaignController::class, 'destroy'])->name('campaigns.destroy');
     Route::get   ('/campanhas/relatorios',          [CampaignController::class, 'reports'])->name('campaigns.reports');
     Route::get   ('/campanhas/drill-down',          [CampaignController::class, 'drillDown'])->name('campaigns.drill-down');
+    Route::get   ('/campanhas/analytics',           [CampaignController::class, 'analytics'])->name('campaigns.analytics');
 
     // Integrações
     Route::prefix('configuracoes/integracoes')->name('settings.integrations.')->group(function () {

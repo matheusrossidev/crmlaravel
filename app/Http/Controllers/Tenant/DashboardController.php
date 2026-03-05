@@ -9,6 +9,7 @@ use App\Models\Lead;
 use App\Models\LostSale;
 use App\Models\Pipeline;
 use App\Models\Sale;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,6 +27,89 @@ class DashboardController extends Controller
         ));
         auth()->user()->update(['dashboard_config' => ['cards' => $cards]]);
         return response()->json(['success' => true]);
+    }
+
+    public function leadsChart(Request $request): JsonResponse
+    {
+        $period = $request->get('period', 'month');
+
+        $now = Carbon::now();
+
+        [$since, $groupExpr, $labelFn] = match ($period) {
+            'week'    => [
+                $now->copy()->startOfWeek(),
+                'DATE(created_at)',
+                fn ($row) => Carbon::parse($row->period)->translatedFormat('D d'),
+            ],
+            '3months' => [
+                $now->copy()->subMonths(2)->startOfMonth(),
+                "DATE_FORMAT(created_at, '%Y-%m-01')",
+                fn ($row) => ucfirst(Carbon::parse($row->period)->translatedFormat('M/y')),
+            ],
+            '6months' => [
+                $now->copy()->subMonths(5)->startOfMonth(),
+                "DATE_FORMAT(created_at, '%Y-%m-01')",
+                fn ($row) => ucfirst(Carbon::parse($row->period)->translatedFormat('M/y')),
+            ],
+            default   => [ // month
+                $now->copy()->startOfMonth(),
+                'DAY(created_at)',
+                fn ($row) => (string) $row->period,
+            ],
+        };
+
+        $raw = Lead::where('exclude_from_pipeline', false)
+            ->selectRaw("{$groupExpr} as period, source, COUNT(*) as total")
+            ->where('created_at', '>=', $since)
+            ->groupBy('period', 'source')
+            ->get();
+
+        // Build ordered labels
+        if ($period === 'month') {
+            $labels = range(1, $now->daysInMonth);
+        } elseif ($period === 'week') {
+            $start  = $now->copy()->startOfWeek();
+            $labels = [];
+            for ($d = $start->copy(); $d->lte($now); $d->addDay()) {
+                $labels[] = $d->toDateString();
+            }
+        } else {
+            $months = $period === '3months' ? 2 : 5;
+            $labels = [];
+            for ($i = $months; $i >= 0; $i--) {
+                $labels[] = $now->copy()->subMonths($i)->startOfMonth()->toDateString();
+            }
+        }
+
+        $sources  = $raw->pluck('source')->unique()->filter()->values();
+        $datasets = [];
+
+        foreach ($sources as $src) {
+            $data = [];
+            foreach ($labels as $lbl) {
+                $data[] = (int) $raw->where('source', $src)->where('period', $lbl)->sum('total');
+            }
+            $datasets[(string) $src] = $data;
+        }
+
+        // Format labels for display
+        $displayLabels = collect($labels)->map(function ($lbl) use ($period, $now) {
+            if ($period === 'month') {
+                return (string) $lbl;
+            }
+            if ($period === 'week') {
+                return ucfirst(Carbon::parse($lbl)->translatedFormat('D d'));
+            }
+            return ucfirst(Carbon::parse($lbl)->translatedFormat('M/y'));
+        })->all();
+
+        $total = $raw->sum('total');
+
+        return response()->json([
+            'labels'   => $displayLabels,
+            'datasets' => $datasets,
+            'total'    => $total,
+        ]);
     }
 
     public function index(Request $request): View

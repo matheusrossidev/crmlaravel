@@ -458,21 +458,14 @@
 
         {{-- Novos Leads --}}
         <div class="content-card">
-            <div class="content-card-header">
-                <h3><i class="bi bi-people"></i> Leads</h3>
-                <div style="display:flex;align-items:center;gap:20px;">
-                    <div style="display:flex;gap:20px;">
-                        <div>
-                            <div style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Novos</div>
-                            <div style="font-size:16px;font-weight:700;color:#1a1d23;">{{ array_sum($leadsPerMonth) }}</div>
-                        </div>
-                        <div style="width:1px;background:#f0f2f7;"></div>
-                        <div>
-                            <div style="font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">
-                                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6366f1;margin-right:4px;vertical-align:middle;"></span>Esse Mês
-                            </div>
-                            <div style="font-size:16px;font-weight:700;color:#1a1d23;">{{ $leadsThisMonth }}</div>
-                        </div>
+            <div class="content-card-header" style="flex-wrap:wrap;gap:10px;">
+                <h3><i class="bi bi-people"></i> Leads <span id="leadsChartTotal" style="font-size:13px;font-weight:600;color:#6b7280;margin-left:6px;">({{ $leadsThisMonth }})</span></h3>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div id="leadsChartFilter" style="display:flex;gap:4px;">
+                        <button type="button" class="leads-period-btn" data-period="week" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;cursor:pointer;">Semana</button>
+                        <button type="button" class="leads-period-btn active" data-period="month" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #0085f3;background:#eff6ff;color:#0085f3;cursor:pointer;">Mês</button>
+                        <button type="button" class="leads-period-btn" data-period="3months" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;cursor:pointer;">3 Meses</button>
+                        <button type="button" class="leads-period-btn" data-period="6months" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;cursor:pointer;">6 Meses</button>
                     </div>
                     <a href="{{ route('leads.index') }}" class="card-link">Ver todos <i class="bi bi-arrow-right"></i></a>
                 </div>
@@ -735,65 +728,107 @@
         }
     };
 
-    // ── Novos Leads — área suave (12 meses) ───────────────────────────
+    // ── Leads stacked bar chart com filtro de período ──────────────────
     (function () {
+        const LEADS_CHART_URL = "{{ url('/dashboard/leads-chart') }}";
         const canvas = document.getElementById('chartLeads');
         const ctx    = canvas.getContext('2d');
-        const grad   = ctx.createLinearGradient(0, 0, 0, 260);
-        grad.addColorStop(0, 'rgba(59,130,246,0.28)');
-        grad.addColorStop(1, 'rgba(59,130,246,0)');
+        let leadsChart = null;
 
-        new Chart(ctx, {
-            type: 'line',
-            plugins: [crosshairPlugin],
-            data: {
-                labels: monthLabels,
-                datasets: [{
-                    label: 'Leads',
-                    data: leadsPerMonth,
-                    fill: true,
-                    backgroundColor: grad,
-                    borderColor: '#3B82F6',
-                    borderWidth: 2.5,
-                    tension: 0.45,
-                    pointRadius: 0,
-                    pointHoverRadius: 6,
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: '#3B82F6',
-                    pointHoverBorderWidth: 2.5,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#1a1d23',
-                        titleColor: '#9ca3af',
-                        bodyColor: '#fff',
-                        padding: 10,
-                        callbacks: {
-                            title: items => items[0].label,
-                            label: ctx  => ` ${ctx.parsed.y} lead(s)`,
+        function buildChart(labels, datasetsObj) {
+            const datasets = Object.entries(datasetsObj).map(([src, data], idx) => ({
+                label: src.charAt(0).toUpperCase() + src.slice(1),
+                data,
+                backgroundColor: sourceColor(src, idx),
+                borderRadius: 20,
+                barPercentage: 0.75,
+                categoryPercentage: 0.8,
+            }));
+
+            if (leadsChart) leadsChart.destroy();
+
+            leadsChart = new Chart(ctx, {
+                type: 'bar',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: { boxWidth: 12, font: { size: 11 }, padding: 8, usePointStyle: true, pointStyle: 'rectRounded' }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1a1d23',
+                            titleColor: '#9ca3af',
+                            bodyColor: '#fff',
+                            padding: 10,
+                            callbacks: {
+                                title: items => items[0].label,
+                                afterBody: items => {
+                                    const total = items.reduce((s, i) => s + i.parsed.y, 0);
+                                    return `\nTotal: ${total} lead(s)`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: { display: false },
+                            border: { display: false },
+                            ticks: { font: { size: 10 }, color: '#9ca3af', maxRotation: 45 },
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            grid: { color: '#f0f2f7', drawBorder: false },
+                            border: { display: false },
+                            ticks: { precision: 0, font: { size: 11 }, color: '#9ca3af' },
                         }
                     }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        border: { display: false },
-                        ticks: { font: { size: 11 }, color: '#9ca3af' },
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: '#f0f2f7', drawBorder: false },
-                        border: { display: false },
-                        ticks: { precision: 0, font: { size: 11 }, color: '#9ca3af' },
-                    }
                 }
-            }
+            });
+        }
+
+        // Initial render with server-side data
+        buildChart(dayLabels, leadsPerDayBySource);
+
+        // Period filter buttons
+        document.querySelectorAll('.leads-period-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.leads-period-btn').forEach(b => {
+                    b.style.border = '1px solid #e5e7eb';
+                    b.style.background = '#fff';
+                    b.style.color = '#6b7280';
+                    b.classList.remove('active');
+                });
+                this.style.border = '1px solid #0085f3';
+                this.style.background = '#eff6ff';
+                this.style.color = '#0085f3';
+                this.classList.add('active');
+
+                const period = this.dataset.period;
+
+                // "month" uses the initial server data
+                if (period === 'month') {
+                    buildChart(dayLabels, leadsPerDayBySource);
+                    document.getElementById('leadsChartTotal').textContent = `({{ $leadsThisMonth }})`;
+                    return;
+                }
+
+                fetch(`${LEADS_CHART_URL}?period=${period}`, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    buildChart(data.labels, data.datasets);
+                    document.getElementById('leadsChartTotal').textContent = `(${data.total})`;
+                })
+                .catch(() => toastr.error('Erro ao carregar dados do gráfico'));
+            });
         });
     }());
 
