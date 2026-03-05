@@ -25,7 +25,6 @@ class WebsiteWidgetController extends Controller
     {
         $exists = ChatbotFlow::withoutGlobalScope('tenant')
             ->where('website_token', $token)
-            ->where('channel', 'website')
             ->exists();
 
         if (! $exists) {
@@ -55,7 +54,6 @@ class WebsiteWidgetController extends Controller
     {
         $flow = ChatbotFlow::withoutGlobalScope('tenant')
             ->where('website_token', $token)
-            ->where('channel', 'website')
             ->first();
 
         if (! $flow) {
@@ -145,7 +143,6 @@ class WebsiteWidgetController extends Controller
     {
         $flow = ChatbotFlow::withoutGlobalScope('tenant')
             ->where('website_token', $token)
-            ->where('channel', 'website')
             ->first();
 
         if (! $flow) {

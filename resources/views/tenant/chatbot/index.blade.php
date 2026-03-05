@@ -472,13 +472,13 @@ function openWidgetTest(token) {
 
     var s = document.createElement('script');
     s.id = 'syncro-test-widget';
-    s.src = '{{ config("app.url") }}/api/widget/' + token + '.js?' + Date.now();
+    s.src = '{{ config("app.url") }}/api/widget/' + token + '.js?' + Date.now() + '&force_bubble=1';
     document.body.appendChild(s);
     _widgetTestActive = true;
 }
 
 function closeWidgetTest() {
-    ['syncro-launcher', 'syncro-window', 'syncro-welcome', 'syncro-test-widget'].forEach(function(id) {
+    ['syncro-launcher', 'syncro-panel', 'syncro-welcome', 'syncro-test-widget'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.remove();
     });

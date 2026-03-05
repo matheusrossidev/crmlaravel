@@ -90,14 +90,19 @@
     flex: 1; overflow: auto;
     background: #f4f6fb;
     padding: 36px 24px 60px;
+    cursor: grab;
 }
+.cb-canvas.is-panning { cursor: grabbing; user-select: none; }
 .cb-flow {
     width: fit-content;
     min-width: 520px;
     margin: 0 auto;
+    padding: 0 40px;
     display: flex;
     flex-direction: column;
+    position: relative;
     align-items: center;
+    gap: 24px;
 }
 
 /* ── Node ─────────────────────────────────────────────────────────── */
@@ -186,20 +191,20 @@
 }
 .cb-node-body .cb-checkbox input { margin: 0; }
 
-/* ── Connector ────────────────────────────────────────────────────── */
-.cb-connector {
-    width: 2px; height: 30px;
-    background: #d1d5db;
-    margin: 0 auto;
-    position: relative;
+/* ── SVG Overlay connections ──────────────────────────────────────── */
+.cb-svg-overlay {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; overflow: visible;
+    z-index: 0;
 }
-.cb-connector::after {
-    content: '';
-    position: absolute; bottom: -7px; left: 50%;
-    transform: translateX(-50%);
-    border: 7px solid transparent;
-    border-top-color: #d1d5db;
-}
+.cb-path { fill: none; stroke: #d1d5db; stroke-width: 2; }
+.cb-path-animated { stroke-dasharray: 6 4; animation: cb-dash .8s linear infinite; }
+@keyframes cb-dash { to { stroke-dashoffset: -10; } }
+.cb-path-dot { fill: #d1d5db; }
+
+/* Legacy connector — hidden, replaced by SVG */
+.cb-connector { display: none; }
 
 /* ── Add step button ──────────────────────────────────────────────── */
 .cb-add-step {
@@ -222,22 +227,22 @@
     width: 100%;
 }
 
-/* Vertical line from parent node down to horizontal bar */
+/* Vertical line from parent node down to horizontal bar — hidden, replaced by SVG */
 .cb-tree-stem {
-    width: 2px; height: 20px;
-    background: #d1d5db;
+    width: 2px; height: 28px;
+    background: transparent;
 }
 
-/* Horizontal bar connecting all branches */
+/* Horizontal bar connecting all branches — hidden, replaced by SVG */
 .cb-tree-hbar {
-    height: 2px; background: #d1d5db;
+    height: 2px; background: transparent;
     position: relative;
 }
 
 /* Container flex das colunas */
 .cb-branches {
     display: flex;
-    gap: 12px;
+    gap: 24px;
     justify-content: center;
     flex-wrap: nowrap;
     position: relative;
@@ -246,7 +251,7 @@
 /* Cada coluna de branch */
 .cb-branch-col {
     flex: 0 0 auto;
-    width: 260px;
+    width: 320px;
     background: #f8fafc;
     border: 1.5px solid #e8eaf0;
     border-radius: 10px;
@@ -255,13 +260,13 @@
     display: flex;
     flex-direction: column;
 }
-/* Vertical line from hbar down to each column */
+/* Vertical line from hbar down to each column — hidden, replaced by SVG */
 .cb-branch-col::before {
     content: '';
     display: block;
-    width: 2px; height: 15px;
-    background: #d1d5db;
-    margin: -15px auto 0;
+    width: 2px; height: 20px;
+    background: transparent;
+    margin: -20px auto 0;
     position: relative;
     z-index: 1;
 }
@@ -324,8 +329,11 @@
 
 /* Body da branch (sub-nós) */
 .cb-branch-body {
-    padding: 10px;
+    padding: 12px;
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 /* Nós compactos dentro de branches */
@@ -338,13 +346,63 @@
 .cb-branch-body .cb-node-icon { width: 24px; height: 24px; font-size: 11px; }
 .cb-branch-body .cb-node-type { font-size: 9.5px; }
 .cb-branch-body .cb-node-name { font-size: 12px; }
-.cb-branch-body .cb-connector { height: 16px; }
+.cb-branch-body .cb-connector { display: none; }
 .cb-branch-body .cb-add-step { font-size: 12px; padding: 8px; }
 .cb-branch-body .cb-node-body .form-control,
 .cb-branch-body .cb-node-body .form-select { font-size: 12px; padding: 5px 9px; }
 .cb-branch-body .cb-node-body textarea.form-control { min-height: 48px; }
 .cb-branch-body .cb-node-remove { width: 22px; height: 22px; font-size: 10px; }
 .cb-branch-body .cb-node-move { width: 18px; height: 18px; font-size: 9px; }
+
+/* ── Variable hint ───────────────────────────────────────────────── */
+.cb-var-hint {
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+.cb-var-hint-label {
+    font-size: 11px; font-weight: 600; color: #9ca3af;
+    display: inline-flex; align-items: center; gap: 3px;
+}
+.cb-var-tag {
+    display: inline-block;
+    padding: 1px 7px; border-radius: 5px;
+    font-size: 11px; font-weight: 600; font-family: monospace;
+    background: #eff6ff; color: #2563eb;
+    border: 1px solid #bfdbfe; cursor: pointer;
+    transition: all .12s;
+}
+.cb-var-tag:hover { background: #dbeafe; border-color: #93c5fd; }
+
+/* ── Contenteditable + Variable chips ─────────────────────────────── */
+.cb-editable {
+    border: 1.5px solid #e8eaf0; border-radius: 8px;
+    padding: 7px 11px; font-size: 13px; color: #374151;
+    background: #fff; outline: none; width: 100%;
+    box-sizing: border-box; font-family: inherit;
+    transition: border-color .15s;
+    min-height: 64px; white-space: pre-wrap;
+    word-break: break-word; overflow-y: auto;
+    line-height: 1.6;
+}
+.cb-editable:focus { border-color: #3b82f6; }
+.cb-editable:empty::before {
+    content: attr(data-placeholder);
+    color: #9ca3af; pointer-events: none;
+}
+.cb-var-chip {
+    display: inline-block;
+    padding: 1px 8px; border-radius: 4px;
+    background: #2563eb; color: #fff;
+    font-size: 12px; font-weight: 600; font-family: monospace;
+    user-select: all; cursor: default;
+    vertical-align: baseline; line-height: 1.5;
+    white-space: nowrap;
+}
+.cb-branch-body .cb-editable { min-height: 48px; font-size: 12px; }
+.cb-branch-body .cb-var-chip { font-size: 11px; padding: 0px 6px; }
 
 /* Botão adicionar branch */
 .cb-add-branch-col {
@@ -662,7 +720,7 @@
 
         // Start node
         container.innerHTML += `
-            <div class="cb-node start" style="align-self:center;">
+            <div class="cb-node start" data-step-id="_start" style="align-self:center;">
                 <div class="cb-node-bar"></div>
                 <div class="cb-node-head">
                     <div class="cb-node-icon"><i class="bi bi-play-fill"></i></div>
@@ -789,13 +847,15 @@
         switch (step.type) {
             case 'message':
                 html += '<label>Texto da mensagem</label>';
-                html += '<textarea class="form-control" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'text\', this.value)">' + esc(c.text || '') + '</textarea>';
+                html += '<div class="cb-editable" contenteditable="true" id="msg-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="text" data-placeholder="Digite a mensagem...">' + textToHtml(c.text || '') + '</div>';
+                html += renderVarHint('msg-' + step.id);
                 html += renderImageArea(step, path, index);
                 break;
 
             case 'input':
                 html += '<label>Pergunta para o visitante</label>';
-                html += '<textarea class="form-control" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'text\', this.value)">' + esc(c.text || '') + '</textarea>';
+                html += '<div class="cb-editable" contenteditable="true" id="inp-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="text" data-placeholder="Digite a pergunta...">' + textToHtml(c.text || '') + '</div>';
+                html += renderVarHint('inp-' + step.id);
                 html += '<div class="row-pair" style="margin-top:8px;">';
                 html += '<div><label>Tipo do campo</label>';
                 html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'field_type\', this.value)">';
@@ -826,6 +886,9 @@
                     html += '<option value="' + esc(name) + '" ' + (c.variable === name ? 'selected' : '') + '>' + esc(name) + '</option>';
                 });
                 html += '</select>';
+                html += '<div style="margin-top:8px;padding:8px 10px;background:#fef9c3;border-radius:6px;font-size:11px;color:#92400e;line-height:1.4;">';
+                html += '<i class="bi bi-info-circle" style="margin-right:4px;"></i> Cada ramificação abaixo define uma condição. Ex: <strong>"Se ' + esc(c.variable || 'variável') + ' for igual a X, faça..."</strong>';
+                html += '</div>';
                 break;
 
             case 'action':
@@ -839,13 +902,107 @@
 
             case 'end':
                 html += '<label>Mensagem de encerramento (opcional)</label>';
-                html += '<textarea class="form-control" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'text\', this.value)">' + esc(c.text || '') + '</textarea>';
+                html += '<div class="cb-editable" contenteditable="true" id="end-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="text" data-placeholder="Mensagem de encerramento...">' + textToHtml(c.text || '') + '</div>';
+                html += renderVarHint('end-' + step.id);
                 break;
         }
 
         html += '</div>';
         return html;
     }
+
+    // Blade-safe braces (double curly braces)
+    var _LB = String.fromCharCode(123,123);
+    var _RB = String.fromCharCode(125,125);
+
+    // ── Contenteditable helpers ────────────────────────────────────
+    // Convert plain text with variable placeholders to HTML with chip spans
+    function textToHtml(text) {
+        if (!text) return '';
+        // Regex to match double-curly-brace vars — built dynamically to avoid Blade
+        var re = new RegExp(_LB + '([^}]+)' + _RB, 'g');
+        var result = '';
+        var lastIdx = 0;
+        var match;
+        while ((match = re.exec(text)) !== null) {
+            result += esc(text.substring(lastIdx, match.index));
+            result += '<span class="cb-var-chip" contenteditable="false" data-var="' + esc(match[1]) + '">' + esc(match[1]) + '</span>';
+            lastIdx = re.lastIndex;
+        }
+        result += esc(text.substring(lastIdx));
+        // Convert newlines to <br>
+        result = result.replace(/\n/g, '<br>');
+        return result;
+    }
+
+    // Extract plain text with variable placeholders from contenteditable element
+    function htmlToText(el) {
+        var result = '';
+        el.childNodes.forEach(function(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                result += node.textContent;
+            } else if (node.nodeName === 'BR') {
+                result += '\n';
+            } else if (node.classList && node.classList.contains('cb-var-chip')) {
+                result += _LB + (node.getAttribute('data-var') || node.textContent) + _RB;
+            } else if (node.nodeName === 'DIV' || node.nodeName === 'P') {
+                // Browsers sometimes wrap lines in divs
+                if (result.length > 0 && result[result.length - 1] !== '\n') result += '\n';
+                result += htmlToText(node);
+            } else {
+                result += node.textContent || '';
+            }
+        });
+        return result;
+    }
+
+    function renderVarHint(editableId) {
+        var allVars = ['$contact_name', '$contact_email', '$contact_phone'];
+        flowVariables.forEach(function(v) {
+            allVars.push(v.name || v);
+        });
+        if (allVars.length === 0) return '';
+        var html = '<div class="cb-var-hint">';
+        html += '<span class="cb-var-hint-label"><i class="bi bi-braces"></i> Variáveis:</span> ';
+        allVars.forEach(function(name) {
+            html += '<button type="button" class="cb-var-tag" onclick="cbInsertVar(\'' + esc(editableId) + '\', \'' + esc(name) + '\')" title="Inserir ' + _LB + esc(name) + _RB + '">' + _LB + esc(name) + _RB + '</button> ';
+        });
+        html += '</div>';
+        return html;
+    }
+
+    // Insert a variable chip into a contenteditable at cursor position
+    window.cbInsertVar = function(editableId, varName) {
+        var el = document.getElementById(editableId);
+        if (!el) return;
+        el.focus();
+        var chip = document.createElement('span');
+        chip.className = 'cb-var-chip';
+        chip.contentEditable = 'false';
+        chip.setAttribute('data-var', varName);
+        chip.textContent = varName;
+
+        var sel = window.getSelection();
+        if (sel.rangeCount > 0) {
+            var range = sel.getRangeAt(0);
+            // Ensure we're inside the editable
+            if (el.contains(range.commonAncestorContainer)) {
+                range.deleteContents();
+                range.insertNode(chip);
+                // Move cursor after chip
+                range.setStartAfter(chip);
+                range.setEndAfter(chip);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } else {
+                el.appendChild(chip);
+            }
+        } else {
+            el.appendChild(chip);
+        }
+        // Trigger sync
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+    };
 
     function renderImageArea(step, path, index) {
         const pathStr = JSON.stringify(path).replace(/"/g, '&quot;');
@@ -887,17 +1044,30 @@
 
         switch (c.type) {
             case 'create_lead':
+                var varOpts = function(field) {
+                    var h = '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'' + field + '\', this.value)">';
+                    h += '<option value="">Selecione variável...</option>';
+                    ['$contact_name', '$contact_email', '$contact_phone'].forEach(function(v) {
+                        h += '<option value="' + v + '" ' + (c[field] === v ? 'selected' : '') + '>' + v + '</option>';
+                    });
+                    flowVariables.forEach(function(fv) {
+                        var name = fv.name || fv;
+                        h += '<option value="' + esc(name) + '" ' + (c[field] === name ? 'selected' : '') + '>' + esc(name) + '</option>';
+                    });
+                    h += '</select>';
+                    return h;
+                };
                 html += '<div class="row-pair" style="margin-top:8px;">';
-                html += '<div><label>Var nome</label><input class="form-control" value="' + esc(c.name_var || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'name_var\', this.value)"></div>';
-                html += '<div><label>Var email</label><input class="form-control" value="' + esc(c.email_var || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'email_var\', this.value)"></div>';
+                html += '<div><label>Nome</label>' + varOpts('name_var') + '</div>';
+                html += '<div><label>Email</label>' + varOpts('email_var') + '</div>';
                 html += '</div>';
                 html += '<div class="row-pair" style="margin-top:8px;">';
-                html += '<div><label>Var telefone</label><input class="form-control" value="' + esc(c.phone_var || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'phone_var\', this.value)"></div>';
+                html += '<div><label>Telefone</label>' + varOpts('phone_var') + '</div>';
                 html += '<div><label>Etapa</label><select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'stage_id\', parseInt(this.value))">';
                 html += '<option value="">Selecione...</option>';
                 PIPELINES.forEach(function(p) {
                     p.stages.forEach(function(s) {
-                        html += '<option value="' + s.id + '" ' + (c.stage_id == s.id ? 'selected' : '') + '>' + esc(p.name) + ' → ' + esc(s.name) + '</option>';
+                        html += '<option value="' + s.id + '" ' + (c.stage_id == s.id ? 'selected' : '') + '>' + esc(p.name) + ' \u2192 ' + esc(s.name) + '</option>';
                     });
                 });
                 html += '</select></div></div>';
@@ -930,8 +1100,19 @@
                 html += '</div>';
                 break;
             case 'send_webhook':
-                html += '<label style="margin-top:8px;">URL</label>';
-                html += '<input class="form-control" value="' + esc(c.url || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'url\', this.value)" placeholder="https://...">';
+                html += '<div class="row-pair" style="margin-top:8px;">';
+                html += '<div style="flex:0 0 120px;"><label>Método</label><select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'http_method\', this.value)">';
+                ['POST', 'GET', 'PUT', 'DELETE', 'PATCH'].forEach(function(m) {
+                    html += '<option value="' + m + '" ' + ((c.http_method || 'POST') === m ? 'selected' : '') + '>' + m + '</option>';
+                });
+                html += '</select></div>';
+                html += '<div><label>URL</label><input class="form-control" value="' + esc(c.url || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'url\', this.value)" placeholder="https://..."></div>';
+                html += '</div>';
+                if ((c.http_method || 'POST') !== 'GET') {
+                    html += '<label style="margin-top:8px;">JSON Body</label>';
+                    html += '<div class="cb-editable" contenteditable="true" id="wh-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="json_body" data-placeholder=\'{"nome": "valor"}\'>' + textToHtml(c.json_body || '') + '</div>';
+                    html += renderVarHint('wh-' + step.id);
+                }
                 break;
             case 'set_custom_field':
                 html += '<label style="margin-top:8px;">Campo</label>';
@@ -954,7 +1135,7 @@
         const pathStr = JSON.stringify(path).replace(/"/g, '&quot;');
         const branches = step.branches || [];
         const totalCols = branches.length + 1; // +1 for default branch
-        const colW = 260, gap = 12;
+        const colW = 320, gap = 24;
         const totalWidth = totalCols * colW + (totalCols - 1) * gap;
         const barWidth = (totalCols - 1) * (colW + gap);
 
@@ -990,6 +1171,10 @@
                 html += '<label>Keywords (vírgula)</label>';
                 html += '<input class="form-control" value="' + esc((b.keywords || []).join(', ')) + '" onchange="cbUpdateBranchKeywords(' + pathStr + ', ' + index + ', ' + bi + ', this.value)">';
             } else if (step.type === 'condition') {
+                var varLabel = (step.config && step.config.variable) || 'variável';
+                var opLabel = {equals:'igual a',not_equals:'diferente de',contains:'contém',starts_with:'começa com',ends_with:'termina com',gt:'maior que',lt:'menor que'}[b.operator] || '...';
+                var valLabel = b.value || '...';
+                html += '<div style="font-size:11px;color:#6b7280;margin-bottom:6px;font-style:italic;">Se <strong>' + esc(varLabel) + '</strong> ' + esc(opLabel) + ' <strong>' + esc(valLabel) + '</strong></div>';
                 html += '<div class="row-pair">';
                 html += '<div><label>Operador</label><select class="form-select" onchange="cbUpdateBranch(' + pathStr + ', ' + index + ', ' + bi + ', \'operator\', this.value)">';
                 var ops = { equals: 'Igual a', not_equals: 'Diferente', contains: 'Contém', starts_with: 'Começa com', ends_with: 'Termina com', gt: 'Maior que', lt: 'Menor que' };
@@ -1129,12 +1314,144 @@
         });
     }
 
+    // ── SVG Connection Drawing ──────────────────────────────────────
+    function drawConnections() {
+        var flow = document.getElementById('cbFlow');
+        if (!flow) return;
+
+        // Remove old SVG
+        var oldSvg = flow.querySelector('.cb-svg-overlay');
+        if (oldSvg) oldSvg.remove();
+
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'cb-svg-overlay');
+        flow.insertBefore(svg, flow.firstChild);
+
+        var flowRect = flow.getBoundingClientRect();
+
+        function rel(rect) {
+            return {
+                cx: rect.left + rect.width / 2 - flowRect.left,
+                top: rect.top - flowRect.top,
+                bottom: rect.bottom - flowRect.top,
+                left: rect.left - flowRect.left,
+                right: rect.right - flowRect.left
+            };
+        }
+
+        function bezierPath(x1, y1, x2, y2) {
+            var dy = Math.abs(y2 - y1) * 0.5;
+            return 'M' + x1 + ',' + y1 + ' C' + x1 + ',' + (y1 + dy) + ' ' + x2 + ',' + (y2 - dy) + ' ' + x2 + ',' + y2;
+        }
+
+        function addPath(x1, y1, x2, y2, animated) {
+            var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', bezierPath(x1, y1, x2, y2));
+            path.setAttribute('class', 'cb-path' + (animated ? ' cb-path-animated' : ''));
+            svg.appendChild(path);
+            var dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            dot.setAttribute('cx', x2);
+            dot.setAttribute('cy', y2);
+            dot.setAttribute('r', '3');
+            dot.setAttribute('class', 'cb-path-dot');
+            svg.appendChild(dot);
+        }
+
+        function findNode(stepId) {
+            return flow.querySelector('.cb-node[data-step-id="' + stepId + '"]');
+        }
+
+        function connectNodes(fromEl, toEl, animated) {
+            if (!fromEl || !toEl) return;
+            var fromR = rel(fromEl.getBoundingClientRect());
+            var toR = rel(toEl.getBoundingClientRect());
+            addPath(fromR.cx, fromR.bottom, toR.cx, toR.top, animated !== false);
+        }
+
+        // Connect a list of steps sequentially, returns the last step's node element
+        function connectStepList(steps, prevNodeEl) {
+            var lastEl = prevNodeEl;
+            steps.forEach(function(step) {
+                var nodeEl = findNode(step.id);
+                if (!nodeEl) return;
+                if (lastEl) connectNodes(lastEl, nodeEl, true);
+                lastEl = nodeEl;
+
+                // If step has branches, connect to branch columns
+                if ((step.type === 'input' || step.type === 'condition') && (step.branches || step.default_branch)) {
+                    var branches = step.branches || [];
+                    var allBranches = branches.slice();
+                    // Add default branch
+                    if (step.default_branch) allBranches.push(step.default_branch);
+
+                    allBranches.forEach(function(branch, bi) {
+                        var branchId = (bi < branches.length) ? ('branch-' + step.id + '-' + bi) : ('branch-' + step.id + '-default');
+                        var branchBody = document.getElementById(branchId);
+                        if (!branchBody) return;
+                        var col = branchBody.closest('.cb-branch-col');
+                        if (!col) return;
+
+                        // Connect parent node to top of branch column
+                        var colR = rel(col.getBoundingClientRect());
+                        var nodeR = rel(nodeEl.getBoundingClientRect());
+                        addPath(nodeR.cx, nodeR.bottom, colR.cx, colR.top, true);
+
+                        // Connect sub-steps within the branch
+                        var subSteps = branch.steps || [];
+                        if (subSteps.length > 0) {
+                            connectStepList(subSteps, null);
+                        }
+                    });
+
+                    // After branches, the next step connects from below — use nodeEl as anchor
+                    // (branches don't have a single exit point, so next step connects from parent)
+                }
+            });
+            return lastEl;
+        }
+
+        // Start: connect _start → first step → second step → ...
+        var startEl = findNode('_start');
+        connectStepList(flowSteps, startEl);
+    }
+
+    var _drawDebounce;
+    window.addEventListener('resize', function() {
+        clearTimeout(_drawDebounce);
+        _drawDebounce = setTimeout(drawConnections, 100);
+    });
+
     // Override renderFlow to include post-render
     const _origRenderFlow = renderFlow;
     renderFlow = function() {
         _origRenderFlow();
         postRenderBranches();
+        bindEditables();
+        requestAnimationFrame(drawConnections);
     };
+
+    // Bind input listeners on contenteditable elements to sync data
+    function bindEditables() {
+        document.querySelectorAll('.cb-editable[data-path]').forEach(function(el) {
+            if (el._cbBound) return;
+            el._cbBound = true;
+            el.addEventListener('input', function() {
+                var path = JSON.parse(el.getAttribute('data-path'));
+                var index = parseInt(el.getAttribute('data-index'), 10);
+                var field = el.getAttribute('data-field');
+                var text = htmlToText(el);
+                var arr = resolveParentSteps(path);
+                if (!arr[index].config) arr[index].config = {};
+                arr[index].config[field] = text;
+            });
+            // Prevent paste from injecting rich HTML — paste plain text only
+            el.addEventListener('paste', function(e) {
+                e.preventDefault();
+                var text = (e.clipboardData || window.clipboardData).getData('text/plain');
+                document.execCommand('insertText', false, text);
+            });
+        });
+    }
 
     // ── Global click handlers ────────────────────────────────────────
     window.cbRemoveStep = function(path, index) {
@@ -1279,14 +1596,14 @@
     };
 
     // ── Save flow ────────────────────────────────────────────────────
-    window.saveFlow = function() {
+    window.saveFlow = function(silent) {
         var name = document.getElementById('cbName').value.trim();
         if (!name) {
-            toastr.warning('Informe o nome do fluxo');
-            return;
+            if (!silent) toastr.warning('Informe o nome do fluxo');
+            return Promise.resolve();
         }
 
-        fetch(SAVE_URL, {
+        return fetch(SAVE_URL, {
             method: 'PUT',
             headers: {
                 'X-CSRF-TOKEN': CSRF,
@@ -1302,7 +1619,7 @@
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.success) {
-                toastr.success('Fluxo salvo com sucesso!');
+                if (!silent) toastr.success('Fluxo salvo com sucesso!');
             } else {
                 toastr.error(data.message || 'Erro ao salvar');
             }
@@ -1353,8 +1670,8 @@
     var _testWidgetActive = false;
 
     window.openTestWidget = async function() {
-        // Salva o fluxo antes de testar
-        await saveFlow();
+        // Salva o fluxo silenciosamente antes de testar
+        await saveFlow(true);
 
         if (_testWidgetActive) {
             closeTestWidget();
@@ -1368,13 +1685,13 @@
         // Injetar script do widget
         var s = document.createElement('script');
         s.id = 'syncro-test-widget';
-        s.src = '{{ config("app.url") }}/api/widget/{{ $flow->website_token }}.js?' + Date.now();
+        s.src = '{{ config("app.url") }}/api/widget/{{ $flow->website_token }}.js?' + Date.now() + '&force_bubble=1';
         document.body.appendChild(s);
         _testWidgetActive = true;
     };
 
     window.closeTestWidget = function() {
-        ['syncro-launcher', 'syncro-window', 'syncro-welcome', 'syncro-test-widget'].forEach(function(id) {
+        ['syncro-launcher', 'syncro-panel', 'syncro-welcome', 'syncro-test-widget'].forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.remove();
         });
@@ -1403,6 +1720,29 @@
             });
         }
     };
+
+    // ── Drag-to-scroll (pan) on canvas ──────────────────────────────
+    (function() {
+        var canvas = document.querySelector('.cb-canvas');
+        if (!canvas) return;
+        var isDown = false, startX, startY, scrollLeft, scrollTop;
+        canvas.addEventListener('mousedown', function(e) {
+            if (e.target.closest('.cb-node, .cb-add-step, .cb-add-branch-col, .cb-branch-col, button, a, input, select, textarea, .cb-editable, .cb-var-hint')) return;
+            isDown = true;
+            startX = e.pageX; startY = e.pageY;
+            scrollLeft = canvas.scrollLeft; scrollTop = canvas.scrollTop;
+            canvas.classList.add('is-panning');
+        });
+        canvas.addEventListener('mouseleave', stop);
+        canvas.addEventListener('mouseup', stop);
+        canvas.addEventListener('mousemove', function(e) {
+            if (!isDown) return;
+            e.preventDefault();
+            canvas.scrollLeft = scrollLeft - (e.pageX - startX);
+            canvas.scrollTop = scrollTop - (e.pageY - startY);
+        });
+        function stop() { isDown = false; canvas.classList.remove('is-panning'); }
+    })();
 
 })();
 </script>

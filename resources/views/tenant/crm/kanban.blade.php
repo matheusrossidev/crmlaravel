@@ -75,6 +75,8 @@
     }
     .kanban-board::-webkit-scrollbar-track { background: transparent; }
     .kanban-board::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
+    .kanban-board { cursor: grab; }
+    .kanban-board.is-grabbing { cursor: grabbing; user-select: none; }
 
     /* Coluna */
     .kanban-col {
@@ -1504,5 +1506,28 @@ document.addEventListener('click', e => {
         document.getElementById('respDropdown')?.classList.remove('open');
     }
 });
+
+// ── Drag-to-scroll horizontal ────────────────────────────────────
+(function() {
+    var board = document.getElementById('kanbanBoard');
+    if (!board) return;
+    var isDown = false, startX, scrollLeft;
+    board.addEventListener('mousedown', function(e) {
+        if (e.target.closest('.lead-card, button, a, input, select, textarea, .kanban-header, .add-lead-btn')) return;
+        isDown = true;
+        startX = e.pageX - board.offsetLeft;
+        scrollLeft = board.scrollLeft;
+        board.classList.add('is-grabbing');
+    });
+    board.addEventListener('mouseleave', stop);
+    board.addEventListener('mouseup', stop);
+    board.addEventListener('mousemove', function(e) {
+        if (!isDown) return;
+        e.preventDefault();
+        var x = e.pageX - board.offsetLeft;
+        board.scrollLeft = scrollLeft - (x - startX);
+    });
+    function stop() { isDown = false; board.classList.remove('is-grabbing'); }
+})();
 </script>
 @endpush

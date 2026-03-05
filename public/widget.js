@@ -14,6 +14,7 @@
     var token        = __INJECTED_TOKEN__ || script.getAttribute('data-token');
     var apiBase      = __INJECTED_BASE__  || script.src.replace(/\/widget\.js(\?[^#]*)?(#.*)?$/, '');
     var colorPrimary = script.getAttribute('data-color') || '#0085f3';
+    var forceBubble  = script.src.indexOf('force_bubble=1') !== -1;
 
     if (!token) { console.warn('[Widget] data-token is required'); return; }
 
@@ -152,6 +153,7 @@
     var panel, launcher;
     var msgsEl, inputEl, sendBtn, hdrName, hdrAvatarWrap;
     var inputType = 'text';
+    var openChat, closeChat;
 
     // ── Helpers ──────────────────────────────────────────────────────────────────
     function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
@@ -513,7 +515,7 @@
         var closeBtn = document.getElementById('syncro-close');
         if (closeBtn) closeBtn.style.display = '';
 
-        function openChat() {
+        openChat = function() {
             isOpen = true;
             panel.classList.add('open');
             launcher.style.display = 'none';
@@ -523,13 +525,13 @@
                 initConversation();
             }
             setTimeout(function () { inputEl.focus(); }, 100);
-        }
+        };
 
-        function closeChat() {
+        closeChat = function() {
             isOpen = false;
             panel.classList.remove('open');
             launcher.style.display = '';
-        }
+        };
 
         launcher.addEventListener('click', function () {
             if (isOpen) { closeChat(); } else { openChat(); }
@@ -594,7 +596,7 @@
         .then(function(res) { return res.json(); })
         .then(function(data) {
             _prefetchedData = data;
-            widgetMode = (data.widget_type === 'inline') ? 'inline' : 'bubble';
+            widgetMode = (!forceBubble && data.widget_type === 'inline') ? 'inline' : 'bubble';
 
             if (widgetMode === 'inline') {
                 setupInlineMode();
