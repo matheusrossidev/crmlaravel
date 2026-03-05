@@ -423,23 +423,7 @@ WAFMT;
             $chunks[] = $para;
         }
 
-        // 3. Agrupar chunks muito curtos (< 40 chars) com o próximo (sem exceder maxLength)
-        $messages = [];
-        $buffer   = '';
-        foreach ($chunks as $chunk) {
-            $candidate = $buffer !== '' ? $buffer . "\n" . $chunk : $chunk;
-            if ($buffer !== '' && mb_strlen($buffer) >= 40 && mb_strlen($candidate) > $maxLength) {
-                $messages[] = $buffer;
-                $buffer     = $chunk;
-            } else {
-                $buffer = $candidate;
-            }
-        }
-        if ($buffer !== '') {
-            $messages[] = $buffer;
-        }
-
-        $result = array_values(array_filter(array_map('trim', $messages)));
+        $result = array_values(array_filter(array_map('trim', $chunks)));
 
         return $result ?: [$text];
     }
@@ -507,18 +491,16 @@ WAFMT;
         foreach ($messages as $i => $text) {
             // Delay entre mensagens (pular na primeira)
             if ($i > 0) {
-                sleep(1);
+                sleep(3);
             }
 
-            // Typing com duração proporcional ao tamanho do texto
+            // Typing presence como indicador visual (bônus — não bloqueia envio se falhar)
             if ($waha && $chatId) {
                 try {
                     $waha->setPresence($chatId, 'typing');
                 } catch (\Throwable) {
-                    // Ignora falha de presence — não impede envio
                 }
-                $typingSeconds = max(1, min(3, (int) ceil(mb_strlen($text) / 80)));
-                sleep($typingSeconds);
+                sleep(2);
             }
 
             $this->sendWhatsappReply($conv, $text);
