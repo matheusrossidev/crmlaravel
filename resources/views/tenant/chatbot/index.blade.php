@@ -444,9 +444,30 @@ function _doDeleteFlow() {
 }
 
 /* ── Embed modal ── */
-function openEmbedModal(scriptUrl) {
+function openEmbedModal(scriptUrl, widgetType) {
+    var scriptTag = '<script src="' + scriptUrl + '"></' + 'script>';
     var el = document.getElementById('idxEmbedCode');
-    el.value = '<script src="' + scriptUrl + '"></' + 'script>';
+    var instructions = document.getElementById('idxEmbedInstructions');
+    var divHint = document.getElementById('idxEmbedDivHint');
+
+    if (widgetType === 'inline' || widgetType === 'page') {
+        var divCode = '<div id="syncro-chat" style="width:100%;height:100vh;"></div>';
+        el.value = divCode + '\n' + scriptTag;
+        el.rows = 4;
+        instructions.innerHTML = widgetType === 'page'
+            ? 'Para exibir o chatbot em <strong>página inteira</strong>, cole o código abaixo no <code>&lt;body&gt;</code> da página dedicada:'
+            : 'Para exibir o chatbot <strong>embutido na página</strong>, cole o código abaixo onde deseja que ele apareça:';
+        divHint.style.display = 'block';
+        divHint.innerHTML = widgetType === 'page'
+            ? '<i class="bi bi-info-circle"></i> O <code>&lt;div id="syncro-chat"&gt;</code> ocupará toda a tela. Ideal para uma página dedicada ao chat (ex: <code>/atendimento</code>).'
+            : '<i class="bi bi-info-circle"></i> O <code>&lt;div id="syncro-chat"&gt;</code> é o container do chatbot. Ajuste <code>width</code> e <code>height</code> conforme necessário.';
+    } else {
+        el.value = scriptTag;
+        el.rows = 3;
+        instructions.innerHTML = 'Cole este código antes do <code>&lt;/body&gt;</code> do seu site. O widget flutuante aparecerá no canto inferior direito:';
+        divHint.style.display = 'none';
+    }
+
     document.getElementById('idxEmbedModal').style.display = 'flex';
 }
 
@@ -569,7 +590,7 @@ function closeWidgetTest() {
                             <i class="bi bi-play-circle"></i> Testar
                         </button>
                         <button type="button" class="btn btn-sm btn-light"
-                                onclick="openEmbedModal('{{ config('app.url') }}/api/widget/{{ $flow->website_token }}.js')"
+                                onclick="openEmbedModal('{{ config('app.url') }}/api/widget/{{ $flow->website_token }}.js', '{{ $flow->widget_type ?? 'bubble' }}')"
                                 style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;">
                             <i class="bi bi-code-slash"></i> Embed
                         </button>
@@ -637,8 +658,9 @@ function closeWidgetTest() {
             <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0;">Código de instalação</h3>
             <button onclick="document.getElementById('idxEmbedModal').style.display='none'" style="background:none;border:none;font-size:20px;color:#9ca3af;cursor:pointer;padding:4px;">&times;</button>
         </div>
-        <p style="font-size:13.5px;color:#6b7280;margin:0 0 14px;">Cole este código antes do <code>&lt;/body&gt;</code> do seu site:</p>
+        <p id="idxEmbedInstructions" style="font-size:13.5px;color:#6b7280;margin:0 0 14px;">Cole este código antes do <code>&lt;/body&gt;</code> do seu site:</p>
         <textarea id="idxEmbedCode" readonly rows="3" style="width:100%;border:1.5px solid #e8eaf0;border-radius:9px;padding:12px;font-family:monospace;font-size:12.5px;color:#374151;background:#f8fafc;resize:none;"></textarea>
+        <div id="idxEmbedDivHint" style="display:none;margin-top:10px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:12px;color:#1e40af;line-height:1.5;"></div>
         <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
             <button onclick="copyIdxEmbed()" style="background:#0085f3;color:#fff;border:none;border-radius:9px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;">
                 <i class="bi bi-clipboard"></i> Copiar código
