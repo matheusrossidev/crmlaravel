@@ -175,9 +175,6 @@ $pageIcon = 'chat-dots';
 
     .wa-channel-tab[data-channel="whatsapp"].active { color: #16a34a; border-bottom-color: #16a34a; }
     .wa-channel-tab[data-channel="instagram"].active { color: #d946ef; border-bottom-color: #d946ef; }
-    .wa-channel-tab[data-channel="website"].active { color: #0085f3; border-bottom-color: #0085f3; }
-    .wa-channel-icon.website { background: #0085f3; }
-    .wa-channel-icon.website i { color: #fff; font-size: 8px; }
 
     .wa-filters {
         display: flex;
@@ -1049,9 +1046,6 @@ $pageIcon = 'chat-dots';
             <button class="wa-channel-tab" data-channel="instagram">
                 <i class="bi bi-instagram"></i> Instagram
             </button>
-            <button class="wa-channel-tab" data-channel="website">
-                <i class="bi bi-globe"></i> Website
-            </button>
         </div>
 
         <div class="wa-filters">
@@ -1067,12 +1061,10 @@ $pageIcon = 'chat-dots';
                 $ch      = $conv->_channel;
                 $convName = match($ch) {
                     'instagram' => $conv->contact_name ?? $conv->contact_username ?? 'Contato Instagram',
-                    'website'   => $conv->contact_name ?? ('Visitante #' . substr($conv->visitor_id ?? '', 0, 8)),
                     default     => $conv->contact_name ?? ($conv->is_group ? 'Grupo' : $conv->phone),
                 };
                 $convPhone = match($ch) {
                     'instagram' => '@' . ltrim($conv->contact_username ?? '', '@'),
-                    'website'   => $conv->contact_phone ?? '',
                     default     => $conv->phone ?? '',
                 };
                 $avatarLetter = strtoupper(substr($convName, 0, 1));
@@ -1085,13 +1077,6 @@ $pageIcon = 'chat-dots';
                 data-tags="{{ json_encode($conv->tags ?? []) }}"
                 data-assigned-user-id="{{ $conv->assigned_user_id ?? '' }}"
                 data-picture="{{ $conv->contact_picture_url }}"
-                data-utm-source="{{ $conv->utm_source ?? '' }}"
-                data-utm-medium="{{ $conv->utm_medium ?? '' }}"
-                data-utm-campaign="{{ $conv->utm_campaign ?? '' }}"
-                data-utm-content="{{ $conv->utm_content ?? '' }}"
-                data-utm-term="{{ $conv->utm_term ?? '' }}"
-                data-page-url="{{ $conv->page_url ?? '' }}"
-                data-referrer-url="{{ $conv->referrer_url ?? '' }}"
                 onclick="openConversation({{ $conv->id }}, this)">
                 <div class="wa-conv-avatar-wrap">
                     <div class="wa-conv-avatar">
@@ -1104,10 +1089,6 @@ $pageIcon = 'chat-dots';
                     @if($ch === 'instagram')
                     <span class="wa-channel-icon instagram" title="Instagram">
                         <i class="bi bi-instagram"></i>
-                    </span>
-                    @elseif($ch === 'website')
-                    <span class="wa-channel-icon website" title="Website">
-                        <i class="bi bi-globe"></i>
                     </span>
                     @else
                     <span class="wa-channel-icon whatsapp" title="WhatsApp">
@@ -1123,9 +1104,7 @@ $pageIcon = 'chat-dots';
                     <div class="wa-conv-bottom">
                         <span class="wa-conv-preview">
                             @if($conv->latestMessage)
-                            @if($ch === 'website')
-                            {{ Str::limit($conv->latestMessage->content ?? '', 40) }}
-                            @elseif($conv->latestMessage->type === 'image') 📷 Imagem
+                            @if($conv->latestMessage->type === 'image') 📷 Imagem
                             @elseif($conv->latestMessage->type === 'share') 📷 Publicação
                             @elseif($conv->latestMessage->type === 'audio') 🎵 Áudio
                             @elseif($conv->latestMessage->type === 'document') 📎 {{ $conv->latestMessage->media_filename ?? 'Arquivo' }}
@@ -1198,28 +1177,6 @@ $pageIcon = 'chat-dots';
 
         {{-- Mensagens --}}
         <div class="wa-messages" id="messagesContainer" style="display:none;"></div>
-
-        {{-- Aviso somente-leitura para canal website --}}
-        <div id="websiteReadonlyNotice" style="display:none;flex-direction:column;gap:0;border-top:1px solid #bae6fd;">
-            <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:#f0f9ff;font-size:13px;color:#0369a1;font-family:'Inter',sans-serif;">
-                <i class="bi bi-globe" style="font-size:15px;"></i>
-                Conversa via widget do website — resposta automática pelo chatbot.
-            </div>
-            {{-- UTM attribution info --}}
-            <div id="utmInfoPanel" style="padding:10px 16px 12px;background:#f8fafc;border-top:1px solid #e8eaf0;display:none;">
-                <div style="font-size:10.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Origem da Visita</div>
-                <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px;">
-                    <span style="color:#6b7280;">Fonte</span>      <span id="utm-source-val"   style="color:#374151;font-weight:500;">—</span>
-                    <span style="color:#6b7280;">Mídia</span>       <span id="utm-medium-val"   style="color:#374151;font-weight:500;">—</span>
-                    <span style="color:#6b7280;">Campanha</span>    <span id="utm-campaign-val" style="color:#374151;font-weight:500;">—</span>
-                    <span style="color:#6b7280;">Conteúdo</span>    <span id="utm-content-val"  style="color:#374151;font-weight:500;">—</span>
-                    <span style="color:#6b7280;">Termo</span>       <span id="utm-term-val"     style="color:#374151;font-weight:500;">—</span>
-                    <span style="color:#6b7280;">Referência</span>  <span id="utm-referrer-val" style="color:#374151;font-weight:500;word-break:break-all;">—</span>
-                    <span style="color:#6b7280;">Página</span>
-                    <span><a id="utm-page-val" href="#" target="_blank" rel="noopener" style="color:#0085f3;font-size:12px;word-break:break-all;text-decoration:none;">—</a></span>
-                </div>
-            </div>
-        </div>
 
         {{-- Footer de composição --}}
         @if(!empty($isPartnerView))
@@ -1913,10 +1870,8 @@ $pageIcon = 'chat-dots';
         document.querySelectorAll('.wa-conv-item').forEach(item => {
             let visible = true;
 
-            // Canal — website só aparece na tab "website", nunca em "all"
-            if (activeChannelTab === 'all') {
-                if (item.dataset.channel === 'website') visible = false;
-            } else {
+            // Canal
+            if (activeChannelTab !== 'all') {
                 visible = item.dataset.channel === activeChannelTab;
             }
 
@@ -1984,51 +1939,15 @@ $pageIcon = 'chat-dots';
             if (channel === 'instagram') {
                 channelIcon.innerHTML = '<i class="bi bi-instagram"></i>';
                 channelIcon.title = 'Instagram';
-            } else if (channel === 'website') {
-                channelIcon.innerHTML = '<i class="bi bi-globe"></i>';
-                channelIcon.title = 'Website';
             } else {
                 channelIcon.innerHTML = '<i class="bi bi-whatsapp"></i>';
                 channelIcon.title = 'WhatsApp';
             }
         }
 
-        // Mostrar/ocultar compose area baseado no canal
+        // Mostrar compose area
         const composeArea = document.getElementById('composeArea');
-        const websiteReadonlyNotice = document.getElementById('websiteReadonlyNotice');
-        if (composeArea) composeArea.style.display = channel === 'website' ? 'none' : 'block';
-        if (websiteReadonlyNotice) websiteReadonlyNotice.style.display = channel === 'website' ? 'flex' : 'none';
-
-        // Preencher painel UTM quando for conversa website
-        if (channel === 'website' && el) {
-            const utmSource   = el.dataset.utmSource   || '';
-            const utmMedium   = el.dataset.utmMedium   || '';
-            const utmCampaign = el.dataset.utmCampaign || '';
-            const utmContent  = el.dataset.utmContent  || '';
-            const utmTerm     = el.dataset.utmTerm     || '';
-            const pageUrl     = el.dataset.pageUrl     || '';
-            const referrerUrl = el.dataset.referrerUrl || '';
-
-            const hasAny = utmSource || utmMedium || utmCampaign || utmContent || utmTerm || pageUrl || referrerUrl;
-            const utmPanel = document.getElementById('utmInfoPanel');
-            if (utmPanel) {
-                utmPanel.style.display = hasAny ? 'block' : 'none';
-                if (hasAny) {
-                    document.getElementById('utm-source-val').textContent   = utmSource   || '—';
-                    document.getElementById('utm-medium-val').textContent   = utmMedium   || '—';
-                    document.getElementById('utm-campaign-val').textContent = utmCampaign || '—';
-                    document.getElementById('utm-content-val').textContent  = utmContent  || '—';
-                    document.getElementById('utm-term-val').textContent     = utmTerm     || '—';
-                    document.getElementById('utm-referrer-val').textContent = referrerUrl || '—';
-                    const pageLink = document.getElementById('utm-page-val');
-                    pageLink.textContent = pageUrl ? (pageUrl.length > 60 ? pageUrl.substring(0, 60) + '…' : pageUrl) : '—';
-                    pageLink.href = pageUrl || '#';
-                }
-            }
-        } else {
-            const utmPanel = document.getElementById('utmInfoPanel');
-            if (utmPanel) utmPanel.style.display = 'none';
-        }
+        if (composeArea) composeArea.style.display = 'block';
 
         await fetch(`${convBaseUrl(convId)}/read`, {
             method: 'POST',

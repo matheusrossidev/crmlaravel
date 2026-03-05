@@ -80,6 +80,18 @@
                 <input type="date" id="fBirthday" name="birthday" class="drawer-input">
             </div>
 
+            {{-- Tags (movido para cima para visibilidade) --}}
+            <div class="drawer-group" style="margin-top:6px;">
+                <label>Tags</label>
+                <input type="hidden" id="fTagsHidden" name="tags_json" value="[]">
+                <div class="tag-input-wrap drawer-input" id="tagInputWrap" onclick="document.getElementById('tagRawInput').focus()">
+                    <div id="tagBadgesContainer" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+                    <input type="text" id="tagRawInput" placeholder="Digite e pressione Enter ou vírgula..." style="border:none;outline:none;font-size:13px;font-family:inherit;background:transparent;min-width:140px;padding:2px 0;">
+                </div>
+                {{-- Sugestões de tags pré-configuradas --}}
+                <div id="tagSuggestions" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;"></div>
+            </div>
+
             {{-- Pipeline / Etapa --}}
             <div class="drawer-section-label" style="margin-top:18px;">Pipeline & Etapa</div>
 
@@ -132,18 +144,6 @@
                 </select>
             </div>
 
-            {{-- Tags --}}
-            <div class="drawer-group">
-                <label>Tags</label>
-                <input type="hidden" id="fTagsHidden" name="tags_json" value="[]">
-                <div class="tag-input-wrap drawer-input" id="tagInputWrap" onclick="document.getElementById('tagRawInput').focus()">
-                    <div id="tagBadgesContainer" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
-                    <input type="text" id="tagRawInput" placeholder="Digite e pressione Enter ou vírgula..." style="border:none;outline:none;font-size:13px;font-family:inherit;background:transparent;min-width:140px;padding:2px 0;">
-                </div>
-                {{-- Sugestões de tags pré-configuradas --}}
-                <div id="tagSuggestions" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;"></div>
-            </div>
-
             {{-- Notas (múltiplas — só em modo edição) --}}
             <div id="notesSection" style="display:none;margin-top:18px;">
                 <div class="drawer-section-label">Notas</div>
@@ -156,31 +156,29 @@
                 </div>
             </div>
 
-            {{-- Campos Personalizados (dinâmico via JS) --}}
-            <div id="customFieldsSection" style="display:none;margin-top:4px;">
-                <div class="drawer-section-label" style="margin-top:18px;">Campos Personalizados</div>
-                <div id="customFieldsContainer"></div>
-            </div>
-
         </form>
 
-        {{-- Seção UTM / Atribuição (só na edição, preenchida via JS) --}}
-        <div id="drawerUtmSection" style="display:none;margin-top:22px;">
-            <div class="drawer-section-label">Atribuição</div>
-            <div id="drawerUtmGrid" style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px;color:#374151;"></div>
+        {{-- Accordion "Avançado" --}}
+        <div id="drawerAdvancedSection" style="display:none;margin-top:18px;">
+            <button type="button" id="drawerAdvancedToggle" onclick="toggleAdvancedAccordion()"
+                    style="display:flex;align-items:center;gap:6px;width:100%;padding:0;border:none;background:none;cursor:pointer;">
+                <span class="drawer-section-label" style="margin-bottom:0;">Avançado</span>
+                <i class="bi bi-chevron-down" id="drawerAdvancedIcon" style="font-size:11px;color:#9ca3af;transition:transform .2s;"></i>
+            </button>
+            <div id="drawerAdvancedBody" style="display:none;margin-top:10px;">
 
-            <div id="drawerCampaignHint" style="display:none;margin-top:10px;padding:8px 12px;
-                 background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:12px;color:#1d4ed8;">
-                <span id="drawerCampaignHintText"></span>
-                <select id="drawerCampaignLinkSelect" style="margin-left:8px;font-size:12px;border:1px solid #bfdbfe;
-                        border-radius:6px;padding:3px 6px;background:#fff;color:#1a1d23;">
-                    <option value="">Selecionar campanha...</option>
-                </select>
-                <button type="button" id="drawerCampaignLinkBtn" onclick="linkCampaignFromHint()"
-                        style="margin-left:6px;padding:3px 10px;background:#0085f3;color:#fff;
-                               border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">
-                    Vincular
-                </button>
+                {{-- Campos Personalizados --}}
+                <div id="customFieldsSection" style="display:none;margin-top:4px;">
+                    <div class="drawer-section-label" style="margin-top:0;">Campos Personalizados</div>
+                    <div id="customFieldsContainer"></div>
+                </div>
+
+                {{-- UTM / Atribuição --}}
+                <div id="drawerUtmSection" style="display:none;margin-top:14px;">
+                    <div class="drawer-section-label">Atribuição UTM</div>
+                    <div id="drawerUtmGrid" style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px;color:#374151;"></div>
+                </div>
+
             </div>
         </div>
 
@@ -685,8 +683,11 @@ function populateDrawer(res) {
     }
     campSel.value = lead.campaign_id || '';
 
+    // Accordion Avançado (mostrar em modo edição)
+    document.getElementById('drawerAdvancedSection').style.display = '';
+
     // UTM / Atribuição
-    renderUtmSection(lead, res.campaigns || []);
+    renderUtmSection(lead);
 
     // Campos personalizados — flatten {name: {label, type, value}} → {name: value}
     const cfDefs = res.custom_field_defs || CF_DEFS;
@@ -748,11 +749,9 @@ function loadCampaigns(selectedId) {
 // ── UTM / Atribuição ──────────────────────────────────────────────────────
 var _currentLeadId = null;
 
-function renderUtmSection(lead, campaigns) {
-    _currentLeadId = lead.id;
+function renderUtmSection(lead) {
     const section = document.getElementById('drawerUtmSection');
     const grid    = document.getElementById('drawerUtmGrid');
-    const hint    = document.getElementById('drawerCampaignHint');
 
     const labels = { utm_source: 'Fonte', utm_medium: 'Mídia', utm_campaign: 'Campanha', utm_content: 'Conteúdo', utm_term: 'Termo' };
     const rows = Object.entries(labels).filter(([k]) => lead[k]);
@@ -766,38 +765,14 @@ function renderUtmSection(lead, campaigns) {
     grid.innerHTML = rows.map(([k, label]) =>
         `<span style="color:#6b7280;font-weight:600;">${label}</span><span>${escapeHtml(lead[k])}</span>`
     ).join('');
-
-    // Campaign-link hint
-    if (lead.utm_campaign && !lead.campaign_id) {
-        document.getElementById('drawerCampaignHintText').textContent =
-            `Campanha "${lead.utm_campaign}" não vinculada — vincular agora?`;
-        const sel = document.getElementById('drawerCampaignLinkSelect');
-        sel.innerHTML = '<option value="">Selecionar campanha...</option>';
-        campaigns.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.id;
-            opt.textContent = c.name;
-            sel.appendChild(opt);
-        });
-        hint.style.display = '';
-    } else {
-        hint.style.display = 'none';
-    }
 }
 
-function linkCampaignFromHint() {
-    const campId = document.getElementById('drawerCampaignLinkSelect').value;
-    if (!campId || !_currentLeadId) return;
-    fetch(LEAD_UPD.replace(':id', _currentLeadId), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-        body: JSON.stringify({ campaign_id: parseInt(campId) }),
-    }).then(r => r.json()).then(data => {
-        if (data.success) {
-            document.getElementById('fCampaign').value = campId;
-            document.getElementById('drawerCampaignHint').style.display = 'none';
-        }
-    });
+function toggleAdvancedAccordion() {
+    const body = document.getElementById('drawerAdvancedBody');
+    const icon = document.getElementById('drawerAdvancedIcon');
+    const open = body.style.display === 'none';
+    body.style.display = open ? '' : 'none';
+    icon.style.transform = open ? 'rotate(180deg)' : '';
 }
 
 // ── Notas múltiplas ───────────────────────────────────────────────────────
@@ -995,6 +970,10 @@ function resetDrawerForm() {
     document.getElementById('fNoteInput').value = '';
     document.getElementById('customFieldsSection').style.display = 'none';
     document.getElementById('customFieldsContainer').innerHTML = '';
+    document.getElementById('drawerAdvancedSection').style.display = 'none';
+    document.getElementById('drawerAdvancedBody').style.display = 'none';
+    document.getElementById('drawerAdvancedIcon').style.transform = '';
+    document.getElementById('drawerUtmSection').style.display = 'none';
     setTags([]);
     document.getElementById('tagRawInput').value = '';
     clearDrawerErrors();

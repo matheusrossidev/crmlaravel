@@ -18,6 +18,14 @@
 
     if (!token) { console.warn('[Widget] data-token is required'); return; }
 
+    // ── Inject Poppins font ────────────────────────────────────────────────────
+    var fontLink = document.createElement('link');
+    fontLink.rel = 'stylesheet';
+    fontLink.href = 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap';
+    document.head.appendChild(fontLink);
+
+    var FONT = "'Poppins', sans-serif";
+
     // ── Visitor ID (persisted via localStorage) ─────────────────────────────────
     var VID_KEY   = 'syncro_vid_' + token;
     var visitorId = localStorage.getItem(VID_KEY);
@@ -62,16 +70,16 @@
         '#syncro-launcher img{width:60px;height:60px;border-radius:50%;object-fit:cover;}',
 
         /* Welcome bubble — à esquerda do launcher */
-        '#syncro-welcome{position:fixed;bottom:30px;right:96px;max-width:240px;background:#fff;border-radius:14px 14px 4px 14px;box-shadow:0 4px 24px rgba(0,0,0,.15);padding:11px 14px;font-size:13.5px;line-height:1.45;color:#1a1d23;z-index:99997;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;opacity:0;transform:translateX(8px);transition:opacity .3s,transform .3s;}',
+        '#syncro-welcome{position:fixed;bottom:30px;right:96px;max-width:240px;background:#fff;border-radius:14px 14px 4px 14px;box-shadow:0 4px 24px rgba(0,0,0,.15);padding:11px 14px;font-size:13.5px;line-height:1.45;color:#1a1d23;z-index:99997;cursor:pointer;font-family:' + FONT + ';opacity:0;transform:translateX(8px);transition:opacity .3s,transform .3s;}',
         '#syncro-welcome.visible{opacity:1;transform:translateX(0);}',
         '#syncro-welcome-close{position:absolute;top:4px;right:6px;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:14px;line-height:1;padding:0;}',
 
         /* Panel — bubble mode */
-        '#syncro-panel{position:fixed;bottom:24px;right:24px;width:380px;max-height:600px;border-radius:16px;background:#fff;box-shadow:0 8px 40px rgba(0,0,0,.18);display:none;flex-direction:column;overflow:hidden;z-index:99999;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}',
+        '#syncro-panel{position:fixed;bottom:24px;right:24px;width:380px;max-height:600px;border-radius:16px;background:#fff;box-shadow:0 8px 40px rgba(0,0,0,.18);display:none;flex-direction:column;overflow:hidden;z-index:99999;font-family:' + FONT + ';}',
         '#syncro-panel.open{display:flex;}',
 
         /* Panel — inline mode overrides */
-        '#syncro-panel.syncro-inline{position:static;bottom:auto;right:auto;width:100%;max-width:100%;height:100%;max-height:100%;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.1);display:flex;}',
+        '#syncro-panel.syncro-inline{position:static;bottom:auto;right:auto;width:100%;max-width:100%;height:100vh;max-height:100vh;border-radius:0;box-shadow:none;display:flex;font-family:' + FONT + ';}',
 
         /* Header */
         '.syncro-header{background:' + colorPrimary + ';color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;}',
@@ -84,22 +92,28 @@
         '.syncro-header-close{background:rgba(255,255,255,0.15);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;}',
         '.syncro-header-close:hover{background:rgba(255,255,255,0.25);}',
 
+        /* Hide header in inline mode */
+        '#syncro-panel.syncro-inline .syncro-header{display:none;}',
+
         /* Messages */
-        '.syncro-messages{flex:1;overflow-y:auto;padding:12px 12px 6px;display:flex;flex-direction:column;gap:6px;min-height:200px;}',
+        '.syncro-messages{flex:1;overflow-y:auto;padding:16px 16px 8px;display:flex;flex-direction:column;gap:15px;min-height:200px;}',
 
         /* Message rows */
-        '.syncro-msg-row{display:flex;align-items:flex-end;gap:6px;}',
+        '.syncro-msg-row{display:flex;align-items:flex-end;gap:8px;animation:syncro-fadeIn .4s ease-out;}',
         '.syncro-msg-row.out-row{flex-direction:row-reverse;}',
-        '.syncro-msg-avatar{width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;}',
-        '.syncro-msg-avatar-placeholder{width:26px;height:26px;border-radius:50%;background:' + colorPrimary + '22;display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
+        '.syncro-msg-avatar{width:40px;height:40px;border-radius:50px;object-fit:cover;flex-shrink:0;}',
+        '.syncro-msg-avatar-placeholder{width:40px;height:40px;border-radius:50px;background:' + colorPrimary + '22;display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
 
         /* Bubbles */
-        '.syncro-bubble{max-width:75%;padding:9px 13px;border-radius:12px;font-size:13.5px;line-height:1.5;word-break:break-word;}',
+        '.syncro-bubble{max-width:75%;padding:10px 14px;border-radius:12px;font-size:13.5px;line-height:1.5;word-break:break-word;}',
         '.syncro-bubble.in{background:#f0f2f7;color:#1a1d23;border-bottom-left-radius:4px;}',
         '.syncro-bubble.out{background:' + colorPrimary + ';color:#fff;border-bottom-right-radius:4px;}',
 
+        /* Fade-in animation for new messages */
+        '@keyframes syncro-fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}',
+
         /* Typing */
-        '.syncro-typing-row{display:flex;align-items:flex-end;gap:6px;padding:4px 0 6px;}',
+        '.syncro-typing-row{display:flex;align-items:flex-end;gap:8px;padding:4px 0 6px;animation:syncro-fadeIn .3s ease-out;}',
         '.syncro-typing-bubble{background:#f0f2f7;border-radius:12px 12px 12px 4px;padding:10px 14px;display:flex;gap:4px;align-items:center;}',
         '.syncro-typing-dot{width:7px;height:7px;border-radius:50%;background:#9ca3af;animation:syncro-bounce .8s infinite ease-in-out;}',
         '.syncro-typing-dot:nth-child(2){animation-delay:.15s;}',
@@ -112,12 +126,17 @@
         '.syncro-btn:hover{background:' + colorPrimary + ';color:#fff;}',
 
         /* Input row */
-        '.syncro-input-row{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #f0f2f7;flex-shrink:0;}',
-        '.syncro-input{flex:1;padding:9px 12px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:13.5px;outline:none;font-family:inherit;transition:border-color .15s;}',
+        '.syncro-input-row{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #f0f2f7;flex-shrink:0;align-items:center;}',
+        '.syncro-input{flex:1;padding:10px 14px;border:1.5px solid #e8eaf0;border-radius:24px;font-size:13.5px;outline:none;font-family:inherit;transition:border-color .15s;}',
         '.syncro-input:focus{border-color:' + colorPrimary + ';}',
-        '.syncro-send{padding:9px 16px;background:' + colorPrimary + ';color:#fff;border:none;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;transition:opacity .15s;}',
+        '.syncro-input.syncro-input-error{border-color:#ef4444;animation:syncro-shake .4s ease-in-out;}',
+        '@keyframes syncro-shake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-4px);}40%,80%{transform:translateX(4px);}}',
+
+        /* Send button — round with airplane icon */
+        '.syncro-send{width:40px;height:40px;min-width:40px;background:' + colorPrimary + ';color:#fff;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .15s;padding:0;}',
         '.syncro-send:hover{opacity:.88;}',
         '.syncro-send:disabled{opacity:.5;cursor:default;}',
+        '.syncro-send svg{width:18px;height:18px;fill:currentColor;}',
         '.syncro-bubble img{max-width:100%;border-radius:8px;display:block;}',
     ].join('');
     document.head.appendChild(style);
@@ -140,7 +159,9 @@
             '<div class="syncro-messages" id="syncro-msgs"></div>',
             '<div class="syncro-input-row">',
             '  <input class="syncro-input" id="syncro-input" placeholder="Digite uma mensagem..." autocomplete="off">',
-            '  <button class="syncro-send" id="syncro-send">Enviar</button>',
+            '  <button class="syncro-send" id="syncro-send" aria-label="Enviar">',
+            '    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
+            '  </button>',
             '</div>',
         ].join('');
     }
@@ -170,6 +191,8 @@
     function applyInputType(type) {
         inputType = type || 'text';
         if (!inputEl) return;
+        // Clear error state
+        inputEl.classList.remove('syncro-input-error');
         if (type === 'phone') {
             inputEl.type = 'tel';
             inputEl.placeholder = '(11) 99999-9999';
@@ -181,6 +204,7 @@
         } else if (type === 'email') {
             inputEl.type = 'email';
             inputEl.placeholder = 'seu@email.com';
+            inputEl.removeAttribute('inputmode');
             if (inputEl._phoneMaskOn) {
                 inputEl._phoneMaskOn = false;
                 inputEl.removeEventListener('input', phoneMask);
@@ -188,6 +212,7 @@
         } else {
             inputEl.type = 'text';
             inputEl.placeholder = 'Digite uma mensagem...';
+            inputEl.removeAttribute('inputmode');
             if (inputEl._phoneMaskOn) {
                 inputEl._phoneMaskOn = false;
                 inputEl.removeEventListener('input', phoneMask);
@@ -195,9 +220,28 @@
         }
     }
 
+    function validateInput(text) {
+        if (inputType === 'phone') {
+            var digits = text.replace(/\D/g, '');
+            if (digits.length < 10) {
+                inputEl.classList.add('syncro-input-error');
+                setTimeout(function() { inputEl.classList.remove('syncro-input-error'); }, 600);
+                return false;
+            }
+        }
+        if (inputType === 'email') {
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) {
+                inputEl.classList.add('syncro-input-error');
+                setTimeout(function() { inputEl.classList.remove('syncro-input-error'); }, 600);
+                return false;
+            }
+        }
+        return true;
+    }
+
     function typingDelay(reply) {
         var text = (typeof reply === 'object' && reply !== null) ? (reply.text || '') : String(reply);
-        return Math.min(600 + text.length * 15, 1800);
+        return Math.min(1000 + text.length * 20, 3000);
     }
 
     function escHtml(s) {
@@ -217,6 +261,7 @@
 
         var row = document.createElement('div');
         row.className = 'syncro-msg-row ' + (direction === 'inbound' ? 'out-row' : '');
+        if (instant) row.style.animation = 'none';
 
         if (direction !== 'inbound' && botAvatar) {
             var av = document.createElement('img');
@@ -227,7 +272,7 @@
         } else if (direction !== 'inbound') {
             var avPh = document.createElement('div');
             avPh.className = 'syncro-msg-avatar-placeholder';
-            avPh.innerHTML = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:' + colorPrimary + '"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>';
+            avPh.innerHTML = '<svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:' + colorPrimary + '"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>';
             row.appendChild(avPh);
         }
 
@@ -269,7 +314,7 @@
         } else {
             var avPh = document.createElement('div');
             avPh.className = 'syncro-msg-avatar-placeholder';
-            avPh.innerHTML = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:' + colorPrimary + '"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>';
+            avPh.innerHTML = '<svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:' + colorPrimary + '"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>';
             row.appendChild(avPh);
         }
 
@@ -340,7 +385,7 @@
             }
             appendBubble(replies[i], 'outbound', instant);
             if (!instant && i < replies.length - 1) {
-                await sleep(250);
+                await sleep(600);
             }
         }
         renderButtons(buttons);
@@ -359,9 +404,9 @@
         botName   = name  || 'Chat';
         botAvatar = resolveUrl(avatar);
 
-        hdrName.textContent = botName;
+        if (hdrName) hdrName.textContent = botName;
 
-        if (botAvatar) {
+        if (botAvatar && hdrAvatarWrap) {
             hdrAvatarWrap.innerHTML = '';
             hdrAvatarWrap.className = '';
             var img = document.createElement('img');
@@ -459,6 +504,9 @@
     async function sendMessage() {
         var text = inputEl.value.trim();
         if (!text || sending) return;
+
+        // Validate phone/email before sending
+        if (!validateInput(text)) return;
 
         var btns = document.getElementById('syncro-quick-btns');
         if (btns) btns.remove();
@@ -560,8 +608,8 @@
             return;
         }
 
-        // Style the container
-        container.style.cssText = 'display:flex;flex-direction:column;width:100%;height:100%;min-height:400px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;';
+        // Style the container — full viewport
+        container.style.cssText = 'display:flex;flex-direction:column;width:100%;height:100vh;font-family:' + FONT + ';';
 
         panel = document.createElement('div');
         panel.id = 'syncro-panel';

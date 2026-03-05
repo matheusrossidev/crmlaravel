@@ -9,6 +9,8 @@ use App\Models\ChatbotFlow;
 use App\Models\CustomFieldDefinition;
 use App\Models\Pipeline;
 use App\Models\User;
+use App\Models\WebsiteConversation;
+use App\Models\WhatsappConversation;
 use App\Models\WhatsappTag;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -169,6 +171,112 @@ class ChatbotFlowController extends Controller
             ]);
 
         return response()->json($pipelines);
+    }
+
+    /**
+     * Resultados do fluxo — tabela com respostas de cada conversa (estilo Typebot).
+     */
+    public function results(ChatbotFlow $flow): View
+    {
+        // Extrair colunas dinâmicas do flow (variáveis com save_to)
+        $variableKeys = $this->extractVariableKeys($flow);
+
+        if ($flow->channel === 'website') {
+            $conversations = WebsiteConversation::where('flow_id', $flow->id)
+                ->orderByDesc('started_at')
+                ->get();
+
+            $rows = $conversations->map(function (WebsiteConversation $c) use ($variableKeys) {
+                $vars = $c->chatbot_variables ?? [];
+                $row = [
+                    'id'         => $c->id,
+                    'date'       => $c->started_at?->format('d/m/Y H:i'),
+                    'name'       => $c->contact_name,
+                    'email'      => $c->contact_email,
+                    'phone'      => $c->contact_phone,
+                    'status'     => $c->status,
+                    'lead_id'    => $c->lead_id,
+                    'utm_source'   => $c->utm_source,
+                    'utm_medium'   => $c->utm_medium,
+                    'utm_campaign' => $c->utm_campaign,
+                    'utm_content'  => $c->utm_content,
+                    'utm_term'     => $c->utm_term,
+                    'variables'  => [],
+                ];
+                foreach ($variableKeys as $key) {
+                    $row['variables'][$key] = $vars[$key] ?? '';
+                }
+                return $row;
+            });
+
+            $fixedColumns = ['Data', 'Nome', 'Email', 'Telefone', 'UTM Source', 'UTM Medium', 'UTM Campaign'];
+        } else {
+            // WhatsApp / Instagram
+            $conversations = WhatsappConversation::where('chatbot_flow_id', $flow->id)
+                ->orderByDesc('last_message_at')
+                ->get();
+
+            $rows = $conversations->map(function (WhatsappConversation $c) use ($variableKeys) {
+                $vars = $c->chatbot_variables ?? [];
+                $row = [
+                    'id'     => $c->id,
+                    'date'   => $c->last_message_at?->format('d/m/Y H:i') ?? $c->created_at?->format('d/m/Y H:i'),
+                    'name'   => $c->contact_name,
+                    'phone'  => $c->phone,
+                    'status' => $c->status,
+                    'lead_id' => null,
+                    'variables' => [],
+                ];
+                foreach ($variableKeys as $key) {
+                    $row['variables'][$key] = $vars[$key] ?? '';
+                }
+                return $row;
+            });
+
+            $fixedColumns = ['Data', 'Nome', 'Telefone'];
+        }
+
+        return view('tenant.chatbot.results', [
+            'flow'          => $flow,
+            'rows'          => $rows,
+            'variableKeys'  => $variableKeys,
+            'fixedColumns'  => $fixedColumns,
+            'totalCount'    => $rows->count(),
+        ]);
+    }
+
+    /**
+     * Extrai as keys save_to dos nós input do flow steps.
+     */
+    private function extractVariableKeys(ChatbotFlow $flow): array
+    {
+        $keys = [];
+        $steps = $flow->steps ?? [];
+        $this->walkSteps($steps, $keys);
+        return array_unique($keys);
+    }
+
+    private function walkSteps(array $steps, array &$keys): void
+    {
+        foreach ($steps as $step) {
+            if (!is_array($step)) continue;
+
+            if (($step['type'] ?? '') === 'input' && !empty($step['config']['save_to'])) {
+                $keys[] = $step['config']['save_to'];
+            }
+
+            // Recurse into branches
+            foreach (['branches', 'children', 'default_branch'] as $child) {
+                if (isset($step[$child]) && is_array($step[$child])) {
+                    $this->walkSteps($step[$child], $keys);
+                }
+            }
+
+            // Some flows nest steps inside branch items
+            if (isset($step['steps']) && is_array($step['steps'])) {
+                $this->walkSteps($step['steps'], $keys);
+            }
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

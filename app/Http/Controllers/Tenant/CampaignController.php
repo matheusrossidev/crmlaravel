@@ -16,46 +16,191 @@ use Illuminate\View\View;
 
 class CampaignController extends Controller
 {
-    // ── GET /campanhas ────────────────────────────────────────────────────────
-    public function index(): View
+    // ── GET /campanhas — Relatórios UTM ──────────────────────────────────────
+    public function index(Request $request): View
     {
-        $campaigns = Campaign::withCount('leads')
-            ->with(['adSpends' => fn ($q) => $q->orderByDesc('date')])
-            ->orderBy('name')
+        $days  = (int) $request->get('days', 30);
+        $since = Carbon::now()->subDays($days)->startOfDay();
+        $prevSince = Carbon::now()->subDays($days * 2)->startOfDay();
+
+        $utmFilter = function ($q) {
+            $q->whereNotNull('leads.utm_source')
+              ->orWhereNotNull('leads.utm_medium')
+              ->orWhereNotNull('leads.utm_campaign');
+        };
+
+        // ── UTM Breakdown (agrupamento por utm_source + utm_medium + utm_campaign)
+        $utmBreakdown = Lead::query()
+            ->select([
+                DB::raw('COALESCE(leads.utm_source, "(direto)") as utm_source'),
+                DB::raw('COALESCE(leads.utm_medium, "(direto)") as utm_medium'),
+                DB::raw('COALESCE(leads.utm_campaign, "(direto)") as utm_campaign'),
+                DB::raw('COUNT(DISTINCT leads.id) as leads_count'),
+                DB::raw('COUNT(DISTINCT sales.id) as conversions'),
+                DB::raw('COALESCE(SUM(sales.value), 0) as revenue'),
+            ])
+            ->leftJoin('sales', 'sales.lead_id', '=', 'leads.id')
+            ->where('leads.created_at', '>=', $since)
+            ->where($utmFilter)
+            ->groupBy('utm_source', 'utm_medium', 'utm_campaign')
+            ->orderByDesc('leads_count')
+            ->limit(100)
             ->get()
-            ->map(function (Campaign $campaign) {
-                $spends = $campaign->adSpends;
-                $totalSpend       = (float) $spends->sum('spend');
-                $totalImpressions = (int)   $spends->sum('impressions');
-                $totalClicks      = (int)   $spends->sum('clicks');
-                $leadsCount       = $campaign->leads_count;
-
-                // Conversions = sales for this campaign
-                $conversions = DB::table('sales')
-                    ->where('campaign_id', $campaign->id)
-                    ->count();
-
-                $revenue = (float) DB::table('sales')
-                    ->where('campaign_id', $campaign->id)
-                    ->sum('value');
-
+            ->map(function ($row) {
+                $leads = (int) $row->leads_count;
+                $conv  = (int) $row->conversions;
                 return [
-                    'campaign'          => $campaign,
-                    'total_spend'       => $totalSpend,
-                    'total_impressions' => $totalImpressions,
-                    'total_clicks'      => $totalClicks,
-                    'leads_count'       => $leadsCount,
-                    'conversions'       => $conversions,
-                    'revenue'           => $revenue,
-                    'cost_per_lead'     => $leadsCount > 0 ? round($totalSpend / $leadsCount, 2) : null,
-                    'roi'               => $totalSpend > 0 ? round(($revenue - $totalSpend) / $totalSpend * 100, 1) : null,
-                    'ctr'               => $totalImpressions > 0
-                        ? round($totalClicks / $totalImpressions * 100, 2)
-                        : null,
+                    'utm_source'   => $row->utm_source,
+                    'utm_medium'   => $row->utm_medium,
+                    'utm_campaign' => $row->utm_campaign,
+                    'leads'        => $leads,
+                    'conversions'  => $conv,
+                    'revenue'      => (float) $row->revenue,
+                    'conv_rate'    => $leads > 0 ? round($conv / $leads * 100, 1) : 0,
                 ];
             });
 
-        return view('tenant.campaigns.index', compact('campaigns'));
+        // ── KPIs totais (período atual)
+        $totalLeads       = $utmBreakdown->sum('leads');
+        $totalConversions = $utmBreakdown->sum('conversions');
+        $totalRevenue     = $utmBreakdown->sum('revenue');
+        $convRate         = $totalLeads > 0 ? round($totalConversions / $totalLeads * 100, 1) : 0;
+
+        // ── KPIs período anterior (para comparação)
+        $prevKpis = Lead::query()
+            ->select([
+                DB::raw('COUNT(DISTINCT leads.id) as leads_count'),
+                DB::raw('COUNT(DISTINCT sales.id) as conversions'),
+                DB::raw('COALESCE(SUM(sales.value), 0) as revenue'),
+            ])
+            ->leftJoin('sales', 'sales.lead_id', '=', 'leads.id')
+            ->where('leads.created_at', '>=', $prevSince)
+            ->where('leads.created_at', '<', $since)
+            ->where($utmFilter)
+            ->first();
+
+        $prevLeads = (int) ($prevKpis->leads_count ?? 0);
+        $prevConv  = (int) ($prevKpis->conversions ?? 0);
+        $prevRev   = (float) ($prevKpis->revenue ?? 0);
+
+        $deltaLeads = $prevLeads > 0 ? round(($totalLeads - $prevLeads) / $prevLeads * 100, 1) : null;
+        $deltaConv  = $prevConv > 0 ? round(($totalConversions - $prevConv) / $prevConv * 100, 1) : null;
+        $deltaRev   = $prevRev > 0 ? round(($totalRevenue - $prevRev) / $prevRev * 100, 1) : null;
+
+        // ── Top Performers
+        $topSource = $utmBreakdown->groupBy('utm_source')
+            ->map(fn ($g) => $g->sum('leads'))
+            ->sortDesc()
+            ->first();
+        $topSourceName = $utmBreakdown->groupBy('utm_source')
+            ->map(fn ($g) => $g->sum('leads'))
+            ->sortDesc()
+            ->keys()
+            ->first() ?? '—';
+
+        $topMedium = $utmBreakdown->groupBy('utm_medium')
+            ->map(fn ($g) => $g->sum('leads'))
+            ->sortDesc()
+            ->first();
+        $topMediumName = $utmBreakdown->groupBy('utm_medium')
+            ->map(fn ($g) => $g->sum('leads'))
+            ->sortDesc()
+            ->keys()
+            ->first() ?? '—';
+
+        $topCampaign = $utmBreakdown->where('leads', '>=', 3)
+            ->sortByDesc('conv_rate')
+            ->first();
+
+        // ── Chart: Doughnut — distribuição por source
+        $bySource = $utmBreakdown->groupBy('utm_source')
+            ->map(fn ($g) => $g->sum('leads'))
+            ->sortDesc()
+            ->take(8);
+        $doughnutLabels = $bySource->keys()->toArray();
+        $doughnutData   = $bySource->values()->toArray();
+
+        // ── Chart: leads por utm_campaign (bar)
+        $byUtmCampaign = $utmBreakdown->groupBy('utm_campaign')
+            ->map(fn ($g) => $g->sum('leads'))
+            ->sortDesc()
+            ->take(10);
+        $barLabels = $byUtmCampaign->keys()->toArray();
+        $barData   = $byUtmCampaign->values()->toArray();
+
+        // ── Chart: evolução semanal (line)
+        $weeks = collect();
+        for ($i = 7; $i >= 0; $i--) {
+            $weeks->push(Carbon::now()->subWeeks($i)->startOfWeek()->format('Y-m-d'));
+        }
+
+        $weeklyRaw = Lead::query()
+            ->select([
+                DB::raw("DATE_FORMAT(DATE_SUB(leads.created_at, INTERVAL (DAYOFWEEK(leads.created_at)-2+7)%7 DAY), '%Y-%m-%d') as week_start"),
+                DB::raw('COUNT(*) as leads_count'),
+            ])
+            ->where('leads.created_at', '>=', Carbon::now()->subWeeks(8))
+            ->where($utmFilter)
+            ->groupBy('week_start')
+            ->get()
+            ->keyBy('week_start');
+
+        $lineLabels = $weeks->map(fn ($w) => Carbon::parse($w)->format('d/m'))->toArray();
+        $lineData   = $weeks->map(fn ($w) => (int) ($weeklyRaw[$w]->leads_count ?? 0))->toArray();
+
+        // ── Max leads (para barra de progresso na tabela)
+        $maxLeads = $utmBreakdown->max('leads') ?: 1;
+
+        return view('tenant.campaigns.index', compact(
+            'utmBreakdown', 'days', 'maxLeads',
+            'totalLeads', 'totalConversions', 'totalRevenue', 'convRate',
+            'deltaLeads', 'deltaConv', 'deltaRev',
+            'topSourceName', 'topSource', 'topMediumName', 'topMedium', 'topCampaign',
+            'doughnutLabels', 'doughnutData',
+            'barLabels', 'barData',
+            'lineLabels', 'lineData'
+        ));
+    }
+
+    // ── GET /campanhas/drill-down (AJAX) ─────────────────────────────────────
+    public function drillDown(Request $request): JsonResponse
+    {
+        $source   = $request->get('source');
+        $medium   = $request->get('medium');
+        $campaign = $request->get('campaign');
+        $days     = (int) $request->get('days', 30);
+        $since    = Carbon::now()->subDays($days)->startOfDay();
+
+        $query = Lead::with(['stage', 'pipeline'])
+            ->where('created_at', '>=', $since);
+
+        if ($source && $source !== '(direto)') {
+            $query->where('utm_source', $source);
+        } elseif ($source === '(direto)') {
+            $query->whereNull('utm_source');
+        }
+        if ($medium && $medium !== '(direto)') {
+            $query->where('utm_medium', $medium);
+        } elseif ($medium === '(direto)') {
+            $query->whereNull('utm_medium');
+        }
+        if ($campaign && $campaign !== '(direto)') {
+            $query->where('utm_campaign', $campaign);
+        } elseif ($campaign === '(direto)') {
+            $query->whereNull('utm_campaign');
+        }
+
+        $leads = $query->orderByDesc('created_at')->limit(50)->get()->map(fn (Lead $l) => [
+            'id'         => $l->id,
+            'name'       => $l->name,
+            'email'      => $l->email,
+            'phone'      => $l->phone,
+            'created_at' => $l->created_at?->format('d/m/Y H:i'),
+            'stage'      => $l->stage?->name,
+            'pipeline'   => $l->pipeline?->name,
+        ]);
+
+        return response()->json(['leads' => $leads]);
     }
 
     // ── POST /campanhas ───────────────────────────────────────────────────────

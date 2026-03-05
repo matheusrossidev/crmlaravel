@@ -557,6 +557,11 @@ function closeWidgetTest() {
                            style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;text-decoration:none;color:#374151;">
                             <i class="bi bi-pencil"></i> Editar
                         </a>
+                        <a href="{{ route('chatbot.flows.results', $flow) }}"
+                           class="btn btn-sm btn-light"
+                           style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;text-decoration:none;color:#374151;">
+                            <i class="bi bi-bar-chart-line"></i> Resultados
+                        </a>
                         @if($flow->website_token)
                         <button type="button" class="btn btn-sm btn-light"
                                 onclick="openWidgetTest('{{ $flow->website_token }}')"

@@ -68,12 +68,7 @@ class WhatsappController extends Controller
                 ->get();
         }
 
-        // Carregar conversas do widget website
-        $websiteConversations = WebsiteConversation::with(['latestMessage', 'lead'])
-            ->orderByDesc('last_message_at')
-            ->get();
-
-        // Unificar e ordenar por data (WhatsApp + Instagram + Website)
+        // Unificar e ordenar por data (WhatsApp + Instagram)
         $allConversations = collect();
         foreach ($conversations as $c) {
             $c->_channel = 'whatsapp';
@@ -81,10 +76,6 @@ class WhatsappController extends Controller
         }
         foreach ($igConversations as $c) {
             $c->_channel = 'instagram';
-            $allConversations->push($c);
-        }
-        foreach ($websiteConversations as $c) {
-            $c->_channel = 'website';
             $allConversations->push($c);
         }
         $allConversations = $allConversations->sortByDesc('last_message_at')->values();

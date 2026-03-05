@@ -159,6 +159,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::put   ('/campanhas/{campaign}',          [CampaignController::class, 'update']) ->name('campaigns.update');
     Route::delete('/campanhas/{campaign}',          [CampaignController::class, 'destroy'])->name('campaigns.destroy');
     Route::get   ('/campanhas/relatorios',          [CampaignController::class, 'reports'])->name('campaigns.reports');
+    Route::get   ('/campanhas/drill-down',          [CampaignController::class, 'drillDown'])->name('campaigns.drill-down');
 
     // Integrações
     Route::prefix('configuracoes/integracoes')->name('settings.integrations.')->group(function () {
@@ -243,6 +244,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::post('upload-image',  [ChatbotFlowController::class, 'uploadImage'])->name('upload-image');
         Route::post('{flow}/toggle',    [ChatbotFlowController::class, 'toggle'])->name('toggle');
         Route::put('{flow}/graph',      [ChatbotFlowController::class, 'saveGraph'])->name('graph');
+        Route::get('{flow}/resultados', [ChatbotFlowController::class, 'results'])->name('results');
     });
 
     // Automações de Instagram
