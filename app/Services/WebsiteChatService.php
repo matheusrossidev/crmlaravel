@@ -372,6 +372,17 @@ class WebsiteChatService
 
     private function findStartNode(int $flowId): ?ChatbotFlowNode
     {
+        // Prefer explicit start node (is_start = true)
+        $startNode = ChatbotFlowNode::withoutGlobalScope('tenant')
+            ->where('flow_id', $flowId)
+            ->where('is_start', true)
+            ->first();
+
+        if ($startNode) {
+            return $startNode;
+        }
+
+        // Fallback for old flows: first node with no incoming edges
         $targetIds = ChatbotFlowEdge::withoutGlobalScope('tenant')
             ->where('flow_id', $flowId)
             ->pluck('target_node_id')

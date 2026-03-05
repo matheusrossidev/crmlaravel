@@ -211,7 +211,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::post('/website-conversations/{websiteConversation}/read',          [WhatsappController::class, 'markReadWebsite'])->name('website-conversations.read');
         Route::put ('/website-conversations/{websiteConversation}/status',        [WhatsappController::class, 'updateStatusWebsite'])->name('website-conversations.status');
         Route::put ('/website-conversations/{websiteConversation}/link-lead',     [WhatsappController::class, 'linkLeadWebsite'])->name('website-conversations.link-lead');
-        Route::put ('/website-conversations/{websiteConversation}/unlink-lead',   [WhatsappController::class, 'unlinkLeadWebsite'])->name('website-conversations.unlink-lead');
+        Route::put   ('/website-conversations/{websiteConversation}/unlink-lead',   [WhatsappController::class, 'unlinkLeadWebsite'])->name('website-conversations.unlink-lead');
+        Route::delete('/website-conversations/{websiteConversation}',               [WhatsappController::class, 'destroyWebsite'])->name('website-conversations.destroy');
 
         // AI Analyst — sugestões por conversa
         Route::get ('{conversation}/analyst-suggestions',             [AiAnalystController::class, 'index'])->name('analyst.index');

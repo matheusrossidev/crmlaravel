@@ -28,13 +28,24 @@ const BLUE_BORDER = '#bfdbfe';
 
 // Bootstrap Icons (bi bi-*) — FontAwesome não está instalado no projeto
 const NODE_TYPES_CONFIG = {
-    message:   { label: 'Mensagem', icon: 'chat-dots'       },
+    start:     { label: 'Início',   icon: 'play-fill'        },
+    message:   { label: 'Mensagem', icon: 'chat-dots'        },
     input:     { label: 'Pergunta', icon: 'keyboard'         },
     condition: { label: 'Condição', icon: 'diagram-2'        },
     action:    { label: 'Ação',     icon: 'lightning-charge' },
     delay:     { label: 'Aguardar', icon: 'hourglass-split'  },
     end:       { label: 'Fim',      icon: 'stop-circle'      },
 };
+
+// Tipos disponíveis na sidebar (start não aparece — criado automaticamente)
+const SIDEBAR_NODE_TYPES = [
+    { type: 'message',   label: 'Mensagem', icon: 'chat-dots',        color: '#2563eb' },
+    { type: 'input',     label: 'Pergunta', icon: 'keyboard',          color: '#7c3aed' },
+    { type: 'condition', label: 'Condição', icon: 'diagram-2',         color: '#ea580c' },
+    { type: 'action',    label: 'Ação',     icon: 'lightning-charge',  color: '#ca8a04' },
+    { type: 'delay',     label: 'Aguardar', icon: 'hourglass-split',   color: '#4b5563' },
+    { type: 'end',       label: 'Fim',      icon: 'stop-circle',       color: '#dc2626' },
+];
 
 const ACTION_TYPES = [
     { value: 'create_lead',        label: 'Criar Lead'                      },
@@ -385,7 +396,57 @@ function EndNode({ id, data, selected }) {
     );
 }
 
-const nodeTypes = { message: MessageNode, input: InputNode, condition: ConditionNode, action: ActionNode, delay: DelayNode, end: EndNode };
+function StartNode({ id, data, selected }) {
+    const GREEN  = '#10b981';
+    const GLIGHT = '#ecfdf5';
+    const FONT   = "'Inter', system-ui, sans-serif";
+
+    return (
+        <div style={{
+            background: GLIGHT,
+            border: `1.5px solid ${selected ? GREEN : '#6ee7b7'}`,
+            borderRadius: 10,
+            width: 200,
+            position: 'relative',
+            boxShadow: selected
+                ? `0 0 0 3px ${GREEN}33, 0 6px 20px rgba(0,0,0,0.10)`
+                : '0 1px 6px rgba(0,0,0,0.07)',
+            fontFamily: FONT,
+        }}>
+            {/* No target handle — this is always the root */}
+            <div style={{
+                background: GREEN,
+                borderRadius: '8px 8px 0 0',
+                padding: '8px 12px',
+                display: 'flex', alignItems: 'center', gap: 8,
+                color: '#fff',
+            }}>
+                <i className="bi bi-play-fill" style={{ fontSize: 14 }} />
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', fontFamily: FONT }}>
+                    INÍCIO DO FLUXO
+                </span>
+            </div>
+            <div style={{ padding: '8px 12px', fontSize: 12, color: '#059669', lineHeight: 1.5, fontFamily: FONT }}>
+                {data.label || 'Conecte ao primeiro nó do fluxo.'}
+            </div>
+            <Handle
+                type="source"
+                position={Position.Right}
+                id="default"
+                style={{
+                    background: GREEN,
+                    width: 12, height: 12,
+                    border: '2px solid #fff',
+                    right: -7,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                }}
+            />
+        </div>
+    );
+}
+
+const nodeTypes = { start: StartNode, message: MessageNode, input: InputNode, condition: ConditionNode, action: ActionNode, delay: DelayNode, end: EndNode };
 
 // ── Node Edit Panel ───────────────────────────────────────────────────────────
 
@@ -1410,23 +1471,25 @@ function NodePanel({ node, onUpdate, onDelete, variables, pipelines, tags, users
                 </div>
             </div>
 
-            {/* Delete button — visible and prominent */}
-            <div style={{ padding: '10px 16px', borderBottom: '1px solid #f3f4f6', flexShrink: 0 }}>
-                <button
-                    onClick={() => onDelete(node.id)}
-                    style={{
-                        width: '100%',
-                        background: '#fff', border: '1px solid #fca5a5',
-                        color: '#dc2626', borderRadius: 7,
-                        padding: '7px 12px', cursor: 'pointer',
-                        fontSize: 12, fontWeight: 600,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    }}
-                >
-                    <i className="bi bi-trash3" />
-                    Excluir este nó
-                </button>
-            </div>
+            {/* Delete button — not shown for start node */}
+            {node.type !== 'start' && (
+                <div style={{ padding: '10px 16px', borderBottom: '1px solid #f3f4f6', flexShrink: 0 }}>
+                    <button
+                        onClick={() => onDelete(node.id)}
+                        style={{
+                            width: '100%',
+                            background: '#fff', border: '1px solid #fca5a5',
+                            color: '#dc2626', borderRadius: 7,
+                            padding: '7px 12px', cursor: 'pointer',
+                            fontSize: 12, fontWeight: 600,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        }}
+                    >
+                        <i className="bi bi-trash3" />
+                        Excluir este nó
+                    </button>
+                </div>
+            )}
 
             {/* Scroll area */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px' }}>
@@ -1719,6 +1782,62 @@ const defaultEdgeOptions = {
     markerEnd: { type: MarkerType.ArrowClosed, color: BLUE, width: 14, height: 14 },
 };
 
+// ── Node Sidebar (Typebot-style) ───────────────────────────────────────────────
+
+function NodeSidebar({ onAddNode, onDragStart }) {
+    const FONT = "'Inter', system-ui, sans-serif";
+
+    return (
+        <div style={{
+            width: 180, flexShrink: 0,
+            borderRight: '1px solid #e5e7eb',
+            background: '#fff',
+            display: 'flex', flexDirection: 'column',
+            zIndex: 10,
+        }}>
+            <div style={{
+                padding: '10px 12px',
+                borderBottom: '1px solid #e5e7eb',
+                background: '#f9fafb',
+            }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: FONT }}>Blocos</div>
+                <div style={{ fontSize: 10, color: '#d1d5db', marginTop: 2, fontFamily: FONT }}>Arraste ou clique</div>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+                {SIDEBAR_NODE_TYPES.map(({ type, label, icon, color }) => (
+                    <div
+                        key={type}
+                        draggable
+                        onDragStart={(e) => onDragStart(e, type)}
+                        onClick={() => onAddNode(type)}
+                        title={`Adicionar ${label}`}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            padding: '8px 10px', marginBottom: 5,
+                            background: '#f9fafb', border: '1px solid #e5e7eb',
+                            borderRadius: 8, cursor: 'grab',
+                            fontSize: 12, fontWeight: 600, color: '#374151',
+                            userSelect: 'none', fontFamily: FONT,
+                            transition: 'background .12s, border-color .12s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.borderColor = '#bfdbfe'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = '#f9fafb'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
+                    >
+                        <div style={{
+                            width: 28, height: 28, borderRadius: 7,
+                            background: color + '18',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        }}>
+                            <i className={`bi bi-${icon}`} style={{ fontSize: 13, color }} />
+                        </div>
+                        {label}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 // ── Main Builder ──────────────────────────────────────────────────────────────
 
 function ChatbotBuilder() {
@@ -1796,10 +1915,46 @@ function ChatbotBuilder() {
     }, [setNodes]);
 
     const deleteNode = useCallback((nodeId) => {
-        setNodes(ns => ns.filter(n => n.id !== nodeId));
+        setNodes(ns => {
+            const node = ns.find(n => n.id === nodeId);
+            if (node?.type === 'start') return ns; // start node cannot be deleted
+            return ns.filter(n => n.id !== nodeId);
+        });
         setEdges(es => es.filter(e => e.source !== nodeId && e.target !== nodeId));
         setSelectedNode(null);
     }, [setNodes, setEdges]);
+
+    // Intercept keyboard Delete to protect start node
+    const handleNodesChange = useCallback((changes) => {
+        const filtered = changes.filter(c => {
+            if (c.type === 'remove') {
+                const node = nodes.find(n => n.id === c.id);
+                return node?.type !== 'start';
+            }
+            return true;
+        });
+        onNodesChange(filtered);
+    }, [nodes, onNodesChange]);
+
+    // Drag & drop from sidebar to canvas
+    const onDragStart = useCallback((e, type) => {
+        e.dataTransfer.setData('node-type', type);
+        e.dataTransfer.effectAllowed = 'copy';
+    }, []);
+
+    const onDrop = useCallback((e) => {
+        e.preventDefault();
+        const type = e.dataTransfer.getData('node-type');
+        if (!type) return;
+        const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+        const id = genId();
+        setNodes(ns => [...ns, { id, type, position, data: { label: '' } }]);
+    }, [screenToFlowPosition, setNodes]);
+
+    const onDragOver = useCallback((e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+    }, []);
 
     const handleToggle = async () => {
         const nv = !isActive;
@@ -1825,7 +1980,21 @@ function ChatbotBuilder() {
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': cfg.csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
                 body: JSON.stringify(payload),
             });
-            setSaveMsg(res.ok ? 'Salvo' : 'Erro ao salvar');
+            if (res.ok) {
+                const json = await res.json();
+                // Atualizar IDs temporários (string) pelos IDs reais do banco (numéricos)
+                if (json.idMap && Object.keys(json.idMap).length > 0) {
+                    setNodes(ns => ns.map(n => ({ ...n, id: String(json.idMap[n.id] ?? n.id) })));
+                    setEdges(es => es.map(e => ({
+                        ...e,
+                        source: String(json.idMap[e.source] ?? e.source),
+                        target: String(json.idMap[e.target] ?? e.target),
+                    })));
+                }
+                setSaveMsg('Salvo');
+            } else {
+                setSaveMsg('Erro ao salvar');
+            }
         } catch {
             setSaveMsg('Erro de conexão');
         } finally {
@@ -1834,29 +2003,10 @@ function ChatbotBuilder() {
         }
     };
 
-    // Toolbar: uniform buttons
-    const nodeButtons = Object.entries(NODE_TYPES_CONFIG).map(([type, c]) => (
-        <button
-            key={type}
-            onClick={() => addNode(type)}
-            title={`Adicionar nó ${c.label}`}
-            style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                background: '#fff', border: '1px solid #e5e7eb',
-                color: '#374151', borderRadius: 7,
-                padding: '5px 11px', cursor: 'pointer',
-                fontSize: 12, fontWeight: 600,
-            }}
-        >
-            <i className={`bi bi-${c.icon}`} style={{ fontSize: 11, color: BLUE }} />
-            {c.label}
-        </button>
-    ));
-
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f8fafc' }}>
 
-            {/* ── Toolbar — barra fixa full-width, nunca espreme ── */}
+            {/* ── Top bar (slim — flow controls only) ── */}
             <div style={{
                 flexShrink: 0,
                 display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'nowrap',
@@ -1866,9 +2016,7 @@ function ChatbotBuilder() {
                 boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
                 overflowX: 'auto',
             }}>
-                {nodeButtons}
-
-                <div style={{ width: 1, height: 24, background: '#e5e7eb', margin: '0 2px', flexShrink: 0 }} />
+                <div style={{ width: 1, height: 0, flexShrink: 0 }} />
 
                 {/* Trigger toggle */}
                 <button
@@ -1948,7 +2096,10 @@ function ChatbotBuilder() {
             {/* ── Canvas area + side panels ── */}
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-                {/* Left: trigger panel */}
+                {/* Left: node sidebar (always visible) + optional trigger/vars panels */}
+                <NodeSidebar onAddNode={addNode} onDragStart={onDragStart} />
+
+                {/* Left: trigger panel (opens next to sidebar) */}
                 {showTrigger && (
                     <TriggerPanel keywords={triggerKeywords} setKeywords={setTriggerKeywords} onClose={() => setShowTrigger(false)} />
                 )}
@@ -1959,11 +2110,15 @@ function ChatbotBuilder() {
                 )}
 
                 {/* Center: canvas */}
-                <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+                <div
+                    style={{ flex: 1, position: 'relative', overflow: 'hidden' }}
+                    onDrop={onDrop}
+                    onDragOver={onDragOver}
+                >
                     <ReactFlow
                         nodes={displayNodes}
                         edges={edges}
-                        onNodesChange={onNodesChange}
+                        onNodesChange={handleNodesChange}
                         onEdgesChange={onEdgesChange}
                         onConnect={onConnect}
                         onNodeClick={onNodeClick}

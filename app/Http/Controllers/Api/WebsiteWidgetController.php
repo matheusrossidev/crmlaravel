@@ -94,7 +94,7 @@ class WebsiteWidgetController extends Controller
             'bot_avatar'      => $flow->bot_avatar,
             'welcome_message' => $flow->welcome_message,
             'widget_type'     => $flow->widget_type ?? 'bubble',
-        ]);
+        ])->header('Access-Control-Allow-Origin', '*');
     }
 
     private function truncate(?string $value, int $max): ?string
@@ -165,6 +165,6 @@ class WebsiteWidgetController extends Controller
             'buttons'         => $result['buttons'] ?? [],
             'input_type'      => $result['input_type'] ?? 'text',
             'conversation_id' => $conversation->id,
-        ]);
+        ])->header('Access-Control-Allow-Origin', '*');
     }
 }

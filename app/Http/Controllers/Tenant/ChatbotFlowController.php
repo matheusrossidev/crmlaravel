@@ -57,6 +57,20 @@ class ChatbotFlowController extends Controller
             return view('tenant.chatbot.form', compact('flow'));
         }
 
+        // Auto-create start node for flows that don't have one yet (migration for old flows)
+        if (! $flow->nodes()->where('type', 'start')->exists()) {
+            ChatbotFlowNode::create([
+                'flow_id'   => $flow->id,
+                'tenant_id' => auth()->user()->tenant_id,
+                'type'      => 'start',
+                'label'     => 'Início',
+                'config'    => [],
+                'canvas_x'  => -250,
+                'canvas_y'  => 0,
+                'is_start'  => true,
+            ]);
+        }
+
         $nodes = $flow->nodes()->get()->map(fn ($n) => [
             'id'       => (string) $n->id,
             'type'     => $n->type,
@@ -155,7 +169,7 @@ class ChatbotFlowController extends Controller
         $validated = $request->validate([
             'nodes'              => 'required|array',
             'nodes.*.id'         => 'required|string',
-            'nodes.*.type'       => 'required|string|in:message,input,condition,action,delay,end',
+            'nodes.*.type'       => 'required|string|in:message,input,condition,action,delay,end,start',
             'nodes.*.position.x' => 'required|numeric',
             'nodes.*.position.y' => 'required|numeric',
             'nodes.*.data'       => 'required|array',
@@ -166,21 +180,26 @@ class ChatbotFlowController extends Controller
             'trigger_keywords.*' => 'string|max:100',
         ]);
 
-        DB::transaction(function () use ($validated, $flow) {
+        $idMap = []; // 'old_id' => new_db_id — defined here so it's accessible after the transaction
+
+        DB::transaction(function () use ($validated, $flow, &$idMap) {
             $tenantId = auth()->user()->tenant_id;
 
             // ── Processar nós ─────────────────────────────────────────────────
             // Mapeamento de IDs temporários (React Flow usa strings como "node-1") para IDs do banco
-            $idMap = []; // 'old_id' => new_db_id
 
             // IDs que vieram do frontend (alguns são IDs do banco, outros são temporários)
             $incomingIds = collect($validated['nodes'])->pluck('id')->all();
 
             // Deletar nós que não estão mais no grafo
-            ChatbotFlowNode::withoutGlobalScope('tenant')
-                ->where('flow_id', $flow->id)
-                ->whereNotIn('id', array_filter($incomingIds, 'is_numeric'))
-                ->delete();
+            // Guard: whereNotIn('id', []) gera WHERE 1=1 e apaga tudo — só executar se houver IDs numéricos
+            $numericIds = array_values(array_filter($incomingIds, 'is_numeric'));
+            if (! empty($numericIds)) {
+                ChatbotFlowNode::withoutGlobalScope('tenant')
+                    ->where('flow_id', $flow->id)
+                    ->whereNotIn('id', $numericIds)
+                    ->delete();
+            }
 
             foreach ($validated['nodes'] as $nodeData) {
                 $nodeId   = $nodeData['id'];
@@ -197,6 +216,7 @@ class ChatbotFlowController extends Controller
                     'config'    => $config,
                     'canvas_x'  => $nodeData['position']['x'],
                     'canvas_y'  => $nodeData['position']['y'],
+                    'is_start'  => $nodeData['type'] === 'start',
                 ];
 
                 if (is_numeric($nodeId)) {
@@ -249,7 +269,8 @@ class ChatbotFlowController extends Controller
 
         Log::info('Chatbot: grafo salvo', ['flow_id' => $flow->id]);
 
-        return response()->json(['success' => true]);
+        // Retornar mapeamento de IDs temporários → IDs do banco para o frontend atualizar seu estado
+        return response()->json(['success' => true, 'idMap' => $idMap]);
     }
 
     /**

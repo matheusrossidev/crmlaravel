@@ -14,13 +14,14 @@ class ChatbotFlowNode extends Model
 
     protected $fillable = [
         'flow_id', 'tenant_id', 'type', 'label',
-        'config', 'canvas_x', 'canvas_y',
+        'config', 'canvas_x', 'canvas_y', 'is_start',
     ];
 
     protected $casts = [
         'config'   => 'array',
         'canvas_x' => 'float',
         'canvas_y' => 'float',
+        'is_start' => 'boolean',
     ];
 
     public function flow(): BelongsTo

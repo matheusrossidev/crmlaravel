@@ -8,7 +8,7 @@
     })();
 
     var token        = script.getAttribute('data-token');
-    var apiBase      = script.src.replace('/widget.js', '');
+    var apiBase      = script.src.replace(/\/widget\.js(\?[^#]*)?(#.*)?$/, '');
     var colorPrimary = script.getAttribute('data-color') || '#0085f3';
 
     if (!token) { console.warn('[Widget] data-token is required'); return; }
