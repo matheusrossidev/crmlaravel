@@ -9,6 +9,7 @@ use App\Models\Lead;
 use App\Models\Pipeline;
 use App\Models\WebsiteConversation;
 use App\Models\WebsiteMessage;
+use App\Models\WhatsappInstance;
 use Illuminate\Support\Facades\Log;
 
 class WebsiteChatService
@@ -220,6 +221,22 @@ class WebsiteChatService
 
                 case 'action':
                     $vars = $this->executeAction($config, $conv, $vars);
+
+                    // Redirect: return immediately with the URL for the widget to handle
+                    if (($config['type'] ?? '') === 'redirect' && ! empty($config['url'])) {
+                        $redirectUrl = ChatbotVariableService::interpolate((string) $config['url'], $vars);
+                        $cursor['index'] = $index + 1;
+                        $this->persistState($conv, $cursor, $vars);
+                        $this->saveOutboundMessages($conv->id, $replies);
+                        return [
+                            'replies'         => $replies,
+                            'buttons'         => [],
+                            'input_type'      => 'text',
+                            'redirect_url'    => $redirectUrl,
+                            'redirect_target' => $config['target'] ?? '_blank',
+                        ];
+                    }
+
                     $cursor['index'] = $index + 1;
                     break;
 
@@ -354,6 +371,14 @@ class WebsiteChatService
                     ->where('id', $conv->id)
                     ->update(['status' => 'closed']);
                 break;
+
+            case 'send_whatsapp':
+                $this->executeSendWhatsapp($config, $conv, $vars);
+                break;
+
+            case 'redirect':
+                // Handled client-side via redirect_url in the API response
+                break;
         }
 
         return $vars;
@@ -392,6 +417,7 @@ class WebsiteChatService
             'phone'        => $phone ?: null,
             'stage_id'     => $stageId,
             'source'       => 'website',
+            'utm_id'       => $conv->utm_id       ?: null,
             'utm_source'   => $conv->utm_source   ?: null,
             'utm_medium'   => $conv->utm_medium   ?: null,
             'utm_campaign' => $conv->utm_campaign ?: null,
@@ -405,6 +431,7 @@ class WebsiteChatService
                 'email'        => $email ?: null,
                 'phone'        => $phone ?: null,
                 'stage_id'     => $stageId ?: $lead->stage_id,
+                'utm_id'       => $lead->utm_id       ?: $conv->utm_id,
                 'utm_source'   => $lead->utm_source   ?: $conv->utm_source,
                 'utm_medium'   => $lead->utm_medium   ?: $conv->utm_medium,
                 'utm_campaign' => $lead->utm_campaign ?: $conv->utm_campaign,
@@ -447,6 +474,52 @@ class WebsiteChatService
             'conversation_id' => $conv->id,
             'lead_id'         => $lead->id,
         ]);
+    }
+
+    // ── Send WhatsApp ────────────────────────────────────────────────
+
+    private function executeSendWhatsapp(array $config, WebsiteConversation $conv, array $vars): void
+    {
+        $phoneMode = $config['phone_mode'] ?? 'variable';
+        $rawPhone  = $phoneMode === 'custom'
+            ? (string) ($config['custom_phone'] ?? '')
+            : (string) ($vars[$config['phone_var'] ?? '$contact_phone'] ?? $conv->contact_phone ?? '');
+
+        if ($rawPhone === '') {
+            Log::channel('whatsapp')->warning('WebsiteChatService: send_whatsapp sem telefone', ['conv' => $conv->id]);
+            return;
+        }
+
+        $phone   = $this->normalizePhone($rawPhone);
+        $message = ChatbotVariableService::interpolate((string) ($config['message'] ?? ''), $vars);
+
+        if ($message === '') {
+            return;
+        }
+
+        $instance = WhatsappInstance::withoutGlobalScope('tenant')
+            ->where('tenant_id', $conv->tenant_id)
+            ->where('status', 'connected')
+            ->first();
+
+        if (! $instance) {
+            Log::channel('whatsapp')->warning('WebsiteChatService: nenhuma instância WhatsApp conectada', ['tenant' => $conv->tenant_id]);
+            return;
+        }
+
+        try {
+            $waha = new WahaService($instance->session_name);
+            $waha->sendText($phone . '@c.us', $message);
+            Log::channel('whatsapp')->info('WebsiteChatService: WhatsApp enviado via chatbot', [
+                'conv'  => $conv->id,
+                'phone' => $phone,
+            ]);
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->error('WebsiteChatService: erro ao enviar WhatsApp', [
+                'conv'  => $conv->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     // ── Helpers ────────────────────────────────────────────────────────

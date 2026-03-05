@@ -39,4 +39,28 @@ class ChatbotFlow extends Model
     {
         return $this->hasMany(WhatsappConversation::class, 'chatbot_flow_id');
     }
+
+    public function websiteConversations(): HasMany
+    {
+        return $this->hasMany(WebsiteConversation::class, 'flow_id');
+    }
+
+    /**
+     * Conta nós a partir do JSON `steps` (campo nodes dentro do array).
+     */
+    public function getStepsNodeCountAttribute(): int
+    {
+        $steps = $this->steps;
+        if (! is_array($steps)) {
+            return 0;
+        }
+
+        // steps pode ser { nodes: [...], edges: [...] } ou array direto
+        $nodes = $steps['nodes'] ?? $steps;
+        if (! is_array($nodes)) {
+            return 0;
+        }
+
+        return count(array_filter($nodes, fn ($n) => isset($n['type'])));
+    }
 }

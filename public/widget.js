@@ -43,6 +43,7 @@
             ? new URLSearchParams(window.location.search)
             : { get: function() { return null; } };
         return {
+            utm_id:       p.get('utm_id')       || undefined,
             utm_source:   p.get('utm_source')   || undefined,
             utm_medium:   p.get('utm_medium')   || undefined,
             utm_campaign: p.get('utm_campaign') || undefined,
@@ -96,13 +97,13 @@
         '#syncro-panel.syncro-inline .syncro-header{display:none;}',
 
         /* Messages */
-        '.syncro-messages{flex:1;overflow-y:auto;padding:16px 16px 8px;display:flex;flex-direction:column;gap:15px;min-height:200px;}',
+        '.syncro-messages{flex:1;overflow-y:auto;padding:16px 16px 8px;display:flex;flex-direction:column;gap:15px;min-height:200px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;}',
 
         /* Message rows */
         '.syncro-msg-row{display:flex;align-items:flex-end;gap:8px;animation:syncro-fadeIn .4s ease-out;}',
         '.syncro-msg-row.out-row{flex-direction:row-reverse;}',
-        '.syncro-msg-avatar{width:40px;height:40px;border-radius:50px;object-fit:cover;flex-shrink:0;}',
-        '.syncro-msg-avatar-placeholder{width:40px;height:40px;border-radius:50px;background:' + colorPrimary + '22;display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
+        '.syncro-msg-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;}',
+        '.syncro-msg-avatar-placeholder{width:40px;height:40px;border-radius:50%;background:' + colorPrimary + '22;display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
 
         /* Bubbles */
         '.syncro-bubble{max-width:75%;padding:10px 14px;border-radius:12px;font-size:13.5px;line-height:1.5;word-break:break-word;}',
@@ -530,6 +531,14 @@
 
             await renderReplies(data.replies || [], data.buttons || [], false);
             applyInputType(data.input_type);
+
+            // Handle redirect action
+            if (data.redirect_url) {
+                var target = data.redirect_target || '_blank';
+                setTimeout(function() {
+                    window.open(data.redirect_url, target);
+                }, 600);
+            }
         } catch (e) {
             console.warn('[Widget] send failed', e);
         }

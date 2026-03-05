@@ -9,6 +9,7 @@ use App\Models\ChatbotFlowNode;
 use App\Models\CustomFieldDefinition;
 use App\Models\CustomFieldValue;
 use App\Models\Lead;
+use App\Models\Tenant;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappMessage;
 use App\Services\ChatbotVariableService;
@@ -35,6 +36,16 @@ class ProcessChatbotStep
             ->find($this->conversationId);
 
         if (! $conv || ! $conv->chatbot_flow_id || ! $conv->chatbotFlow) {
+            return;
+        }
+
+        // Bloquear se tenant com serviço bloqueado (trial expirado, suspenso, etc.)
+        $tenant = Tenant::find($conv->tenant_id);
+        if ($tenant && $tenant->isServiceBlocked()) {
+            Log::channel('whatsapp')->info('Chatbot: tenant com serviço bloqueado', [
+                'conversation_id' => $conv->id,
+                'tenant_id'       => $conv->tenant_id,
+            ]);
             return;
         }
 
@@ -324,6 +335,31 @@ class ProcessChatbotStep
                         'field_name' => $fieldName,
                         'value'      => $fieldValue,
                     ]);
+                }
+                break;
+
+            case 'send_whatsapp':
+                $phoneMode = $config['phone_mode'] ?? 'variable';
+                if ($phoneMode === 'custom' && ! empty($config['custom_phone'])) {
+                    $phone   = preg_replace('/\D/', '', (string) $config['custom_phone']);
+                    $message = ChatbotVariableService::interpolate((string) ($config['message'] ?? ''), $vars);
+                    if ($message !== '') {
+                        $chatId = $phone . '@c.us';
+                        $instance = $conv->instance;
+                        if ($instance) {
+                            try {
+                                (new WahaService($instance->session_name))->sendText($chatId, $message);
+                                Log::channel('whatsapp')->info('Chatbot: WhatsApp enviado para número fixo', ['conv' => $conv->id, 'phone' => $phone]);
+                            } catch (\Throwable $e) {
+                                Log::channel('whatsapp')->error('Chatbot: erro ao enviar WhatsApp', ['conv' => $conv->id, 'error' => $e->getMessage()]);
+                            }
+                        }
+                    }
+                } else {
+                    $message = ChatbotVariableService::interpolate((string) ($config['message'] ?? ''), $vars);
+                    if ($message !== '') {
+                        $this->sendWahaMessage($conv, $message);
+                    }
                 }
                 break;
         }

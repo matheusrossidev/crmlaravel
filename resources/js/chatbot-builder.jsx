@@ -57,6 +57,7 @@ const ACTION_TYPES = [
     { value: 'save_variable',      label: 'Salvar variável'                 },
     { value: 'send_webhook',       label: 'Enviar Webhook (HTTP)'           },
     { value: 'set_custom_field',   label: 'Preencher campo personalizado'   },
+    { value: 'send_whatsapp',     label: 'Enviar WhatsApp'                 },
 ];
 
 const SYSTEM_VARS_META = [
@@ -369,6 +370,12 @@ function ActionNode({ id, data, selected }) {
             {data.type === 'send_webhook' && data.url && (
                 <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 4, wordBreak: 'break-all' }}>
                     {data.method || 'POST'} {data.url.substring(0, 36)}{data.url.length > 36 ? '…' : ''}
+                </div>
+            )}
+            {data.type === 'send_whatsapp' && data.message && (
+                <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 4, wordBreak: 'break-all' }}>
+                    <i className="bi bi-whatsapp" style={{ marginRight: 4, color: '#25d366' }} />
+                    {data.message.substring(0, 40)}{data.message.length > 40 ? '…' : ''}
                 </div>
             )}
         </BaseNode>
@@ -1346,6 +1353,56 @@ function ActionForm({ data, update, pipelines, allVars, tags, users, customField
                     </FieldGroup>
                 </>
             )}
+
+            {data.type === 'send_whatsapp' && (
+                <>
+                    <FieldGroup label="Destino">
+                        <select
+                            style={field.input}
+                            value={data.phone_mode || 'variable'}
+                            onChange={e => update('phone_mode', e.target.value)}
+                        >
+                            <option value="variable">Variável do fluxo</option>
+                            <option value="custom">Número fixo</option>
+                        </select>
+                    </FieldGroup>
+                    {(data.phone_mode || 'variable') === 'variable' ? (
+                        <FieldGroup label="Variável com telefone">
+                            <select style={field.input} value={data.phone_var || '$contact_phone'} onChange={e => update('phone_var', e.target.value)}>
+                                {allVars.map(v => <option key={v} value={v}>{v}</option>)}
+                            </select>
+                        </FieldGroup>
+                    ) : (
+                        <FieldGroup label="Número fixo (com DDD)">
+                            <input style={field.input} value={data.custom_phone || ''} onChange={e => update('custom_phone', e.target.value)} placeholder="5511999999999" />
+                        </FieldGroup>
+                    )}
+                    <FieldGroup label="Mensagem">
+                        <textarea
+                            style={{ ...field.input, height: 80, resize: 'vertical' }}
+                            value={data.message || ''}
+                            onChange={e => update('message', e.target.value)}
+                            placeholder={'Olá {{$contact_name}}, obrigado pelo contato!'}
+                        />
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+                            {[{ l: 'Nome', v: '{{$contact_name}}' }, { l: 'Telefone', v: '{{$contact_phone}}' }].map(q => (
+                                <button
+                                    key={q.l}
+                                    type="button"
+                                    onClick={() => update('message', (data.message || '') + q.v)}
+                                    style={{ ...field.smallBtn, fontSize: 10, color: '#25d366' }}
+                                >
+                                    + {q.l}
+                                </button>
+                            ))}
+                        </div>
+                    </FieldGroup>
+                    <p style={{ fontSize: 11, color: '#9ca3af', margin: '4px 0 0' }}>
+                        <i className="bi bi-info-circle" style={{ marginRight: 4 }} />
+                        A mensagem será enviada pela instância WhatsApp conectada do tenant.
+                    </p>
+                </>
+            )}
         </>
     );
 }
@@ -1838,6 +1895,177 @@ function NodeSidebar({ onAddNode, onDragStart }) {
     );
 }
 
+// ── Bot Templates ─────────────────────────────────────────────────────────────
+
+const BOT_TEMPLATES = [
+    {
+        id: 'lead_capture',
+        name: 'Captura de Lead',
+        description: 'Coleta nome, email e telefone. Cria lead automaticamente.',
+        icon: 'bi-person-plus',
+        nodes: [
+            { id: 't1', type: 'message', position: { x: 250, y: 0 }, data: { text: 'Olá! Tudo bem? 👋\nVamos começar!' } },
+            { id: 't2', type: 'input', position: { x: 250, y: 120 }, data: { text: 'Qual é o seu nome?', variable: 'nome', input_type: 'text' } },
+            { id: 't3', type: 'input', position: { x: 250, y: 240 }, data: { text: 'E o seu e-mail?', variable: 'email', input_type: 'email' } },
+            { id: 't4', type: 'input', position: { x: 250, y: 360 }, data: { text: 'Agora informe um número de telefone:', variable: 'telefone', input_type: 'phone' } },
+            { id: 't5', type: 'action', position: { x: 250, y: 480 }, data: { type: 'create_lead', name_var: 'nome', email_var: 'email', phone_var: 'telefone' } },
+            { id: 't6', type: 'message', position: { x: 250, y: 600 }, data: { text: 'Obrigado, {{nome}}! Entraremos em contato em breve. 🚀' } },
+            { id: 't7', type: 'end', position: { x: 250, y: 720 }, data: {} },
+        ],
+        edges: [
+            { id: 'te1', source: 't1', sourceHandle: 'default', target: 't2' },
+            { id: 'te2', source: 't2', sourceHandle: 'default', target: 't3' },
+            { id: 'te3', source: 't3', sourceHandle: 'default', target: 't4' },
+            { id: 'te4', source: 't4', sourceHandle: 'default', target: 't5' },
+            { id: 'te5', source: 't5', sourceHandle: 'default', target: 't6' },
+            { id: 'te6', source: 't6', sourceHandle: 'default', target: 't7' },
+        ],
+    },
+    {
+        id: 'real_estate',
+        name: 'Imobiliária',
+        description: 'Qualificação: tipo de imóvel, faixa de preço e localização.',
+        icon: 'bi-building',
+        nodes: [
+            { id: 't1', type: 'message', position: { x: 250, y: 0 }, data: { text: 'Olá! Vou ajudar você a encontrar o imóvel ideal. 🏠' } },
+            { id: 't2', type: 'input', position: { x: 250, y: 120 }, data: { text: 'Qual é o seu nome?', variable: 'nome', input_type: 'text' } },
+            { id: 't3', type: 'input', position: { x: 250, y: 240 }, data: { text: 'Você procura comprar ou alugar?', variable: 'tipo', input_type: 'text', buttons: ['Comprar', 'Alugar'] } },
+            { id: 't4', type: 'input', position: { x: 250, y: 360 }, data: { text: 'Qual a região de interesse?', variable: 'regiao', input_type: 'text' } },
+            { id: 't5', type: 'input', position: { x: 250, y: 480 }, data: { text: 'Qual a faixa de valor?', variable: 'faixa_valor', input_type: 'text', buttons: ['Até 300mil', '300-600mil', '600mil-1M', 'Acima de 1M'] } },
+            { id: 't6', type: 'input', position: { x: 250, y: 600 }, data: { text: 'Informe seu e-mail para contato:', variable: 'email', input_type: 'email' } },
+            { id: 't7', type: 'input', position: { x: 250, y: 720 }, data: { text: 'E seu telefone com DDD:', variable: 'telefone', input_type: 'phone' } },
+            { id: 't8', type: 'action', position: { x: 250, y: 840 }, data: { type: 'create_lead', name_var: 'nome', email_var: 'email', phone_var: 'telefone' } },
+            { id: 't9', type: 'message', position: { x: 250, y: 960 }, data: { text: 'Perfeito, {{nome}}! Um corretor entrará em contato. 🔑' } },
+            { id: 't10', type: 'end', position: { x: 250, y: 1080 }, data: {} },
+        ],
+        edges: [
+            { id: 'te1', source: 't1', sourceHandle: 'default', target: 't2' },
+            { id: 'te2', source: 't2', sourceHandle: 'default', target: 't3' },
+            { id: 'te3', source: 't3', sourceHandle: 'default', target: 't4' },
+            { id: 'te4', source: 't4', sourceHandle: 'default', target: 't5' },
+            { id: 'te5', source: 't5', sourceHandle: 'default', target: 't6' },
+            { id: 'te6', source: 't6', sourceHandle: 'default', target: 't7' },
+            { id: 'te7', source: 't7', sourceHandle: 'default', target: 't8' },
+            { id: 'te8', source: 't8', sourceHandle: 'default', target: 't9' },
+            { id: 'te9', source: 't9', sourceHandle: 'default', target: 't10' },
+        ],
+    },
+    {
+        id: 'ecommerce',
+        name: 'E-commerce',
+        description: 'Atendimento: dúvida sobre pedido, troca ou suporte.',
+        icon: 'bi-cart3',
+        nodes: [
+            { id: 't1', type: 'message', position: { x: 250, y: 0 }, data: { text: 'Olá! Como posso ajudar? 🛒' } },
+            { id: 't2', type: 'input', position: { x: 250, y: 120 }, data: { text: 'Qual o motivo do contato?', variable: 'motivo', input_type: 'text', buttons: ['Dúvida sobre pedido', 'Troca/Devolução', 'Suporte técnico', 'Outro'] } },
+            { id: 't3', type: 'input', position: { x: 250, y: 240 }, data: { text: 'Qual é o seu nome?', variable: 'nome', input_type: 'text' } },
+            { id: 't4', type: 'input', position: { x: 250, y: 360 }, data: { text: 'Informe seu e-mail:', variable: 'email', input_type: 'email' } },
+            { id: 't5', type: 'input', position: { x: 250, y: 480 }, data: { text: 'Descreva brevemente sua solicitação:', variable: 'descricao', input_type: 'text' } },
+            { id: 't6', type: 'action', position: { x: 250, y: 600 }, data: { type: 'create_lead', name_var: 'nome', email_var: 'email', phone_var: '' } },
+            { id: 't7', type: 'message', position: { x: 250, y: 720 }, data: { text: 'Recebemos sua solicitação, {{nome}}! Nossa equipe vai responder em breve. 📦' } },
+            { id: 't8', type: 'end', position: { x: 250, y: 840 }, data: {} },
+        ],
+        edges: [
+            { id: 'te1', source: 't1', sourceHandle: 'default', target: 't2' },
+            { id: 'te2', source: 't2', sourceHandle: 'default', target: 't3' },
+            { id: 'te3', source: 't3', sourceHandle: 'default', target: 't4' },
+            { id: 'te4', source: 't4', sourceHandle: 'default', target: 't5' },
+            { id: 'te5', source: 't5', sourceHandle: 'default', target: 't6' },
+            { id: 'te6', source: 't6', sourceHandle: 'default', target: 't7' },
+            { id: 'te7', source: 't7', sourceHandle: 'default', target: 't8' },
+        ],
+    },
+    {
+        id: 'clinic',
+        name: 'Clínica / Saúde',
+        description: 'Agendamento: especialidade, convênio e horário.',
+        icon: 'bi-heart-pulse',
+        nodes: [
+            { id: 't1', type: 'message', position: { x: 250, y: 0 }, data: { text: 'Olá! Bem-vindo à nossa clínica. 🩺' } },
+            { id: 't2', type: 'input', position: { x: 250, y: 120 }, data: { text: 'Qual é o seu nome?', variable: 'nome', input_type: 'text' } },
+            { id: 't3', type: 'input', position: { x: 250, y: 240 }, data: { text: 'Qual especialidade você procura?', variable: 'especialidade', input_type: 'text', buttons: ['Clínico Geral', 'Dermatologia', 'Ortopedia', 'Outro'] } },
+            { id: 't4', type: 'input', position: { x: 250, y: 360 }, data: { text: 'Possui convênio?', variable: 'convenio', input_type: 'text', buttons: ['Sim', 'Não / Particular'] } },
+            { id: 't5', type: 'input', position: { x: 250, y: 480 }, data: { text: 'Informe seu telefone com DDD:', variable: 'telefone', input_type: 'phone' } },
+            { id: 't6', type: 'input', position: { x: 250, y: 600 }, data: { text: 'E seu e-mail:', variable: 'email', input_type: 'email' } },
+            { id: 't7', type: 'action', position: { x: 250, y: 720 }, data: { type: 'create_lead', name_var: 'nome', email_var: 'email', phone_var: 'telefone' } },
+            { id: 't8', type: 'message', position: { x: 250, y: 840 }, data: { text: 'Obrigado, {{nome}}! Vamos entrar em contato para confirmar o agendamento. 📅' } },
+            { id: 't9', type: 'end', position: { x: 250, y: 960 }, data: {} },
+        ],
+        edges: [
+            { id: 'te1', source: 't1', sourceHandle: 'default', target: 't2' },
+            { id: 'te2', source: 't2', sourceHandle: 'default', target: 't3' },
+            { id: 'te3', source: 't3', sourceHandle: 'default', target: 't4' },
+            { id: 'te4', source: 't4', sourceHandle: 'default', target: 't5' },
+            { id: 'te5', source: 't5', sourceHandle: 'default', target: 't6' },
+            { id: 'te6', source: 't6', sourceHandle: 'default', target: 't7' },
+            { id: 'te7', source: 't7', sourceHandle: 'default', target: 't8' },
+            { id: 'te8', source: 't8', sourceHandle: 'default', target: 't9' },
+        ],
+    },
+    {
+        id: 'saas_trial',
+        name: 'SaaS / Teste Grátis',
+        description: 'Onboarding: coleta nome, email, telefone e empresa.',
+        icon: 'bi-rocket-takeoff',
+        nodes: [
+            { id: 't1', type: 'message', position: { x: 250, y: 0 }, data: { text: 'Olá! Quer testar nossa plataforma gratuitamente? 🚀' } },
+            { id: 't2', type: 'input', position: { x: 250, y: 120 }, data: { text: 'Qual é o seu nome?', variable: 'nome', input_type: 'text' } },
+            { id: 't3', type: 'input', position: { x: 250, y: 240 }, data: { text: 'E o seu e-mail?', variable: 'email', input_type: 'email' } },
+            { id: 't4', type: 'input', position: { x: 250, y: 360 }, data: { text: 'Informe seu telefone:', variable: 'telefone', input_type: 'phone' } },
+            { id: 't5', type: 'input', position: { x: 250, y: 480 }, data: { text: 'Nome da sua empresa:', variable: 'empresa', input_type: 'text' } },
+            { id: 't6', type: 'action', position: { x: 250, y: 600 }, data: { type: 'create_lead', name_var: 'nome', email_var: 'email', phone_var: 'telefone' } },
+            { id: 't7', type: 'message', position: { x: 250, y: 720 }, data: { text: 'Perfeito, {{nome}}! Sua conta trial será criada e enviaremos os dados de acesso por e-mail. ✨' } },
+            { id: 't8', type: 'end', position: { x: 250, y: 840 }, data: {} },
+        ],
+        edges: [
+            { id: 'te1', source: 't1', sourceHandle: 'default', target: 't2' },
+            { id: 'te2', source: 't2', sourceHandle: 'default', target: 't3' },
+            { id: 'te3', source: 't3', sourceHandle: 'default', target: 't4' },
+            { id: 'te4', source: 't4', sourceHandle: 'default', target: 't5' },
+            { id: 'te5', source: 't5', sourceHandle: 'default', target: 't6' },
+            { id: 'te6', source: 't6', sourceHandle: 'default', target: 't7' },
+            { id: 'te7', source: 't7', sourceHandle: 'default', target: 't8' },
+        ],
+    },
+];
+
+function TemplatePickerModal({ onSelect, onClose }) {
+    return (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
+            <div style={{ background: '#fff', borderRadius: 14, padding: 24, maxWidth: 640, width: '95%', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1a1d23' }}>Modelos de Bot</h3>
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#6b7280' }}>&times;</button>
+                </div>
+                <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 16px' }}>Selecione um modelo para carregar no canvas. Os nós atuais serão substituídos.</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+                    {BOT_TEMPLATES.map(t => (
+                        <div
+                            key={t.id}
+                            onClick={() => onSelect(t)}
+                            style={{
+                                border: '1.5px solid #e8eaf0', borderRadius: 10, padding: 16, cursor: 'pointer',
+                                transition: 'border-color .15s, box-shadow .15s',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#2563eb'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(37,99,235,0.12)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8eaf0'; e.currentTarget.style.boxShadow = 'none'; }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                <i className={`bi ${t.icon}`} style={{ fontSize: 20, color: '#2563eb' }} />
+                                <span style={{ fontWeight: 700, fontSize: 13, color: '#1a1d23' }}>{t.name}</span>
+                            </div>
+                            <p style={{ fontSize: 12, color: '#6b7280', margin: 0, lineHeight: 1.4 }}>{t.description}</p>
+                            <div style={{ marginTop: 8, fontSize: 11, color: '#9ca3af' }}>
+                                {t.nodes.length} nós
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ── Main Builder ──────────────────────────────────────────────────────────────
 
 function ChatbotBuilder() {
@@ -1867,6 +2095,7 @@ function ChatbotBuilder() {
     const [saveMsg, setSaveMsg] = useState('');
     const [showVars, setShowVars] = useState(false);
     const [showTrigger, setShowTrigger] = useState(false);
+    const [showTemplates, setShowTemplates] = useState(false);
 
     // Nó de início: o que não é alvo de nenhuma edge
     const startNodeId = useMemo(() => {
@@ -2038,6 +2267,21 @@ function ChatbotBuilder() {
                     )}
                 </button>
 
+                {/* Templates button */}
+                <button
+                    onClick={() => setShowTemplates(true)}
+                    style={{
+                        ...field.smallBtn,
+                        background: '#f0fdf4',
+                        color: '#15803d',
+                        border: '1px solid #bbf7d0',
+                        display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
+                    }}
+                >
+                    <i className="bi bi-lightning" style={{ fontSize: 11 }} />
+                    Modelos
+                </button>
+
                 {/* Variables toggle */}
                 <button
                     onClick={() => { setShowVars(v => !v); setShowTrigger(false); }}
@@ -2160,6 +2404,17 @@ function ChatbotBuilder() {
                     </div>
                 )}
             </div>
+
+            {showTemplates && (
+                <TemplatePickerModal
+                    onClose={() => setShowTemplates(false)}
+                    onSelect={(template) => {
+                        setNodes(template.nodes.map(n => ({ ...n, id: String(n.id) })));
+                        setEdges(template.edges.map(e => ({ ...e, id: String(e.id), source: String(e.source), target: String(e.target) })));
+                        setShowTemplates(false);
+                    }}
+                />
+            )}
         </div>
     );
 }

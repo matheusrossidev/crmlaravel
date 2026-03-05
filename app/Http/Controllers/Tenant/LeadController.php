@@ -382,6 +382,7 @@ class LeadController extends Controller
             'pipeline'      => $lead->pipeline ? ['id' => $lead->pipeline->id, 'name' => $lead->pipeline->name] : null,
             'created_at'    => $lead->created_at?->format('d/m/Y H:i'),
             'custom_fields' => $lead->customFields,  // usa o accessor do Model
+            'utm_id'        => $lead->utm_id,
             'utm_source'    => $lead->utm_source,
             'utm_medium'    => $lead->utm_medium,
             'utm_campaign'  => $lead->utm_campaign,

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ChatbotFlow;
+use App\Models\Tenant;
 use App\Models\WebsiteConversation;
 use App\Models\WebsiteMessage;
 use App\Services\WebsiteChatService;
@@ -60,6 +61,13 @@ class WebsiteWidgetController extends Controller
             return response()->json(['error' => 'Widget not found'], 404);
         }
 
+        // Bloquear se tenant com serviço bloqueado (trial expirado, suspenso, etc.)
+        $tenant = Tenant::find($flow->tenant_id);
+        if ($tenant && $tenant->isServiceBlocked()) {
+            return response()->json(['error' => 'Service unavailable'], 403)
+                ->header('Access-Control-Allow-Origin', '*');
+        }
+
         // Accept visitor_id from body (POST) or query string (legacy GET)
         $visitorId = (string) ($request->input('visitor_id') ?? $request->query('visitor_id', ''));
         if ($visitorId === '') {
@@ -80,6 +88,7 @@ class WebsiteWidgetController extends Controller
                 'visitor_id'   => $visitorId,
                 'status'       => 'open',
                 'started_at'   => now(),
+                'utm_id'       => $this->truncate($request->input('utm_id'),       100),
                 'utm_source'   => $this->truncate($request->input('utm_source'),   100),
                 'utm_medium'   => $this->truncate($request->input('utm_medium'),   100),
                 'utm_campaign' => $this->truncate($request->input('utm_campaign'), 150),
@@ -147,6 +156,13 @@ class WebsiteWidgetController extends Controller
 
         if (! $flow) {
             return response()->json(['error' => 'Widget not found'], 404);
+        }
+
+        // Bloquear se tenant com serviço bloqueado
+        $tenant = Tenant::find($flow->tenant_id);
+        if ($tenant && $tenant->isServiceBlocked()) {
+            return response()->json(['error' => 'Service unavailable', 'replies' => []], 403)
+                ->header('Access-Control-Allow-Origin', '*');
         }
 
         $validated = $request->validate([

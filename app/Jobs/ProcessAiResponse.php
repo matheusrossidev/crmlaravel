@@ -105,6 +105,16 @@ class ProcessAiResponse implements ShouldQueue
             return;
         }
 
+        // ── Verificar se serviço está bloqueado (trial expirado, suspenso, etc.) ──
+        $tenant = Tenant::find($conv->tenant_id);
+        if ($tenant && $tenant->isServiceBlocked()) {
+            Log::channel('whatsapp')->warning('AI job: serviço bloqueado para o tenant', [
+                'conversation_id' => $this->conversationId,
+                'tenant_id'       => $conv->tenant_id,
+            ]);
+            return;
+        }
+
         // ── Verificar cota de tokens do plano ────────────────────────────────
         if (! $this->checkTokenQuota($conv)) {
             Log::channel('whatsapp')->warning('AI job: cota de tokens do plano excedida', [

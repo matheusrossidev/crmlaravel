@@ -23,7 +23,7 @@ class ChatbotFlowController extends Controller
 {
     public function index(): View
     {
-        $flows = ChatbotFlow::withCount('conversations')->orderByDesc('created_at')->get();
+        $flows = ChatbotFlow::withCount(['conversations', 'websiteConversations'])->orderByDesc('created_at')->get();
         return view('tenant.chatbot.index', compact('flows'));
     }
 
@@ -34,10 +34,11 @@ class ChatbotFlowController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        // Limite de 1 fluxo de chatbot por tenant
-        if (ChatbotFlow::exists()) {
+        $tenant = auth()->user()->tenant;
+        $max = $tenant->max_chatbot_flows ?? 0;
+        if ($max > 0 && ChatbotFlow::count() >= $max) {
             return redirect()->route('chatbot.flows.index')
-                ->withErrors(['limit' => 'Cada conta pode ter apenas 1 fluxo de chatbot. Edite o fluxo existente.']);
+                ->withErrors(['limit' => "Limite de {$max} fluxo(s) de chatbot atingido. Atualize seu plano para criar mais."]);
         }
 
         $data = $this->validatedFlow($request);

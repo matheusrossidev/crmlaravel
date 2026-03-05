@@ -19,7 +19,7 @@ class Lead extends Model
         'source', 'tags', 'pipeline_id', 'stage_id',
         'assigned_to', 'campaign_id', 'created_by', 'notes',
         'instagram_username', 'exclude_from_pipeline',
-        'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+        'utm_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
         'birthday',
     ];
 

@@ -31,6 +31,7 @@ class WebsiteConversation extends Model
         'unread_count',
         'started_at',
         'last_message_at',
+        'utm_id',
         'utm_source',
         'utm_medium',
         'utm_campaign',

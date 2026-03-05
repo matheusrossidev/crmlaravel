@@ -164,6 +164,10 @@
                 <i id="advancedAccordionIcon" class="fas fa-chevron-down" style="color:#9ca3af;font-size:12px;transition:transform .2s;"></i>
             </div>
             <div id="advancedAccordionBody" style="display:none;">
+                <div class="drawer-group">
+                    <label>Campaign ID</label>
+                    <input type="text" id="fUtmId" class="drawer-input" readonly style="background:#f3f4f6;color:#6b7280;cursor:default;" placeholder="—">
+                </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div class="drawer-group">
                         <label>Fonte (Source)</label>
@@ -736,6 +740,7 @@ function toggleAdvancedAccordion() {
 function renderUtmSection(lead) {
     const section = document.getElementById('drawerUtmSection');
     section.style.display = '';
+    document.getElementById('fUtmId').value       = lead.utm_id       || '';
     document.getElementById('fUtmSource').value   = lead.utm_source   || '';
     document.getElementById('fUtmMedium').value   = lead.utm_medium   || '';
     document.getElementById('fUtmCampaign').value = lead.utm_campaign || '';
@@ -937,6 +942,7 @@ function resetDrawerForm() {
     document.getElementById('customFieldsSection').style.display = 'none';
     document.getElementById('customFieldsContainer').innerHTML = '';
     document.getElementById('drawerUtmSection').style.display = 'none';
+    document.getElementById('fUtmId').value       = '';
     document.getElementById('fUtmSource').value   = '';
     document.getElementById('fUtmMedium').value   = '';
     document.getElementById('fUtmCampaign').value = '';

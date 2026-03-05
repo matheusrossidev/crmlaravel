@@ -561,9 +561,13 @@ function closeWidgetTest() {
                     </div>
 
                     {{-- Meta row --}}
+                    @php
+                        $nodesCount = $flow->steps_node_count;
+                        $leadsCount = $flow->conversations_count + $flow->website_conversations_count;
+                    @endphp
                     <div class="flow-meta-row">
-                        <span><i class="bi bi-diagram-3"></i> {{ $flow->nodes()->count() }} nós</span>
-                        <span><i class="bi bi-person-lines-fill"></i> {{ $flow->conversations_count }} {{ $flow->conversations_count === 1 ? 'lead atendido' : 'leads atendidos' }}</span>
+                        <span><i class="bi bi-diagram-3"></i> {{ $nodesCount }} {{ $nodesCount === 1 ? 'nó' : 'nós' }}</span>
+                        <span><i class="bi bi-person-lines-fill"></i> {{ $leadsCount }} {{ $leadsCount === 1 ? 'lead atendido' : 'leads atendidos' }}</span>
                     </div>
 
                     {{-- Description --}}

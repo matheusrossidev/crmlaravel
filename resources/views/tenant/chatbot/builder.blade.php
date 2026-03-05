@@ -538,6 +538,15 @@
                     <span class="cb-block-icon" style="background:#f3f4f6;color:#6b7280"><i class="bi bi-braces"></i></span>Variáveis
                 </div>
             </div>
+
+            <div class="cb-sidebar-divider"></div>
+
+            <div class="cb-sidebar-section">
+                <div class="cb-sidebar-section-title">Modelos</div>
+                <div class="cb-block-item" onclick="showTemplatesModal()" style="color:#15803d">
+                    <span class="cb-block-icon" style="background:#f0fdf4;color:#15803d"><i class="bi bi-lightning"></i></span>Usar modelo
+                </div>
+            </div>
         </div>
 
         {{-- Canvas --}}
@@ -591,6 +600,24 @@
 </div>
 @endif
 
+{{-- Templates Modal --}}
+<div id="templatesModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
+    <div style="background:#fff;border-radius:14px;padding:28px 32px;width:780px;max-width:94vw;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.18);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0;">
+            <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0;"><i class="bi bi-lightning" style="color:#0085f3;"></i> Modelos pré-prontos</h3>
+            <button onclick="document.getElementById('templatesModal').style.display='none'" style="background:none;border:none;font-size:20px;color:#9ca3af;cursor:pointer;padding:4px;">&times;</button>
+        </div>
+        <input type="text" id="tplSearch" placeholder="Buscar por nicho... ex: dentista, restaurante, academia" style="width:100%;border:1.5px solid #e8eaf0;border-radius:9px;padding:10px 14px;font-size:13.5px;color:#374151;outline:none;margin-bottom:16px;flex-shrink:0;font-family:inherit;" oninput="filterTemplates(this.value)">
+        <div id="tplTabsWrap" style="position:relative;margin-bottom:14px;flex-shrink:0;">
+            <button id="tplTabLeft" onclick="document.getElementById('tplCategoryTabs').scrollBy({left:-160,behavior:'smooth'})" style="display:none;position:absolute;left:0;top:0;bottom:0;z-index:2;width:32px;border:none;cursor:pointer;background:linear-gradient(90deg,#fff 60%,transparent);color:#374151;font-size:14px;padding:0;align-items:center;justify-content:center;"><i class="bi bi-chevron-left"></i></button>
+            <div id="tplCategoryTabs" style="display:flex;gap:6px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none;-ms-overflow-style:none;"></div>
+            <button id="tplTabRight" onclick="document.getElementById('tplCategoryTabs').scrollBy({left:160,behavior:'smooth'})" style="display:none;position:absolute;right:0;top:0;bottom:0;z-index:2;width:32px;border:none;cursor:pointer;background:linear-gradient(270deg,#fff 60%,transparent);color:#374151;font-size:14px;padding:0;align-items:center;justify-content:center;"><i class="bi bi-chevron-right"></i></button>
+        </div>
+        <div id="templatesGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;overflow-y:auto;flex:1;padding-right:4px;"></div>
+        <div id="tplEmpty" style="display:none;text-align:center;padding:40px 0;color:#9ca3af;font-size:13.5px;">Nenhum modelo encontrado para esta busca.</div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -607,6 +634,7 @@
     const TAGS      = {!! json_encode($tags) !!};
     const USERS     = {!! json_encode($users) !!};
     const CUSTOM_FIELDS = {!! json_encode($customFieldDefs) !!};
+    const FLOW_CHANNEL  = "{{ $flow->channel }}";
 
     let flowSteps     = {!! json_encode($flow->steps ?? []) !!} || [];
     let flowVariables = {!! json_encode($flow->variables ?? []) !!} || [];
@@ -834,6 +862,8 @@
             case 'assign_human':       return 'Transferir para humano';
             case 'send_webhook':       return 'Webhook: ' + (c.url || '');
             case 'set_custom_field':   return 'Campo: ' + (c.field_label || c.field_name || '');
+            case 'send_whatsapp':      return 'WhatsApp: ' + truncate(c.message || '', 30);
+            case 'redirect':           return 'Redirect: ' + truncate(c.url || '', 30);
             default:                   return c.type || 'Ação';
         }
     }
@@ -1036,8 +1066,11 @@
             ['assign_human', 'Transferir para humano'],
             ['send_webhook', 'Enviar webhook'],
             ['set_custom_field', 'Preencher campo personalizado'],
+            ['send_whatsapp', 'Enviar WhatsApp'],
+            ['redirect', 'Redirecionar (URL)'],
         ];
         actionTypes.forEach(function(at) {
+            if (at[0] === 'redirect' && FLOW_CHANNEL !== 'website') return;
             html += '<option value="' + at[0] + '" ' + (c.type === at[0] ? 'selected' : '') + '>' + at[1] + '</option>';
         });
         html += '</select>';
@@ -1124,6 +1157,40 @@
                 html += '</select>';
                 html += '<label style="margin-top:8px;">Valor</label>';
                 html += '<input class="form-control" value="' + esc(c.field_value || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'field_value\', this.value)">';
+                break;
+            case 'send_whatsapp':
+                html += '<label style="margin-top:8px;">Destino</label>';
+                html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'phone_mode\', this.value); renderFlow();">';
+                html += '<option value="variable" ' + ((c.phone_mode || 'variable') === 'variable' ? 'selected' : '') + '>Variável do fluxo</option>';
+                html += '<option value="custom" ' + (c.phone_mode === 'custom' ? 'selected' : '') + '>Número fixo</option>';
+                html += '</select>';
+                if (c.phone_mode === 'custom') {
+                    html += '<label style="margin-top:8px;">Número (com DDD)</label>';
+                    html += '<input class="form-control" value="' + esc(c.custom_phone || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'custom_phone\', this.value)" placeholder="5511999999999">';
+                } else {
+                    html += '<label style="margin-top:8px;">Variável com telefone</label>';
+                    html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'phone_var\', this.value)">';
+                    html += '<option value="$contact_phone" ' + ((c.phone_var || '$contact_phone') === '$contact_phone' ? 'selected' : '') + '>$contact_phone</option>';
+                    flowVariables.forEach(function(fv) {
+                        var name = fv.name || fv;
+                        html += '<option value="' + esc(name) + '" ' + (c.phone_var === name ? 'selected' : '') + '>' + esc(name) + '</option>';
+                    });
+                    html += '</select>';
+                }
+                html += '<label style="margin-top:8px;">Mensagem</label>';
+                html += '<div class="cb-editable" contenteditable="true" id="wa-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="message" data-placeholder="Olá @{{nome}}, obrigado pelo contato!">' + textToHtml(c.message || '') + '</div>';
+                html += renderVarHint('wa-' + step.id);
+                html += '<p style="font-size:11px;color:#9ca3af;margin-top:6px;"><i class="bi bi-info-circle"></i> Enviada pela instância WhatsApp conectada.</p>';
+                break;
+            case 'redirect':
+                html += '<label style="margin-top:8px;">URL de destino</label>';
+                html += '<input class="form-control" value="' + esc(c.url || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'url\', this.value)" placeholder="https://seusite.com/obrigado">';
+                html += '<label style="margin-top:8px;">Abrir em</label>';
+                html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'target\', this.value)">';
+                html += '<option value="_blank" ' + ((c.target || '_blank') === '_blank' ? 'selected' : '') + '>Nova aba</option>';
+                html += '<option value="_self" ' + (c.target === '_self' ? 'selected' : '') + '>Mesma aba</option>';
+                html += '</select>';
+                html += '<p style="font-size:11px;color:#9ca3af;margin-top:6px;"><i class="bi bi-info-circle"></i> Redireciona o visitante para a URL informada.</p>';
                 break;
         }
 
@@ -1662,6 +1729,713 @@
         flowVariables.splice(index, 1);
         renderVarsList();
     };
+
+    // ── Bot Templates Library ───────────────────────────────────────────
+    // Helper: build a standard lead-capture flow with customizable greeting, questions and farewell
+    function buildLeadFlow(greeting, extraQuestions, farewell, extraVars) {
+        var steps = [
+            { id:'t1', type:'message', config:{ text: greeting } },
+            { id:'t2', type:'input', config:{ input_type:'text', prompt:'Qual o seu nome?', save_to:'nome' }, branches:[], default_branch:{ steps:[] } },
+        ];
+        var vars = [{ name:'nome', default:'' }];
+        var idx = 3;
+        (extraQuestions || []).forEach(function(q) {
+            var step = { id:'t'+(idx), type:'input', config:{ input_type: q.type || 'text', prompt: q.prompt, save_to: q.save_to }, branches:[], default_branch:{ steps:[] } };
+            if (q.buttons) {
+                step.config.input_type = 'buttons';
+                step.branches = q.buttons.map(function(b, bi) {
+                    return { id:'b'+idx+'_'+bi, label: b, keywords:[b.toLowerCase()], steps:[] };
+                });
+            }
+            steps.push(step);
+            vars.push({ name: q.save_to, default:'' });
+            idx++;
+        });
+        steps.push({ id:'t'+(idx++), type:'input', config:{ input_type:'phone', prompt:'Seu telefone com DDD:', save_to:'telefone' }, branches:[], default_branch:{ steps:[] } });
+        vars.push({ name:'telefone', default:'' });
+        steps.push({ id:'t'+(idx++), type:'action', config:{ action_type:'create_lead', source:'website' } });
+        steps.push({ id:'t'+(idx++), type:'message', config:{ text: farewell } });
+        steps.push({ id:'t'+(idx++), type:'end', config:{} });
+        return { steps: steps, variables: vars };
+    }
+
+    var BOT_TEMPLATES = [
+        // ─── Geral ───
+        (function() {
+            var f = buildLeadFlow(
+                'Seja bem-vindo! Vou te ajudar com algumas perguntas rapidas.',
+                [{ prompt:'Qual o seu email?', save_to:'email', type:'email' }],
+                'Obrigado! Em breve entraremos em contato.',
+                []
+            );
+            return { id:'lead_capture', name:'Captura de Lead', category:'Geral', description:'Coleta nome, email e telefone. Cria lead.', icon:'bi-person-plus', color:'#2563eb', tags:'lead contato captura generico', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Quer receber um contato da nossa equipe?',
+                [{ prompt:'Qual o seu email?', save_to:'email', type:'email' }, { prompt:'Como podemos te ajudar?', save_to:'interesse' }],
+                'Perfeito! Nossa equipe vai entrar em contato em breve.',
+                []
+            );
+            return { id:'callback', name:'Solicitar Callback', category:'Geral', description:'Visitante solicita que a equipe entre em contato.', icon:'bi-telephone-inbound', color:'#0d9488', tags:'callback retorno ligacao contato', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Imobiliária ───
+        (function() {
+            var f = buildLeadFlow(
+                'Que bom que voce se interessou! Vou fazer perguntas rapidas.',
+                [
+                    { prompt:'Que tipo de imovel procura?', save_to:'tipo_imovel', buttons:['Apartamento','Casa','Comercial','Terreno'] },
+                    { prompt:'Qual a faixa de preco?', save_to:'faixa_preco', buttons:['Ate R$ 300 mil','R$ 300-600 mil','Acima R$ 600 mil'] },
+                    { prompt:'Em qual regiao ou bairro?', save_to:'regiao' }
+                ],
+                'Vou buscar as melhores opcoes para voce!', []
+            );
+            return { id:'real_estate', name:'Imobiliaria', category:'Imoveis', description:'Tipo de imovel, faixa de preco, localizacao.', icon:'bi-building', color:'#7c3aed', tags:'imovel imobiliaria casa apartamento aluguel venda corretor', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Procurando um imovel para alugar? Vou te ajudar!',
+                [
+                    { prompt:'Tipo de imovel?', save_to:'tipo', buttons:['Apartamento','Casa','Kitnet','Comercial'] },
+                    { prompt:'Quantos quartos?', save_to:'quartos', buttons:['1','2','3','4+'] },
+                    { prompt:'Orcamento mensal maximo?', save_to:'orcamento' }
+                ],
+                'Otimo! Vamos encontrar o lugar ideal pra voce.', []
+            );
+            return { id:'rental', name:'Aluguel de Imoveis', category:'Imoveis', description:'Qualificacao para locacao: tipo, quartos, orcamento.', icon:'bi-house-door', color:'#6d28d9', tags:'aluguel locacao imovel alugar kitnet', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Saude ───
+        (function() {
+            var f = buildLeadFlow(
+                'Bem-vindo a nossa clinica! Vou te ajudar a agendar.',
+                [
+                    { prompt:'Qual a especialidade desejada?', save_to:'especialidade', buttons:['Clinico Geral','Ortopedia','Dermatologia','Outra'] },
+                    { prompt:'Possui convenio?', save_to:'convenio', buttons:['Sim','Particular'] },
+                    { prompt:'Melhor horario? (manha, tarde, noite)', save_to:'horario' }
+                ],
+                'Agendamento solicitado! Confirmaremos por telefone.', []
+            );
+            return { id:'clinic', name:'Clinica Medica', category:'Saude', description:'Agendamento: especialidade, convenio, horario.', icon:'bi-heart-pulse', color:'#dc2626', tags:'clinica medico saude consulta agendamento', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Bem-vindo ao nosso consultorio odontologico!',
+                [
+                    { prompt:'Qual o servico desejado?', save_to:'servico', buttons:['Limpeza','Clareamento','Ortodontia','Implante','Outro'] },
+                    { prompt:'Possui convenio odontologico?', save_to:'convenio', buttons:['Sim','Nao'] },
+                    { prompt:'Melhor horario para consulta?', save_to:'horario' }
+                ],
+                'Perfeito! Vamos agendar sua consulta.', []
+            );
+            return { id:'dentist', name:'Dentista', category:'Saude', description:'Servico odontologico, convenio, horario.', icon:'bi-emoji-smile', color:'#e11d48', tags:'dentista odontologia dente clareamento ortodontia implante', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Vou te ajudar a agendar sua sessao.',
+                [
+                    { prompt:'Qual o tipo de terapia?', save_to:'terapia', buttons:['Psicologia','Fisioterapia','Nutricao','Fonoaudiologia'] },
+                    { prompt:'E a primeira consulta?', save_to:'primeira_vez', buttons:['Sim','Nao, retorno'] },
+                    { prompt:'Prefere atendimento presencial ou online?', save_to:'modalidade', buttons:['Presencial','Online'] }
+                ],
+                'Sessao solicitada! Confirmaremos em breve.', []
+            );
+            return { id:'therapy', name:'Terapia / Psicologia', category:'Saude', description:'Agendamento de sessao terapeutica.', icon:'bi-chat-heart', color:'#be185d', tags:'psicologia terapia fisioterapia nutricao terapeuta', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Bem-vindo a nossa clinica veterinaria!',
+                [
+                    { prompt:'Qual o tipo de animal?', save_to:'animal', buttons:['Cao','Gato','Ave','Outro'] },
+                    { prompt:'Qual o motivo da consulta?', save_to:'motivo', buttons:['Check-up','Vacina','Emergencia','Outro'] },
+                    { prompt:'Nome do pet?', save_to:'pet_nome' }
+                ],
+                'Vamos cuidar bem do seu pet! Entraremos em contato.', []
+            );
+            return { id:'vet', name:'Veterinaria', category:'Saude', description:'Agendamento veterinario: animal, motivo.', icon:'bi-bug', color:'#9333ea', tags:'veterinaria vet pet cachorro gato animal clinica', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Estetica e Beleza ───
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Agende seu horario no nosso salao.',
+                [
+                    { prompt:'Qual o servico?', save_to:'servico', buttons:['Corte','Coloracao','Manicure','Sobrancelha','Outro'] },
+                    { prompt:'Tem preferencia de profissional?', save_to:'profissional' },
+                    { prompt:'Melhor dia e horario?', save_to:'horario' }
+                ],
+                'Agendamento solicitado! Confirmaremos seu horario.', []
+            );
+            return { id:'salon', name:'Salao de Beleza', category:'Estetica', description:'Agendamento: servico, profissional, horario.', icon:'bi-scissors', color:'#ec4899', tags:'salao beleza cabelo corte manicure sobrancelha cabeleireiro', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Bem-vindo a nossa clinica de estetica.',
+                [
+                    { prompt:'Qual procedimento te interessa?', save_to:'procedimento', buttons:['Botox','Preenchimento','Limpeza de pele','Depilacao a laser','Outro'] },
+                    { prompt:'Ja fez esse procedimento antes?', save_to:'experiencia', buttons:['Sim','Primeira vez'] }
+                ],
+                'Otimo! Vamos agendar sua avaliacao.', []
+            );
+            return { id:'aesthetics', name:'Clinica de Estetica', category:'Estetica', description:'Procedimentos esteticos: botox, preenchimento, laser.', icon:'bi-stars', color:'#d946ef', tags:'estetica botox preenchimento pele depilacao laser clinica', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Agende sua sessao de massagem ou spa.',
+                [
+                    { prompt:'Qual servico?', save_to:'servico', buttons:['Massagem Relaxante','Drenagem','Day Spa','Reflexologia'] },
+                    { prompt:'Prefere manha, tarde ou noite?', save_to:'horario', buttons:['Manha','Tarde','Noite'] }
+                ],
+                'Relaxe! Vamos confirmar seu agendamento.', []
+            );
+            return { id:'spa', name:'Spa / Massagem', category:'Estetica', description:'Agendamento de massagem e spa.', icon:'bi-droplet-half', color:'#8b5cf6', tags:'spa massagem relaxante drenagem bem-estar', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Fitness ───
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Quer conhecer nossa academia?',
+                [
+                    { prompt:'Qual seu objetivo?', save_to:'objetivo', buttons:['Emagrecer','Ganhar massa','Condicionamento','Outro'] },
+                    { prompt:'Ja treina ou vai comecar agora?', save_to:'experiencia', buttons:['Ja treino','Iniciante'] },
+                    { prompt:'Melhor horario para visita?', save_to:'horario' }
+                ],
+                'Perfeito! Vamos agendar sua visita e aula experimental.', []
+            );
+            return { id:'gym', name:'Academia / Fitness', category:'Fitness', description:'Captacao: objetivo, experiencia, visita.', icon:'bi-activity', color:'#ea580c', tags:'academia fitness musculacao treino crossfit pilates', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Que tal agendar uma aula experimental?',
+                [
+                    { prompt:'Qual modalidade?', save_to:'modalidade', buttons:['Yoga','Pilates','Danca','Funcional','Luta'] },
+                    { prompt:'Nivel de experiencia?', save_to:'nivel', buttons:['Iniciante','Intermediario','Avancado'] }
+                ],
+                'Aula experimental agendada! Te esperamos.', []
+            );
+            return { id:'studio', name:'Studio / Aulas', category:'Fitness', description:'Aula experimental: modalidade, nivel.', icon:'bi-person-arms-up', color:'#f97316', tags:'yoga pilates danca funcional luta studio aula', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Educacao ───
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Que bom que voce quer estudar conosco!',
+                [
+                    { prompt:'Qual curso te interessa?', save_to:'curso' },
+                    { prompt:'Qual sua escolaridade atual?', save_to:'escolaridade', buttons:['Fundamental','Medio','Superior','Pos-graduacao'] },
+                    { prompt:'Seu email para enviarmos mais informacoes:', save_to:'email', type:'email' }
+                ],
+                'Informacoes enviadas! Logo entraremos em contato.', []
+            );
+            return { id:'school', name:'Escola / Curso', category:'Educacao', description:'Captacao de alunos: curso, escolaridade.', icon:'bi-mortarboard', color:'#0284c7', tags:'escola curso faculdade educacao matricula aluno', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Quer agendar uma aula de idiomas?',
+                [
+                    { prompt:'Qual idioma?', save_to:'idioma', buttons:['Ingles','Espanhol','Frances','Alemao','Outro'] },
+                    { prompt:'Seu nivel atual?', save_to:'nivel', buttons:['Iniciante','Intermediario','Avancado'] },
+                    { prompt:'Prefere aulas individuais ou em grupo?', save_to:'formato', buttons:['Individual','Grupo','Tanto faz'] }
+                ],
+                'Otimo! Vamos agendar sua aula experimental.', []
+            );
+            return { id:'language', name:'Escola de Idiomas', category:'Educacao', description:'Aula de idiomas: lingua, nivel, formato.', icon:'bi-translate', color:'#0369a1', tags:'idioma ingles espanhol escola lingua curso', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Alimentacao ───
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Bem-vindo ao nosso restaurante.',
+                [
+                    { prompt:'Para quantas pessoas?', save_to:'pessoas', buttons:['1-2','3-4','5-8','9+'] },
+                    { prompt:'Qual dia e horario da reserva?', save_to:'horario' },
+                    { prompt:'Alguma restricao alimentar ou observacao?', save_to:'observacao' }
+                ],
+                'Reserva solicitada! Confirmaremos em breve.', []
+            );
+            return { id:'restaurant', name:'Restaurante', category:'Alimentacao', description:'Reserva: pessoas, horario, restricoes.', icon:'bi-cup-hot', color:'#b45309', tags:'restaurante reserva mesa jantar almoco comida gastronomia', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Que bom que voce chegou! Faca seu pedido.',
+                [
+                    { prompt:'O que deseja pedir?', save_to:'pedido' },
+                    { prompt:'Entrega ou retirada?', save_to:'tipo_entrega', buttons:['Entrega','Retirada'] },
+                    { prompt:'Endereco de entrega (se aplicavel):', save_to:'endereco' }
+                ],
+                'Pedido anotado! Ja estamos preparando.', []
+            );
+            return { id:'delivery', name:'Delivery / Lanchonete', category:'Alimentacao', description:'Pedido, tipo de entrega, endereco.', icon:'bi-bag-check', color:'#a16207', tags:'delivery lanchonete hamburgueria pizza entrega pedido comida', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Vamos montar seu orcamento de encomendas.',
+                [
+                    { prompt:'Tipo de produto?', save_to:'produto', buttons:['Bolo','Doces','Salgados','Kit festa','Outro'] },
+                    { prompt:'Para quantas pessoas?', save_to:'pessoas' },
+                    { prompt:'Data do evento?', save_to:'data_evento' }
+                ],
+                'Orcamento solicitado! Enviaremos em breve.', []
+            );
+            return { id:'bakery', name:'Confeitaria / Padaria', category:'Alimentacao', description:'Encomendas: bolo, doces, salgados, data.', icon:'bi-cake2', color:'#ca8a04', tags:'confeitaria padaria bolo doce salgado encomenda festa', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── E-commerce / Varejo ───
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Como posso te ajudar hoje?',
+                [
+                    { prompt:'Escolha uma opcao:', save_to:'assunto', buttons:['Acompanhar pedido','Troca/Devolucao','Duvida sobre produto','Outro'] }
+                ],
+                'Entendido! Um atendente vai te responder em breve.', []
+            );
+            return { id:'ecommerce', name:'E-commerce Geral', category:'Varejo', description:'Atendimento: pedido, troca, duvida.', icon:'bi-cart3', color:'#ea580c', tags:'ecommerce loja online pedido troca devolucao', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Bem-vindo a nossa loja.',
+                [
+                    { prompt:'O que voce procura?', save_to:'interesse', buttons:['Cortinas','Persianas','Blackout','Orcamento completo'] },
+                    { prompt:'Qual o tamanho da janela? (largura x altura)', save_to:'medida' },
+                    { prompt:'Em qual comodo?', save_to:'comodo', buttons:['Sala','Quarto','Cozinha','Escritorio','Outro'] }
+                ],
+                'Vamos preparar seu orcamento personalizado!', []
+            );
+            return { id:'curtains', name:'Cortinas e Persianas', category:'Varejo', description:'Orcamento: tipo, medida, comodo.', icon:'bi-window', color:'#6366f1', tags:'cortina persiana blackout janela decoracao loja', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Procurando moveis novos?',
+                [
+                    { prompt:'Que tipo de movel procura?', save_to:'tipo', buttons:['Sofa','Mesa','Cama','Armario','Outro'] },
+                    { prompt:'Para qual ambiente?', save_to:'ambiente', buttons:['Sala','Quarto','Cozinha','Escritorio'] },
+                    { prompt:'Tem um orcamento em mente?', save_to:'orcamento' }
+                ],
+                'Otimo! Vamos encontrar o movel perfeito.', []
+            );
+            return { id:'furniture', name:'Moveis / Decoracao', category:'Varejo', description:'Tipo de movel, ambiente, orcamento.', icon:'bi-lamp', color:'#7c3aed', tags:'moveis mobilia decoracao sofa mesa cama armario loja', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Bem-vindo a nossa otica.',
+                [
+                    { prompt:'O que voce precisa?', save_to:'servico', buttons:['Oculos de grau','Oculos de sol','Lentes de contato','Exame de vista'] },
+                    { prompt:'Tem receita medica?', save_to:'receita', buttons:['Sim','Nao, preciso agendar exame'] }
+                ],
+                'Perfeito! Vamos te atender da melhor forma.', []
+            );
+            return { id:'optics', name:'Otica', category:'Varejo', description:'Oculos, lentes, exame de vista.', icon:'bi-eyeglasses', color:'#4f46e5', tags:'otica oculos lentes grau sol exame vista', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Bem-vindo a nossa pet shop.',
+                [
+                    { prompt:'O que procura?', save_to:'servico', buttons:['Banho e tosa','Racao/Acessorios','Consulta veterinaria','Outro'] },
+                    { prompt:'Tipo de pet?', save_to:'pet', buttons:['Cao','Gato','Outro'] },
+                    { prompt:'Nome do pet?', save_to:'pet_nome' }
+                ],
+                'Vamos cuidar do seu bichinho!', []
+            );
+            return { id:'petshop', name:'Pet Shop', category:'Varejo', description:'Banho e tosa, produtos, consulta.', icon:'bi-suit-heart', color:'#e11d48', tags:'pet shop banho tosa racao cachorro gato animal', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Procurando flores ou presentes?',
+                [
+                    { prompt:'Qual a ocasiao?', save_to:'ocasiao', buttons:['Aniversario','Namorados','Casamento','Condolencias','Outra'] },
+                    { prompt:'Orcamento estimado?', save_to:'orcamento', buttons:['Ate R$100','R$100-200','R$200-500','Acima R$500'] },
+                    { prompt:'Data de entrega desejada?', save_to:'data_entrega' }
+                ],
+                'Vamos preparar um arranjo especial!', []
+            );
+            return { id:'florist', name:'Floricultura', category:'Varejo', description:'Flores, ocasiao, orcamento, entrega.', icon:'bi-flower1', color:'#db2777', tags:'floricultura flores presente buque arranjo entrega', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Servicos ───
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Precisa de um orcamento?',
+                [
+                    { prompt:'Qual o servico?', save_to:'servico', buttons:['Eletrica','Hidraulica','Pintura','Reforma geral','Outro'] },
+                    { prompt:'E residencial ou comercial?', save_to:'tipo', buttons:['Residencial','Comercial'] },
+                    { prompt:'Descreva brevemente o servico:', save_to:'descricao' }
+                ],
+                'Orcamento solicitado! Entraremos em contato.', []
+            );
+            return { id:'handyman', name:'Servicos / Manutencao', category:'Servicos', description:'Eletrica, hidraulica, pintura, reforma.', icon:'bi-tools', color:'#d97706', tags:'eletricista encanador pintor pedreiro manutencao reforma servico', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Vamos cuidar da limpeza pra voce.',
+                [
+                    { prompt:'Tipo de limpeza?', save_to:'tipo', buttons:['Residencial','Comercial','Pos-obra','Vidros'] },
+                    { prompt:'Tamanho do local (m2 aprox.)?', save_to:'tamanho' },
+                    { prompt:'Frequencia desejada?', save_to:'frequencia', buttons:['Unica vez','Semanal','Quinzenal','Mensal'] }
+                ],
+                'Otimo! Enviaremos o orcamento em breve.', []
+            );
+            return { id:'cleaning', name:'Limpeza / Diarista', category:'Servicos', description:'Tipo de limpeza, tamanho, frequencia.', icon:'bi-droplet', color:'#0891b2', tags:'limpeza faxina diarista pos-obra lavar', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Precisa de assessoria juridica?',
+                [
+                    { prompt:'Qual a area?', save_to:'area', buttons:['Trabalhista','Civil','Criminal','Familia','Empresarial','Outro'] },
+                    { prompt:'Descreva brevemente seu caso:', save_to:'descricao' },
+                    { prompt:'Seu email:', save_to:'email', type:'email' }
+                ],
+                'Analisaremos seu caso e retornaremos em breve.', []
+            );
+            return { id:'lawyer', name:'Advocacia', category:'Servicos', description:'Area juridica, descricao do caso.', icon:'bi-bank', color:'#1e40af', tags:'advogado advocacia juridico direito lei escritorio', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Precisa de servicos contabeis?',
+                [
+                    { prompt:'Qual servico?', save_to:'servico', buttons:['Abertura de empresa','Imposto de renda','Contabilidade mensal','Outro'] },
+                    { prompt:'Tipo de empresa (se aplicavel)?', save_to:'tipo_empresa', buttons:['MEI','ME','EPP','LTDA','SA','Pessoa fisica'] },
+                    { prompt:'Seu email:', save_to:'email', type:'email' }
+                ],
+                'Entendido! Nossa equipe analisara e retornara.', []
+            );
+            return { id:'accountant', name:'Contabilidade', category:'Servicos', description:'Servicos contabeis, tipo de empresa.', icon:'bi-calculator', color:'#1e3a5f', tags:'contador contabilidade empresa imposto mei abertura', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Quer fazer um seguro ou cotacao?',
+                [
+                    { prompt:'Tipo de seguro?', save_to:'tipo', buttons:['Auto','Vida','Residencial','Empresarial','Viagem'] },
+                    { prompt:'Ja possui seguro atualmente?', save_to:'possui_seguro', buttons:['Sim, quero trocar','Nao, primeira vez'] }
+                ],
+                'Vamos preparar sua cotacao personalizada!', []
+            );
+            return { id:'insurance', name:'Seguros / Corretora', category:'Servicos', description:'Tipo de seguro, cotacao.', icon:'bi-shield-check', color:'#15803d', tags:'seguro corretora auto vida residencial cotacao', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Automotivo ───
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Bem-vindo a nossa oficina.',
+                [
+                    { prompt:'Qual o servico?', save_to:'servico', buttons:['Revisao','Freios','Motor','Eletrica','Funilaria','Outro'] },
+                    { prompt:'Marca e modelo do veiculo?', save_to:'veiculo' },
+                    { prompt:'Melhor dia para levar?', save_to:'data' }
+                ],
+                'Agendamento solicitado! Confirmaremos o horario.', []
+            );
+            return { id:'mechanic', name:'Oficina Mecanica', category:'Automotivo', description:'Servico, veiculo, agendamento.', icon:'bi-wrench', color:'#78350f', tags:'oficina mecanica carro veiculo revisao freio motor', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Procurando um veiculo?',
+                [
+                    { prompt:'Novo ou usado?', save_to:'condicao', buttons:['Novo','Seminovo','Tanto faz'] },
+                    { prompt:'Tipo de veiculo?', save_to:'tipo', buttons:['Carro','Moto','Caminhonete','SUV'] },
+                    { prompt:'Faixa de preco?', save_to:'preco' }
+                ],
+                'Vamos encontrar o veiculo ideal pra voce!', []
+            );
+            return { id:'car_dealer', name:'Concessionaria / Veiculos', category:'Automotivo', description:'Novo/usado, tipo, faixa de preco.', icon:'bi-car-front', color:'#92400e', tags:'concessionaria carro moto veiculo comprar vender auto loja', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Tecnologia ───
+        (function() {
+            var f = buildLeadFlow(
+                'Quer conhecer nossa plataforma? Crie sua conta gratis!',
+                [
+                    { prompt:'Seu email:', save_to:'email', type:'email' },
+                    { prompt:'Nome da empresa:', save_to:'empresa' },
+                    { prompt:'Segmento?', save_to:'segmento', buttons:['Tecnologia','Servicos','Varejo','Outro'] }
+                ],
+                'Conta trial solicitada! Verifique seu email.', []
+            );
+            return { id:'saas_trial', name:'SaaS / Teste Gratis', category:'Tecnologia', description:'Onboarding: email, empresa, segmento.', icon:'bi-rocket-takeoff', color:'#0891b2', tags:'saas software trial teste tecnologia startup', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Precisa de suporte tecnico?',
+                [
+                    { prompt:'Qual o problema?', save_to:'problema', buttons:['Computador lento','Sem internet','Erro no sistema','Outro'] },
+                    { prompt:'E urgente?', save_to:'urgencia', buttons:['Sim, urgente','Nao, pode agendar'] },
+                    { prompt:'Seu email:', save_to:'email', type:'email' }
+                ],
+                'Suporte registrado! Um tecnico vai te atender.', []
+            );
+            return { id:'tech_support', name:'Suporte Tecnico / TI', category:'Tecnologia', description:'Problema, urgencia, contato.', icon:'bi-pc-display', color:'#0e7490', tags:'suporte tecnico ti computador informatica assistencia', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Eventos ───
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Vamos planejar seu evento?',
+                [
+                    { prompt:'Tipo de evento?', save_to:'tipo', buttons:['Casamento','Aniversario','Corporativo','Formatura','Outro'] },
+                    { prompt:'Numero estimado de convidados?', save_to:'convidados' },
+                    { prompt:'Data prevista?', save_to:'data_evento' },
+                    { prompt:'Orcamento estimado?', save_to:'orcamento' }
+                ],
+                'Seu evento vai ser incrivel! Entraremos em contato.', []
+            );
+            return { id:'events', name:'Eventos / Festas', category:'Eventos', description:'Tipo, convidados, data, orcamento.', icon:'bi-calendar-event', color:'#c026d3', tags:'evento festa casamento aniversario formatura buffet decoracao', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Quer fazer um orcamento de fotografia?',
+                [
+                    { prompt:'Tipo de ensaio/evento?', save_to:'tipo', buttons:['Casamento','Ensaio','Aniversario','Corporativo','Produto'] },
+                    { prompt:'Data estimada?', save_to:'data' },
+                    { prompt:'Local (cidade/bairro)?', save_to:'local' }
+                ],
+                'Orcamento de fotografia solicitado!', []
+            );
+            return { id:'photography', name:'Fotografia / Video', category:'Eventos', description:'Tipo de ensaio, data, local.', icon:'bi-camera', color:'#a21caf', tags:'fotografia foto video ensaio casamento evento fotografo', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Turismo ───
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Vamos planejar sua viagem dos sonhos?',
+                [
+                    { prompt:'Destino desejado?', save_to:'destino' },
+                    { prompt:'Quantas pessoas?', save_to:'pessoas', buttons:['1','2','3-4','5+'] },
+                    { prompt:'Periodo da viagem?', save_to:'periodo' },
+                    { prompt:'Seu email:', save_to:'email', type:'email' }
+                ],
+                'Pacote em analise! Enviaremos opcoes por email.', []
+            );
+            return { id:'travel', name:'Agencia de Viagem', category:'Turismo', description:'Destino, pessoas, periodo.', icon:'bi-airplane', color:'#0284c7', tags:'viagem turismo agencia pacote hotel passagem destino', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Bem-vindo ao nosso hotel/pousada.',
+                [
+                    { prompt:'Tipo de acomodacao?', save_to:'tipo', buttons:['Standard','Luxo','Suite','Chalé'] },
+                    { prompt:'Datas de check-in e check-out?', save_to:'datas' },
+                    { prompt:'Quantos hospedes?', save_to:'hospedes', buttons:['1','2','3-4','5+'] }
+                ],
+                'Reserva solicitada! Confirmaremos disponibilidade.', []
+            );
+            return { id:'hotel', name:'Hotel / Pousada', category:'Turismo', description:'Acomodacao, datas, hospedes.', icon:'bi-building-check', color:'#0369a1', tags:'hotel pousada hospedagem reserva suite chale', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Financeiro ───
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Precisa de credito ou financiamento?',
+                [
+                    { prompt:'Qual o objetivo?', save_to:'objetivo', buttons:['Credito pessoal','Financiamento imovel','Financiamento veiculo','Consignado','Outro'] },
+                    { prompt:'Valor estimado?', save_to:'valor' },
+                    { prompt:'Seu email:', save_to:'email', type:'email' }
+                ],
+                'Simulacao solicitada! Enviaremos as opcoes.', []
+            );
+            return { id:'finance', name:'Credito / Financiamento', category:'Financeiro', description:'Tipo de credito, valor estimado.', icon:'bi-cash-stack', color:'#15803d', tags:'credito financiamento banco emprestimo consignado', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Construcao ───
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Precisa de materiais de construcao?',
+                [
+                    { prompt:'Tipo de obra?', save_to:'tipo_obra', buttons:['Construcao nova','Reforma','Acabamento','Manutencao'] },
+                    { prompt:'Quais materiais precisa?', save_to:'materiais' },
+                    { prompt:'CEP ou cidade para entrega?', save_to:'local' }
+                ],
+                'Orcamento solicitado! Entraremos em contato.', []
+            );
+            return { id:'construction', name:'Materiais de Construcao', category:'Construcao', description:'Tipo de obra, materiais, entrega.', icon:'bi-bricks', color:'#b45309', tags:'construcao material obra cimento tijolo reforma acabamento', steps:f.steps, variables:f.variables };
+        })(),
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Vamos projetar o espaco dos seus sonhos.',
+                [
+                    { prompt:'Tipo de projeto?', save_to:'tipo', buttons:['Residencial','Comercial','Interiores','Paisagismo'] },
+                    { prompt:'Tamanho estimado (m2)?', save_to:'tamanho' },
+                    { prompt:'Cidade/regiao?', save_to:'local' }
+                ],
+                'Projeto em analise! Agendaremos uma reuniao.', []
+            );
+            return { id:'architect', name:'Arquitetura / Design', category:'Construcao', description:'Tipo de projeto, tamanho, local.', icon:'bi-rulers', color:'#a16207', tags:'arquitetura design interiores projeto decoracao paisagismo', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Energia Solar ───
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Quer economizar na conta de luz com energia solar?',
+                [
+                    { prompt:'Valor medio da conta de luz?', save_to:'conta_luz' },
+                    { prompt:'Tipo de imovel?', save_to:'tipo', buttons:['Residencial','Comercial','Rural','Industrial'] },
+                    { prompt:'Cidade?', save_to:'cidade' }
+                ],
+                'Simulacao solicitada! Enviaremos a proposta.', []
+            );
+            return { id:'solar', name:'Energia Solar', category:'Servicos', description:'Conta de luz, tipo de imovel, cidade.', icon:'bi-sun', color:'#eab308', tags:'energia solar fotovoltaica painel placa economia luz', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Marketing ───
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Quer impulsionar sua presenca digital?',
+                [
+                    { prompt:'O que voce precisa?', save_to:'servico', buttons:['Gestao de redes sociais','Trafego pago','Criacao de site','Branding','Outro'] },
+                    { prompt:'Site ou Instagram da empresa (se tiver):', save_to:'site' },
+                    { prompt:'Seu email:', save_to:'email', type:'email' }
+                ],
+                'Otimo! Vamos criar uma estrategia pra voce.', []
+            );
+            return { id:'marketing_agency', name:'Agencia de Marketing', category:'Tecnologia', description:'Servico digital, site, contato.', icon:'bi-megaphone', color:'#7c3aed', tags:'marketing agencia trafego pago redes sociais site digital', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Moda ───
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Bem-vindo a nossa loja!',
+                [
+                    { prompt:'O que procura?', save_to:'interesse', buttons:['Roupas femininas','Roupas masculinas','Acessorios','Calcados'] },
+                    { prompt:'Algum tamanho especifico?', save_to:'tamanho' },
+                    { prompt:'Seu email para receber novidades:', save_to:'email', type:'email' }
+                ],
+                'Obrigado! Enviaremos novidades e ofertas.', []
+            );
+            return { id:'fashion', name:'Loja de Roupas / Moda', category:'Varejo', description:'Interesse, tamanho, novidades.', icon:'bi-handbag', color:'#be185d', tags:'roupa moda loja calcado acessorio feminino masculino', steps:f.steps, variables:f.variables };
+        })(),
+        // ─── Joias ───
+        (function() {
+            var f = buildLeadFlow(
+                'Ola! Procurando joias ou semi-joias?',
+                [
+                    { prompt:'Tipo de peca?', save_to:'tipo', buttons:['Anel','Brinco','Colar','Pulseira','Alianca','Outro'] },
+                    { prompt:'E para presente ou uso proprio?', save_to:'finalidade', buttons:['Presente','Uso proprio'] },
+                    { prompt:'Faixa de preco?', save_to:'preco', buttons:['Ate R$200','R$200-500','R$500-1000','Acima R$1000'] }
+                ],
+                'Vamos encontrar a peca perfeita!', []
+            );
+            return { id:'jewelry', name:'Joalheria', category:'Varejo', description:'Tipo de peca, finalidade, preco.', icon:'bi-gem', color:'#9333ea', tags:'joia semi-joia anel alianca brinco colar pulseira presente', steps:f.steps, variables:f.variables };
+        })(),
+    ];
+
+    // ── Categories & Search ──
+    var _tplActiveCategory = 'Todos';
+
+    function getTemplateCategories() {
+        var cats = ['Todos'];
+        BOT_TEMPLATES.forEach(function(t) {
+            if (cats.indexOf(t.category) === -1) cats.push(t.category);
+        });
+        return cats;
+    }
+
+    function renderTemplateTabs() {
+        var container = document.getElementById('tplCategoryTabs');
+        if (!container) return;
+        container.innerHTML = '';
+        var cats = getTemplateCategories();
+        cats.forEach(function(cat) {
+            var btn = document.createElement('button');
+            btn.textContent = cat;
+            btn.style.cssText = 'padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid #e8eaf0;background:#fff;color:#6b7280;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap;flex-shrink:0;';
+            if (cat === _tplActiveCategory) {
+                btn.style.background = '#0085f3';
+                btn.style.color = '#fff';
+                btn.style.borderColor = '#0085f3';
+            }
+            btn.onclick = function() {
+                _tplActiveCategory = cat;
+                renderTemplateTabs();
+                renderTemplateGrid(document.getElementById('tplSearch').value);
+            };
+            container.appendChild(btn);
+        });
+        setTimeout(updateTabArrows, 20);
+    }
+
+    function renderTemplateGrid(searchText) {
+        var grid = document.getElementById('templatesGrid');
+        var empty = document.getElementById('tplEmpty');
+        if (!grid) return;
+        grid.innerHTML = '';
+        var q = (searchText || '').toLowerCase().trim();
+
+        var filtered = BOT_TEMPLATES.filter(function(tpl) {
+            if (_tplActiveCategory !== 'Todos' && tpl.category !== _tplActiveCategory) return false;
+            if (!q) return true;
+            var haystack = (tpl.name + ' ' + tpl.description + ' ' + (tpl.tags || '') + ' ' + tpl.category).toLowerCase();
+            return haystack.indexOf(q) !== -1;
+        });
+
+        if (empty) empty.style.display = filtered.length === 0 ? 'block' : 'none';
+        grid.style.display = filtered.length === 0 ? 'none' : 'grid';
+
+        filtered.forEach(function(tpl) {
+            var card = document.createElement('div');
+            card.style.cssText = 'border:1.5px solid #e8eaf0;border-radius:12px;padding:16px 14px;cursor:pointer;transition:all .15s;background:#fff;';
+            card.onmouseenter = function() { card.style.borderColor = '#0085f3'; card.style.background = '#f8faff'; };
+            card.onmouseleave = function() { card.style.borderColor = '#e8eaf0'; card.style.background = '#fff'; };
+            card.innerHTML =
+                '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
+                    '<div style="width:34px;height:34px;border-radius:9px;background:#eff6ff;color:#0085f3;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;"><i class="bi ' + tpl.icon + '"></i></div>' +
+                    '<div style="min-width:0;"><span style="font-size:13.5px;font-weight:700;color:#1a1d23;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + tpl.name + '</span>' +
+                    '<span style="font-size:11px;color:#9ca3af;">' + tpl.category + '</span></div>' +
+                '</div>' +
+                '<p style="font-size:12px;color:#6b7280;margin:0 0 8px;line-height:1.4;">' + tpl.description + '</p>' +
+                '<div style="font-size:11px;color:#b0b5bf;">' + tpl.steps.length + ' nos · ' + (tpl.variables ? tpl.variables.length : 0) + ' variaveis</div>';
+            card.onclick = function() { loadTemplate(tpl); };
+            grid.appendChild(card);
+        });
+    }
+
+    window.filterTemplates = function(val) {
+        renderTemplateGrid(val);
+    };
+
+    function updateTabArrows() {
+        var tabs = document.getElementById('tplCategoryTabs');
+        var btnL = document.getElementById('tplTabLeft');
+        var btnR = document.getElementById('tplTabRight');
+        if (!tabs || !btnL || !btnR) return;
+        var canScrollLeft = tabs.scrollLeft > 4;
+        var canScrollRight = tabs.scrollLeft + tabs.clientWidth < tabs.scrollWidth - 4;
+        btnL.style.display = canScrollLeft ? 'inline-flex' : 'none';
+        btnR.style.display = canScrollRight ? 'inline-flex' : 'none';
+    }
+
+    // Attach scroll listener once DOM is ready
+    (function() {
+        var tabs = document.getElementById('tplCategoryTabs');
+        if (tabs) tabs.addEventListener('scroll', updateTabArrows);
+    })();
+
+    window.showTemplatesModal = function() {
+        var modal = document.getElementById('templatesModal');
+        if (!modal) return;
+        var search = document.getElementById('tplSearch');
+        if (search) search.value = '';
+        _tplActiveCategory = 'Todos';
+        renderTemplateTabs();
+        renderTemplateGrid('');
+        modal.style.display = 'flex';
+        setTimeout(updateTabArrows, 50);
+    };
+
+    function loadTemplate(tpl) {
+        var hasSteps = flowSteps.length > 0;
+        if (hasSteps && !confirm('Isso vai substituir todos os nós atuais. Deseja continuar?')) return;
+
+        // Deep-clone steps with fresh IDs
+        var newSteps = JSON.parse(JSON.stringify(tpl.steps));
+        assignFreshIds(newSteps);
+        flowSteps.length = 0;
+        newSteps.forEach(function(s) { flowSteps.push(s); });
+
+        // Load template variables
+        if (tpl.variables) {
+            flowVariables.length = 0;
+            tpl.variables.forEach(function(v) { flowVariables.push({ name: v.name, default: v.default || '' }); });
+        }
+
+        document.getElementById('templatesModal').style.display = 'none';
+        renderFlow();
+        toastr.success('Modelo "' + tpl.name + '" carregado!');
+    }
+
+    function assignFreshIds(steps) {
+        steps.forEach(function(s) {
+            s.id = genId();
+            if (s.branches) {
+                s.branches.forEach(function(b) {
+                    b.id = genId();
+                    if (b.steps) assignFreshIds(b.steps);
+                });
+            }
+            if (s.default_branch && s.default_branch.steps) {
+                assignFreshIds(s.default_branch.steps);
+            }
+        });
+    }
 
     // ── Init ─────────────────────────────────────────────────────────
     renderFlow();

@@ -61,9 +61,12 @@ class AiAgentController extends Controller
 
     public function store(Request $request): JsonResponse|\Illuminate\Http\RedirectResponse
     {
-        // Limite de 1 agente por tenant
-        if (AiAgent::exists()) {
-            $message = 'Cada conta pode ter apenas 1 agente de IA. Edite o agente existente.';
+        // Limite dinâmico de agentes por tenant
+        $tenant = auth()->user()->tenant;
+        $max = $tenant->max_ai_agents ?? 0;
+        $maxEffective = $max > 0 ? $max : 1; // default 1 se não configurado
+        if (AiAgent::count() >= $maxEffective) {
+            $message = "Limite de {$maxEffective} agente(s) de IA atingido. Atualize seu plano para criar mais.";
             if ($request->expectsJson()) {
                 return response()->json(['success' => false, 'message' => $message], 422);
             }
