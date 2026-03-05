@@ -28,7 +28,6 @@
         overflow: hidden;
         transition: box-shadow .15s;
     }
-
     .flow-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.07); }
 
     .flow-card-body {
@@ -36,6 +35,12 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
+    }
+
+    .flow-card-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
     }
 
     .flow-icon {
@@ -60,16 +65,31 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+    .flow-subtitle { font-size: 12px; color: #9ca3af; }
+
+    .flow-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 2px 9px; border-radius: 99px;
+        font-size: 11px; font-weight: 700; white-space: nowrap;
+    }
+    .badge-active   { background: #d1fae5; color: #065f46; }
+    .badge-inactive { background: #f3f4f6; color: #6b7280; }
 
     .flow-desc {
         font-size: 12px;
         color: #9ca3af;
         overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
     }
 
-    .flow-meta {
+    .flow-meta-row {
         display: flex;
         gap: 14px;
         font-size: 11px;
@@ -84,31 +104,16 @@
         margin-top: auto;
     }
 
-    .badge-active   { background: #d1fae5; color: #065f46; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 700; white-space: nowrap; }
-    .badge-inactive { background: #f3f4f6; color: #6b7280;  padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .btn-delete-flow:hover { background: #fee2e2 !important; color: #ef4444 !important; }
 
     .empty-state {
         text-align: center;
         padding: 80px 20px;
         color: #9ca3af;
     }
-
-    .empty-state i      { font-size: 52px; opacity: .2; margin-bottom: 14px; display: block; }
-    .empty-state h3     { font-size: 16px; color: #374151; margin: 0 0 6px; }
-    .empty-state p      { font-size: 13.5px; margin: 0 0 20px; }
-
-    .btn-delete-flow {
-        display: inline-flex; align-items: center; gap: 5px;
-        font-size: 12px; padding: 8px 16px;
-        border: none; border-radius: 9px;
-    }
-    .btn-delete-flow:hover { background: #fee2e2 !important; color: #ef4444 !important; }
-
-    .btn-test-flow {
-        display: inline-flex; align-items: center; gap: 5px;
-        font-size: 12px; padding: 8px 16px;
-        border: none; border-radius: 9px;
-    }
+    .empty-state i  { font-size: 52px; opacity: .2; margin-bottom: 14px; display: block; }
+    .empty-state h3 { font-size: 16px; color: #374151; margin: 0 0 6px; }
+    .empty-state p  { font-size: 13.5px; margin: 0 0 20px; }
 
     /* ── Test Chat Sidebar ──────────────────────────────────────────────────── */
     .tcm-backdrop {
@@ -406,6 +411,24 @@ function tcmRemoveTyping(id) {
     document.getElementById(id)?.remove();
 }
 
+/* ── Toggle flow active ── */
+function toggleFlowActive(flowId, currentlyActive, btn) {
+    btn.disabled = true;
+    fetch('{{ url("chatbot/fluxos") }}/' + flowId + '/toggle', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    })
+    .then(r => r.json())
+    .then(data => {
+        // Reload to reflect updated state
+        window.location.reload();
+    })
+    .catch(() => {
+        btn.disabled = false;
+        if (typeof toastr !== 'undefined') toastr.error('Erro ao alterar status do fluxo.');
+    });
+}
+
 /* ── Delete flow modal ── */
 let _deleteFlowForm = null;
 
@@ -487,56 +510,77 @@ function closeWidgetTest() {
             <div class="flow-card">
                 <div class="flow-card-body">
 
-                    {{-- Cabeçalho do card --}}
-                    <div style="display:flex;align-items:center;gap:12px;">
+                    {{-- Top: icon + name --}}
+                    <div class="flow-card-top">
                         <div class="flow-icon"><i class="bi bi-diagram-3"></i></div>
                         <div style="flex:1;min-width:0;">
                             <div class="flow-name">{{ $flow->name }}</div>
-                            @if($flow->description)
-                                <div class="flow-desc">{{ $flow->description }}</div>
+                            @if($flow->trigger_keywords)
+                                <div class="flow-subtitle">{{ implode(', ', array_slice($flow->trigger_keywords, 0, 3)) }}{{ count($flow->trigger_keywords) > 3 ? '…' : '' }}</div>
                             @endif
                         </div>
-                        <span class="{{ $flow->is_active ? 'badge-active' : 'badge-inactive' }}">
+                    </div>
+
+                    {{-- Badges --}}
+                    <div class="flow-badges">
+                        <span class="badge {{ $flow->is_active ? 'badge-active' : 'badge-inactive' }}">
+                            <i class="bi bi-circle-fill" style="font-size:7px;"></i>
                             {{ $flow->is_active ? 'Ativo' : 'Inativo' }}
                         </span>
-                    </div>
-
-                    {{-- Meta --}}
-                    <div class="flow-meta">
-                        @if($flow->trigger_keywords)
-                            <span><i class="bi bi-lightning-charge text-warning me-1"></i>{{ implode(', ', array_slice($flow->trigger_keywords, 0, 3)) }}{{ count($flow->trigger_keywords) > 3 ? '…' : '' }}</span>
-                        @else
-                            <span><i class="bi bi-hand-index me-1"></i>Manual</span>
-                        @endif
-                        <span><i class="bi bi-diagram-3 me-1"></i>{{ $flow->nodes()->count() }} nós</span>
-                        <span title="Conversas atribuídas a este fluxo agora">
-                            <i class="bi bi-person-lines-fill me-1" style="color:#8b5cf6;"></i>
-                            {{ $flow->conversations_count }} {{ $flow->conversations_count === 1 ? 'lead atendido' : 'leads atendidos' }}
+                        @if($flow->website_token)
+                        <span class="badge" style="background:#eff6ff;color:#2563eb;">
+                            <i class="bi bi-globe2"></i> Website
                         </span>
+                        @endif
+                        @if($flow->trigger_keywords)
+                        <span class="badge" style="background:#eff6ff;color:#2563eb;">
+                            <i class="bi bi-lightning-fill"></i> Auto-trigger
+                        </span>
+                        @endif
                     </div>
 
-                    {{-- Ações --}}
+                    {{-- Meta row --}}
+                    <div class="flow-meta-row">
+                        <span><i class="bi bi-diagram-3"></i> {{ $flow->nodes()->count() }} nós</span>
+                        <span><i class="bi bi-person-lines-fill"></i> {{ $flow->conversations_count }} {{ $flow->conversations_count === 1 ? 'lead atendido' : 'leads atendidos' }}</span>
+                    </div>
+
+                    {{-- Description --}}
+                    @if($flow->description)
+                    <div class="flow-desc">{{ $flow->description }}</div>
+                    @endif
+
+                    {{-- Actions --}}
                     <div class="flow-actions">
-                        <a href="{{ route('chatbot.flows.edit', $flow) }}" class="btn-primary-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;font-size:12px;">
-                            <i class="bi bi-pencil-square"></i> Editar fluxo
-                        </a>
-                        <a href="{{ route('chatbot.flows.edit', $flow) }}?settings=1" class="btn-secondary-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;font-size:12px;">
-                            <i class="bi bi-gear"></i> Config.
+                        <a href="{{ route('chatbot.flows.edit', $flow) }}"
+                           class="btn btn-sm btn-light"
+                           style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;text-decoration:none;color:#374151;">
+                            <i class="bi bi-pencil"></i> Editar
                         </a>
                         @if($flow->website_token)
-                        <button type="button" class="btn-secondary-sm btn-test-flow" onclick="openWidgetTest('{{ $flow->website_token }}')">
+                        <button type="button" class="btn btn-sm btn-light"
+                                onclick="openWidgetTest('{{ $flow->website_token }}')"
+                                style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;">
                             <i class="bi bi-play-circle"></i> Testar
                         </button>
-                        <button type="button" class="btn-secondary-sm" onclick="openEmbedModal('{{ config('app.url') }}/api/widget/{{ $flow->website_token }}.js')">
+                        <button type="button" class="btn btn-sm btn-light"
+                                onclick="openEmbedModal('{{ config('app.url') }}/api/widget/{{ $flow->website_token }}.js')"
+                                style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;">
                             <i class="bi bi-code-slash"></i> Embed
                         </button>
                         @endif
-                        <form method="POST" action="{{ route('chatbot.flows.destroy', $flow) }}" style="margin-left:auto;"
-                              class="flow-delete-form">
+                        <button type="button" class="btn btn-sm btn-light"
+                                onclick="toggleFlowActive({{ $flow->id }}, {{ $flow->is_active ? 'true' : 'false' }}, this)"
+                                style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;">
+                            <i class="bi bi-{{ $flow->is_active ? 'pause' : 'play' }}"></i>
+                            {{ $flow->is_active ? 'Pausar' : 'Ativar' }}
+                        </button>
+                        <form method="POST" action="{{ route('chatbot.flows.destroy', $flow) }}" style="margin-left:auto;">
                             @csrf @method('DELETE')
-                            <button type="button" class="btn-secondary-sm btn-delete-flow"
-                                    onclick="openFlowDeleteModal(this.closest('form'), '{{ addslashes($flow->name) }}')">
-                                <i class="bi bi-trash3"></i> Excluir
+                            <button type="button" class="btn btn-sm btn-light btn-delete-flow"
+                                    onclick="openFlowDeleteModal(this.closest('form'), '{{ addslashes($flow->name) }}')"
+                                    style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;color:#9ca3af;">
+                                <i class="bi bi-trash"></i>
                             </button>
                         </form>
                     </div>
