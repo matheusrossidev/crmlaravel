@@ -84,7 +84,7 @@
 
         /* Header */
         '.syncro-header{background:' + colorPrimary + ';color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;}',
-        '.syncro-header-avatar{width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.5);flex-shrink:0;}',
+        '.syncro-header-avatar{width:38px;height:38px;border-radius:50% !important;object-fit:cover;border:2px solid rgba(255,255,255,0.5);flex-shrink:0;}',
         '.syncro-header-avatar-placeholder{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
         '.syncro-header-info{flex:1;min-width:0;}',
         '.syncro-header-title{font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
@@ -102,7 +102,7 @@
         /* Message rows */
         '.syncro-msg-row{display:flex;align-items:flex-end;gap:8px;animation:syncro-fadeIn .4s ease-out;}',
         '.syncro-msg-row.out-row{flex-direction:row-reverse;}',
-        '.syncro-msg-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;}',
+        '.syncro-msg-avatar{width:40px;height:40px;border-radius:50% !important;object-fit:cover;flex-shrink:0;}',
         '.syncro-msg-avatar-placeholder{width:40px;height:40px;border-radius:50%;background:' + colorPrimary + '22;display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
 
         /* Bubbles */
@@ -127,8 +127,8 @@
         '.syncro-btn:hover{background:' + colorPrimary + ';color:#fff;}',
 
         /* Input row */
-        '.syncro-input-row{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #f0f2f7;flex-shrink:0;align-items:center;}',
-        '.syncro-input{flex:1;padding:10px 14px;border:1.5px solid #e8eaf0;border-radius:24px;font-size:13.5px;outline:none;font-family:inherit;transition:border-color .15s;}',
+        '.syncro-input-row{display:flex;gap:8px;padding:10px 12px;border-top:none;flex-shrink:0;align-items:center;}',
+        '.syncro-input{flex:1;padding:10px 14px;border:1.5px solid #e8eaf0 !important;border-radius:24px !important;font-size:13.5px;outline:none;font-family:inherit;transition:border-color .15s;}',
         '.syncro-input:focus{border-color:' + colorPrimary + ';}',
         '.syncro-input.syncro-input-error{border-color:#ef4444;animation:syncro-shake .4s ease-in-out;}',
         '@keyframes syncro-shake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-4px);}40%,80%{transform:translateX(4px);}}',
