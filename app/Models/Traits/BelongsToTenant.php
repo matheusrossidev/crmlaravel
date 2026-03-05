@@ -12,10 +12,13 @@ trait BelongsToTenant
     {
         static::addGlobalScope('tenant', function (Builder $builder) {
             if (auth()->check()) {
-                // Se há uma impersonação ativa (agência acessando conta de cliente), usar esse tenant_id
+                // Se há uma impersonação ativa (agência acessando conta de cliente), usar esse tenant_id.
+                // Verifica app('active_tenant_id') (setado pelo TenantMiddleware) e também
+                // session('impersonating_tenant_id') diretamente, pois o SubstituteBindings
+                // (route model binding) roda ANTES do TenantMiddleware na pipeline.
                 $tenantId = app()->has('active_tenant_id')
                     ? app('active_tenant_id')
-                    : (auth()->user()->tenant_id ?? 0);
+                    : (int) (session('impersonating_tenant_id') ?: (auth()->user()->tenant_id ?? 0));
 
                 $builder->where($builder->getModel()->getTable() . '.tenant_id', $tenantId);
             }
@@ -25,7 +28,7 @@ trait BelongsToTenant
             if (auth()->check() && !$model->tenant_id) {
                 $model->tenant_id = app()->has('active_tenant_id')
                     ? app('active_tenant_id')
-                    : auth()->user()->tenant_id;
+                    : (int) (session('impersonating_tenant_id') ?: auth()->user()->tenant_id);
             }
         });
     }

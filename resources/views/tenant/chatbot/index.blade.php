@@ -419,6 +419,51 @@ function _doDeleteFlow() {
     document.getElementById('delFlowModal').classList.remove('open');
     if (_deleteFlowForm) _deleteFlowForm.submit();
 }
+
+/* ── Embed modal ── */
+function openEmbedModal(scriptUrl) {
+    var el = document.getElementById('idxEmbedCode');
+    el.value = '<script src="' + scriptUrl + '"></' + 'script>';
+    document.getElementById('idxEmbedModal').style.display = 'flex';
+}
+
+function copyIdxEmbed() {
+    var textarea = document.getElementById('idxEmbedCode');
+    navigator.clipboard.writeText(textarea.value.trim()).then(function() {
+        var msg = document.getElementById('idxEmbedCopied');
+        msg.style.display = 'inline-flex';
+        setTimeout(function() { msg.style.display = 'none'; }, 2500);
+    });
+}
+
+/* ── Widget test ── */
+var _widgetTestActive = false;
+
+function openWidgetTest(token) {
+    if (_widgetTestActive) {
+        closeWidgetTest();
+        return;
+    }
+    // Limpar visitor ID para conversa nova
+    localStorage.removeItem('syncro_vid_' + token);
+
+    var s = document.createElement('script');
+    s.id = 'syncro-test-widget';
+    s.src = '{{ config("app.url") }}/api/widget/' + token + '.js?' + Date.now();
+    document.body.appendChild(s);
+    _widgetTestActive = true;
+}
+
+function closeWidgetTest() {
+    ['syncro-launcher', 'syncro-window', 'syncro-welcome', 'syncro-test-widget'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.remove();
+    });
+    document.querySelectorAll('style').forEach(function(s) {
+        if (s.textContent && s.textContent.indexOf('#syncro-launcher') !== -1) s.remove();
+    });
+    _widgetTestActive = false;
+}
 </script>
 @endpush
 
@@ -478,10 +523,14 @@ function _doDeleteFlow() {
                         <a href="{{ route('chatbot.flows.edit', $flow) }}?settings=1" class="btn-secondary-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;font-size:12px;">
                             <i class="bi bi-gear"></i> Config.
                         </a>
-                        <button class="btn-secondary-sm btn-test-flow"
-                                onclick="openTestChat({{ $flow->id }}, '{{ addslashes($flow->name) }}', '{{ route('chatbot.flows.test-step', $flow) }}')">
+                        @if($flow->website_token)
+                        <button type="button" class="btn-secondary-sm btn-test-flow" onclick="openWidgetTest('{{ $flow->website_token }}')">
                             <i class="bi bi-play-circle"></i> Testar
                         </button>
+                        <button type="button" class="btn-secondary-sm" onclick="openEmbedModal('{{ config('app.url') }}/api/widget/{{ $flow->website_token }}.js')">
+                            <i class="bi bi-code-slash"></i> Embed
+                        </button>
+                        @endif
                         <form method="POST" action="{{ route('chatbot.flows.destroy', $flow) }}" style="margin-left:auto;"
                               class="flow-delete-form">
                             @csrf @method('DELETE')
@@ -530,6 +579,24 @@ function _doDeleteFlow() {
         </div>
     </div>
 
+</div>
+
+{{-- Modal: Embed code --}}
+<div id="idxEmbedModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
+    <div style="background:#fff;border-radius:14px;padding:28px 32px;width:520px;max-width:94vw;box-shadow:0 20px 60px rgba(0,0,0,.18);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0;">Código de instalação</h3>
+            <button onclick="document.getElementById('idxEmbedModal').style.display='none'" style="background:none;border:none;font-size:20px;color:#9ca3af;cursor:pointer;padding:4px;">&times;</button>
+        </div>
+        <p style="font-size:13.5px;color:#6b7280;margin:0 0 14px;">Cole este código antes do <code>&lt;/body&gt;</code> do seu site:</p>
+        <textarea id="idxEmbedCode" readonly rows="3" style="width:100%;border:1.5px solid #e8eaf0;border-radius:9px;padding:12px;font-family:monospace;font-size:12.5px;color:#374151;background:#f8fafc;resize:none;"></textarea>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+            <button onclick="copyIdxEmbed()" style="background:#0085f3;color:#fff;border:none;border-radius:9px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;">
+                <i class="bi bi-clipboard"></i> Copiar código
+            </button>
+            <span id="idxEmbedCopied" style="font-size:12px;color:#16a34a;font-weight:600;display:none;"><i class="bi bi-check-circle"></i> Copiado!</span>
+        </div>
+    </div>
 </div>
 
 {{-- Modal: confirmar exclusão de fluxo --}}

@@ -17,8 +17,7 @@
 @push('styles')
 <style>
     .flow-form-wrap {
-        max-width: 640px;
-        margin: 0 auto;
+        max-width: 100%;
     }
 
     .flow-form-card {

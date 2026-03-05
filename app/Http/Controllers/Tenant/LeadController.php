@@ -117,10 +117,11 @@ class LeadController extends Controller
 
         $this->saveCustomFields($lead, $request->input('custom_fields', []));
 
+        $agencyPrefix = session()->has('impersonating_tenant_id') ? 'Agência parceira: ' : '';
         LeadEvent::create([
             'lead_id'      => $lead->id,
             'event_type'   => 'created',
-            'description'  => 'Lead criado',
+            'description'  => $agencyPrefix . 'Lead criado',
             'performed_by' => auth()->id(),
             'created_at'   => now(),
         ]);
@@ -251,12 +252,13 @@ class LeadController extends Controller
 
         $this->saveCustomFields($lead, $request->input('custom_fields', []));
 
+        $agencyPrefix = session()->has('impersonating_tenant_id') ? 'Agência parceira: ' : '';
         if ($oldStageId !== (int) $data['stage_id']) {
             $newStage = PipelineStage::find($data['stage_id']);
             LeadEvent::create([
                 'lead_id'      => $lead->id,
                 'event_type'   => 'stage_changed',
-                'description'  => "Movido para {$newStage?->name}",
+                'description'  => $agencyPrefix . "Movido para {$newStage?->name}",
                 'performed_by' => auth()->id(),
                 'created_at'   => now(),
             ]);
@@ -264,7 +266,7 @@ class LeadController extends Controller
             LeadEvent::create([
                 'lead_id'      => $lead->id,
                 'event_type'   => 'updated',
-                'description'  => 'Lead atualizado',
+                'description'  => $agencyPrefix . 'Lead atualizado',
                 'performed_by' => auth()->id(),
                 'created_at'   => now(),
             ]);
@@ -311,10 +313,11 @@ class LeadController extends Controller
 
         $note->load('author');
 
+        $agencyPrefix = session()->has('impersonating_tenant_id') ? 'Agência parceira: ' : '';
         LeadEvent::create([
             'lead_id'      => $lead->id,
             'event_type'   => 'note_added',
-            'description'  => 'Nota adicionada',
+            'description'  => $agencyPrefix . 'Nota adicionada',
             'performed_by' => auth()->id(),
             'created_at'   => now(),
         ]);

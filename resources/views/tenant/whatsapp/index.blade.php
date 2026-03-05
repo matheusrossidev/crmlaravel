@@ -1222,6 +1222,13 @@ $pageIcon = 'chat-dots';
         </div>
 
         {{-- Footer de composição --}}
+        @if(!empty($isPartnerView))
+        <div class="wa-compose-area" id="composeArea" style="display:none;">
+            <div style="padding:14px 18px;text-align:center;color:#6b7280;font-size:13px;background:#f8fafc;border-top:1px solid #f0f2f7;">
+                <i class="bi bi-eye" style="margin-right:5px;"></i> Modo visualização — agência parceira não pode enviar mensagens
+            </div>
+        </div>
+        @else
         <div class="wa-compose-area" id="composeArea" style="display:none;">
             <div class="wa-compose-tabs">
                 <button class="wa-tab-btn active" id="tabReply" onclick="setComposeMode('reply')">Responder</button>
@@ -1277,6 +1284,7 @@ $pageIcon = 'chat-dots';
                 </button>
             </div>
         </div>
+        @endif
     </div>
 
     {{-- Painel de detalhes --}}

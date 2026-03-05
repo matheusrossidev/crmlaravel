@@ -17,6 +17,11 @@ class WhatsappMessageController extends Controller
 {
     public function store(WhatsappConversation $conversation, Request $request): JsonResponse
     {
+        // Parceiros só podem visualizar — bloqueio de envio
+        if (session()->has('impersonating_tenant_id')) {
+            return response()->json(['error' => 'Acesso somente leitura para agências parceiras.'], 403);
+        }
+
         $type = $request->input('type', 'text');
         $body = $request->input('body', '');
 

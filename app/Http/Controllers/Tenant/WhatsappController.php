@@ -102,7 +102,9 @@ class WhatsappController extends Controller
             ->get(['id', 'title', 'body'])
             ->toArray();
 
-        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'igConversations', 'allConversations', 'users', 'pipelines', 'whatsappTags', 'aiAgents', 'chatbotFlows', 'quickMessages'));
+        $isPartnerView = session()->has('impersonating_tenant_id');
+
+        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'igConversations', 'allConversations', 'users', 'pipelines', 'whatsappTags', 'aiAgents', 'chatbotFlows', 'quickMessages', 'isPartnerView'));
     }
 
     // ── Instagram Conversations ───────────────────────────────────────────────
@@ -163,6 +165,11 @@ class WhatsappController extends Controller
 
     public function sendInstagramMessage(InstagramConversation $conversation, Request $request): JsonResponse
     {
+        // Parceiros só podem visualizar
+        if (session()->has('impersonating_tenant_id')) {
+            return response()->json(['error' => 'Acesso somente leitura para agências parceiras.'], 403);
+        }
+
         $body = $request->input('body', '');
         if (! $body) {
             return response()->json(['error' => 'Mensagem vazia'], 422);

@@ -25,6 +25,7 @@ class WebsiteConversation extends Model
         'contact_phone',
         'lead_id',
         'chatbot_node_id',
+        'chatbot_cursor',
         'chatbot_variables',
         'status',
         'unread_count',
@@ -41,6 +42,7 @@ class WebsiteConversation extends Model
 
     protected $casts = [
         'chatbot_variables' => 'array',
+        'chatbot_cursor'    => 'array',
         'started_at'        => 'datetime',
         'last_message_at'   => 'datetime',
     ];

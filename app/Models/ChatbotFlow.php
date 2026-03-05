@@ -14,7 +14,7 @@ class ChatbotFlow extends Model
 
     protected $fillable = [
         'tenant_id', 'name', 'channel', 'website_token', 'description', 'is_active',
-        'trigger_keywords', 'variables',
+        'trigger_keywords', 'variables', 'steps',
         'bot_name', 'bot_avatar', 'welcome_message', 'widget_type',
     ];
 
@@ -22,6 +22,7 @@ class ChatbotFlow extends Model
         'is_active'        => 'boolean',
         'trigger_keywords' => 'array',
         'variables'        => 'array',
+        'steps'            => 'array',
     ];
 
     public function nodes(): HasMany

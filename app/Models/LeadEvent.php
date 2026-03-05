@@ -30,6 +30,7 @@ class LeadEvent extends Model
 
     public function performedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'performed_by');
+        // withoutGlobalScope para carregar users de outros tenants (ex: agência parceira)
+        return $this->belongsTo(User::class, 'performed_by')->withoutGlobalScope('tenant');
     }
 }

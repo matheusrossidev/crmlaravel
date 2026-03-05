@@ -60,13 +60,13 @@
         '#syncro-launcher svg{width:28px;height:28px;fill:currentColor;}',
         '#syncro-launcher img{width:60px;height:60px;border-radius:50%;object-fit:cover;}',
 
-        /* Welcome bubble */
-        '#syncro-welcome{position:fixed;bottom:98px;right:24px;max-width:220px;background:#fff;border-radius:14px 14px 4px 14px;box-shadow:0 4px 24px rgba(0,0,0,.15);padding:11px 14px;font-size:13.5px;line-height:1.45;color:#1a1d23;z-index:99997;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;opacity:0;transform:translateY(8px);transition:opacity .3s,transform .3s;}',
-        '#syncro-welcome.visible{opacity:1;transform:translateY(0);}',
-        '#syncro-welcome-close{position:absolute;top:6px;right:8px;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:14px;line-height:1;padding:0;}',
+        /* Welcome bubble — à esquerda do launcher */
+        '#syncro-welcome{position:fixed;bottom:30px;right:96px;max-width:240px;background:#fff;border-radius:14px 14px 4px 14px;box-shadow:0 4px 24px rgba(0,0,0,.15);padding:11px 14px;font-size:13.5px;line-height:1.45;color:#1a1d23;z-index:99997;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;opacity:0;transform:translateX(8px);transition:opacity .3s,transform .3s;}',
+        '#syncro-welcome.visible{opacity:1;transform:translateX(0);}',
+        '#syncro-welcome-close{position:absolute;top:4px;right:6px;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:14px;line-height:1;padding:0;}',
 
         /* Panel — bubble mode */
-        '#syncro-panel{position:fixed;bottom:96px;right:24px;width:340px;max-height:540px;border-radius:16px;background:#fff;box-shadow:0 8px 40px rgba(0,0,0,.18);display:none;flex-direction:column;overflow:hidden;z-index:99999;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}',
+        '#syncro-panel{position:fixed;bottom:24px;right:24px;width:380px;max-height:600px;border-radius:16px;background:#fff;box-shadow:0 8px 40px rgba(0,0,0,.18);display:none;flex-direction:column;overflow:hidden;z-index:99999;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}',
         '#syncro-panel.open{display:flex;}',
 
         /* Panel — inline mode overrides */
@@ -202,6 +202,12 @@
         return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
+    function formatText(s) {
+        // Escape HTML first, then convert **bold** to <strong>
+        var escaped = escHtml(s);
+        return escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    }
+
     function appendBubble(reply, direction, instant) {
         var text     = (typeof reply === 'object' && reply !== null) ? (reply.text || '') : String(reply);
         var imageUrl = (typeof reply === 'object' && reply !== null) ? (reply.image_url || '') : '';
@@ -237,7 +243,7 @@
 
         if (text) {
             var span = document.createElement('span');
-            span.textContent = text;
+            span.innerHTML = formatText(text);
             b.appendChild(span);
         }
 
@@ -284,7 +290,19 @@
         var existing = document.getElementById('syncro-quick-btns');
         if (existing) existing.remove();
 
-        if (!buttons || !buttons.length) return;
+        if (!buttons || !buttons.length) {
+            // Reabilitar input se não há botões
+            if (inputEl) {
+                inputEl.disabled = false;
+                sendBtn.disabled = false;
+            }
+            return;
+        }
+
+        // Desabilitar input quando há botões
+        inputEl.disabled = true;
+        inputEl.placeholder = 'Selecione uma opção...';
+        sendBtn.disabled = true;
 
         var row = document.createElement('div');
         row.className = 'syncro-buttons';
@@ -296,6 +314,10 @@
             b.textContent = btn.label;
             b.addEventListener('click', function() {
                 row.remove();
+                // Reabilitar input
+                inputEl.disabled = false;
+                sendBtn.disabled = false;
+                applyInputType('text');
                 inputEl.value = btn.value;
                 sendMessage();
             });
@@ -369,7 +391,7 @@
         welcomeEl = document.createElement('div');
         welcomeEl.id = 'syncro-welcome';
         welcomeEl.innerHTML =
-            '<button class="syncro-welcome-close" id="syncro-welcome-close" aria-label="Fechar" style="position:absolute;top:6px;right:8px;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:16px;line-height:1;padding:0;">&times;</button>' +
+            '<button class="syncro-welcome-close" id="syncro-welcome-close" aria-label="Fechar" style="position:absolute;top:4px;right:6px;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:14px;line-height:1;padding:0;">&times;</button>' +
             '<span>' + escHtml(message) + '</span>';
 
         welcomeEl.addEventListener('click', function(e) {
@@ -494,6 +516,7 @@
         function openChat() {
             isOpen = true;
             panel.classList.add('open');
+            launcher.style.display = 'none';
             dismissWelcome();
             if (!_initiated) {
                 _initiated = true;
@@ -505,6 +528,7 @@
         function closeChat() {
             isOpen = false;
             panel.classList.remove('open');
+            launcher.style.display = '';
         }
 
         launcher.addEventListener('click', function () {
