@@ -237,15 +237,16 @@ class ProcessAiResponse implements ShouldQueue
         }
 
         // ── Roteamento: Agno ou LLM direto ───────────────────────────────────
-        $reply   = '';
-        $actions = [];
+        $reply       = '';
+        $actions     = [];
+        $replyBlocks = [];
 
         if ($agent->use_agno) {
             // ── Caminho Agno ──────────────────────────────────────────────────
             try {
                 $agnoResult = $this->callAgnoService($conv, $agent, $stages, $availTags);
-                $replyBlocks = array_filter(array_map('trim', $agnoResult['reply_blocks'] ?? []));
-                $reply   = implode("\n\n---SPLIT---\n\n", $replyBlocks);
+                $replyBlocks = array_values(array_filter(array_map('trim', $agnoResult['reply_blocks'] ?? [])));
+                $reply   = implode("\n\n", $replyBlocks);
                 $actions = $agnoResult['actions'] ?? [];
 
                 try {
@@ -496,8 +497,14 @@ class ProcessAiResponse implements ShouldQueue
         }
 
         // ── Dividir em mensagens e enviar com delay ───────────────────────────
-        $delay    = max(2, $agent->response_delay_seconds ?? 2);
-        $messages = $service->splitIntoMessages($reply, $maxLength);
+        $delay = max(1, $agent->response_delay_seconds ?? 1);
+
+        // Agno já retorna reply_blocks pré-separados — usar direto
+        if (count($replyBlocks) > 1) {
+            $messages = array_map(fn ($b) => $service->cleanFormatting($b), $replyBlocks);
+        } else {
+            $messages = $service->splitIntoMessages($reply, $maxLength);
+        }
 
         foreach ($extraMessages as $extra) {
             $messages[] = $extra;

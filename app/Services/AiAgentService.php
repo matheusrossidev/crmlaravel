@@ -416,12 +416,12 @@ WAFMT;
             $chunks[] = $para;
         }
 
-        // 3. Agrupar chunks muito curtos (< 80 chars) com o próximo (sem exceder maxLength)
+        // 3. Agrupar chunks muito curtos (< 40 chars) com o próximo (sem exceder maxLength)
         $messages = [];
         $buffer   = '';
         foreach ($chunks as $chunk) {
             $candidate = $buffer !== '' ? $buffer . "\n" . $chunk : $chunk;
-            if ($buffer !== '' && mb_strlen($buffer) >= 80 && mb_strlen($candidate) > $maxLength) {
+            if ($buffer !== '' && mb_strlen($buffer) >= 40 && mb_strlen($candidate) > $maxLength) {
                 $messages[] = $buffer;
                 $buffer     = $chunk;
             } else {
@@ -440,7 +440,7 @@ WAFMT;
     /**
      * Remove formatação markdown do texto para uso no WhatsApp.
      */
-    private function cleanFormatting(string $text): string
+    public function cleanFormatting(string $text): string
     {
         // Remove **negrito** e __sublinhado__ (mantém o texto interno)
         $text = preg_replace('/\*\*(.+?)\*\*/su', '$1', $text);
@@ -466,10 +466,54 @@ WAFMT;
      */
     public function sendWhatsappReplies(WhatsappConversation $conv, array $messages, int $delaySeconds = 2): void
     {
-        foreach ($messages as $i => $text) {
-            if ($i > 0 && $delaySeconds > 0) {
-                sleep($delaySeconds);
+        // Resolver instância + chatId uma vez para enviar presence
+        $instance = WhatsappInstance::withoutGlobalScope('tenant')
+            ->where('id', $conv->instance_id)
+            ->first();
+
+        $chatId = null;
+        $waha   = null;
+
+        if ($instance && $instance->status === 'connected') {
+            $sampleId = WhatsappMessage::withoutGlobalScope('tenant')
+                ->where('conversation_id', $conv->id)
+                ->whereNotNull('waha_message_id')
+                ->where('direction', 'inbound')
+                ->latest('sent_at')
+                ->value('waha_message_id');
+
+            if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
+                $jid = $m[1];
+                $chatId = str_ends_with($jid, '@lid')
+                    ? preg_replace('/[:@].+$/', '', $jid) . '@lid'
+                    : preg_replace('/[:@].+$/', '', $jid) . '@c.us';
             }
+
+            if (! $chatId) {
+                $rawPhone = ltrim((string) preg_replace('/[:@\s].+$/', '', $conv->phone), '+');
+                $chatId   = $rawPhone . '@c.us';
+            }
+
+            $waha = new WahaService($instance->session_name);
+        }
+
+        foreach ($messages as $i => $text) {
+            // Delay entre mensagens (pular na primeira)
+            if ($i > 0) {
+                sleep(1);
+            }
+
+            // Typing com duração proporcional ao tamanho do texto
+            if ($waha && $chatId) {
+                try {
+                    $waha->setPresence($chatId, 'typing');
+                } catch (\Throwable) {
+                    // Ignora falha de presence — não impede envio
+                }
+                $typingSeconds = max(1, min(3, (int) ceil(mb_strlen($text) / 80)));
+                sleep($typingSeconds);
+            }
+
             $this->sendWhatsappReply($conv, $text);
         }
     }

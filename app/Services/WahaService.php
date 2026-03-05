@@ -156,6 +156,16 @@ class WahaService
         }
     }
 
+    // ── Presence ─────────────────────────────────────────────────────────────
+
+    public function setPresence(string $chatId, string $presence = 'typing'): array
+    {
+        return $this->post("/api/{$this->session}/presence", [
+            'chatId'   => $chatId,
+            'presence' => $presence,
+        ]);
+    }
+
     // ── Send Messages ─────────────────────────────────────────────────────────
 
     public function sendText(string $chatId, string $text): array

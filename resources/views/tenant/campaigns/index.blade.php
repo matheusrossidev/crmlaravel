@@ -223,18 +223,6 @@
         font-size: 11px; font-weight: 700; color: #1a1d23;
     }
 
-    /* ── ROI Table ── */
-    .roi-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-    .roi-table th {
-        background: #f8fafc; color: #6b7280; font-weight: 700; font-size: 11px;
-        text-transform: uppercase; padding: 10px 12px; text-align: left;
-        border-bottom: 1px solid #f0f2f7; white-space: nowrap;
-    }
-    .roi-table th.num { text-align: right; }
-    .roi-table td { padding: 10px 12px; border-bottom: 1px solid #f8f9fa; color: #374151; }
-    .roi-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
-    .roi-table tr:hover td { background: #f8fafc; }
-
     /* ── Dim analytics table ── */
     .dim-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
     .dim-table th {
@@ -430,7 +418,6 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'comparison': loadComparisonValues('source'); break;
             case 'funnel':     loadFunnel('source'); break;
             case 'trends':     loadTrends('source', 'weekly'); break;
-            case 'roi':        loadRoi(); break;
         }
     }
 
@@ -614,57 +601,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loadTrends(activeDim, gran);
     };
 
-    // ── 5. ROI ──
-    let roiChart = null;
-    function loadRoi() {
-        const container = document.getElementById('roi-content');
-        container.innerHTML = '<div class="analytics-loader"><i class="bi bi-arrow-repeat"></i> Carregando...</div>';
-        fetch(`${ANALYTICS_URL}?section=roi&days=${DAYS}`, {headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
-            .then(r => r.json())
-            .then(data => {
-                const items = data.data || [];
-                if (!items.length) { container.innerHTML = '<div class="analytics-empty"><i class="bi bi-currency-dollar" style="font-size:32px;opacity:.2;display:block;margin-bottom:8px;"></i>Sem dados de investimento. Adicione gastos nas campanhas para ver o ROI.</div>'; return; }
-
-                let html = '<div style="display:grid;grid-template-columns:1fr 350px;gap:20px;align-items:start;">';
-                html += '<div style="overflow-x:auto;"><table class="roi-table"><thead><tr><th>Campanha</th><th class="num">Leads</th><th class="num">Conv.</th><th class="num">Investimento</th><th class="num">Receita</th><th class="num">ROAS</th><th class="num">CPA</th><th class="num">CPL</th><th class="num">ROI %</th></tr></thead><tbody>';
-                items.forEach(i => {
-                    const roiClass = (i.roi_pct !== null && i.roi_pct > 0) ? 'badge-high' : (i.roi_pct !== null && i.roi_pct < 0) ? 'badge-low' : '';
-                    html += `<tr>
-                        <td style="font-weight:600;">${escapeHtml(i.name)}</td>
-                        <td class="num">${i.leads}</td>
-                        <td class="num">${i.conversions}</td>
-                        <td class="num">R$ ${formatMoney(i.spend)}</td>
-                        <td class="num" style="font-weight:700;">R$ ${formatMoney(i.revenue)}</td>
-                        <td class="num">${i.roas !== null ? i.roas + 'x' : '—'}</td>
-                        <td class="num">${i.cpa !== null ? 'R$ ' + formatMoney(i.cpa) : '—'}</td>
-                        <td class="num">${i.cpl !== null ? 'R$ ' + formatMoney(i.cpl) : '—'}</td>
-                        <td class="num"><span class="badge-conv ${roiClass}">${i.roi_pct !== null ? i.roi_pct + '%' : '—'}</span></td>
-                    </tr>`;
-                });
-                html += '</tbody></table></div>';
-                html += '<div><canvas id="roiChart" height="280"></canvas></div></div>';
-                container.innerHTML = html;
-
-                const ctx = document.getElementById('roiChart');
-                if (roiChart) roiChart.destroy();
-                const top8 = items.filter(i => i.spend > 0 || i.revenue > 0).slice(0, 8);
-                roiChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: top8.map(i => i.name.length > 18 ? i.name.slice(0,16)+'...' : i.name),
-                        datasets: [
-                            { label: 'Investimento', data: top8.map(i => i.spend), backgroundColor: '#EF4444', borderRadius: 4, maxBarThickness: 28 },
-                            { label: 'Receita', data: top8.map(i => i.revenue), backgroundColor: '#10B981', borderRadius: 4, maxBarThickness: 28 },
-                        ]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } } },
-                        scales: { y: { beginAtZero: true }, x: { ticks: { maxRotation: 45, font: { size: 10 } } } }
-                    }
-                });
-            });
-    }
 
     // ── Helpers ──
     function formatMoney(v) { return Number(v).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
@@ -1059,16 +995,6 @@ function exportCSV() {
         </div>
     </div>
 
-    {{-- 5. ROI --}}
-    <div class="analytics-section">
-        <div class="analytics-section-header" id="header-roi" onclick="toggleAnalyticsSection('roi')">
-            <h3><i class="bi bi-cash-coin" style="color:#3B82F6;"></i> ROI / Retorno sobre Investimento</h3>
-            <i class="bi bi-chevron-down chevron"></i>
-        </div>
-        <div class="analytics-section-body" id="body-roi">
-            <div id="roi-content"><div class="analytics-loader">Carregando dados de ROI...</div></div>
-        </div>
-    </div>
 
 </div>
 @endsection

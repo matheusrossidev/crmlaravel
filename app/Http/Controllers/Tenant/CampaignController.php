@@ -230,7 +230,6 @@ class CampaignController extends Controller
             'comparison' => $this->analyticsComparison($request, $since, $utmFilter),
             'funnel'     => $this->analyticsFunnel($since, $dim, $utmFilter),
             'trends'     => $this->analyticsTrends($request, $since, $dim, $utmFilter),
-            'roi'        => $this->analyticsRoi($since),
             default      => response()->json(['error' => 'Invalid section'], 400),
         };
     }
@@ -436,46 +435,6 @@ class CampaignController extends Controller
         }
 
         return response()->json(['labels' => $labels, 'datasets' => $datasets]);
-    }
-
-    private function analyticsRoi(Carbon $since): JsonResponse
-    {
-        $data = Campaign::query()
-            ->select([
-                'campaigns.id', 'campaigns.name', 'campaigns.type',
-                DB::raw('COUNT(DISTINCT leads.id) as leads_count'),
-                DB::raw('COUNT(DISTINCT sales.id) as conversions'),
-                DB::raw('COALESCE(SUM(DISTINCT sales.value), 0) as revenue'),
-                DB::raw('COALESCE(SUM(ad_spends.spend), 0) as total_spend'),
-            ])
-            ->leftJoin('leads', fn ($j) => $j->on('leads.campaign_id', '=', 'campaigns.id')
-                ->where('leads.created_at', '>=', $since))
-            ->leftJoin('sales', 'sales.campaign_id', '=', 'campaigns.id')
-            ->leftJoin('ad_spends', fn ($j) => $j->on('ad_spends.campaign_id', '=', 'campaigns.id')
-                ->where('ad_spends.date', '>=', $since))
-            ->groupBy('campaigns.id', 'campaigns.name', 'campaigns.type')
-            ->orderByDesc('revenue')
-            ->get()
-            ->map(function ($c) {
-                $spend   = (float) $c->total_spend;
-                $revenue = (float) $c->revenue;
-                $leads   = (int) $c->leads_count;
-                $conv    = (int) $c->conversions;
-                return [
-                    'name'        => $c->name,
-                    'type'        => $c->type,
-                    'leads'       => $leads,
-                    'conversions' => $conv,
-                    'spend'       => $spend,
-                    'revenue'     => $revenue,
-                    'roas'        => $spend > 0 ? round($revenue / $spend, 2) : null,
-                    'cpa'         => $conv > 0 ? round($spend / $conv, 2) : null,
-                    'cpl'         => $leads > 0 ? round($spend / $leads, 2) : null,
-                    'roi_pct'     => $spend > 0 ? round(($revenue - $spend) / $spend * 100, 1) : null,
-                ];
-            });
-
-        return response()->json(['data' => $data]);
     }
 
     // ── POST /campanhas ───────────────────────────────────────────────────────
