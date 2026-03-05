@@ -9,7 +9,6 @@ use App\Exports\LeadsExport;
 use App\Http\Controllers\Controller;
 use App\Imports\KanbanImport;
 use App\Imports\KanbanPreviewImport;
-use App\Models\Campaign;
 use App\Models\CustomFieldDefinition;
 use App\Models\Lead;
 use App\Models\LeadEvent;
@@ -41,21 +40,15 @@ class KanbanController extends Controller
             : Pipeline::with('stages')->where('is_default', true)->first()
                 ?? Pipeline::with('stages')->first();
 
-        $campaigns = Campaign::orderBy('name')->get(['id', 'name']);
-
         $stages = collect();
         if ($pipeline) {
             $stages = $pipeline->stages->map(function (PipelineStage $stage) use ($request) {
                 $query = Lead::where('stage_id', $stage->id)
-                    ->with(['campaign', 'assignedTo', 'customFieldValues.fieldDefinition', 'whatsappConversation.aiAgent'])
+                    ->with(['assignedTo', 'customFieldValues.fieldDefinition', 'whatsappConversation.aiAgent'])
                     ->orderByDesc('created_at');
 
                 if ($source = $request->get('source')) {
                     $query->where('source', $source);
-                }
-
-                if ($campaignId = $request->get('campaign_id')) {
-                    $query->where('campaign_id', $campaignId);
                 }
 
                 if ($dateFrom = $request->get('date_from')) {
@@ -158,7 +151,7 @@ class KanbanController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return view('tenant.crm.kanban', compact('pipelines', 'pipeline', 'stages', 'campaigns', 'lostReasons', 'customFieldDefs', 'availableTags', 'users'));
+        return view('tenant.crm.kanban', compact('pipelines', 'pipeline', 'stages', 'lostReasons', 'customFieldDefs', 'availableTags', 'users'));
     }
 
     public function updateStage(Request $request, Lead $lead): JsonResponse
@@ -239,7 +232,7 @@ class KanbanController extends Controller
         $pipelineId = (int) $request->get('pipeline_id', 0);
 
         $filters = array_merge(
-            $request->only(['source', 'campaign_id', 'date_from', 'date_to', 'tag', 'stage_id']),
+            $request->only(['source', 'date_from', 'date_to', 'tag', 'stage_id']),
             $pipelineId ? ['pipeline_id' => $pipelineId] : []
         );
 

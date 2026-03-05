@@ -137,13 +137,6 @@
                 </div>
             </div>
 
-            <div class="drawer-group">
-                <label>Campanha</label>
-                <select id="fCampaign" name="campaign_id" class="drawer-input">
-                    <option value="">Nenhuma</option>
-                </select>
-            </div>
-
             {{-- Notas (múltiplas — só em modo edição) --}}
             <div id="notesSection" style="display:none;margin-top:18px;">
                 <div class="drawer-section-label">Notas</div>
@@ -158,27 +151,43 @@
 
         </form>
 
-        {{-- Accordion "Avançado" --}}
-        <div id="drawerAdvancedSection" style="display:none;margin-top:18px;">
-            <button type="button" id="drawerAdvancedToggle" onclick="toggleAdvancedAccordion()"
-                    style="display:flex;align-items:center;gap:6px;width:100%;padding:0;border:none;background:none;cursor:pointer;">
-                <span class="drawer-section-label" style="margin-bottom:0;">Avançado</span>
-                <i class="bi bi-chevron-down" id="drawerAdvancedIcon" style="font-size:11px;color:#9ca3af;transition:transform .2s;"></i>
-            </button>
-            <div id="drawerAdvancedBody" style="display:none;margin-top:10px;">
+        {{-- Campos Personalizados --}}
+        <div id="customFieldsSection" style="display:none;margin-top:18px;">
+            <div class="drawer-section-label">Campos Personalizados</div>
+            <div id="customFieldsContainer"></div>
+        </div>
 
-                {{-- Campos Personalizados --}}
-                <div id="customFieldsSection" style="display:none;margin-top:4px;">
-                    <div class="drawer-section-label" style="margin-top:0;">Campos Personalizados</div>
-                    <div id="customFieldsContainer"></div>
+        {{-- Accordion Avançado (UTM readonly) --}}
+        <div id="drawerUtmSection" style="display:none;margin-top:18px;">
+            <div onclick="toggleAdvancedAccordion()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 0;">
+                <div class="drawer-section-label" style="margin-bottom:0;">Avançado</div>
+                <i id="advancedAccordionIcon" class="fas fa-chevron-down" style="color:#9ca3af;font-size:12px;transition:transform .2s;"></i>
+            </div>
+            <div id="advancedAccordionBody" style="display:none;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="drawer-group">
+                        <label>Fonte (Source)</label>
+                        <input type="text" id="fUtmSource" class="drawer-input" readonly style="background:#f3f4f6;color:#6b7280;cursor:default;" placeholder="—">
+                    </div>
+                    <div class="drawer-group">
+                        <label>Mídia (Medium)</label>
+                        <input type="text" id="fUtmMedium" class="drawer-input" readonly style="background:#f3f4f6;color:#6b7280;cursor:default;" placeholder="—">
+                    </div>
                 </div>
-
-                {{-- UTM / Atribuição --}}
-                <div id="drawerUtmSection" style="display:none;margin-top:14px;">
-                    <div class="drawer-section-label">Atribuição UTM</div>
-                    <div id="drawerUtmGrid" style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px;color:#374151;"></div>
+                <div class="drawer-group">
+                    <label>Campanha (Campaign)</label>
+                    <input type="text" id="fUtmCampaign" class="drawer-input" readonly style="background:#f3f4f6;color:#6b7280;cursor:default;" placeholder="—">
                 </div>
-
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="drawer-group">
+                        <label>Conteúdo (Content)</label>
+                        <input type="text" id="fUtmContent" class="drawer-input" readonly style="background:#f3f4f6;color:#6b7280;cursor:default;" placeholder="—">
+                    </div>
+                    <div class="drawer-group">
+                        <label>Termo (Term)</label>
+                        <input type="text" id="fUtmTerm" class="drawer-input" readonly style="background:#f3f4f6;color:#6b7280;cursor:default;" placeholder="—">
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -472,16 +481,12 @@ $_configuredTagsJson = isset($_configuredTags)
     ? $_configuredTags->map(fn($t) => ['name' => $t->name, 'color' => $t->color])->values()->toArray()
     : [];
 
-$_campaignsJson = isset($campaigns)
-    ? $campaigns->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values()->toArray()
-    : [];
 @endphp
 
 <script>
 // ── Dados de pipelines e campos personalizados injetados pelo servidor ────
 const PIPELINES_DATA   = {!! json_encode($_pipelinesJson) !!};
 const CF_DEFS          = {!! json_encode($_cfDefsJson) !!};
-const DRAWER_CAMPAIGNS = {!! json_encode($_campaignsJson) !!};
 const CF_UPLOAD_URL    = '{{ route('leads.cf-upload') }}';
 const LEAD_TAGS        = {!! json_encode($_configuredTagsJson) !!};
 const LEAD_NOTE_STORE  = '{{ route('leads.notes.store',   ['lead' => '__ID__']) }}';
@@ -592,9 +597,6 @@ function openNewLeadDrawer(defaults = {}) {
         loadStagesForPipeline(PIPELINES_DATA[0].id);
     }
 
-    // Carregar campanhas
-    loadCampaigns(null);
-
     // Campos personalizados com valores default/vazios
     renderCustomFields(CF_DEFS, {});
 
@@ -673,19 +675,6 @@ function populateDrawer(res) {
         loadStagesForPipeline(lead.pipeline_id, lead.stage_id);
     }
 
-    // Campanhas
-    const campSel = document.getElementById('fCampaign');
-    campSel.innerHTML = '<option value="">Nenhuma</option>';
-    if (res.campaigns) {
-        res.campaigns.forEach(c => {
-            campSel.insertAdjacentHTML('beforeend', `<option value="${c.id}">${escapeHtml(c.name)}</option>`);
-        });
-    }
-    campSel.value = lead.campaign_id || '';
-
-    // Accordion Avançado (mostrar em modo edição)
-    document.getElementById('drawerAdvancedSection').style.display = '';
-
     // UTM / Atribuição
     renderUtmSection(lead);
 
@@ -733,46 +722,25 @@ function populateStages(stages, selectedId = null) {
     ).join('');
 }
 
-// ── Carregar campanhas via AJAX (simplificado) ────────────────────────────
-function loadCampaigns(selectedId) {
-    const campSel = document.getElementById('fCampaign');
-    campSel.innerHTML = '<option value="">Nenhuma</option>';
-    DRAWER_CAMPAIGNS.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = c.name;
-        if (selectedId && c.id == selectedId) opt.selected = true;
-        campSel.appendChild(opt);
-    });
-}
-
 // ── UTM / Atribuição ──────────────────────────────────────────────────────
 var _currentLeadId = null;
 
-function renderUtmSection(lead) {
-    const section = document.getElementById('drawerUtmSection');
-    const grid    = document.getElementById('drawerUtmGrid');
-
-    const labels = { utm_source: 'Fonte', utm_medium: 'Mídia', utm_campaign: 'Campanha', utm_content: 'Conteúdo', utm_term: 'Termo' };
-    const rows = Object.entries(labels).filter(([k]) => lead[k]);
-
-    if (!rows.length) {
-        section.style.display = 'none';
-        return;
-    }
-
-    section.style.display = '';
-    grid.innerHTML = rows.map(([k, label]) =>
-        `<span style="color:#6b7280;font-weight:600;">${label}</span><span>${escapeHtml(lead[k])}</span>`
-    ).join('');
-}
-
 function toggleAdvancedAccordion() {
-    const body = document.getElementById('drawerAdvancedBody');
-    const icon = document.getElementById('drawerAdvancedIcon');
+    const body = document.getElementById('advancedAccordionBody');
+    const icon = document.getElementById('advancedAccordionIcon');
     const open = body.style.display === 'none';
     body.style.display = open ? '' : 'none';
     icon.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+function renderUtmSection(lead) {
+    const section = document.getElementById('drawerUtmSection');
+    section.style.display = '';
+    document.getElementById('fUtmSource').value   = lead.utm_source   || '';
+    document.getElementById('fUtmMedium').value   = lead.utm_medium   || '';
+    document.getElementById('fUtmCampaign').value = lead.utm_campaign || '';
+    document.getElementById('fUtmContent').value  = lead.utm_content  || '';
+    document.getElementById('fUtmTerm').value     = lead.utm_term     || '';
 }
 
 // ── Notas múltiplas ───────────────────────────────────────────────────────
@@ -864,7 +832,6 @@ document.getElementById('btnSaveLead')?.addEventListener('click', () => {
         tags:          _currentTags,
         pipeline_id:   document.getElementById('fPipeline').value,
         stage_id:      document.getElementById('fStage').value,
-        campaign_id:   document.getElementById('fCampaign').value || null,
         custom_fields: collectCustomFields(),
     };
 
@@ -962,7 +929,6 @@ function resetDrawerForm() {
         document.getElementById('fPipeline').insertAdjacentHTML('beforeend', `<option value="${p.id}">${escapeHtml(p.name)}</option>`);
     });
     document.getElementById('fStage').innerHTML = '<option value="">Selecione primeiro o pipeline</option>';
-    document.getElementById('fCampaign').innerHTML = '<option value="">Nenhuma</option>';
     document.getElementById('eventsSection').style.display = 'none';
     document.getElementById('eventsList').innerHTML = '';
     document.getElementById('notesSection').style.display = 'none';
@@ -970,10 +936,14 @@ function resetDrawerForm() {
     document.getElementById('fNoteInput').value = '';
     document.getElementById('customFieldsSection').style.display = 'none';
     document.getElementById('customFieldsContainer').innerHTML = '';
-    document.getElementById('drawerAdvancedSection').style.display = 'none';
-    document.getElementById('drawerAdvancedBody').style.display = 'none';
-    document.getElementById('drawerAdvancedIcon').style.transform = '';
     document.getElementById('drawerUtmSection').style.display = 'none';
+    document.getElementById('fUtmSource').value   = '';
+    document.getElementById('fUtmMedium').value   = '';
+    document.getElementById('fUtmCampaign').value = '';
+    document.getElementById('fUtmContent').value  = '';
+    document.getElementById('fUtmTerm').value     = '';
+    document.getElementById('advancedAccordionBody').style.display = 'none';
+    document.getElementById('advancedAccordionIcon').style.transform = '';
     setTags([]);
     document.getElementById('tagRawInput').value = '';
     clearDrawerErrors();

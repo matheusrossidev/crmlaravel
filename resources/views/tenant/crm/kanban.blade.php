@@ -567,13 +567,6 @@
             @endforeach
         </select>
 
-        <select name="campaign_id" class="filter-control" onchange="this.form.submit()">
-            <option value="">Todas as campanhas</option>
-            @foreach($campaigns as $camp)
-            <option value="{{ $camp->id }}" {{ request('campaign_id') == $camp->id ? 'selected' : '' }}>{{ $camp->name }}</option>
-            @endforeach
-        </select>
-
         <select name="tag" class="filter-control" onchange="this.form.submit()">
             <option value="">Todas as tags</option>
             @foreach($availableTags as $t)

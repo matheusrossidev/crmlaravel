@@ -7,7 +7,6 @@ namespace App\Http\Controllers\Tenant;
 use App\Exports\LeadsExport;
 use App\Http\Controllers\Controller;
 use App\Imports\LeadsImport;
-use App\Models\Campaign;
 use App\Models\CustomFieldDefinition;
 use App\Models\CustomFieldValue;
 use App\Models\InstagramConversation;
@@ -76,8 +75,6 @@ class LeadController extends Controller
             ->orderBy('position')
             ->get();
         $pipelines = Pipeline::orderBy('sort_order')->get();
-        $campaigns = Campaign::orderBy('name')->get(['id', 'name', 'platform']);
-
         // Lista de origens distintas para filtro
         $sources = Lead::distinct()->pluck('source')->filter()->sort()->values();
 
@@ -90,7 +87,7 @@ class LeadController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return view('tenant.leads.index', compact('leads', 'stages', 'pipelines', 'campaigns', 'sources', 'customFieldDefs', 'users'));
+        return view('tenant.leads.index', compact('leads', 'stages', 'pipelines', 'sources', 'customFieldDefs', 'users'));
     }
 
     public function store(Request $request): JsonResponse
@@ -146,10 +143,9 @@ class LeadController extends Controller
             return redirect()->route('leads.index', ['lead' => $lead->id]);
         }
 
-        $lead->load(['stage', 'pipeline', 'campaign', 'assignedTo', 'events.performedBy', 'customFieldValues.fieldDefinition', 'leadNotes.author']);
+        $lead->load(['stage', 'pipeline', 'assignedTo', 'events.performedBy', 'customFieldValues.fieldDefinition', 'leadNotes.author']);
 
         $pipelines = Pipeline::with('stages')->orderBy('sort_order')->get();
-        $campaigns = Campaign::orderBy('name')->get(['id', 'name', 'platform']);
 
         $customFieldDefs = CustomFieldDefinition::where('is_active', true)
             ->orderBy('sort_order')
@@ -182,7 +178,6 @@ class LeadController extends Controller
                     'color' => $s->color,
                 ]),
             ]),
-            'campaigns' => $campaigns,
         ]);
     }
 
@@ -212,7 +207,6 @@ class LeadController extends Controller
             ->orderBy('sort_order')
             ->get(['id', 'name', 'is_default']);
 
-        $campaigns         = Campaign::orderBy('name')->get(['id', 'name']);
         $cfDefs            = CustomFieldDefinition::where('is_active', true)->orderBy('sort_order')->get();
         $users             = User::where('tenant_id', auth()->user()->tenant_id)
             ->orderBy('name')
@@ -224,7 +218,7 @@ class LeadController extends Controller
         $quickMessages     = WhatsappQuickMessage::orderBy('sort_order')->get(['id', 'title', 'body']);
 
         return view('tenant.leads.show', compact(
-            'lead', 'waConversation', 'igConversation', 'pipelines', 'campaigns', 'cfDefs', 'users',
+            'lead', 'waConversation', 'igConversation', 'pipelines', 'cfDefs', 'users',
             'scheduledMessages', 'quickMessages'
         ));
     }
@@ -382,12 +376,10 @@ class LeadController extends Controller
             'tags'          => $lead->tags ?? [],
             'pipeline_id'   => $lead->pipeline_id,
             'stage_id'      => $lead->stage_id,
-            'campaign_id'   => $lead->campaign_id,
             'notes'         => $lead->notes ?? null,
             'birthday'      => $lead->birthday?->format('Y-m-d'),
             'stage'         => $lead->stage   ? ['id' => $lead->stage->id,    'name' => $lead->stage->name,    'color' => $lead->stage->color]   : null,
             'pipeline'      => $lead->pipeline ? ['id' => $lead->pipeline->id, 'name' => $lead->pipeline->name] : null,
-            'campaign'      => $lead->campaign ? ['id' => $lead->campaign->id, 'name' => $lead->campaign->name] : null,
             'created_at'    => $lead->created_at?->format('d/m/Y H:i'),
             'custom_fields' => $lead->customFields,  // usa o accessor do Model
             'utm_source'    => $lead->utm_source,
