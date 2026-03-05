@@ -121,7 +121,7 @@
         </div>
         <p style="font-size:13px;color:#6b7280;margin-bottom:14px;">Cole este código antes do <code>&lt;/body&gt;</code> no seu site:</p>
         <div style="position:relative;">
-            <textarea id="embedCode" readonly style="width:100%;height:90px;font-family:monospace;font-size:12px;padding:10px 12px;border:1.5px solid #e8eaf0;border-radius:8px;background:#f9fafb;color:#374151;resize:none;box-sizing:border-box;outline:none;">&lt;script src="{{ config('app.url') }}/widget.js" data-token="{{ $flow->website_token }}"&gt;&lt;/script&gt;</textarea>
+            <textarea id="embedCode" readonly style="width:100%;height:90px;font-family:monospace;font-size:12px;padding:10px 12px;border:1.5px solid #e8eaf0;border-radius:8px;background:#f9fafb;color:#374151;resize:none;box-sizing:border-box;outline:none;">&lt;script src="{{ config('app.url') }}/api/widget/{{ $flow->website_token }}.js"&gt;&lt;/script&gt;</textarea>
             <button onclick="copyEmbed()" id="copyEmbedBtn" style="position:absolute;top:8px;right:8px;padding:4px 10px;background:#0085f3;color:#fff;border:none;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;">Copiar</button>
         </div>
         <p style="font-size:11.5px;color:#9ca3af;margin-top:10px;">O widget aparecerá no canto inferior direito do seu site.</p>

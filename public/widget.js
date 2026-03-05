@@ -2,13 +2,17 @@
     'use strict';
 
     // ── Config ──────────────────────────────────────────────────────────────────
+    // Placeholders — replaced by server when served via /api/widget/{token}.js
+    var __INJECTED_TOKEN__ = null;
+    var __INJECTED_BASE__  = null;
+
     var script   = document.currentScript || (function () {
         var scripts = document.getElementsByTagName('script');
         return scripts[scripts.length - 1];
     })();
 
-    var token        = script.getAttribute('data-token');
-    var apiBase      = script.src.replace(/\/widget\.js(\?[^#]*)?(#.*)?$/, '');
+    var token        = __INJECTED_TOKEN__ || script.getAttribute('data-token');
+    var apiBase      = __INJECTED_BASE__  || script.src.replace(/\/widget\.js(\?[^#]*)?(#.*)?$/, '');
     var colorPrimary = script.getAttribute('data-color') || '#0085f3';
 
     if (!token) { console.warn('[Widget] data-token is required'); return; }
@@ -113,6 +117,7 @@
         '.syncro-send{padding:9px 16px;background:' + colorPrimary + ';color:#fff;border:none;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;transition:opacity .15s;}',
         '.syncro-send:hover{opacity:.88;}',
         '.syncro-send:disabled{opacity:.5;cursor:default;}',
+        '.syncro-bubble img{max-width:100%;border-radius:8px;display:block;}',
     ].join('');
     document.head.appendChild(style);
 
@@ -188,7 +193,8 @@
         }
     }
 
-    function typingDelay(text) {
+    function typingDelay(reply) {
+        var text = (typeof reply === 'object' && reply !== null) ? (reply.text || '') : String(reply);
         return Math.min(600 + text.length * 15, 1800);
     }
 
@@ -196,7 +202,11 @@
         return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
-    function appendBubble(text, direction, instant) {
+    function appendBubble(reply, direction, instant) {
+        var text     = (typeof reply === 'object' && reply !== null) ? (reply.text || '') : String(reply);
+        var imageUrl = (typeof reply === 'object' && reply !== null) ? (reply.image_url || '') : '';
+        if (imageUrl) imageUrl = resolveUrl(imageUrl) || '';
+
         var row = document.createElement('div');
         row.className = 'syncro-msg-row ' + (direction === 'inbound' ? 'out-row' : '');
 
@@ -215,9 +225,23 @@
 
         var b = document.createElement('div');
         b.className = 'syncro-bubble ' + (direction === 'inbound' ? 'out' : 'in');
-        b.textContent = text;
-        row.appendChild(b);
 
+        if (imageUrl) {
+            var img = document.createElement('img');
+            img.src = imageUrl;
+            img.alt = '';
+            if (text) img.style.marginBottom = '6px';
+            img.onerror = function() { img.style.display = 'none'; };
+            b.appendChild(img);
+        }
+
+        if (text) {
+            var span = document.createElement('span');
+            span.textContent = text;
+            b.appendChild(span);
+        }
+
+        row.appendChild(b);
         msgsEl.appendChild(row);
         msgsEl.scrollTop = msgsEl.scrollHeight;
         return row;

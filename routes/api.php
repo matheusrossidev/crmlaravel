@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 
 // ── Widget Website (público, sem autenticação) ────────────────────────────
 Route::prefix('widget')->group(function () {
+    Route::get('{token}.js', [WebsiteWidgetController::class, 'script']);
     Route::match(['get', 'post'], '{token}/init', [WebsiteWidgetController::class, 'init']);
     Route::post('{token}/message', [WebsiteWidgetController::class, 'message']);
 });

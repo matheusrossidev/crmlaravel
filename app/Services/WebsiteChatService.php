@@ -109,7 +109,7 @@ class WebsiteChatService
                 case 'end':
                     $text = ChatbotVariableService::interpolate((string) ($currentNode->config['text'] ?? ''), $vars);
                     if ($text !== '') {
-                        $replies[] = $text;
+                        $replies[] = ['text' => $text, 'image_url' => null];
                     }
                     $this->persistVars($conv, $vars);
                     $this->clearFlow($conv);
@@ -137,11 +137,12 @@ class WebsiteChatService
 
     private function collectMessage(ChatbotFlowNode $node, array $vars, array &$replies): void
     {
-        $text = ChatbotVariableService::interpolate((string) ($node->config['text'] ?? ''), $vars);
-        if ($text !== '') {
-            $replies[] = $text;
+        $text     = ChatbotVariableService::interpolate((string) ($node->config['text'] ?? ''), $vars);
+        $imageUrl = $node->config['image_url'] ?? null;
+
+        if ($text !== '' || $imageUrl) {
+            $replies[] = ['text' => $text, 'image_url' => $imageUrl];
         }
-        // Images are skipped in the text channel (website shows only text for now)
     }
 
     /**
@@ -398,11 +399,15 @@ class WebsiteChatService
     private function saveOutboundMessages(int $conversationId, array $replies): void
     {
         $now = now();
-        foreach ($replies as $text) {
+        foreach ($replies as $reply) {
+            $content = is_array($reply) ? ($reply['text'] ?? '') : (string) $reply;
+            if ($content === '') {
+                continue;
+            }
             WebsiteMessage::create([
                 'conversation_id' => $conversationId,
                 'direction'       => 'outbound',
-                'content'         => $text,
+                'content'         => $content,
                 'sent_at'         => $now,
             ]);
         }

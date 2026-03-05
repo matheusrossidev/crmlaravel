@@ -11,9 +11,39 @@ use App\Models\WebsiteMessage;
 use App\Services\WebsiteChatService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class WebsiteWidgetController extends Controller
 {
+    /**
+     * GET /api/widget/{token}.js
+     *
+     * Serves the widget JavaScript with the token and apiBase baked in.
+     * This allows a clean embed: <script src="https://domain/api/widget/{token}.js"></script>
+     */
+    public function script(string $token): Response
+    {
+        $exists = ChatbotFlow::withoutGlobalScope('tenant')
+            ->where('website_token', $token)
+            ->where('channel', 'website')
+            ->exists();
+
+        if (! $exists) {
+            abort(404);
+        }
+
+        $js = file_get_contents(public_path('widget.js'));
+
+        $appUrl = rtrim((string) config('app.url'), '/');
+        $js = str_replace('var __INJECTED_TOKEN__ = null;', "var __INJECTED_TOKEN__ = '{$token}';", $js);
+        $js = str_replace('var __INJECTED_BASE__  = null;', "var __INJECTED_BASE__  = '{$appUrl}';", $js);
+
+        return response($js, 200)
+            ->header('Content-Type', 'application/javascript; charset=utf-8')
+            ->header('Cache-Control', 'public, max-age=3600')
+            ->header('Access-Control-Allow-Origin', '*');
+    }
+
     /**
      * POST /api/widget/{token}/init
      *
