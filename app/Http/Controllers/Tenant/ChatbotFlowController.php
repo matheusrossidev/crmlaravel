@@ -44,6 +44,7 @@ class ChatbotFlowController extends Controller
         $data = $this->validatedFlow($request);
         if (($data['channel'] ?? '') === 'website') {
             $data['website_token'] = Str::uuid()->toString();
+            $data['slug'] = $this->generateUniqueSlug($data['name']);
         }
         $flow = ChatbotFlow::create($data);
         return redirect()->route('chatbot.flows.edit', $flow)->with('success', 'Fluxo criado! Agora adicione os nós.');
@@ -93,8 +94,13 @@ class ChatbotFlowController extends Controller
     public function update(Request $request, ChatbotFlow $flow): RedirectResponse
     {
         $data = $this->validatedFlow($request);
-        if (($data['channel'] ?? '') === 'website' && ! $flow->website_token) {
-            $data['website_token'] = Str::uuid()->toString();
+        if (($data['channel'] ?? '') === 'website') {
+            if (! $flow->website_token) {
+                $data['website_token'] = Str::uuid()->toString();
+            }
+            if (! $flow->slug) {
+                $data['slug'] = $this->generateUniqueSlug($data['name'], $flow->id);
+            }
         }
         $flow->update($data);
         return redirect()->route('chatbot.flows.edit', $flow)->with('success', 'Fluxo atualizado.');
@@ -292,9 +298,11 @@ class ChatbotFlowController extends Controller
             'trigger_keywords' => 'nullable|string',
             'variables'        => 'nullable|string',
             'bot_name'         => 'nullable|string|max:100',
-            'bot_avatar'       => 'nullable|string|max:500',  // accepts relative paths (/images/...) or full URLs
+            'bot_avatar'       => 'nullable|string|max:500',
             'welcome_message'  => 'nullable|string|max:500',
             'widget_type'      => 'nullable|in:bubble,inline',
+            'widget_color'     => 'nullable|string|max:10',
+            'slug'             => 'nullable|string|max:191',
         ]);
 
         // Converter campos JSON string → array
@@ -311,7 +319,35 @@ class ChatbotFlowController extends Controller
             $data['variables'] = $vars;
         }
 
+        // Sanitize slug
+        if (! empty($data['slug'])) {
+            $data['slug'] = Str::slug($data['slug']);
+        }
+
         return $data;
     }
 
+    private function generateUniqueSlug(string $name, ?int $excludeId = null): string
+    {
+        $base = Str::slug($name);
+        if ($base === '') {
+            $base = 'chatbot';
+        }
+
+        $slug = $base;
+        $i = 2;
+        $tenantId = auth()->user()->tenant_id;
+
+        while (
+            ChatbotFlow::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->where('slug', $slug)
+                ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
+                ->exists()
+        ) {
+            $slug = $base . '-' . $i++;
+        }
+
+        return $slug;
+    }
 }

@@ -79,6 +79,7 @@ Route::middleware('auth')->group(function () {
 // Páginas públicas (sem autenticação)
 Route::view('/politica-de-privacidade', 'public.privacy')->name('privacy');
 Route::view('/termos-de-uso', 'public.terms')->name('terms');
+Route::get('/chat/{tenantSlug}/{botSlug}', [\App\Http\Controllers\Api\WebsiteWidgetController::class, 'hostedPage'])->name('chatbot.hosted');
 
 /*
 |--------------------------------------------------------------------------

@@ -260,6 +260,28 @@
                     placeholder="Para que serve este fluxo?">{{ old('description', $flow->description) }}</textarea>
             </div>
 
+            {{-- Slug (URL pública) — só para website --}}
+            <div id="slug-field" style="{{ ($currentChannel === 'website') ? '' : 'display:none;' }}">
+                <div class="form-group" style="margin-top:14px;">
+                    <label>Slug (URL pública)</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <input type="text" name="slug" class="field-input" style="flex:1;"
+                            value="{{ old('slug', $flow->slug) }}"
+                            placeholder="meu-chatbot"
+                            oninput="updateSlugPreview(this.value)">
+                    </div>
+                    <div class="hint" style="margin-top:6px;">
+                        <span id="slug-preview-url" style="color:#6366f1;">
+                            @php
+                                $tenantSlug = auth()->user()->tenant->slug ?? 'empresa';
+                                $currentSlug = old('slug', $flow->slug ?? 'meu-chatbot');
+                            @endphp
+                            {{ config('app.url') }}/chat/{{ $tenantSlug }}/{{ $currentSlug }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
             {{-- Widget Website --}}
             <div id="website-settings" style="{{ ($currentChannel === 'website') ? '' : 'display:none;' }}">
                 <div class="form-section-label">Aparência do Widget</div>
@@ -352,6 +374,21 @@
                         Adicione <code>&lt;div id="syncro-chat"&gt;&lt;/div&gt;</code> onde deseja o chat, e o <code>&lt;script&gt;</code> no final do body.
                     </div>
                 </div>
+
+                <div class="form-group">
+                    <label>Cor dos botões</label>
+                    @php $currentColor = old('widget_color', $flow->widget_color ?? '#0085f3'); @endphp
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <input type="color" name="widget_color" id="widget-color-picker"
+                            value="{{ $currentColor }}"
+                            style="width:42px;height:36px;padding:2px;border:1.5px solid #e8eaf0;border-radius:8px;cursor:pointer;background:#fafafa;"
+                            oninput="document.getElementById('widget-color-hex').value = this.value">
+                        <input type="text" id="widget-color-hex" class="field-input" style="width:100px;text-align:center;font-family:monospace;"
+                            value="{{ $currentColor }}" maxlength="7"
+                            oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value)) document.getElementById('widget-color-picker').value = this.value">
+                    </div>
+                    <div class="hint">Define a cor do botão do chat, cabeçalho e balões de mensagem enviada.</div>
+                </div>
             </div>
 
             {{-- Disparo --}}
@@ -430,8 +467,17 @@ function updateChatbotChannelCards() {
     document.querySelectorAll('.chatbot-channel-card').forEach(card => {
         card.classList.toggle('selected', card.dataset.channel === selected);
     });
+    const isWebsite = selected === 'website';
     const ws = document.getElementById('website-settings');
-    if (ws) ws.style.display = selected === 'website' ? 'block' : 'none';
+    const sf = document.getElementById('slug-field');
+    if (ws) ws.style.display = isWebsite ? 'block' : 'none';
+    if (sf) sf.style.display = isWebsite ? 'block' : 'none';
+}
+
+function updateSlugPreview(val) {
+    var slug = val.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    var el = document.getElementById('slug-preview-url');
+    if (el) el.textContent = '{{ config("app.url") }}/chat/{{ auth()->user()->tenant->slug ?? "empresa" }}/' + (slug || 'meu-chatbot');
 }
 
 function selectAvatar(url) {

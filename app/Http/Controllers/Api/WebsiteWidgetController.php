@@ -13,6 +13,7 @@ use App\Services\WebsiteChatService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\View\View;
 
 class WebsiteWidgetController extends Controller
 {
@@ -24,19 +25,21 @@ class WebsiteWidgetController extends Controller
      */
     public function script(string $token): Response
     {
-        $exists = ChatbotFlow::withoutGlobalScope('tenant')
+        $flow = ChatbotFlow::withoutGlobalScope('tenant')
             ->where('website_token', $token)
-            ->exists();
+            ->first();
 
-        if (! $exists) {
+        if (! $flow) {
             abort(404);
         }
 
         $js = file_get_contents(public_path('widget.js'));
 
         $appUrl = rtrim((string) config('app.url'), '/');
+        $color  = $flow->widget_color ?? '#0085f3';
         $js = str_replace('var __INJECTED_TOKEN__ = null;', "var __INJECTED_TOKEN__ = '{$token}';", $js);
         $js = str_replace('var __INJECTED_BASE__  = null;', "var __INJECTED_BASE__  = '{$appUrl}';", $js);
+        $js = str_replace('var __INJECTED_COLOR__ = null;', "var __INJECTED_COLOR__ = '{$color}';", $js);
 
         return response($js, 200)
             ->header('Content-Type', 'application/javascript; charset=utf-8')
@@ -204,10 +207,43 @@ class WebsiteWidgetController extends Controller
         $result  = $service->processMessage($conversation->fresh(), $validated['message']);
 
         return response()->json([
-            'replies'         => $result['replies'] ?? [],
-            'buttons'         => $result['buttons'] ?? [],
-            'input_type'      => $result['input_type'] ?? 'text',
-            'conversation_id' => $conversation->id,
+            'replies'          => $result['replies'] ?? [],
+            'buttons'          => $result['buttons'] ?? [],
+            'input_type'       => $result['input_type'] ?? 'text',
+            'conversation_id'  => $conversation->id,
+            'redirect_url'     => $result['redirect_url'] ?? null,
+            'redirect_target'  => $result['redirect_target'] ?? null,
         ])->header('Access-Control-Allow-Origin', '*');
+    }
+
+    /**
+     * GET /chat/{tenantSlug}/{botSlug}
+     *
+     * Public hosted chatbot page — full-screen inline widget.
+     */
+    public function hostedPage(string $tenantSlug, string $botSlug): View
+    {
+        $tenant = Tenant::where('slug', $tenantSlug)->first();
+        if (! $tenant) {
+            abort(404);
+        }
+
+        $flow = ChatbotFlow::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->where('slug', $botSlug)
+            ->where('channel', 'website')
+            ->where('is_active', true)
+            ->first();
+
+        if (! $flow || ! $flow->website_token) {
+            abort(404);
+        }
+
+        $scriptUrl   = rtrim((string) config('app.url'), '/') . '/api/widget/' . $flow->website_token . '.js';
+        $widgetColor = $flow->widget_color ?? '#0085f3';
+        $botName     = $flow->bot_name ?? 'Assistente';
+        $tenantName  = $tenant->name ?? 'Chat';
+
+        return view('chatbot.hosted', compact('scriptUrl', 'widgetColor', 'botName', 'tenantName'));
     }
 }

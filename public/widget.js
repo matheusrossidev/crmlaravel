@@ -5,6 +5,7 @@
     // Placeholders — replaced by server when served via /api/widget/{token}.js
     var __INJECTED_TOKEN__ = null;
     var __INJECTED_BASE__  = null;
+    var __INJECTED_COLOR__ = null;
 
     var script   = document.currentScript || (function () {
         var scripts = document.getElementsByTagName('script');
@@ -13,7 +14,7 @@
 
     var token        = __INJECTED_TOKEN__ || script.getAttribute('data-token');
     var apiBase      = __INJECTED_BASE__  || script.src.replace(/\/widget\.js(\?[^#]*)?(#.*)?$/, '');
-    var colorPrimary = script.getAttribute('data-color') || '#0085f3';
+    var colorPrimary = __INJECTED_COLOR__ || script.getAttribute('data-color') || '#0085f3';
     var forceBubble  = script.src.indexOf('force_bubble=1') !== -1;
 
     if (!token) { console.warn('[Widget] data-token is required'); return; }

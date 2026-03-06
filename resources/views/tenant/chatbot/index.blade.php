@@ -444,11 +444,20 @@ function _doDeleteFlow() {
 }
 
 /* ── Embed modal ── */
-function openEmbedModal(scriptUrl, widgetType) {
+function openEmbedModal(scriptUrl, widgetType, publicUrl) {
     var scriptTag = '<script src="' + scriptUrl + '"></' + 'script>';
     var el = document.getElementById('idxEmbedCode');
     var instructions = document.getElementById('idxEmbedInstructions');
     var divHint = document.getElementById('idxEmbedDivHint');
+    var linkSection = document.getElementById('idxPublicLinkSection');
+    var linkInput = document.getElementById('idxPublicLinkUrl');
+
+    if (publicUrl) {
+        linkSection.style.display = 'block';
+        linkInput.value = publicUrl;
+    } else {
+        linkSection.style.display = 'none';
+    }
 
     if (widgetType === 'inline' || widgetType === 'page') {
         var divCode = '<div id="syncro-chat" style="width:100%;height:100vh;"></div>';
@@ -469,6 +478,21 @@ function openEmbedModal(scriptUrl, widgetType) {
     }
 
     document.getElementById('idxEmbedModal').style.display = 'flex';
+}
+
+function copyFlowLink(url) {
+    navigator.clipboard.writeText(url).then(function() {
+        if (typeof toastr !== 'undefined') toastr.success('Link copiado!');
+    });
+}
+
+function copyPublicLink() {
+    var input = document.getElementById('idxPublicLinkUrl');
+    navigator.clipboard.writeText(input.value.trim()).then(function() {
+        var msg = document.getElementById('idxPublicLinkCopied');
+        msg.style.display = 'inline-flex';
+        setTimeout(function() { msg.style.display = 'none'; }, 2500);
+    });
 }
 
 function copyIdxEmbed() {
@@ -593,8 +617,15 @@ function closeWidgetTest() {
                                 style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;">
                             <i class="bi bi-play-circle"></i> Testar
                         </button>
+                        @if($flow->slug)
                         <button type="button" class="btn btn-sm btn-light"
-                                onclick="openEmbedModal('{{ config('app.url') }}/api/widget/{{ $flow->website_token }}.js', '{{ $flow->widget_type ?? 'bubble' }}')"
+                                onclick="copyFlowLink('{{ config('app.url') }}/chat/{{ auth()->user()->tenant->slug }}/{{ $flow->slug }}')"
+                                style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;">
+                            <i class="bi bi-link-45deg"></i> Link
+                        </button>
+                        @endif
+                        <button type="button" class="btn btn-sm btn-light"
+                                onclick="openEmbedModal('{{ config('app.url') }}/api/widget/{{ $flow->website_token }}.js', '{{ $flow->widget_type ?? 'bubble' }}', '{{ $flow->slug ? config('app.url') . '/chat/' . auth()->user()->tenant->slug . '/' . $flow->slug : '' }}')"
                                 style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;">
                             <i class="bi bi-code-slash"></i> Embed
                         </button>
@@ -661,6 +692,25 @@ function closeWidgetTest() {
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
             <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0;">Código de instalação</h3>
             <button onclick="document.getElementById('idxEmbedModal').style.display='none'" style="background:none;border:none;font-size:20px;color:#9ca3af;cursor:pointer;padding:4px;">&times;</button>
+        </div>
+
+        {{-- Link público --}}
+        <div id="idxPublicLinkSection" style="display:none;margin-bottom:18px;padding:14px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;">
+            <div style="font-size:12px;font-weight:700;color:#16a34a;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">
+                <i class="bi bi-link-45deg"></i> Link público
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <input type="text" id="idxPublicLinkUrl" readonly style="flex:1;border:1.5px solid #e8eaf0;border-radius:8px;padding:8px 12px;font-family:monospace;font-size:12px;color:#374151;background:#fff;">
+                <button onclick="copyPublicLink()" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
+                    <i class="bi bi-clipboard"></i> Copiar
+                </button>
+            </div>
+            <span id="idxPublicLinkCopied" style="font-size:11px;color:#16a34a;font-weight:600;display:none;margin-top:4px;"><i class="bi bi-check-circle"></i> Link copiado!</span>
+            <div style="font-size:11px;color:#6b7280;margin-top:6px;">Use este link em campanhas, redes sociais ou bio do Instagram. Não precisa ter site.</div>
+        </div>
+
+        <div style="font-size:12px;font-weight:700;color:#9ca3af;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">
+            <i class="bi bi-code-slash"></i> Código embed
         </div>
         <p id="idxEmbedInstructions" style="font-size:13.5px;color:#6b7280;margin:0 0 14px;">Cole este código antes do <code>&lt;/body&gt;</code> do seu site:</p>
         <textarea id="idxEmbedCode" readonly rows="3" style="width:100%;border:1.5px solid #e8eaf0;border-radius:9px;padding:12px;font-family:monospace;font-size:12.5px;color:#374151;background:#f8fafc;resize:none;"></textarea>
