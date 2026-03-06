@@ -142,6 +142,16 @@
             pointer-events: none;
         }
 
+        .input-wrap .toggle-pwd {
+            left: auto;
+            right: 13px;
+            pointer-events: auto;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .input-wrap .toggle-pwd:hover { color: #374151; }
+
         .form-control {
             width: 100%;
             padding: 11px 14px 11px 38px;
@@ -405,7 +415,9 @@
                                    name="password"
                                    class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}"
                                    placeholder="Mín. 8 caracteres"
-                                   autocomplete="new-password">
+                                   autocomplete="new-password"
+                                   oninput="this.classList.remove('is-invalid');const fb=this.closest('.form-group').querySelector('.invalid-feedback');if(fb)fb.style.display='none';">
+                            <i class="bi bi-eye toggle-pwd" onclick="togglePassword(this, 'password')"></i>
                         </div>
                         @error('password')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -418,10 +430,15 @@
                             <input type="password"
                                    id="password_confirmation"
                                    name="password_confirmation"
-                                   class="form-control"
+                                   class="form-control {{ $errors->has('password_confirmation') ? 'is-invalid' : '' }}"
                                    placeholder="Repita a senha"
-                                   autocomplete="new-password">
+                                   autocomplete="new-password"
+                                   oninput="this.classList.remove('is-invalid');const fb=this.closest('.form-group').querySelector('.invalid-feedback');if(fb)fb.style.display='none';">
+                            <i class="bi bi-eye toggle-pwd" onclick="togglePassword(this, 'password_confirmation')"></i>
                         </div>
+                        @error('password_confirmation')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
                     </div>
                     {{-- Código de agência parceira (opcional) --}}
                     <div id="agency-code-wrap" style="margin-bottom:16px;">
@@ -450,7 +467,7 @@
                     </button>
                     <p class="terms-text">
                         Ao criar uma conta você concorda com nossos
-                        <a href="#">Termos de Uso</a> e <a href="#">Política de Privacidade</a>.
+                        <a href="{{ route('terms') }}" target="_blank">Termos de Uso</a> e <a href="{{ route('privacy') }}" target="_blank">Política de Privacidade</a>.
                     </p>
                 </div>
 
@@ -556,8 +573,32 @@
         } else if (n === 3) {
             const v = document.getElementById('d-email').value.trim();
             if (!v || !v.includes('@')) { document.getElementById('d-email').focus(); return false; }
+        } else if (n === 4) {
+            const pwd = document.getElementById('password').value;
+            const conf = document.getElementById('password_confirmation').value;
+            if (pwd.length < 8) {
+                document.getElementById('password').classList.add('is-invalid');
+                document.getElementById('password').focus();
+                return false;
+            }
+            if (pwd !== conf) {
+                document.getElementById('password_confirmation').classList.add('is-invalid');
+                document.getElementById('password_confirmation').focus();
+                return false;
+            }
         }
         return true;
+    }
+
+    function togglePassword(icon, inputId) {
+        const input = document.getElementById(inputId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('bi-eye', 'bi-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('bi-eye-slash', 'bi-eye');
+        }
     }
 
     function toggleAgencyCode() {

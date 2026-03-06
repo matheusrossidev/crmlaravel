@@ -521,7 +521,7 @@
                     <strong>{{ $facebook->platform_user_name ?? 'Conta conectada' }}</strong><br>
                     <span>
                         Último sync:
-                        {{ $facebook->last_sync_at ? $facebook->last_sync_at->diffForHumans() : 'Nunca' }}
+                        {{ $facebook->last_sync_at ? $facebook->last_sync_at->diffForHumans() : 'Aguardando primeira sincronização...' }}
                     </span>
                 </div>
                 @else
@@ -576,7 +576,7 @@
                     <strong>{{ $google->platform_user_name ?? 'Conta conectada' }}</strong><br>
                     <span>
                         Último sync:
-                        {{ $google->last_sync_at ? $google->last_sync_at->diffForHumans() : 'Nunca' }}
+                        {{ $google->last_sync_at ? $google->last_sync_at->diffForHumans() : 'Aguardando primeira sincronização...' }}
                     </span>
                 </div>
                 @else

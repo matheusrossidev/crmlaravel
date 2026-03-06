@@ -497,6 +497,9 @@
             <a href="{{ route('chatbot.flows.edit', ['flow' => $flow->id, 'settings' => 1]) }}" class="btn-cancel-sm">
                 <i class="bi bi-gear"></i> Config
             </a>
+            <button class="btn-cancel-sm" onclick="centerCanvas()" title="Centralizar canvas">
+                <i class="bi bi-fullscreen"></i>
+            </button>
             <button class="btn-primary-sm" onclick="saveFlow()">
                 <i class="bi bi-check2"></i> Salvar
             </button>
@@ -2437,8 +2440,18 @@
         });
     }
 
+    // ── Center canvas on first node ──────────────────────────────────
+    window.centerCanvas = function() {
+        var canvas = document.querySelector('.cb-canvas');
+        var firstNode = canvas.querySelector('.cb-node');
+        if (canvas && firstNode) {
+            firstNode.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'center' });
+        }
+    };
+
     // ── Init ─────────────────────────────────────────────────────────
     renderFlow();
+    setTimeout(centerCanvas, 100);
 
     // ── Test Widget ──────────────────────────────────────────────────
     var _testWidgetActive = false;

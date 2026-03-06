@@ -1033,7 +1033,8 @@ const chartDates = @json($chartDates);
 const chartLeads = @json($chartLeads);
 
 @php
-    $srcLabels = $leadsBySource->pluck('source')->map(fn($s) => ucfirst($s ?? 'manual'))->toArray();
+    $sourceDisplayNames = ['indicacao' => 'Indicação', 'manual' => 'Manual', 'whatsapp' => 'WhatsApp', 'instagram' => 'Instagram', 'facebook' => 'Facebook', 'google' => 'Google', 'linkedin' => 'LinkedIn', 'site' => 'Site'];
+    $srcLabels = $leadsBySource->pluck('source')->map(fn($s) => $sourceDisplayNames[$s] ?? ucfirst($s ?? 'manual'))->toArray();
     $srcData   = $leadsBySource->pluck('total')->toArray();
 @endphp
 const sourceLabels = @json($srcLabels);

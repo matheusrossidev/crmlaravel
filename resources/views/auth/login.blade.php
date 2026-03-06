@@ -118,6 +118,16 @@
             pointer-events: none;
         }
 
+        .input-wrap .toggle-pwd {
+            left: auto;
+            right: 13px;
+            pointer-events: auto;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .input-wrap .toggle-pwd:hover { color: #374151; }
+
         .form-control {
             width: 100%;
             padding: 11px 14px 11px 38px;
@@ -377,6 +387,7 @@
                                    class="form-control"
                                    placeholder="••••••••"
                                    autocomplete="current-password">
+                            <i class="bi bi-eye toggle-pwd" onclick="togglePassword(this, 'password')"></i>
                         </div>
                     </div>
 
@@ -477,6 +488,17 @@
         stepEmail.style.display = 'none';
         stepPwd.style.display   = 'block';
         document.getElementById('password').focus();
+    }
+
+    function togglePassword(icon, inputId) {
+        const input = document.getElementById(inputId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('bi-eye', 'bi-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('bi-eye-slash', 'bi-eye');
+        }
     }
 
     function backStep() {

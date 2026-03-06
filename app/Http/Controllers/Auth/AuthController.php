@@ -33,6 +33,10 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email'    => 'required|email',
             'password' => 'required|string',
+        ], [
+            'email.required'    => 'Informe seu e-mail.',
+            'email.email'       => 'Informe um e-mail válido.',
+            'password.required' => 'Informe sua senha.',
         ]);
 
         if (!Auth::attempt($credentials, $request->boolean('remember'))) {
@@ -195,7 +199,10 @@ class AuthController extends Controller
 
     public function sendResetLink(Request $request): RedirectResponse
     {
-        $request->validate(['email' => 'required|email']);
+        $request->validate(['email' => 'required|email'], [
+            'email.required' => 'Informe seu e-mail.',
+            'email.email'    => 'Informe um e-mail válido.',
+        ]);
 
         $user = User::where('email', $request->input('email'))->first();
 
@@ -250,6 +257,12 @@ class AuthController extends Controller
             'token'                 => 'required|string',
             'email'                 => 'required|email',
             'password'              => 'required|string|min:8|confirmed',
+        ], [
+            'email.required'       => 'Informe seu e-mail.',
+            'email.email'          => 'Informe um e-mail válido.',
+            'password.required'    => 'Crie uma senha.',
+            'password.min'         => 'A senha deve ter pelo menos 8 caracteres.',
+            'password.confirmed'   => 'As senhas não conferem.',
         ]);
 
         $record = DB::table('password_reset_tokens')

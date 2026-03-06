@@ -686,19 +686,19 @@ function exportCSV() {
             @if($deltaLeads !== null)
                 <span class="kpi-delta {{ $deltaLeads >= 0 ? 'up' : 'down' }}">
                     <i class="bi bi-arrow-{{ $deltaLeads >= 0 ? 'up' : 'down' }}-short"></i>
-                    {{ abs($deltaLeads) }}% vs periodo anterior
+                    {{ abs($deltaLeads) }}% vs período anterior
                 </span>
             @else
                 <span class="kpi-delta neu">com UTM no periodo</span>
             @endif
         </div>
         <div class="kpi-card">
-            <div class="kpi-label"><i class="bi bi-check2-circle"></i> Conversoes</div>
+            <div class="kpi-label"><i class="bi bi-check2-circle"></i> Conversões</div>
             <div class="kpi-value">{{ number_format($totalConversions) }}</div>
             @if($deltaConv !== null)
                 <span class="kpi-delta {{ $deltaConv >= 0 ? 'up' : 'down' }}">
                     <i class="bi bi-arrow-{{ $deltaConv >= 0 ? 'up' : 'down' }}-short"></i>
-                    {{ abs($deltaConv) }}% vs periodo anterior
+                    {{ abs($deltaConv) }}% vs período anterior
                 </span>
             @else
                 <span class="kpi-delta neu">vendas fechadas</span>
@@ -717,7 +717,7 @@ function exportCSV() {
             @if($deltaRev !== null)
                 <span class="kpi-delta {{ $deltaRev >= 0 ? 'up' : 'down' }}">
                     <i class="bi bi-arrow-{{ $deltaRev >= 0 ? 'up' : 'down' }}-short"></i>
-                    {{ abs($deltaRev) }}% vs periodo anterior
+                    {{ abs($deltaRev) }}% vs período anterior
                 </span>
             @else
                 <span class="kpi-delta neu">total gerado</span>
@@ -731,7 +731,7 @@ function exportCSV() {
         <div class="top-card">
             <div class="top-icon source"><i class="bi bi-box-arrow-in-right"></i></div>
             <div>
-                <div class="top-label">Melhor Source</div>
+                <div class="top-label">Melhor Fonte</div>
                 <div class="top-name">{{ $topSourceName }}</div>
                 <div class="top-count">{{ number_format($topSource ?? 0) }} leads</div>
             </div>
@@ -739,7 +739,7 @@ function exportCSV() {
         <div class="top-card">
             <div class="top-icon medium"><i class="bi bi-broadcast"></i></div>
             <div>
-                <div class="top-label">Melhor Medium</div>
+                <div class="top-label">Melhor Mídia</div>
                 <div class="top-name">{{ $topMediumName }}</div>
                 <div class="top-count">{{ number_format($topMedium ?? 0) }} leads</div>
             </div>
@@ -747,10 +747,10 @@ function exportCSV() {
         <div class="top-card">
             <div class="top-icon campaign"><i class="bi bi-trophy"></i></div>
             <div>
-                <div class="top-label">Melhor Campaign</div>
+                <div class="top-label">Melhor Campanha</div>
                 @if($topCampaign)
                     <div class="top-name">{{ $topCampaign['utm_campaign'] }}</div>
-                    <div class="top-count">{{ $topCampaign['conv_rate'] }}% conversao ({{ $topCampaign['leads'] }} leads)</div>
+                    <div class="top-count">{{ $topCampaign['conv_rate'] }}% conversão ({{ $topCampaign['leads'] }} leads)</div>
                 @else
                     <div class="top-name">&mdash;</div>
                     <div class="top-count">sem dados suficientes</div>
@@ -842,7 +842,7 @@ function exportCSV() {
                             <th data-col="term" class="col-term">Term <span class="sort-icon"></span></th>
                             <th data-col="content" class="col-content">Content <span class="sort-icon"></span></th>
                             <th data-col="leads" class="num">Leads <span class="sort-icon"></span></th>
-                            <th data-col="conversions" class="num">Conversoes <span class="sort-icon"></span></th>
+                            <th data-col="conversions" class="num">Conversões <span class="sort-icon"></span></th>
                             <th data-col="revenue" class="num">Receita <span class="sort-icon"></span></th>
                             <th data-col="conv_rate" class="num">Conv. % <span class="sort-icon"></span></th>
                             <th class="col-actions" style="width:40px;"></th>

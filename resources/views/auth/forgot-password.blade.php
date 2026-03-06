@@ -312,8 +312,12 @@
                                class="form-control {{ $errors->has('email') ? 'is-invalid' : '' }}"
                                placeholder="seuemail@empresa.com"
                                autocomplete="email"
-                               autofocus>
+                               autofocus
+                               oninput="this.classList.remove('is-invalid');const fb=this.closest('.form-group').querySelector('.invalid-feedback');if(fb)fb.style.display='none';">
                     </div>
+                    @error('email')
+                        <div class="invalid-feedback" style="display:block;font-size:12px;color:#dc2626;margin-top:4px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <button type="submit" class="btn-submit">

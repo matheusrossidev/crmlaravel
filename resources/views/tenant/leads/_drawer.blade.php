@@ -62,11 +62,14 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div class="drawer-group">
                     <label>Telefone / WhatsApp</label>
-                    <input type="text" id="fPhone" name="phone" placeholder="(11) 99999-9999" class="drawer-input">
+                    <input type="text" id="fPhone" name="phone" placeholder="(11) 99999-9999" class="drawer-input"
+                           oninput="maskPhone(this)" maxlength="15">
+                    <div class="drawer-error" id="err-phone"></div>
                 </div>
                 <div class="drawer-group">
                     <label>E-mail</label>
                     <input type="email" id="fEmail" name="email" placeholder="email@exemplo.com" class="drawer-input">
+                    <div class="drawer-error" id="err-email"></div>
                 </div>
             </div>
 
@@ -892,7 +895,7 @@ document.getElementById('btnSaveLead')?.addEventListener('click', () => {
 document.getElementById('btnDeleteLead')?.addEventListener('click', () => {
     confirmAction({
         title: 'Excluir lead',
-        message: 'Tem certeza que deseja excluir este lead?',
+        message: `Tem certeza que deseja excluir o lead "${document.getElementById('fName').value || 'sem nome'}"?`,
         confirmText: 'Excluir',
         onConfirm: () => {
             $.ajax({
@@ -965,6 +968,18 @@ function showDrawerError(field, msg) {
 function clearDrawerErrors() {
     document.querySelectorAll('.drawer-error').forEach(el => { el.textContent = ''; el.style.display = 'none'; });
     document.querySelectorAll('.drawer-input.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+}
+
+function maskPhone(input) {
+    let v = input.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 6) {
+        v = '(' + v.slice(0,2) + ') ' + v.slice(2, v.length > 10 ? 7 : 6) + '-' + v.slice(v.length > 10 ? 7 : 6);
+    } else if (v.length > 2) {
+        v = '(' + v.slice(0,2) + ') ' + v.slice(2);
+    } else if (v.length > 0) {
+        v = '(' + v;
+    }
+    input.value = v;
 }
 
 // Fechar com Esc

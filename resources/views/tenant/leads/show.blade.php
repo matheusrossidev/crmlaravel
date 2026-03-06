@@ -714,7 +714,7 @@ $pageIcon = 'person-badge';
             </button>
             @endif
             <button class="lp-tab-btn" data-tab="scheduled">
-                <i class="bi bi-clock"></i> Agendamentos
+                <i class="bi bi-clock"></i> Msg. Agendadas
                 @if($scheduledMessages->where('status', 'pending')->count() > 0)
                 <span style="background:#fff7ed;color:#f59e0b;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">{{ $scheduledMessages->where('status', 'pending')->count() }}</span>
                 @endif
@@ -907,7 +907,15 @@ $pageIcon = 'person-badge';
         {{-- ── Tab: Agendamentos ── --}}
         <div class="lp-tab-panel" id="tab-scheduled">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                <span style="font-size:13px;color:#6b7280;">{{ $scheduledMessages->count() }} mensagem(ns) agendada(s)</span>
+                <span style="font-size:13px;color:#6b7280;">
+                    @if($scheduledMessages->count() === 0)
+                        Nenhuma mensagem agendada
+                    @elseif($scheduledMessages->count() === 1)
+                        1 mensagem agendada
+                    @else
+                        {{ $scheduledMessages->count() }} mensagens agendadas
+                    @endif
+                </span>
                 <button onclick="openScheduleModal()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#eff6ff;color:#3b82f6;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">
                     <i class="bi bi-plus-lg"></i> Agendar Mensagem
                 </button>

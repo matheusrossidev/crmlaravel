@@ -383,7 +383,7 @@
         <div class="stat-card blue">
             <div class="stat-card-top">
                 <div class="stat-icon blue"><i class="bi bi-people"></i></div>
-                <span class="stat-label">Leads este mês</span>
+                <span class="stat-label" title="Leads criados de 1 a {{ now()->endOfMonth()->day }} de {{ now()->translatedFormat('F/Y') }}">Leads este mês</span>
             </div>
             <div class="stat-bottom">
                 <span class="stat-value" data-val="{{ $leadsThisMonth }}" data-prefix="" data-suffix="">{{ $cfLeads }}</span>

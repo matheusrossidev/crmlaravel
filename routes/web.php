@@ -106,6 +106,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     });
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::redirect('/dashboard', '/');
     Route::get('/inicio', [DashboardController::class, 'index'])->name('inicio');
     Route::post('/dashboard/config', [DashboardController::class, 'saveConfig'])->name('dashboard.config');
     Route::get('/dashboard/leads-chart', [DashboardController::class, 'leadsChart'])->name('dashboard.leads-chart');
