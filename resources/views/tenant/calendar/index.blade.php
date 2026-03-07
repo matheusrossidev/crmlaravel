@@ -163,197 +163,233 @@
     background: #fff;
     border: 1.5px solid #e8eaf0;
     border-radius: 16px;
-    padding: 22px 26px 26px;
+    padding: 24px 28px 28px;
     min-height: 600px;
 }
 
-/* ── FullCalendar overrides ──────────────────────────────────────────────── */
-.fc { --fc-border-color: #eef0f4; --fc-today-bg-color: transparent; }
-.fc .fc-toolbar { margin-bottom: 18px; align-items: center; }
-.fc .fc-toolbar-title {
-    font-size: 18px;
-    font-weight: 700;
+/* ══════════════════════════════════════════════════════════════════════════
+   FullCalendar — Slothui Overrides
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.fc {
+    --fc-border-color: #f0f1f4;
+    --fc-today-bg-color: transparent;
+    --fc-neutral-bg-color: transparent;
+}
+
+/* ── Custom Toolbar (replaces FC toolbar) ────────────────────────────────── */
+.fc .fc-toolbar.fc-header-toolbar { display: none !important; }
+
+.sloth-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+.sloth-title {
+    font-size: 26px;
+    font-weight: 800;
     color: #1a1d23;
-    letter-spacing: -.02em;
+    letter-spacing: -.03em;
+    line-height: 1.2;
+    white-space: nowrap;
 }
-
-/* Navigation buttons (prev/next/today) */
-.fc .fc-button {
-    background: #fff !important;
-    border: 1.5px solid #e2e6ed !important;
-    color: #4b5563 !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    border-radius: 10px !important;
-    padding: 7px 14px !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04) !important;
-    transition: all .15s !important;
+.sloth-today-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1.5px solid #e2e6ed;
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
 }
-.fc .fc-button:hover {
-    background: #f7f9fc !important;
-    border-color: #d1d5db !important;
+.sloth-today-btn:hover { background: #f7f9fc; border-color: #d1d5db; }
+.sloth-today-btn .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    flex-shrink: 0;
 }
-.fc .fc-button:focus { box-shadow: 0 0 0 3px rgba(0,133,243,.12) !important; }
-.fc .fc-prev-button,
-.fc .fc-next-button {
-    padding: 7px 10px !important;
+.sloth-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid #e2e6ed;
+    background: #fff;
+    color: #6b7280;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all .15s;
+    flex-shrink: 0;
 }
-.fc .fc-today-button {
-    background: #eff6ff !important;
-    border-color: #bfdbfe !important;
-    color: #0085f3 !important;
-}
-.fc .fc-today-button:hover {
-    background: #dbeafe !important;
-}
-.fc .fc-today-button:disabled {
-    background: #f9fafb !important;
-    border-color: #e5e7eb !important;
-    color: #b0b5bf !important;
-    opacity: 1 !important;
-}
-
-/* View toggle buttons (Month/Week/Day) — pill style */
-.fc .fc-button-group {
+.sloth-nav-btn:hover { background: #f3f4f6; color: #374151; border-color: #d1d5db; }
+.sloth-spacer { flex: 1; }
+.sloth-view-group {
+    display: inline-flex;
     background: #f3f5f8;
-    border-radius: 10px;
-    padding: 3px;
+    border-radius: 12px;
+    padding: 4px;
+    gap: 2px;
+}
+.sloth-view-btn {
+    padding: 7px 18px;
     border: none;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    background: transparent;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
 }
-.fc .fc-button-group .fc-button {
-    background: transparent !important;
-    border: none !important;
-    border-radius: 8px !important;
-    color: #6b7280 !important;
-    font-size: 12.5px !important;
-    font-weight: 600 !important;
-    padding: 6px 14px !important;
-    box-shadow: none !important;
-    transition: all .15s !important;
-}
-.fc .fc-button-group .fc-button:hover {
-    background: rgba(0,0,0,.04) !important;
-    color: #374151 !important;
-}
-.fc .fc-button-primary:not(:disabled).fc-button-active,
-.fc .fc-button-primary:not(:disabled):active {
-    background: #fff !important;
-    border: none !important;
-    color: #1a1d23 !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,.08) !important;
+.sloth-view-btn:hover { color: #374151; background: rgba(0,0,0,.03); }
+.sloth-view-btn.active {
+    background: #fff;
+    color: #1a1d23;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
 }
 
-/* Column headers */
+/* ── Column headers ──────────────────────────────────────────────────────── */
 .fc .fc-col-header-cell {
-    background: #fafbfc;
+    background: transparent;
+    border: none !important;
+    padding-bottom: 4px;
 }
 .fc .fc-col-header-cell-cushion {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
-    color: #9ca3af;
-    text-transform: uppercase;
+    color: #1a1d23;
+    text-transform: capitalize;
     text-decoration: none;
-    padding: 10px 4px;
-    letter-spacing: .03em;
+    padding: 10px 8px;
+    letter-spacing: .01em;
 }
 
-/* Day cells */
+/* ── Day cells ───────────────────────────────────────────────────────────── */
 .fc .fc-daygrid-day {
     transition: background .12s;
+    border-color: #f0f1f4 !important;
 }
 .fc .fc-daygrid-day:hover { background: #fafbfe; }
 .fc .fc-daygrid-day-frame {
-    min-height: 90px;
-    padding: 2px;
+    min-height: 100px;
+    padding: 4px;
 }
 
-/* Day numbers */
+/* ── Day numbers ─────────────────────────────────────────────────────────── */
+.fc .fc-daygrid-day-top {
+    flex-direction: row;
+    padding: 6px 8px 2px;
+}
 .fc .fc-daygrid-day-number {
-    font-size: 13px;
-    font-weight: 500;
-    color: #6b7280;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
     text-decoration: none;
-    padding: 8px 10px;
+    padding: 0;
 }
 .fc .fc-daygrid-day.fc-day-other .fc-daygrid-day-number {
     color: #d1d5db;
+    font-weight: 400;
 }
 
-/* Today cell */
+/* ── Today ───────────────────────────────────────────────────────────────── */
 .fc .fc-daygrid-day.fc-day-today {
     background: transparent !important;
 }
 .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
-    background: #0085f3;
+    background: #3b82f6;
     color: #fff !important;
-    border-radius: 10px;
-    width: 28px;
-    height: 28px;
-    display: flex;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0;
     font-weight: 700;
-    font-size: 13px;
+    font-size: 14px;
 }
 
-/* Events — pill style */
+/* ══════════════════════════════════════════════════════════════════════════
+   Events — Slothui colored pill blocks
+   ══════════════════════════════════════════════════════════════════════════ */
 .fc .fc-event {
     border: none !important;
-    border-radius: 6px !important;
-    padding: 3px 8px !important;
-    font-size: 11.5px !important;
+    border-radius: 8px !important;
+    padding: 4px 10px !important;
+    font-size: 12px !important;
     font-weight: 600 !important;
     cursor: pointer;
     transition: opacity .12s, transform .12s;
+    line-height: 1.4 !important;
+    margin-bottom: 2px;
 }
 .fc .fc-event:hover {
     opacity: .88;
-    transform: scale(1.01);
+    transform: scale(1.015);
 }
-.fc .fc-daygrid-event-harness { margin-top: 2px; }
-.fc .fc-daygrid-dot-event { padding: 2px 6px !important; }
-.fc .fc-daygrid-event-dot {
-    border-radius: 50%;
-    width: 8px;
-    height: 8px;
-    min-width: 8px;
+.fc .fc-daygrid-event-harness {
+    margin: 1px 3px;
 }
+.fc .fc-daygrid-block-event .fc-event-time {
+    font-weight: 500 !important;
+    opacity: .9;
+    padding-right: 3px;
+    font-size: 11px !important;
+}
+.fc .fc-daygrid-block-event .fc-event-title {
+    font-weight: 600 !important;
+}
+/* Force block display — hide dot style */
+.fc .fc-daygrid-dot-event { display: none !important; }
+
 .fc a { text-decoration: none !important; }
 .fc a:hover { color: inherit; }
 
-/* More events link */
+/* ── More events link ────────────────────────────────────────────────────── */
 .fc .fc-daygrid-more-link {
-    font-size: 11px;
-    font-weight: 600;
-    color: #0085f3;
-    padding: 2px 4px;
-    border-radius: 4px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #6366f1;
+    padding: 3px 6px;
+    border-radius: 6px;
 }
-.fc .fc-daygrid-more-link:hover { background: #eff6ff; }
+.fc .fc-daygrid-more-link:hover { background: #eef2ff; }
 
-/* Time grid */
-.fc .fc-timegrid-slot { height: 48px; }
+/* ── Time grid ───────────────────────────────────────────────────────────── */
+.fc .fc-timegrid-slot { height: 52px; }
 .fc .fc-timegrid-slot-label-cushion {
-    font-size: 11px;
+    font-size: 11.5px;
     font-weight: 500;
     color: #9ca3af;
 }
 .fc .fc-timegrid-event {
-    border-radius: 8px !important;
-    border-left: 3px solid rgba(0,0,0,.15) !important;
+    border-radius: 10px !important;
+    border-left: 4px solid rgba(0,0,0,.12) !important;
 }
 .fc .fc-timegrid-event .fc-event-main {
     padding: 6px 10px;
-    font-size: 12px;
+    font-size: 12.5px;
 }
 .fc .fc-timegrid-event .fc-event-time {
     font-size: 11px;
     font-weight: 500;
-    opacity: .8;
+    opacity: .85;
 }
 
-/* Now indicator */
+/* ── Now indicator ───────────────────────────────────────────────────────── */
 .fc .fc-timegrid-now-indicator-line {
     border-color: #ef4444;
     border-width: 2px;
@@ -363,15 +399,15 @@
     border-bottom-color: #ef4444;
 }
 
-/* Scrollgrid */
+/* ── Grid borders ────────────────────────────────────────────────────────── */
 .fc .fc-scrollgrid { border: none !important; }
 .fc .fc-scrollgrid td,
 .fc .fc-scrollgrid th {
-    border-color: #eef0f4 !important;
+    border-color: #f0f1f4 !important;
 }
 .fc table { border-collapse: collapse; }
 .fc .fc-scrollgrid-section-header > * {
-    border-bottom: none;
+    border-bottom: 2px solid #eef0f4;
 }
 
 /* ── Event Popup ─────────────────────────────────────────────────────────── */
@@ -457,32 +493,47 @@
 /* ── Mobile ── */
 @media (max-width: 768px) {
     .cal-main {
-        padding: 14px 12px 18px;
+        padding: 16px 14px 18px;
         border-radius: 14px;
     }
-    .fc .fc-toolbar {
-        flex-direction: column;
+    .sloth-toolbar {
         gap: 10px;
-        align-items: stretch;
-        margin-bottom: 14px;
+        margin-bottom: 16px;
     }
-    .fc .fc-toolbar-chunk { display: flex; justify-content: center; }
-    .fc .fc-toolbar-title { font-size: 16px !important; text-align: center; }
-    .fc .fc-button { padding: 6px 10px !important; font-size: 12px !important; }
-    .fc .fc-button-group .fc-button { padding: 5px 10px !important; font-size: 11.5px !important; }
-    .fc .fc-daygrid-day-frame { min-height: 60px; }
+    .sloth-title { font-size: 20px; }
+    .sloth-today-btn { padding: 5px 12px; font-size: 12px; }
+    .sloth-nav-btn { width: 32px; height: 32px; font-size: 14px; }
+    .sloth-view-btn { padding: 5px 12px; font-size: 12px; }
+    .fc .fc-daygrid-day-frame { min-height: 65px; }
+    .fc .fc-col-header-cell-cushion { font-size: 11px; padding: 6px 4px; }
     .cal-fab { display: flex; }
     .ev-popup { width: calc(100vw - 32px); left: 16px !important; right: 16px; }
 }
 @media (max-width: 480px) {
-    .cal-main { padding: 10px 8px 14px; }
+    .cal-main { padding: 12px 10px 14px; }
     #calDrawer { width: 100vw !important; }
-    .fc .fc-col-header-cell-cushion { font-size: 10px; padding: 6px 2px; }
-    .fc .fc-daygrid-day-number { font-size: 11.5px; padding: 4px 6px; }
+    .sloth-title { font-size: 18px; }
+    .sloth-view-group { display: none; }
+    .sloth-view-mobile {
+        display: flex !important;
+        width: 100%;
+        order: 10;
+    }
+    .fc .fc-col-header-cell-cushion { font-size: 10px; padding: 4px 2px; }
+    .fc .fc-daygrid-day-number { font-size: 12px; }
     .fc .fc-daygrid-day-frame { min-height: 50px; }
-    .fc .fc-button-group { padding: 2px; }
-    .fc .fc-button-group .fc-button { padding: 4px 8px !important; font-size: 11px !important; }
-    .fc .fc-toolbar-title { font-size: 15px !important; }
+}
+/* Mobile view selector — hidden on desktop */
+.sloth-view-mobile {
+    display: none;
+    background: #f3f5f8;
+    border-radius: 12px;
+    padding: 4px;
+    gap: 2px;
+}
+.sloth-view-mobile .sloth-view-btn {
+    flex: 1;
+    text-align: center;
 }
 </style>
 @endpush
@@ -502,13 +553,37 @@
         <div id="miniCal"></div>
 
         {{-- Upcoming Events --}}
-        <div class="up-section-title">Próximos eventos</div>
-        <div id="upcomingList"><div class="up-empty">Carregando…</div></div>
+        <div class="up-section-title">Proximos eventos</div>
+        <div id="upcomingList"><div class="up-empty">Carregando...</div></div>
 
     </aside>
 
     {{-- ── Main Calendar ───────────────────────────────────────────────── --}}
     <div class="cal-main">
+
+        {{-- Custom Slothui Toolbar --}}
+        <div class="sloth-toolbar">
+            <span class="sloth-title" id="slothTitle"></span>
+            <button class="sloth-today-btn" onclick="goToday()">
+                <span class="dot"></span> Hoje
+            </button>
+            <button class="sloth-nav-btn" onclick="goPrev()"><i class="bi bi-chevron-left"></i></button>
+            <button class="sloth-nav-btn" onclick="goNext()"><i class="bi bi-chevron-right"></i></button>
+            <span class="sloth-spacer"></span>
+            <div class="sloth-view-group" id="viewGroup">
+                <button class="sloth-view-btn active" data-view="dayGridMonth" onclick="switchView(this)">Mes</button>
+                <button class="sloth-view-btn" data-view="timeGridWeek" onclick="switchView(this)">Semana</button>
+                <button class="sloth-view-btn" data-view="timeGridDay" onclick="switchView(this)">Dia</button>
+            </div>
+        </div>
+
+        {{-- Mobile view selector --}}
+        <div class="sloth-view-mobile" id="viewGroupMobile">
+            <button class="sloth-view-btn active" data-view="dayGridMonth" onclick="switchView(this)">Mes</button>
+            <button class="sloth-view-btn" data-view="timeGridWeek" onclick="switchView(this)">Semana</button>
+            <button class="sloth-view-btn" data-view="timeGridDay" onclick="switchView(this)">Dia</button>
+        </div>
+
         <div id="calendar"></div>
     </div>
 
@@ -560,25 +635,25 @@
         <button onclick="closeCalDrawer()" style="
             background:none;border:none;cursor:pointer;
             color:#94a3b8;font-size:22px;line-height:1;padding:4px;
-        ">×</button>
+        ">x</button>
     </div>
 
     {{-- Body (scrollable) --}}
     <div style="flex:1;overflow-y:auto;padding:22px 24px">
         <input type="hidden" id="calEventId">
 
-        {{-- Título --}}
+        {{-- Titulo --}}
         <div style="margin-bottom:18px">
             <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">
-                Título <span style="color:#ef4444">*</span>
+                Titulo <span style="color:#ef4444">*</span>
             </label>
-            <input type="text" class="cal-inp" id="calTitle" placeholder="Ex: Reunião com cliente">
+            <input type="text" class="cal-inp" id="calTitle" placeholder="Ex: Reuniao com cliente">
         </div>
 
         {{-- Data/Hora --}}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
             <div>
-                <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Início</label>
+                <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Inicio</label>
                 <input type="datetime-local" class="cal-inp" id="calStart">
             </div>
             <div>
@@ -592,7 +667,7 @@
             <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">
                 <i class="bi bi-geo-alt" style="margin-right:4px;color:#9ca3af"></i>Local
             </label>
-            <input type="text" class="cal-inp" id="calLocation" placeholder="Ex: Google Meet, Sala de reunião…">
+            <input type="text" class="cal-inp" id="calLocation" placeholder="Ex: Google Meet, Sala de reuniao...">
         </div>
 
         {{-- Convidados --}}
@@ -612,17 +687,17 @@
                 "><i class="bi bi-plus"></i> Adicionar</button>
             </div>
             <p style="margin:6px 0 0;font-size:12px;color:#94a3b8">
-                Os convidados receberão um convite por e-mail do Google Calendar.
+                Os convidados receberao um convite por e-mail do Google Calendar.
             </p>
         </div>
 
-        {{-- Descrição --}}
+        {{-- Descricao --}}
         <div style="margin-bottom:18px">
             <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">
-                <i class="bi bi-card-text" style="margin-right:4px;color:#9ca3af"></i>Descrição
+                <i class="bi bi-card-text" style="margin-right:4px;color:#9ca3af"></i>Descricao
             </label>
             <textarea class="cal-inp" id="calDescription" rows="4"
-                      placeholder="Observações sobre o evento…"
+                      placeholder="Observacoes sobre o evento..."
                       style="resize:vertical"></textarea>
         </div>
 
@@ -666,8 +741,8 @@ const ROUTES = {
     destroy: id => '{{ url('agenda/eventos') }}/' + id,
 };
 
-// ── Color palette ─────────────────────────────────────────────────────────
-const PALETTE = ['#4285f4','#0f9d58','#f4b400','#db4437','#ab47bc','#00bcd4','#ff7043','#795548','#607d8b','#e91e63'];
+// ── Slothui Color palette (vibrant) ──────────────────────────────────────
+const PALETTE = ['#6366f1','#22c55e','#f59e0b','#3b82f6','#ef4444','#8b5cf6','#14b8a6','#f97316','#ec4899','#06b6d4'];
 function eventColor(str) {
     let h = 0;
     for (let i = 0; i < (str || '').length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
@@ -683,10 +758,31 @@ let eventDateSet    = new Set();
 let calAttendees    = [];
 
 // ── PT-BR helpers ─────────────────────────────────────────────────────────
-const MONTHS_LONG  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MONTHS_LONG  = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const MONTHS_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-const WDAYS_SHORT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const WDAYS_SHORT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
 const WDAYS_MIN    = ['D','S','T','Q','Q','S','S'];
+
+// ── Custom toolbar controls ──────────────────────────────────────────────
+function updateTitle() {
+    const d = calendar.getDate();
+    document.getElementById('slothTitle').textContent =
+        MONTHS_LONG[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function goToday() { calendar.today(); updateTitle(); }
+function goPrev()  { calendar.prev();  updateTitle(); }
+function goNext()  { calendar.next();  updateTitle(); }
+
+function switchView(btn) {
+    const view = btn.dataset.view;
+    calendar.changeView(view);
+    // Update both desktop & mobile button groups
+    document.querySelectorAll('.sloth-view-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.view === view);
+    });
+    updateTitle();
+}
 
 // ── Mini Calendar ─────────────────────────────────────────────────────────
 let miniDate = new Date();
@@ -702,9 +798,9 @@ function renderMiniCal() {
 
     let html = `<div class="mini-cal">
         <div class="mini-cal-nav">
-            <button onclick="mcPrev()">‹</button>
+            <button onclick="mcPrev()">&lsaquo;</button>
             <span class="mc-title">${MONTHS_LONG[month]} ${year}</span>
-            <button onclick="mcNext()">›</button>
+            <button onclick="mcNext()">&rsaquo;</button>
         </div>
         <div class="mc-grid">`;
 
@@ -732,7 +828,9 @@ function renderMiniCal() {
 
 function mcPrev() { miniDate.setMonth(miniDate.getMonth() - 1); renderMiniCal(); }
 function mcNext() { miniDate.setMonth(miniDate.getMonth() + 1); renderMiniCal(); }
-function mcGoto(ds) { closePopup(); calendar.gotoDate(ds); calendar.changeView('timeGridDay'); }
+function mcGoto(ds) { closePopup(); calendar.gotoDate(ds); calendar.changeView('timeGridDay'); updateTitle();
+    document.querySelectorAll('.sloth-view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === 'timeGridDay'));
+}
 
 // ── Upcoming Events List ──────────────────────────────────────────────────
 function renderUpcoming(events) {
@@ -744,7 +842,7 @@ function renderUpcoming(events) {
         .slice(0, 7);
 
     if (!list.length) {
-        el.innerHTML = '<div class="up-empty">Sem eventos próximos</div>';
+        el.innerHTML = '<div class="up-empty">Sem eventos proximos</div>';
         return;
     }
 
@@ -753,12 +851,12 @@ function renderUpcoming(events) {
         const d      = new Date(e.start);
         const dLabel = WDAYS_SHORT[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS_SHORT[d.getMonth()];
         const tLabel = (d.getHours() || d.getMinutes())
-            ? ' · ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')
+            ? ' - ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')
             : '';
         return `<div class="up-item" onclick="mcGoto('${e.start.substr(0,10)}')">
             <div class="up-dot" style="background:${color}"></div>
             <div class="up-body">
-                <div class="up-title">${esc(e.title || 'Sem título')}</div>
+                <div class="up-title">${esc(e.title || 'Sem titulo')}</div>
                 <div class="up-date">${dLabel}${tLabel}</div>
             </div>
         </div>`;
@@ -771,17 +869,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
         initialView:  'dayGridMonth',
-        headerToolbar: {
-            left:   'prev,next today',
-            center: 'title',
-            right:  'dayGridMonth,timeGridWeek,timeGridDay',
-        },
-        buttonText: {
-            today:  'Hoje',
-            month:  'Mês',
-            week:   'Semana',
-            day:    'Dia',
-        },
+        headerToolbar: false,
         locale:     'pt-br',
         allDayText: 'Dia inteiro',
         firstDay:   0,
@@ -790,6 +878,8 @@ document.addEventListener('DOMContentLoaded', () => {
         selectable:  true,
         height:      'auto',
         nowIndicator: true,
+        eventDisplay: 'block',
+        dayMaxEvents: 3,
 
         events(info, ok, fail) {
             fetch(`${ROUTES.events}?start=${info.startStr}&end=${info.endStr}`, {
@@ -798,7 +888,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(r => r.json())
             .then(data => {
                 if (data.error) {
-                    toastr.error('Erro ao carregar agenda: ' + data.error, 'Calendário');
+                    toastr.error('Erro ao carregar agenda: ' + data.error, 'Calendario');
                     fail(data.error);
                     return;
                 }
@@ -815,7 +905,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ok(colored);
             })
             .catch(err => {
-                toastr.error('Não foi possível conectar ao Google Calendar. Verifique a integração nas configurações.', 'Calendário');
+                toastr.error('Nao foi possivel conectar ao Google Calendar. Verifique a integracao nas configuracoes.', 'Calendario');
                 fail(err);
             });
         },
@@ -837,6 +927,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     calendar.render();
+    updateTitle();
 
     document.addEventListener('click', e => {
         if (!document.getElementById('evPopup').contains(e.target)) closePopup();
@@ -852,13 +943,13 @@ function showPopup(event, jsEvent) {
     popupEvent = event;
     const color = eventColor(event.id || event.title || '');
     document.getElementById('popupDot').style.background = color;
-    document.getElementById('popupTitle').textContent = event.title || 'Sem título';
+    document.getElementById('popupTitle').textContent = event.title || 'Sem titulo';
 
     let body = '';
     if (event.start) {
         const s = fmtDT(event.start);
         const e = event.end ? fmtDT(event.end) : null;
-        body += row('bi-clock', s + (e ? ' → ' + e : ''));
+        body += row('bi-clock', s + (e ? ' &rarr; ' + e : ''));
     }
     const loc       = event.extendedProps?.location    || '';
     const desc      = event.extendedProps?.description || '';
@@ -868,7 +959,7 @@ function showPopup(event, jsEvent) {
         const emails = attendees.map(a => esc(a.email || a)).join(', ');
         body += row('bi-people', emails);
     }
-    if (desc) body += row('bi-card-text', `<span style="white-space:pre-line">${esc(desc.substring(0,250))}${desc.length>250?'…':''}</span>`);
+    if (desc) body += row('bi-card-text', `<span style="white-space:pre-line">${esc(desc.substring(0,250))}${desc.length>250?'...':''}</span>`);
 
     document.getElementById('popupBody').innerHTML = body;
 
@@ -995,7 +1086,7 @@ function renderAttendeeTags() {
             ${esc(email)}
             <button type="button" onclick="removeCalAttendee(${JSON.stringify(email)})"
                     style="background:none;border:none;cursor:pointer;color:#93c5fd;
-                           font-size:15px;line-height:1;padding:0;margin-left:2px">×</button>
+                           font-size:15px;line-height:1;padding:0;margin-left:2px">x</button>
         </span>
     `).join('');
 }
@@ -1010,13 +1101,13 @@ async function saveEvent() {
     const start = document.getElementById('calStart').value;
     const end   = document.getElementById('calEnd').value;
 
-    if (!title)        { showErr('O título é obrigatório.'); return; }
-    if (!start)        { showErr('Informe a data/hora de início.'); return; }
+    if (!title)        { showErr('O titulo e obrigatorio.'); return; }
+    if (!start)        { showErr('Informe a data/hora de inicio.'); return; }
     if (!end)          { showErr('Informe a data/hora de fim.'); return; }
-    if (start >= end)  { showErr('O fim deve ser após o início.'); return; }
+    if (start >= end)  { showErr('O fim deve ser apos o inicio.'); return; }
 
     const btn = document.getElementById('btnCalSave');
-    btn.disabled = true; btn.textContent = 'Salvando…';
+    btn.disabled = true; btn.textContent = 'Salvando...';
     hideErr();
 
     const isEdit = !!currentEventId;
@@ -1036,7 +1127,7 @@ async function saveEvent() {
         const data = await res.json();
         if (data.success) { closeCalDrawer(); calendar.refetchEvents(); }
         else showErr(data.message || 'Erro ao salvar evento.');
-    } catch { showErr('Erro de conexão. Tente novamente.'); }
+    } catch { showErr('Erro de conexao. Tente novamente.'); }
 
     btn.disabled = false; btn.textContent = 'Salvar';
 }
@@ -1052,7 +1143,7 @@ async function deleteEvent() {
         const data = await res.json();
         if (data.success) { closeCalDrawer(); calendar.refetchEvents(); }
         else showErr(data.message || 'Erro ao excluir.');
-    } catch { showErr('Erro de conexão.'); }
+    } catch { showErr('Erro de conexao.'); }
 }
 
 // ── Drag/resize update ────────────────────────────────────────────────────
