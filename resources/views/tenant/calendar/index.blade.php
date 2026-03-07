@@ -5,159 +5,17 @@
     $pageIcon = 'calendar3';
 @endphp
 
+@section('topbar_actions')
+<div class="topbar-actions" style="gap:8px;">
+    <button class="btn-primary-sm" onclick="openCreateModal()">
+        <i class="bi bi-plus-lg"></i> Novo evento
+    </button>
+</div>
+@endsection
+
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
 <style>
-/* ── Layout ──────────────────────────────────────────────────────────────── */
-.cal-page {
-    display: grid;
-    grid-template-columns: 270px 1fr;
-    gap: 24px;
-    align-items: start;
-}
-@media (max-width: 960px) {
-    .cal-page { grid-template-columns: 1fr; }
-    .cal-sidebar { display: none; }
-}
-
-/* ── Sidebar ─────────────────────────────────────────────────────────────── */
-.cal-sidebar {
-    background: #fff;
-    border: 1.5px solid #e8eaf0;
-    border-radius: 16px;
-    padding: 20px 18px;
-    position: sticky;
-    top: 20px;
-}
-
-.btn-new-event {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 11px 18px;
-    background: #0085f3;
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    font-size: 13.5px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-bottom: 22px;
-    transition: background .15s, box-shadow .15s;
-    box-shadow: 0 2px 8px rgba(0,133,243,.25);
-}
-.btn-new-event:hover { background: #0070d1; box-shadow: 0 4px 14px rgba(0,133,243,.35); }
-
-/* ── Mini Calendar ───────────────────────────────────────────────────────── */
-.mini-cal { margin-bottom: 6px; }
-.mini-cal-nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 10px;
-}
-.mini-cal-nav .mc-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: #1a1d23;
-}
-.mini-cal-nav button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #9ca3af;
-    font-size: 18px;
-    padding: 2px 6px;
-    border-radius: 8px;
-    line-height: 1;
-    transition: color .1s, background .1s;
-}
-.mini-cal-nav button:hover { background: #f3f4f6; color: #374151; }
-.mc-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-    text-align: center;
-}
-.mc-head {
-    font-size: 10px;
-    font-weight: 600;
-    color: #b0b5bf;
-    padding: 4px 0 6px;
-    text-transform: uppercase;
-}
-.mc-day {
-    position: relative;
-    font-size: 12px;
-    color: #374151;
-    cursor: pointer;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    border-radius: 10px;
-    transition: background .12s;
-    line-height: 1;
-    font-weight: 500;
-}
-.mc-day:hover:not(.mc-empty) { background: #f0f4ff; }
-.mc-day.mc-today { background: #0085f3 !important; color: #fff; font-weight: 700; border-radius: 10px; }
-.mc-day.mc-today:hover { background: #0070d1 !important; }
-.mc-day.mc-has-event::after {
-    content: '';
-    position: absolute;
-    bottom: 3px;
-    width: 4px;
-    height: 4px;
-    background: #0085f3;
-    border-radius: 50%;
-}
-.mc-day.mc-today.mc-has-event::after { background: rgba(255,255,255,.7); }
-.mc-day.mc-empty { cursor: default; color: #d1d5db !important; }
-.mc-day.mc-other { color: #d1d5db; }
-
-/* ── Upcoming ────────────────────────────────────────────────────────────── */
-.up-section-title {
-    font-size: 11px;
-    font-weight: 700;
-    color: #9ca3af;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-    padding: 16px 0 10px;
-    border-top: 1px solid #f0f2f5;
-    margin-top: 14px;
-}
-.up-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    margin: 0 -10px;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background .12s;
-}
-.up-item:hover { background: #f7f9fc; }
-.up-item:hover .up-title { color: #0085f3; }
-.up-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.up-body { flex: 1; min-width: 0; }
-.up-title {
-    font-size: 12.5px;
-    font-weight: 600;
-    color: #1a1d23;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    transition: color .1s;
-}
-.up-date { font-size: 11px; color: #9ca3af; margin-top: 2px; }
-.up-empty { font-size: 12.5px; color: #b0b5bf; text-align: center; padding: 20px 0; }
-
 /* ── Main calendar wrapper ───────────────────────────────────────────────── */
 .cal-main {
     background: #fff;
@@ -540,24 +398,6 @@
 
 @section('content')
 <div class="page-container">
-<div class="cal-page">
-
-    {{-- ── Sidebar ─────────────────────────────────────────────────────── --}}
-    <aside class="cal-sidebar">
-
-        <button class="btn-new-event" onclick="openCreateModal()">
-            <i class="bi bi-plus-lg"></i> Novo evento
-        </button>
-
-        {{-- Mini Calendar --}}
-        <div id="miniCal"></div>
-
-        {{-- Upcoming Events --}}
-        <div class="up-section-title">Proximos eventos</div>
-        <div id="upcomingList"><div class="up-empty">Carregando...</div></div>
-
-    </aside>
-
     {{-- ── Main Calendar ───────────────────────────────────────────────── --}}
     <div class="cal-main">
 
@@ -586,8 +426,6 @@
 
         <div id="calendar"></div>
     </div>
-
-</div>
 </div>
 
 {{-- ── FAB mobile ─────────────────────────────────────────────────────── --}}
@@ -753,16 +591,11 @@ function eventColor(str) {
 let calendar;
 let currentEventId  = null;
 let popupEvent      = null;
-let cachedEvents    = [];
-let eventDateSet    = new Set();
 let calAttendees    = [];
 
 // ── PT-BR helpers ─────────────────────────────────────────────────────────
 const MONTHS_LONG  = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const MONTHS_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const WDAYS_SHORT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
-const WDAYS_MIN    = ['D','S','T','Q','Q','S','S'];
-
 // ── Custom toolbar controls ──────────────────────────────────────────────
 function updateTitle() {
     const d = calendar.getDate();
@@ -784,89 +617,8 @@ function switchView(btn) {
     updateTitle();
 }
 
-// ── Mini Calendar ─────────────────────────────────────────────────────────
-let miniDate = new Date();
-
-function renderMiniCal() {
-    const el     = document.getElementById('miniCal');
-    const year   = miniDate.getFullYear();
-    const month  = miniDate.getMonth();
-    const today  = new Date();
-    const first  = new Date(year, month, 1).getDay();
-    const days   = new Date(year, month + 1, 0).getDate();
-    const prevD  = new Date(year, month, 0).getDate();
-
-    let html = `<div class="mini-cal">
-        <div class="mini-cal-nav">
-            <button onclick="mcPrev()">&lsaquo;</button>
-            <span class="mc-title">${MONTHS_LONG[month]} ${year}</span>
-            <button onclick="mcNext()">&rsaquo;</button>
-        </div>
-        <div class="mc-grid">`;
-
-    WDAYS_MIN.forEach(d => { html += `<div class="mc-head">${d}</div>`; });
-
-    for (let i = first - 1; i >= 0; i--)
-        html += `<div class="mc-day mc-empty mc-other">${prevD - i}</div>`;
-
-    for (let d = 1; d <= days; d++) {
-        const ds   = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        const isTd = today.getFullYear()===year && today.getMonth()===month && today.getDate()===d;
-        const hasE = eventDateSet.has(ds);
-        const cls  = (isTd ? ' mc-today' : '') + (hasE ? ' mc-has-event' : '');
-        html += `<div class="mc-day${cls}" onclick="mcGoto('${ds}')" title="${ds}">${d}</div>`;
-    }
-
-    const total = first + days;
-    const fill  = total % 7 === 0 ? 0 : 7 - (total % 7);
-    for (let i = 1; i <= fill; i++)
-        html += `<div class="mc-day mc-empty mc-other">${i}</div>`;
-
-    html += '</div></div>';
-    el.innerHTML = html;
-}
-
-function mcPrev() { miniDate.setMonth(miniDate.getMonth() - 1); renderMiniCal(); }
-function mcNext() { miniDate.setMonth(miniDate.getMonth() + 1); renderMiniCal(); }
-function mcGoto(ds) { closePopup(); calendar.gotoDate(ds); calendar.changeView('timeGridDay'); updateTitle();
-    document.querySelectorAll('.sloth-view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === 'timeGridDay'));
-}
-
-// ── Upcoming Events List ──────────────────────────────────────────────────
-function renderUpcoming(events) {
-    const el  = document.getElementById('upcomingList');
-    const now = new Date();
-    const list = [...events]
-        .filter(e => new Date(e.start) >= now)
-        .sort((a, b) => new Date(a.start) - new Date(b.start))
-        .slice(0, 7);
-
-    if (!list.length) {
-        el.innerHTML = '<div class="up-empty">Sem eventos proximos</div>';
-        return;
-    }
-
-    el.innerHTML = list.map(e => {
-        const color  = eventColor(e.id || e.title || '');
-        const d      = new Date(e.start);
-        const dLabel = WDAYS_SHORT[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS_SHORT[d.getMonth()];
-        const tLabel = (d.getHours() || d.getMinutes())
-            ? ' - ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')
-            : '';
-        return `<div class="up-item" onclick="mcGoto('${e.start.substr(0,10)}')">
-            <div class="up-dot" style="background:${color}"></div>
-            <div class="up-body">
-                <div class="up-title">${esc(e.title || 'Sem titulo')}</div>
-                <div class="up-date">${dLabel}${tLabel}</div>
-            </div>
-        </div>`;
-    }).join('');
-}
-
 // ── FullCalendar Init ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-    renderMiniCal();
-
     calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
         initialView:  'dayGridMonth',
         headerToolbar: false,
@@ -898,10 +650,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     borderColor:     eventColor(e.id || e.title || ''),
                     textColor:       '#fff',
                 }));
-                cachedEvents = data;
-                eventDateSet = new Set(data.map(e => (e.start||'').substr(0,10)).filter(Boolean));
-                renderMiniCal();
-                renderUpcoming(data);
                 ok(colored);
             })
             .catch(err => {
