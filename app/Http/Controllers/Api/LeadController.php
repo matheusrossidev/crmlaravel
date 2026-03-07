@@ -62,6 +62,29 @@ class LeadController extends Controller
             'created_at'   => now(),
         ]);
 
+        // Se o stage inicial é won/lost, cria Sale/LostSale
+        $initialStage = PipelineStage::find($data['stage_id']);
+        if ($initialStage?->is_won) {
+            Sale::firstOrCreate(
+                ['lead_id' => $lead->id, 'pipeline_id' => $data['pipeline_id']],
+                [
+                    'campaign_id' => $lead->campaign_id,
+                    'value'       => $lead->value,
+                    'closed_by'   => auth()->id(),
+                    'closed_at'   => now(),
+                ]
+            );
+        } elseif ($initialStage?->is_lost) {
+            LostSale::firstOrCreate(
+                ['lead_id' => $lead->id, 'pipeline_id' => $data['pipeline_id']],
+                [
+                    'campaign_id' => $lead->campaign_id,
+                    'lost_at'     => now(),
+                    'lost_by'     => auth()->id(),
+                ]
+            );
+        }
+
         $lead->load(['stage', 'pipeline', 'campaign']);
 
         return response()->json([
