@@ -483,18 +483,23 @@ class ProcessWahaWebhook implements ShouldQueue
                 'phone'           => $phone,
             ]);
 
-            // Atualizar foto/nome se ausentes (retry a cada mensagem até preencher)
+            // Atualizar foto de perfil: URLs do WhatsApp expiram.
+            // Re-fetch a cada 6h (throttle via Cache) ou quando ausente.
             $convUpdates = [];
-            if ($conversation->contact_picture_url === null) {
+            $picCacheKey = "waha:pic_refresh:{$conversation->id}";
+            if (! Cache::has($picCacheKey)) {
                 try {
                     $wahaForPic  = new \App\Services\WahaService($instance->session_name);
                     $pic         = $isGroup
                         ? $wahaForPic->getGroupPicture($from)
                         : $wahaForPic->getContactPicture($from);
-                    if ($pic) {
+                    if ($pic && $pic !== $conversation->contact_picture_url) {
                         $convUpdates['contact_picture_url'] = $pic;
                     }
-                } catch (\Throwable) {}
+                    Cache::put($picCacheKey, 1, 21600); // 6 horas
+                } catch (\Throwable) {
+                    Cache::put($picCacheKey, 1, 3600); // 1h se falhou
+                }
             }
             // Retry nome para contatos individuais sem nome
             if (! $isGroup && empty($conversation->contact_name)) {
