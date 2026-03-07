@@ -15,7 +15,7 @@
                    style="padding:7px 12px 7px 30px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:13px;font-family:inherit;outline:none;width:220px;background:#fafafa;"
                    id="searchInput">
         </div>
-        <select name="assigned_to" class="filter-select" onchange="this.form.submit()" title="Filtrar por responsável">
+        <select name="assigned_to" class="filter-select leads-hide-mobile" onchange="this.form.submit()" title="Filtrar por responsável">
             <option value="">Todos os responsáveis</option>
             <option value="ai" {{ request('assigned_to') === 'ai' ? 'selected' : '' }}>🤖 Agente IA</option>
             @foreach($users as $u)
@@ -27,11 +27,11 @@
     </form>
 
     <a href="{{ route('leads.export') }}"
-       class="btn-secondary-sm" style="display:flex;align-items:center;gap:5px;text-decoration:none;">
+       class="btn-secondary-sm leads-hide-mobile" style="display:flex;align-items:center;gap:5px;text-decoration:none;">
         <i class="bi bi-download"></i> Exportar
     </a>
 
-    <button class="btn-secondary-sm" id="btnImportLead" style="display:flex;align-items:center;gap:5px;">
+    <button class="btn-secondary-sm leads-hide-mobile" id="btnImportLead" style="display:flex;align-items:center;gap:5px;">
         <i class="bi bi-upload"></i> Importar
     </button>
 
@@ -226,12 +226,12 @@
     @media (max-width: 768px) {
         .leads-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .leads-table { min-width: 700px; }
-        #searchInput { width: 140px !important; }
-        .topbar-actions .btn-secondary-sm span,
-        .btn-secondary-sm { font-size: 12px; padding: 6px 8px; }
+        #searchInput { width: 120px !important; font-size: 12px !important; padding: 6px 10px 6px 28px !important; }
+        .leads-hide-mobile { display: none !important; }
     }
     @media (max-width: 480px) {
         .leads-table { min-width: 500px; }
+        #searchInput { width: 100px !important; }
     }
 </style>
 @endpush

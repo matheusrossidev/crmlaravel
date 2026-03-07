@@ -13,6 +13,8 @@ use App\Models\InstagramConversation;
 use App\Models\Lead;
 use App\Models\LeadEvent;
 use App\Models\LeadNote;
+use App\Models\LostSale;
+use App\Models\Sale;
 use App\Models\Pipeline;
 use App\Models\PipelineStage;
 use App\Models\User;
@@ -284,9 +286,11 @@ class LeadController extends Controller
 
     public function destroy(Lead $lead): JsonResponse
     {
+        // Limpa registros de venda/perda associados ao lead
+        Sale::where('lead_id', $lead->id)->delete();
+        LostSale::where('lead_id', $lead->id)->delete();
+
         // Arquiva o lead: remove do funil/pipeline mas mantém o contato.
-        // Evita que contatos de membros da equipe ou descartados reapareçam
-        // automaticamente no Kanban ao enviar uma nova mensagem.
         $lead->update([
             'stage_id'              => null,
             'pipeline_id'           => null,

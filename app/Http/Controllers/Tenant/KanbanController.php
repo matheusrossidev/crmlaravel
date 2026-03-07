@@ -187,39 +187,45 @@ class KanbanController extends Controller
                 'created_at'   => now(),
             ]);
 
-            if ($newStage?->is_won) {
-                // Evitar duplicata: só cria venda se não existir para este lead+pipeline
-                $existingSale = Sale::where('lead_id', $lead->id)
-                    ->where('pipeline_id', $data['pipeline_id'])
-                    ->first();
+            $oldStage = PipelineStage::find($oldStageId);
 
-                if (! $existingSale) {
-                    Sale::create([
-                        'lead_id'     => $lead->id,
-                        'pipeline_id' => $data['pipeline_id'],
+            if ($newStage?->is_won) {
+                // Cria venda se não existir para este lead+pipeline
+                Sale::firstOrCreate(
+                    ['lead_id' => $lead->id, 'pipeline_id' => $data['pipeline_id']],
+                    [
                         'campaign_id' => $lead->campaign_id,
                         'value'       => $data['value'] ?? $lead->value,
                         'closed_by'   => auth()->id(),
                         'closed_at'   => now(),
-                    ]);
+                    ]
+                );
+                // Se saiu de "lost", remove o registro de perda
+                if ($oldStage?->is_lost) {
+                    LostSale::where('lead_id', $lead->id)->where('pipeline_id', $data['pipeline_id'])->delete();
                 }
-            }
-
-            if ($newStage?->is_lost) {
-                // Evitar duplicata: só cria perda se não existir para este lead+pipeline
-                $existingLost = LostSale::where('lead_id', $lead->id)
-                    ->where('pipeline_id', $data['pipeline_id'])
-                    ->first();
-
-                if (! $existingLost) {
-                    LostSale::create([
-                        'lead_id'     => $lead->id,
-                        'pipeline_id' => $data['pipeline_id'],
+            } elseif ($newStage?->is_lost) {
+                // Cria perda se não existir
+                LostSale::firstOrCreate(
+                    ['lead_id' => $lead->id, 'pipeline_id' => $data['pipeline_id']],
+                    [
                         'campaign_id' => $lead->campaign_id,
                         'reason_id'   => !empty($data['lost_reason_id']) ? $data['lost_reason_id'] : null,
                         'lost_at'     => now(),
                         'lost_by'     => auth()->id(),
-                    ]);
+                    ]
+                );
+                // Se saiu de "won", remove o registro de venda
+                if ($oldStage?->is_won) {
+                    Sale::where('lead_id', $lead->id)->where('pipeline_id', $data['pipeline_id'])->delete();
+                }
+            } else {
+                // Moveu para estágio normal — limpa venda e perda se existiam
+                if ($oldStage?->is_won) {
+                    Sale::where('lead_id', $lead->id)->where('pipeline_id', $data['pipeline_id'])->delete();
+                }
+                if ($oldStage?->is_lost) {
+                    LostSale::where('lead_id', $lead->id)->where('pipeline_id', $data['pipeline_id'])->delete();
                 }
             }
 
