@@ -59,7 +59,7 @@
                 <div class="drawer-error" id="err-name"></div>
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="drawer-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div class="drawer-group">
                     <label>Telefone / WhatsApp</label>
                     <input type="text" id="fPhone" name="phone" placeholder="(11) 99999-9999" class="drawer-input"
@@ -120,7 +120,7 @@
             {{-- Negócio --}}
             <div class="drawer-section-label" style="margin-top:18px;">Negócio</div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="drawer-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div class="drawer-group">
                     <label>Valor (R$)</label>
                     <input type="number" id="fValue" name="value" placeholder="0,00" min="0" step="0.01" class="drawer-input">
@@ -171,7 +171,7 @@
                     <label>Campaign ID</label>
                     <input type="text" id="fUtmId" class="drawer-input" readonly style="background:#f3f4f6;color:#6b7280;cursor:default;" placeholder="—">
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="drawer-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div class="drawer-group">
                         <label>Fonte (Source)</label>
                         <input type="text" id="fUtmSource" class="drawer-input" readonly style="background:#f3f4f6;color:#6b7280;cursor:default;" placeholder="—">
@@ -185,7 +185,7 @@
                     <label>Campanha (Campaign)</label>
                     <input type="text" id="fUtmCampaign" class="drawer-input" readonly style="background:#f3f4f6;color:#6b7280;cursor:default;" placeholder="—">
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="drawer-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div class="drawer-group">
                         <label>Conteúdo (Content)</label>
                         <input type="text" id="fUtmContent" class="drawer-input" readonly style="background:#f3f4f6;color:#6b7280;cursor:default;" placeholder="—">
@@ -459,6 +459,19 @@
         transition: transform .2s;
     }
     .cf-toggle.on .cf-toggle-thumb { transform: translateX(18px); }
+
+    /* ── Mobile: drawer full-width ── */
+    @media (max-width: 768px) {
+        #leadDrawer {
+            width: 100vw !important;
+        }
+        #drawerBody {
+            padding: 16px !important;
+        }
+        .drawer-grid-2 {
+            grid-template-columns: 1fr !important;
+        }
+    }
 </style>
 
 @php
