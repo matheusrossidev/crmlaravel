@@ -35,7 +35,7 @@
         <i class="bi bi-upload"></i> Importar
     </button>
 
-    <button class="btn-primary-sm" id="btnNovoLead">
+    <button class="btn-primary-sm leads-hide-mobile" id="btnNovoLead">
         <i class="bi bi-plus-lg"></i> Novo Lead
     </button>
 </div>
@@ -222,12 +222,23 @@
     }
     .filter-select:focus { border-color: #3B82F6; background: #fff; }
 
+    .fab-novo-lead {
+        display: none;
+        position: fixed; bottom: 24px; right: 20px; z-index: 90;
+        width: 52px; height: 52px; border-radius: 50%;
+        background: #0085f3; color: #fff; border: none;
+        align-items: center; justify-content: center;
+        font-size: 22px; cursor: pointer;
+        box-shadow: 0 4px 14px rgba(0,133,243,.4);
+    }
+
     /* ── Mobile ── */
     @media (max-width: 768px) {
         .leads-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .leads-table { min-width: 700px; }
         #searchInput { width: 120px !important; font-size: 12px !important; padding: 6px 10px 6px 28px !important; }
         .leads-hide-mobile { display: none !important; }
+        .fab-novo-lead { display: flex; }
     }
     @media (max-width: 480px) {
         .leads-table { min-width: 500px; }
@@ -351,6 +362,10 @@
         </div>
     </div>
 </div>
+
+<button class="fab-novo-lead" id="fabNovoLead" title="Novo Lead">
+    <i class="bi bi-plus-lg"></i>
+</button>
 @endsection
 
 @push('scripts')
@@ -383,6 +398,7 @@ document.getElementById('leadsTableBody').addEventListener('click', e => {
 });
 
 document.getElementById('btnNovoLead')?.addEventListener('click', () => openNewLeadDrawer());
+document.getElementById('fabNovoLead')?.addEventListener('click', () => openNewLeadDrawer());
 document.getElementById('emptyAddLead')?.addEventListener('click', e => { e.preventDefault(); openNewLeadDrawer(); });
 
 const SOURCE_META = {
