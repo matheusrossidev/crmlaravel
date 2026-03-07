@@ -77,27 +77,46 @@ class ProcessWahaWebhook implements ShouldQueue
         $isFromMe = ! empty($msg['fromMe']);
 
         // Para mensagens fromMe, 'from' é o JID do nosso celular conectado.
-        // O parceiro da conversa está em chatId / to ou embutido no message ID.
-        // No GOWS engine, msgs enviadas do celular têm msg_id="true_{account_lid}_{id}",
-        // codificando o LID da CONTA (não o JID do cliente). chatId e to têm o JID
-        // correto do cliente. Preferir chatId/to quando disponíveis e não forem @lid.
+        // O parceiro da conversa está em chatId / to / _data.Info.Chat / RecipientAlt.
         // Grupos: 'from' já é o JID do grupo (@g.us) mesmo em mensagens fromMe — não sobrescrever.
         if ($isFromMe && ! str_contains($from, '@g.us')) {
-            $msgId         = $msg['id'] ?? '';
-            $recipientFrom = null;
-            if (preg_match('/^true_(.+@[\w.]+)_/', $msgId, $m)) {
-                $recipientFrom = $m[1];
+            $info = $msg['_data']['Info'] ?? [];
+
+            // Candidatos para o JID do destinatário, em ordem de confiabilidade
+            $candidates = [
+                $msg['chatId']          ?? '',
+                $msg['to']              ?? '',
+                $info['Chat']           ?? '',
+                $info['RecipientAlt']   ?? '',
+                $info['SenderAlt']      ?? '',
+            ];
+
+            // Usar o primeiro candidato que NÃO seja @lid e NÃO seja nosso telefone
+            $myPhone  = (string) preg_replace('/[:@].+$/', '', $msg['from'] ?? '');
+            $resolved = null;
+            $firstLid = null;
+            foreach ($candidates as $c) {
+                if (! $c || str_contains($c, '@g.us') || str_contains($c, 'broadcast')) {
+                    continue;
+                }
+                if (str_ends_with($c, '@lid')) {
+                    $firstLid ??= $c;
+                    continue;
+                }
+                $cPhone = (string) preg_replace('/[:@].+$/', '', $c);
+                if ($cPhone && $cPhone !== $myPhone) {
+                    $resolved = $c;
+                    break;
+                }
             }
-            $chatIdCandidate = $msg['chatId'] ?? '';
-            $toCandidate     = $msg['to']     ?? '';
-            if ($chatIdCandidate && ! str_ends_with($chatIdCandidate, '@lid')) {
-                $from = $chatIdCandidate;
-            } elseif ($toCandidate && ! str_ends_with($toCandidate, '@lid')) {
-                $from = $toCandidate;
-            } else {
-                // Ambos @lid ou ausentes: usar recipientFrom do msg_id como fallback
-                $from = $recipientFrom ?? $toCandidate ?? $chatIdCandidate ?? $from;
+
+            if ($resolved) {
+                $from = $resolved;
+            } elseif ($firstLid) {
+                // Todos candidatos reais falharam — usar @lid (fallbacks posteriores resolverão)
+                $from = $firstLid;
             }
+            // Se nenhum candidato válido, $from fica inalterado (nosso telefone — Fix 3 bloqueará)
         }
 
         // Ignorar: Status/Stories (@broadcast), Canais (@newsletter) e mensagens de sistema.
@@ -270,6 +289,46 @@ class ProcessWahaWebhook implements ShouldQueue
                     ]);
                 }
             }
+
+            // Fallback: conversa pode ter sido criada com phone = LID numérico
+            if (! $conversation) {
+                $conv = WhatsappConversation::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $instance->tenant_id)
+                    ->where('phone', $lidNumeric)
+                    ->first();
+                if ($conv) {
+                    $conversation = $conv;
+                    $phone        = $conv->phone;
+                    Log::channel('whatsapp')->info('fromMe @lid: conversa encontrada por phone=LID', [
+                        'conversation_id' => $conv->id,
+                        'lid'             => $lidNumeric,
+                    ]);
+                }
+            }
+        }
+
+        // Fallback fromMe genérico: buscar conversa via chatId do payload
+        // (chatId pode ser @lid mas corresponde a uma conversa criada com esse LID como phone)
+        if (! $conversation && $isFromMe) {
+            $payloadChatId = $msg['chatId'] ?? '';
+            if ($payloadChatId) {
+                $chatIdPhone = (string) preg_replace('/[:@].+$/', '', $payloadChatId);
+                if ($chatIdPhone && $chatIdPhone !== $phone) {
+                    $conv = WhatsappConversation::withoutGlobalScope('tenant')
+                        ->where('tenant_id', $instance->tenant_id)
+                        ->where('phone', $chatIdPhone)
+                        ->first();
+                    if ($conv) {
+                        $conversation = $conv;
+                        $phone        = $conv->phone;
+                        Log::channel('whatsapp')->info('fromMe: conversa encontrada via chatId payload', [
+                            'conversation_id' => $conv->id,
+                            'chatId'          => $payloadChatId,
+                            'phone'           => $phone,
+                        ]);
+                    }
+                }
+            }
         }
 
         // Para grupos: contact_name = nome do grupo; sender_name = quem enviou a mensagem.
@@ -327,6 +386,34 @@ class ProcessWahaWebhook implements ShouldQueue
                     ?? null;
             }
             $messageSenderName = null;
+        }
+
+        // Segurança: se fromMe e phone resolveu para nosso próprio número,
+        // tentar extrair o destinatário correto de campos alternativos
+        if (! $conversation && $isFromMe && ! $isGroup) {
+            $instancePhone = ltrim((string) $instance->phone_number, '+');
+            if ($phone === $instancePhone) {
+                // phone é nosso número — tentar chatId como última tentativa
+                $fallbackChatId = $msg['chatId'] ?? '';
+                $fallbackPhone  = (string) preg_replace('/[:@].+$/', '', $fallbackChatId);
+                if ($fallbackPhone && $fallbackPhone !== $instancePhone) {
+                    $phone = $fallbackPhone;
+                    Log::channel('whatsapp')->warning('fromMe: phone era nosso número, corrigido via chatId', [
+                        'old_phone' => $instancePhone,
+                        'new_phone' => $phone,
+                        'chatId'    => $fallbackChatId,
+                    ]);
+                    // Tentar encontrar conversa com o phone corrigido
+                    $conversation = WhatsappConversation::withoutGlobalScope('tenant')
+                        ->where('tenant_id', $instance->tenant_id)
+                        ->where('phone', $phone)
+                        ->first();
+                } else {
+                    Log::channel('whatsapp')->warning('fromMe: phone resolveu para nosso número e não há fallback', [
+                        'phone' => $phone, 'chatId' => $fallbackChatId,
+                    ]);
+                }
+            }
         }
 
         if (! $conversation) {
