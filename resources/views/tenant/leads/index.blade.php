@@ -221,6 +221,18 @@
         cursor: pointer;
     }
     .filter-select:focus { border-color: #3B82F6; background: #fff; }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+        .leads-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .leads-table { min-width: 700px; }
+        #searchInput { width: 140px !important; }
+        .topbar-actions .btn-secondary-sm span,
+        .btn-secondary-sm { font-size: 12px; padding: 6px 8px; }
+    }
+    @media (max-width: 480px) {
+        .leads-table { min-width: 500px; }
+    }
 </style>
 @endpush
 

@@ -270,6 +270,28 @@
     text-decoration: none; font-family: inherit;
 }
 .btn-cancel-sm:hover { background: #f3f4f6; color: #111827; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+    .af-builder { flex-direction: column; }
+    .af-sidebar {
+        width: 100%; max-height: 180px;
+        border-right: none; border-bottom: 1px solid #e8eaf0;
+        display: flex; flex-direction: row; overflow-x: auto; overflow-y: hidden;
+        -webkit-overflow-scrolling: touch; padding: 8px 0; gap: 0;
+    }
+    .af-sidebar-section { display: flex; flex-direction: row; gap: 4px; padding: 0 8px; margin-bottom: 0; flex-shrink: 0; }
+    .af-sidebar-section-title { display: none; }
+    .af-sidebar-divider { display: none; }
+    .af-block-item {
+        white-space: nowrap; padding: 6px 12px; border-radius: 20px;
+        border: 1px solid #e8eaf0; background: #fff; font-size: 12px;
+    }
+    .af-canvas { padding: 20px 12px 40px; }
+    .af-flow { max-width: 100%; }
+    .af-header { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
+    .af-name-input { min-width: 0; width: 100%; }
+}
 </style>
 @endpush
 

@@ -182,6 +182,14 @@
         color: #9ca3af;
     }
     .empty-state i { font-size: 36px; margin-bottom: 12px; display: block; }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+        .users-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .users-table { min-width: 500px; }
+        .drawer { width: 100vw; right: -100vw; }
+        .drawer.open { right: 0; }
+    }
 </style>
 @endpush
 

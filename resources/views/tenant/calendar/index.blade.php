@@ -309,6 +309,20 @@
     background: #fff;
 }
 .cal-inp:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+    .cal-main { padding: 12px 10px 16px; }
+    .fc .fc-toolbar { flex-direction: column; gap: 8px; align-items: stretch; }
+    .fc .fc-toolbar-chunk { display: flex; justify-content: center; }
+    .fc .fc-toolbar-title { font-size: 15px !important; text-align: center; }
+    .fc .fc-button { padding: 5px 8px !important; font-size: 11px !important; }
+}
+@media (max-width: 480px) {
+    .cal-drawer { width: 100vw; }
+    .fc .fc-col-header-cell-cushion { font-size: 10px; padding: 4px 2px; }
+    .fc .fc-daygrid-day-number { font-size: 11px; padding: 2px 4px; }
+}
 </style>
 @endpush
 

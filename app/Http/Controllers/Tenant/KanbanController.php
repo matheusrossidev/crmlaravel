@@ -188,25 +188,39 @@ class KanbanController extends Controller
             ]);
 
             if ($newStage?->is_won) {
-                Sale::create([
-                    'lead_id'     => $lead->id,
-                    'pipeline_id' => $data['pipeline_id'],
-                    'campaign_id' => $lead->campaign_id,
-                    'value'       => $data['value'] ?? $lead->value,
-                    'closed_by'   => auth()->id(),
-                    'closed_at'   => now(),
-                ]);
+                // Evitar duplicata: só cria venda se não existir para este lead+pipeline
+                $existingSale = Sale::where('lead_id', $lead->id)
+                    ->where('pipeline_id', $data['pipeline_id'])
+                    ->first();
+
+                if (! $existingSale) {
+                    Sale::create([
+                        'lead_id'     => $lead->id,
+                        'pipeline_id' => $data['pipeline_id'],
+                        'campaign_id' => $lead->campaign_id,
+                        'value'       => $data['value'] ?? $lead->value,
+                        'closed_by'   => auth()->id(),
+                        'closed_at'   => now(),
+                    ]);
+                }
             }
 
             if ($newStage?->is_lost) {
-                LostSale::create([
-                    'lead_id'     => $lead->id,
-                    'pipeline_id' => $data['pipeline_id'],
-                    'campaign_id' => $lead->campaign_id,
-                    'reason_id'   => !empty($data['lost_reason_id']) ? $data['lost_reason_id'] : null,
-                    'lost_at'     => now(),
-                    'lost_by'     => auth()->id(),
-                ]);
+                // Evitar duplicata: só cria perda se não existir para este lead+pipeline
+                $existingLost = LostSale::where('lead_id', $lead->id)
+                    ->where('pipeline_id', $data['pipeline_id'])
+                    ->first();
+
+                if (! $existingLost) {
+                    LostSale::create([
+                        'lead_id'     => $lead->id,
+                        'pipeline_id' => $data['pipeline_id'],
+                        'campaign_id' => $lead->campaign_id,
+                        'reason_id'   => !empty($data['lost_reason_id']) ? $data['lost_reason_id'] : null,
+                        'lost_at'     => now(),
+                        'lost_by'     => auth()->id(),
+                    ]);
+                }
             }
 
             // Automações de etapa

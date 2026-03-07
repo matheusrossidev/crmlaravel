@@ -17,19 +17,19 @@
         @endforeach
     </select>
 
-    <button class="topbar-btn" title="Filtros" id="btnToggleFilters">
+    <button class="topbar-btn hide-mobile" title="Filtros" id="btnToggleFilters">
         <i class="bi bi-funnel{{ request()->hasAny(['source','date_from','date_to','campaign_id','tag']) ? '-fill' : '' }}"></i>
     </button>
 
-    <button class="topbar-btn" title="Exportar leads" onclick="exportarLeads()">
+    <button class="topbar-btn hide-mobile" title="Exportar leads" onclick="exportarLeads()">
         <i class="bi bi-download"></i>
     </button>
 
-    <button class="topbar-btn" title="Importar leads" onclick="openImportModal()">
+    <button class="topbar-btn hide-mobile" title="Importar leads" onclick="openImportModal()">
         <i class="bi bi-upload"></i>
     </button>
 
-    <button class="btn-primary-sm" id="btnNovoLead">
+    <button class="btn-primary-sm hide-mobile" id="btnNovoLead">
         <i class="bi bi-plus-lg"></i>
         Novo Lead
     </button>
@@ -535,6 +535,28 @@
     }
     .pd-btn-save:hover { background: #006acf; }
     .pd-btn-save:disabled { opacity: .6; cursor: not-allowed; }
+
+    .fab-novo-lead {
+        display: none;
+        position: fixed; bottom: 24px; right: 20px; z-index: 90;
+        width: 52px; height: 52px; border-radius: 50%;
+        background: #0085f3; color: #fff; border: none;
+        align-items: center; justify-content: center;
+        font-size: 22px; cursor: pointer;
+        box-shadow: 0 4px 14px rgba(0,133,243,.4);
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+        .kanban-board { padding: 12px 14px 14px; }
+        .kanban-col { flex: 0 0 85vw; min-width: 240px; }
+        .kanban-header { padding: 12px 14px 0; flex-wrap: wrap; gap: 8px; }
+        .hide-mobile { display: none !important; }
+        .fab-novo-lead { display: flex; }
+    }
+    @media (max-width: 480px) {
+        .kanban-col { flex: 0 0 88vw; }
+    }
 </style>
 @endpush
 
@@ -938,6 +960,10 @@
     </div>
 </div>
 
+<button class="fab-novo-lead" id="fabNovoLead" title="Novo Lead">
+    <i class="bi bi-plus-lg"></i>
+</button>
+
 @endsection
 
 @push('scripts')
@@ -976,6 +1002,9 @@ document.querySelectorAll('.sortable-zone').forEach(zone => {
     Sortable.create(zone, {
         group:     'kanban',
         animation: 150,
+        delay: 150,
+        delayOnTouchOnly: true,
+        touchStartThreshold: 5,
         ghostClass:  'sortable-ghost',
         dragClass:   'sortable-drag',
         handle:    '.lead-card',
@@ -1107,6 +1136,9 @@ document.addEventListener('click', e => {
 
 // ── Botão global "Novo Lead" ───────────────────────────────────────────────
 document.getElementById('btnNovoLead')?.addEventListener('click', () => {
+    openNewLeadDrawer();
+});
+document.getElementById('fabNovoLead')?.addEventListener('click', () => {
     openNewLeadDrawer();
 });
 

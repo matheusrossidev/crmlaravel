@@ -627,9 +627,22 @@
             .sidebar.open { transform: translateX(0); }
             .sidebar--collapsed { transform: translateX(-100%); }
             .sidebar--collapsed.open { transform: translateX(0); }
-            .topbar { left: 0 !important; }
+            .topbar { left: 0 !important; padding: 0 12px; gap: 8px; }
             .main-content { margin-left: 0 !important; }
             .sidebar-collapse-btn { display: none; }
+            .page-container { padding: 16px 14px; }
+            .topbar-title { font-size: 14px; }
+            .topbar-title .page-icon { font-size: 15px; }
+            .topbar-actions { flex-shrink: 1; min-width: 0; }
+            .section-title { font-size: 17px; }
+            .section-subtitle { font-size: 12.5px; }
+        }
+        @media (max-width: 480px) {
+            .page-container { padding: 12px 10px; }
+            .topbar-title { font-size: 13px; }
+            .topbar-title .page-icon { font-size: 14px; }
+            .section-title { font-size: 16px; }
+            .section-subtitle { font-size: 12px; }
         }
     </style>
 </head>
@@ -930,6 +943,7 @@
     </div>
 
 </aside>
+<div id="sidebarOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99;"></div>
 
 {{-- ===== TOPBAR ===== --}}
 <header class="topbar" id="topbar">
@@ -1125,7 +1139,14 @@ window.confirmAction = function ({ title = 'Confirmar ação', message = '', con
 
 // ── Sidebar mobile toggle ─────────────────────────────────────────────────
 document.getElementById('sidebarToggle')?.addEventListener('click', () => {
-    document.getElementById('sidebar').classList.toggle('open');
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('sidebarOverlay');
+    sb.classList.toggle('open');
+    ov.style.display = sb.classList.contains('open') ? 'block' : 'none';
+});
+document.getElementById('sidebarOverlay')?.addEventListener('click', () => {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').style.display = 'none';
 });
 
 // ── Flash messages ────────────────────────────────────────────────────────

@@ -237,6 +237,13 @@
 
     .analytics-loader { text-align: center; padding: 30px; color: #9ca3af; font-size: 13px; }
     .analytics-empty { text-align: center; padding: 30px; color: #9ca3af; font-size: 13px; }
+
+    /* ── Mobile ── */
+    @media (max-width: 480px) {
+        .kpi-grid { grid-template-columns: 1fr 1fr; }
+        .kpi-value { font-size: 20px; }
+        .top-card { padding: 12px 14px; }
+    }
 </style>
 @endpush
 

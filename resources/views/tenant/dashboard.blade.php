@@ -5,7 +5,7 @@
 
 @section('topbar_actions')
 <div class="topbar-actions">
-    <span style="font-size:13px;color:#6b7280;">
+    <span class="topbar-date" style="font-size:13px;color:#6b7280;">
         {{ now()->translatedFormat('l, d \d\e F') }}
     </span>
     <button class="topbar-btn" onclick="openCustomize()" title="Personalizar dashboard">
@@ -362,6 +362,19 @@
     }
     .btn-apply:hover { background: #2563EB; }
     .btn-apply:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+        .topbar-date { display: none; }
+    }
+    @media (max-width: 480px) {
+        .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .stat-card { padding: 12px 14px; }
+        .stat-value { font-size: 18px; }
+        .content-card-header { padding: 12px 14px; flex-wrap: wrap; gap: 8px; }
+        .content-card-body { padding: 14px; }
+        .welcome-banner-sub { font-size: 12.5px; }
+    }
 </style>
 @endpush
 

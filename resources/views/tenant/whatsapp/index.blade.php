@@ -1000,6 +1000,26 @@ $pageIcon = 'chat-dots';
     .lead-search-item:hover { background: #f3f4f6; }
     .lead-search-name { font-weight: 600; color: #111827; }
     .lead-search-phone { font-size: 11px; color: #6b7280; }
+
+    /* ── Mobile ── */
+    .wa-chat-back-btn {
+        display: none;
+        width: 32px; height: 32px;
+        border: none; background: none;
+        color: #374151; font-size: 18px;
+        cursor: pointer; flex-shrink: 0;
+        align-items: center; justify-content: center;
+    }
+    @media (max-width: 768px) {
+        .wa-page { position: relative; }
+        .wa-sidebar { width: 100%; position: absolute; inset: 0; z-index: 10; }
+        .wa-chat-area { position: absolute; inset: 0; z-index: 20; display: none; flex-direction: column; }
+        .wa-chat-area.mobile-active { display: flex; }
+        .wa-details { display: none !important; }
+        .wa-chat-back-btn { display: flex; }
+        .wa-chat-header { padding: 10px 14px; gap: 8px; }
+        .wa-msg { max-width: 85%; }
+    }
 </style>
 @endpush
 
@@ -1149,6 +1169,9 @@ $pageIcon = 'chat-dots';
 
         {{-- Header do chat (oculto até abrir conversa) --}}
         <div class="wa-chat-header" id="chatHeader" style="display:none;">
+            <button class="wa-chat-back-btn" onclick="mobileBackToList()" title="Voltar">
+                <i class="bi bi-arrow-left"></i>
+            </button>
             <div class="wa-conv-avatar-wrap">
                 <div class="wa-conv-avatar" id="chatAvatar" style="width:38px;height:38px;font-size:14px;"></div>
                 <span class="wa-channel-icon whatsapp" id="chatChannelIcon" title="WhatsApp">
@@ -1896,6 +1919,10 @@ $pageIcon = 'chat-dots';
     }
 
     // ── Abrir conversa ────────────────────────────────────────────────────────────
+    function mobileBackToList() {
+        document.getElementById('chatArea').classList.remove('mobile-active');
+    }
+
     async function openConversation(convId, el) {
         activeConvId = convId;
         activeConvChannel = el.dataset.channel || 'whatsapp';
@@ -1903,6 +1930,7 @@ $pageIcon = 'chat-dots';
         document.getElementById('detailsPanel').classList.add('open');
         document.querySelectorAll('.wa-conv-item').forEach(i => i.classList.remove('active'));
         el.classList.add('active');
+        if (window.innerWidth <= 768) document.getElementById('chatArea').classList.add('mobile-active');
 
         const dot = el.querySelector('.wa-unread-dot');
         if (dot) dot.remove();

@@ -245,6 +245,19 @@
         border: none; background: #EF4444; color: #fff; cursor: pointer;
     }
     .btn-del-confirm:hover { background: #dc2626; }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+        .flow-actions {
+            overflow-x: auto; -webkit-overflow-scrolling: touch;
+            padding-bottom: 4px;
+            -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+            mask-image: linear-gradient(to right, black 90%, transparent 100%);
+        }
+        .flow-actions .btn,
+        .flow-actions button,
+        .flow-actions a { flex-shrink: 0; white-space: nowrap; }
+    }
 </style>
 @endpush
 

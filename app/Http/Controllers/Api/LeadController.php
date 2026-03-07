@@ -126,14 +126,20 @@ class LeadController extends Controller
         }
         $lead->update($updateData);
 
-        Sale::create([
-            'lead_id'     => $lead->id,
-            'campaign_id' => $lead->campaign_id,
-            'pipeline_id' => $lead->pipeline_id,
-            'value'       => $data['value'] ?? $lead->value ?? 0,
-            'closed_by'   => auth()->id(),
-            'closed_at'   => now(),
-        ]);
+        $existingSale = Sale::where('lead_id', $lead->id)
+            ->where('pipeline_id', $lead->pipeline_id)
+            ->first();
+
+        if (! $existingSale) {
+            Sale::create([
+                'lead_id'     => $lead->id,
+                'campaign_id' => $lead->campaign_id,
+                'pipeline_id' => $lead->pipeline_id,
+                'value'       => $data['value'] ?? $lead->value ?? 0,
+                'closed_by'   => auth()->id(),
+                'closed_at'   => now(),
+            ]);
+        }
 
         LeadEvent::create([
             'lead_id'      => $lead->id,
@@ -162,14 +168,20 @@ class LeadController extends Controller
 
         $lead->update(['stage_id' => $stage->id, 'pipeline_id' => $stage->pipeline_id]);
 
-        LostSale::create([
-            'lead_id'     => $lead->id,
-            'pipeline_id' => $lead->pipeline_id,
-            'campaign_id' => $lead->campaign_id,
-            'reason_id'   => $data['reason_id'] ?? null,
-            'lost_at'     => now(),
-            'lost_by'     => auth()->id(),
-        ]);
+        $existingLost = LostSale::where('lead_id', $lead->id)
+            ->where('pipeline_id', $lead->pipeline_id)
+            ->first();
+
+        if (! $existingLost) {
+            LostSale::create([
+                'lead_id'     => $lead->id,
+                'pipeline_id' => $lead->pipeline_id,
+                'campaign_id' => $lead->campaign_id,
+                'reason_id'   => $data['reason_id'] ?? null,
+                'lost_at'     => now(),
+                'lost_by'     => auth()->id(),
+            ]);
+        }
 
         LeadEvent::create([
             'lead_id'      => $lead->id,

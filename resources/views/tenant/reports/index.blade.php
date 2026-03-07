@@ -438,6 +438,18 @@
         font-size: 13px;
         line-height: 1;
     }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+        .report-filter-inner input,
+        .report-filter-inner select { min-height: 40px; font-size: 14px; }
+        .btn-apply, .btn-clear { min-height: 40px; padding: 10px 16px; font-size: 14px; }
+    }
+    @media (max-width: 480px) {
+        .kpi-grid { grid-template-columns: 1fr 1fr; }
+        .kpi-value { font-size: 20px; }
+        .report-section-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    }
 </style>
 @endpush
 
