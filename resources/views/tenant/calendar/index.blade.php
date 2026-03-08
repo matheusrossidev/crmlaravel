@@ -337,7 +337,7 @@
     background: #0085f3;
     color: #fff;
     border: none;
-    border-radius: 16px;
+    border-radius: 50%;
     font-size: 22px;
     cursor: pointer;
     z-index: 100;

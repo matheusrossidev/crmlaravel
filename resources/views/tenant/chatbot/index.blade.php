@@ -246,8 +246,33 @@
     }
     .btn-del-confirm:hover { background: #dc2626; }
 
+    /* ── FAB mobile ── */
+    .chatbot-fab {
+        display: none;
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 52px;
+        height: 52px;
+        background: #0085f3;
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        font-size: 22px;
+        cursor: pointer;
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 16px rgba(0,133,243,.35);
+        transition: transform .15s, box-shadow .15s;
+        text-decoration: none;
+    }
+    .chatbot-fab:hover { transform: scale(1.06); box-shadow: 0 6px 24px rgba(0,133,243,.45); }
+
     /* ── Mobile ── */
     @media (max-width: 768px) {
+        .topbar-actions .btn-primary-sm { display: none !important; }
+        .chatbot-fab { display: flex; }
         .flow-actions {
             overflow-x: auto; -webkit-overflow-scrolling: touch;
             padding-bottom: 4px;
@@ -749,4 +774,8 @@ function closeWidgetTest() {
         </div>
     </div>
 </div>
+
+<a href="{{ route('chatbot.flows.create') }}" class="chatbot-fab" aria-label="Novo Fluxo">
+    <i class="bi bi-plus-lg"></i>
+</a>
 @endsection

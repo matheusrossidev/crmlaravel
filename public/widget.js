@@ -157,6 +157,12 @@
         '.syncro-send:disabled{opacity:.4;cursor:default;box-shadow:none;}',
         '.syncro-send svg{width:17px;height:17px;fill:currentColor;}',
 
+        /* ── Brand bar ────────────────────────────────────── */
+        '.syncro-brand{text-align:center;padding:6px 16px;border-top:1px solid #f0f2f7;flex-shrink:0;}',
+        '.syncro-brand a{display:inline-flex;align-items:center;gap:4px;text-decoration:none;font-size:11px;color:#9ca3af;transition:color .15s;}',
+        '.syncro-brand a:hover{color:#6b7280;}',
+        '.syncro-brand img{height:13px;}',
+
         /* ── Mobile responsive ─────────────────────────────── */
         '@media(max-width:480px){#syncro-panel{width:calc(100vw - 16px);right:8px;bottom:8px;max-height:calc(100vh - 16px);border-radius:12px;}}',
     ].join('');
@@ -183,6 +189,11 @@
             '  <button class="syncro-send" id="syncro-send" aria-label="Enviar">',
             '    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
             '  </button>',
+            '</div>',
+            '<div class="syncro-brand" id="syncro-brand" style="display:none;">',
+            '  <a href="https://syncro.chat" target="_blank" rel="noopener">',
+            '    Feito com <img src="' + apiBase + '/images/logo.png" alt="Syncro">',
+            '  </a>',
             '</div>',
         ].join('');
     }
@@ -587,9 +598,11 @@
         hdrName       = document.getElementById('syncro-hdr-name');
         hdrAvatarWrap = document.getElementById('syncro-hdr-avatar-wrap');
 
-        // Show close button in bubble mode
+        // Show close button and brand bar in bubble mode
         var closeBtn = document.getElementById('syncro-close');
         if (closeBtn) closeBtn.style.display = '';
+        var brandBar = document.getElementById('syncro-brand');
+        if (brandBar) brandBar.style.display = '';
 
         openChat = function() {
             isOpen = true;
