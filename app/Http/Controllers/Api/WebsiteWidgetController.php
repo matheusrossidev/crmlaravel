@@ -121,6 +121,11 @@ class WebsiteWidgetController extends Controller
             $replies   = $result['replies'] ?? [];
             $buttons   = $result['buttons'] ?? [];
             $inputType = $result['input_type'] ?? 'text';
+        } elseif (! $isNew && ! empty($conversation->chatbot_cursor['waiting'])) {
+            $service   = new WebsiteChatService();
+            $state     = $service->getCurrentInputState($conversation);
+            $buttons   = $state['buttons'];
+            $inputType = $state['input_type'];
         }
 
         return response()->json([

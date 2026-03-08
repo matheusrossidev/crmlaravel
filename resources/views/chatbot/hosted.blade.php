@@ -64,8 +64,11 @@
             <div id="syncro-chat"></div>
         </div>
         <div class="hosted-footer">
-            <span>Powered by</span>
-            <a href="https://syncro.chat" target="_blank" rel="noopener">Syncro</a>
+            <a href="https://syncro.chat" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;">
+                <span>Feito com</span>
+                <img src="{{ asset('images/logo.png') }}" alt="Syncro" style="height:16px;">
+                <span style="font-weight:600;color:#6b7280;">Syncro</span>
+            </a>
         </div>
     </div>
 

@@ -17,6 +17,52 @@ class WebsiteChatService
     private const MAX_ITERATIONS = 30;
 
     /**
+     * Retorna o estado atual de input (buttons + input_type) para conversas em waiting.
+     * Usado pelo init para restaurar botões ao recarregar a página.
+     *
+     * @return array{buttons: array, input_type: string}
+     */
+    public function getCurrentInputState(WebsiteConversation $conv): array
+    {
+        $conv->load('flow');
+        if (! $conv->flow) {
+            return ['buttons' => [], 'input_type' => 'text'];
+        }
+
+        $cursor = $conv->chatbot_cursor;
+        if (empty($cursor['waiting'])) {
+            return ['buttons' => [], 'input_type' => 'text'];
+        }
+
+        $steps   = $conv->flow->steps ?? [];
+        $path    = $cursor['path'] ?? [];
+        $index   = $cursor['index'] ?? 0;
+        $stepsAt = $this->resolveStepsAtPath($steps, $path);
+        $step    = $stepsAt[$index] ?? null;
+
+        if (! $step || $step['type'] !== 'input') {
+            return ['buttons' => [], 'input_type' => 'text'];
+        }
+
+        $config    = $step['config'] ?? [];
+        $inputType = $config['field_type'] ?? 'text';
+        $buttons   = [];
+
+        if (! empty($config['show_buttons'])) {
+            foreach ($step['branches'] ?? [] as $branch) {
+                $label    = (string) ($branch['label'] ?? '');
+                $keywords = (array) ($branch['keywords'] ?? []);
+                $value    = $keywords[0] ?? $label;
+                if ($label !== '') {
+                    $buttons[] = ['label' => $label, 'value' => $value];
+                }
+            }
+        }
+
+        return ['buttons' => $buttons, 'input_type' => $inputType];
+    }
+
+    /**
      * Processa a mensagem do visitante usando a árvore de steps (JSON).
      * Retorna array com replies, buttons e input_type.
      *
