@@ -639,35 +639,33 @@
                     <thead>
                         <tr>
                             <th>Campanha</th>
-                            <th class="num">Investido</th>
                             <th class="num">Leads</th>
-                            <th class="num">C/Lead</th>
+                            <th class="num">Conversoes</th>
+                            <th class="num">Conv.%</th>
                             <th class="num">Receita</th>
-                            <th class="num">ROI</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($campaignRows as $row)
                         <tr>
                             <td style="font-size:12px;">
-                                <span style="font-weight:600;color:#1a1d23;">{{ $row['campaign']->name }}</span><br>
-                                <span style="font-size:11px;color:#9ca3af;">{{ $row['campaign']->platform === 'facebook' ? 'Facebook' : 'Google' }}</span>
+                                <span style="font-weight:600;color:#1a1d23;">{{ $row['name'] }}</span><br>
+                                <span style="font-size:11px;color:#9ca3af;">{{ $row['source'] }}</span>
                             </td>
-                            <td class="num">{{ $row['spend'] > 0 ? 'R$ '.number_format($row['spend'], 0, ',', '.') : '—' }}</td>
                             <td class="num" style="font-weight:700;color:#3B82F6;">{{ $row['leads_count'] }}</td>
-                            <td class="num">{{ $row['cost_per_lead'] !== null ? 'R$ '.number_format($row['cost_per_lead'], 0, ',', '.') : '—' }}</td>
-                            <td class="num" style="color:#10B981;font-weight:700;">{{ $row['revenue'] > 0 ? 'R$ '.number_format($row['revenue'], 0, ',', '.') : '—' }}</td>
+                            <td class="num" style="font-weight:600;">{{ $row['sales_count'] }}</td>
                             <td class="num">
-                                @if($row['roi'] !== null)
-                                    <span class="{{ $row['roi'] >= 0 ? 'roi-positive' : 'roi-negative' }}">{{ $row['roi'] >= 0 ? '+' : '' }}{{ $row['roi'] }}%</span>
+                                @if($row['conv'] > 0)
+                                    <span style="color:#10B981;font-weight:600;">{{ $row['conv'] }}%</span>
                                 @else
-                                    <span class="roi-neutral">—</span>
+                                    <span style="color:#9ca3af;">0%</span>
                                 @endif
                             </td>
+                            <td class="num" style="color:#10B981;font-weight:700;">{{ $row['revenue'] > 0 ? 'R$ '.number_format($row['revenue'], 0, ',', '.') : '—' }}</td>
                         </tr>
                         @empty
                         <tr class="empty-row">
-                            <td colspan="6">
+                            <td colspan="5">
                                 <i class="bi bi-megaphone" style="font-size:28px;opacity:.2;display:block;margin-bottom:6px;"></i>
                                 Nenhuma campanha com dados
                             </td>

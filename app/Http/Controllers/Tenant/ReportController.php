@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
-use App\Models\AdSpend;
 use App\Models\Campaign;
 use App\Models\Lead;
 use App\Models\LeadEvent;
@@ -18,6 +17,7 @@ use App\Models\WhatsappConversation;
 use App\Models\WhatsappMessage;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class ReportController extends Controller
@@ -111,36 +111,38 @@ class ReportController extends Controller
         // 2. CAMPANHAS
         // ══════════════════════════════════════════════════════════════════════
 
-        $campaignRows = Campaign::when($filterCampaign, fn ($q) => $q->where('id', $filterCampaign))
+        $campaignRows = Lead::where('exclude_from_pipeline', false)
+            ->whereBetween('leads.created_at', [$dateFrom, $dateTo])
+            ->whereNotNull('leads.utm_campaign')
+            ->when($filterPipeline, fn ($q) => $q->where('leads.pipeline_id', $filterPipeline))
+            ->when($filterUser, fn ($q) => $q->where('leads.assigned_to', $filterUser))
+            ->select([
+                'leads.utm_campaign',
+                DB::raw('COALESCE(leads.utm_source, "(direto)") as utm_source'),
+                DB::raw('COUNT(DISTINCT leads.id) as leads_count'),
+                DB::raw('COUNT(DISTINCT sales.id) as sales_count'),
+                DB::raw('COALESCE(SUM(sales.value), 0) as revenue'),
+            ])
+            ->leftJoin('sales', 'sales.lead_id', '=', 'leads.id')
+            ->groupBy('leads.utm_campaign', DB::raw('COALESCE(leads.utm_source, "(direto)")'))
+            ->orderByDesc('leads_count')
             ->get()
-            ->map(function (Campaign $campaign) use ($dateFrom, $dateTo) {
-                $spends = AdSpend::where('campaign_id', $campaign->id)
-                    ->whereBetween('date', [$dateFrom->toDateString(), $dateTo->toDateString()])
-                    ->get();
-
-                $spend       = (float) $spends->sum('spend');
-                $impressions = (int)   $spends->sum('impressions');
-                $clicks      = (int)   $spends->sum('clicks');
-                $leadsCount  = Lead::where('exclude_from_pipeline', false)
-                    ->where('campaign_id', $campaign->id)
-                    ->whereBetween('created_at', [$dateFrom, $dateTo])->count();
-                $revenue     = (float) (Sale::where('campaign_id', $campaign->id)
-                    ->whereBetween('closed_at', [$dateFrom, $dateTo])->sum('value') ?? 0);
-
+            ->groupBy('utm_campaign')
+            ->map(function ($rows, $campaignName) {
+                $leadsCount = (int) $rows->sum('leads_count');
+                $salesCount = (int) $rows->sum('sales_count');
+                $revenue    = (float) $rows->sum('revenue');
+                $source     = $rows->first()->utm_source ?? '—';
                 return [
-                    'campaign'     => $campaign,
-                    'spend'        => $spend,
-                    'impressions'  => $impressions,
-                    'clicks'       => $clicks,
-                    'ctr'          => $impressions > 0 ? round($clicks / $impressions * 100, 2) : null,
-                    'leads_count'  => $leadsCount,
-                    'cost_per_lead'=> $leadsCount > 0 ? round($spend / $leadsCount, 2) : null,
-                    'revenue'      => $revenue,
-                    'roi'          => $spend > 0 ? round(($revenue - $spend) / $spend * 100, 1) : null,
+                    'name'          => $campaignName,
+                    'source'        => $source,
+                    'leads_count'   => $leadsCount,
+                    'sales_count'   => $salesCount,
+                    'revenue'       => $revenue,
+                    'conv'          => $leadsCount > 0 ? round($salesCount / $leadsCount * 100, 1) : 0,
                 ];
             })
-            ->filter(fn ($row) => $row['spend'] > 0 || $row['leads_count'] > 0)
-            ->sortByDesc('revenue')
+            ->sortByDesc('leads_count')
             ->values();
 
         // ══════════════════════════════════════════════════════════════════════
