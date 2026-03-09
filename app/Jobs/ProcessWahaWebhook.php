@@ -575,6 +575,22 @@ class ProcessWahaWebhook implements ShouldQueue
 
         $body = $msg['body'] ?? $msg['caption'] ?? null;
 
+        // Detectar mensagem de localização (WAHA envia como text sem hasMedia)
+        if ($type === 'text') {
+            $wahaType = $msg['_data']['type'] ?? $msg['type'] ?? null;
+            if ($wahaType === 'location' || isset($msg['location'])) {
+                $type = 'location';
+                $lat  = $msg['_data']['lat']  ?? $msg['location']['latitude']  ?? null;
+                $lng  = $msg['_data']['lng']  ?? $msg['location']['longitude'] ?? null;
+                $addr = $msg['_data']['loc']  ?? $msg['location']['address']   ?? '';
+                if ($lat && $lng) {
+                    $body = ($addr ? "Localização: {$addr}\n" : '')
+                          . "Coordenadas: {$lat}, {$lng}\n"
+                          . "https://maps.google.com/?q={$lat},{$lng}";
+                }
+            }
+        }
+
         // Auto-trigger de chatbot: verifica keyword em QUALQUER mensagem inbound sem flow ativo.
         // DEVE ficar APÓS a atribuição de $body (acima) para comparar a mensagem correta.
         // Não ativar chatbot se a conversa já tem agente de IA — exclusividade mútua.

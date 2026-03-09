@@ -802,7 +802,13 @@ $pageIcon = 'person-badge';
                     <div class="lp-tl-body">
                         <div class="lp-tl-desc">{{ $event->description }}</div>
                         <div class="lp-tl-meta">
-                            por {{ $event->performedBy?->name ?? 'Sistema' }}
+                            @if($event->performedBy)
+                                por {{ $event->performedBy->name }}
+                            @elseif(($event->data_json['source'] ?? '') === 'ai_agent')
+                                por Agente de IA
+                            @else
+                                por Sistema
+                            @endif
                             · {{ $event->created_at?->format('d/m/Y H:i') }}
                         </div>
                     </div>

@@ -625,6 +625,20 @@ class ProcessAiResponse implements ShouldQueue
             'created_at'   => now(),
         ]);
 
+        // Mensagem de evento visível no chat
+        WhatsappMessage::withoutGlobalScope('tenant')->create([
+            'tenant_id'       => $conv->tenant_id,
+            'conversation_id' => $conv->id,
+            'waha_message_id' => null,
+            'direction'       => 'outbound',
+            'type'            => 'event',
+            'body'            => "Agente {$agent->name} moveu para etapa \"{$stageName}\"",
+            'media_filename'  => 'Etapa alterada',
+            'media_mime'      => 'ai_stage_changed',
+            'sent_at'         => now(),
+            'ack'             => 'delivered',
+        ]);
+
         Log::channel('whatsapp')->info('AI: lead movido de etapa', [
             'conversation_id' => $conv->id,
             'contact_name'    => $conv->contact_name ?? $conv->phone,
@@ -692,6 +706,20 @@ class ProcessAiResponse implements ShouldQueue
             ]);
         }
 
+        // Mensagem de evento visível no chat
+        WhatsappMessage::withoutGlobalScope('tenant')->create([
+            'tenant_id'       => $conv->tenant_id,
+            'conversation_id' => $conv->id,
+            'waha_message_id' => null,
+            'direction'       => 'outbound',
+            'type'            => 'event',
+            'body'            => "Agente {$agent->name} transferiu a conversa para atendimento humano",
+            'media_filename'  => 'Transferido para humano',
+            'media_mime'      => 'ai_assign_human',
+            'sent_at'         => now(),
+            'ack'             => 'delivered',
+        ]);
+
         Log::channel('whatsapp')->info('AI: conversa transferida para humano', [
             'conversation_id'  => $conv->id,
             'contact_name'     => $conv->contact_name ?? $conv->phone,
@@ -727,6 +755,23 @@ class ProcessAiResponse implements ShouldQueue
                 'created_at'   => now(),
             ]);
         }
+
+        // Mensagem de evento visível no chat
+        $tagLabel = count($newTags) === 1
+            ? "tag \"{$newTags[0]}\""
+            : count($newTags) . ' tags: ' . implode(', ', $newTags);
+        WhatsappMessage::withoutGlobalScope('tenant')->create([
+            'tenant_id'       => $conv->tenant_id,
+            'conversation_id' => $conv->id,
+            'waha_message_id' => null,
+            'direction'       => 'outbound',
+            'type'            => 'event',
+            'body'            => "Agente {$agent->name} adicionou {$tagLabel}",
+            'media_filename'  => 'Tag adicionada',
+            'media_mime'      => 'ai_tag_added',
+            'sent_at'         => now(),
+            'ack'             => 'delivered',
+        ]);
 
         Log::channel('whatsapp')->info('AI: tags adicionadas', [
             'conversation_id' => $conv->id,
@@ -792,6 +837,7 @@ class ProcessAiResponse implements ShouldQueue
                         'event_id'        => $event['id'] ?? null,
                         'title'           => $action['title'] ?? '',
                     ]);
+                    $eventTitle = $action['title'] ?? 'Evento';
                     $dateFormatted = \Carbon\Carbon::parse($startStr)
                         ->setTimezone(config('app.timezone', 'America/Sao_Paulo'))
                         ->format('d/m/Y \à\s H:i');
@@ -800,6 +846,21 @@ class ProcessAiResponse implements ShouldQueue
                     if ($attendee) {
                         $msg .= " O convite foi enviado para {$attendee}.";
                     }
+
+                    // Mensagem de evento visível no chat
+                    WhatsappMessage::withoutGlobalScope('tenant')->create([
+                        'tenant_id'       => $conv->tenant_id,
+                        'conversation_id' => $conv->id,
+                        'waha_message_id' => null,
+                        'direction'       => 'outbound',
+                        'type'            => 'event',
+                        'body'            => "Agente agendou \"{$eventTitle}\" para {$dateFormatted}",
+                        'media_filename'  => 'Evento agendado',
+                        'media_mime'      => 'ai_calendar_create',
+                        'sent_at'         => now(),
+                        'ack'             => 'delivered',
+                    ]);
+
                     return $msg;
 
                 case 'calendar_reschedule':

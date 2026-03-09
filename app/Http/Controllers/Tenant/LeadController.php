@@ -20,6 +20,7 @@ use App\Models\PipelineStage;
 use App\Models\User;
 use App\Models\ScheduledMessage;
 use App\Models\WhatsappConversation;
+use App\Models\WhatsappMessage;
 use App\Models\WhatsappQuickMessage;
 use App\Services\AutomationEngine;
 use Illuminate\Http\JsonResponse;
@@ -281,6 +282,25 @@ class LeadController extends Controller
                 'performed_by' => auth()->id(),
                 'created_at'   => now(),
             ]);
+
+            // Mensagem de evento visível no chat WhatsApp vinculado
+            $waConv = WhatsappConversation::withoutGlobalScope('tenant')
+                ->where('lead_id', $lead->id)
+                ->first();
+            if ($waConv) {
+                WhatsappMessage::withoutGlobalScope('tenant')->create([
+                    'tenant_id'       => $lead->tenant_id,
+                    'conversation_id' => $waConv->id,
+                    'waha_message_id' => null,
+                    'direction'       => 'outbound',
+                    'type'            => 'event',
+                    'body'            => auth()->user()->name . " moveu para etapa \"{$newStage?->name}\"",
+                    'media_filename'  => 'Etapa alterada',
+                    'media_mime'      => 'user_stage_changed',
+                    'sent_at'         => now(),
+                    'ack'             => 'delivered',
+                ]);
+            }
         } else {
             LeadEvent::create([
                 'lead_id'      => $lead->id,

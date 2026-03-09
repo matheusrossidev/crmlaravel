@@ -357,7 +357,7 @@ WAFMT;
         $messages = WhatsappMessage::withoutGlobalScope('tenant')
             ->where('conversation_id', $conv->id)
             ->where('is_deleted', false)
-            ->whereIn('type', ['text', 'image', 'audio'])
+            ->whereIn('type', ['text', 'image', 'audio', 'video', 'document', 'location', 'event'])
             ->orderByDesc('sent_at')
             ->limit($limit)
             ->get()
@@ -369,8 +369,8 @@ WAFMT;
         foreach ($messages as $msg) {
             $role = $msg->direction === 'inbound' ? 'user' : 'assistant';
 
-            // Texto puro, sem mídia, ou áudio com transcrição disponível no body
-            if ($msg->type === 'text' || ! $msg->media_url || ($msg->type === 'audio' && $msg->body)) {
+            // Texto puro, localização, ou áudio com transcrição disponível no body
+            if ($msg->type === 'text' || $msg->type === 'location' || ! $msg->media_url || ($msg->type === 'audio' && $msg->body)) {
                 $history[] = [
                     'role'    => $role,
                     'content' => $msg->body ?? '',
@@ -378,11 +378,50 @@ WAFMT;
                 continue;
             }
 
+            // Imagens — enviar via Vision API (multimodal com base64)
+            if ($msg->type === 'image' && $msg->media_url) {
+                $content   = [];
+                $imagePath = $this->resolveMediaPath($msg->media_url);
+                if ($imagePath) {
+                    $mime = $msg->media_mime ?: 'image/jpeg';
+                    $b64  = base64_encode(file_get_contents($imagePath));
+                    // Limitar a ~1MB de base64 (~750KB de imagem real)
+                    if (strlen($b64) > 1_000_000) {
+                        $b64 = $this->resizeImageBase64($imagePath, 1024, $mime);
+                    }
+                    if ($b64) {
+                        $content[] = ['type' => 'image_url', 'image_url' => ['url' => "data:{$mime};base64,{$b64}"]];
+                    }
+                }
+                if ($msg->body) {
+                    $content[] = ['type' => 'text', 'text' => $msg->body];
+                } elseif (empty($content)) {
+                    $content[] = ['type' => 'text', 'text' => '[imagem enviada]'];
+                }
+                $history[] = ['role' => $role, 'content' => $content];
+                continue;
+            }
+
+            // Documentos / PDFs — extrair texto quando possível
+            if ($msg->type === 'document' && $msg->media_url) {
+                $docInfo = '[documento: ' . ($msg->media_filename ?: 'arquivo') . ']';
+                if ($msg->media_mime === 'application/pdf') {
+                    $pdfPath = $this->resolveMediaPath($msg->media_url);
+                    if ($pdfPath) {
+                        $pdfText = $this->extractPdfText($pdfPath);
+                        if ($pdfText) {
+                            $docInfo = "Conteúdo do PDF ({$msg->media_filename}):\n{$pdfText}";
+                        }
+                    }
+                }
+                $history[] = ['role' => $role, 'content' => ($msg->body ? $msg->body . "\n" : '') . $docInfo];
+                continue;
+            }
+
+            // Vídeos, áudio sem transcrição e demais — placeholder
             $label = match ($msg->type) {
-                'image'    => '[imagem enviada]',
+                'video'    => '[vídeo enviado' . ($msg->media_filename ? ': ' . $msg->media_filename : '') . ']',
                 'audio'    => '[áudio enviado]',
-                'video'    => '[vídeo enviado]',
-                'document' => '[documento enviado]',
                 default    => '[mídia enviada]',
             };
             $history[] = [
@@ -392,6 +431,78 @@ WAFMT;
         }
 
         return $history;
+    }
+
+    /**
+     * Resolve media_url para caminho absoluto no filesystem.
+     */
+    private function resolveMediaPath(string $mediaUrl): ?string
+    {
+        // media_url: "/storage/whatsapp/image/media_xxx.jpg"
+        if (str_starts_with($mediaUrl, '/storage/')) {
+            $relative = substr($mediaUrl, strlen('/storage/'));
+            $path     = storage_path('app/public/' . $relative);
+            return file_exists($path) ? $path : null;
+        }
+        // Produção: URL completa como "https://app.syncro.chat/storage/whatsapp/..."
+        $parsed = parse_url($mediaUrl, PHP_URL_PATH);
+        if ($parsed && str_contains($parsed, '/storage/')) {
+            $relative = substr($parsed, strpos($parsed, '/storage/') + strlen('/storage/'));
+            $path     = storage_path('app/public/' . $relative);
+            return file_exists($path) ? $path : null;
+        }
+        return null;
+    }
+
+    /**
+     * Redimensiona imagem para max dimension e retorna base64.
+     */
+    private function resizeImageBase64(string $path, int $maxDim, string $mime): ?string
+    {
+        try {
+            $img = @imagecreatefromstring(file_get_contents($path));
+            if (! $img) {
+                return null;
+            }
+            $w = imagesx($img);
+            $h = imagesy($img);
+            if ($w <= $maxDim && $h <= $maxDim) {
+                imagedestroy($img);
+                return base64_encode(file_get_contents($path));
+            }
+            $ratio  = min($maxDim / $w, $maxDim / $h);
+            $newW   = (int) ($w * $ratio);
+            $newH   = (int) ($h * $ratio);
+            $resized = imagecreatetruecolor($newW, $newH);
+            imagecopyresampled($resized, $img, 0, 0, 0, 0, $newW, $newH, $w, $h);
+            ob_start();
+            if (str_contains($mime, 'png')) {
+                imagepng($resized);
+            } else {
+                imagejpeg($resized, null, 85);
+            }
+            $data = ob_get_clean();
+            imagedestroy($img);
+            imagedestroy($resized);
+            return base64_encode($data);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Extrai texto de um PDF usando smalot/pdfparser.
+     */
+    private function extractPdfText(string $path): ?string
+    {
+        try {
+            $parser = new \Smalot\PdfParser\Parser();
+            $pdf    = $parser->parseFile($path);
+            $text   = $pdf->getText();
+            return mb_substr(trim($text), 0, 2000) ?: null;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

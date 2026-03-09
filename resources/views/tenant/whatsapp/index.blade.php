@@ -529,7 +529,7 @@ $pageIcon = 'chat-dots';
 
     .wa-msg.note {
         align-self: center;
-        max-width: 80%;
+        max-width: 75%;
     }
 
     .wa-bubble {
@@ -558,10 +558,11 @@ $pageIcon = 'chat-dots';
     .wa-msg.outbound .wa-ack.read i { color: rgba(255,255,255,.9); }
 
     .wa-msg.note .wa-bubble {
-        background: #fef9c3;
-        border-radius: 10px;
+        background: #fefce8;
+        border-radius: 0 10px 10px 0;
         width: 100%;
-        border-left: 3px solid #F59E0B;
+        border-left: 3px solid #f59e0b;
+        padding: 10px 14px;
     }
 
     .wa-bubble.deleted {
@@ -606,8 +607,35 @@ $pageIcon = 'chat-dots';
         display: flex;
         align-items: center;
         gap: 4px;
-        margin-bottom: 4px;
+        margin-bottom: 6px;
     }
+    .wa-note-time {
+        font-size: 10.5px;
+        color: #a16207;
+        margin-top: 6px;
+        text-align: right;
+    }
+
+    /* Evento/Ação no chat */
+    .wa-msg.event { align-self: center; max-width: 85%; }
+    .wa-event-box {
+        display: flex; align-items: flex-start; gap: 10px;
+        background: #f8fafc; border: 1px solid #e8eaf0;
+        border-left: 3px solid #3b82f6;
+        border-radius: 0 10px 10px 0; padding: 10px 14px;
+    }
+    .wa-event-box.ai { border-left-color: #10b981; }
+    .wa-event-icon {
+        width: 28px; height: 28px; border-radius: 7px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px; flex-shrink: 0;
+        background: #eff6ff; color: #3b82f6;
+    }
+    .wa-event-box.ai .wa-event-icon { background: #ecfdf5; color: #10b981; }
+    .wa-event-content { flex: 1; min-width: 0; }
+    .wa-event-title { font-size: 12px; font-weight: 700; color: #1a1d23; margin-bottom: 2px; }
+    .wa-event-desc { font-size: 12px; color: #6b7280; line-height: 1.4; }
+    .wa-event-time { font-size: 10px; color: #9ca3af; margin-top: 4px; }
 
     /* Reações */
     .wa-reactions {
@@ -2092,9 +2120,49 @@ $pageIcon = 'chat-dots';
     function buildMessageEl(msg) {
         const isNote = msg.type === 'note';
         const isReaction = msg.type === 'reaction';
+        const isEvent = msg.type === 'event';
 
         if (isReaction) {
             return document.createComment('reaction');
+        }
+
+        // Evento/Ação (IA ou usuário)
+        if (isEvent) {
+            const wrap = document.createElement('div');
+            wrap.className = 'wa-msg event';
+            wrap.dataset.id = msg.id;
+            const isAi = (msg.media_mime || '').startsWith('ai_');
+            const box = document.createElement('div');
+            box.className = 'wa-event-box' + (isAi ? ' ai' : '');
+
+            const icon = document.createElement('div');
+            icon.className = 'wa-event-icon';
+            icon.innerHTML = isAi ? '<i class="bi bi-robot"></i>' : '<i class="bi bi-person-gear"></i>';
+            box.appendChild(icon);
+
+            const content = document.createElement('div');
+            content.className = 'wa-event-content';
+
+            const title = document.createElement('div');
+            title.className = 'wa-event-title';
+            title.textContent = msg.media_filename || 'Ação realizada';
+            content.appendChild(title);
+
+            if (msg.body) {
+                const desc = document.createElement('div');
+                desc.className = 'wa-event-desc';
+                desc.textContent = msg.body;
+                content.appendChild(desc);
+            }
+
+            const time = document.createElement('div');
+            time.className = 'wa-event-time';
+            time.textContent = msg.sent_at ? new Date(msg.sent_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+            content.appendChild(time);
+
+            box.appendChild(content);
+            wrap.appendChild(box);
+            return wrap;
         }
 
         const dir = msg.direction;
@@ -2165,6 +2233,13 @@ $pageIcon = 'chat-dots';
         }
 
         wrap.appendChild(bubble);
+
+        if (isNote && msg.sent_at) {
+            const noteTime = document.createElement('div');
+            noteTime.className = 'wa-note-time';
+            noteTime.textContent = new Date(msg.sent_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            wrap.appendChild(noteTime);
+        }
 
         if (!isNote) {
             const meta = document.createElement('div');
@@ -3032,6 +3107,7 @@ $pageIcon = 'chat-dots';
             conv.last_message_type === 'share'    ? '📷 Publicação' :
             conv.last_message_type === 'audio'    ? '🎵 Áudio'      :
             conv.last_message_type === 'document' ? '📎 Arquivo'    :
+            conv.last_message_type === 'event'    ? 'Ação realizada' :
             conv.last_message_type === 'note'     ? '🔒 Nota'       :
             (conv.last_message_body || '').substring(0, 40);
 
