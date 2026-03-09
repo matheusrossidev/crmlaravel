@@ -190,21 +190,28 @@ class KanbanController extends Controller
             ]);
 
             // Mensagem de evento visível no chat WhatsApp vinculado
-            $waConv = WhatsappConversation::withoutGlobalScope('tenant')
-                ->where('lead_id', $lead->id)
-                ->first();
-            if ($waConv) {
-                WhatsappMessage::withoutGlobalScope('tenant')->create([
-                    'tenant_id'       => $lead->tenant_id,
-                    'conversation_id' => $waConv->id,
-                    'waha_message_id' => null,
-                    'direction'       => 'outbound',
-                    'type'            => 'event',
-                    'body'            => auth()->user()->name . " moveu para etapa \"{$newStage?->name}\"",
-                    'media_filename'  => 'Etapa alterada',
-                    'media_mime'      => 'user_stage_changed',
-                    'sent_at'         => now(),
-                    'ack'             => 'delivered',
+            try {
+                $waConv = WhatsappConversation::withoutGlobalScope('tenant')
+                    ->where('lead_id', $lead->id)
+                    ->first();
+                if ($waConv) {
+                    WhatsappMessage::withoutGlobalScope('tenant')->create([
+                        'tenant_id'       => $lead->tenant_id,
+                        'conversation_id' => $waConv->id,
+                        'waha_message_id' => null,
+                        'direction'       => 'outbound',
+                        'type'            => 'event',
+                        'body'            => auth()->user()->name . " moveu para etapa \"{$newStage?->name}\"",
+                        'media_filename'  => 'Etapa alterada',
+                        'media_mime'      => 'user_stage_changed',
+                        'sent_at'         => now(),
+                        'ack'             => 'delivered',
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                \Log::error('Falha ao criar evento WhatsApp (kanban)', [
+                    'lead_id' => $lead->id,
+                    'error'   => $e->getMessage(),
                 ]);
             }
 

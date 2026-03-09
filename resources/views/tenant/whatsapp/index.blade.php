@@ -530,17 +530,15 @@ $pageIcon = 'chat-dots';
     .wa-msg.note, .wa-msg.event {
         align-self: center;
         width: 100%;
-        position: relative;
         display: flex;
         align-items: center;
-        justify-content: center;
+        gap: 10px;
         padding: 8px 0;
     }
-    .wa-msg.note::before, .wa-msg.event::before {
+    .wa-msg.note::before, .wa-msg.event::before,
+    .wa-msg.note::after, .wa-msg.event::after {
         content: '';
-        position: absolute;
-        top: 50%;
-        left: 0; right: 0;
+        flex: 1;
         height: 1px;
         background: #e5e7eb;
     }
@@ -608,22 +606,19 @@ $pageIcon = 'chat-dots';
 
     /* Timeline entries (eventos + notas) */
     .wa-event-box {
-        position: relative; z-index: 1;
         display: flex; align-items: center; gap: 8px;
-        background: #f4f6fb; padding: 4px 14px;
+        flex-shrink: 0; white-space: nowrap;
     }
     .wa-event-icon {
-        width: 28px; height: 28px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 12px; flex-shrink: 0;
+        font-size: 16px; flex-shrink: 0; line-height: 1;
     }
-    .wa-event-box.ai .wa-event-icon { background: #ecfdf5; color: #10b981; }
-    .wa-event-box.user .wa-event-icon { background: #eff6ff; color: #3b82f6; }
-    .wa-event-box.note-type .wa-event-icon { background: #fef3c7; color: #d97706; }
-    .wa-event-content { flex: 1; min-width: 0; }
+    .wa-event-box.ai .wa-event-icon { color: #10b981; }
+    .wa-event-box.user .wa-event-icon { color: #3b82f6; }
+    .wa-event-box.note-type .wa-event-icon { color: #d97706; }
+    .wa-event-content { flex-shrink: 0; }
     .wa-event-title { font-size: 12px; font-weight: 700; color: #1a1d23; }
-    .wa-event-desc { font-size: 12px; color: #6b7280; line-height: 1.4; }
-    .wa-event-time { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+    .wa-event-desc { font-size: 11px; color: #6b7280; line-height: 1.3; white-space: normal; }
+    .wa-event-time { font-size: 10px; color: #9ca3af; }
 
     /* Reações */
     .wa-reactions {
@@ -1670,10 +1665,11 @@ $pageIcon = 'chat-dots';
         }
     }
 
+    const CHATS_BASE = '{{ rtrim(url("/chats"), "/") }}';
     function convBaseUrl(id) {
-        if (activeConvChannel === 'instagram') return `/chats/instagram-conversations/${id}`;
-        if (activeConvChannel === 'website')   return `/chats/website-conversations/${id}`;
-        return `/chats/conversations/${id}`;
+        if (activeConvChannel === 'instagram') return `${CHATS_BASE}/instagram-conversations/${id}`;
+        if (activeConvChannel === 'website')   return `${CHATS_BASE}/website-conversations/${id}`;
+        return `${CHATS_BASE}/conversations/${id}`;
     }
     let composeMode = 'reply';
     let mediaRecorder = null;
@@ -1746,7 +1742,7 @@ $pageIcon = 'chat-dots';
             params.append('conv_channel', activeConvChannel || 'whatsapp');
         }
 
-        fetch(`/chats/poll?${params}`, {
+        fetch(`${CHATS_BASE}/poll?${params}`, {
                 headers: {
                     'Accept': 'application/json'
                 }
@@ -2143,10 +2139,15 @@ $pageIcon = 'chat-dots';
                 content.appendChild(desc);
             }
 
-            const time = document.createElement('div');
-            time.className = 'wa-event-time';
-            time.textContent = msg.sent_at ? new Date(msg.sent_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
-            content.appendChild(time);
+            if (msg.sent_at) {
+                const time = document.createElement('div');
+                time.className = 'wa-event-time';
+                const d = new Date(msg.sent_at);
+                const dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                const timeStr = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                time.textContent = `${dateStr} às ${timeStr}`;
+                content.appendChild(time);
+            }
 
             box.appendChild(content);
             wrap.appendChild(box);
@@ -2164,7 +2165,7 @@ $pageIcon = 'chat-dots';
             box.className = 'wa-event-box note-type';
             const icon = document.createElement('div');
             icon.className = 'wa-event-icon';
-            icon.innerHTML = '<i class="bi bi-sticky-fill"></i>';
+            icon.innerHTML = '<i class="bi bi-sticky"></i>';
             box.appendChild(icon);
             const content = document.createElement('div');
             content.className = 'wa-event-content';
@@ -2181,7 +2182,10 @@ $pageIcon = 'chat-dots';
             if (msg.sent_at) {
                 const time = document.createElement('div');
                 time.className = 'wa-event-time';
-                time.textContent = new Date(msg.sent_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                const d = new Date(msg.sent_at);
+                const dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                const timeStr = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                time.textContent = `${dateStr} às ${timeStr}`;
                 content.appendChild(time);
             }
             box.appendChild(content);
@@ -2402,7 +2406,7 @@ $pageIcon = 'chat-dots';
         formData.append('waha_message_id', wahaId);
         formData.append('emoji', emoji);
 
-        await fetch(`/chats/conversations/${activeConvId}/react`, {
+        await fetch(`${convBaseUrl(activeConvId)}/react`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': CSRF,
@@ -2561,7 +2565,7 @@ $pageIcon = 'chat-dots';
         if (!activeConvId) return;
         const newStatus = activeConvStatus === 'open' ? 'closed' : 'open';
 
-        const res = await fetch(`/chats/conversations/${activeConvId}/status`, {
+        const res = await fetch(`${convBaseUrl(activeConvId)}/status`, {
             method: 'PUT',
             headers: {
                 'X-CSRF-TOKEN': CSRF,
@@ -2683,7 +2687,7 @@ $pageIcon = 'chat-dots';
     }
 
     async function doLeadSearch(q) {
-        const res = await fetch(`/chats/leads/search?q=${encodeURIComponent(q)}`, {
+        const res = await fetch(`${CHATS_BASE}/leads/search?q=${encodeURIComponent(q)}`, {
             headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
         });
         const data = await res.json();
@@ -2702,10 +2706,10 @@ $pageIcon = 'chat-dots';
 
     async function linkExistingLead(leadId, lead) {
         const url = activeConvChannel === 'instagram'
-            ? `/chats/instagram-conversations/${activeConvId}/link-lead`
+            ? `${CHATS_BASE}/instagram-conversations/${activeConvId}/link-lead`
             : activeConvChannel === 'website'
-            ? `/chats/website-conversations/${activeConvId}/link-lead`
-            : `/chats/conversations/${activeConvId}/link-lead`;
+            ? `${CHATS_BASE}/website-conversations/${activeConvId}/link-lead`
+            : `${convBaseUrl(activeConvId)}/link-lead`;
 
         const res = await fetch(url, {
             method: 'PUT',
@@ -2726,10 +2730,10 @@ $pageIcon = 'chat-dots';
     async function unlinkCurrentLead() {
         if (!confirm('Desvincular este lead da conversa?')) return;
         const url = activeConvChannel === 'instagram'
-            ? `/chats/instagram-conversations/${activeConvId}/unlink-lead`
+            ? `${CHATS_BASE}/instagram-conversations/${activeConvId}/unlink-lead`
             : activeConvChannel === 'website'
-            ? `/chats/website-conversations/${activeConvId}/unlink-lead`
-            : `/chats/conversations/${activeConvId}/unlink-lead`;
+            ? `${CHATS_BASE}/website-conversations/${activeConvId}/unlink-lead`
+            : `${convBaseUrl(activeConvId)}/unlink-lead`;
 
         const res = await fetch(url, {
             method: 'PUT',
@@ -2781,10 +2785,10 @@ $pageIcon = 'chat-dots';
         if (!lead.id) return;
 
         const linkUrl = activeConvChannel === 'instagram'
-            ? `/chats/instagram-conversations/${activeConvId}/link-lead`
+            ? `${CHATS_BASE}/instagram-conversations/${activeConvId}/link-lead`
             : activeConvChannel === 'website'
-            ? `/chats/website-conversations/${activeConvId}/link-lead`
-            : `/chats/conversations/${activeConvId}/link-lead`;
+            ? `${CHATS_BASE}/website-conversations/${activeConvId}/link-lead`
+            : `${convBaseUrl(activeConvId)}/link-lead`;
         await fetch(linkUrl, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
@@ -2825,7 +2829,7 @@ $pageIcon = 'chat-dots';
 
         if (!pipelineId || !stageId) return;
 
-        await fetch(`/chats/conversations/${activeConvId}/lead`, {
+        await fetch(`${convBaseUrl(activeConvId)}/lead`, {
             method: 'PUT',
             headers: {
                 'X-CSRF-TOKEN': CSRF,
@@ -2844,7 +2848,7 @@ $pageIcon = 'chat-dots';
         if (!activeConvId) return;
         const userId = document.getElementById('assignSelect').value;
 
-        await fetch(`/chats/conversations/${activeConvId}/assign`, {
+        await fetch(`${convBaseUrl(activeConvId)}/assign`, {
             method: 'PUT',
             headers: {
                 'X-CSRF-TOKEN': CSRF,
@@ -2863,7 +2867,7 @@ $pageIcon = 'chat-dots';
         const agentId = sel ? sel.value : '';
 
         try {
-            const res = await fetch(`/chats/conversations/${activeConvId}/ai-agent`, {
+            const res = await fetch(`${convBaseUrl(activeConvId)}/ai-agent`, {
                 method: 'PUT',
                 headers: {
                     'X-CSRF-TOKEN': CSRF,
@@ -2902,7 +2906,7 @@ $pageIcon = 'chat-dots';
         const flowId = sel ? sel.value : '';
 
         try {
-            const res = await fetch(`/chats/conversations/${activeConvId}/chatbot-flow`, {
+            const res = await fetch(`${convBaseUrl(activeConvId)}/chatbot-flow`, {
                 method: 'PUT',
                 headers: {
                     'X-CSRF-TOKEN': CSRF,
@@ -2962,7 +2966,7 @@ $pageIcon = 'chat-dots';
         const phone = document.getElementById('editContactPhone').value.trim().replace(/\D/g, '');
         if (!name && !phone) return;
 
-        const res = await fetch(`/chats/conversations/${activeConvId}/contact`, {
+        const res = await fetch(`${convBaseUrl(activeConvId)}/contact`, {
             method: 'PUT',
             headers: {
                 'X-CSRF-TOKEN': CSRF,
@@ -3052,7 +3056,7 @@ $pageIcon = 'chat-dots';
     }
 
     async function saveTags() {
-        await fetch(`/chats/conversations/${activeConvId}/contact`, {
+        await fetch(`${convBaseUrl(activeConvId)}/contact`, {
             method: 'PUT',
             headers: {
                 'X-CSRF-TOKEN': CSRF,
