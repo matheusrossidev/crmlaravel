@@ -644,6 +644,13 @@ $pageIcon = 'chat-dots';
         display: block;
     }
 
+    /* Vídeo */
+    .wa-bubble video {
+        max-width: 280px;
+        border-radius: 8px;
+        display: block;
+    }
+
     /* ── Custom Audio Player ── */
     .wa-audio-player {
         display: flex;
@@ -2135,6 +2142,9 @@ $pageIcon = 'chat-dots';
                 </div>
                 <audio preload="metadata" src="${msg.media_url}" style="display:none;"></audio>
             </div>`;
+        } else if (msg.type === 'video' && msg.media_url) {
+            bubble.innerHTML = `<video src="${msg.media_url}" controls preload="metadata" style="max-width:100%;border-radius:8px;display:block;"></video>`;
+            if (msg.body) bubble.innerHTML += `<div style="margin-top:6px;font-size:13px;">${escHtml(msg.body)}</div>`;
         } else if (msg.type === 'document' && msg.media_url) {
             const fname = escHtml(msg.media_filename || 'Arquivo');
             bubble.innerHTML = `<a href="${msg.media_url}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none;"><i class="bi bi-file-earmark-text" style="font-size:20px;color:#3b82f6;flex-shrink:0;"></i><span style="word-break:break-all;">${fname}</span><i class="bi bi-download" style="margin-left:4px;font-size:13px;flex-shrink:0;"></i></a>`;
@@ -3018,6 +3028,7 @@ $pageIcon = 'chat-dots';
         if (conv.contact_picture) el.dataset.picture = conv.contact_picture;
 
         const preview = conv.last_message_type === 'image'    ? '📷 Imagem'     :
+            conv.last_message_type === 'video'    ? '🎥 Vídeo'      :
             conv.last_message_type === 'share'    ? '📷 Publicação' :
             conv.last_message_type === 'audio'    ? '🎵 Áudio'      :
             conv.last_message_type === 'document' ? '📎 Arquivo'    :

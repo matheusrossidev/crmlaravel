@@ -857,6 +857,8 @@ $pageIcon = 'person-badge';
                     <div class="lp-bubble {{ $isOut ? 'out' : 'in' }}">
                         @if($msg->type === 'image' && $msg->media_url)
                             <img src="{{ $msg->media_url }}" alt="Imagem" onclick="window.open(this.src,'_blank')">
+                        @elseif($msg->type === 'video' && $msg->media_url)
+                            <video src="{{ $msg->media_url }}" controls preload="metadata" style="max-width:100%;border-radius:8px;"></video>
                         @elseif($msg->type === 'audio' && $msg->media_url)
                             <audio controls src="{{ $msg->media_url }}"></audio>
                         @elseif($msg->body)
@@ -915,6 +917,8 @@ $pageIcon = 'person-badge';
                     <div class="lp-bubble {{ $isOut ? 'ig-out' : 'in' }}">
                         @if($msg->type === 'image' && $msg->media_url)
                             <img src="{{ $msg->media_url }}" alt="Imagem" onclick="window.open(this.src,'_blank')">
+                        @elseif($msg->type === 'video' && $msg->media_url)
+                            <video src="{{ $msg->media_url }}" controls preload="metadata" style="max-width:100%;border-radius:8px;"></video>
                         @elseif($msg->type === 'audio' && $msg->media_url)
                             <audio controls src="{{ $msg->media_url }}"></audio>
                         @elseif($msg->body)
