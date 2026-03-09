@@ -527,10 +527,22 @@ $pageIcon = 'chat-dots';
         align-items: flex-end;
     }
 
-    .wa-msg.note {
+    .wa-msg.note, .wa-msg.event {
         align-self: center;
-        max-width: 85%;
         width: 100%;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 0;
+    }
+    .wa-msg.note::before, .wa-msg.event::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0; right: 0;
+        height: 1px;
+        background: #e5e7eb;
     }
 
     .wa-bubble {
@@ -559,41 +571,6 @@ $pageIcon = 'chat-dots';
     .wa-msg.outbound .wa-ack.read i { color: rgba(255,255,255,.9); }
 
     .wa-msg.note .wa-bubble { display: none; }
-    .wa-note-box {
-        display: flex; align-items: flex-start; gap: 10px;
-        background: #faf5ff; border: 1px solid #e9d5ff;
-        border-left: 3px solid #8b5cf6;
-        border-radius: 0 10px 10px 0; padding: 10px 14px;
-        width: 100%;
-    }
-    .wa-note-icon {
-        width: 28px; height: 28px; border-radius: 7px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 13px; flex-shrink: 0;
-        background: #ede9fe; color: #7c3aed;
-    }
-    .wa-note-content { flex: 1; min-width: 0; }
-    .wa-note-header {
-        display: flex; align-items: center; gap: 6px;
-        margin-bottom: 4px;
-    }
-    .wa-note-header-label {
-        font-size: 11px; font-weight: 700; color: #7c3aed;
-        text-transform: uppercase; letter-spacing: 0.5px;
-    }
-    .wa-note-header-badge {
-        font-size: 9px; color: #9ca3af; background: #f3f4f6;
-        padding: 1px 6px; border-radius: 4px;
-    }
-    .wa-note-body {
-        font-size: 13px; color: #374151; line-height: 1.5;
-        word-break: break-word; white-space: pre-wrap;
-    }
-    .wa-note-footer {
-        display: flex; align-items: center; justify-content: flex-end;
-        gap: 6px; margin-top: 6px;
-        font-size: 10px; color: #a78bfa;
-    }
 
     .wa-bubble.deleted {
         font-style: italic;
@@ -629,28 +606,24 @@ $pageIcon = 'chat-dots';
         color: #3b82f6;
     }
 
-    /* Nota privada — legacy classes (hidden, replaced by wa-note-box) */
-
-    /* Evento/Ação no chat */
-    .wa-msg.event { align-self: center; max-width: 85%; width: 100%; }
+    /* Timeline entries (eventos + notas) */
     .wa-event-box {
-        display: flex; align-items: flex-start; gap: 10px;
-        background: #f8fafc; border: 1px solid #e8eaf0;
-        border-left: 3px solid #3b82f6;
-        border-radius: 0 10px 10px 0; padding: 10px 14px;
+        position: relative; z-index: 1;
+        display: flex; align-items: center; gap: 8px;
+        background: #f4f6fb; padding: 4px 14px;
     }
-    .wa-event-box.ai { border-left-color: #10b981; }
     .wa-event-icon {
-        width: 28px; height: 28px; border-radius: 7px;
+        width: 28px; height: 28px; border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
-        font-size: 13px; flex-shrink: 0;
-        background: #eff6ff; color: #3b82f6;
+        font-size: 12px; flex-shrink: 0;
     }
     .wa-event-box.ai .wa-event-icon { background: #ecfdf5; color: #10b981; }
+    .wa-event-box.user .wa-event-icon { background: #eff6ff; color: #3b82f6; }
+    .wa-event-box.note-type .wa-event-icon { background: #fef3c7; color: #d97706; }
     .wa-event-content { flex: 1; min-width: 0; }
-    .wa-event-title { font-size: 12px; font-weight: 700; color: #1a1d23; margin-bottom: 2px; }
+    .wa-event-title { font-size: 12px; font-weight: 700; color: #1a1d23; }
     .wa-event-desc { font-size: 12px; color: #6b7280; line-height: 1.4; }
-    .wa-event-time { font-size: 10px; color: #9ca3af; margin-top: 4px; }
+    .wa-event-time { font-size: 10px; color: #9ca3af; margin-top: 2px; }
 
     /* Reações */
     .wa-reactions {
@@ -2148,7 +2121,7 @@ $pageIcon = 'chat-dots';
             wrap.dataset.id = msg.id;
             const isAi = (msg.media_mime || '').startsWith('ai_');
             const box = document.createElement('div');
-            box.className = 'wa-event-box' + (isAi ? ' ai' : '');
+            box.className = 'wa-event-box' + (isAi ? ' ai' : ' user');
 
             const icon = document.createElement('div');
             icon.className = 'wa-event-icon';
@@ -2187,30 +2160,32 @@ $pageIcon = 'chat-dots';
         wrap.dataset.wahaId = msg.waha_message_id || '';
 
         if (isNote) {
-            const noteBox = document.createElement('div');
-            noteBox.className = 'wa-note-box';
+            const box = document.createElement('div');
+            box.className = 'wa-event-box note-type';
             const icon = document.createElement('div');
-            icon.className = 'wa-note-icon';
-            icon.innerHTML = '<i class="bi bi-lock-fill"></i>';
-            noteBox.appendChild(icon);
+            icon.className = 'wa-event-icon';
+            icon.innerHTML = '<i class="bi bi-sticky-fill"></i>';
+            box.appendChild(icon);
             const content = document.createElement('div');
-            content.className = 'wa-note-content';
-            const header = document.createElement('div');
-            header.className = 'wa-note-header';
-            header.innerHTML = '<span class="wa-note-header-label">Nota interna</span><span class="wa-note-header-badge">Visível só para o time</span>';
-            content.appendChild(header);
-            const body = document.createElement('div');
-            body.className = 'wa-note-body';
-            body.textContent = msg.body || '';
-            content.appendChild(body);
-            if (msg.sent_at) {
-                const footer = document.createElement('div');
-                footer.className = 'wa-note-footer';
-                footer.textContent = new Date(msg.sent_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                content.appendChild(footer);
+            content.className = 'wa-event-content';
+            const title = document.createElement('div');
+            title.className = 'wa-event-title';
+            title.textContent = 'Nota criada';
+            content.appendChild(title);
+            if (msg.body) {
+                const desc = document.createElement('div');
+                desc.className = 'wa-event-desc';
+                desc.textContent = msg.body;
+                content.appendChild(desc);
             }
-            noteBox.appendChild(content);
-            wrap.appendChild(noteBox);
+            if (msg.sent_at) {
+                const time = document.createElement('div');
+                time.className = 'wa-event-time';
+                time.textContent = new Date(msg.sent_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                content.appendChild(time);
+            }
+            box.appendChild(content);
+            wrap.appendChild(box);
             return wrap;
         }
 
@@ -2270,7 +2245,6 @@ $pageIcon = 'chat-dots';
 
         wrap.appendChild(bubble);
 
-        /* note time handled inside wa-note-box above */
 
         if (!isNote) {
             const meta = document.createElement('div');
