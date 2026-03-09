@@ -300,6 +300,26 @@ class WebsiteChatService
                     $this->saveOutboundMessages($conv->id, $replies);
                     return ['replies' => $replies, 'buttons' => [], 'input_type' => 'text'];
 
+                case 'cards':
+                    $items = $config['items'] ?? [];
+                    $cards = [];
+                    foreach ($items as $card) {
+                        $cards[] = [
+                            'title'         => ChatbotVariableService::interpolate((string) ($card['title'] ?? ''), $vars),
+                            'description'   => ChatbotVariableService::interpolate((string) ($card['description'] ?? ''), $vars),
+                            'image_url'     => $card['image_url'] ?? null,
+                            'button_label'  => $card['button_label'] ?? null,
+                            'button_action' => $card['button_action'] ?? 'reply',
+                            'button_value'  => $card['button_value'] ?? null,
+                            'button_url'    => $card['button_url'] ?? null,
+                        ];
+                    }
+                    if (! empty($cards)) {
+                        $replies[] = ['type' => 'cards', 'cards' => $cards];
+                    }
+                    $cursor['index'] = $index + 1;
+                    break;
+
                 default:
                     $cursor['index'] = $index + 1;
                     break;

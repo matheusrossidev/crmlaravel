@@ -1045,11 +1045,6 @@ $pageIcon = 'chat-dots';
     {{-- Sidebar de conversas --}}
     <div class="wa-sidebar">
         <div class="wa-sidebar-header">
-            <div class="wa-sidebar-title">
-                <i class="bi bi-chat-dots-fill" style="color:#3b82f6;"></i>
-                Conversas
-                <span class="wa-badge" id="totalUnreadBadge" style="display:none;"></span>
-            </div>
             <div class="wa-search">
                 <i class="bi bi-search"></i>
                 <input type="text" id="searchInput" placeholder="Buscar conversa...">

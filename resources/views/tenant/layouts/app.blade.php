@@ -1254,9 +1254,11 @@ function toggleSubmenu(id) {
     const LIST_URL      = '{{ route("ai.intent-signals.list") }}';
     const READ_ALL      = '{{ route("ai.intent-signals.read-all") }}';
     const ANALYST_URL   = '{{ route("analyst.pending-count") }}';
+    const MASTER_URL    = '{{ route("master-notifications.index") }}';
     const CSRF          = '{{ csrf_token() }}';
     const ICONS         = { buy: '🛒', schedule: '📅', close: '🤝', interest: '⭐' };
     const CONV_BASE     = '{{ rtrim(url("/"), "/") }}';
+    let _masterNotifs   = [];
 
     function updateBadge(count) {
         const num = document.getElementById('notif-badge-num');
@@ -1269,9 +1271,32 @@ function toggleSubmenu(id) {
         }
     }
 
-    function renderList(signals, analystItems) {
+    function renderList(signals, analystItems, masterItems) {
         const el = document.getElementById('notif-list');
         if (!el) return;
+
+        const lastReadId = parseInt(localStorage.getItem('mn_last_read') || '0');
+        const MASTER_TYPE_ICONS = { info: 'bi-info-circle-fill', warning: 'bi-exclamation-triangle-fill', alert: 'bi-exclamation-octagon-fill' };
+        const MASTER_TYPE_COLORS = { info: '#3b82f6', warning: '#f59e0b', alert: '#ef4444' };
+        const masterHtml = (masterItems && masterItems.length) ? [
+            `<div style="padding:6px 16px 4px;font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.5px;background:#f8fafc;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;gap:5px;"><i class="bi bi-megaphone-fill"></i> AVISOS DO SISTEMA</div>`,
+            ...masterItems.map(n => {
+                const unread = n.id > lastReadId ? 'unread' : '';
+                const iconClass = MASTER_TYPE_ICONS[n.type] || 'bi-info-circle-fill';
+                const iconColor = MASTER_TYPE_COLORS[n.type] || '#3b82f6';
+                const ts = new Date(n.created_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+                return `<div class="notif-item ${unread}" style="padding:10px 16px;border-bottom:1px solid #f3f4f6;">
+                          <div style="display:flex;align-items:flex-start;gap:10px;">
+                            <i class="bi ${iconClass}" style="font-size:16px;flex-shrink:0;margin-top:2px;color:${iconColor};"></i>
+                            <div style="flex:1;min-width:0;">
+                              <div style="font-size:12px;font-weight:600;color:#1a1d23;margin-bottom:2px;">${n.title}</div>
+                              <div style="font-size:11px;color:#6b7280;line-height:1.4;">${n.body}</div>
+                              <div style="font-size:10px;color:#9ca3af;margin-top:3px;">${ts}</div>
+                            </div>
+                          </div>
+                        </div>`;
+            })
+        ].join('') : '';
 
         const intentHtml = (signals && signals.length) ? signals.map(s => {
             const icon    = ICONS[s.intent_type] || '⭐';
@@ -1318,22 +1343,26 @@ function toggleSubmenu(id) {
             })
         ].join('') : '';
 
-        if (!intentHtml && !analystHtml) {
+        if (!intentHtml && !analystHtml && !masterHtml) {
             el.innerHTML = '<div style="padding:24px;text-align:center;color:#9ca3af;font-size:12px;">Nenhuma notificação</div>';
             return;
         }
 
-        el.innerHTML = analystHtml + intentHtml;
+        el.innerHTML = masterHtml + analystHtml + intentHtml;
     }
 
     window.loadIntentSignals = function () {
         Promise.all([
             fetch(LIST_URL,    { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => ({ signals: [], unread_count: 0 })),
             fetch(ANALYST_URL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => ({ count: 0, recent: [] })),
-        ]).then(([intentData, analystData]) => {
-            const total = (intentData.unread_count || 0) + (analystData.count || 0);
+            fetch(MASTER_URL,  { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => ({ notifications: [] })),
+        ]).then(([intentData, analystData, masterData]) => {
+            _masterNotifs = masterData.notifications || [];
+            const lastReadId = parseInt(localStorage.getItem('mn_last_read') || '0');
+            const masterUnread = _masterNotifs.filter(n => n.id > lastReadId).length;
+            const total = (intentData.unread_count || 0) + (analystData.count || 0) + masterUnread;
             updateBadge(total);
-            renderList(intentData.signals || [], analystData.recent || []);
+            renderList(intentData.signals || [], analystData.recent || [], _masterNotifs);
         });
     };
 
@@ -1375,20 +1404,32 @@ function toggleSubmenu(id) {
             });
 
             channel.listen('.master.notification', function (data) {
-                if (!window.toastr) return;
-                const typeMap = {
-                    info:    { fn: 'info',    title: 'Notificação' },
-                    warning: { fn: 'warning', title: 'Aviso' },
-                    alert:   { fn: 'error',   title: 'Alerta Importante' },
-                };
-                const t = typeMap[data.type] || typeMap.info;
-                toastr[t.fn](
-                    `<b>${data.title}</b><br><small>${data.body}</small>`,
-                    t.title,
-                    { timeOut: 12000, closeButton: true, progressBar: true, escapeHtml: false }
-                );
+                if (window.toastr) {
+                    const typeMap = {
+                        info:    { fn: 'info',    title: 'Notificação' },
+                        warning: { fn: 'warning', title: 'Aviso' },
+                        alert:   { fn: 'error',   title: 'Alerta Importante' },
+                    };
+                    const t = typeMap[data.type] || typeMap.info;
+                    toastr[t.fn](
+                        `<b>${data.title}</b><br><small>${data.body}</small>`,
+                        t.title,
+                        { timeOut: 12000, closeButton: true, progressBar: true, escapeHtml: false }
+                    );
+                }
+                loadIntentSignals();
             });
         }
+
+        // Ao abrir o sino, marcar master notifications como lidas
+        document.getElementById('notif-bell-btn')?.addEventListener('click', function () {
+            if (_masterNotifs.length) {
+                const maxId = Math.max(..._masterNotifs.map(n => n.id));
+                localStorage.setItem('mn_last_read', maxId);
+                // Recalcular badge sem unread do master
+                setTimeout(loadIntentSignals, 50);
+            }
+        });
     });
 })();
 </script>

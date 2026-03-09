@@ -83,6 +83,9 @@
 .cb-block-item.action   .cb-block-icon { background: #dcfce7; color: #16a34a; }
 .cb-block-item.delay    .cb-block-icon { background: #fce7f3; color: #db2777; }
 .cb-block-item.end      .cb-block-icon { background: #f3f4f6; color: #6b7280; }
+.cb-block-item.cards    .cb-block-icon { background: #f0fdf4; color: #16a34a; }
+.cb-node.cards  .cb-node-bar  { background: #16a34a; }
+.cb-node.cards  .cb-node-icon { background: #f0fdf4; color: #16a34a; }
 .cb-sidebar-divider { height: 1px; background: #f0f2f7; margin: 8px 16px; }
 
 /* ── Canvas ───────────────────────────────────────────────────────── */
@@ -531,6 +534,9 @@
                 <div class="cb-block-item end" onclick="addStepToRoot('end')">
                     <span class="cb-block-icon"><i class="bi bi-stop-circle"></i></span>Fim
                 </div>
+                <div class="cb-block-item cards" onclick="addStepToRoot('cards')">
+                    <span class="cb-block-icon"><i class="bi bi-card-heading"></i></span>Cards
+                </div>
             </div>
 
             <div class="cb-sidebar-divider"></div>
@@ -649,6 +655,7 @@
         action:    { icon: 'bi-lightning',            label: 'Ação',      color: 'action' },
         delay:     { icon: 'bi-hourglass-split',      label: 'Aguardar',  color: 'delay' },
         end:       { icon: 'bi-stop-circle',          label: 'Fim',       color: 'end' },
+        cards:     { icon: 'bi-card-heading',         label: 'Cards',     color: 'cards' },
     };
 
     let idCounter = 1;
@@ -678,6 +685,7 @@
             case 'action':    return { type: 'create_lead' };
             case 'delay':     return { seconds: 3 };
             case 'end':       return { text: '' };
+            case 'cards':     return { items: [] };
             default:          return {};
         }
     }
@@ -845,6 +853,7 @@
             case 'action':  return getActionLabel(c);
             case 'delay':   return (c.seconds || 3) + ' segundos';
             case 'end':     return truncate(c.text, 40) || 'Finalizar';
+            case 'cards':   return (c.items || []).length + ' card(s)';
             default:        return step.type;
         }
     }
@@ -937,6 +946,31 @@
                 html += '<label>Mensagem de encerramento (opcional)</label>';
                 html += '<div class="cb-editable" contenteditable="true" id="end-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="text" data-placeholder="Mensagem de encerramento...">' + textToHtml(c.text || '') + '</div>';
                 html += renderVarHint('end-' + step.id);
+                break;
+
+            case 'cards':
+                (c.items || []).forEach(function(item, i) {
+                    var ba = item.button_action || 'reply';
+                    html += '<div style="border:1px solid #e8eaf0;border-radius:8px;padding:10px;margin-bottom:8px;background:#fafafa;">';
+                    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+                    html += '<span style="font-size:11px;font-weight:700;color:#6b7280;">CARD ' + (i + 1) + '</span>';
+                    html += '<button onclick="cbRemoveCard(' + pathStr + ',' + index + ',' + i + ')" style="border:none;background:none;cursor:pointer;color:#ef4444;font-size:12px;padding:0 4px;">Remover</button>';
+                    html += '</div>';
+                    html += '<input class="form-control" placeholder="Título" value="' + esc(item.title || '') + '" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'title\',this.value)" style="margin-bottom:4px;">';
+                    html += '<textarea class="form-control" placeholder="Descrição" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'description\',this.value)" style="margin-bottom:4px;min-height:38px;">' + esc(item.description || '') + '</textarea>';
+                    html += '<input class="form-control" placeholder="URL da imagem (opcional)" value="' + esc(item.image_url || '') + '" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'image_url\',this.value)" style="margin-bottom:4px;">';
+                    html += '<div style="display:flex;gap:6px;margin-top:2px;">';
+                    html += '<input class="form-control" placeholder="Texto do botão (opcional)" value="' + esc(item.button_label || '') + '" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'button_label\',this.value)">';
+                    html += '<select class="form-select" style="max-width:140px;" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'button_action\',this.value);renderFlow();">';
+                    html += '<option value="reply"' + (ba === 'reply' ? ' selected' : '') + '>Continuar fluxo</option>';
+                    html += '<option value="url"' + (ba === 'url' ? ' selected' : '') + '>Abrir link</option>';
+                    html += '</select>';
+                    html += '<input class="form-control" placeholder="' + (ba === 'url' ? 'URL' : 'Valor enviado') + '" value="' + esc(ba === 'url' ? (item.button_url || '') : (item.button_value || '')) + '" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'' + (ba === 'url' ? 'button_url' : 'button_value') + '\',this.value)">';
+                    html += '</div>';
+                    html += '</div>';
+                });
+                html += '<button style="width:100%;background:#eff6ff;color:#0085f3;border:1.5px solid #bfdbfe;border-radius:8px;font-size:12px;font-weight:600;padding:7px;cursor:pointer;margin-top:2px;" onclick="cbAddCard(' + pathStr + ',' + index + ')">';
+                html += '<i class="bi bi-plus-lg"></i> Adicionar card</button>';
                 break;
         }
 
@@ -1536,6 +1570,22 @@
         const arr = resolveParentSteps(path);
         if (!arr[index].config) arr[index].config = {};
         arr[index].config[field] = value;
+    };
+
+    window.cbAddCard = function(path, index) {
+        const arr = resolveParentSteps(path);
+        if (!arr[index].config.items) arr[index].config.items = [];
+        arr[index].config.items.push({ title: '', description: '', image_url: '', button_label: '', button_action: 'reply', button_value: '', button_url: '' });
+        renderFlow();
+    };
+
+    window.cbRemoveCard = function(path, index, i) {
+        resolveParentSteps(path)[index].config.items.splice(i, 1);
+        renderFlow();
+    };
+
+    window.cbUpdateCardItem = function(path, index, i, field, value) {
+        resolveParentSteps(path)[index].config.items[i][field] = value;
     };
 
     window.cbUpdateActionType = function(path, index, newType) {

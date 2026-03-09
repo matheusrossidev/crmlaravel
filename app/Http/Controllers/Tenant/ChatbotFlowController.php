@@ -190,6 +190,7 @@ class ChatbotFlowController extends Controller
 
         if ($flow->channel === 'website') {
             $conversations = WebsiteConversation::where('flow_id', $flow->id)
+                ->whereNotNull('last_message_at')
                 ->orderByDesc('started_at')
                 ->get();
 

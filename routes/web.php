@@ -39,6 +39,7 @@ use App\Http\Controllers\Tenant\BillingController;
 use App\Http\Controllers\Tenant\TokenIncrementController;
 use App\Http\Controllers\Tenant\CalendarController;
 use App\Http\Controllers\Tenant\OnboardingController;
+use App\Http\Controllers\Tenant\MasterNotificationReadController;
 use App\Http\Controllers\Tenant\ScheduledMessageController;
 use App\Http\Controllers\Tenant\InstagramAutomationController;
 use App\Http\Controllers\WhatsappWebhookController;
@@ -235,6 +236,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::post('/analyst-suggestions/{suggestion}/approve', [AiAnalystController::class, 'approve'])->name('analyst.approve');
     Route::post('/analyst-suggestions/{suggestion}/reject',  [AiAnalystController::class, 'reject'])->name('analyst.reject');
     Route::get ('/analyst-suggestions/pending-count',        [AiAnalystController::class, 'pendingCount'])->name('analyst.pending-count');
+    Route::get ('/notificacoes/master',                      [MasterNotificationReadController::class, 'index'])->name('master-notifications.index');
 
     // Chatbot Builder
     Route::prefix('chatbot/fluxos')->name('chatbot.flows.')->group(function () {

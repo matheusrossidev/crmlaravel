@@ -327,7 +327,23 @@ $pageIcon = 'person-badge';
 .lp-bubble.out { background: #d1fae5; border-bottom-right-radius: 3px; color: #065f46; }
 .lp-bubble.in  { background: #f3f4f6; border-bottom-left-radius: 3px; color: #1a1d23; }
 .lp-bubble.ig-out { background: #dbeafe; color: #1e3a8a; border-bottom-right-radius: 3px; }
-.lp-bubble.note-bubble { background: #fef3c7; color: #78350f; font-style: italic; }
+.lp-note-internal {
+    margin: 6px 0;
+    background: #fefce8;
+    border-left: 3px solid #f59e0b;
+    border-radius: 0 8px 8px 0;
+    padding: 8px 12px;
+}
+.lp-note-internal-header {
+    font-size: 11px; font-weight: 600; color: #92400e;
+    margin-bottom: 4px; display: flex; align-items: center; gap: 4px;
+}
+.lp-note-internal-body {
+    font-size: 13.5px; color: #1a1d23; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+}
+.lp-note-internal-time {
+    font-size: 10.5px; color: #a16207; text-align: right; margin-top: 4px;
+}
 .lp-bubble-time {
     font-size: 10.5px;
     color: #9ca3af;
@@ -769,10 +785,14 @@ $pageIcon = 'person-badge';
                 @foreach($lead->events as $event)
                 @php
                     [$iconClass, $iconBg, $iconColor] = match($event->event_type) {
-                        'created'      => ['bi-star-fill',              '#f0fdf4', '#10b981'],
-                        'stage_changed'=> ['bi-arrow-right-circle-fill','#eff6ff', '#3b82f6'],
-                        'note_added'   => ['bi-chat-left-text-fill',    '#faf5ff', '#8b5cf6'],
-                        default        => ['bi-pencil-fill',             '#fff7ed', '#f59e0b'],
+                        'created'         => ['bi-star-fill',               '#f0fdf4', '#10b981'],
+                        'stage_changed'   => ['bi-arrow-right-circle-fill', '#eff6ff', '#3b82f6'],
+                        'note_added'      => ['bi-chat-left-text-fill',     '#faf5ff', '#8b5cf6'],
+                        'ai_tag_added'    => ['bi-robot',                   '#f0fdf4', '#10b981'],
+                        'ai_note'         => ['bi-robot',                   '#faf5ff', '#8b5cf6'],
+                        'ai_field_filled' => ['bi-robot',                   '#f0fdf4', '#10b981'],
+                        'ai_data_updated' => ['bi-robot',                   '#eff6ff', '#3b82f6'],
+                        default           => ['bi-pencil-fill',              '#fff7ed', '#f59e0b'],
                     };
                 @endphp
                 <li class="lp-timeline-item">
@@ -824,11 +844,17 @@ $pageIcon = 'person-badge';
                     $isOut = $msg->direction === 'outbound';
                     $isNote = $msg->type === 'note';
                 @endphp
+                @if($isNote)
+                    <div class="lp-note-internal">
+                        <div class="lp-note-internal-header">
+                            <i class="bi bi-lock-fill"></i> Nota interna — visível só para o time
+                        </div>
+                        <div class="lp-note-internal-body">{{ $msg->body }}</div>
+                        <div class="lp-note-internal-time">{{ $msg->sent_at?->format('H:i') }}</div>
+                    </div>
+                @else
                 <div class="lp-bubble-wrap {{ $isOut ? 'out' : 'in' }}">
-                    <div class="lp-bubble {{ $isNote ? 'note-bubble' : ($isOut ? 'out' : 'in') }}">
-                        @if($isNote)
-                            <span style="font-size:11px;margin-bottom:4px;display:block;opacity:.7;"><i class="bi bi-lock-fill"></i> Nota interna</span>
-                        @endif
+                    <div class="lp-bubble {{ $isOut ? 'out' : 'in' }}">
                         @if($msg->type === 'image' && $msg->media_url)
                             <img src="{{ $msg->media_url }}" alt="Imagem" onclick="window.open(this.src,'_blank')">
                         @elseif($msg->type === 'audio' && $msg->media_url)
@@ -841,6 +867,7 @@ $pageIcon = 'person-badge';
                     </div>
                     <div class="lp-bubble-time">{{ $msg->sent_at?->format('H:i') }}</div>
                 </div>
+                @endif
                 @endforeach
             </div>
         </div>

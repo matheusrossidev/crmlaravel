@@ -163,6 +163,17 @@
         '.syncro-brand a:hover{color:#6b7280;}',
         '.syncro-brand img{height:13px;}',
 
+        /* ── Cards ────────────────────────────────────────── */
+        '.syncro-cards-row{display:flex;gap:10px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none;max-width:320px;}',
+        '.syncro-cards-row::-webkit-scrollbar{display:none;}',
+        '.syncro-card{background:#fff;border:1.5px solid #e8eaf0;border-radius:12px;min-width:200px;max-width:200px;overflow:hidden;flex-shrink:0;}',
+        '.syncro-card-img{width:100%;height:130px;object-fit:cover;display:block;}',
+        '.syncro-card-body{padding:12px;}',
+        '.syncro-card-title{font-size:13.5px;font-weight:700;color:#1a1d23;line-height:1.3;margin-bottom:4px;}',
+        '.syncro-card-desc{font-size:12px;color:#6b7280;line-height:1.4;margin-bottom:8px;}',
+        '.syncro-card-btn{display:block;width:100%;padding:8px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;text-align:center;text-decoration:none;font-family:inherit;}',
+        '.syncro-card-btn:hover{opacity:.9;}',
+
         /* ── Mobile responsive ─────────────────────────────── */
         '@media(max-width:480px){#syncro-panel{width:calc(100vw - 16px);right:8px;bottom:8px;max-height:calc(100vh - 16px);border-radius:12px;}}',
     ].join('');
@@ -272,6 +283,7 @@
     }
 
     function typingDelay(reply) {
+        if (typeof reply === 'object' && reply !== null && reply.type === 'cards') { return 1500; }
         var text = (typeof reply === 'object' && reply !== null) ? (reply.text || '') : String(reply);
         return Math.min(1000 + text.length * 20, 3000);
     }
@@ -287,6 +299,80 @@
     }
 
     function appendBubble(reply, direction, instant) {
+        // Handle cards reply
+        if (typeof reply === 'object' && reply !== null && reply.type === 'cards') {
+            var row = document.createElement('div');
+            row.className = 'syncro-msg-row' + (instant ? ' instant' : '');
+            if (botAvatar) {
+                var av = document.createElement('img');
+                av.src = botAvatar;
+                av.className = 'syncro-msg-avatar';
+                av.alt = botName;
+                row.appendChild(av);
+            } else {
+                var avPh = document.createElement('div');
+                avPh.className = 'syncro-msg-avatar-placeholder';
+                avPh.innerHTML = '<svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:' + colorPrimary + '"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>';
+                row.appendChild(avPh);
+            }
+            var wrapper = document.createElement('div');
+            wrapper.className = 'syncro-cards-row';
+            (reply.cards || []).forEach(function(card) {
+                var el = document.createElement('div');
+                el.className = 'syncro-card';
+                if (card.image_url) {
+                    var img = document.createElement('img');
+                    img.src = card.image_url;
+                    img.className = 'syncro-card-img';
+                    img.alt = '';
+                    img.onerror = function() { img.style.display = 'none'; };
+                    el.appendChild(img);
+                }
+                var body = document.createElement('div');
+                body.className = 'syncro-card-body';
+                if (card.title) {
+                    var t = document.createElement('div');
+                    t.className = 'syncro-card-title';
+                    t.textContent = card.title;
+                    body.appendChild(t);
+                }
+                if (card.description) {
+                    var d = document.createElement('div');
+                    d.className = 'syncro-card-desc';
+                    d.textContent = card.description;
+                    body.appendChild(d);
+                }
+                if (card.button_label) {
+                    if (card.button_action === 'url' && card.button_url) {
+                        var btn = document.createElement('a');
+                        btn.className = 'syncro-card-btn';
+                        btn.textContent = card.button_label;
+                        btn.href = card.button_url;
+                        btn.target = '_blank';
+                        btn.rel = 'noopener';
+                        body.appendChild(btn);
+                    } else {
+                        var btn = document.createElement('button');
+                        btn.className = 'syncro-card-btn';
+                        btn.textContent = card.button_label;
+                        (function(bv, bl) {
+                            btn.addEventListener('click', function() {
+                                inputEl.value = bv || bl;
+                                sendMessage();
+                            });
+                        })(card.button_value, card.button_label);
+                        body.appendChild(btn);
+                    }
+                }
+                el.appendChild(body);
+                wrapper.appendChild(el);
+            });
+            row.appendChild(wrapper);
+            msgsEl.appendChild(row);
+            msgsEl.scrollTop = msgsEl.scrollHeight;
+            return row;
+        }
+
         var text     = (typeof reply === 'object' && reply !== null) ? (reply.text || '') : String(reply);
         var imageUrl = (typeof reply === 'object' && reply !== null) ? (reply.image_url || '') : '';
         if (imageUrl) imageUrl = resolveUrl(imageUrl) || '';
@@ -689,7 +775,8 @@
         .then(function(res) { return res.json(); })
         .then(function(data) {
             _prefetchedData = data;
-            widgetMode = (!forceBubble && data.widget_type === 'inline') ? 'inline' : 'bubble';
+            var hasChatContainer = !!document.getElementById('syncro-chat');
+            widgetMode = (hasChatContainer || (!forceBubble && data.widget_type === 'inline')) ? 'inline' : 'bubble';
 
             if (widgetMode === 'inline') {
                 setupInlineMode();

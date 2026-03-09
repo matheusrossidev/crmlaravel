@@ -615,6 +615,16 @@ class ProcessAiResponse implements ShouldQueue
 
         $stageName = collect($stages)->firstWhere('id', $stageId)['name'] ?? "id:{$stageId}";
 
+        \App\Models\LeadEvent::create([
+            'tenant_id'    => $conv->tenant_id,
+            'lead_id'      => $conv->lead_id,
+            'event_type'   => 'stage_changed',
+            'description'  => "🤖 Agente {$agent->name} moveu para etapa \"{$stageName}\"",
+            'data_json'    => ['source' => 'ai_agent', 'agent_id' => $agent->id],
+            'performed_by' => null,
+            'created_at'   => now(),
+        ]);
+
         Log::channel('whatsapp')->info('AI: lead movido de etapa', [
             'conversation_id' => $conv->id,
             'contact_name'    => $conv->contact_name ?? $conv->phone,
@@ -702,6 +712,21 @@ class ProcessAiResponse implements ShouldQueue
         WhatsappConversation::withoutGlobalScope('tenant')
             ->where('id', $conv->id)
             ->update(['tags' => json_encode($merged)]);
+
+        if ($conv->lead_id) {
+            $tagLabel = count($newTags) === 1
+                ? "tag \"{$newTags[0]}\""
+                : count($newTags) . ' tags: ' . implode(', ', $newTags);
+            \App\Models\LeadEvent::create([
+                'tenant_id'    => $conv->tenant_id,
+                'lead_id'      => $conv->lead_id,
+                'event_type'   => 'ai_tag_added',
+                'description'  => "🤖 Agente {$agent->name} adicionou {$tagLabel}",
+                'data_json'    => ['source' => 'ai_agent', 'agent_id' => $agent->id, 'tags' => $newTags],
+                'performed_by' => null,
+                'created_at'   => now(),
+            ]);
+        }
 
         Log::channel('whatsapp')->info('AI: tags adicionadas', [
             'conversation_id' => $conv->id,
