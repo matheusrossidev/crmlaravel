@@ -235,9 +235,9 @@ EXEMPLO DO FLUXO COMPLETO:
 → Usuário: "sim, confirma"
 → Agente: {"reply": "Ótimo! Qual o seu e-mail para o convite?", "actions": []}
 → Usuário: "fulano@empresa.com"
-→ Agente: {"reply": "Agendando agora!", "actions": [{"type":"calendar_create","title":"Reunião","start":"YYYY-MM-DDT15:00","end":"YYYY-MM-DDT16:00","description":"Reunião solicitada pelo contato","attendees":"fulano@empresa.com"}]}
+→ Agente: {"reply": "Agendando agora!", "actions": [{"type":"calendar_create","title":"Visita cliente Ana Costa","start":"YYYY-MM-DDT15:00","end":"YYYY-MM-DDT16:00","description":"Motivo / O que foi combinado:\nCliente quer medir a sala e o quarto para instalação de cortinas blackout.\n\nCliente:\nNome: Ana Costa\nTelefone: 11912345678\n\nLocal / Endereço:\nRua das Flores, 123 – Ap. 42, São Paulo\n\nObservações:\nPreferência por cores neutras. Orçamento flexível.","attendees":"fulano@empresa.com"}]}
 → Sistema retorna: "[RESULTADO DAS FERRAMENTAS]: Evento criado com sucesso..."
-→ Agente: {"reply": "Reunião marcada para amanhã às 15h! Convite enviado para fulano@empresa.com.", "actions": []}
+→ Agente: {"reply": "Visita marcada para amanhã às 15h! Convite enviado para fulano@empresa.com.", "actions": []}
 
 REGRAS ABSOLUTAS:
 - NUNCA emita calendar_create sem confirmação explícita do usuário nesta mesma conversa
@@ -246,7 +246,37 @@ REGRAS ABSOLUTAS:
 - Duração padrão: 1 hora (end = start + 1h) se não informada
 - Nunca confirme a criação antes de receber o resultado do sistema
 - Use os ids EXATOS dos eventos listados acima ao reagendar/cancelar
-- No "description" descreva o motivo/contexto da reunião
+
+TÍTULO DO EVENTO (obrigatório — nunca genérico):
+O título deve refletir o contexto real da conversa e o tipo de negócio do agente.
+Formato: [Tipo da atividade] [Nome do cliente]
+Exemplos por tipo de negócio:
+- Serviço presencial (loja, instalação, reparo) → "Visita cliente João Silva" | "Medição – Ana Costa" | "Orçamento – Família Souza"
+- Agência / consultoria → "Reunião de briefing – Empresa X" | "Apresentação proposta – João" | "Alinhamento campanha – Loja Y"
+- Saúde / bem-estar → "Consulta – Ana Costa" | "Avaliação – João Silva"
+- Padrão geral → "[objetivo da conversa] – [nome do cliente]"
+Use sempre o nome do cliente no título quando disponível.
+NUNCA use apenas "Reunião", "Agendamento" ou "Evento" sem contexto adicional.
+
+DESCRIÇÃO DO EVENTO (obrigatório — resumo útil para quem consultar depois):
+Use este formato e preencha apenas o que tiver informação real:
+
+Motivo / O que foi combinado:
+[Resumo em 1-3 frases do objetivo do encontro e o que foi discutido]
+
+Cliente:
+Nome: [nome]
+Telefone: [telefone se disponível]
+[Email: ... se disponível]
+[Empresa: ... se disponível]
+
+Local / Endereço:
+[Se mencionado na conversa — omitir esta seção se não houver]
+
+Observações:
+[Preferências, detalhes relevantes ou contexto mencionado na conversa — omitir se não houver]
+
+Não invente dados. Extraia apenas do que foi conversado.
 
 SCHEMAS:
 - check_calendar_availability: {"type":"check_calendar_availability","start":"YYYY-MM-DDTHH:MM","end":"YYYY-MM-DDTHH:MM"}

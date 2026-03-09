@@ -764,10 +764,18 @@ class ProcessAiResponse implements ShouldQueue
 
                     $description = $agentDesc;
                     if (! empty($contactLines)) {
-                        $contactBlock = implode("\n", $contactLines);
-                        $description  = $agentDesc
-                            ? $agentDesc . "\n\n---\n" . $contactBlock
-                            : $contactBlock;
+                        // Não duplicar se o LLM já incluiu dados do cliente na descrição
+                        $alreadyHasContact = ! empty($agentDesc) && (
+                            str_contains($agentDesc, 'Nome:') ||
+                            str_contains($agentDesc, 'Telefone:') ||
+                            str_contains($agentDesc, 'Cliente:')
+                        );
+                        if (! $alreadyHasContact) {
+                            $contactBlock = implode("\n", $contactLines);
+                            $description  = $agentDesc
+                                ? $agentDesc . "\n\n---\n" . $contactBlock
+                                : $contactBlock;
+                        }
                     }
 
                     $startStr = $action['start'] ?? now()->addHour()->format('Y-m-d\TH:i');
