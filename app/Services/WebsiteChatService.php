@@ -303,7 +303,11 @@ class WebsiteChatService
                 case 'cards':
                     $items = $config['items'] ?? [];
                     $cards = [];
+                    $hasReplyButton = false;
                     foreach ($items as $card) {
+                        if (($card['button_action'] ?? 'reply') === 'reply' && ! empty($card['button_label'])) {
+                            $hasReplyButton = true;
+                        }
                         $cards[] = [
                             'title'         => ChatbotVariableService::interpolate((string) ($card['title'] ?? ''), $vars),
                             'description'   => ChatbotVariableService::interpolate((string) ($card['description'] ?? ''), $vars),
@@ -318,6 +322,12 @@ class WebsiteChatService
                         $replies[] = ['type' => 'cards', 'cards' => $cards];
                     }
                     $cursor['index'] = $index + 1;
+                    if ($hasReplyButton) {
+                        $cursor['waiting'] = true;
+                        $this->persistState($conv, $cursor, $vars);
+                        $this->saveOutboundMessages($conv->id, $replies);
+                        return ['replies' => $replies, 'buttons' => [], 'input_type' => 'text'];
+                    }
                     break;
 
                 default:

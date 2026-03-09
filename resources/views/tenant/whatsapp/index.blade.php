@@ -529,7 +529,8 @@ $pageIcon = 'chat-dots';
 
     .wa-msg.note {
         align-self: center;
-        max-width: 75%;
+        max-width: 85%;
+        width: 100%;
     }
 
     .wa-bubble {
@@ -557,12 +558,41 @@ $pageIcon = 'chat-dots';
     .wa-msg.outbound .wa-msg-meta { color: rgba(255,255,255,.65); }
     .wa-msg.outbound .wa-ack.read i { color: rgba(255,255,255,.9); }
 
-    .wa-msg.note .wa-bubble {
-        background: #fefce8;
-        border-radius: 0 10px 10px 0;
+    .wa-msg.note .wa-bubble { display: none; }
+    .wa-note-box {
+        display: flex; align-items: flex-start; gap: 10px;
+        background: #faf5ff; border: 1px solid #e9d5ff;
+        border-left: 3px solid #8b5cf6;
+        border-radius: 0 10px 10px 0; padding: 10px 14px;
         width: 100%;
-        border-left: 3px solid #f59e0b;
-        padding: 10px 14px;
+    }
+    .wa-note-icon {
+        width: 28px; height: 28px; border-radius: 7px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px; flex-shrink: 0;
+        background: #ede9fe; color: #7c3aed;
+    }
+    .wa-note-content { flex: 1; min-width: 0; }
+    .wa-note-header {
+        display: flex; align-items: center; gap: 6px;
+        margin-bottom: 4px;
+    }
+    .wa-note-header-label {
+        font-size: 11px; font-weight: 700; color: #7c3aed;
+        text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .wa-note-header-badge {
+        font-size: 9px; color: #9ca3af; background: #f3f4f6;
+        padding: 1px 6px; border-radius: 4px;
+    }
+    .wa-note-body {
+        font-size: 13px; color: #374151; line-height: 1.5;
+        word-break: break-word; white-space: pre-wrap;
+    }
+    .wa-note-footer {
+        display: flex; align-items: center; justify-content: flex-end;
+        gap: 6px; margin-top: 6px;
+        font-size: 10px; color: #a78bfa;
     }
 
     .wa-bubble.deleted {
@@ -599,25 +629,10 @@ $pageIcon = 'chat-dots';
         color: #3b82f6;
     }
 
-    /* Nota privada label */
-    .wa-note-label {
-        font-size: 11px;
-        color: #92400e;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        margin-bottom: 6px;
-    }
-    .wa-note-time {
-        font-size: 10.5px;
-        color: #a16207;
-        margin-top: 6px;
-        text-align: right;
-    }
+    /* Nota privada — legacy classes (hidden, replaced by wa-note-box) */
 
     /* Evento/Ação no chat */
-    .wa-msg.event { align-self: center; max-width: 85%; }
+    .wa-msg.event { align-self: center; max-width: 85%; width: 100%; }
     .wa-event-box {
         display: flex; align-items: flex-start; gap: 10px;
         background: #f8fafc; border: 1px solid #e8eaf0;
@@ -2172,10 +2187,31 @@ $pageIcon = 'chat-dots';
         wrap.dataset.wahaId = msg.waha_message_id || '';
 
         if (isNote) {
-            const label = document.createElement('div');
-            label.className = 'wa-note-label';
-            label.innerHTML = '<i class="bi bi-lock-fill"></i> Nota interna — visível só para o time';
-            wrap.appendChild(label);
+            const noteBox = document.createElement('div');
+            noteBox.className = 'wa-note-box';
+            const icon = document.createElement('div');
+            icon.className = 'wa-note-icon';
+            icon.innerHTML = '<i class="bi bi-lock-fill"></i>';
+            noteBox.appendChild(icon);
+            const content = document.createElement('div');
+            content.className = 'wa-note-content';
+            const header = document.createElement('div');
+            header.className = 'wa-note-header';
+            header.innerHTML = '<span class="wa-note-header-label">Nota interna</span><span class="wa-note-header-badge">Visível só para o time</span>';
+            content.appendChild(header);
+            const body = document.createElement('div');
+            body.className = 'wa-note-body';
+            body.textContent = msg.body || '';
+            content.appendChild(body);
+            if (msg.sent_at) {
+                const footer = document.createElement('div');
+                footer.className = 'wa-note-footer';
+                footer.textContent = new Date(msg.sent_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                content.appendChild(footer);
+            }
+            noteBox.appendChild(content);
+            wrap.appendChild(noteBox);
+            return wrap;
         }
 
         // Sender name (only for group messages with sender_name set)
@@ -2234,12 +2270,7 @@ $pageIcon = 'chat-dots';
 
         wrap.appendChild(bubble);
 
-        if (isNote && msg.sent_at) {
-            const noteTime = document.createElement('div');
-            noteTime.className = 'wa-note-time';
-            noteTime.textContent = new Date(msg.sent_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            wrap.appendChild(noteTime);
-        }
+        /* note time handled inside wa-note-box above */
 
         if (!isNote) {
             const meta = document.createElement('div');
