@@ -73,7 +73,7 @@ class ProcessInstagramWebhook implements ShouldQueue
             }
 
             foreach ($entry['messaging'] ?? [] as $messaging) {
-                $this->processMessaging($instance, $messaging);
+                $this->processMessaging($instance, $messaging, $igAccountId);
             }
 
             foreach ($entry['changes'] ?? [] as $change) {
@@ -86,7 +86,7 @@ class ProcessInstagramWebhook implements ShouldQueue
 
     // ── Handlers ──────────────────────────────────────────────────────────────
 
-    private function processMessaging(InstagramInstance $instance, array $messaging): void
+    private function processMessaging(InstagramInstance $instance, array $messaging, string $entryId): void
     {
         $senderId    = $messaging['sender']['id'] ?? null;
         $recipientId = $messaging['recipient']['id'] ?? null;
@@ -98,8 +98,18 @@ class ProcessInstagramWebhook implements ShouldQueue
         }
 
         $msgId    = $messageData['mid'] ?? null;
-        $isFromMe = ($senderId === $instance->instagram_account_id)
+        // entry.id é a referência mais confiável — identifica a conta que recebeu o webhook
+        $isFromMe = ($senderId === $entryId)
+            || ($senderId === $instance->instagram_account_id)
             || ($instance->ig_business_account_id && $senderId === $instance->ig_business_account_id);
+
+        Log::channel('instagram')->debug('isFromMe check', [
+            'sender_id'             => $senderId,
+            'entry_id'              => $entryId,
+            'instagram_account_id'  => $instance->instagram_account_id,
+            'ig_business_account_id'=> $instance->ig_business_account_id,
+            'is_from_me'            => $isFromMe,
+        ]);
 
         // Dedup via Cache (atomic): Meta pode entregar o mesmo evento mais de uma vez
         if ($msgId && ! Cache::add("ig:processing:{$msgId}", 1, 10)) {
@@ -242,11 +252,19 @@ class ProcessInstagramWebhook implements ShouldQueue
             // getProfile() retorna ['error'=>true,...] em vez de lançar exceção
             if (! empty($profile['error'])) {
                 Log::channel('instagram')->warning('Falha ao buscar perfil do contato', [
-                    'igsid' => $igsid,
-                    'body'  => $profile['body'] ?? null,
+                    'igsid'  => $igsid,
+                    'status' => $profile['status'] ?? null,
+                    'body'   => $profile['body'] ?? null,
                 ]);
                 return ['name' => null, 'username' => null, 'picture' => null];
             }
+
+            Log::channel('instagram')->info('Perfil do contato obtido', [
+                'igsid'    => $igsid,
+                'name'     => $profile['name'] ?? null,
+                'username' => $profile['username'] ?? null,
+                'has_pic'  => isset($profile['profile_pic']),
+            ]);
 
             return [
                 'name'     => $profile['name']        ?? null,

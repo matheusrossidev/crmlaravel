@@ -173,7 +173,18 @@ class WhatsappController extends Controller
 
         try {
             $service = new InstagramService(decrypt($instance->access_token));
-            $service->sendMessage($conversation->igsid, $body);
+            $result = $service->sendMessage($conversation->igsid, $body);
+
+            if (! empty($result['error'])) {
+                Log::channel('instagram')->error('Falha ao enviar DM', [
+                    'igsid'  => $conversation->igsid,
+                    'status' => $result['status'] ?? null,
+                    'body'   => $result['body'] ?? null,
+                ]);
+                return response()->json([
+                    'error' => 'Falha ao enviar: ' . ($result['body'] ?? 'Erro desconhecido'),
+                ], 500);
+            }
         } catch (\Throwable $e) {
             Log::channel('instagram')->error('Falha ao enviar mensagem', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Falha ao enviar: ' . $e->getMessage()], 500);
