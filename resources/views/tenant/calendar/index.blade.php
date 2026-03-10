@@ -325,6 +325,10 @@
     background: #fff;
 }
 .cal-inp:focus { border-color: #0085f3; box-shadow: 0 0 0 3px rgba(0,133,243,.1); }
+@media (max-width: 520px) {
+    .cal-datetime-grid { grid-template-columns: 1fr !important; }
+    .cal-inp[type="datetime-local"] { font-size: 13px; }
+}
 
 /* ── FAB for mobile ── */
 .cal-fab {
@@ -489,14 +493,14 @@
         </div>
 
         {{-- Data/Hora --}}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px" class="cal-datetime-grid">
             <div>
                 <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Inicio</label>
-                <input type="datetime-local" class="cal-inp" id="calStart">
+                <input type="datetime-local" class="cal-inp" id="calStart" style="max-width:100%">
             </div>
             <div>
                 <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Fim</label>
-                <input type="datetime-local" class="cal-inp" id="calEnd">
+                <input type="datetime-local" class="cal-inp" id="calEnd" style="max-width:100%">
             </div>
         </div>
 
@@ -545,7 +549,7 @@
 
     {{-- Footer --}}
     <div style="display:flex;align-items:center;gap:10px;
-                padding:16px 24px;border-top:1px solid #e2e8f0;flex-shrink:0">
+                padding:16px 24px;padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px));border-top:1px solid #e2e8f0;flex-shrink:0">
         <button id="btnCalDelete" onclick="deleteEvent()" style="
             display:none;margin-right:auto;
             padding:8px 14px;background:#fff;border:1px solid #fecaca;
