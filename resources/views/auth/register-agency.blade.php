@@ -210,18 +210,7 @@
             background: url('{{ asset("images/split-screen-login.png") }}') center center / cover no-repeat;
             overflow: hidden;
             min-height: 100vh;
-        }
-
-        .auth-right::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-                to top,
-                rgba(0,0,0,.72) 0%,
-                rgba(0,0,0,.18) 50%,
-                rgba(0,0,0,.05) 100%
-            );
+            border-radius: 0 50px 50px 0;
         }
 
         /* Responsivo */

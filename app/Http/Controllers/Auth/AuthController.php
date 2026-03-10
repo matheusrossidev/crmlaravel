@@ -13,12 +13,15 @@ use App\Models\PartnerAgencyCode;
 use App\Models\PlanDefinition;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\UserConsent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class AuthController extends Controller
@@ -39,7 +42,20 @@ class AuthController extends Controller
             'password.required' => 'Informe sua senha.',
         ]);
 
+        // Rate limiting — 5 tentativas por minuto por email+IP
+        $throttleKey = Str::lower($request->input('email')) . '|' . $request->ip();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+
+            return back()->withErrors([
+                'email' => "Muitas tentativas. Tente novamente em {$seconds} segundos.",
+            ])->onlyInput('email');
+        }
+
         if (!Auth::attempt($credentials, $request->boolean('remember'))) {
+            RateLimiter::hit($throttleKey, 60);
+
             return back()->withErrors([
                 'email' => 'E-mail ou senha incorretos.',
             ])->onlyInput('email');
@@ -65,6 +81,8 @@ class AuthController extends Controller
             }
         }
 
+        RateLimiter::clear($throttleKey);
+
         $user->update(['last_login_at' => now()]);
 
         $request->session()->regenerate();
@@ -83,8 +101,9 @@ class AuthController extends Controller
             'tenant_name'  => 'required|string|max:255',
             'name'         => 'required|string|max:255',
             'email'        => 'required|email|unique:users,email',
-            'password'     => 'required|string|min:8|confirmed',
+            'password'     => ['required', 'string', Password::min(8)->mixedCase()->numbers(), 'confirmed'],
             'agency_code'  => 'nullable|string|max:20',
+            'accept_terms' => 'accepted',
         ], [
             'tenant_name.required' => 'Informe o nome da empresa.',
             'tenant_name.max'      => 'O nome da empresa pode ter no máximo 255 caracteres.',
@@ -94,8 +113,9 @@ class AuthController extends Controller
             'email.email'          => 'Informe um e-mail válido.',
             'email.unique'         => 'Este e-mail já está cadastrado. Tente fazer login.',
             'password.required'    => 'Crie uma senha.',
-            'password.min'         => 'A senha deve ter pelo menos 8 caracteres.',
+            'password.min'         => 'A senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula e número.',
             'password.confirmed'   => 'As senhas não conferem.',
+            'accept_terms.accepted' => 'Você deve aceitar os Termos de Uso e Política de Privacidade.',
         ]);
 
         $token = Str::random(64);
@@ -131,6 +151,16 @@ class AuthController extends Controller
             'role'               => 'admin',
             'email_verified_at'  => null,
             'verification_token' => $token,
+        ]);
+
+        // Registra consentimento LGPD
+        UserConsent::create([
+            'user_id'        => $user->id,
+            'consent_type'   => 'terms_and_privacy',
+            'policy_version' => '2026-03',
+            'accepted_at'    => now(),
+            'ip_address'     => $request->ip(),
+            'user_agent'     => $request->userAgent(),
         ]);
 
         // Envia email de verificação (ignora falhas para não bloquear o cadastro)
@@ -256,12 +286,12 @@ class AuthController extends Controller
         $data = $request->validate([
             'token'                 => 'required|string',
             'email'                 => 'required|email',
-            'password'              => 'required|string|min:8|confirmed',
+            'password'              => ['required', 'string', Password::min(8)->mixedCase()->numbers(), 'confirmed'],
         ], [
             'email.required'       => 'Informe seu e-mail.',
             'email.email'          => 'Informe um e-mail válido.',
             'password.required'    => 'Crie uma senha.',
-            'password.min'         => 'A senha deve ter pelo menos 8 caracteres.',
+            'password.min'         => 'A senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula e número.',
             'password.confirmed'   => 'As senhas não conferem.',
         ]);
 

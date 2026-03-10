@@ -20,13 +20,13 @@
     <meta name="twitter:description" content="CRM completo com atendimento automático via WhatsApp, agente de IA, funil de vendas e agenda integrada. Gerencie leads e converta mais com menos esforço.">
     <meta name="twitter:image"       content="{{ asset('images/shared-image.jpg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         *, *::before, *::after { box-sizing: border-box; }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             margin: 0;
             min-height: 100vh;
             display: flex;
@@ -84,14 +84,15 @@
         }
 
         .step-dot.active {
-            background: #0085f3;
+            background: #007DFF;
             width: 20px;
             border-radius: 4px;
         }
 
-        .step-dot.done { background: #0085f3; opacity: .4; }
+        .step-dot.done { background: #007DFF; opacity: .4; }
 
         .auth-form-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
             font-size: 26px;
             font-weight: 700;
             color: #1a1d23;
@@ -100,7 +101,7 @@
 
         .auth-form-sub {
             font-size: 14px;
-            color: #6b7280;
+            color: #677489;
             margin: 0 0 24px;
         }
 
@@ -108,7 +109,7 @@
         .auth-error {
             background: #fef2f2;
             border: 1px solid #fecaca;
-            border-radius: 10px;
+            border-radius: 14px;
             padding: 12px 16px;
             margin-bottom: 20px;
             font-size: 13px;
@@ -137,7 +138,7 @@
             left: 13px;
             top: 50%;
             transform: translateY(-50%);
-            color: #9ca3af;
+            color: #97A3B7;
             font-size: 15px;
             pointer-events: none;
         }
@@ -155,20 +156,20 @@
         .form-control {
             width: 100%;
             padding: 11px 14px 11px 38px;
-            border: 1.5px solid #e5e7eb;
-            border-radius: 10px;
+            border: 1px solid #CDDEF6;
+            border-radius: 100px;
             font-size: 14px;
-            font-family: 'Inter', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             color: #1a1d23;
             outline: none;
             transition: border-color .15s, box-shadow .15s;
-            background: #fafafa;
+            background: #fff;
         }
 
         .form-control:focus {
-            border-color: #0085f3;
+            border-color: #007DFF;
             background: #fff;
-            box-shadow: 0 0 0 3px rgba(0,133,243,.1);
+            box-shadow: 0 0 0 3px rgba(0,125,255,.12);
         }
 
         .form-control.is-invalid { border-color: #ef4444; }
@@ -185,8 +186,8 @@
             align-items: center;
             gap: 9px;
             background: #f3f4f6;
-            border: 1.5px solid #e5e7eb;
-            border-radius: 10px;
+            border: 1px solid #CDDEF6;
+            border-radius: 100px;
             padding: 9px 14px;
             font-size: 13.5px;
             font-weight: 500;
@@ -197,32 +198,32 @@
             user-select: none;
         }
 
-        .value-chip:hover { border-color: #0085f3; background: #eff6ff; }
+        .value-chip:hover { border-color: #007DFF; background: #eff6ff; }
         .value-chip .chip-icon { color: #6b7280; font-size: 14px; flex-shrink: 0; }
         .value-chip .chip-val  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .value-chip .chip-edit { color: #9ca3af; font-size: 12px; flex-shrink: 0; }
+        .value-chip .chip-edit { color: #97A3B7; font-size: 12px; flex-shrink: 0; }
 
         /* Botões */
         .btn-submit {
             width: 100%;
-            padding: 12px;
-            background: #0085f3;
+            padding: 13px 30px;
+            background: linear-gradient(148deg, #2C83FB 0%, #1970EA 100%);
             color: #fff;
             border: none;
-            border-radius: 10px;
+            border-radius: 100px;
             font-size: 14.5px;
             font-weight: 600;
-            font-family: 'Inter', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             cursor: pointer;
             margin-top: 18px;
-            transition: background .15s, transform .1s;
+            transition: all .4s;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
         }
 
-        .btn-submit:hover { background: #006acf; }
+        .btn-submit:hover { background: #0066FF; }
         .btn-submit:active { transform: scale(.98); }
 
         .terms-text {
@@ -233,7 +234,7 @@
             line-height: 1.5;
         }
 
-        .terms-text a { color: #0085f3; text-decoration: none; }
+        .terms-text a { color: #007DFF; text-decoration: none; }
         .terms-text a:hover { text-decoration: underline; }
 
         .auth-footer-link {
@@ -244,7 +245,7 @@
         }
 
         .auth-footer-link a {
-            color: #0085f3;
+            color: #007DFF;
             font-weight: 600;
             text-decoration: none;
         }
@@ -258,18 +259,7 @@
             background: url('{{ asset("images/split-screen-login.png") }}') center center / cover no-repeat;
             overflow: hidden;
             min-height: 100vh;
-        }
-
-        .auth-right::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-                to top,
-                rgba(0,0,0,.72) 0%,
-                rgba(0,0,0,.18) 50%,
-                rgba(0,0,0,.05) 100%
-            );
+            border-radius: 0 50px 50px 0;
         }
 
         /* Responsivo */
@@ -414,7 +404,7 @@
                                    id="password"
                                    name="password"
                                    class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}"
-                                   placeholder="Mín. 8 caracteres"
+                                   placeholder="Mín. 8 chars, maiúscula e número"
                                    autocomplete="new-password"
                                    oninput="this.classList.remove('is-invalid');const fb=this.closest('.form-group').querySelector('.invalid-feedback');if(fb)fb.style.display='none';">
                             <i class="bi bi-eye toggle-pwd" onclick="togglePassword(this, 'password')"></i>
@@ -461,14 +451,26 @@
                         </div>
                     </div>
 
+                    <div class="form-group" style="margin-bottom:16px;">
+                        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:13px;color:#374151;line-height:1.5;">
+                            <input type="checkbox" name="accept_terms" value="1"
+                                   {{ old('accept_terms') ? 'checked' : '' }}
+                                   required
+                                   style="margin-top:3px;accent-color:#007DFF;min-width:16px;">
+                            <span>Li e aceito os
+                                <a href="{{ route('terms') }}" target="_blank" style="color:#007DFF;">Termos de Uso</a> e a
+                                <a href="{{ route('privacy') }}" target="_blank" style="color:#007DFF;">Política de Privacidade</a>.
+                            </span>
+                        </label>
+                        @error('accept_terms')
+                            <div class="invalid-feedback" style="display:block;">{{ $message }}</div>
+                        @enderror
+                    </div>
+
                     <button type="submit" class="btn-submit">
                         <i class="bi bi-rocket-takeoff"></i>
                         Criar minha conta
                     </button>
-                    <p class="terms-text">
-                        Ao criar uma conta você concorda com nossos
-                        <a href="{{ route('terms') }}" target="_blank">Termos de Uso</a> e <a href="{{ route('privacy') }}" target="_blank">Política de Privacidade</a>.
-                    </p>
                 </div>
 
             </form>
@@ -622,5 +624,8 @@
         }
     })();
 </script>
+
+@include('components.cookie-consent')
+
 </body>
 </html>

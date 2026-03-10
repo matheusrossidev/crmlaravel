@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recuperar Senha — Syncro</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         *, *::before, *::after { box-sizing: border-box; }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             margin: 0;
             min-height: 100vh;
             display: flex;
@@ -53,6 +53,7 @@
         }
 
         .auth-form-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
             font-size: 26px;
             font-weight: 700;
             color: #1a1d23;
@@ -61,7 +62,7 @@
 
         .auth-form-sub {
             font-size: 14px;
-            color: #6b7280;
+            color: #677489;
             margin: 0 0 28px;
             line-height: 1.5;
         }
@@ -70,7 +71,7 @@
         .auth-error {
             background: #fef2f2;
             border: 1px solid #fecaca;
-            border-radius: 10px;
+            border-radius: 14px;
             padding: 12px 16px;
             margin-bottom: 20px;
             font-size: 13px;
@@ -86,7 +87,7 @@
         .auth-success {
             background: #f0fdf4;
             border: 1px solid #bbf7d0;
-            border-radius: 10px;
+            border-radius: 14px;
             padding: 12px 16px;
             margin-bottom: 20px;
             font-size: 13px;
@@ -115,7 +116,7 @@
             left: 13px;
             top: 50%;
             transform: translateY(-50%);
-            color: #9ca3af;
+            color: #97A3B7;
             font-size: 15px;
             pointer-events: none;
         }
@@ -123,20 +124,20 @@
         .form-control {
             width: 100%;
             padding: 11px 14px 11px 38px;
-            border: 1.5px solid #e5e7eb;
-            border-radius: 10px;
+            border: 1px solid #CDDEF6;
+            border-radius: 100px;
             font-size: 14px;
-            font-family: 'Inter', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             color: #1a1d23;
             outline: none;
             transition: border-color .15s, box-shadow .15s;
-            background: #fafafa;
+            background: #fff;
         }
 
         .form-control:focus {
-            border-color: #0085f3;
+            border-color: #007DFF;
             background: #fff;
-            box-shadow: 0 0 0 3px rgba(0,133,243,.1);
+            box-shadow: 0 0 0 3px rgba(0,125,255,.12);
         }
 
         .form-control.is-invalid { border-color: #ef4444; }
@@ -144,24 +145,24 @@
         /* Buttons */
         .btn-submit {
             width: 100%;
-            padding: 12px;
-            background: #0085f3;
+            padding: 13px 30px;
+            background: linear-gradient(148deg, #2C83FB 0%, #1970EA 100%);
             color: #fff;
             border: none;
-            border-radius: 10px;
+            border-radius: 100px;
             font-size: 14.5px;
             font-weight: 600;
-            font-family: 'Inter', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             cursor: pointer;
             margin-top: 6px;
-            transition: background .15s, transform .1s;
+            transition: all .4s;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
         }
 
-        .btn-submit:hover { background: #006acf; }
+        .btn-submit:hover { background: #0066FF; }
         .btn-submit:active { transform: scale(.98); }
 
         /* Footer link */
@@ -173,7 +174,7 @@
         }
 
         .auth-footer-link a {
-            color: #0085f3;
+            color: #007DFF;
             font-weight: 600;
             text-decoration: none;
         }
@@ -187,79 +188,7 @@
             background: url('{{ asset("images/split-screen-login.png") }}') center center / cover no-repeat;
             overflow: hidden;
             min-height: 100vh;
-        }
-
-        /* Gradiente escuro para legibilidade do texto */
-        .auth-right::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-                to top,
-                rgba(0,0,0,.72) 0%,
-                rgba(0,0,0,.18) 50%,
-                rgba(0,0,0,.05) 100%
-            );
-        }
-
-        /* Textos no canto inferior esquerdo */
-        .auth-overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 48px 56px;
-            z-index: 1;
-        }
-
-        .auth-overlay h1 {
-            font-size: 22px;
-            font-weight: 700;
-            color: #fff;
-            line-height: 1.3;
-            margin: 0 0 14px;
-            max-width: 480px;
-        }
-
-        .auth-features {
-            margin-top: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .auth-feature {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .auth-feature-icon {
-            width: 30px;
-            height: 30px;
-            background: rgba(255,255,255,.15);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            color: #fff;
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
-
-        .auth-feature-text strong {
-            display: block;
-            font-size: 12.5px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 2px;
-        }
-
-        .auth-feature-text span {
-            font-size: 12px;
-            color: rgba(255,255,255,.65);
-            line-height: 1.5;
+            border-radius: 50px 0 0 50px;
         }
 
         /* Responsivo */
@@ -337,43 +266,7 @@
     </div>
 
     {{-- ── Painel direito — Imagem ── --}}
-    <div class="auth-right">
-        <div class="auth-overlay">
-
-            <h1>Controle Total do Seu Marketing e Vendas em Uma Única Plataforma</h1>
-
-            <div class="auth-features">
-                <div class="auth-feature">
-                    <div class="auth-feature-icon">
-                        <i class="bi bi-kanban"></i>
-                    </div>
-                    <div class="auth-feature-text">
-                        <strong>CRM visual com Kanban e pipelines totalmente personalizáveis</strong>
-                        <span>Organize oportunidades, acompanhe negociações em tempo real e adapte o funil ao seu processo comercial.</span>
-                    </div>
-                </div>
-                <div class="auth-feature">
-                    <div class="auth-feature-icon">
-                        <i class="bi bi-bar-chart-line"></i>
-                    </div>
-                    <div class="auth-feature-text">
-                        <strong>Relatórios completos de ROAS, vendas e conversão</strong>
-                        <span>Tome decisões baseadas em dados com dashboards claros e métricas que realmente importam para o crescimento.</span>
-                    </div>
-                </div>
-                <div class="auth-feature">
-                    <div class="auth-feature-icon">
-                        <i class="bi bi-whatsapp"></i>
-                    </div>
-                    <div class="auth-feature-text">
-                        <strong>Integração oficial com WhatsApp Cloud API</strong>
-                        <span>Converse com leads e clientes direto da plataforma, mantendo histórico, contexto e produtividade do time.</span>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
+    <div class="auth-right"></div>
 
 </div>
 </body>

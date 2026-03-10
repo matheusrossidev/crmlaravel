@@ -143,7 +143,7 @@
 <header class="page-header">
     <div class="page-header-inner">
         <a href="{{ route('login') }}"><img src="{{ asset('images/logo.png') }}" alt="Syncro" style="height:28px;"></a>
-        <span>Atualizado em fevereiro de 2026</span>
+        <span>Atualizado em março de 2026</span>
     </div>
 </header>
 
@@ -216,6 +216,7 @@
         <li><strong>Gestão de leads e pipeline:</strong> organizar contatos em funis de vendas, registrar etapas e histórico.</li>
         <li><strong>Atendimento via mensagens:</strong> exibir conversas de WhatsApp e Instagram no inbox para que a equipe possa atender e acompanhar clientes.</li>
         <li><strong>Automação com IA:</strong> quando habilitado, o histórico recente de mensagens é processado por um modelo de linguagem para gerar respostas automáticas. Nenhum dado é retido pelo provedor de IA além da requisição.</li>
+        <li><strong>Agenda e calendário:</strong> quando conectado ao Google Calendar, exibir, criar, editar e excluir eventos diretamente na plataforma para organização de compromissos e tarefas comerciais.</li>
         <li><strong>Campanhas de marketing:</strong> sincronizar métricas de Facebook Ads e Google Ads para análise no painel.</li>
         <li><strong>Relatórios:</strong> gerar relatórios de desempenho, origem de leads e atividade da equipe.</li>
         <li><strong>Segurança:</strong> detectar acessos não autorizados e manter registros de auditoria.</li>
@@ -252,6 +253,10 @@
                 <td>Métricas de campanhas, token OAuth (leitura)</td>
             </tr>
             <tr>
+                <td><strong>Google Calendar</strong></td>
+                <td>Eventos de calendário (título, data, horário, descrição, localização), token OAuth (leitura e escrita)</td>
+            </tr>
+            <tr>
                 <td><strong>Modelos de IA (LLM)</strong></td>
                 <td>Histórico recente de mensagens (somente quando agente de IA habilitado)</td>
             </tr>
@@ -260,7 +265,19 @@
 
     <hr>
 
-    <h2>5. Armazenamento e segurança</h2>
+    <h2>5. Uso de dados do Google</h2>
+    <p>O uso de dados recebidos das APIs do Google está em conformidade com a <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Política de Dados de Usuário dos Serviços de API do Google</a>, incluindo os requisitos de Uso Limitado:</p>
+    <ul>
+        <li>Os dados do Google Calendar (eventos, datas, descrições) são utilizados <strong>exclusivamente</strong> para exibir, criar, editar e excluir eventos dentro da plataforma Syncro.</li>
+        <li><strong>Não transferimos</strong> dados do Google para terceiros, exceto conforme necessário para o funcionamento da integração ou quando exigido por lei.</li>
+        <li><strong>Não utilizamos</strong> dados do Google para exibir publicidade, treinar modelos de IA ou qualquer finalidade não relacionada à funcionalidade do calendário.</li>
+        <li>Os tokens OAuth do Google são armazenados de forma <strong>criptografada (AES-256)</strong> e podem ser revogados a qualquer momento pelo usuário ao desconectar a integração.</li>
+        <li>O usuário pode revogar o acesso da Syncro ao Google Calendar a qualquer momento nas <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">configurações da conta Google</a>.</li>
+    </ul>
+
+    <hr>
+
+    <h2>6. Armazenamento e segurança</h2>
     <ul>
         <li><strong>Criptografia em trânsito:</strong> toda comunicação com a plataforma utiliza HTTPS/TLS.</li>
         <li><strong>Criptografia em repouso:</strong> tokens OAuth e credenciais sensíveis são criptografados com AES-256.</li>
@@ -271,7 +288,7 @@
 
     <hr>
 
-    <h2>6. Retenção de dados</h2>
+    <h2>7. Retenção de dados</h2>
     <p>Os dados são mantidos enquanto a conta da organização estiver ativa. Ao encerrar o contrato:</p>
     <ul>
         <li>Os dados podem ser exportados em formato padrão mediante solicitação.</li>
@@ -281,7 +298,7 @@
 
     <hr>
 
-    <h2>7. Compartilhamento de dados</h2>
+    <h2>8. Compartilhamento de dados</h2>
     <p>Não compartilhamos dados pessoais com terceiros, exceto:</p>
     <ul>
         <li><strong>Obrigação legal:</strong> quando exigido por lei ou ordem judicial.</li>
@@ -291,7 +308,7 @@
 
     <hr>
 
-    <h2>8. Seus direitos (LGPD)</h2>
+    <h2>9. Seus direitos (LGPD)</h2>
     <p>Em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018), você possui os seguintes direitos:</p>
     <ul>
         <li><strong>Acesso:</strong> confirmar se seus dados são tratados e receber uma cópia.</li>
@@ -305,7 +322,7 @@
 
     <hr>
 
-    <h2>9. Cookies</h2>
+    <h2>10. Cookies</h2>
     <p>A Syncro utiliza apenas cookies técnicos essenciais:</p>
     <ul>
         <li><strong>Cookie de sessão:</strong> mantém o usuário autenticado. Expira com o fechamento do navegador ou inatividade.</li>
@@ -315,17 +332,17 @@
 
     <hr>
 
-    <h2>10. Menores de idade</h2>
+    <h2>11. Menores de idade</h2>
     <p>A Syncro é destinada exclusivamente a empresas e profissionais. Não coletamos dados de menores de 18 anos. Caso identificados, serão excluídos imediatamente.</p>
 
     <hr>
 
-    <h2>11. Alterações nesta política</h2>
+    <h2>12. Alterações nesta política</h2>
     <p>Esta política pode ser atualizada periodicamente. Em alterações substanciais, notificaremos os administradores por e-mail com antecedência mínima de 15 dias.</p>
 
     <hr>
 
-    <h2>12. Contato</h2>
+    <h2>13. Contato</h2>
     <p>Para dúvidas ou solicitações relacionadas aos seus dados, entre em contato com nosso Encarregado de Proteção de Dados (DPO):</p>
     <p>E-mail: <a href="mailto:privacidade@syncro.com.br">privacidade@syncro.com.br</a></p>
 

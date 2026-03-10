@@ -133,77 +133,7 @@
             background: url('{{ asset("images/split-screen-login.png") }}') center center / cover no-repeat;
             overflow: hidden;
             min-height: 100vh;
-        }
-
-        .auth-right::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-                to top,
-                rgba(0,0,0,.72) 0%,
-                rgba(0,0,0,.18) 50%,
-                rgba(0,0,0,.05) 100%
-            );
-        }
-
-        .auth-overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 48px 56px;
-            z-index: 1;
-        }
-
-        .auth-overlay h1 {
-            font-size: 22px;
-            font-weight: 700;
-            color: #fff;
-            line-height: 1.3;
-            margin: 0 0 14px;
-            max-width: 480px;
-        }
-
-        .auth-features {
-            margin-top: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .auth-feature {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .auth-feature-icon {
-            width: 30px;
-            height: 30px;
-            background: rgba(255,255,255,.15);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            color: #fff;
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
-
-        .auth-feature-text strong {
-            display: block;
-            font-size: 12.5px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 2px;
-        }
-
-        .auth-feature-text span {
-            font-size: 12px;
-            color: rgba(255,255,255,.65);
-            line-height: 1.5;
+            border-radius: 50px 0 0 50px;
         }
 
         /* Responsivo */
@@ -259,43 +189,7 @@
     </div>
 
     {{-- ── Painel direito — Imagem ── --}}
-    <div class="auth-right">
-        <div class="auth-overlay">
-
-            <h1>Controle Total do Seu Marketing e Vendas em Uma Única Plataforma</h1>
-
-            <div class="auth-features">
-                <div class="auth-feature">
-                    <div class="auth-feature-icon">
-                        <i class="bi bi-kanban"></i>
-                    </div>
-                    <div class="auth-feature-text">
-                        <strong>CRM visual com Kanban e pipelines totalmente personalizáveis</strong>
-                        <span>Organize oportunidades, acompanhe negociações em tempo real e adapte o funil ao seu processo comercial.</span>
-                    </div>
-                </div>
-                <div class="auth-feature">
-                    <div class="auth-feature-icon">
-                        <i class="bi bi-bar-chart-line"></i>
-                    </div>
-                    <div class="auth-feature-text">
-                        <strong>Relatórios completos de ROAS, vendas e conversão</strong>
-                        <span>Tome decisões baseadas em dados com dashboards claros e métricas que realmente importam para o crescimento.</span>
-                    </div>
-                </div>
-                <div class="auth-feature">
-                    <div class="auth-feature-icon">
-                        <i class="bi bi-whatsapp"></i>
-                    </div>
-                    <div class="auth-feature-text">
-                        <strong>Integração oficial com WhatsApp Cloud API</strong>
-                        <span>Converse com leads e clientes direto da plataforma, mantendo histórico, contexto e produtividade do time.</span>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
+    <div class="auth-right"></div>
 
 </div>
 </body>
