@@ -14,14 +14,6 @@ class WhatsappWebhookController extends Controller
 {
     public function handle(Request $request): Response
     {
-        // Validate WAHA webhook secret (HMAC or header token)
-        if (! $this->verifyWahaSecret($request)) {
-            Log::channel('whatsapp')->warning('Webhook secret inválido', [
-                'ip' => $request->ip(),
-            ]);
-            return response('Unauthorized', 401);
-        }
-
         $payload = $request->json()->all();
         $session = $payload['session'] ?? null;
         $event   = $payload['event'] ?? 'unknown';
@@ -84,30 +76,5 @@ class WhatsappWebhookController extends Controller
         }
 
         return response('', 200);
-    }
-
-    /**
-     * Verify WAHA webhook secret via X-Webhook-Hmac-Sha256 header.
-     * If no secret is configured, skip validation (backwards-compatible).
-     */
-    private function verifyWahaSecret(Request $request): bool
-    {
-        $secret = config('services.waha.webhook_secret', '');
-
-        // If no secret configured, allow (backwards-compatible)
-        if ($secret === '') {
-            return true;
-        }
-
-        // WAHA GOWS engine sends HMAC in X-Webhook-Hmac-Sha256 header
-        $signature = $request->header('X-Webhook-Hmac-Sha256', '');
-
-        if ($signature === '') {
-            return false;
-        }
-
-        $expected = hash_hmac('sha256', $request->getContent(), $secret);
-
-        return hash_equals($expected, $signature);
     }
 }
