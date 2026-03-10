@@ -39,17 +39,17 @@ class ProcessInstagramWebhook implements ShouldQueue
                 continue;
             }
 
+            // Lookup: tentar casar entry.id com qualquer ID armazenado da instância
             $instance = InstagramInstance::withoutGlobalScope('tenant')
                 ->where(function ($q) use ($igAccountId) {
                     $q->where('instagram_account_id', $igAccountId)
-                      ->orWhere('ig_business_account_id', $igAccountId);
+                      ->orWhere('ig_business_account_id', $igAccountId)
+                      ->orWhere('ig_page_id', $igAccountId);
                 })
                 ->first();
 
             if (! $instance) {
-                // Auto-descoberta: IGA token retorna ID diferente do usado no webhook (entry.id).
-                // Na primeira entrega, procurar instância conectada sem ig_business_account_id
-                // e atualizar automaticamente.
+                // Auto-descoberta nível 1: instância conectada sem ig_business_account_id
                 $instance = InstagramInstance::withoutGlobalScope('tenant')
                     ->where('status', 'connected')
                     ->whereNull('ig_business_account_id')
@@ -63,12 +63,27 @@ class ProcessInstagramWebhook implements ShouldQueue
                         'ig_business_account_id' => $igAccountId,
                     ]);
                 } else {
-                    // entry.id pode ser o FB Page ID enviado pelo Meta como webhook duplicado —
-                    // o evento real chega pelo outro entry com o IG Account ID correto.
-                    Log::channel('instagram')->debug('entry.id não corresponde a nenhuma instância (possível duplicata Meta)', [
-                        'ig_account_id' => $igAccountId,
-                    ]);
-                    continue;
+                    // Auto-descoberta nível 2: instância com ig_business_account_id mas sem ig_page_id
+                    // Meta envia webhooks com 2 IDs diferentes para a mesma conta (IG account + Page)
+                    $instance = InstagramInstance::withoutGlobalScope('tenant')
+                        ->where('status', 'connected')
+                        ->whereNotNull('ig_business_account_id')
+                        ->whereNull('ig_page_id')
+                        ->orderByDesc('updated_at')
+                        ->first();
+
+                    if ($instance) {
+                        $instance->update(['ig_page_id' => $igAccountId]);
+                        Log::channel('instagram')->info('ig_page_id auto-descoberto e salvo', [
+                            'instance_id' => $instance->id,
+                            'ig_page_id'  => $igAccountId,
+                        ]);
+                    } else {
+                        Log::channel('instagram')->debug('entry.id não corresponde a nenhuma instância', [
+                            'ig_account_id' => $igAccountId,
+                        ]);
+                        continue;
+                    }
                 }
             }
 

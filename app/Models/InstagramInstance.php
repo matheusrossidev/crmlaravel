@@ -17,6 +17,7 @@ class InstagramInstance extends Model
         'tenant_id',
         'instagram_account_id',
         'ig_business_account_id',
+        'ig_page_id',
         'username',
         'profile_picture_url',
         'access_token',
