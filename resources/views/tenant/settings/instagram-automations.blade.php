@@ -584,6 +584,8 @@ textarea.form-control { resize: vertical; min-height: 68px; }
 @section('content')
 <div class="page-container">
 
+    @include('tenant.settings._tabs')
+
     <div class="section-header">
         <div>
             <div class="section-title">Automações de Instagram</div>

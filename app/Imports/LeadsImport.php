@@ -17,15 +17,18 @@ class LeadsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
 {
     private int $imported = 0;
     private int $skipped  = 0;
+    private int $limitSkipped = 0;
 
     private ?int $defaultPipelineId;
     private ?int $defaultStageId;
+    private ?int $maxRemaining;
 
-    public function __construct()
+    public function __construct(?int $maxRemaining = null)
     {
         $pipeline = Pipeline::where('is_default', true)->first() ?? Pipeline::first();
         $this->defaultPipelineId = $pipeline?->id;
         $this->defaultStageId    = $pipeline?->stages()->orderBy('position')->first()?->id;
+        $this->maxRemaining      = $maxRemaining;
     }
 
     public function collection(Collection $rows): void
@@ -34,6 +37,11 @@ class LeadsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
             $name = trim((string) ($row['nome'] ?? $row['name'] ?? ''));
             if (!$name) {
                 $this->skipped++;
+                continue;
+            }
+
+            if ($this->maxRemaining !== null && $this->imported >= $this->maxRemaining) {
+                $this->limitSkipped++;
                 continue;
             }
 
@@ -66,6 +74,7 @@ class LeadsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
         }
     }
 
-    public function getImported(): int { return $this->imported; }
-    public function getSkipped(): int  { return $this->skipped; }
+    public function getImported(): int     { return $this->imported; }
+    public function getSkipped(): int      { return $this->skipped; }
+    public function getLimitSkipped(): int  { return $this->limitSkipped; }
 }

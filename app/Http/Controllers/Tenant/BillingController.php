@@ -184,6 +184,7 @@ class BillingController extends Controller
                 default   => 'pending',
             };
 
+            $features = $plan->features_json ?? [];
             $tenant->update([
                 'plan'                  => $plan->name,
                 'asaas_subscription_id' => $subscription['id'],
@@ -191,6 +192,13 @@ class BillingController extends Controller
                 'status'                => $subscriptionStatus === 'active'
                     ? ($tenant->isPartner() ? 'partner' : 'active')
                     : $tenant->status,
+                'max_users'             => $features['max_users'] ?? 0,
+                'max_leads'             => $features['max_leads'] ?? 0,
+                'max_pipelines'         => $features['max_pipelines'] ?? 0,
+                'max_custom_fields'     => $features['max_custom_fields'] ?? 0,
+                'max_departments'       => $features['max_departments'] ?? 0,
+                'max_chatbot_flows'     => $features['max_chatbot_flows'] ?? 0,
+                'max_ai_agents'         => $features['max_ai_agents'] ?? 0,
             ]);
 
             // 4. Enviar email se ativo

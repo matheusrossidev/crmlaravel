@@ -21,6 +21,7 @@ use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
 use App\Models\WhatsappQuickMessage;
 use App\Models\WhatsappTag;
+use App\Models\Department;
 use App\Services\InstagramService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -42,12 +43,22 @@ class WhatsappController extends Controller
         $pipelines       = [];
         $whatsappTags    = collect();
 
-        if ($connected) {
-            $conversations = WhatsappConversation::with(['latestMessage', 'assignedUser'])
-                ->orderByDesc('last_message_at')
-                ->get();
+        $authUser = auth()->user();
+        $restrictByDept = !$authUser->isAdmin() && !$authUser->can_see_all_conversations;
+        $userDeptIds = $restrictByDept ? $authUser->departments()->pluck('departments.id') : collect();
 
-            $users = User::where('tenant_id', auth()->user()->tenant_id)
+        if ($connected) {
+            $waQuery = WhatsappConversation::with(['latestMessage', 'assignedUser', 'department']);
+            if ($restrictByDept) {
+                $waQuery->where(function ($q) use ($authUser, $userDeptIds) {
+                    $q->whereIn('department_id', $userDeptIds)
+                      ->orWhereNull('department_id')
+                      ->orWhere('assigned_user_id', $authUser->id);
+                });
+            }
+            $conversations = $waQuery->orderByDesc('last_message_at')->get();
+
+            $users = User::where('tenant_id', $authUser->tenant_id)
                 ->orderBy('name')
                 ->get(['id', 'name']);
 
@@ -63,9 +74,15 @@ class WhatsappController extends Controller
         // Carregar conversas Instagram independente do WhatsApp estar conectado
         $igInstance = InstagramInstance::first();
         if ($igInstance && $igInstance->status === 'connected') {
-            $igConversations = InstagramConversation::with(['latestMessage'])
-                ->orderByDesc('last_message_at')
-                ->get();
+            $igQuery = InstagramConversation::with(['latestMessage', 'department']);
+            if ($restrictByDept) {
+                $igQuery->where(function ($q) use ($authUser, $userDeptIds) {
+                    $q->whereIn('department_id', $userDeptIds)
+                      ->orWhereNull('department_id')
+                      ->orWhere('assigned_user_id', $authUser->id);
+                });
+            }
+            $igConversations = $igQuery->orderByDesc('last_message_at')->get();
         }
 
         // Unificar e ordenar por data (WhatsApp + Instagram)
@@ -95,7 +112,11 @@ class WhatsappController extends Controller
 
         $isPartnerView = session()->has('impersonating_tenant_id');
 
-        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'igConversations', 'allConversations', 'users', 'pipelines', 'whatsappTags', 'aiAgents', 'chatbotFlows', 'quickMessages', 'isPartnerView'));
+        $departments = Department::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'color', 'icon']);
+
+        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'igConversations', 'allConversations', 'users', 'pipelines', 'whatsappTags', 'aiAgents', 'chatbotFlows', 'quickMessages', 'isPartnerView', 'departments'));
     }
 
     // ── Instagram Conversations ───────────────────────────────────────────────
@@ -276,15 +297,33 @@ class WhatsappController extends Controller
             }
         }
 
-        $updatedWaConvs = WhatsappConversation::with(['latestMessage', 'assignedUser'])
-            ->where('last_message_at', '>=', $since)
-            ->orderByDesc('last_message_at')
+        $pollUser = auth()->user();
+        $pollRestrict = !$pollUser->isAdmin() && !$pollUser->can_see_all_conversations;
+        $pollDeptIds  = $pollRestrict ? $pollUser->departments()->pluck('departments.id') : collect();
+
+        $waQuery = WhatsappConversation::with(['latestMessage', 'assignedUser', 'department'])
+            ->where('last_message_at', '>=', $since);
+        if ($pollRestrict) {
+            $waQuery->where(function ($q) use ($pollUser, $pollDeptIds) {
+                $q->whereIn('department_id', $pollDeptIds)
+                  ->orWhereNull('department_id')
+                  ->orWhere('assigned_user_id', $pollUser->id);
+            });
+        }
+        $updatedWaConvs = $waQuery->orderByDesc('last_message_at')
             ->get()
             ->map(fn ($c) => $this->formatConversation($c));
 
-        $updatedIgConvs = InstagramConversation::with(['latestMessage'])
-            ->where('last_message_at', '>=', $since)
-            ->orderByDesc('last_message_at')
+        $igQuery = InstagramConversation::with(['latestMessage', 'department'])
+            ->where('last_message_at', '>=', $since);
+        if ($pollRestrict) {
+            $igQuery->where(function ($q) use ($pollUser, $pollDeptIds) {
+                $q->whereIn('department_id', $pollDeptIds)
+                  ->orWhereNull('department_id')
+                  ->orWhere('assigned_user_id', $pollUser->id);
+            });
+        }
+        $updatedIgConvs = $igQuery->orderByDesc('last_message_at')
             ->get()
             ->map(fn ($c) => $this->formatInstagramConversation($c));
 
@@ -537,6 +576,33 @@ class WhatsappController extends Controller
         ]);
     }
 
+    public function assignDepartment(WhatsappConversation $conversation, Request $request): JsonResponse
+    {
+        $request->validate([
+            'department_id' => 'nullable|exists:departments,id',
+        ]);
+
+        $deptId = $request->input('department_id');
+
+        if ($deptId) {
+            $dept = Department::findOrFail($deptId);
+            $dept->assignConversation($conversation);
+            $conversation->refresh();
+        } else {
+            $conversation->update(['department_id' => null]);
+        }
+
+        Log::channel('whatsapp')->info('Departamento atribuído à conversa', [
+            'conversation_id' => $conversation->id,
+            'department_id'   => $deptId,
+        ]);
+
+        return response()->json([
+            'success'       => true,
+            'department_id' => $conversation->department_id,
+        ]);
+    }
+
     public function destroy(WhatsappConversation $conversation): JsonResponse
     {
         // Cascade delete via FK — messages are deleted with the conversation
@@ -619,6 +685,9 @@ class WhatsappController extends Controller
             'assigned_user_id'  => $c->assigned_user_id,
             'is_group'          => $c->is_group ?? false,
             'ai_agent_id'       => $c->ai_agent_id,
+            'department_id'     => $c->department_id,
+            'department_name'   => $c->department?->name,
+            'department_color'  => $c->department?->color,
             'channel'           => 'whatsapp',
         ];
     }
@@ -641,6 +710,9 @@ class WhatsappController extends Controller
             'assigned_user_id'  => $c->assigned_user_id,
             'is_group'          => false,
             'ai_agent_id'       => $c->ai_agent_id,
+            'department_id'     => $c->department_id,
+            'department_name'   => $c->department?->name,
+            'department_color'  => $c->department?->color,
             'channel'           => 'instagram',
         ];
     }

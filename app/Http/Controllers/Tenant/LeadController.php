@@ -14,6 +14,7 @@ use App\Models\Lead;
 use App\Models\LeadEvent;
 use App\Models\LeadAttachment;
 use App\Models\LeadNote;
+use App\Services\PlanLimitChecker;
 use App\Models\LostSale;
 use App\Models\Sale;
 use App\Models\Pipeline;
@@ -96,6 +97,11 @@ class LeadController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $limitMsg = PlanLimitChecker::check('leads');
+        if ($limitMsg) {
+            return response()->json(['success' => false, 'message' => $limitMsg, 'limit_reached' => true], 422);
+        }
+
         $data = $request->validate([
             'name'        => 'required|string|max:255',
             'phone'       => 'nullable|string|max:20',
@@ -417,14 +423,30 @@ class LeadController extends Controller
             'file' => 'required|file|mimes:xlsx,xls,csv|max:5120',
         ]);
 
-        $import = new LeadsImport();
+        $remaining = PlanLimitChecker::remaining('leads');
+        if ($remaining === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Limite de leads atingido no seu plano. Faça upgrade para importar.',
+                'limit_reached' => true,
+            ], 422);
+        }
+
+        $import = new LeadsImport($remaining);
         Excel::import($import, $request->file('file'));
 
-        return response()->json([
+        $result = [
             'success'  => true,
             'imported' => $import->getImported(),
             'skipped'  => $import->getSkipped(),
-        ]);
+        ];
+
+        if ($remaining !== null && $import->getLimitSkipped() > 0) {
+            $result['limit_skipped'] = $import->getLimitSkipped();
+            $result['message'] = "{$import->getImported()} leads importados. {$import->getLimitSkipped()} ignorados por limite do plano.";
+        }
+
+        return response()->json($result);
     }
 
     private function formatLead(Lead $lead, bool $withNotes = false): array

@@ -314,6 +314,8 @@
 @section('content')
 <div class="page-container">
 
+    @include('tenant.settings._tabs')
+
     <div class="integrations-grid">
 
         {{-- ─── WhatsApp ─────────────────────────────────────────────────── --}}

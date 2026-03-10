@@ -298,6 +298,8 @@
 @section('content')
 <div class="af-page">
 
+    @include('tenant.settings._tabs')
+
     {{-- Header --}}
     <div class="af-header">
         <a href="{{ route('settings.automations') }}" class="af-back" title="Voltar">
@@ -399,6 +401,9 @@
                 <div class="af-block-item action" onclick="addActionBlock('assign_chatbot_flow')">
                     <span class="af-block-icon"><i class="bi bi-diagram-3"></i></span>Atribuir chatbot
                 </div>
+                <div class="af-block-item action" onclick="addActionBlock('transfer_to_department')">
+                    <span class="af-block-icon"><i class="bi bi-building"></i></span>Transferir p/ departamento
+                </div>
                 <div class="af-block-item action" onclick="addActionBlock('close_conversation')">
                     <span class="af-block-icon"><i class="bi bi-lock"></i></span>Fechar conversa
                 </div>
@@ -461,6 +466,7 @@ const PIPELINES      = @json($pipelinesJs);
 const USERS          = @json($users);
 const AI_AGENTS      = @json($aiAgents);
 const CHATBOT_FLOWS  = @json($chatbotFlows);
+const DEPARTMENTS    = @json($departments);
 const WAHA_CONNECTED = {{ $wahaConnected ? 'true' : 'false' }};
 const LEAD_TAGS      = @json($leadTags->values());
 const LEAD_SOURCES   = @json($leadSources->values());
@@ -691,6 +697,7 @@ const ACTION_META = {
     add_note:              { icon:'bi-sticky',            label:'Adicionar nota' },
     assign_ai_agent:       { icon:'bi-robot',             label:'Atribuir agente de IA' },
     assign_chatbot_flow:   { icon:'bi-diagram-3',         label:'Atribuir chatbot' },
+    transfer_to_department:{ icon:'bi-building',           label:'Transferir p/ departamento' },
     close_conversation:    { icon:'bi-lock',              label:'Fechar conversa' },
     send_whatsapp_message:     { icon:'bi-whatsapp',    label:'Enviar msg WhatsApp' },
     schedule_whatsapp_message: { icon:'bi-clock',       label:'Agendar msg WhatsApp' },
@@ -781,6 +788,12 @@ function buildActionBody(type, idx, prefill) {
         const fOpts = CHATBOT_FLOWS.map(f => `<option value="${f.id}" ${prefill.chatbot_flow_id==f.id?'selected':''}>${h(f.name)}</option>`).join('');
         return `<label>Fluxo</label><select class="form-select" id="aval-${idx}">
             <option value="">Selecione...</option>${fOpts}</select>`;
+    }
+    if (type === 'transfer_to_department') {
+        if (!DEPARTMENTS.length) return `<p style="font-size:12px;color:#9ca3af;margin:0;">Nenhum departamento ativo.</p>`;
+        const dOpts = DEPARTMENTS.map(d => `<option value="${d.id}" ${prefill.department_id==d.id?'selected':''}>${h(d.name)}</option>`).join('');
+        return `<label>Departamento</label><select class="form-select" id="aval-${idx}">
+            <option value="">Selecione...</option>${dOpts}</select>`;
     }
     if (type === 'close_conversation') {
         return `<p style="font-size:12px;color:#6b7280;margin:0;"><i class="bi bi-info-circle me-1"></i>A conversa vinculada ao lead será fechada automaticamente.</p>`;
@@ -997,6 +1010,9 @@ function saveAutomation() {
         } else if (type === 'assign_chatbot_flow') {
             config.chatbot_flow_id = parseInt(document.getElementById(`aval-${idx}`)?.value || 0);
             if (!config.chatbot_flow_id) { toastr.warning('Selecione o fluxo.'); err = true; return; }
+        } else if (type === 'transfer_to_department') {
+            config.department_id = parseInt(document.getElementById(`aval-${idx}`)?.value || 0);
+            if (!config.department_id) { toastr.warning('Selecione o departamento.'); err = true; return; }
         } else if (type === 'send_whatsapp_message') {
             config.message = (document.getElementById(`aval-${idx}`)?.value || '').trim();
             if (!config.message) { toastr.warning('Informe a mensagem.'); err = true; return; }

@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class TenantMiddleware
@@ -44,9 +45,26 @@ class TenantMiddleware
                     ->first();
 
                 if (!$targetTenant) {
+                    Log::warning('Impersonação rejeitada: tenant-alvo inválido', [
+                        'user_id'   => $user->id,
+                        'agency_id' => $user->tenant_id,
+                        'target_id' => $impersonatingId,
+                        'ip'        => $request->ip(),
+                    ]);
                     session()->forget('impersonating_tenant_id');
                     $impersonatingId = null;
                 } else {
+                    // Log de impersonação ativa (uma vez por sessão)
+                    if (!session('impersonation_logged')) {
+                        Log::info('Impersonação de agência ativa', [
+                            'user_id'       => $user->id,
+                            'agency_id'     => $user->tenant_id,
+                            'target_tenant' => $targetTenant->name,
+                            'target_id'     => $impersonatingId,
+                            'ip'            => $request->ip(),
+                        ]);
+                        session(['impersonation_logged' => true]);
+                    }
                     // Injeta o tenant ativo no container para o BelongsToTenant trait
                     app()->instance('active_tenant_id', (int) $impersonatingId);
                 }

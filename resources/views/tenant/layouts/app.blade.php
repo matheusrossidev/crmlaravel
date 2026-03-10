@@ -443,6 +443,32 @@
             padding: 28px 28px;
         }
 
+        /* ===== SETTINGS NAV TABS ===== */
+        .settings-nav-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid #e8eaf0;
+            margin-bottom: 24px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .settings-nav-tabs::-webkit-scrollbar { display: none; }
+        .settings-nav-tab {
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            background: none;
+            transition: color .15s;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .settings-nav-tab:hover { color: #374151; text-decoration: none; }
+        .settings-nav-tab.active { color: #0085f3; border-bottom-color: #0085f3; }
+
         /* ===== CARDS ===== */
         .stat-card {
             background: #fff;
@@ -799,12 +825,6 @@
             <i class="bi bi-calendar3 nav-icon"></i>
             <span class="nav-label">Agenda</span>
         </a>
-    </nav>
-
-    {{-- Nav: Gerenciamento --}}
-    <nav class="nav-group">
-        <div class="nav-group-label">Gerenciamento</div>
-
         <a href="{{ route('reports.index') }}"
            class="nav-item {{ request()->routeIs('reports*') ? 'active' : '' }}"
            title="Relatórios">
@@ -826,80 +846,12 @@
             <span class="nav-label">Agentes de IA</span>
         </a>
 
-        @php
-            $settingsOpen = request()->routeIs('settings.*');
-        @endphp
-        <div class="nav-submenu-wrap {{ $settingsOpen ? 'open' : '' }}" id="settingsSubmenuWrap">
-            <button type="button"
-                    class="nav-item nav-submenu-toggle w-100"
-                    onclick="toggleSubmenu('settingsSubmenu')"
-                    title="Configurações"
-                    style="background:none;border:none;cursor:pointer;text-align:left;{{ $settingsOpen ? 'color:#007DFF;background:#eff6ff;font-weight:600;' : '' }}">
-                <i class="bi bi-gear nav-icon"></i>
-                <span class="nav-label">Configurações</span>
-                <i class="bi bi-chevron-down nav-chevron nav-label" id="settingsChevron"
-                   style="margin-left:auto;font-size:11px;transition:transform .2s;{{ $settingsOpen ? 'transform:rotate(180deg);' : '' }}"></i>
-            </button>
-            <div class="nav-submenu" id="settingsSubmenu" style="{{ $settingsOpen ? '' : 'display:none;' }}">
-                <a href="{{ route('settings.profile') }}"
-                   class="nav-subitem {{ request()->routeIs('settings.profile*') ? 'active' : '' }}">
-                    <i class="bi bi-person nav-icon" style="font-size:14px;"></i>
-                    <span class="nav-label">Perfil</span>
-                </a>
-                <a href="{{ route('settings.pipelines') }}"
-                   class="nav-subitem {{ request()->routeIs('settings.pipelines*') || request()->routeIs('settings.lost-reasons*') ? 'active' : '' }}">
-                    <i class="bi bi-funnel nav-icon" style="font-size:14px;"></i>
-                    <span class="nav-label">Pipelines</span>
-                </a>
-                @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
-                <a href="{{ route('settings.users') }}"
-                   class="nav-subitem {{ request()->routeIs('settings.users*') ? 'active' : '' }}">
-                    <i class="bi bi-people nav-icon" style="font-size:14px;"></i>
-                    <span class="nav-label">Usuários</span>
-                </a>
-                <a href="{{ route('settings.custom-fields') }}"
-                   class="nav-subitem {{ request()->routeIs('settings.custom-fields*') ? 'active' : '' }}">
-                    <i class="bi bi-sliders nav-icon" style="font-size:14px;"></i>
-                    <span class="nav-label">Campos extras</span>
-                </a>
-                @endif
-                <a href="{{ route('settings.integrations.index') }}"
-                   class="nav-subitem {{ request()->routeIs('settings.integrations*') ? 'active' : '' }}">
-                    <i class="bi bi-plugin nav-icon" style="font-size:14px;"></i>
-                    <span class="nav-label">Integrações</span>
-                </a>
-                @php
-                    $igConnected = auth()->check() && \App\Models\InstagramInstance::where('status', 'connected')->exists();
-                @endphp
-                @if($igConnected)
-                <a href="{{ route('settings.ig-automations.index') }}"
-                   class="nav-subitem {{ request()->routeIs('settings.ig-automations*') ? 'active' : '' }}">
-                    <i class="bi bi-instagram nav-icon" style="font-size:14px;"></i>
-                    <span class="nav-label">Automações Instagram</span>
-                </a>
-                @endif
-                <a href="{{ route('settings.tags') }}"
-                   class="nav-subitem {{ request()->routeIs('settings.tags*') ? 'active' : '' }}">
-                    <i class="bi bi-tag nav-icon" style="font-size:14px;"></i>
-                    <span class="nav-label">Tags</span>
-                </a>
-                <a href="{{ route('settings.automations') }}"
-                   class="nav-subitem {{ request()->routeIs('settings.automations*') ? 'active' : '' }}">
-                    <i class="bi bi-lightning-charge nav-icon" style="font-size:14px;"></i>
-                    <span class="nav-label">Automações</span>
-                </a>
-                <a href="{{ route('settings.billing') }}"
-                   class="nav-subitem {{ request()->routeIs('settings.billing', 'billing.*') ? 'active' : '' }}">
-                    <i class="bi bi-credit-card nav-icon" style="font-size:14px;"></i>
-                    <span class="nav-label">Cobrança</span>
-                </a>
-                <a href="{{ route('settings.api-keys') }}"
-                   class="nav-subitem {{ request()->routeIs('settings.api-keys*') ? 'active' : '' }}">
-                    <i class="bi bi-key nav-icon" style="font-size:14px;"></i>
-                    <span class="nav-label">API / Webhooks</span>
-                </a>
-            </div>
-        </div>
+        <a href="{{ route('settings.profile') }}"
+           class="nav-item {{ request()->routeIs('settings.*') || request()->routeIs('billing.*') ? 'active' : '' }}"
+           title="Configurações">
+            <i class="bi bi-gear nav-icon"></i>
+            <span class="nav-label">Configurações</span>
+        </a>
     </nav>
 
     @if(auth()->user()->isSuperAdmin())
@@ -1291,17 +1243,6 @@ document.addEventListener('click', function (e) {
 });
 // ─────────────────────────────────────────────────────────────────────────────
 
-function toggleSubmenu(id) {
-    // No modo colapsado, o flyout é controlado por CSS (:hover); não faz nada via JS
-    if (document.getElementById('sidebar')?.classList.contains('sidebar--collapsed')) return;
-
-    const menu    = document.getElementById(id);
-    const chevron = document.getElementById(id.replace('Submenu', 'Chevron'));
-    if (!menu) return;
-    const isOpen = menu.style.display !== 'none';
-    menu.style.display = isOpen ? 'none' : '';
-    if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
-}
 </script>
 
 <script>
@@ -1530,6 +1471,34 @@ function toggleSubmenu(id) {
 @endif
 
 @include('components.cookie-consent')
+
+{{-- Modal global: Limite do plano atingido --}}
+<div id="limitReachedModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:32px;width:420px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.18);text-align:center;">
+        <i class="bi bi-lock" style="font-size:44px;color:#f59e0b;display:block;margin-bottom:8px;"></i>
+        <h3 style="font-size:17px;font-weight:700;color:#1a1d23;margin:0 0 8px;">Limite do plano atingido</h3>
+        <p id="limitReachedMessage" style="color:#6b7280;font-size:14px;margin:0 0 20px;line-height:1.5;"></p>
+        <div style="display:flex;gap:10px;justify-content:center;">
+            <button onclick="closeLimitModal()" style="padding:9px 20px;border-radius:100px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;">Fechar</button>
+            <a href="{{ route('settings.billing') }}" style="padding:9px 20px;border-radius:100px;border:none;background:#0085f3;color:#fff;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+                <i class="bi bi-arrow-up-circle"></i> Fazer Upgrade
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function showLimitModal(message) {
+    document.getElementById('limitReachedMessage').textContent = message;
+    document.getElementById('limitReachedModal').style.display = 'flex';
+}
+function closeLimitModal() {
+    document.getElementById('limitReachedModal').style.display = 'none';
+}
+document.getElementById('limitReachedModal').addEventListener('click', function(e) {
+    if (e.target === this) closeLimitModal();
+});
+</script>
 
 </body>
 </html>

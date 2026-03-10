@@ -74,6 +74,10 @@ window.API = {
                 'Accept': 'application/json',
             },
         }).fail(function(xhr) {
+            if (xhr.status === 422 && xhr.responseJSON?.limit_reached) {
+                showLimitModal(xhr.responseJSON.message || 'Limite do plano atingido.');
+                return;
+            }
             if (xhr.status === 422) {
                 const errors = xhr.responseJSON?.errors ?? {};
                 Object.keys(errors).forEach(function(field) {
@@ -98,4 +102,18 @@ window.API = {
 window.escapeHtml = function(text) {
     const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
     return String(text ?? '').replace(/[&<>"']/g, m => map[m]);
+};
+
+// Verifica se resposta JSON indica limite de plano atingido.
+// Retorna true se limite foi atingido (e mostra modal), false caso contrário.
+window.checkLimitReached = function(data) {
+    if (data && data.limit_reached) {
+        if (typeof showLimitModal === 'function') {
+            showLimitModal(data.message || 'Limite do plano atingido.');
+        } else {
+            alert(data.message || 'Limite do plano atingido.');
+        }
+        return true;
+    }
+    return false;
 };

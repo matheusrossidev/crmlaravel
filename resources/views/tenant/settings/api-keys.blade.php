@@ -309,6 +309,9 @@
 
 @section('content')
 <div class="page-container">
+
+    @include('tenant.settings._tabs')
+
 <div class="api-layout">
 
     {{-- ── Left: Keys + Docs ──────────────────────────────────────────── --}}

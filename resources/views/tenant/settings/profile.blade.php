@@ -129,6 +129,9 @@
 
 @section('content')
 <div class="page-container">
+
+    @include('tenant.settings._tabs')
+
     <div class="profile-layout">
 
         {{-- ── Coluna esquerda: Info + Senha ── --}}

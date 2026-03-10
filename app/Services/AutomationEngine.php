@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\AiAgent;
 use App\Models\Automation;
 use App\Models\ChatbotFlow;
+use App\Models\Department;
 use App\Models\InstagramConversation;
 use App\Models\Lead;
 use App\Models\LeadNote;
@@ -192,6 +193,7 @@ class AutomationEngine
             'schedule_whatsapp_message'     => $this->actionScheduleWhatsappMessage($config, $ctx),
             'assign_campaign'               => $this->actionAssignCampaign($config, $ctx),
             'set_utm_params'                => $this->actionSetUtmParams($config, $ctx),
+            'transfer_to_department'        => $this->actionTransferToDepartment($config, $ctx),
             default               => null,
         };
     }
@@ -441,6 +443,21 @@ class AutomationEngine
             return;
         }
         Lead::withoutGlobalScope('tenant')->where('id', $lead->id)->update($fields);
+    }
+
+    private function actionTransferToDepartment(array $config, array $ctx): void
+    {
+        $conv = $ctx['conversation'] ?? null;
+        if (! $conv || empty($config['department_id'])) {
+            return;
+        }
+        $department = Department::withoutGlobalScope('tenant')
+            ->where('id', (int) $config['department_id'])
+            ->where('tenant_id', $ctx['tenant_id'] ?? 0)
+            ->first();
+        if ($department) {
+            $department->assignConversation($conv);
+        }
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────────

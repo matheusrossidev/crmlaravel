@@ -149,6 +149,8 @@
 @section('content')
 <div class="page-container">
 
+    @include('tenant.settings._tabs')
+
     <div class="cf-card">
         <div class="cf-card-header">
             <h3><i class="bi bi-layout-text-window-sidebar" style="color:#3B82F6;"></i> Campos Personalizados</h3>
@@ -393,6 +395,8 @@ async function saveField() {
             toastr.success(isEdit ? 'Campo atualizado!' : 'Campo criado!');
             closeDrawer();
             setTimeout(() => location.reload(), 700);
+        } else if (checkLimitReached(data)) {
+            // modal de upgrade exibido
         } else if (data.errors) {
             Object.keys(data.errors).forEach(f => {
                 const el = document.getElementById('err' + f.charAt(0).toUpperCase() + f.slice(1));

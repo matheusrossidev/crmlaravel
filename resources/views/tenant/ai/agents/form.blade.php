@@ -640,9 +640,24 @@
                     </div>
                 </div>
 
+                {{-- Departamento de transferência --}}
+                <div style="margin-top:16px;">
+                    <label class="form-label fw-semibold" style="font-size:13px;">Transferir para departamento</label>
+                    <select name="transfer_to_department_id" class="form-select form-select-sm" style="max-width:320px;">
+                        <option value="">— Nenhum —</option>
+                        @foreach($departments ?? [] as $dept)
+                            <option value="{{ $dept->id }}"
+                                {{ old('transfer_to_department_id', $agent->transfer_to_department_id ?? '') == $dept->id ? 'selected' : '' }}>
+                                {{ $dept->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <div class="form-text" style="font-size:11px;color:#9ca3af;">Se definido, ao transferir para humano a conversa será encaminhada ao departamento (com distribuição automática). Tem prioridade sobre o usuário abaixo.</div>
+                </div>
+
                 {{-- Usuário de transferência --}}
                 <div style="margin-top:16px;">
-                    <label class="form-label fw-semibold" style="font-size:13px;">Atribuir conversa a (ao transferir)</label>
+                    <label class="form-label fw-semibold" style="font-size:13px;">Atribuir conversa a usuário (ao transferir)</label>
                     <select name="transfer_to_user_id" class="form-select form-select-sm" style="max-width:320px;">
                         <option value="">— Nenhum (sem atribuição automática) —</option>
                         @foreach($users as $u)
@@ -652,7 +667,7 @@
                             </option>
                         @endforeach
                     </select>
-                    <div class="form-text" style="font-size:11px;color:#9ca3af;">Quando o agente usar "assign_human", a conversa será atribuída a este usuário e o IA desativado.</div>
+                    <div class="form-text" style="font-size:11px;color:#9ca3af;">Fallback: se nenhum departamento for definido, a conversa será atribuída a este usuário e o IA desativado.</div>
                 </div>
             </div>
         </div>

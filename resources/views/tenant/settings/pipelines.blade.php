@@ -1,36 +1,12 @@
 @extends('tenant.layouts.app')
 
-@php($title = 'Configurações')
-@php($pageIcon = 'gear')
+@php
+    $title = 'Configurações';
+    $pageIcon = 'gear';
+@endphp
 
 @push('styles')
 <style>
-    .settings-tabs {
-        display: flex;
-        gap: 4px;
-        border-bottom: 2px solid #e8eaf0;
-        margin-bottom: 24px;
-    }
-    .settings-tab {
-        padding: 10px 20px;
-        font-size: 13.5px;
-        font-weight: 600;
-        color: #6b7280;
-        border-bottom: 2px solid transparent;
-        margin-bottom: -2px;
-        cursor: pointer;
-        background: none;
-        border-top: none;
-        border-left: none;
-        border-right: none;
-        transition: color .15s;
-    }
-    .settings-tab:hover { color: #374151; }
-    .settings-tab.active { color: #3B82F6; border-bottom-color: #3B82F6; }
-
-    .tab-pane { display: none; }
-    .tab-pane.active { display: block; }
-
     .pipeline-card {
         background: #fff;
         border: 1px solid #e8eaf0;
@@ -89,17 +65,6 @@
         transition: background .1s; border: none; width: 100%; text-align: left;
     }
     .add-stage-btn:hover { background: #f0f4ff; color: #0085f3; }
-
-    .reason-table-wrap { background: #fff; border: 1px solid #e8eaf0; border-radius: 12px; overflow: hidden; }
-    .reason-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-    .reason-table thead th {
-        padding: 11px 16px; font-size: 11.5px; font-weight: 700; color: #9ca3af;
-        text-transform: uppercase; letter-spacing: .06em; background: #fafafa;
-        border-bottom: 1px solid #f0f2f7;
-    }
-    .reason-table tbody tr { border-bottom: 1px solid #f7f8fa; }
-    .reason-table tbody tr:last-child { border-bottom: none; }
-    .reason-table tbody td { padding: 12px 16px; color: #374151; vertical-align: middle; }
 
     .toggle { position: relative; display: inline-block; width: 36px; height: 20px; }
     .toggle input { display: none; }
@@ -162,124 +127,68 @@
 @section('content')
 <div class="page-container">
 
-    <div class="settings-tabs">
-        <button class="settings-tab active" data-tab="pipelines">Funis &amp; Etapas</button>
-        <button class="settings-tab" data-tab="reasons">Motivos de Perda</button>
+    @include('tenant.settings._tabs')
+
+    <div class="section-header">
+        <div class="section-title">Funis</div>
+        <button class="btn-primary-sm" id="btnNovoPipeline">
+            <i class="bi bi-plus-lg"></i> Novo Funil
+        </button>
     </div>
 
-    {{-- TAB: PIPELINES --}}
-    <div class="tab-pane active" id="tab-pipelines">
-        <div class="section-header">
-            <div class="section-title">Funis</div>
-            <button class="btn-primary-sm" id="btnNovoPipeline">
-                <i class="bi bi-plus-lg"></i> Novo Funil
-            </button>
-        </div>
-
-        <div id="pipelinesContainer">
-            @forelse($pipelines as $pipeline)
-            <div class="pipeline-card" data-pipeline-id="{{ $pipeline->id }}">
-                <div class="pipeline-header" onclick="togglePipeline(this)">
-                    <span class="pipeline-color-dot" style="background: {{ $pipeline->color }};"></span>
-                    <span class="pipeline-name">{{ $pipeline->name }}</span>
-                    @if($pipeline->is_default)
-                    <span class="default-badge">Padrão</span>
-                    @endif
-                    <div class="pipeline-actions" onclick="event.stopPropagation()">
-                        <button class="btn-icon" title="Definir como padrão" onclick="setDefaultPipeline({{ $pipeline->id }}, '{{ addslashes($pipeline->name) }}', '{{ $pipeline->color }}')">
-                            <i class="bi bi-star{{ $pipeline->is_default ? '-fill' : '' }}" style="{{ $pipeline->is_default ? 'color:#f59e0b;' : '' }}"></i>
-                        </button>
-                        <button class="btn-icon" title="Editar" onclick="openEditPipeline({{ $pipeline->id }}, '{{ addslashes($pipeline->name) }}', '{{ $pipeline->color }}', {{ $pipeline->auto_create_lead ? 'true' : 'false' }}, {{ $pipeline->auto_create_from_whatsapp ? 'true' : 'false' }}, {{ $pipeline->auto_create_from_instagram ? 'true' : 'false' }})">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <button class="btn-icon danger" title="Excluir" onclick="deletePipeline({{ $pipeline->id }}, this)">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                        <i class="bi bi-chevron-down" style="font-size:13px;color:#9ca3af;transition:transform .2s;" id="chevron-{{ $pipeline->id }}"></i>
-                    </div>
-                </div>
-                <div class="pipeline-body" id="body-{{ $pipeline->id }}">
-                    <ul class="stages-list" data-pipeline-id="{{ $pipeline->id }}" id="stages-{{ $pipeline->id }}">
-                        @foreach($pipeline->stages as $stage)
-                        <li class="stage-item" data-stage-id="{{ $stage->id }}">
-                            <i class="bi bi-grip-vertical stage-drag-handle"></i>
-                            <span class="stage-color-dot" style="background: {{ $stage->color }};"></span>
-                            <span class="stage-name">{{ $stage->name }}</span>
-                            @if($stage->is_won)  <span class="stage-badge won-badge">Ganho</span>  @endif
-                            @if($stage->is_lost) <span class="stage-badge lost-badge">Perdido</span> @endif
-                            <div style="display:flex;gap:5px;">
-                                <button class="btn-icon" onclick="openEditStage({{ $pipeline->id }}, {{ $stage->id }}, '{{ addslashes($stage->name) }}', '{{ $stage->color }}', {{ $stage->is_won ? 'true' : 'false' }}, {{ $stage->is_lost ? 'true' : 'false' }})">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn-icon danger" onclick="deleteStage({{ $pipeline->id }}, {{ $stage->id }}, this)">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </li>
-                        @endforeach
-                    </ul>
-                    <button class="add-stage-btn" onclick="openAddStage({{ $pipeline->id }})">
-                        <i class="bi bi-plus-lg"></i> Adicionar etapa
+    <div id="pipelinesContainer">
+        @forelse($pipelines as $pipeline)
+        <div class="pipeline-card" data-pipeline-id="{{ $pipeline->id }}">
+            <div class="pipeline-header" onclick="togglePipeline(this)">
+                <span class="pipeline-color-dot" style="background: {{ $pipeline->color }};"></span>
+                <span class="pipeline-name">{{ $pipeline->name }}</span>
+                @if($pipeline->is_default)
+                <span class="default-badge">Padrão</span>
+                @endif
+                <div class="pipeline-actions" onclick="event.stopPropagation()">
+                    <button class="btn-icon" title="Definir como padrão" onclick="setDefaultPipeline({{ $pipeline->id }}, '{{ addslashes($pipeline->name) }}', '{{ $pipeline->color }}')">
+                        <i class="bi bi-star{{ $pipeline->is_default ? '-fill' : '' }}" style="{{ $pipeline->is_default ? 'color:#f59e0b;' : '' }}"></i>
                     </button>
+                    <button class="btn-icon" title="Editar" onclick="openEditPipeline({{ $pipeline->id }}, '{{ addslashes($pipeline->name) }}', '{{ $pipeline->color }}', {{ $pipeline->auto_create_lead ? 'true' : 'false' }}, {{ $pipeline->auto_create_from_whatsapp ? 'true' : 'false' }}, {{ $pipeline->auto_create_from_instagram ? 'true' : 'false' }})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn-icon danger" title="Excluir" onclick="deletePipeline({{ $pipeline->id }}, this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    <i class="bi bi-chevron-down" style="font-size:13px;color:#9ca3af;transition:transform .2s;" id="chevron-{{ $pipeline->id }}"></i>
                 </div>
             </div>
-            @empty
-            <div id="emptyPipelines" style="text-align:center;padding:60px 20px;color:#9ca3af;">
-                <i class="bi bi-diagram-3" style="font-size:40px;opacity:.3;display:block;margin-bottom:12px;"></i>
-                <p style="font-size:14px;margin:0;">Nenhum funil criado ainda.</p>
+            <div class="pipeline-body" id="body-{{ $pipeline->id }}">
+                <ul class="stages-list" data-pipeline-id="{{ $pipeline->id }}" id="stages-{{ $pipeline->id }}">
+                    @foreach($pipeline->stages as $stage)
+                    <li class="stage-item" data-stage-id="{{ $stage->id }}">
+                        <i class="bi bi-grip-vertical stage-drag-handle"></i>
+                        <span class="stage-color-dot" style="background: {{ $stage->color }};"></span>
+                        <span class="stage-name">{{ $stage->name }}</span>
+                        @if($stage->is_won)  <span class="stage-badge won-badge">Ganho</span>  @endif
+                        @if($stage->is_lost) <span class="stage-badge lost-badge">Perdido</span> @endif
+                        <div style="display:flex;gap:5px;">
+                            <button class="btn-icon" onclick="openEditStage({{ $pipeline->id }}, {{ $stage->id }}, '{{ addslashes($stage->name) }}', '{{ $stage->color }}', {{ $stage->is_won ? 'true' : 'false' }}, {{ $stage->is_lost ? 'true' : 'false' }})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn-icon danger" onclick="deleteStage({{ $pipeline->id }}, {{ $stage->id }}, this)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </li>
+                    @endforeach
+                </ul>
+                <button class="add-stage-btn" onclick="openAddStage({{ $pipeline->id }})">
+                    <i class="bi bi-plus-lg"></i> Adicionar etapa
+                </button>
             </div>
-            @endforelse
         </div>
-    </div>
-
-    {{-- TAB: MOTIVOS DE PERDA --}}
-    <div class="tab-pane" id="tab-reasons">
-        <div class="section-header">
-            <div class="section-title">Motivos de Perda</div>
-            <button class="btn-primary-sm" id="btnNovoMotivo">
-                <i class="bi bi-plus-lg"></i> Novo Motivo
-            </button>
+        @empty
+        <div id="emptyPipelines" style="text-align:center;padding:60px 20px;color:#9ca3af;">
+            <i class="bi bi-diagram-3" style="font-size:40px;opacity:.3;display:block;margin-bottom:12px;"></i>
+            <p style="font-size:14px;margin:0;">Nenhum funil criado ainda.</p>
         </div>
-
-        <div class="reason-table-wrap">
-            <table class="reason-table">
-                <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th style="width:100px;text-align:center;">Ativo</th>
-                        <th style="width:80px;"></th>
-                    </tr>
-                </thead>
-                <tbody id="reasonsBody">
-                    @forelse($reasons ?? [] as $reason)
-                    <tr data-reason-id="{{ $reason->id }}">
-                        <td class="reason-name-cell">{{ $reason->name }}</td>
-                        <td style="text-align:center;">
-                            <label class="toggle">
-                                <input type="checkbox" {{ $reason->is_active ? 'checked' : '' }}
-                                       onchange="toggleReason({{ $reason->id }}, '{{ addslashes($reason->name) }}', this.checked)">
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </td>
-                        <td>
-                            <div style="display:flex;gap:5px;justify-content:flex-end;">
-                                <button class="btn-icon" onclick="openEditReason({{ $reason->id }}, '{{ addslashes($reason->name) }}')">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn-icon danger" onclick="deleteReason({{ $reason->id }}, this)">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr id="emptyReasons">
-                        <td colspan="3" style="text-align:center;padding:40px;color:#9ca3af;">Nenhum motivo cadastrado.</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+        @endforelse
     </div>
 
 </div>
@@ -363,22 +272,6 @@
         </div>
     </div>
 </div>
-
-{{-- MODAL: Motivo de Perda --}}
-<div class="modal-overlay" id="modalReason">
-    <div class="modal-box">
-        <div class="modal-title" id="modalReasonTitle">Novo Motivo</div>
-        <input type="hidden" id="reasonId">
-        <div class="form-group">
-            <label class="form-label">Nome do Motivo</label>
-            <input type="text" id="reasonName" class="form-control" placeholder="Ex: Sem orçamento">
-        </div>
-        <div class="modal-footer">
-            <button class="btn-cancel" onclick="closeReasonModal()">Cancelar</button>
-            <button class="btn-save" onclick="saveReason()">Salvar</button>
-        </div>
-    </div>
-</div>
 @endsection
 
 @push('scripts')
@@ -391,20 +284,7 @@ const STAGE_STORE = @json(route('settings.pipelines.stages.store',  ['pipeline' 
 const STAGE_UPD   = @json(route('settings.pipelines.stages.update', ['pipeline' => '__P__', 'stage' => '__S__']));
 const STAGE_DEL   = @json(route('settings.pipelines.stages.destroy',['pipeline' => '__P__', 'stage' => '__S__']));
 const STAGE_REORD = @json(route('settings.pipelines.stages.reorder',['pipeline' => '__ID__']));
-const REASON_STORE = @json(route('settings.lost-reasons.store'));
-const REASON_UPD   = @json(route('settings.lost-reasons.update',  ['reason' => '__ID__']));
-const REASON_DEL   = @json(route('settings.lost-reasons.destroy', ['reason' => '__ID__']));
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
-
-/* ---- Tabs ---- */
-document.querySelectorAll('.settings-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-        document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
-    });
-});
 
 /* ---- Accordion ---- */
 function togglePipeline(header) {
@@ -501,7 +381,10 @@ async function savePipeline() {
             })
         });
         const data = await res.json();
-        if (!data.success) { alert(data.message || 'Erro ao salvar.'); return; }
+        if (!data.success) {
+            if (checkLimitReached(data)) return;
+            alert(data.message || 'Erro ao salvar.'); return;
+        }
 
         closePipelineModal();
         if (id) {
@@ -673,97 +556,6 @@ function deleteStage(pipelineId, stageId, btn) {
             const data = await res.json();
             if (!data.success) { toastr.error(data.message || 'Não foi possível excluir.'); return; }
             btn.closest('.stage-item').remove();
-        },
-    });
-}
-
-/* ---- Reasons ---- */
-document.getElementById('btnNovoMotivo').addEventListener('click', () => {
-    document.getElementById('modalReasonTitle').textContent = 'Novo Motivo';
-    document.getElementById('reasonId').value = '';
-    document.getElementById('reasonName').value = '';
-    document.getElementById('modalReason').classList.add('open');
-    setTimeout(() => document.getElementById('reasonName').focus(), 100);
-});
-
-function openEditReason(id, name) {
-    document.getElementById('modalReasonTitle').textContent = 'Editar Motivo';
-    document.getElementById('reasonId').value = id;
-    document.getElementById('reasonName').value = name;
-    document.getElementById('modalReason').classList.add('open');
-}
-
-function closeReasonModal() { document.getElementById('modalReason').classList.remove('open'); }
-
-async function saveReason() {
-    const id   = document.getElementById('reasonId').value;
-    const name = document.getElementById('reasonName').value.trim();
-    if (!name) { document.getElementById('reasonName').focus(); return; }
-
-    const url    = id ? REASON_UPD.replace('__ID__', id) : REASON_STORE;
-    const method = id ? 'PUT' : 'POST';
-
-    const res  = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-        body: JSON.stringify({ name, is_active: true })
-    });
-    const data = await res.json();
-    if (!data.success) { alert(data.message || 'Erro.'); return; }
-
-    closeReasonModal();
-    const r = data.reason;
-    const body = document.getElementById('reasonsBody');
-    document.getElementById('emptyReasons')?.remove();
-
-    if (id) {
-        const row = body.querySelector(`tr[data-reason-id="${id}"]`);
-        if (row) row.querySelector('.reason-name-cell').textContent = r.name;
-    } else {
-        body.insertAdjacentHTML('beforeend', `<tr data-reason-id="${r.id}">
-            <td class="reason-name-cell">${escapeHtml(r.name)}</td>
-            <td style="text-align:center;">
-                <label class="toggle">
-                    <input type="checkbox" checked onchange="toggleReason(${r.id},'${escapeJs(r.name)}',this.checked)">
-                    <span class="toggle-slider"></span>
-                </label>
-            </td>
-            <td>
-                <div style="display:flex;gap:5px;justify-content:flex-end;">
-                    <button class="btn-icon" onclick="openEditReason(${r.id},'${escapeJs(r.name)}')"><i class="bi bi-pencil"></i></button>
-                    <button class="btn-icon danger" onclick="deleteReason(${r.id},this)"><i class="bi bi-trash"></i></button>
-                </div>
-            </td>
-        </tr>`);
-    }
-}
-
-async function toggleReason(id, name, active) {
-    await fetch(REASON_UPD.replace('__ID__', id), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-        body: JSON.stringify({ name, is_active: active })
-    });
-}
-
-function deleteReason(id, btn) {
-    confirmAction({
-        title: 'Excluir motivo',
-        message: 'Tem certeza que deseja excluir este motivo de perda?',
-        confirmText: 'Excluir',
-        onConfirm: async () => {
-            const res  = await fetch(REASON_DEL.replace('__ID__', id), {
-                method: 'DELETE', headers: { 'X-CSRF-TOKEN': CSRF }
-            });
-            const data = await res.json();
-            if (!data.success) { toastr.error(data.message || 'Erro ao excluir.'); return; }
-            if (data.deactivated) {
-                toastr.warning('Este motivo possui registros e foi desativado.');
-                const row = document.querySelector(`tr[data-reason-id="${id}"]`);
-                if (row) row.querySelector('input[type=checkbox]').checked = false;
-            } else {
-                btn.closest('tr').remove();
-            }
         },
     });
 }

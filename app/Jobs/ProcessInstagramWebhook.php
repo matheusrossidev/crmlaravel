@@ -13,8 +13,10 @@ use App\Models\InstagramInstance;
 use App\Models\InstagramMessage;
 use App\Models\Lead;
 use App\Models\Pipeline;
+use App\Models\Tenant;
 use App\Services\AutomationEngine;
 use App\Services\InstagramService;
+use App\Services\PlanLimitChecker;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -439,6 +441,15 @@ class ProcessInstagramWebhook implements ShouldQueue
 
         if ($pipeline->auto_create_lead === false || $pipeline->auto_create_from_instagram === false) {
             return null; // Auto-criação via Instagram desativada para este pipeline
+        }
+
+        $tenant = Tenant::find($tenantId);
+        if ($tenant) {
+            $limitMsg = PlanLimitChecker::check('leads', $tenant);
+            if ($limitMsg) {
+                Log::channel('whatsapp')->info("Lead IG não criado (limite do plano): {$name} tenant={$tenantId}");
+                return null;
+            }
         }
 
         $stage = $pipeline->stages()->orderBy('position')->first();

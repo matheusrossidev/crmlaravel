@@ -149,8 +149,9 @@ class AuthController extends Controller
             'email'              => $data['email'],
             'password'           => $data['password'],
             'role'               => 'admin',
-            'email_verified_at'  => null,
-            'verification_token' => $token,
+            'email_verified_at'              => null,
+            'verification_token'             => $token,
+            'verification_token_expires_at'  => now()->addHours(48),
         ]);
 
         // Registra consentimento LGPD
@@ -204,9 +205,18 @@ class AuthController extends Controller
             ]);
         }
 
+        // Verificar se o token expirou
+        if ($user->verification_token_expires_at && $user->verification_token_expires_at->isPast()) {
+            $user->update(['verification_token' => null, 'verification_token_expires_at' => null]);
+            return redirect()->route('login')->withErrors([
+                'email' => 'Link de verificação expirado. Solicite um novo cadastro.',
+            ]);
+        }
+
         $user->update([
-            'email_verified_at'  => now(),
-            'verification_token' => null,
+            'email_verified_at'              => now(),
+            'verification_token'             => null,
+            'verification_token_expires_at'  => null,
         ]);
 
         // Envia email de boas-vindas

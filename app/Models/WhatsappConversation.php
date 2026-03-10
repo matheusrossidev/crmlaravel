@@ -20,7 +20,7 @@ class WhatsappConversation extends Model
         'tenant_id', 'instance_id', 'lead_id', 'phone', 'is_group',
         'contact_name', 'contact_picture_url', 'tags',
         'whatsapp_message_id', 'referral_source', 'referral_campaign_id',
-        'status', 'assigned_user_id', 'ai_agent_id',
+        'status', 'assigned_user_id', 'department_id', 'ai_agent_id',
         'chatbot_flow_id', 'chatbot_node_id', 'chatbot_variables',
         'unread_count', 'started_at', 'last_message_at', 'closed_at',
         'followup_count', 'last_followup_at',
@@ -59,6 +59,11 @@ class WhatsappConversation extends Model
     public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 
     public function aiAgent(): BelongsTo

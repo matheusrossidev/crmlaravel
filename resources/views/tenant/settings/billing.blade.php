@@ -282,6 +282,8 @@
 @section('content')
 <div class="page-container">
 
+    @include('tenant.settings._tabs')
+
     <div class="section-header">
         <div>
             <div class="section-title">Cobrança</div>

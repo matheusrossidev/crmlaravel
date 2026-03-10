@@ -25,9 +25,11 @@ class OAuthConnection extends Model
     ];
 
     protected $casts = [
-        'scopes_json' => 'array',
+        'access_token'     => 'encrypted',
+        'refresh_token'    => 'encrypted',
+        'scopes_json'      => 'array',
         'token_expires_at' => 'datetime',
-        'last_sync_at' => 'datetime',
+        'last_sync_at'     => 'datetime',
     ];
 
     public function tenant(): BelongsTo

@@ -1,0 +1,604 @@
+@extends('tenant.layouts.app')
+
+@php
+    $title    = 'Configurações';
+    $pageIcon = 'gear';
+@endphp
+
+@push('styles')
+<style>
+    .dept-table-wrap {
+        background: #fff;
+        border: 1px solid #e8eaf0;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .dept-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+    }
+    .dept-table thead th {
+        padding: 11px 16px;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        background: #fafafa;
+        border-bottom: 1px solid #f0f2f7;
+    }
+    .dept-table tbody tr { border-bottom: 1px solid #f7f8fa; }
+    .dept-table tbody tr:last-child { border-bottom: none; }
+    .dept-table tbody td {
+        padding: 12px 16px;
+        color: #374151;
+        vertical-align: middle;
+    }
+
+    .dept-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12.5px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .dept-chip i { font-size: 13px; }
+
+    .badge-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 11.5px;
+        font-weight: 600;
+        background: #f0f4ff;
+        color: #3B82F6;
+    }
+
+    .badge-strategy {
+        display: inline-flex;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+
+    .badge-agent {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        background: #ecfdf5;
+        color: #059669;
+    }
+
+    .status-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    .status-dot.active { background: #10B981; }
+    .status-dot.inactive { background: #d1d5db; }
+
+    .btn-icon {
+        width: 28px; height: 28px; border-radius: 7px;
+        border: 1px solid #e8eaf0; background: #fff; color: #6b7280;
+        display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; font-size: 13px; transition: all .15s;
+    }
+    .btn-icon:hover { background: #f0f4ff; color: #374151; }
+    .btn-icon.danger:hover { background: #fee2e2; color: #ef4444; border-color: #fca5a5; }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+    }
+    .section-title { font-size: 15px; font-weight: 700; color: #1a1d23; }
+    .section-subtitle { font-size: 13px; color: #9ca3af; margin-top: 3px; }
+
+    /* Modal */
+    .dept-modal-overlay {
+        display: none;
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,.45);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    .dept-modal-overlay.open { display: flex; }
+    .dept-modal {
+        background: #fff;
+        border-radius: 14px;
+        padding: 28px;
+        width: 520px;
+        max-width: 95vw;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0,0,0,.18);
+    }
+    .dept-modal-title {
+        font-size: 16px; font-weight: 700; color: #1a1d23;
+        margin-bottom: 20px;
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-label {
+        display: block; font-size: 11.5px; font-weight: 700;
+        color: #6b7280; margin-bottom: 5px;
+        text-transform: uppercase; letter-spacing: .05em;
+    }
+    .form-control, .form-select {
+        width: 100%; padding: 9px 12px;
+        border: 1.5px solid #e8eaf0; border-radius: 9px;
+        font-size: 13.5px; outline: none; font-family: inherit;
+        transition: border-color .15s; box-sizing: border-box;
+        background: #fff;
+    }
+    .form-control:focus, .form-select:focus { border-color: #3B82F6; }
+
+    .form-row { display: flex; gap: 12px; }
+    .form-row .form-group { flex: 1; }
+
+    .color-row { display: flex; gap: 8px; align-items: center; }
+    .color-picker-input {
+        width: 46px; height: 38px; padding: 3px;
+        border: 1.5px solid #e8eaf0; border-radius: 9px;
+        cursor: pointer; background: #fff; flex-shrink: 0;
+    }
+
+    .preset-colors { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .preset-btn {
+        width: 24px; height: 24px; border-radius: 6px;
+        border: 2px solid transparent; cursor: pointer;
+        transition: transform .1s, border-color .1s;
+    }
+    .preset-btn:hover { transform: scale(1.15); }
+    .preset-btn.selected { border-color: #1a1d23; }
+
+    .user-list { display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; }
+    .user-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 7px 10px; border-radius: 8px;
+        cursor: pointer; transition: background .1s;
+        font-size: 13px;
+    }
+    .user-item:hover { background: #f0f4ff; }
+    .user-item input[type="checkbox"] { accent-color: #3B82F6; }
+    .user-item-name { font-weight: 600; color: #1a1d23; }
+    .user-item-email { font-size: 11.5px; color: #9ca3af; }
+
+    .modal-footer {
+        display: flex; gap: 8px; justify-content: flex-end;
+        margin-top: 22px;
+    }
+    .btn-cancel {
+        padding: 8px 18px; border-radius: 8px;
+        border: 1.5px solid #e8eaf0; background: #fff;
+        font-size: 13px; font-weight: 600; color: #6b7280;
+        cursor: pointer; transition: background .15s;
+    }
+    .btn-cancel:hover { background: #f0f2f7; }
+    .btn-save {
+        padding: 8px 22px; border-radius: 8px; border: none;
+        background: #3B82F6; color: #fff;
+        font-size: 13px; font-weight: 600;
+        cursor: pointer; transition: background .15s;
+    }
+    .btn-save:hover { background: #2563eb; }
+    .btn-save:disabled { opacity: .6; cursor: not-allowed; }
+
+    .empty-state {
+        text-align: center; padding: 56px 24px; color: #9ca3af;
+    }
+    .empty-state i { font-size: 36px; opacity: .25; display: block; margin-bottom: 12px; }
+</style>
+@endpush
+
+@section('content')
+<div class="page-container">
+
+    @include('tenant.settings._tabs')
+
+    <div class="section-header">
+        <div>
+            <div class="section-title">Departamentos</div>
+            <div class="section-subtitle">Organize sua equipe em setores e atribua agentes ou bots padrão.</div>
+        </div>
+        <button class="btn-primary-sm" id="btnNewDept">
+            <i class="bi bi-plus-lg"></i> Novo Departamento
+        </button>
+    </div>
+
+    <div class="dept-table-wrap">
+        <table class="dept-table">
+            <thead>
+                <tr>
+                    <th>Departamento</th>
+                    <th>Membros</th>
+                    <th>Agente / Bot</th>
+                    <th>Estratégia</th>
+                    <th style="width:60px;">Status</th>
+                    <th style="width:80px;"></th>
+                </tr>
+            </thead>
+            <tbody id="deptBody">
+                @forelse($departments as $dept)
+                @php
+                    $c = $dept->color ?? '#3B82F6';
+                    [$r, $g, $b] = sscanf($c, '#%02x%02x%02x') ?: [59, 130, 246];
+                @endphp
+                <tr data-id="{{ $dept->id }}">
+                    <td>
+                        <span class="dept-chip"
+                              style="background:rgba({{ $r }},{{ $g }},{{ $b }},.10);color:{{ $c }};border:1px solid rgba({{ $r }},{{ $g }},{{ $b }},.25);">
+                            <i class="bi {{ $dept->icon ?? 'bi-building' }}"></i>
+                            {{ $dept->name }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge-count"><i class="bi bi-people"></i> {{ $dept->users->count() }}</span>
+                    </td>
+                    <td>
+                        @if($dept->defaultAiAgent)
+                            <span class="badge-agent"><i class="bi bi-robot"></i> {{ $dept->defaultAiAgent->name }}</span>
+                        @elseif($dept->defaultChatbotFlow)
+                            <span class="badge-agent"><i class="bi bi-diagram-3"></i> {{ $dept->defaultChatbotFlow->name }}</span>
+                        @else
+                            <span style="font-size:12px;color:#d1d5db;">—</span>
+                        @endif
+                    </td>
+                    <td>
+                        <span class="badge-strategy">
+                            {{ $dept->assignment_strategy === 'round_robin' ? 'Round-robin' : 'Menos ocupado' }}
+                        </span>
+                    </td>
+                    <td style="text-align:center;">
+                        <span class="status-dot {{ $dept->is_active ? 'active' : 'inactive' }}"
+                              title="{{ $dept->is_active ? 'Ativo' : 'Inativo' }}"></span>
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:5px;justify-content:flex-end;">
+                            <button class="btn-icon" title="Editar" onclick="openEdit({{ $dept->id }})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn-icon danger" title="Excluir" onclick="deleteDept({{ $dept->id }},this)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                @empty
+                <tr id="emptyRow">
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="bi bi-building"></i>
+                            Nenhum departamento criado. Clique em <strong>Novo Departamento</strong> para começar.
+                        </div>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+{{-- Modal Criar/Editar --}}
+<div class="dept-modal-overlay" id="deptModal">
+    <div class="dept-modal">
+        <div class="dept-modal-title" id="modalTitle">Novo Departamento</div>
+        <input type="hidden" id="deptId">
+
+        <div class="form-row">
+            <div class="form-group" style="flex:2;">
+                <label class="form-label">Nome</label>
+                <input type="text" id="deptName" class="form-control" placeholder="Ex: Financeiro, Suporte...">
+            </div>
+            <div class="form-group" style="flex:1;">
+                <label class="form-label">Ícone</label>
+                <select id="deptIcon" class="form-select">
+                    <option value="bi-building">Prédio</option>
+                    <option value="bi-headset">Headset</option>
+                    <option value="bi-cash-stack">Financeiro</option>
+                    <option value="bi-megaphone">Marketing</option>
+                    <option value="bi-graph-up">Vendas</option>
+                    <option value="bi-tools">Técnico</option>
+                    <option value="bi-people">Equipe</option>
+                    <option value="bi-shield-check">Compliance</option>
+                    <option value="bi-truck">Logística</option>
+                    <option value="bi-briefcase">Negócios</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Descrição</label>
+            <input type="text" id="deptDescription" class="form-control" placeholder="Breve descrição do setor (opcional)">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Cor</label>
+            <div class="color-row">
+                <input type="color" id="deptColorPicker" class="color-picker-input" value="#3B82F6"
+                       oninput="document.getElementById('deptColorText').value=this.value; highlightPreset(this.value);">
+                <input type="text" id="deptColorText" class="form-control"
+                       value="#3B82F6" placeholder="#3B82F6"
+                       oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value)){document.getElementById('deptColorPicker').value=this.value;highlightPreset(this.value);}"
+                       style="flex:1;font-family:monospace;">
+            </div>
+            <div class="preset-colors">
+                @foreach(['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#EC4899','#06B6D4','#F97316','#84CC16','#6B7280'] as $c)
+                <button type="button" class="preset-btn" style="background:{{ $c }};"
+                        data-color="{{ $c }}" onclick="setPreset('{{ $c }}')"></button>
+                @endforeach
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Agente IA Padrão</label>
+                <select id="deptAiAgent" class="form-select">
+                    <option value="">Nenhum</option>
+                    @foreach($aiAgents as $agent)
+                    <option value="{{ $agent->id }}">{{ $agent->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Chatbot Padrão</label>
+                <select id="deptChatbot" class="form-select">
+                    <option value="">Nenhum</option>
+                    @foreach($chatbotFlows as $flow)
+                    <option value="{{ $flow->id }}">{{ $flow->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Estratégia de Distribuição</label>
+            <select id="deptStrategy" class="form-select">
+                <option value="round_robin">Round-robin (revezamento)</option>
+                <option value="least_busy">Menos ocupado</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Membros</label>
+            <div class="user-list" id="userList">
+                @foreach($users as $u)
+                <label class="user-item">
+                    <input type="checkbox" value="{{ $u->id }}" class="user-check">
+                    <div>
+                        <span class="user-item-name">{{ $u->name }}</span>
+                        <span class="user-item-email">{{ $u->email }}</span>
+                    </div>
+                </label>
+                @endforeach
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+            <button class="btn-save" id="btnSave" onclick="saveDept()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+{{-- Modal: confirmar exclusão --}}
+<div class="dept-modal-overlay" id="deleteDeptModal">
+    <div class="dept-modal" style="text-align:center;width:400px;">
+        <div style="font-size:36px;color:#EF4444;margin-bottom:12px;"><i class="bi bi-trash3-fill"></i></div>
+        <div class="dept-modal-title" style="margin-bottom:8px;">Excluir departamento?</div>
+        <p style="font-size:13.5px;color:#6b7280;margin-bottom:24px;line-height:1.5;">
+            As conversas deste setor ficarão sem departamento atribuído.<br>Esta ação não pode ser desfeita.
+        </p>
+        <div style="display:flex;justify-content:center;gap:10px;">
+            <button class="btn-cancel" onclick="document.getElementById('deleteDeptModal').classList.remove('open')">Cancelar</button>
+            <button class="btn-save" style="background:#EF4444;" onclick="_doDeleteDept()">Excluir</button>
+        </div>
+    </div>
+</div>
+@endsection
+
+@push('scripts')
+<script>
+const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+const URL_STORE   = '{{ route('settings.departments.store') }}';
+const URL_UPDATE  = '{{ route('settings.departments.update', ['department' => '__ID__']) }}';
+const URL_DESTROY = '{{ route('settings.departments.destroy', ['department' => '__ID__']) }}';
+
+/* ── Dados dos departamentos para edição ── */
+@php
+    $deptsJson = $departments->map(function($d) {
+        return [
+            'id' => $d->id,
+            'name' => $d->name,
+            'description' => $d->description,
+            'icon' => $d->icon,
+            'color' => $d->color,
+            'default_ai_agent_id' => $d->default_ai_agent_id,
+            'default_chatbot_flow_id' => $d->default_chatbot_flow_id,
+            'assignment_strategy' => $d->assignment_strategy,
+            'is_active' => $d->is_active,
+            'user_ids' => $d->users->pluck('id')->toArray(),
+        ];
+    });
+@endphp
+const DEPTS_DATA = {!! json_encode($deptsJson) !!};
+
+function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function hexToRgba(hex, a) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${a})`;
+}
+
+function setPreset(hex) {
+    document.getElementById('deptColorPicker').value = hex;
+    document.getElementById('deptColorText').value   = hex;
+    highlightPreset(hex);
+}
+function highlightPreset(hex) {
+    document.querySelectorAll('.preset-btn').forEach(b => {
+        b.classList.toggle('selected', b.dataset.color.toLowerCase() === hex.toLowerCase());
+    });
+}
+
+/* ── Modal ── */
+document.getElementById('btnNewDept').addEventListener('click', () => {
+    document.getElementById('modalTitle').textContent = 'Novo Departamento';
+    document.getElementById('deptId').value = '';
+    document.getElementById('deptName').value = '';
+    document.getElementById('deptDescription').value = '';
+    document.getElementById('deptIcon').value = 'bi-building';
+    setPreset('#3B82F6');
+    document.getElementById('deptAiAgent').value = '';
+    document.getElementById('deptChatbot').value = '';
+    document.getElementById('deptStrategy').value = 'round_robin';
+    document.querySelectorAll('.user-check').forEach(cb => cb.checked = false);
+    document.getElementById('deptModal').classList.add('open');
+    setTimeout(() => document.getElementById('deptName').focus(), 80);
+});
+
+function openEdit(id) {
+    const d = DEPTS_DATA.find(x => x.id === id);
+    if (!d) return;
+    document.getElementById('modalTitle').textContent = 'Editar Departamento';
+    document.getElementById('deptId').value = d.id;
+    document.getElementById('deptName').value = d.name;
+    document.getElementById('deptDescription').value = d.description || '';
+    document.getElementById('deptIcon').value = d.icon || 'bi-building';
+    setPreset(d.color || '#3B82F6');
+    document.getElementById('deptAiAgent').value = d.default_ai_agent_id || '';
+    document.getElementById('deptChatbot').value = d.default_chatbot_flow_id || '';
+    document.getElementById('deptStrategy').value = d.assignment_strategy || 'round_robin';
+    document.querySelectorAll('.user-check').forEach(cb => {
+        cb.checked = d.user_ids.includes(parseInt(cb.value));
+    });
+    document.getElementById('deptModal').classList.add('open');
+}
+
+function closeModal() {
+    document.getElementById('deptModal').classList.remove('open');
+}
+
+document.getElementById('deptModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+/* ── CRUD ── */
+async function saveDept() {
+    const id   = document.getElementById('deptId').value;
+    const name = document.getElementById('deptName').value.trim();
+    if (!name) { document.getElementById('deptName').focus(); return; }
+
+    const color = document.getElementById('deptColorText').value.trim()
+               || document.getElementById('deptColorPicker').value;
+
+    const userIds = [];
+    document.querySelectorAll('.user-check:checked').forEach(cb => userIds.push(parseInt(cb.value)));
+
+    const aiAgentVal = document.getElementById('deptAiAgent').value;
+    const chatbotVal = document.getElementById('deptChatbot').value;
+
+    const body = {
+        name,
+        description: document.getElementById('deptDescription').value.trim() || null,
+        icon:  document.getElementById('deptIcon').value,
+        color,
+        default_ai_agent_id:     aiAgentVal ? parseInt(aiAgentVal) : null,
+        default_chatbot_flow_id: chatbotVal ? parseInt(chatbotVal) : null,
+        assignment_strategy: document.getElementById('deptStrategy').value,
+        user_ids: userIds,
+    };
+
+    const btn = document.getElementById('btnSave');
+    btn.disabled = true;
+
+    try {
+        const url    = id ? URL_UPDATE.replace('__ID__', id) : URL_STORE;
+        const method = id ? 'PUT' : 'POST';
+        const res    = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+            body: JSON.stringify(body),
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+            if (checkLimitReached(data)) return;
+            toastr.error(data.message || Object.values(data.errors || {}).flat().join(', ') || 'Erro ao salvar.');
+            return;
+        }
+
+        closeModal();
+        const d = data.department;
+
+        // Atualizar cache local
+        const idx = DEPTS_DATA.findIndex(x => x.id === d.id);
+        const cached = { ...d, user_ids: d.user_ids };
+        if (idx >= 0) DEPTS_DATA[idx] = cached;
+        else DEPTS_DATA.push(cached);
+
+        // Recarregar página para refletir mudanças
+        location.reload();
+    } catch (e) {
+        toastr.error('Erro de rede.');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+let _deleteId  = null;
+let _deleteBtn = null;
+
+function deleteDept(id, btn) {
+    _deleteId  = id;
+    _deleteBtn = btn;
+    document.getElementById('deleteDeptModal').classList.add('open');
+}
+
+async function _doDeleteDept() {
+    document.getElementById('deleteDeptModal').classList.remove('open');
+    if (!_deleteId) return;
+
+    const row = _deleteBtn.closest('tr');
+    const res = await fetch(URL_DESTROY.replace('__ID__', _deleteId), {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': CSRF },
+    });
+    const data = await res.json();
+    if (!data.success) { toastr.error('Erro ao excluir.'); return; }
+
+    row.remove();
+    toastr.success('Departamento excluído.');
+
+    // Remover do cache
+    const idx = DEPTS_DATA.findIndex(x => x.id === _deleteId);
+    if (idx >= 0) DEPTS_DATA.splice(idx, 1);
+
+    if (!document.querySelector('#deptBody tr[data-id]')) {
+        document.getElementById('deptBody').innerHTML = `
+            <tr id="emptyRow"><td colspan="6">
+                <div class="empty-state">
+                    <i class="bi bi-building"></i>
+                    Nenhum departamento criado.
+                </div>
+            </td></tr>`;
+    }
+}
+</script>
+@endpush

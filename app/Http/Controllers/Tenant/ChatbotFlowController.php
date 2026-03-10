@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\ChatbotFlow;
 use App\Models\CustomFieldDefinition;
+use App\Services\PlanLimitChecker;
 use App\Models\Pipeline;
 use App\Models\User;
 use App\Models\WebsiteConversation;
@@ -39,14 +40,12 @@ class ChatbotFlowController extends Controller
 
     public function store(Request $request): RedirectResponse|JsonResponse
     {
-        $tenant = auth()->user()->tenant;
-        $max = $tenant->max_chatbot_flows ?? 0;
-        if ($max > 0 && ChatbotFlow::count() >= $max) {
+        $limitMsg = PlanLimitChecker::check('chatbot_flows');
+        if ($limitMsg) {
             if ($request->expectsJson()) {
-                return response()->json(['success' => false, 'message' => "Limite de {$max} fluxo(s) de chatbot atingido."], 422);
+                return response()->json(['success' => false, 'message' => $limitMsg, 'limit_reached' => true], 422);
             }
-            return redirect()->route('chatbot.flows.index')
-                ->withErrors(['limit' => "Limite de {$max} fluxo(s) de chatbot atingido. Atualize seu plano para criar mais."]);
+            return redirect()->route('chatbot.flows.index')->withErrors(['limit' => $limitMsg]);
         }
 
         $data = $this->validatedFlow($request);

@@ -42,6 +42,14 @@ class InstagramWebhookController extends Controller
      */
     public function handle(Request $request): Response
     {
+        // Validate Meta's HMAC-SHA256 signature
+        if (! $this->verifySignature($request)) {
+            Log::channel('instagram')->warning('Webhook signature inválida', [
+                'ip' => $request->ip(),
+            ]);
+            return response('Invalid signature', 403);
+        }
+
         $payload = $request->json()->all();
 
         Log::channel('instagram')->info('Webhook recebido', [
@@ -64,5 +72,22 @@ class InstagramWebhookController extends Controller
         }
 
         return response('', 200);
+    }
+
+    /**
+     * Verify Meta's X-Hub-Signature-256 HMAC header.
+     */
+    private function verifySignature(Request $request): bool
+    {
+        $signature = $request->header('X-Hub-Signature-256', '');
+        $secret    = config('services.instagram.client_secret', '');
+
+        if ($signature === '' || $secret === '') {
+            return false;
+        }
+
+        $expected = 'sha256=' . hash_hmac('sha256', $request->getContent(), $secret);
+
+        return hash_equals($expected, $signature);
     }
 }

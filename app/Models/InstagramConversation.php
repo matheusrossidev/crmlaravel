@@ -19,7 +19,7 @@ class InstagramConversation extends Model
     protected $fillable = [
         'tenant_id', 'instance_id', 'lead_id',
         'igsid', 'contact_name', 'contact_username', 'contact_picture_url',
-        'tags', 'assigned_user_id', 'ai_agent_id',
+        'tags', 'assigned_user_id', 'department_id', 'ai_agent_id',
         'status', 'unread_count',
         'started_at', 'last_message_at', 'closed_at',
     ];
@@ -46,6 +46,11 @@ class InstagramConversation extends Model
     public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 
     public function aiAgent(): BelongsTo

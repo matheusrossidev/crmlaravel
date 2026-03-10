@@ -7,11 +7,13 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\AiAgent;
 use App\Models\AiAgentKnowledgeFile;
+use App\Services\PlanLimitChecker;
 use App\Models\AiAgentMedia;
 use App\Models\AiUsageLog;
 use App\Models\PlanDefinition;
 use App\Models\TenantTokenIncrement;
 use App\Models\TokenIncrementPlan;
+use App\Models\Department;
 use App\Models\User;
 use App\Services\AgnoService;
 use Illuminate\Http\JsonResponse;
@@ -57,22 +59,19 @@ class AiAgentController extends Controller
         $agent          = new AiAgent();
         $knowledgeFiles = collect();
         $users          = $this->tenantUsers();
+        $departments    = $this->activeDepartments();
 
-        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles', 'users'));
+        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles', 'users', 'departments'));
     }
 
     public function store(Request $request): JsonResponse|\Illuminate\Http\RedirectResponse
     {
-        // Limite dinâmico de agentes por tenant
-        $tenant = auth()->user()->tenant;
-        $max = $tenant->max_ai_agents ?? 0;
-        $maxEffective = $max > 0 ? $max : 1; // default 1 se não configurado
-        if (AiAgent::count() >= $maxEffective) {
-            $message = "Limite de {$maxEffective} agente(s) de IA atingido. Atualize seu plano para criar mais.";
+        $limitMsg = PlanLimitChecker::check('ai_agents');
+        if ($limitMsg) {
             if ($request->expectsJson()) {
-                return response()->json(['success' => false, 'message' => $message], 422);
+                return response()->json(['success' => false, 'message' => $limitMsg, 'limit_reached' => true], 422);
             }
-            return redirect()->route('ai.agents.index')->withErrors(['limit' => $message]);
+            return redirect()->route('ai.agents.index')->withErrors(['limit' => $limitMsg]);
         }
 
         $data = $this->validated($request);
@@ -100,14 +99,15 @@ class AiAgentController extends Controller
     {
         $knowledgeFiles = $agent->knowledgeFiles()->orderBy('created_at')->get();
         $agent->load('mediaFiles');
-        $users = $this->tenantUsers();
+        $users       = $this->tenantUsers();
+        $departments = $this->activeDepartments();
 
         $embedScriptUrl = null;
         if ($agent->website_token) {
             $embedScriptUrl = rtrim((string) config('app.url'), '/') . '/api/widget/' . $agent->website_token . '.js';
         }
 
-        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles', 'users', 'embedScriptUrl'));
+        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles', 'users', 'departments', 'embedScriptUrl'));
     }
 
     public function update(Request $request, AiAgent $agent): \Illuminate\Http\RedirectResponse|JsonResponse
@@ -396,6 +396,13 @@ class AiAgentController extends Controller
             ->get(['id', 'name']);
     }
 
+    private function activeDepartments(): \Illuminate\Database\Eloquent\Collection
+    {
+        return Department::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+    }
+
     private function validated(Request $request): array
     {
         $data = $request->validate([
@@ -423,7 +430,8 @@ class AiAgentController extends Controller
             'enable_pipeline_tool'   => 'nullable|boolean',
             'enable_tags_tool'       => 'nullable|boolean',
             'enable_intent_notify'   => 'nullable|boolean',
-            'transfer_to_user_id'    => 'nullable|integer|exists:users,id',
+            'transfer_to_user_id'         => 'nullable|integer|exists:users,id',
+            'transfer_to_department_id'   => 'nullable|integer|exists:departments,id',
             'followup_enabled'           => 'nullable|boolean',
             'followup_delay_minutes'     => 'nullable|integer|min:5|max:1440',
             'followup_max_count'         => 'nullable|integer|min:1|max:10',
@@ -447,7 +455,8 @@ class AiAgentController extends Controller
         $data['followup_enabled']       = $request->boolean('followup_enabled');
         $data['enable_calendar_tool']   = $request->boolean('enable_calendar_tool');
         $data['use_agno']               = true; // Todos os agentes usam Agno
-        $data['transfer_to_user_id']    = $request->input('transfer_to_user_id') ?: null;
+        $data['transfer_to_user_id']         = $request->input('transfer_to_user_id') ?: null;
+        $data['transfer_to_department_id']   = $request->input('transfer_to_department_id') ?: null;
 
         return $data;
     }

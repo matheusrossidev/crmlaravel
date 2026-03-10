@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
-use App\Models\LostSaleReason;
 use App\Models\Pipeline;
 use App\Models\PipelineStage;
+use App\Services\PlanLimitChecker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -17,13 +17,17 @@ class PipelineController extends Controller
     public function index(): View
     {
         $pipelines = Pipeline::with(['stages' => fn($q) => $q->orderBy('position')])->orderBy('sort_order')->get();
-        $reasons   = LostSaleReason::orderBy('sort_order')->get();
 
-        return view('tenant.settings.pipelines', compact('pipelines', 'reasons'));
+        return view('tenant.settings.pipelines', compact('pipelines'));
     }
 
     public function store(Request $request): JsonResponse
     {
+        $limitMsg = PlanLimitChecker::check('pipelines');
+        if ($limitMsg) {
+            return response()->json(['success' => false, 'message' => $limitMsg, 'limit_reached' => true], 422);
+        }
+
         $data = $request->validate([
             'name'                       => 'required|string|max:100',
             'color'                      => 'required|string|max:20',

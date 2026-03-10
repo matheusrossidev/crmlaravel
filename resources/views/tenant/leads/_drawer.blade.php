@@ -1073,7 +1073,9 @@ document.getElementById('btnSaveLead')?.addEventListener('click', () => {
             }
         },
         error(xhr) {
-            if (xhr.status === 422) {
+            if (xhr.status === 422 && xhr.responseJSON?.limit_reached) {
+                showLimitModal(xhr.responseJSON.message || 'Limite do plano atingido.');
+            } else if (xhr.status === 422) {
                 const errors = xhr.responseJSON?.errors || {};
                 Object.entries(errors).forEach(([field, msgs]) => showDrawerError(field, msgs[0]));
             } else {

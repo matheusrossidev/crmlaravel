@@ -11,7 +11,7 @@ use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
 
 // ── Widget Website (público, sem autenticação) ────────────────────────────
-Route::prefix('widget')->group(function () {
+Route::prefix('widget')->middleware('throttle:widget')->group(function () {
     Route::get('{token}.js', [WebsiteWidgetController::class, 'script']);
     Route::match(['get', 'post'], '{token}/init', [WebsiteWidgetController::class, 'init']);
     Route::post('{token}/message', [WebsiteWidgetController::class, 'message']);
@@ -19,15 +19,17 @@ Route::prefix('widget')->group(function () {
 
 // ── Webhook Asaas (público, sem autenticação) ─────────────────────────────
 Route::post('/webhook/asaas', [AsaasWebhookController::class, 'handle'])
+    ->middleware('throttle:webhooks')
     ->name('asaas.webhook');
 
 // ── Webhook WAHA (público, sem autenticação) ──────────────────────────────
 Route::post('/webhook/waha', [WhatsappWebhookController::class, 'handle'])
+    ->middleware('throttle:webhooks')
     ->name('waha.webhook');
 
 // ── Webhook Instagram / Meta (público, sem autenticação) ──────────────────
 Route::get ('/webhook/instagram', [InstagramWebhookController::class, 'verify'])->name('instagram.webhook.verify');
-Route::post('/webhook/instagram', [InstagramWebhookController::class, 'handle'])->name('instagram.webhook.handle');
+Route::post('/webhook/instagram', [InstagramWebhookController::class, 'handle'])->middleware('throttle:webhooks')->name('instagram.webhook.handle');
 
 /*
 |--------------------------------------------------------------------------
@@ -47,7 +49,7 @@ Route::prefix('internal/agno')->middleware(['agno_internal'])->group(function ()
     Route::post('conversations/{convId}/transfer',      [AgnoToolsController::class, 'transferToHuman']);
 });
 
-Route::prefix('v1')->middleware(['api_key'])->group(function () {
+Route::prefix('v1')->middleware(['api_key', 'throttle:api'])->group(function () {
 
     // ── Leads ──────────────────────────────────────────────────────────────
     Route::post  ('leads',              [LeadController::class, 'store']);

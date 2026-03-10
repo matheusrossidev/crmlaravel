@@ -13,6 +13,7 @@ use App\Models\LeadEvent;
 use App\Models\LostSale;
 use App\Models\PipelineStage;
 use App\Models\Sale;
+use App\Services\PlanLimitChecker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,6 +22,11 @@ class LeadController extends Controller
     // ── POST /api/v1/leads ────────────────────────────────────────────────
     public function store(Request $request): JsonResponse
     {
+        $limitMsg = PlanLimitChecker::check('leads');
+        if ($limitMsg) {
+            return response()->json(['success' => false, 'message' => $limitMsg, 'limit_reached' => true], 422);
+        }
+
         $data = $request->validate([
             'name'         => 'required|string|max:255',
             'phone'        => 'nullable|string|max:20',

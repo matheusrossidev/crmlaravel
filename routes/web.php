@@ -42,6 +42,7 @@ use App\Http\Controllers\Tenant\OnboardingController;
 use App\Http\Controllers\Tenant\MasterNotificationReadController;
 use App\Http\Controllers\Tenant\ScheduledMessageController;
 use App\Http\Controllers\Tenant\InstagramAutomationController;
+use App\Http\Controllers\Tenant\DepartmentController;
 use App\Http\Controllers\Tenant\UpsellBannerController;
 use App\Http\Controllers\WhatsappWebhookController;
 use App\Http\Controllers\Master\UpsellTriggerController as MasterUpsellTriggerController;
@@ -56,11 +57,11 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register'])->name('register.post');
+    Route::post('/register', [AuthController::class, 'register'])->name('register.post')->middleware('throttle:register');
     Route::get('/cadastro-agencia', [AgencyRegisterController::class, 'show'])->name('agency.register');
-    Route::post('/cadastro-agencia', [AgencyRegisterController::class, 'store'])->name('agency.register.store');
+    Route::post('/cadastro-agencia', [AgencyRegisterController::class, 'store'])->name('agency.register.store')->middleware('throttle:register');
     Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
-    Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
+    Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email')->middleware('throttle:password-reset');
     Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 });
@@ -213,6 +214,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::post('/conversations/{conversation}/react',    [WhatsappMessageController::class, 'react'])->name('messages.react');
         Route::put('/conversations/{conversation}/ai-agent',      [WhatsappController::class, 'assignAiAgent'])->name('conversations.ai-agent');
         Route::put('/conversations/{conversation}/chatbot-flow',   [WhatsappController::class, 'assignChatbotFlow'])->name('conversations.chatbot-flow');
+        Route::put('/conversations/{conversation}/department',     [WhatsappController::class, 'assignDepartment'])->name('conversations.department');
         Route::delete('/conversations/{conversation}',             [WhatsappController::class, 'destroy'])->name('conversations.destroy');
         // Instagram conversations
         Route::get ('/instagram-conversations/{conversation}',         [WhatsappController::class, 'showInstagram'])->name('ig-conversations.show');
@@ -329,6 +331,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
         // Vínculo de agência parceira para usuários existentes
         Route::post('agencia-parceira', [AgencyAccessController::class, 'linkCode'])->name('agency.link');
+
+        // Departamentos
+        Route::get('departamentos',                     [DepartmentController::class, 'index'])->name('departments');
+        Route::post('departamentos',                    [DepartmentController::class, 'store'])->name('departments.store');
+        Route::put('departamentos/{department}',        [DepartmentController::class, 'update'])->name('departments.update');
+        Route::delete('departamentos/{department}',     [DepartmentController::class, 'destroy'])->name('departments.destroy');
 
         // Automações
         Route::get('automacoes',                        [AutomationController::class, 'index'])->name('automations');

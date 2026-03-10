@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AgnoInternalMiddleware;
 use App\Http\Middleware\ApiKeyMiddleware;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SuperAdminMiddleware;
 use App\Http\Middleware\TenantMiddleware;
 use Illuminate\Console\Scheduling\Schedule;
@@ -18,12 +19,19 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Traefik termina SSL — confia em todos os proxies para gerar URLs https://
-        $middleware->trustProxies(at: '*', headers: \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR |
-            \Illuminate\Http\Request::HEADER_X_FORWARDED_HOST |
-            \Illuminate\Http\Request::HEADER_X_FORWARDED_PORT |
-            \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO |
-            \Illuminate\Http\Request::HEADER_X_FORWARDED_PREFIX);
+        // Traefik termina SSL — confia em proxies da rede Docker overlay (10.0.0.0/8, 172.16-31.x)
+        // Em produção, TRUSTED_PROXIES deve listar os IPs exatos do Traefik.
+        // Fallback: '*' se TRUSTED_PROXIES não estiver configurado (dev local).
+        $middleware->trustProxies(
+            at: env('TRUSTED_PROXIES', '*'),
+            headers: \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR |
+                \Illuminate\Http\Request::HEADER_X_FORWARDED_HOST |
+                \Illuminate\Http\Request::HEADER_X_FORWARDED_PORT |
+                \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO |
+                \Illuminate\Http\Request::HEADER_X_FORWARDED_PREFIX
+        );
+
+        $middleware->append(SecurityHeaders::class);
 
         $middleware->alias([
             'tenant'        => TenantMiddleware::class,

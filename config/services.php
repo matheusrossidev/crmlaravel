@@ -66,4 +66,8 @@ return [
         'webhook_token' => env('ASAAS_WEBHOOK_TOKEN'),
     ],
 
+    'agno' => [
+        'internal_token' => env('AGNO_INTERNAL_TOKEN', ''),
+    ],
+
 ];

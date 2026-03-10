@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AiAgent extends Model
@@ -26,7 +27,7 @@ class AiAgent extends Model
         'enable_calendar_tool', 'calendar_tool_instructions',
         'followup_enabled', 'followup_delay_minutes', 'followup_max_count',
         'followup_hour_start', 'followup_hour_end',
-        'transfer_to_user_id',
+        'transfer_to_user_id', 'transfer_to_department_id',
         'use_agno',
     ];
 
@@ -67,5 +68,10 @@ class AiAgent extends Model
     public function webConversations(): HasMany
     {
         return $this->hasMany(WebsiteConversation::class, 'ai_agent_id');
+    }
+
+    public function transferDepartment(): BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'transfer_to_department_id');
     }
 }

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AiAgent;
 use App\Models\Automation;
 use App\Models\ChatbotFlow;
+use App\Models\Department;
 use App\Models\Lead;
 use App\Models\Pipeline;
 use App\Models\User;
@@ -74,9 +75,13 @@ class AutomationController extends Controller
             ->orderBy('sort_order')
             ->get(['id', 'name', 'label']);
 
+        $departments = Department::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return compact('pipelines', 'users', 'aiAgents', 'chatbotFlows', 'wahaConnected',
                        'whatsappTags', 'leadTags', 'leadSources', 'allLeadSources',
-                       'campaigns', 'dateCustomFields');
+                       'campaigns', 'dateCustomFields', 'departments');
     }
 
     public function index(): View

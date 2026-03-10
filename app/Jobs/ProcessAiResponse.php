@@ -10,6 +10,7 @@ use App\Http\Controllers\Tenant\AiConfigurationController;
 use App\Models\AiAgent;
 use App\Models\AiIntentSignal;
 use App\Models\AiUsageLog;
+use App\Models\Department;
 use App\Models\Lead;
 use App\Models\OAuthConnection;
 use App\Models\TenantTokenIncrement;
@@ -700,6 +701,55 @@ class ProcessAiResponse implements ShouldQueue
 
     private function applyAssignHuman(WhatsappConversation $conv, AiAgent $agent): void
     {
+        // Prioridade: departamento > usuário direto
+        if ($agent->transfer_to_department_id) {
+            $dept = Department::withoutGlobalScope('tenant')
+                ->where('id', $agent->transfer_to_department_id)
+                ->where('tenant_id', $conv->tenant_id)
+                ->first();
+
+            if ($dept) {
+                // Remove AI agent first
+                WhatsappConversation::withoutGlobalScope('tenant')
+                    ->where('id', $conv->id)
+                    ->update(['ai_agent_id' => null]);
+                $conv->refresh();
+
+                $dept->assignConversation($conv);
+
+                // Event message
+                WhatsappMessage::withoutGlobalScope('tenant')->create([
+                    'tenant_id'       => $conv->tenant_id,
+                    'conversation_id' => $conv->id,
+                    'waha_message_id' => null,
+                    'direction'       => 'outbound',
+                    'type'            => 'event',
+                    'body'            => "Agente {$agent->name} transferiu a conversa para o departamento {$dept->name}",
+                    'media_filename'  => "Transferido para {$dept->name}",
+                    'media_mime'      => 'ai_assign_human',
+                    'sent_at'         => now(),
+                    'ack'             => 'delivered',
+                ]);
+
+                Log::channel('whatsapp')->info('AI: conversa transferida para departamento', [
+                    'conversation_id' => $conv->id,
+                    'department_id'   => $dept->id,
+                    'department_name' => $dept->name,
+                    'agent_name'      => $agent->name,
+                ]);
+
+                try {
+                    WhatsappConversationUpdated::dispatch($conv->refresh(), $conv->tenant_id);
+                } catch (\Throwable $e) {
+                    Log::channel('whatsapp')->warning('AI: falha ao broadcast dept transfer', [
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                return;
+            }
+        }
+
         $update = ['ai_agent_id' => null];
         if ($agent->transfer_to_user_id) {
             $update['assigned_user_id'] = $agent->transfer_to_user_id;

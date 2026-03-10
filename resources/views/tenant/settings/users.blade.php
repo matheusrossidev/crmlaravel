@@ -65,6 +65,14 @@
     .role-manager { background: #f0fdf4; color: #16a34a; }
     .role-viewer  { background: #fef9c3; color: #a16207; }
 
+    .dept-badge {
+        display: inline-flex; align-items: center; gap: 3px;
+        padding: 2px 8px; border-radius: 12px;
+        font-size: 10.5px; font-weight: 600;
+        white-space: nowrap; margin: 1px 2px;
+    }
+    .dept-badges { display: flex; flex-wrap: wrap; gap: 2px; }
+
     .btn-icon {
         width: 32px; height: 32px;
         border: 1px solid #e8eaf0;
@@ -196,6 +204,8 @@
 @section('content')
 <div class="page-container">
 
+    @include('tenant.settings._tabs')
+
     <div class="users-card">
         <div class="users-card-header">
             <h3><i class="bi bi-people" style="color:#3B82F6;"></i> Usuários da Conta</h3>
@@ -218,6 +228,7 @@
                     <th>Usuário</th>
                     <th>E-mail</th>
                     <th>Papel</th>
+                    <th>Departamentos</th>
                     <th>Desde</th>
                     <th style="width:80px;"></th>
                 </tr>
@@ -246,12 +257,28 @@
                     <td>
                         <span class="role-badge role-{{ $u->role }}">{{ ucfirst($u->role) }}</span>
                     </td>
+                    <td>
+                        <div class="dept-badges">
+                            @forelse($u->departments as $dept)
+                                @php
+                                    $dc = $dept->color ?? '#3B82F6';
+                                    [$dr,$dg,$db] = sscanf($dc, '#%02x%02x%02x') ?: [59,130,246];
+                                @endphp
+                                <span class="dept-badge"
+                                      style="background:rgba({{ $dr }},{{ $dg }},{{ $db }},.10);color:{{ $dc }};">
+                                    {{ $dept->name }}
+                                </span>
+                            @empty
+                                <span style="font-size:12px;color:#d1d5db;">—</span>
+                            @endforelse
+                        </div>
+                    </td>
                     <td>{{ $u->created_at->format('d/m/Y') }}</td>
                     <td>
                         @if($u->id !== auth()->id() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
                         <div style="display:flex;gap:4px;">
                             <button class="btn-icon" title="Editar"
-                                onclick="editUser({{ $u->id }}, '{{ addslashes($u->name) }}', '{{ $u->email }}', '{{ $u->role }}')">
+                                onclick="editUser({{ $u->id }}, '{{ addslashes($u->name) }}', '{{ $u->email }}', '{{ $u->role }}', {{ json_encode($u->departments->pluck('id')) }}, {{ $u->can_see_all_conversations ? 'true' : 'false' }})">
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <button class="btn-icon danger" title="Excluir"
@@ -313,6 +340,31 @@
             </select>
             <div class="form-error d-none" id="errDRole"></div>
         </div>
+        @if(isset($departments) && $departments->count())
+        <div class="form-group">
+            <label>Departamentos</label>
+            <div style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;border:1px solid #e8eaf0;border-radius:9px;padding:8px;">
+                @foreach($departments as $dept)
+                @php
+                    $dc = $dept->color ?? '#3B82F6';
+                @endphp
+                <label style="display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:13px;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='transparent'">
+                    <input type="checkbox" class="dept-check" value="{{ $dept->id }}" style="accent-color:{{ $dc }};">
+                    <span style="font-weight:600;color:#1a1d23;">{{ $dept->name }}</span>
+                </label>
+                @endforeach
+            </div>
+        </div>
+        <div class="form-group">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="drawerSeeAll" checked style="accent-color:#3B82F6;">
+                <span>Ver todas as conversas</span>
+            </label>
+            <div style="font-size:11.5px;color:#9ca3af;margin-top:4px;">
+                Se desmarcado, o usuário verá apenas conversas do(s) seu(s) departamento(s).
+            </div>
+        </div>
+        @endif
     </div>
     <div class="drawer-footer">
         <button class="btn-cancel" onclick="closeDrawer()">Cancelar</button>
@@ -332,6 +384,14 @@ const csrf      = document.querySelector('meta[name=csrf-token]').content;
 
 let editingId = null;
 
+function resetDeptChecks(selectedIds = []) {
+    document.querySelectorAll('.dept-check').forEach(cb => {
+        cb.checked = selectedIds.includes(parseInt(cb.value));
+    });
+    const seeAll = document.getElementById('drawerSeeAll');
+    if (seeAll) seeAll.checked = true;
+}
+
 function openDrawer(mode = 'create') {
     editingId = null;
     document.getElementById('drawerTitle').textContent = 'Novo Usuário';
@@ -341,19 +401,23 @@ function openDrawer(mode = 'create') {
     document.getElementById('drawerPassword').value = '';
     document.getElementById('drawerRole').value = 'viewer';
     document.getElementById('pwdGroup').style.display = '';
+    resetDeptChecks([]);
     clearDrawerErrors();
     document.getElementById('drawerOverlay').classList.add('open');
     document.getElementById('drawer').classList.add('open');
 }
 
-function editUser(id, name, email, role) {
+function editUser(id, name, email, role, deptIds = [], canSeeAll = true) {
     editingId = id;
     document.getElementById('drawerTitle').textContent = 'Editar Usuário';
     document.getElementById('editUserId').value = id;
     document.getElementById('drawerName').value = name;
     document.getElementById('drawerEmail').value = email;
     document.getElementById('drawerRole').value = role;
-    document.getElementById('pwdGroup').style.display = 'none'; // senha não editada aqui
+    document.getElementById('pwdGroup').style.display = 'none';
+    resetDeptChecks(deptIds);
+    const seeAll = document.getElementById('drawerSeeAll');
+    if (seeAll) seeAll.checked = canSeeAll;
     clearDrawerErrors();
     document.getElementById('drawerOverlay').classList.add('open');
     document.getElementById('drawer').classList.add('open');
@@ -373,10 +437,16 @@ async function saveUser() {
     const url    = isEdit ? updateUrl(editingId) : storeUrl;
     const method = isEdit ? 'PUT' : 'POST';
 
+    const deptIds = [];
+    document.querySelectorAll('.dept-check:checked').forEach(cb => deptIds.push(parseInt(cb.value)));
+    const seeAllEl = document.getElementById('drawerSeeAll');
+
     const body = {
         name:  document.getElementById('drawerName').value,
         email: document.getElementById('drawerEmail').value,
         role:  document.getElementById('drawerRole').value,
+        department_ids: deptIds,
+        can_see_all_conversations: seeAllEl ? seeAllEl.checked : true,
     };
     if (!isEdit) body.password = document.getElementById('drawerPassword').value;
 
@@ -392,6 +462,8 @@ async function saveUser() {
             toastr.success(isEdit ? 'Usuário atualizado!' : 'Usuário criado!');
             closeDrawer();
             setTimeout(() => location.reload(), 800);
+        } else if (checkLimitReached(data)) {
+            // modal de upgrade exibido
         } else if (data.errors) {
             showDrawerErrors(data.errors);
         } else {

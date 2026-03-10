@@ -15,7 +15,9 @@ use App\Models\Pipeline;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
+use App\Models\Tenant;
 use App\Services\AutomationEngine;
+use App\Services\PlanLimitChecker;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -908,6 +910,15 @@ class ProcessWahaWebhook implements ShouldQueue
 
         if ($pipeline->auto_create_lead === false || $pipeline->auto_create_from_whatsapp === false) {
             return null; // Auto-criação via WhatsApp desativada para este pipeline
+        }
+
+        $tenant = Tenant::find($tenantId);
+        if ($tenant) {
+            $limitMsg = PlanLimitChecker::check('leads', $tenant);
+            if ($limitMsg) {
+                Log::channel('whatsapp')->info("Lead não criado (limite do plano): {$phone} tenant={$tenantId}");
+                return null;
+            }
         }
 
         $stage = $pipeline->stages()->orderBy('position')->first();

@@ -14,7 +14,7 @@ class Tenant extends Model
 {
     protected $fillable = [
         'name', 'slug', 'logo', 'plan', 'status', 'trial_ends_at', 'settings_json',
-        'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields', 'max_chatbot_flows', 'max_ai_agents', 'api_rate_limit',
+        'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields', 'max_chatbot_flows', 'max_ai_agents', 'max_departments', 'api_rate_limit',
         'asaas_customer_id', 'asaas_subscription_id', 'subscription_status', 'subscription_ends_at',
         'onboarding_completed_at', 'ai_tokens_exhausted', 'referred_by_agency_id',
         'partner_billing_starts_at',
@@ -32,6 +32,7 @@ class Tenant extends Model
         'max_custom_fields'  => 'integer',
         'max_chatbot_flows'  => 'integer',
         'max_ai_agents'      => 'integer',
+        'max_departments'    => 'integer',
         'api_rate_limit'       => 'integer',
         'ai_tokens_exhausted'    => 'boolean',
         'referred_by_agency_id'  => 'integer',

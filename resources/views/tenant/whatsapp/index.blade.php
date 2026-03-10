@@ -1657,9 +1657,9 @@ $pageIcon = 'chat-dots';
     }
 
     function setAvatar(el, name, pictureUrl) {
-        const initial = (name || '?').charAt(0).toUpperCase();
+        const initial = escHtml((name || '?').charAt(0).toUpperCase());
         if (pictureUrl) {
-            el.innerHTML = `<img src="${pictureUrl}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentElement.textContent='${initial}'">`;
+            el.innerHTML = `<img src="${escHtml(pictureUrl)}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentElement.textContent='${initial}'">`;
         } else {
             el.textContent = initial;
         }
@@ -2207,14 +2207,14 @@ $pageIcon = 'chat-dots';
         if (msg.is_deleted) {
             bubble.innerHTML = '<i class="bi bi-slash-circle" style="margin-right:4px;"></i>Esta mensagem foi apagada';
         } else if (msg.type === 'image' && msg.media_url) {
-            bubble.innerHTML = `<img src="${msg.media_url}" class="wa-img-thumb" onclick="window.open('${msg.media_url}','_blank')" alt="Imagem">`;
+            bubble.innerHTML = `<img src="${escHtml(msg.media_url)}" class="wa-img-thumb" onclick="window.open(this.src,'_blank')" alt="Imagem">`;
             if (msg.body) bubble.innerHTML += `<div style="margin-top:6px;font-size:13px;">${escHtml(msg.body)}</div>`;
         } else if (msg.type === 'audio' && msg.media_url) {
             const apBars = Array.from({length: 28}, () => {
                 const h = 4 + Math.floor(Math.random() * 22);
                 return `<div class="ap-bar" style="height:${h}px"></div>`;
             }).join('');
-            bubble.innerHTML = `<div class="wa-audio-player" data-src="${msg.media_url}">
+            bubble.innerHTML = `<div class="wa-audio-player" data-src="${escHtml(msg.media_url)}">
                 <div class="ap-top-row">
                     <button class="ap-play-btn" onclick="apToggle(this)"><i class="bi bi-play-fill"></i></button>
                     <div class="ap-waveform" onclick="apSeek(this,event)">${apBars}</div>
@@ -2223,19 +2223,19 @@ $pageIcon = 'chat-dots';
                     <span class="ap-timer">0:00</span>
                     <span class="ap-label">Áudio</span>
                 </div>
-                <audio preload="metadata" src="${msg.media_url}" style="display:none;"></audio>
+                <audio preload="metadata" src="${escHtml(msg.media_url)}" style="display:none;"></audio>
             </div>`;
         } else if (msg.type === 'video' && msg.media_url) {
-            bubble.innerHTML = `<video src="${msg.media_url}" controls preload="metadata" style="max-width:100%;border-radius:8px;display:block;"></video>`;
+            bubble.innerHTML = `<video src="${escHtml(msg.media_url)}" controls preload="metadata" style="max-width:100%;border-radius:8px;display:block;"></video>`;
             if (msg.body) bubble.innerHTML += `<div style="margin-top:6px;font-size:13px;">${escHtml(msg.body)}</div>`;
         } else if (msg.type === 'document' && msg.media_url) {
             const fname = escHtml(msg.media_filename || 'Arquivo');
-            bubble.innerHTML = `<a href="${msg.media_url}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none;"><i class="bi bi-file-earmark-text" style="font-size:20px;color:#3b82f6;flex-shrink:0;"></i><span style="word-break:break-all;">${fname}</span><i class="bi bi-download" style="margin-left:4px;font-size:13px;flex-shrink:0;"></i></a>`;
+            bubble.innerHTML = `<a href="${escHtml(msg.media_url)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none;"><i class="bi bi-file-earmark-text" style="font-size:20px;color:#3b82f6;flex-shrink:0;"></i><span style="word-break:break-all;">${fname}</span><i class="bi bi-download" style="margin-left:4px;font-size:13px;flex-shrink:0;"></i></a>`;
             if (msg.body) bubble.innerHTML += `<div style="margin-top:4px;font-size:12px;color:#6b7280;">${escHtml(msg.body)}</div>`;
         } else if (msg.type === 'share') {
             let inner = '';
             if (msg.media_url) {
-                inner += `<img src="${msg.media_url}" class="wa-img-thumb" onclick="window.open('${escHtml(msg.media_url)}','_blank')" alt="Publicação" onerror="this.style.display='none'">`;
+                inner += `<img src="${escHtml(msg.media_url)}" class="wa-img-thumb" onclick="window.open(this.src,'_blank')" alt="Publicação" onerror="this.style.display='none'">`;
             }
             const postLink = escHtml(msg.body || '');
             if (postLink) {

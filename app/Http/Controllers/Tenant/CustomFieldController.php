@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\CustomFieldDefinition;
+use App\Services\PlanLimitChecker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -42,16 +43,9 @@ class CustomFieldController extends Controller
             'is_active'    => 'boolean',
         ]);
 
-        // Verificar limite de campos do tenant
-        $tenant = auth()->user()->tenant;
-        if ($tenant && $tenant->max_custom_fields > 0) {
-            $count = CustomFieldDefinition::count();
-            if ($count >= $tenant->max_custom_fields) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Limite de {$tenant->max_custom_fields} campos personalizados atingido para este plano.",
-                ], 422);
-            }
+        $limitMsg = PlanLimitChecker::check('custom_fields');
+        if ($limitMsg) {
+            return response()->json(['success' => false, 'message' => $limitMsg, 'limit_reached' => true], 422);
         }
 
         $name = Str::slug($request->input('label'), '_');

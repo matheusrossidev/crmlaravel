@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -19,6 +20,7 @@ class User extends Authenticatable
         'tenant_id', 'name', 'email', 'password', 'role',
         'is_super_admin', 'avatar', 'last_login_at', 'dashboard_config',
         'email_verified_at', 'verification_token',
+        'can_see_all_conversations',
     ];
 
     protected $hidden = [
@@ -32,6 +34,7 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
+            'can_see_all_conversations' => 'boolean',
             'dashboard_config' => 'array',
         ];
     }
@@ -44,6 +47,11 @@ class User extends Authenticatable
     public function leads(): HasMany
     {
         return $this->hasMany(Lead::class, 'assigned_to');
+    }
+
+    public function departments(): BelongsToMany
+    {
+        return $this->belongsToMany(Department::class);
     }
 
     public function isSuperAdmin(): bool
