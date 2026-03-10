@@ -87,8 +87,18 @@ class ProcessInstagramWebhook implements ShouldQueue
                 }
             }
 
-            foreach ($entry['messaging'] ?? [] as $messaging) {
-                $this->processMessaging($instance, $messaging, $igAccountId);
+            // A entry do ig_page_id contém apenas outbound echoes com IGSIDs inválidos
+            // (diferente ID space). Ignorar messaging dessa entry para evitar conversas duplicadas.
+            $isPageEntry = $instance->ig_page_id && $igAccountId === $instance->ig_page_id;
+
+            if (! $isPageEntry) {
+                foreach ($entry['messaging'] ?? [] as $messaging) {
+                    $this->processMessaging($instance, $messaging, $igAccountId);
+                }
+            } else {
+                Log::channel('instagram')->debug('Ignorando messaging da entry ig_page_id (outbound echo)', [
+                    'entry_id' => $igAccountId,
+                ]);
             }
 
             foreach ($entry['changes'] ?? [] as $change) {
