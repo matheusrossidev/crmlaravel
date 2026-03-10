@@ -19,6 +19,7 @@ class WebsiteConversation extends Model
     protected $fillable = [
         'tenant_id',
         'flow_id',
+        'ai_agent_id',
         'visitor_id',
         'contact_name',
         'contact_email',
@@ -51,6 +52,11 @@ class WebsiteConversation extends Model
     public function flow(): BelongsTo
     {
         return $this->belongsTo(ChatbotFlow::class, 'flow_id');
+    }
+
+    public function aiAgent(): BelongsTo
+    {
+        return $this->belongsTo(AiAgent::class, 'ai_agent_id');
     }
 
     public function lead(): BelongsTo

@@ -146,6 +146,10 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::post('/contatos/{lead}/notas', [LeadController::class, 'addNote'])->name('leads.notes.store');
     Route::delete('/contatos/{lead}/notas/{note}', [LeadController::class, 'deleteNote'])->name('leads.notes.destroy');
 
+    // Lead attachments
+    Route::post('/contatos/{lead}/anexos', [LeadController::class, 'uploadAttachment'])->name('leads.attachments.store');
+    Route::delete('/contatos/{lead}/anexos/{attachment}', [LeadController::class, 'deleteAttachment'])->name('leads.attachments.destroy');
+
     // Lead profile page
     Route::get('/contatos/{lead}/perfil', [LeadController::class, 'showPage'])->name('leads.profile');
 
@@ -243,6 +247,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::get('pipelines',      [ChatbotFlowController::class, 'getPipelines'])->name('pipelines');
         Route::get('',               [ChatbotFlowController::class, 'index'])->name('index');
         Route::get('criar',          [ChatbotFlowController::class, 'create'])->name('create');
+        Route::get('onboarding',    [ChatbotFlowController::class, 'onboarding'])->name('onboarding');
         Route::post('',              [ChatbotFlowController::class, 'store'])->name('store');
         Route::get('{flow}/editar',  [ChatbotFlowController::class, 'edit'])->name('edit');
         Route::put('{flow}',         [ChatbotFlowController::class, 'update'])->name('update');
@@ -340,6 +345,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     // Agentes de IA
     Route::prefix('ia/agentes')->name('ai.agents.')->group(function () {
         Route::get('',                           [AiAgentController::class, 'index'])->name('index');
+        Route::get('onboarding',                 [AiAgentController::class, 'onboarding'])->name('onboarding');
         Route::get('criar',                      [AiAgentController::class, 'create'])->name('create');
         Route::post('',                          [AiAgentController::class, 'store'])->name('store');
         Route::get('{agent}/editar',             [AiAgentController::class, 'edit'])->name('edit');
@@ -349,6 +355,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::post('{agent}/test-chat',         [AiAgentController::class, 'testChat'])->name('test-chat');
         Route::post('{agent}/knowledge-files',           [AiAgentController::class, 'uploadKnowledgeFile'])->name('knowledge-files.store');
         Route::delete('{agent}/knowledge-files/{file}',  [AiAgentController::class, 'deleteKnowledgeFile'])->name('knowledge-files.destroy');
+        Route::post('{agent}/media',             [AiAgentController::class, 'uploadMedia'])->name('media.store');
+        Route::delete('{agent}/media/{media}',   [AiAgentController::class, 'deleteMedia'])->name('media.destroy');
     });
 });
 

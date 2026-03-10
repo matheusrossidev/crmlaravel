@@ -87,6 +87,11 @@ class Lead extends Model
         return $this->hasMany(LeadNote::class)->orderByDesc('created_at');
     }
 
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(LeadAttachment::class)->orderByDesc('created_at');
+    }
+
     public function getCustomFieldsAttribute(): array
     {
         return $this->customFieldValues

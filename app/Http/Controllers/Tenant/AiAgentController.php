@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\AiAgent;
 use App\Models\AiAgentKnowledgeFile;
+use App\Models\AiAgentMedia;
 use App\Models\AiUsageLog;
 use App\Models\PlanDefinition;
 use App\Models\TenantTokenIncrement;
@@ -17,6 +18,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class AiAgentController extends Controller
@@ -73,7 +75,13 @@ class AiAgentController extends Controller
             return redirect()->route('ai.agents.index')->withErrors(['limit' => $message]);
         }
 
-        $data  = $this->validated($request);
+        $data = $this->validated($request);
+
+        // Generate website_token for web_chat agents
+        if (($data['channel'] ?? '') === 'web_chat' && empty($data['website_token'])) {
+            $data['website_token'] = (string) Str::uuid();
+        }
+
         $agent = AiAgent::create($data);
 
         $this->syncToAgno($agent);
@@ -91,25 +99,94 @@ class AiAgentController extends Controller
     public function edit(AiAgent $agent): View
     {
         $knowledgeFiles = $agent->knowledgeFiles()->orderBy('created_at')->get();
-        $users          = $this->tenantUsers();
+        $agent->load('mediaFiles');
+        $users = $this->tenantUsers();
 
-        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles', 'users'));
+        $embedScriptUrl = null;
+        if ($agent->website_token) {
+            $embedScriptUrl = rtrim((string) config('app.url'), '/') . '/api/widget/' . $agent->website_token . '.js';
+        }
+
+        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles', 'users', 'embedScriptUrl'));
     }
 
-    public function update(Request $request, AiAgent $agent): \Illuminate\Http\RedirectResponse
+    public function update(Request $request, AiAgent $agent): \Illuminate\Http\RedirectResponse|JsonResponse
     {
         $data = $this->validated($request);
+
+        // Generate website_token for web_chat agents if not set
+        if (($data['channel'] ?? '') === 'web_chat' && ! $agent->website_token) {
+            $data['website_token'] = (string) Str::uuid();
+        }
+
         $agent->update($data);
         $agent->refresh();
 
         $this->syncToAgno($agent);
 
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'redirect' => route('ai.agents.edit', $agent->id)]);
+        }
+
         return redirect()->route('ai.agents.index')->with('success', 'Agente atualizado.');
+    }
+
+    public function onboarding(): View
+    {
+        return view('tenant.ai.agents.onboarding');
     }
 
     public function destroy(AiAgent $agent): JsonResponse
     {
+        // Cleanup media files from storage before cascade delete
+        foreach ($agent->mediaFiles as $media) {
+            Storage::disk('public')->delete($media->storage_path);
+        }
+        foreach ($agent->knowledgeFiles as $kf) {
+            Storage::disk('public')->delete($kf->storage_path);
+        }
+
         $agent->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    public function uploadMedia(Request $request, AiAgent $agent): JsonResponse
+    {
+        $request->validate([
+            'file'        => 'required|file|max:20480|mimes:png,jpg,jpeg,webp,gif,pdf,doc,docx',
+            'description' => 'required|string|max:500',
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->store("ai-agent-media/{$agent->id}", 'public');
+
+        $record = AiAgentMedia::create([
+            'ai_agent_id'   => $agent->id,
+            'tenant_id'     => $agent->tenant_id,
+            'original_name' => $file->getClientOriginalName(),
+            'storage_path'  => $path,
+            'mime_type'     => $file->getMimeType(),
+            'file_size'     => $file->getSize(),
+            'description'   => $request->input('description'),
+        ]);
+
+        return response()->json([
+            'id'            => $record->id,
+            'original_name' => $record->original_name,
+            'mime_type'     => $record->mime_type,
+            'file_size'     => $record->file_size,
+            'description'   => $record->description,
+            'url'           => asset('storage/' . $record->storage_path),
+        ]);
+    }
+
+    public function deleteMedia(AiAgent $agent, AiAgentMedia $media): JsonResponse
+    {
+        abort_unless($media->ai_agent_id === $agent->id, 404);
+
+        Storage::disk('public')->delete($media->storage_path);
+        $media->delete();
 
         return response()->json(['success' => true]);
     }
@@ -354,6 +431,12 @@ class AiAgentController extends Controller
             'followup_hour_end'          => 'nullable|integer|min:1|max:23',
             'enable_calendar_tool'       => 'nullable|boolean',
             'calendar_tool_instructions' => 'nullable|string|max:2000',
+            // Widget fields (web_chat channel)
+            'bot_name'                   => 'nullable|string|max:100',
+            'bot_avatar'                 => 'nullable|string|max:500',
+            'welcome_message'            => 'nullable|string|max:1000',
+            'widget_type'                => 'nullable|in:bubble,inline',
+            'widget_color'               => 'nullable|string|max:10',
         ]);
 
         $data['is_active']              = $request->boolean('is_active');
@@ -443,6 +526,17 @@ class AiAgentController extends Controller
             if ($kbFile->extracted_text) {
                 $lines[] = "\n--- ARQUIVO: {$kbFile->original_name} ---\n{$kbFile->extracted_text}\n--- FIM DO ARQUIVO ---";
             }
+        }
+
+        // Mídias disponíveis para envio
+        $mediaFiles = $agent->mediaFiles()->get();
+        if ($mediaFiles->isNotEmpty()) {
+            $lines[] = "\n--- MÍDIAS DISPONÍVEIS PARA ENVIO ---";
+            $lines[] = "Você pode enviar arquivos ao contato. Use SOMENTE quando relevante.";
+            foreach ($mediaFiles as $media) {
+                $lines[] = "  media_id {$media->id}: {$media->original_name} — {$media->description}";
+            }
+            $lines[] = "--- FIM DAS MÍDIAS ---";
         }
 
         $lines[] = "\nResponda sempre em {$agent->language}. Seja conciso (máximo {$agent->max_message_length} caracteres por mensagem).";

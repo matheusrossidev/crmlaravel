@@ -486,6 +486,19 @@ class ProcessAiResponse implements ShouldQueue
                 $this->applyNotifyIntent($conv, $action, $agent);
             } elseif ($type === 'assign_human') {
                 $this->applyAssignHuman($conv, $agent);
+            } elseif ($type === 'send_media') {
+                $mediaId = (int) ($action['media_id'] ?? 0);
+                if ($mediaId > 0) {
+                    try {
+                        $service->sendMediaReply($conv, $agent, $mediaId);
+                    } catch (\Throwable $e) {
+                        Log::channel('whatsapp')->error('AI send_media falhou', [
+                            'conversation_id' => $conv->id,
+                            'media_id'        => $mediaId,
+                            'error'           => $e->getMessage(),
+                        ]);
+                    }
+                }
             } elseif (in_array($type, ['calendar_create', 'calendar_reschedule', 'calendar_cancel', 'calendar_list'], true)) {
                 if ($calendarService !== null) {
                     $extra = $this->applyCalendarAction($conv, $action, $calendarService, $lead ?? null);

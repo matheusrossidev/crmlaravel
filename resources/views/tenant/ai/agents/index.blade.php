@@ -605,6 +605,7 @@
 @push('scripts')
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+const AGENTS_BASE = '{{ url("/ia/agentes") }}';
 let tcmAgentId = null;
 let tcmHistory = [];
 let tcmBusy    = false;
@@ -666,7 +667,7 @@ async function tcmSend() {
     const typing = tcmAddTyping();
 
     try {
-        const res  = await fetch(`/ia/agentes/${tcmAgentId}/test-chat`, {
+        const res  = await fetch(`${AGENTS_BASE}/${tcmAgentId}/test-chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
             body: JSON.stringify({ message: msg, history: tcmHistory }),
@@ -700,7 +701,7 @@ function tcmReset() {
 
 /* ── Card actions ── */
 async function toggleActive(id, isActive, btn) {
-    const res  = await fetch(`/ia/agentes/${id}/toggle`, {
+    const res  = await fetch(`${AGENTS_BASE}/${id}/toggle`, {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json' },
     });
@@ -721,9 +722,9 @@ function deleteAgent(id, btn) {
 async function _doDeleteAgent() {
     document.getElementById('delAgentModal').classList.remove('open');
     if (!_deleteAgentId) return;
-    const res  = await fetch(`/ia/agentes/${_deleteAgentId}`, {
+    const res  = await fetch(`${AGENTS_BASE}/${_deleteAgentId}`, {
         method: 'DELETE',
-        headers: { 'X-CSRF-TOKEN': CSRF },
+        headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
     });
     const data = await res.json();
     if (!data.success) { toastr.error('Erro ao excluir.'); return; }

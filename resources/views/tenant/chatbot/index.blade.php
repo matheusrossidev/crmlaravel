@@ -7,7 +7,7 @@
 
 @section('topbar_actions')
 <div class="topbar-actions">
-    <a href="{{ route('chatbot.flows.create') }}" class="btn-primary-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;">
+    <a href="{{ route('chatbot.flows.onboarding') }}" class="btn-primary-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;">
         <i class="bi bi-plus-lg"></i> Novo Fluxo
     </a>
 </div>
@@ -582,7 +582,7 @@ function closeWidgetTest() {
             <h3>Nenhum fluxo criado ainda</h3>
             <p>
                 Crie um fluxo para atender seus contatos automaticamente no WhatsApp.<br>
-                <a href="{{ route('chatbot.flows.create') }}" style="color:#3B82F6;font-weight:600;">
+                <a href="{{ route('chatbot.flows.onboarding') }}" style="color:#3B82F6;font-weight:600;">
                     Criar primeiro fluxo →
                 </a>
             </p>
@@ -775,7 +775,7 @@ function closeWidgetTest() {
     </div>
 </div>
 
-<a href="{{ route('chatbot.flows.create') }}" class="chatbot-fab" aria-label="Novo Fluxo">
+<a href="{{ route('chatbot.flows.onboarding') }}" class="chatbot-fab" aria-label="Novo Fluxo">
     <i class="bi bi-plus-lg"></i>
 </a>
 @endsection

@@ -514,6 +514,59 @@
             </div>
         </div>
 
+        {{-- 5b. Mídias do Agente (para envio) --}}
+        @if($isEdit)
+        <div class="section-card">
+            <div class="section-card-header" onclick="toggleSection('media')">
+                <div class="section-icon"><i class="bi bi-images"></i></div>
+                <div class="section-card-title">Mídias do Agente</div>
+                <i class="bi bi-chevron-down chevron" id="chevron-media"></i>
+            </div>
+            <div class="section-card-body collapsed" id="body-media">
+                <p style="font-size:12.5px;color:#6b7280;margin-bottom:14px;">
+                    Arquivos que o agente pode <strong>enviar ao contato</strong> durante a conversa (catálogos, fotos, PDFs).
+                    Diferente da Base de Conhecimento, que é apenas para contexto interno.
+                </p>
+
+                <div id="mediaDropzone" style="border:2px dashed #d1d5db;border-radius:10px;padding:20px 16px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px;"
+                     onclick="document.getElementById('mediaFileInput').click()"
+                     ondragover="event.preventDefault();this.style.borderColor='#0085f3';this.style.background='#eff6ff';"
+                     ondragleave="this.style.borderColor='#d1d5db';this.style.background='';"
+                     ondrop="handleMediaDropEdit(event)">
+                    <i class="bi bi-cloud-arrow-up" style="font-size:26px;color:#9ca3af;"></i>
+                    <div style="font-size:13px;color:#6b7280;margin-top:4px;">Clique ou arraste arquivos aqui</div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:2px;">PNG, JPG, PDF, DOC — máx. 20 MB</div>
+                </div>
+                <input type="file" id="mediaFileInput" style="display:none"
+                       accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.doc,.docx"
+                       onchange="prepareMediaEdit(this.files[0])">
+
+                <div id="mediaDescRowEdit" style="display:none;gap:8px;margin-bottom:12px;">
+                    <input type="text" id="mediaDescEdit" style="flex:1;border:1.5px solid #e8eaf0;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;"
+                           placeholder="Descreva quando enviar este arquivo" maxlength="500">
+                    <button type="button" id="mediaUploadBtnEdit" onclick="uploadMediaEdit()" style="padding:8px 16px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Enviar</button>
+                </div>
+
+                <div id="mediaFilesList">
+                    @foreach($agent->mediaFiles ?? [] as $media)
+                    <div class="kb-file-item" id="media-file-{{ $media->id }}">
+                        <div class="kb-file-icon" style="background:{{ str_starts_with($media->mime_type, 'image/') ? '#f3e8ff;color:#9333ea' : (str_contains($media->mime_type, 'pdf') ? '#fee2e2;color:#dc2626' : '#dbeafe;color:#2563eb') }};">
+                            <i class="bi {{ str_starts_with($media->mime_type, 'image/') ? 'bi-file-earmark-image' : (str_contains($media->mime_type, 'pdf') ? 'bi-file-earmark-pdf' : 'bi-file-earmark-text') }}"></i>
+                        </div>
+                        <div class="kb-file-info">
+                            <div class="kb-file-name">{{ $media->original_name }}</div>
+                            <div style="font-size:11px;color:#6b7280;">{{ $media->description }}</div>
+                        </div>
+                        <button type="button" class="kb-del-btn" onclick="deleteMediaEdit({{ $media->id }}, '{{ e($media->original_name) }}')" title="Remover">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+        @endif
+
         {{-- 6. Ferramentas do Agente --}}
         <div class="section-card">
             <div class="section-card-header" onclick="toggleSection('tools')">
@@ -700,6 +753,126 @@
             </div>
         </div>
 
+        {{-- 9. Widget do Chat (só para web_chat) --}}
+        @php
+            $showWidget = old('channel', $agent->channel ?? 'whatsapp') === 'web_chat';
+            $currentAvatar = old('bot_avatar', $agent->bot_avatar ?? '');
+            $predefinedAvatars = [
+                '/images/avatars/agent-1.png',
+                '/images/avatars/agent-2.png',
+                '/images/avatars/agent-3.png',
+                '/images/avatars/agent-4.png',
+                '/images/avatars/agent-5.png',
+            ];
+            $isCustomAvatar = $currentAvatar && !in_array($currentAvatar, $predefinedAvatars);
+        @endphp
+        <div class="section-card" id="widgetSection" style="{{ $showWidget ? '' : 'display:none' }}">
+            <div class="section-card-header" onclick="toggleSection('widget')">
+                <div class="section-icon"><i class="bi bi-window-stack"></i></div>
+                <div class="section-card-title">9. Widget do Chat</div>
+                <i class="bi bi-chevron-down chevron" id="chevron-widget"></i>
+            </div>
+            <div class="section-card-body {{ $showWidget && $isEdit ? '' : 'collapsed' }}" id="body-widget">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Nome do Bot</label>
+                        <input type="text" name="bot_name" class="form-control"
+                               value="{{ old('bot_name', $agent->bot_name ?? '') }}"
+                               placeholder="Ex: Assistente Virtual" maxlength="100">
+                        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Exibido no cabeçalho do widget</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tipo do Widget</label>
+                        <div style="display:flex;gap:10px;margin-top:4px;">
+                            @php $wType = old('widget_type', $agent->widget_type ?? 'bubble'); @endphp
+                            <label style="flex:1;cursor:pointer;">
+                                <input type="radio" name="widget_type" value="bubble" {{ $wType === 'bubble' ? 'checked' : '' }} style="display:none;" onchange="updateWidgetTypeCards()">
+                                <div class="channel-card {{ $wType === 'bubble' ? 'selected' : '' }}" data-wtype="bubble">
+                                    <i class="bi bi-chat-dots" style="font-size:16px;"></i>
+                                    <span>Bubble</span>
+                                </div>
+                            </label>
+                            <label style="flex:1;cursor:pointer;">
+                                <input type="radio" name="widget_type" value="inline" {{ $wType === 'inline' ? 'checked' : '' }} style="display:none;" onchange="updateWidgetTypeCards()">
+                                <div class="channel-card {{ $wType === 'inline' ? 'selected' : '' }}" data-wtype="inline">
+                                    <i class="bi bi-layout-sidebar-inset" style="font-size:16px;"></i>
+                                    <span>Inline</span>
+                                </div>
+                            </label>
+                        </div>
+                        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Bubble: botão flutuante. Inline: embutido na página.</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Avatar do Bot</label>
+                    <input type="hidden" name="bot_avatar" id="agentAvatarValue" value="{{ $currentAvatar }}">
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;" id="agentAvatarGrid">
+                        @foreach($predefinedAvatars as $av)
+                        <div class="avatar-option {{ $currentAvatar === $av ? 'selected' : '' }}"
+                             data-url="{{ $av }}"
+                             onclick="selectAgentAvatar('{{ $av }}')"
+                             style="width:52px;height:52px;border-radius:50%;overflow:hidden;cursor:pointer;border:2.5px solid {{ $currentAvatar === $av ? '#0085f3' : '#e8eaf0' }};transition:border-color .15s;flex-shrink:0;">
+                            <img src="{{ asset($av) }}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;"
+                                 onerror="this.parentElement.style.display='none'">
+                        </div>
+                        @endforeach
+                        <div id="agentAvatarUploadCard"
+                             onclick="document.getElementById('agentAvatarUploadInput').click()"
+                             style="width:52px;height:52px;border-radius:50%;overflow:hidden;cursor:pointer;border:2.5px solid {{ $isCustomAvatar ? '#0085f3' : '#e8eaf0' }};transition:border-color .15s;flex-shrink:0;background:#f8fafc;display:flex;align-items:center;justify-content:center;position:relative;">
+                            @if($isCustomAvatar)
+                                <img id="agentAvatarPreview" src="{{ $currentAvatar }}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;">
+                            @else
+                                <img id="agentAvatarPreview" src="" alt="" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:none;">
+                                <svg id="agentAvatarIcon" viewBox="0 0 24 24" style="width:20px;height:20px;fill:#9ca3af;"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-7 13l-4-4h3V9h2v3h3l-4 4z"/></svg>
+                            @endif
+                        </div>
+                        <input type="file" id="agentAvatarUploadInput" accept="image/*" style="display:none;">
+                    </div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:6px;">Escolha um avatar ou envie uma imagem personalizada.</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Mensagem de Boas-Vindas</label>
+                    <textarea name="welcome_message" class="form-control" rows="3"
+                              placeholder="Olá! Como posso te ajudar hoje?">{{ old('welcome_message', $agent->welcome_message ?? '') }}</textarea>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Enviada automaticamente quando o visitante abre o chat.</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Cor do Widget</label>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input type="color" id="widgetColorPicker"
+                                   value="{{ old('widget_color', $agent->widget_color ?? '#0085f3') }}"
+                                   style="width:42px;height:38px;border:1.5px solid #e8eaf0;border-radius:8px;cursor:pointer;padding:2px;"
+                                   oninput="document.getElementById('widgetColorHex').value=this.value;document.querySelector('[name=widget_color]').value=this.value;">
+                            <input type="text" id="widgetColorHex" class="form-control" style="width:120px;"
+                                   value="{{ old('widget_color', $agent->widget_color ?? '#0085f3') }}"
+                                   maxlength="10"
+                                   oninput="document.getElementById('widgetColorPicker').value=this.value;document.querySelector('[name=widget_color]').value=this.value;">
+                            <input type="hidden" name="widget_color" value="{{ old('widget_color', $agent->widget_color ?? '#0085f3') }}">
+                        </div>
+                    </div>
+                </div>
+
+                @if($isEdit && ($embedScriptUrl ?? null))
+                <div class="form-group" style="margin-top:8px;">
+                    <label class="form-label">Código de Incorporação</label>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="text" class="form-control" readonly id="embedCodeInput"
+                               value='<script src="{{ $embedScriptUrl }}"></script>'
+                               style="font-family:monospace;font-size:12px;background:#f8fafc;">
+                        <button type="button" class="btn-primary" style="white-space:nowrap;padding:9px 16px;" onclick="copyEmbedCode()">
+                            <i class="bi bi-clipboard"></i> Copiar
+                        </button>
+                    </div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Cole este código no HTML do seu site para exibir o widget de chat.</div>
+                </div>
+                @endif
+            </div>
+        </div>
+
         <div class="form-footer">
             <button type="submit" class="btn-primary">
                 <i class="bi bi-floppy"></i> {{ $isEdit ? 'Salvar alterações' : 'Criar Agente' }}
@@ -858,14 +1031,169 @@ async function deleteKbFile(id, name) {
         toastr.error('Erro de rede.', 'Erro');
     }
 }
+
+/* ── Mídias do Agente (upload/delete) ── */
+const MEDIA_UPLOAD = '{{ $isEdit ? route("ai.agents.media.store", $agent) : "" }}';
+const MEDIA_DELETE = '{{ $isEdit ? url("/ia/agentes/" . $agent->id . "/media") : "" }}';
+let _pendingMediaFile = null;
+
+function handleMediaDropEdit(e) {
+    e.preventDefault();
+    e.currentTarget.style.borderColor = '#d1d5db';
+    e.currentTarget.style.background = '';
+    if (e.dataTransfer.files.length) prepareMediaEdit(e.dataTransfer.files[0]);
+}
+
+function prepareMediaEdit(file) {
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) { toastr.error('Arquivo muito grande (máx. 20 MB).'); return; }
+    _pendingMediaFile = file;
+    const row = document.getElementById('mediaDescRowEdit');
+    row.style.display = 'flex';
+    document.getElementById('mediaDescEdit').value = '';
+    document.getElementById('mediaDescEdit').placeholder = `Descreva "${file.name}" (ex: catálogo de produtos)`;
+    document.getElementById('mediaDescEdit').focus();
+    document.getElementById('mediaFileInput').value = '';
+}
+
+async function uploadMediaEdit() {
+    if (!_pendingMediaFile) return;
+    const desc = document.getElementById('mediaDescEdit').value.trim();
+    if (!desc) { toastr.warning('Descreva quando o agente deve enviar este arquivo.'); return; }
+
+    const btn = document.getElementById('mediaUploadBtnEdit');
+    btn.disabled = true; btn.textContent = 'Enviando...';
+
+    try {
+        const fd = new FormData();
+        fd.append('file', _pendingMediaFile);
+        fd.append('description', desc);
+        fd.append('_token', CSRF);
+
+        const res = await fetch(MEDIA_UPLOAD, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json' },
+            body: fd,
+        });
+        const data = await res.json();
+        btn.disabled = false; btn.textContent = 'Enviar';
+
+        if (!res.ok) {
+            toastr.error(data.message || Object.values(data.errors || {}).flat().join(', ') || 'Erro ao enviar.');
+            return;
+        }
+
+        const isImg = (data.mime_type || '').startsWith('image/');
+        const isPdf = (data.mime_type || '').includes('pdf');
+        const iconClass = isImg ? 'bi-file-earmark-image' : (isPdf ? 'bi-file-earmark-pdf' : 'bi-file-earmark-text');
+        const iconBg = isImg ? '#f3e8ff;color:#9333ea' : (isPdf ? '#fee2e2;color:#dc2626' : '#dbeafe;color:#2563eb');
+
+        document.getElementById('mediaFilesList').insertAdjacentHTML('beforeend', `
+            <div class="kb-file-item" id="media-file-${data.id}">
+                <div class="kb-file-icon" style="background:${iconBg};">
+                    <i class="bi ${iconClass}"></i>
+                </div>
+                <div class="kb-file-info">
+                    <div class="kb-file-name">${data.original_name}</div>
+                    <div style="font-size:11px;color:#6b7280;">${data.description}</div>
+                </div>
+                <button type="button" class="kb-del-btn" onclick="deleteMediaEdit(${data.id}, '${data.original_name.replace(/'/g, "\\'")}')" title="Remover">
+                    <i class="bi bi-trash3"></i>
+                </button>
+            </div>
+        `);
+
+        _pendingMediaFile = null;
+        document.getElementById('mediaDescRowEdit').style.display = 'none';
+        toastr.success('Arquivo enviado!');
+    } catch {
+        btn.disabled = false; btn.textContent = 'Enviar';
+        toastr.error('Erro de rede.');
+    }
+}
+
+async function deleteMediaEdit(id, name) {
+    if (!confirm('Remover "' + name + '"?')) return;
+    try {
+        const res = await fetch(MEDIA_DELETE + '/' + id, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+        });
+        if (!res.ok) { toastr.error('Erro ao remover.'); return; }
+        document.getElementById('media-file-' + id)?.remove();
+        toastr.success('Arquivo removido.');
+    } catch {
+        toastr.error('Erro de rede.');
+    }
+}
+
 let testHistory = [];
 let testChatOpen = false;
 
 /* ── Canal ── */
 function updateChannelCards() {
     const selected = document.querySelector('input[name="channel"]:checked')?.value;
-    document.querySelectorAll('.channel-card').forEach(card => {
+    document.querySelectorAll('.channel-card[data-channel]').forEach(card => {
         card.classList.toggle('selected', card.dataset.channel === selected);
+    });
+    // Show/hide widget section
+    const widgetSection = document.getElementById('widgetSection');
+    if (widgetSection) {
+        widgetSection.style.display = selected === 'web_chat' ? '' : 'none';
+    }
+}
+
+/* ── Widget type cards ── */
+function updateWidgetTypeCards() {
+    const selected = document.querySelector('input[name="widget_type"]:checked')?.value;
+    document.querySelectorAll('.channel-card[data-wtype]').forEach(card => {
+        card.classList.toggle('selected', card.dataset.wtype === selected);
+    });
+}
+
+/* ── Agent Avatar ── */
+function selectAgentAvatar(url) {
+    document.getElementById('agentAvatarValue').value = url;
+    const grid = document.getElementById('agentAvatarGrid');
+    grid.querySelectorAll('.avatar-option').forEach(el => {
+        el.style.borderColor = el.dataset.url === url ? '#0085f3' : '#e8eaf0';
+        el.classList.toggle('selected', el.dataset.url === url);
+    });
+    const uploadCard = document.getElementById('agentAvatarUploadCard');
+    uploadCard.style.borderColor = '#e8eaf0';
+}
+
+document.getElementById('agentAvatarUploadInput')?.addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const url = e.target.result;
+        document.getElementById('agentAvatarValue').value = url;
+        const preview = document.getElementById('agentAvatarPreview');
+        preview.src = url;
+        preview.style.display = '';
+        const icon = document.getElementById('agentAvatarIcon');
+        if (icon) icon.style.display = 'none';
+        const uploadCard = document.getElementById('agentAvatarUploadCard');
+        uploadCard.style.borderColor = '#0085f3';
+        document.getElementById('agentAvatarGrid').querySelectorAll('.avatar-option').forEach(el => {
+            el.style.borderColor = '#e8eaf0';
+            el.classList.remove('selected');
+        });
+    };
+    reader.readAsDataURL(file);
+});
+
+/* ── Embed code ── */
+function copyEmbedCode() {
+    const input = document.getElementById('embedCodeInput');
+    if (!input) return;
+    navigator.clipboard.writeText(input.value).then(() => {
+        const btn = input.nextElementSibling;
+        const original = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check-lg"></i> Copiado!';
+        setTimeout(() => btn.innerHTML = original, 2000);
     });
 }
 

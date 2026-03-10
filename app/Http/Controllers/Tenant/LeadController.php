@@ -12,6 +12,7 @@ use App\Models\CustomFieldValue;
 use App\Models\InstagramConversation;
 use App\Models\Lead;
 use App\Models\LeadEvent;
+use App\Models\LeadAttachment;
 use App\Models\LeadNote;
 use App\Models\LostSale;
 use App\Models\Sale;
@@ -169,7 +170,7 @@ class LeadController extends Controller
             return redirect()->route('leads.index', ['lead' => $lead->id]);
         }
 
-        $lead->load(['stage', 'pipeline', 'assignedTo', 'events.performedBy', 'customFieldValues.fieldDefinition', 'leadNotes.author']);
+        $lead->load(['stage', 'pipeline', 'assignedTo', 'events.performedBy', 'customFieldValues.fieldDefinition', 'leadNotes.author', 'attachments.uploader']);
 
         $pipelines = Pipeline::with('stages')->orderBy('sort_order')->get();
 
@@ -203,6 +204,15 @@ class LeadController extends Controller
                     'name'  => $s->name,
                     'color' => $s->color,
                 ]),
+            ]),
+            'attachments' => $lead->attachments->map(fn ($a) => [
+                'id'            => $a->id,
+                'original_name' => $a->original_name,
+                'mime_type'     => $a->mime_type,
+                'file_size'     => $a->file_size,
+                'url'           => Storage::disk('public')->url($a->storage_path),
+                'created_at'    => $a->created_at->format('d/m/Y H:i'),
+                'uploaded_by'   => $a->uploader?->name ?? 'Sistema',
             ]),
         ]);
     }
@@ -467,6 +477,46 @@ class LeadController extends Controller
             'success' => true,
             'url'     => Storage::disk('public')->url($path),
         ]);
+    }
+
+    public function uploadAttachment(Request $request, Lead $lead): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|max:20480|mimes:png,jpg,jpeg,webp,gif,pdf,doc,docx,xls,xlsx,csv,txt,zip,rar',
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->store("lead-attachments/{$lead->id}", 'public');
+
+        $record = LeadAttachment::create([
+            'lead_id'       => $lead->id,
+            'tenant_id'     => auth()->user()->tenant_id,
+            'uploaded_by'   => auth()->id(),
+            'original_name' => $file->getClientOriginalName(),
+            'storage_path'  => $path,
+            'mime_type'     => $file->getMimeType() ?? $file->getClientMimeType(),
+            'file_size'     => $file->getSize(),
+        ]);
+
+        return response()->json([
+            'id'            => $record->id,
+            'original_name' => $record->original_name,
+            'mime_type'     => $record->mime_type,
+            'file_size'     => $record->file_size,
+            'url'           => Storage::disk('public')->url($record->storage_path),
+            'created_at'    => $record->created_at->format('d/m/Y H:i'),
+            'uploaded_by'   => auth()->user()->name,
+        ]);
+    }
+
+    public function deleteAttachment(Lead $lead, LeadAttachment $attachment): JsonResponse
+    {
+        abort_unless($attachment->lead_id === $lead->id, 404);
+
+        Storage::disk('public')->delete($attachment->storage_path);
+        $attachment->delete();
+
+        return response()->json(['success' => true]);
     }
 
     private function saveCustomFields(Lead $lead, array $fields): void

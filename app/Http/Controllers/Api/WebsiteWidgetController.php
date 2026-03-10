@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AiAgent;
 use App\Models\ChatbotFlow;
 use App\Models\Tenant;
 use App\Models\WebsiteConversation;
 use App\Models\WebsiteMessage;
+use App\Services\AiAgentWebChatService;
 use App\Services\WebsiteChatService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +20,33 @@ use Illuminate\View\View;
 class WebsiteWidgetController extends Controller
 {
     /**
+     * Resolve a website_token to either a ChatbotFlow or AiAgent.
+     *
+     * @return array{type: string, entity: ChatbotFlow|AiAgent, tenant_id: int}|null
+     */
+    private function resolveToken(string $token): ?array
+    {
+        $flow = ChatbotFlow::withoutGlobalScope('tenant')
+            ->where('website_token', $token)
+            ->first();
+
+        if ($flow) {
+            return ['type' => 'flow', 'entity' => $flow, 'tenant_id' => $flow->tenant_id];
+        }
+
+        $agent = AiAgent::withoutGlobalScope('tenant')
+            ->where('website_token', $token)
+            ->where('is_active', true)
+            ->first();
+
+        if ($agent) {
+            return ['type' => 'agent', 'entity' => $agent, 'tenant_id' => $agent->tenant_id];
+        }
+
+        return null;
+    }
+
+    /**
      * GET /api/widget/{token}.js
      *
      * Serves the widget JavaScript with the token and apiBase baked in.
@@ -25,18 +54,16 @@ class WebsiteWidgetController extends Controller
      */
     public function script(string $token): Response
     {
-        $flow = ChatbotFlow::withoutGlobalScope('tenant')
-            ->where('website_token', $token)
-            ->first();
+        $resolved = $this->resolveToken($token);
 
-        if (! $flow) {
+        if (! $resolved) {
             abort(404);
         }
 
         $js = file_get_contents(public_path('widget.js'));
 
         $appUrl = rtrim((string) config('app.url'), '/');
-        $color  = $flow->widget_color ?? '#0085f3';
+        $color  = $resolved['entity']->widget_color ?? '#0085f3';
         $js = str_replace('var __INJECTED_TOKEN__ = null;', "var __INJECTED_TOKEN__ = '{$token}';", $js);
         $js = str_replace('var __INJECTED_BASE__  = null;', "var __INJECTED_BASE__  = '{$appUrl}';", $js);
         $js = str_replace('var __INJECTED_COLOR__ = null;', "var __INJECTED_COLOR__ = '{$color}';", $js);
@@ -56,16 +83,18 @@ class WebsiteWidgetController extends Controller
      */
     public function init(string $token, Request $request): JsonResponse
     {
-        $flow = ChatbotFlow::withoutGlobalScope('tenant')
-            ->where('website_token', $token)
-            ->first();
+        $resolved = $this->resolveToken($token);
 
-        if (! $flow) {
+        if (! $resolved) {
             return response()->json(['error' => 'Widget not found'], 404);
         }
 
+        $entity   = $resolved['entity'];
+        $tenantId = $resolved['tenant_id'];
+        $isAgent  = $resolved['type'] === 'agent';
+
         // Bloquear se tenant com serviço bloqueado (trial expirado, suspenso, etc.)
-        $tenant = Tenant::find($flow->tenant_id);
+        $tenant = Tenant::find($tenantId);
         if ($tenant && $tenant->isServiceBlocked()) {
             return response()->json(['error' => 'Service unavailable'], 403)
                 ->header('Access-Control-Allow-Origin', '*');
@@ -77,17 +106,25 @@ class WebsiteWidgetController extends Controller
             return response()->json(['error' => 'visitor_id is required'], 422);
         }
 
-        $conversation = WebsiteConversation::withoutGlobalScope('tenant')
-            ->where('flow_id', $flow->id)
-            ->where('visitor_id', $visitorId)
-            ->first();
+        // Find existing conversation
+        $convQuery = WebsiteConversation::withoutGlobalScope('tenant')
+            ->where('visitor_id', $visitorId);
+
+        if ($isAgent) {
+            $convQuery->where('ai_agent_id', $entity->id);
+        } else {
+            $convQuery->where('flow_id', $entity->id);
+        }
+
+        $conversation = $convQuery->first();
 
         $isNew = false;
         if (! $conversation) {
             $isNew = true;
             $conversation = WebsiteConversation::withoutGlobalScope('tenant')->create([
-                'tenant_id'    => $flow->tenant_id,
-                'flow_id'      => $flow->id,
+                'tenant_id'    => $tenantId,
+                'flow_id'      => $isAgent ? null : $entity->id,
+                'ai_agent_id'  => $isAgent ? $entity->id : null,
                 'visitor_id'   => $visitorId,
                 'status'       => 'open',
                 'started_at'   => now(),
@@ -111,21 +148,37 @@ class WebsiteWidgetController extends Controller
                 'sent_at'   => $m->sent_at?->toISOString(),
             ]);
 
-        // If this is a brand-new conversation, trigger the flow start immediately
         $replies   = [];
         $buttons   = [];
         $inputType = 'text';
-        if ($isNew && $flow->is_active) {
-            $service   = new WebsiteChatService();
-            $result    = $service->processMessage($conversation->fresh(), '');
-            $replies   = $result['replies'] ?? [];
-            $buttons   = $result['buttons'] ?? [];
-            $inputType = $result['input_type'] ?? 'text';
-        } elseif (! $isNew && ! empty($conversation->chatbot_cursor['waiting'])) {
-            $service   = new WebsiteChatService();
-            $state     = $service->getCurrentInputState($conversation);
-            $buttons   = $state['buttons'];
-            $inputType = $state['input_type'];
+
+        if ($isAgent) {
+            // AI Agent: send welcome message as first reply for new conversations
+            if ($isNew && $entity->welcome_message) {
+                $replies = [$entity->welcome_message];
+
+                // Save welcome message as outbound
+                WebsiteMessage::create([
+                    'conversation_id' => $conversation->id,
+                    'direction'       => 'outbound',
+                    'content'         => $entity->welcome_message,
+                    'sent_at'         => now(),
+                ]);
+            }
+        } else {
+            // ChatbotFlow: trigger flow start for new conversations
+            if ($isNew && $entity->is_active) {
+                $service   = new WebsiteChatService();
+                $result    = $service->processMessage($conversation->fresh(), '');
+                $replies   = $result['replies'] ?? [];
+                $buttons   = $result['buttons'] ?? [];
+                $inputType = $result['input_type'] ?? 'text';
+            } elseif (! $isNew && ! empty($conversation->chatbot_cursor['waiting'])) {
+                $service   = new WebsiteChatService();
+                $state     = $service->getCurrentInputState($conversation);
+                $buttons   = $state['buttons'];
+                $inputType = $state['input_type'];
+            }
         }
 
         return response()->json([
@@ -135,10 +188,10 @@ class WebsiteWidgetController extends Controller
             'replies'         => $replies,
             'buttons'         => $buttons,
             'input_type'      => $inputType,
-            'bot_name'        => $flow->bot_name,
-            'bot_avatar'      => $flow->bot_avatar,
-            'welcome_message' => $flow->welcome_message,
-            'widget_type'     => $flow->widget_type ?? 'bubble',
+            'bot_name'        => $entity->bot_name,
+            'bot_avatar'      => $entity->bot_avatar,
+            'welcome_message' => $entity->welcome_message,
+            'widget_type'     => $entity->widget_type ?? 'bubble',
         ])->header('Access-Control-Allow-Origin', '*');
     }
 
@@ -158,16 +211,18 @@ class WebsiteWidgetController extends Controller
      */
     public function message(string $token, Request $request): JsonResponse
     {
-        $flow = ChatbotFlow::withoutGlobalScope('tenant')
-            ->where('website_token', $token)
-            ->first();
+        $resolved = $this->resolveToken($token);
 
-        if (! $flow) {
+        if (! $resolved) {
             return response()->json(['error' => 'Widget not found'], 404);
         }
 
+        $entity   = $resolved['entity'];
+        $tenantId = $resolved['tenant_id'];
+        $isAgent  = $resolved['type'] === 'agent';
+
         // Bloquear se tenant com serviço bloqueado
-        $tenant = Tenant::find($flow->tenant_id);
+        $tenant = Tenant::find($tenantId);
         if ($tenant && $tenant->isServiceBlocked()) {
             return response()->json(['error' => 'Service unavailable', 'replies' => []], 403)
                 ->header('Access-Control-Allow-Origin', '*');
@@ -178,10 +233,17 @@ class WebsiteWidgetController extends Controller
             'message'    => 'required|string|max:2000',
         ]);
 
-        $conversation = WebsiteConversation::withoutGlobalScope('tenant')
-            ->where('flow_id', $flow->id)
-            ->where('visitor_id', $validated['visitor_id'])
-            ->first();
+        // Find conversation
+        $convQuery = WebsiteConversation::withoutGlobalScope('tenant')
+            ->where('visitor_id', $validated['visitor_id']);
+
+        if ($isAgent) {
+            $convQuery->where('ai_agent_id', $entity->id);
+        } else {
+            $convQuery->where('flow_id', $entity->id);
+        }
+
+        $conversation = $convQuery->first();
 
         if (! $conversation) {
             return response()->json(['error' => 'Conversation not found'], 404);
@@ -191,14 +253,6 @@ class WebsiteWidgetController extends Controller
             return response()->json(['error' => 'Conversation is closed', 'replies' => []], 422);
         }
 
-        // Save inbound message
-        WebsiteMessage::create([
-            'conversation_id' => $conversation->id,
-            'direction'       => 'inbound',
-            'content'         => $validated['message'],
-            'sent_at'         => now(),
-        ]);
-
         // Increment unread count and update last_message_at
         WebsiteConversation::withoutGlobalScope('tenant')
             ->where('id', $conversation->id)
@@ -207,7 +261,35 @@ class WebsiteWidgetController extends Controller
                 'last_message_at' => now(),
             ]);
 
-        // Process chatbot step
+        if ($isAgent) {
+            // AI Agent: save inbound message, then process via LLM
+            WebsiteMessage::create([
+                'conversation_id' => $conversation->id,
+                'direction'       => 'inbound',
+                'content'         => $validated['message'],
+                'sent_at'         => now(),
+            ]);
+
+            $service = new AiAgentWebChatService();
+            $result  = $service->processMessage($conversation->fresh(), $entity, $validated['message']);
+
+            return response()->json([
+                'replies'         => $result['replies'] ?? [],
+                'buttons'         => $result['buttons'] ?? [],
+                'cards'           => $result['cards'] ?? [],
+                'input_type'      => $result['input_type'] ?? 'text',
+                'conversation_id' => $conversation->id,
+            ])->header('Access-Control-Allow-Origin', '*');
+        }
+
+        // ChatbotFlow: save inbound message, then process flow step
+        WebsiteMessage::create([
+            'conversation_id' => $conversation->id,
+            'direction'       => 'inbound',
+            'content'         => $validated['message'],
+            'sent_at'         => now(),
+        ]);
+
         $service = new WebsiteChatService();
         $result  = $service->processMessage($conversation->fresh(), $validated['message']);
 
@@ -233,6 +315,7 @@ class WebsiteWidgetController extends Controller
             abort(404);
         }
 
+        // Try ChatbotFlow first
         $flow = ChatbotFlow::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenant->id)
             ->where('slug', $botSlug)
@@ -240,13 +323,34 @@ class WebsiteWidgetController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if (! $flow || ! $flow->website_token) {
+        if ($flow && $flow->website_token) {
+            $scriptUrl   = rtrim((string) config('app.url'), '/') . '/api/widget/' . $flow->website_token . '.js';
+            $widgetColor = $flow->widget_color ?? '#0085f3';
+            $botName     = $flow->bot_name ?? 'Assistente';
+            $tenantName  = $tenant->name ?? 'Chat';
+
+            return view('chatbot.hosted', compact('scriptUrl', 'widgetColor', 'botName', 'tenantName'));
+        }
+
+        // Fallback: try AiAgent by slug (name slugified) or website_token
+        $agent = AiAgent::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->where('channel', 'web_chat')
+            ->where('is_active', true)
+            ->where('website_token', '!=', null)
+            ->get()
+            ->first(function ($a) use ($botSlug) {
+                return \Illuminate\Support\Str::slug($a->name) === $botSlug
+                    || $a->website_token === $botSlug;
+            });
+
+        if (! $agent) {
             abort(404);
         }
 
-        $scriptUrl   = rtrim((string) config('app.url'), '/') . '/api/widget/' . $flow->website_token . '.js';
-        $widgetColor = $flow->widget_color ?? '#0085f3';
-        $botName     = $flow->bot_name ?? 'Assistente';
+        $scriptUrl   = rtrim((string) config('app.url'), '/') . '/api/widget/' . $agent->website_token . '.js';
+        $widgetColor = $agent->widget_color ?? '#0085f3';
+        $botName     = $agent->bot_name ?? $agent->name ?? 'Assistente';
         $tenantName  = $tenant->name ?? 'Chat';
 
         return view('chatbot.hosted', compact('scriptUrl', 'widgetColor', 'botName', 'tenantName'));

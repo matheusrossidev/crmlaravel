@@ -32,11 +32,19 @@ class ChatbotFlowController extends Controller
         return view('tenant.chatbot.form', ['flow' => new ChatbotFlow()]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function onboarding(): View
+    {
+        return view('tenant.chatbot.onboarding');
+    }
+
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $tenant = auth()->user()->tenant;
         $max = $tenant->max_chatbot_flows ?? 0;
         if ($max > 0 && ChatbotFlow::count() >= $max) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => "Limite de {$max} fluxo(s) de chatbot atingido."], 422);
+            }
             return redirect()->route('chatbot.flows.index')
                 ->withErrors(['limit' => "Limite de {$max} fluxo(s) de chatbot atingido. Atualize seu plano para criar mais."]);
         }
@@ -46,7 +54,30 @@ class ChatbotFlowController extends Controller
             $data['website_token'] = Str::uuid()->toString();
             $data['slug'] = $this->generateUniqueSlug($data['name']);
         }
+
+        // Accept steps and variables from onboarding wizard (template pre-loaded)
+        if ($request->has('steps') && is_string($request->input('steps'))) {
+            $steps = json_decode($request->input('steps'), true);
+            if (is_array($steps)) {
+                $data['steps'] = $steps;
+            }
+        }
+        if ($request->has('template_variables') && is_string($request->input('template_variables'))) {
+            $vars = json_decode($request->input('template_variables'), true);
+            if (is_array($vars)) {
+                $data['variables'] = $vars;
+            }
+        }
+
         $flow = ChatbotFlow::create($data);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success'      => true,
+                'redirect_url' => route('chatbot.flows.edit', $flow),
+            ]);
+        }
+
         return redirect()->route('chatbot.flows.edit', $flow)->with('success', 'Fluxo criado! Agora adicione os nós.');
     }
 

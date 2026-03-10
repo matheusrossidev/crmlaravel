@@ -152,6 +152,27 @@
                 </div>
             </div>
 
+            {{-- Anexos (só em modo edição) --}}
+            <div id="attachmentsSection" style="display:none;margin-top:18px;">
+                <div class="drawer-section-label">Anexos</div>
+
+                <div id="attachDropzone"
+                     style="border:2px dashed #d1d5db;border-radius:10px;padding:18px 14px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:10px;"
+                     onclick="document.getElementById('attachFileInput').click()"
+                     ondragover="event.preventDefault();this.style.borderColor='#0085f3';this.style.background='#eff6ff';"
+                     ondragleave="this.style.borderColor='#d1d5db';this.style.background='';"
+                     ondrop="handleAttachDrop(event)">
+                    <i class="bi bi-cloud-arrow-up" style="font-size:22px;color:#9ca3af;display:block;margin-bottom:4px;"></i>
+                    <div style="font-size:12.5px;color:#6b7280;font-weight:600;">Clique ou arraste arquivos</div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:2px;">PDF, imagens, documentos — máx. 20 MB</div>
+                </div>
+                <input type="file" id="attachFileInput" style="display:none;"
+                       accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.rar"
+                       onchange="uploadAttachment(this.files[0]);this.value='';">
+
+                <div id="attachmentsList" style="display:flex;flex-direction:column;gap:6px;"></div>
+            </div>
+
         </form>
 
         {{-- Campos Personalizados --}}
@@ -423,6 +444,37 @@
     .drawer-add-note-btn:hover { background: #dbeafe; }
     .drawer-add-note-btn:disabled { opacity: .6; cursor: not-allowed; }
 
+    /* Attachments */
+    .attach-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 9px 11px; background: #f8fafc;
+        border: 1px solid #e8eaf0; border-radius: 9px;
+    }
+    .attach-item-icon {
+        width: 30px; height: 30px; border-radius: 7px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 15px; flex-shrink: 0;
+    }
+    .attach-item-icon.img  { background: #f3e8ff; color: #9333ea; }
+    .attach-item-icon.pdf  { background: #fee2e2; color: #dc2626; }
+    .attach-item-icon.doc  { background: #dbeafe; color: #2563eb; }
+    .attach-item-icon.file { background: #f0f2f7; color: #6b7280; }
+    .attach-item-body { flex: 1; min-width: 0; }
+    .attach-item-name {
+        font-size: 12px; font-weight: 600; color: #1a1d23;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .attach-item-meta { font-size: 10.5px; color: #9ca3af; }
+    .attach-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .attach-item-btn {
+        background: none; border: none; color: #9ca3af; cursor: pointer;
+        font-size: 13px; padding: 4px; border-radius: 6px; transition: all .15s;
+    }
+    .attach-item-btn:hover { color: #3b82f6; background: #eff6ff; }
+    .attach-item-btn.danger:hover { color: #dc2626; background: #fee2e2; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin .6s linear infinite; display: inline-block; }
+
     /* Toggle switch para campos checkbox */
     .cf-toggle-row {
         display: flex;
@@ -512,6 +564,8 @@ const LEAD_TAGS        = {!! json_encode($_configuredTagsJson) !!};
 const LEAD_NOTE_STORE  = '{{ route('leads.notes.store',   ['lead' => '__ID__']) }}';
 const LEAD_NOTE_DEL    = '{{ route('leads.notes.destroy', ['lead' => '__LEAD__', 'note' => '__NOTE__']) }}';
 const LEAD_PROFILE     = '{{ route('leads.profile',       ['lead' => '__ID__']) }}';
+const ATTACH_STORE     = '{{ route('leads.attachments.store',   ['lead' => '__ID__']) }}';
+const ATTACH_DEL       = '{{ route('leads.attachments.destroy', ['lead' => '__LEAD__', 'attachment' => '__ATT__']) }}';
 const DRAWER_SCHED_INDEX   = '{{ route('leads.scheduled.index',   ['lead' => '__ID__']) }}';
 const DRAWER_SCHED_DESTROY = '{{ route('leads.scheduled.destroy', ['lead' => '__ID__', 'scheduled' => '__SID__']) }}';
 
@@ -721,6 +775,10 @@ function populateDrawer(res) {
         document.getElementById('eventsSection').style.display = '';
     }
 
+    // Anexos
+    renderAttachments(res.attachments || []);
+    document.getElementById('attachmentsSection').style.display = '';
+
     // Agendamentos
     loadDrawerScheduled(lead.id);
 }
@@ -836,6 +894,131 @@ function deleteNote(noteId) {
         },
         error(xhr) { toastr.error(xhr.responseJSON?.message || 'Erro ao excluir nota.'); },
     });
+}
+
+// ── Anexos ───────────────────────────────────────────────────────────────
+
+function handleAttachDrop(e) {
+    e.preventDefault();
+    e.currentTarget.style.borderColor = '#d1d5db';
+    e.currentTarget.style.background  = '';
+    if (e.dataTransfer.files.length) uploadAttachment(e.dataTransfer.files[0]);
+}
+
+function uploadAttachment(file) {
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) {
+        toastr.error('Arquivo muito grande (máx. 20 MB).');
+        return;
+    }
+    if (!_drawerLeadId) {
+        toastr.warning('Salve o lead antes de anexar arquivos.');
+        return;
+    }
+
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('_token', $('meta[name="csrf-token"]').attr('content'));
+
+    const url = ATTACH_STORE.replace('__ID__', _drawerLeadId);
+
+    // Show uploading indicator
+    const list = document.getElementById('attachmentsList');
+    const tempId = 'att-temp-' + Date.now();
+    list.insertAdjacentHTML('afterbegin', `
+        <div class="attach-item" id="${tempId}">
+            <div class="attach-item-icon file"><i class="bi bi-arrow-repeat spin"></i></div>
+            <div class="attach-item-body">
+                <div class="attach-item-name">${escapeHtml(file.name)}</div>
+                <div class="attach-item-meta">Enviando...</div>
+            </div>
+        </div>
+    `);
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: fd,
+    })
+    .then(r => r.json().then(data => ({ ok: r.ok, data })))
+    .then(({ ok, data }) => {
+        const temp = document.getElementById(tempId);
+        if (temp) temp.remove();
+        if (ok && data.id) {
+            renderAttachItem(data);
+            toastr.success('Arquivo anexado!');
+        } else {
+            const msg = data.message || Object.values(data.errors || {}).flat().join(', ') || 'Erro ao enviar.';
+            toastr.error(msg);
+        }
+    })
+    .catch(() => {
+        const temp = document.getElementById(tempId);
+        if (temp) temp.remove();
+        toastr.error('Erro de conexão.');
+    });
+}
+
+function deleteAttachment(attId) {
+    if (!confirm('Remover este anexo?')) return;
+
+    const url = ATTACH_DEL.replace('__LEAD__', _drawerLeadId).replace('__ATT__', attId);
+
+    fetch(url, {
+        method: 'DELETE',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const el = document.getElementById('att-' + attId);
+            if (el) el.remove();
+            toastr.success('Anexo removido.');
+        }
+    })
+    .catch(() => toastr.error('Erro ao remover anexo.'));
+}
+
+function renderAttachments(attachments) {
+    const list = document.getElementById('attachmentsList');
+    list.innerHTML = '';
+    if (!attachments || !attachments.length) return;
+    attachments.forEach(a => renderAttachItem(a));
+}
+
+function renderAttachItem(a) {
+    const list = document.getElementById('attachmentsList');
+    const mime = a.mime_type || '';
+    const isImg = mime.startsWith('image/');
+    const isPdf = mime.includes('pdf');
+    const isDoc = mime.includes('word') || mime.includes('doc');
+    const iconClass = isImg ? 'img' : (isPdf ? 'pdf' : (isDoc ? 'doc' : 'file'));
+    const iconBi    = isImg ? 'bi-file-earmark-image' : (isPdf ? 'bi-file-earmark-pdf' : (isDoc ? 'bi-file-earmark-word' : 'bi-file-earmark'));
+    const size = formatFileSize(a.file_size || 0);
+
+    list.insertAdjacentHTML('beforeend', `
+        <div class="attach-item" id="att-${a.id}">
+            <div class="attach-item-icon ${iconClass}"><i class="bi ${iconBi}"></i></div>
+            <div class="attach-item-body">
+                <div class="attach-item-name" title="${escapeHtml(a.original_name)}">${escapeHtml(a.original_name)}</div>
+                <div class="attach-item-meta">${size} · ${escapeHtml(a.uploaded_by || '')} · ${escapeHtml(a.created_at || '')}</div>
+            </div>
+            <div class="attach-item-actions">
+                <a href="${a.url}" target="_blank" class="attach-item-btn" title="Abrir"><i class="bi bi-box-arrow-up-right"></i></a>
+                <button class="attach-item-btn danger" onclick="deleteAttachment(${a.id})" title="Remover"><i class="bi bi-trash3"></i></button>
+            </div>
+        </div>
+    `);
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
 }
 
 // ── Salvar lead ───────────────────────────────────────────────────────────
@@ -957,6 +1140,8 @@ function resetDrawerForm() {
     document.getElementById('fNoteInput').value = '';
     document.getElementById('customFieldsSection').style.display = 'none';
     document.getElementById('customFieldsContainer').innerHTML = '';
+    document.getElementById('attachmentsSection').style.display = 'none';
+    document.getElementById('attachmentsList').innerHTML = '';
     document.getElementById('drawerUtmSection').style.display = 'none';
     document.getElementById('fUtmId').value       = '';
     document.getElementById('fUtmSource').value   = '';

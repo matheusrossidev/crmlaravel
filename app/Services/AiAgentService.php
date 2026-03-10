@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Events\WhatsappConversationUpdated;
 use App\Events\WhatsappMessageCreated;
 use App\Models\AiAgent;
+use App\Models\AiAgentMedia;
 use App\Models\Lead;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
@@ -112,6 +113,19 @@ class AiAgentService
             if ($kbFile->extracted_text) {
                 $lines[] = "\n--- ARQUIVO: {$kbFile->original_name} ---\n{$kbFile->extracted_text}\n--- FIM DO ARQUIVO ---";
             }
+        }
+
+        // ── Mídias disponíveis para envio ────────────────────────────────────
+        $mediaFiles = $agent->mediaFiles()->get();
+        if ($mediaFiles->isNotEmpty()) {
+            $lines[] = "\n--- MÍDIAS DISPONÍVEIS PARA ENVIO ---";
+            $lines[] = "Você pode enviar arquivos/imagens ao contato usando a ação send_media.";
+            $lines[] = "Use SOMENTE quando for relevante para a conversa (ex: contato pede catálogo, tabela de preços, fotos).";
+            foreach ($mediaFiles as $media) {
+                $lines[] = "  media_id {$media->id}: {$media->original_name} — {$media->description}";
+            }
+            $lines[] = 'Para enviar: inclua {"type": "send_media", "media_id": <id>} nas actions do JSON.';
+            $lines[] = "--- FIM DAS MÍDIAS ---";
         }
 
         // ── Contexto de pipeline (se disponível) ──────────────────────────────
@@ -344,6 +358,177 @@ REGRAS DE FORMATAÇÃO PARA WHATSAPP — OBRIGATÓRIO:
 - Escreva como uma pessoa real digitando no WhatsApp: frases curtas e naturais.
 - Se a resposta tiver 2 ou mais ideias distintas, quebre em blocos com linha dupla.
 WAFMT;
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Constrói o system prompt para canal Web Chat.
+     * Reutiliza o core do buildSystemPrompt mas com formato JSON rico (botões, cards).
+     */
+    public function buildWebChatSystemPrompt(
+        AiAgent $agent,
+        array   $stages             = [],
+        array   $availTags          = [],
+        bool    $enableIntentNotify = false,
+        ?Lead   $lead               = null,
+    ): string {
+        $objective = match ($agent->objective) {
+            'sales'   => 'vendas',
+            'support' => 'suporte ao cliente',
+            default   => 'atendimento geral',
+        };
+
+        $style = match ($agent->communication_style) {
+            'formal'  => 'formal e profissional',
+            'casual'  => 'descontraído e amigável',
+            default   => 'natural e cordial',
+        };
+
+        $now     = \Carbon\Carbon::now(config('app.timezone', 'America/Sao_Paulo'));
+        $weekdays = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+        $dayName  = $weekdays[$now->dayOfWeek];
+        $dateStr  = $now->format('d/m/Y') . ' (' . $dayName . ') — ' . $now->format('H:i');
+
+        $lines = [
+            "Data e hora atual: {$dateStr}.",
+            "Você é {$agent->name}, um assistente virtual de {$objective}.",
+        ];
+
+        if ($agent->company_name) $lines[] = "Você representa a empresa: {$agent->company_name}.";
+        if ($agent->industry)     $lines[] = "Setor/indústria: {$agent->industry}.";
+        $lines[] = "Idioma de resposta: {$agent->language}.";
+        $lines[] = "Estilo de comunicação: {$style}.";
+
+        if ($agent->persona_description) $lines[] = "\nPerfil do atendente:\n{$agent->persona_description}";
+        if ($agent->behavior)            $lines[] = "\nComportamento esperado:\n{$agent->behavior}";
+
+        // Humanização (mesmo código do WhatsApp)
+        $lines[] = "\nDIRETRIZES DE HUMANIZAÇÃO:";
+        if ($agent->communication_style === 'casual') {
+            $lines[] = "- Use linguagem descontraída, mas sem exagerar em gírias.";
+            $lines[] = "- Varie as saudações — NUNCA repita a mesma saudação duas vezes seguidas.";
+            $lines[] = "- Demonstre entusiasmo genuíno com o visitante.";
+        } elseif ($agent->communication_style === 'formal') {
+            $lines[] = "- Mantenha tom profissional e respeitoso.";
+            $lines[] = "- Varie as formas de tratamento.";
+            $lines[] = "- Evite abreviações e informalidades.";
+        } else {
+            $lines[] = "- Use tom natural e cordial, equilibrando proximidade e profissionalismo.";
+            $lines[] = "- Varie as saudações e formas de iniciar frases.";
+        }
+        $lines[] = "- Adapte o comprimento das respostas ao contexto.";
+        $lines[] = "- Incorpore sua personalidade de {$agent->name} nas respostas.";
+
+        // Etapas da conversa
+        if (! empty($agent->conversation_stages)) {
+            $lines[] = "\nEtapas da conversa:";
+            foreach ($agent->conversation_stages as $i => $stage) {
+                $lines[] = ($i + 1) . ". {$stage['name']}" . (! empty($stage['description']) ? ": {$stage['description']}" : '');
+            }
+            $lines[] = "\nREGRA DE CONTINUIDADE: Analise o histórico e continue de onde a conversa parou. NUNCA reinicie o fluxo.";
+        }
+
+        if ($agent->on_finish_action)    $lines[] = "\nAo finalizar o atendimento: {$agent->on_finish_action}";
+        if ($agent->on_transfer_message) $lines[] = "\nQuando transferir para humano: {$agent->on_transfer_message}";
+
+        // Base de conhecimento
+        if ($agent->knowledge_base) {
+            $lines[] = "\n--- BASE DE CONHECIMENTO ---\n{$agent->knowledge_base}\n--- FIM DA BASE DE CONHECIMENTO ---";
+        }
+
+        // Arquivos de conhecimento
+        $kbFiles = $agent->knowledgeFiles()->where('status', 'done')->get();
+        foreach ($kbFiles as $kbFile) {
+            if ($kbFile->extracted_text) {
+                $lines[] = "\n--- ARQUIVO: {$kbFile->original_name} ---\n{$kbFile->extracted_text}\n--- FIM DO ARQUIVO ---";
+            }
+        }
+
+        // Mídias — fornecer URLs públicas para uso em cards
+        $mediaFiles = $agent->mediaFiles()->get();
+        if ($mediaFiles->isNotEmpty()) {
+            $lines[] = "\n--- MÍDIAS DISPONÍVEIS (para usar em cards) ---";
+            $lines[] = "Inclua a URL no campo image_url de um card quando relevante.";
+            foreach ($mediaFiles as $media) {
+                $url = Storage::disk('public')->url($media->storage_path);
+                $lines[] = "  {$media->original_name} — {$media->description} → URL: {$url}";
+            }
+            $lines[] = "--- FIM DAS MÍDIAS ---";
+        }
+
+        // Pipeline
+        if (! empty($stages)) {
+            $currentStage = collect($stages)->firstWhere('current', true);
+            $lines[] = "\n--- CONTROLE DE FUNIL ---";
+            $lines[] = "Etapas disponíveis:";
+            foreach ($stages as $s) {
+                $annotation = $s['is_won'] ? ' [GANHO]' : ($s['is_lost'] ? ' [PERDIDO]' : '');
+                $lines[] = "  {$s['id']}: {$s['name']}{$annotation}";
+            }
+            if ($currentStage) {
+                $lines[] = "Etapa atual: {$currentStage['name']}";
+            }
+            $lines[] = "--- FIM DO CONTROLE DE FUNIL ---";
+        }
+
+        // Tags
+        if (! empty($availTags)) {
+            $lines[] = "\n--- TAGS DISPONÍVEIS ---";
+            $lines[] = implode(', ', $availTags);
+            $lines[] = "--- FIM DAS TAGS ---";
+        }
+
+        // Detecção de intenção
+        if ($enableIntentNotify) {
+            $lines[] = "\n--- DETECÇÃO DE INTENÇÃO ---";
+            $lines[] = "Quando o visitante demonstrar intenção CLARA de comprar/agendar/fechar:";
+            $lines[] = 'Use: {"type": "notify_intent", "intent": "buy|schedule|close", "context": "resumo"}';
+            $lines[] = "--- FIM ---";
+        }
+
+        // ── FORMATO DE RESPOSTA WEB CHAT ──────────────────────────────────────
+        $lines[] = <<<'WEBCHAT'
+
+--- FORMATO DE RESPOSTA (WEB CHAT) ---
+Você está atendendo em um widget de chat no site. Responda SEMPRE com JSON válido, sem markdown:
+
+{
+  "reply": "Texto da mensagem ao visitante",
+  "actions": [],
+  "buttons": [{"label": "Texto do botão", "value": "valor_enviado"}],
+  "cards": [{"title": "Título", "description": "Descrição", "image_url": "URL", "button_label": "Ver mais", "button_value": "ver_mais"}],
+  "input_type": "text"
+}
+
+REGRAS DE UI PARA CHAT WEB:
+- "reply": OBRIGATÓRIO. Texto principal da resposta (máx 300 chars). Seja direto e conciso.
+- "buttons": OPCIONAL. Use para apresentar 2-5 opções rápidas (respostas pré-definidas que o visitante clica).
+  Exemplos: escolher departamento, confirmar sim/não, selecionar produto, responder enquete.
+  O visitante clica no botão e o "value" é enviado como mensagem.
+- "cards": OPCIONAL. Use para apresentar produtos, planos, serviços ou catálogo com visual rico.
+  Cada card pode ter: title, description, image_url (opcional), button_label, button_value.
+  Use quando tiver 2+ itens para mostrar com detalhes (preços, descrições, fotos).
+- "input_type": OPCIONAL. Controla a validação do campo de input.
+  "text" (padrão) → campo normal
+  "email" → quando precisar coletar email do visitante
+  "phone" → quando precisar coletar telefone do visitante
+  Após coletar, volte para "text".
+- "actions": OPCIONAL. Ações internas (set_stage, add_tags, notify_intent, assign_human). Mesmo formato do WhatsApp.
+
+QUANDO USAR CADA RECURSO:
+- Saudação/boas-vindas → reply + buttons com opções iniciais ("Vendas", "Suporte", "Preços")
+- Mostrar produtos/planos → reply + cards com detalhes e preços
+- Pedir confirmação → reply + buttons ["Sim", "Não"]
+- Coletar email → reply pedindo email + input_type: "email"
+- Coletar telefone → reply pedindo telefone + input_type: "phone"
+- Conversa livre/resposta simples → apenas reply (omita buttons/cards)
+- Transferir para humano → reply + actions com assign_human
+
+Se não precisar de buttons/cards/input_type, OMITA esses campos do JSON (não envie arrays vazios).
+NUNCA inclua texto fora do JSON.
+--- FIM ---
+WEBCHAT;
 
         return implode("\n", $lines);
     }
@@ -799,6 +984,119 @@ WAFMT;
             'conversation_id' => $conv->id,
             'waha_message_id' => $wahaMessageId,
             'length'          => mb_strlen($text),
+        ]);
+    }
+
+    /**
+     * Envia um arquivo de mídia do agente (imagem/documento) pelo WhatsApp.
+     */
+    public function sendMediaReply(WhatsappConversation $conv, AiAgent $agent, int $mediaId): void
+    {
+        $media = AiAgentMedia::withoutGlobalScope('tenant')
+            ->where('id', $mediaId)
+            ->where('ai_agent_id', $agent->id)
+            ->first();
+
+        if (! $media) {
+            Log::channel('whatsapp')->warning('AI send_media: mídia não encontrada', [
+                'conversation_id' => $conv->id,
+                'media_id'        => $mediaId,
+            ]);
+            return;
+        }
+
+        $instance = WhatsappInstance::withoutGlobalScope('tenant')
+            ->where('id', $conv->instance_id)
+            ->first();
+
+        if (! $instance || $instance->status !== 'connected') {
+            Log::channel('whatsapp')->warning('AI send_media: instância não conectada', [
+                'conversation_id' => $conv->id,
+            ]);
+            return;
+        }
+
+        // Resolver chatId (mesmo padrão do sendWhatsappReply)
+        $sampleId = WhatsappMessage::withoutGlobalScope('tenant')
+            ->where('conversation_id', $conv->id)
+            ->whereNotNull('waha_message_id')
+            ->where('direction', 'inbound')
+            ->latest('sent_at')
+            ->value('waha_message_id');
+
+        $chatId = null;
+        if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
+            $jid = $m[1];
+            $chatId = str_ends_with($jid, '@lid')
+                ? preg_replace('/[:@].+$/', '', $jid) . '@lid'
+                : preg_replace('/[:@].+$/', '', $jid) . '@c.us';
+        }
+
+        if (! $chatId) {
+            $rawPhone = ltrim((string) preg_replace('/[:@\s].+$/', '', $conv->phone), '+');
+            $chatId   = $rawPhone . '@c.us';
+        }
+
+        $localPath = Storage::disk('public')->path($media->storage_path);
+        if (! file_exists($localPath)) {
+            Log::channel('whatsapp')->warning('AI send_media: arquivo não encontrado no disco', [
+                'path' => $media->storage_path,
+            ]);
+            return;
+        }
+
+        $waha    = new WahaService($instance->session_name);
+        $caption = $media->description ?? '';
+        $isImage = str_starts_with($media->mime_type, 'image/');
+
+        if ($isImage) {
+            $result = $waha->sendImageBase64($chatId, $localPath, $media->mime_type, $caption);
+        } else {
+            $result = $waha->sendFileBase64($chatId, $localPath, $media->mime_type, $media->original_name, $caption);
+        }
+
+        if (isset($result['error'])) {
+            Log::channel('whatsapp')->error('AI send_media: falha ao enviar pelo WAHA', [
+                'conversation_id' => $conv->id,
+                'error'           => $result['body'] ?? 'desconhecido',
+            ]);
+            return;
+        }
+
+        $wahaMessageId = $result['id'] ?? null;
+
+        $message = WhatsappMessage::withoutGlobalScope('tenant')->create([
+            'tenant_id'       => $conv->tenant_id,
+            'conversation_id' => $conv->id,
+            'waha_message_id' => $wahaMessageId,
+            'direction'       => 'outbound',
+            'type'            => $isImage ? 'image' : 'document',
+            'body'            => $caption,
+            'media_url'       => '/storage/' . $media->storage_path,
+            'media_mime'      => $media->mime_type,
+            'media_filename'  => $media->original_name,
+            'user_id'         => null,
+            'ack'             => 'sent',
+            'sent_at'         => now(),
+        ]);
+
+        WhatsappConversation::withoutGlobalScope('tenant')
+            ->where('id', $conv->id)
+            ->update(['last_message_at' => now()]);
+
+        try {
+            WhatsappMessageCreated::dispatch($message, $conv->tenant_id);
+            $conv->refresh();
+            WhatsappConversationUpdated::dispatch($conv, $conv->tenant_id);
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->error('AI send_media: broadcast falhou', ['error' => $e->getMessage()]);
+        }
+
+        Log::channel('whatsapp')->info('AI send_media enviado', [
+            'conversation_id' => $conv->id,
+            'media_id'        => $mediaId,
+            'type'            => $isImage ? 'image' : 'document',
+            'file'            => $media->original_name,
         ]);
     }
 }
