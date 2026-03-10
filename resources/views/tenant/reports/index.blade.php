@@ -476,6 +476,7 @@
         }
     }
     @media (max-width: 480px) {
+        .report-filter-inner { grid-template-columns: 1fr !important; }
         .kpi-grid { grid-template-columns: 1fr 1fr; }
         .kpi-value { font-size: 20px; }
         .report-section-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }

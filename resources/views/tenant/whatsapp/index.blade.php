@@ -748,6 +748,7 @@ $pageIcon = 'chat-dots';
         background: #fff;
         border-top: 1px solid #e8eaf0;
         padding: 12px 16px;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
         flex-shrink: 0;
     }
 
@@ -839,6 +840,24 @@ $pageIcon = 'chat-dots';
         background: #f4f6fb;
         color: #1a1d23;
     }
+
+    .wa-attach-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 10px 14px;
+        font-size: 13px;
+        font-weight: 500;
+        color: #374151;
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: background .1s;
+        text-align: left;
+    }
+    .wa-attach-item:hover { background: #f4f6fb; }
+    .wa-attach-item i { font-size: 16px; width: 20px; text-align: center; }
 
     .wa-btn-send {
         width: 38px;
@@ -1244,18 +1263,28 @@ $pageIcon = 'chat-dots';
             <div class="wa-compose-row" id="normalRow">
                 <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="sendImage(this)">
                 <input type="file" id="docInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.csv" style="display:none;" onchange="sendDocument(this)">
-                <button class="wa-btn-icon" onclick="document.getElementById('fileInput').click()" title="Enviar imagem">
-                    <i class="bi bi-image"></i>
-                </button>
-                <button class="wa-btn-icon" onclick="document.getElementById('docInput').click()" title="Enviar documento">
-                    <i class="bi bi-paperclip"></i>
-                </button>
-                <button class="wa-btn-icon" id="btnMic" onclick="startRecording()" title="Gravar áudio">
-                    <i class="bi bi-mic"></i>
-                </button>
-                <button class="wa-btn-icon" id="btnQuickMsgs" onclick="openQmModal()" title="Mensagens rápidas">
-                    <i class="bi bi-lightning-charge-fill" style="color:#f59e0b;"></i>
-                </button>
+                {{-- Botão "+" com menu de anexos --}}
+                <div style="position:relative;" id="attachMenuWrap">
+                    <button class="wa-btn-icon" onclick="toggleAttachMenu()" title="Anexar" id="btnAttach">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                    <div id="attachMenu" style="display:none;position:absolute;bottom:calc(100% + 8px);left:0;
+                         width:200px;background:#fff;border:1px solid #e8eaf0;border-radius:12px;
+                         box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:1000;overflow:hidden;">
+                        <button onclick="document.getElementById('fileInput').click();closeAttachMenu()" class="wa-attach-item">
+                            <i class="bi bi-image" style="color:#3b82f6;"></i> Imagem
+                        </button>
+                        <button onclick="document.getElementById('docInput').click();closeAttachMenu()" class="wa-attach-item">
+                            <i class="bi bi-paperclip" style="color:#6b7280;"></i> Documento
+                        </button>
+                        <button onclick="startRecording();closeAttachMenu()" class="wa-attach-item" id="btnMic">
+                            <i class="bi bi-mic" style="color:#ef4444;"></i> Gravar Áudio
+                        </button>
+                        <button onclick="openQmModal();closeAttachMenu()" class="wa-attach-item" id="btnQuickMsgs">
+                            <i class="bi bi-lightning-charge-fill" style="color:#f59e0b;"></i> Resposta Rápida
+                        </button>
+                    </div>
+                </div>
                 <div class="wa-textarea-wrap" style="position:relative;">
                     {{-- Popup de mensagens rápidas --}}
                     <div id="quickMsgPopup" style="display:none;position:absolute;bottom:calc(100% + 8px);left:0;
@@ -3436,6 +3465,18 @@ $pageIcon = 'chat-dots';
     });
 
     // ── Modal de gerenciamento ────────────────────────────────────────────────
+    function toggleAttachMenu() {
+        const menu = document.getElementById('attachMenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+    function closeAttachMenu() {
+        document.getElementById('attachMenu').style.display = 'none';
+    }
+    document.addEventListener('click', function(e) {
+        const wrap = document.getElementById('attachMenuWrap');
+        if (wrap && !wrap.contains(e.target)) closeAttachMenu();
+    });
+
     function openQmModal() {
         renderQmModalList();
         document.getElementById('qmModalOverlay').style.display = 'block';

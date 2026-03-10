@@ -5,12 +5,12 @@ $pageIcon = 'person-badge';
 @endphp
 
 @section('topbar_actions')
-<div class="topbar-actions" style="gap:8px;">
-    <a href="{{ route('leads.index') }}" class="btn-secondary-sm" style="display:flex;align-items:center;gap:5px;text-decoration:none;">
-        <i class="bi bi-arrow-left"></i> Contatos
+<div class="topbar-actions" style="gap:6px;">
+    <a href="{{ route('leads.index') }}" class="btn-secondary-sm" style="padding:8px 10px;text-decoration:none;" title="Voltar">
+        <i class="bi bi-arrow-left"></i>
     </a>
-    <button class="btn-primary-sm" id="btnEditLead" onclick="openLeadDrawer({{ $lead->id }})">
-        <i class="bi bi-pencil"></i> Editar Lead
+    <button class="btn-primary-sm" id="btnEditLead" onclick="openLeadDrawer({{ $lead->id }})" style="padding:8px 10px;" title="Editar Lead">
+        <i class="bi bi-pencil"></i>
     </button>
 </div>
 @endsection
