@@ -336,6 +336,10 @@
            class="m-nav-item {{ request()->routeIs('master.token-increments*') ? 'active' : '' }}">
             <i class="bi bi-coin"></i> Pacotes de Tokens
         </a>
+        <a href="{{ route('master.upsell') }}"
+           class="m-nav-item {{ request()->routeIs('master.upsell*') ? 'active' : '' }}">
+            <i class="bi bi-rocket-takeoff"></i> Upsell
+        </a>
 
         <div class="m-nav-group">
             <div class="m-nav-group-label">Monitoramento</div>

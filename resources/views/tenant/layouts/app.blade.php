@@ -1037,6 +1037,55 @@
     </div>
     @endif
     @endif
+
+    {{-- Upsell Banner --}}
+    @if(!empty($upsellBanner) && $upsellBanner->trigger)
+    @php
+        $ubTrigger = $upsellBanner->trigger;
+        $ubCfg     = $ubTrigger->action_config ?? [];
+        $ubTitle   = $ubCfg['title'] ?? 'Hora de crescer!';
+        $ubBody    = $ubCfg['body'] ?? 'Você está chegando no limite do seu plano atual.';
+        $ubCta     = $ubCfg['cta_text'] ?? 'Ver planos';
+        $ubUrl     = $ubCfg['cta_url'] ?? route('billing.checkout', ['plan' => $ubTrigger->target_plan]);
+    @endphp
+    <div id="upsellBanner" style="background:#0085f3;color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+            <i class="bi bi-rocket-takeoff" style="font-size:18px;flex-shrink:0;"></i>
+            <div>
+                <strong style="font-size:14px;">{{ $ubTitle }}</strong>
+                <span style="font-size:13px;opacity:.9;margin-left:8px;">{{ $ubBody }}</span>
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+            <a href="{{ $ubUrl }}"
+               onclick="dismissUpsellBanner({{ $upsellBanner->id }}, true)"
+               style="background:#fff;color:#0085f3;padding:6px 18px;border-radius:7px;font-size:13px;font-weight:700;text-decoration:none;">
+                {{ $ubCta }}
+            </a>
+            <button onclick="dismissUpsellBanner({{ $upsellBanner->id }}, false)"
+                    style="background:none;border:none;color:#fff;cursor:pointer;font-size:18px;opacity:.7;padding:4px;"
+                    title="Fechar">&times;</button>
+        </div>
+    </div>
+    <script>
+    function dismissUpsellBanner(logId, isClick) {
+        const url = isClick
+            ? `/upsell/${logId}/click`
+            : `/upsell/${logId}/dismiss`;
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                'Accept': 'application/json',
+            },
+        });
+        if (!isClick) {
+            document.getElementById('upsellBanner').style.display = 'none';
+        }
+    }
+    </script>
+    @endif
+
     @yield('content')
 </main>
 

@@ -42,7 +42,9 @@ use App\Http\Controllers\Tenant\OnboardingController;
 use App\Http\Controllers\Tenant\MasterNotificationReadController;
 use App\Http\Controllers\Tenant\ScheduledMessageController;
 use App\Http\Controllers\Tenant\InstagramAutomationController;
+use App\Http\Controllers\Tenant\UpsellBannerController;
 use App\Http\Controllers\WhatsappWebhookController;
+use App\Http\Controllers\Master\UpsellTriggerController as MasterUpsellTriggerController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -97,6 +99,10 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('cobranca/checkout', [BillingController::class, 'showCheckout'])->name('billing.checkout');
     Route::post('cobranca/assinar',  [BillingController::class, 'subscribe'])->name('billing.subscribe');
     Route::post('cobranca/cancelar', [BillingController::class, 'cancel'])->name('billing.cancel');
+
+    // Upsell banner (dismiss/click)
+    Route::post('upsell/{log}/dismiss', [UpsellBannerController::class, 'dismiss'])->name('upsell.dismiss');
+    Route::post('upsell/{log}/click',   [UpsellBannerController::class, 'click'])->name('upsell.click');
 
     // Agenda (Google Calendar)
     Route::prefix('agenda')->name('calendar.')->group(function () {
@@ -396,6 +402,13 @@ Route::middleware(['auth', 'super_admin'])->prefix('master')->name('master.')->g
     Route::post('token-incrementos',                                               [MasterTokenIncrementPlanController::class, 'store'])->name('token-increments.store');
     Route::put('token-incrementos/{tokenIncrementPlan}',                           [MasterTokenIncrementPlanController::class, 'update'])->name('token-increments.update');
     Route::delete('token-incrementos/{tokenIncrementPlan}',                        [MasterTokenIncrementPlanController::class, 'destroy'])->name('token-increments.destroy');
+
+    // Upsell Triggers
+    Route::get('upsell',                               [MasterUpsellTriggerController::class, 'index'])->name('upsell');
+    Route::post('upsell',                              [MasterUpsellTriggerController::class, 'store'])->name('upsell.store');
+    Route::put('upsell/{trigger}',                     [MasterUpsellTriggerController::class, 'update'])->name('upsell.update');
+    Route::delete('upsell/{trigger}',                  [MasterUpsellTriggerController::class, 'destroy'])->name('upsell.destroy');
+    Route::get('upsell/{trigger}/logs',                [MasterUpsellTriggerController::class, 'logs'])->name('upsell.logs');
 
     // Uso de tokens IA
     Route::get('uso',                                  [MasterUsageController::class, 'index'])->name('usage');

@@ -44,7 +44,7 @@ class BillingController extends Controller
         }
 
         $plan   = PlanDefinition::where('name', $tenant->plan)->first();
-        $plans  = PlanDefinition::where('is_active', true)->orderBy('price_monthly')->get();
+        $plans  = PlanDefinition::where('is_active', true)->where('is_visible', true)->orderBy('price_monthly')->get();
 
         $tokenUsedMonth = (int) AiUsageLog::where('tenant_id', $tenant->id)
             ->whereYear('created_at', now()->year)
@@ -93,8 +93,8 @@ class BillingController extends Controller
                 ->get();
         } else {
             $plans = PlanDefinition::where('is_active', true)
+                ->where('is_visible', true)
                 ->where('price_monthly', '>', 0)
-                ->whereNot('name', 'partner')
                 ->orderBy('price_monthly')
                 ->get();
         }

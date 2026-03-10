@@ -31,6 +31,7 @@
                     <th>IA</th>
                     <th>Features</th>
                     <th>Status</th>
+                    <th>Visível</th>
                     <th></th>
                 </tr>
             </thead>
@@ -71,6 +72,13 @@
                             <span class="m-badge m-badge-active">Ativo</span>
                         @else
                             <span class="m-badge m-badge-inactive">Inativo</span>
+                        @endif
+                    </td>
+                    <td>
+                        @if($plan->is_visible)
+                            <i class="bi bi-eye-fill" style="color:#10B981;"></i>
+                        @else
+                            <i class="bi bi-eye-slash" style="color:#D1D5DB;"></i>
                         @endif
                     </td>
                     <td style="white-space:nowrap;">
@@ -159,6 +167,9 @@
             </label>
             <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
                 <input type="checkbox" id="fIsActive"> Plano ativo
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
+                <input type="checkbox" id="fIsVisible"> Visível para usuários
             </label>
         </div>
 
@@ -276,6 +287,7 @@ function openNewPlan() {
     document.getElementById('fInstagram').checked = false;
     document.getElementById('fChatbot').checked = false;
     document.getElementById('fIsActive').checked = true;
+    document.getElementById('fIsVisible').checked = true;
     document.getElementById('featureInput').value = '';
     renderFeaturesList();
     showModal();
@@ -303,6 +315,7 @@ function editPlan(id, plan) {
     document.getElementById('fInstagram').checked  = !!f.instagram;
     document.getElementById('fChatbot').checked    = !!f.chatbot;
     document.getElementById('fIsActive').checked   = !!plan.is_active;
+    document.getElementById('fIsVisible').checked  = plan.is_visible !== false && plan.is_visible !== 0;
     document.getElementById('featureInput').value = '';
     renderFeaturesList();
     showModal();
@@ -320,6 +333,7 @@ async function savePlan() {
         price_monthly:  parseFloat(document.getElementById('planPrice').value) || 0,
         trial_days:     trialRaw !== '' ? parseInt(trialRaw) : null,
         is_active:      document.getElementById('fIsActive').checked ? 1 : 0,
+        is_visible:     document.getElementById('fIsVisible').checked ? 1 : 0,
         features_json: {
             max_users:          parseInt(document.getElementById('fMaxUsers').value) || 0,
             max_leads:          parseInt(document.getElementById('fMaxLeads').value) || 0,

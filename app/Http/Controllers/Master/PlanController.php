@@ -28,9 +28,11 @@ class PlanController extends Controller
             'trial_days'    => 'nullable|integer|min:0|max:365',
             'features_json' => 'nullable|array',
             'is_active'     => 'nullable|boolean',
+            'is_visible'    => 'nullable|boolean',
         ]);
 
         $data['is_active']  = $request->boolean('is_active', true);
+        $data['is_visible'] = $request->boolean('is_visible', true);
         $data['trial_days'] = isset($data['trial_days']) ? (int) $data['trial_days'] : null;
 
         $plan = PlanDefinition::create($data);
@@ -46,9 +48,11 @@ class PlanController extends Controller
             'trial_days'    => 'nullable|integer|min:0|max:365',
             'features_json' => 'nullable|array',
             'is_active'     => 'nullable|boolean',
+            'is_visible'    => 'nullable|boolean',
         ]);
 
         $data['is_active']  = $request->boolean('is_active', true);
+        $data['is_visible'] = $request->boolean('is_visible', true);
         $data['trial_days'] = isset($data['trial_days']) ? (int) $data['trial_days'] : null;
 
         $plan->update($data);

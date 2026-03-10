@@ -15,6 +15,7 @@ class PlanDefinition extends Model
         'trial_days',
         'features_json',
         'is_active',
+        'is_visible',
     ];
 
     protected $casts = [
@@ -22,5 +23,6 @@ class PlanDefinition extends Model
         'trial_days'    => 'integer',
         'features_json' => 'array',
         'is_active'     => 'boolean',
+        'is_visible'    => 'boolean',
     ];
 }

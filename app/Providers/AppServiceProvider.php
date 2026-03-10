@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Http\ViewComposers\UpsellBannerComposer;
 use App\Models\WhatsappTag;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
@@ -22,6 +23,8 @@ class AppServiceProvider extends ServiceProvider
         Schema::defaultStringLength(191);
 
         Model::shouldBeStrict(!app()->isProduction());
+
+        View::composer('tenant.layouts.app', UpsellBannerComposer::class);
 
         View::composer('tenant.leads._drawer', function ($view): void {
             $tags = auth()->check()
