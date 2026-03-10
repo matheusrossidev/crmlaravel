@@ -243,7 +243,7 @@ class GoogleCalendarService
             'description' => $item['description'] ?? '',
             'location'    => $item['location'] ?? '',
             'allDay'      => isset($item['start']['date']) && ! isset($item['start']['dateTime']),
-            'url'         => $item['htmlLink'] ?? '',
+            'googleUrl'   => $item['htmlLink'] ?? '',
         ];
     }
 }

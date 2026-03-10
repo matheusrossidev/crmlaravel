@@ -667,6 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
             openCreateModal(info.startStr, info.endStr);
         },
         eventClick(info) {
+            info.jsEvent.preventDefault();
             info.jsEvent.stopPropagation();
             showPopup(info.event, info.jsEvent);
         },
@@ -708,6 +709,9 @@ function showPopup(event, jsEvent) {
         body += row('bi-people', emails);
     }
     if (desc) body += row('bi-card-text', `<span style="white-space:pre-line">${esc(desc.substring(0,250))}${desc.length>250?'...':''}</span>`);
+
+    const gUrl = event.extendedProps?.googleUrl;
+    if (gUrl) body += row('bi-box-arrow-up-right', `<a href="${gUrl}" target="_blank" rel="noopener" style="color:#3B82F6;text-decoration:none;font-size:12px;">Abrir no Google Calendar</a>`);
 
     document.getElementById('popupBody').innerHTML = body;
 
