@@ -905,11 +905,11 @@
             {{-- Actions --}}
             <div style="display:flex;gap:10px;justify-content:flex-end;">
                 <button onclick="closeImportModal()"
-                        style="padding:9px 20px;border-radius:9px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;">
+                        style="padding:9px 20px;border-radius:100px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;">
                     Cancelar
                 </button>
                 <button id="btnImportPreview" onclick="submitPreview()"
-                        style="padding:9px 24px;border-radius:9px;border:none;background:#3B82F6;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
+                        style="padding:9px 24px;border-radius:100px;border:none;background:#0085f3;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
                     <i class="bi bi-eye"></i> Pré-visualizar
                 </button>
             </div>

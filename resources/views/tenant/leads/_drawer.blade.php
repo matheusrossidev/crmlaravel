@@ -230,7 +230,7 @@
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
                 <div class="drawer-section-label" style="margin-bottom:0;">Agendamentos Pendentes</div>
                 <button type="button" id="drawerSchedBtn"
-                        style="font-size:12px;font-weight:600;color:#3b82f6;background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px;">
+                        style="font-size:12px;font-weight:600;color:#0085f3;background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px;">
                     <i class="bi bi-plus-lg"></i> Agendar
                 </button>
             </div>
@@ -247,10 +247,10 @@
 
     {{-- Footer com ações --}}
     <div style="padding:16px 22px;border-top:1px solid #f0f2f7;display:flex;gap:10px;flex-shrink:0;">
-        <button type="button" onclick="closeLeadDrawer()" style="flex:0;padding:10px 18px;border:1.5px solid #e8eaf0;border-radius:9px;background:#fff;font-size:13.5px;font-weight:600;color:#6b7280;cursor:pointer;">
+        <button type="button" onclick="closeLeadDrawer()" style="flex:0;padding:10px 18px;border:1.5px solid #e8eaf0;border-radius:100px;background:#fff;font-size:13.5px;font-weight:600;color:#6b7280;cursor:pointer;">
             Cancelar
         </button>
-        <button type="button" id="btnSaveLead" style="flex:1;padding:10px;background:#3B82F6;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s;">
+        <button type="button" id="btnSaveLead" style="flex:1;padding:10px;background:#0085f3;color:#fff;border:none;border-radius:100px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s;">
             <i class="bi bi-check-lg"></i>
             Salvar
         </button>
@@ -437,11 +437,11 @@
     }
     .drawer-add-note-btn {
         display: flex; align-items: center; justify-content: center; gap: 5px;
-        padding: 8px 14px; background: #f0f4ff; color: #3B82F6;
-        border: 1.5px dashed #3B82F6; border-radius: 8px;
+        padding: 8px 14px; background: #eff6ff; color: #0085f3;
+        border: 1.5px dashed #0085f3; border-radius: 100px;
         font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s;
     }
-    .drawer-add-note-btn:hover { background: #dbeafe; }
+    .drawer-add-note-btn:hover { background: #dbeafe; color: #0070d1; }
     .drawer-add-note-btn:disabled { opacity: .6; cursor: not-allowed; }
 
     /* Attachments */

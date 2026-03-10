@@ -24,7 +24,7 @@
 
     {{-- Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     {{-- Bootstrap Icons --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -49,10 +49,16 @@
     @stack('styles')
 
     <style>
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: #d5d5d5 transparent; }
+
+        /* ===== Scrollbar ===== */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d5d5d5; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: #bbb; }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             background: #f4f6fb;
             margin: 0;
             color: #1a1d23;
@@ -109,7 +115,7 @@
             border-radius: 7px;
             border: 1px solid #e8eaf0;
             background: #fff;
-            color: #9ca3af;
+            color: #97A3B7;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -119,12 +125,12 @@
             flex-shrink: 0;
             margin-left: auto;
         }
-        .sidebar-collapse-btn:hover { background: #f4f6fb; color: #3B82F6; border-color: #dbeafe; }
+        .sidebar-collapse-btn:hover { background: #f4f6fb; color: #007DFF; border-color: #CDDEF6; }
 
         .sidebar-logo .logo-icon {
             width: 36px;
             height: 36px;
-            background: linear-gradient(135deg, #3B82F6, #6366F1);
+            background: linear-gradient(135deg, #007DFF, #6366F1);
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -144,7 +150,7 @@
 
         .sidebar-logo .logo-sub {
             font-size: 11px;
-            color: #9ca3af;
+            color: #97A3B7;
             font-weight: 400;
         }
 
@@ -224,7 +230,7 @@
         .nav-group-label {
             font-size: 10px;
             font-weight: 700;
-            color: #9ca3af;
+            color: #97A3B7;
             letter-spacing: .08em;
             text-transform: uppercase;
             padding: 0 6px;
@@ -239,7 +245,7 @@
             gap: 10px;
             padding: 9px 10px;
             border-radius: 9px;
-            color: #6b7280;
+            color: #677489;
             font-size: 13.5px;
             font-weight: 500;
             text-decoration: none;
@@ -251,16 +257,16 @@
 
         .nav-item:hover {
             background: #f4f6fb;
-            color: #3B82F6;
+            color: #007DFF;
         }
 
         .nav-item.active {
             background: #eff6ff;
-            color: #3B82F6;
+            color: #007DFF;
             font-weight: 600;
         }
 
-        .nav-item.active .nav-icon { color: #3B82F6; }
+        .nav-item.active .nav-icon { color: #007DFF; }
 
         .nav-icon {
             font-size: 16px;
@@ -298,7 +304,7 @@
             width: 34px;
             height: 34px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #10B981, #3B82F6);
+            background: linear-gradient(135deg, #10B981, #007DFF);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -317,7 +323,7 @@
 
         .user-info .user-role {
             font-size: 11px;
-            color: #9ca3af;
+            color: #97A3B7;
         }
 
         /* ===== TOPBAR ===== */
@@ -338,6 +344,7 @@
         }
 
         .topbar-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
             font-size: 16px;
             font-weight: 600;
             color: #1a1d23;
@@ -347,7 +354,7 @@
         }
 
         .topbar-title .page-icon {
-            color: #3B82F6;
+            color: #007DFF;
             font-size: 18px;
         }
 
@@ -368,7 +375,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #6b7280;
+            color: #677489;
             font-size: 16px;
             cursor: pointer;
             transition: all .15s;
@@ -378,8 +385,8 @@
 
         .topbar-btn:hover {
             background: #f4f6fb;
-            color: #3B82F6;
-            border-color: #dbeafe;
+            color: #007DFF;
+            border-color: #CDDEF6;
         }
 
         .badge-dot {
@@ -403,18 +410,18 @@
 
         .notif-item:hover { background: #f9fafb; }
         .notif-item.unread { background: #eff6ff; }
-        .notif-item.unread:hover { background: #dbeafe; }
+        .notif-item.unread:hover { background: #CDDEF6; }
 
         .btn-primary-sm {
             display: inline-flex;
             align-items: center;
             gap: 6px;
             padding: 8px 16px;
-            background: #3B82F6;
+            background: #0085f3;
             color: #fff;
             border: none;
-            border-radius: 9px;
-            font-size: 13.5px;
+            border-radius: 100px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
@@ -422,7 +429,7 @@
             white-space: nowrap;
         }
 
-        .btn-primary-sm:hover { background: #2563EB; color: #fff; }
+        .btn-primary-sm:hover { background: #0070d1; color: #fff; }
 
         /* ===== MAIN CONTENT ===== */
         .main-content {
@@ -446,7 +453,7 @@
 
         .stat-card .stat-label {
             font-size: 13px;
-            color: #6b7280;
+            color: #677489;
             font-weight: 500;
             display: flex;
             align-items: center;
@@ -464,7 +471,7 @@
 
         .stat-card .stat-sub {
             font-size: 12px;
-            color: #9ca3af;
+            color: #97A3B7;
         }
 
         .stat-card .stat-delta {
@@ -506,7 +513,7 @@
             gap: 10px;
             padding: 9px 10px;
             border-radius: 9px;
-            color: #6b7280;
+            color: #677489;
             font-size: 13.5px;
             font-weight: 500;
             text-decoration: none;
@@ -518,7 +525,7 @@
 
         .nav-submenu-toggle:hover {
             background: #f4f6fb;
-            color: #3B82F6;
+            color: #007DFF;
         }
 
         .nav-submenu {
@@ -532,7 +539,7 @@
             gap: 10px;
             padding: 7px 10px;
             border-radius: 9px;
-            color: #6b7280;
+            color: #677489;
             font-size: 13px;
             font-weight: 500;
             text-decoration: none;
@@ -544,12 +551,12 @@
 
         .nav-subitem:hover {
             background: #f4f6fb;
-            color: #3B82F6;
+            color: #007DFF;
         }
 
         .nav-subitem.active {
             background: #eff6ff;
-            color: #3B82F6;
+            color: #007DFF;
             font-weight: 600;
         }
 
@@ -695,7 +702,7 @@
             <span class="workspace-name nav-label">{{ $activeTenant?->name ?? 'Minha Empresa' }}</span>
             @if($isPartnerUser)
                 <i class="bi bi-chevron-expand nav-label" id="wsChevron"
-                   style="font-size:12px;color:#9ca3af;margin-left:auto;"></i>
+                   style="font-size:12px;color:#97A3B7;margin-left:auto;"></i>
             @endif
         </div>
 
@@ -711,20 +718,20 @@
                     <div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                         {{ $authTenant->name }}
                     </div>
-                    <div style="font-size:11px;color:#9ca3af;">Minha conta</div>
+                    <div style="font-size:11px;color:#97A3B7;">Minha conta</div>
                 </div>
                 @if(!$impersonatingId)<i class="bi bi-check2" style="margin-left:auto;color:#7C3AED;"></i>@endif
             </div>
 
             @if($partnerClients->isNotEmpty())
             <hr class="workspace-dd-divider">
-            <div style="padding:6px 14px 4px;font-size:10.5px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;">
+            <div style="padding:6px 14px 4px;font-size:10.5px;font-weight:700;color:#97A3B7;text-transform:uppercase;letter-spacing:.06em;">
                 Clientes
             </div>
             @foreach($partnerClients as $client)
             <div class="workspace-dd-item {{ (int)$impersonatingId === (int)$client->id ? 'active' : '' }}"
                  onclick="switchWorkspace({{ $client->id }})">
-                <div class="workspace-dd-avatar" style="background:#3B82F6;">
+                <div class="workspace-dd-avatar" style="background:#007DFF;">
                     {{ strtoupper(substr($client->name, 0, 1)) }}
                 </div>
                 <div style="min-width:0;">
@@ -733,13 +740,13 @@
                     </div>
                 </div>
                 @if((int)$impersonatingId === (int)$client->id)
-                    <i class="bi bi-check2" style="margin-left:auto;color:#3B82F6;"></i>
+                    <i class="bi bi-check2" style="margin-left:auto;color:#007DFF;"></i>
                 @endif
             </div>
             @endforeach
             @else
             <hr class="workspace-dd-divider">
-            <div style="padding:12px 14px;font-size:12.5px;color:#9ca3af;text-align:center;">
+            <div style="padding:12px 14px;font-size:12.5px;color:#97A3B7;text-align:center;">
                 Nenhum cliente vinculado ainda.
             </div>
             @endif
@@ -827,7 +834,7 @@
                     class="nav-item nav-submenu-toggle w-100"
                     onclick="toggleSubmenu('settingsSubmenu')"
                     title="Configurações"
-                    style="background:none;border:none;cursor:pointer;text-align:left;{{ $settingsOpen ? 'color:#3B82F6;background:#eff6ff;font-weight:600;' : '' }}">
+                    style="background:none;border:none;cursor:pointer;text-align:left;{{ $settingsOpen ? 'color:#007DFF;background:#eff6ff;font-weight:600;' : '' }}">
                 <i class="bi bi-gear nav-icon"></i>
                 <span class="nav-label">Configurações</span>
                 <i class="bi bi-chevron-down nav-chevron nav-label" id="settingsChevron"
@@ -925,7 +932,7 @@
                     <div class="user-role">{{ ucfirst(auth()->user()->role) }}</div>
                 </div>
                 <i class="bi bi-three-dots-vertical user-dots nav-label"
-                   style="color:#9ca3af;margin-left:auto;flex-shrink:0;"></i>
+                   style="color:#97A3B7;margin-left:auto;flex-shrink:0;"></i>
             </div>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width:180px;border-radius:10px;">
                 <li><a class="dropdown-item" href="{{ route('settings.profile') }}"><i class="bi bi-person me-2"></i>Meu Perfil</a></li>
@@ -976,10 +983,10 @@
                 <div style="padding:12px 16px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1;">
                     <span style="font-weight:700;font-size:13px;">Notificações</span>
                     <button onclick="markAllIntentRead()" type="button" class="btn btn-link btn-sm p-0"
-                            style="font-size:11px;text-decoration:none;color:#6b7280;">Marcar todas lidas</button>
+                            style="font-size:11px;text-decoration:none;color:#677489;">Marcar todas lidas</button>
                 </div>
                 <div id="notif-list">
-                    <div style="padding:24px;text-align:center;color:#9ca3af;font-size:12px;">Nenhuma notificação</div>
+                    <div style="padding:24px;text-align:center;color:#97A3B7;font-size:12px;">Nenhuma notificação</div>
                 </div>
             </div>
         </div>
@@ -996,7 +1003,7 @@
             <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width:180px;border-radius:10px;">
                 <li class="px-3 py-2">
                     <div style="font-size:13px;font-weight:600;">{{ auth()->user()->name }}</div>
-                    <div style="font-size:11px;color:#9ca3af;">{{ auth()->user()->email }}</div>
+                    <div style="font-size:11px;color:#97A3B7;">{{ auth()->user()->email }}</div>
                 </li>
                 <li><hr class="dropdown-divider my-1"></li>
                 <li><a class="dropdown-item" href="{{ route('settings.profile') }}"><i class="bi bi-person me-2"></i>Perfil</a></li>
@@ -1098,7 +1105,7 @@
             </div>
             <div style="flex:1;min-width:0;">
                 <h5 id="confirmModalTitle" style="font-size:16px;font-weight:700;color:#111827;margin:0 0 6px;"></h5>
-                <p id="confirmModalMessage" style="font-size:14px;color:#6b7280;margin:0 0 10px;line-height:1.5;"></p>
+                <p id="confirmModalMessage" style="font-size:14px;color:#677489;margin:0 0 10px;line-height:1.5;"></p>
                 <p style="font-size:12px;color:#EF4444;font-weight:500;margin:0;display:flex;align-items:center;gap:5px;">
                     <i class="bi bi-shield-exclamation"></i> Esta ação é irreversível e não pode ser desfeita.
                 </p>
@@ -1328,7 +1335,7 @@ function toggleSubmenu(id) {
         const MASTER_TYPE_ICONS = { info: 'bi-info-circle-fill', warning: 'bi-exclamation-triangle-fill', alert: 'bi-exclamation-octagon-fill' };
         const MASTER_TYPE_COLORS = { info: '#3b82f6', warning: '#f59e0b', alert: '#ef4444' };
         const masterHtml = (masterItems && masterItems.length) ? [
-            `<div style="padding:6px 16px 4px;font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.5px;background:#f8fafc;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;gap:5px;"><i class="bi bi-megaphone-fill"></i> AVISOS DO SISTEMA</div>`,
+            `<div style="padding:6px 16px 4px;font-size:10px;font-weight:700;color:#677489;letter-spacing:.5px;background:#f8fafc;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;gap:5px;"><i class="bi bi-megaphone-fill"></i> AVISOS DO SISTEMA</div>`,
             ...masterItems.map(n => {
                 const unread = n.id > lastReadId ? 'unread' : '';
                 const iconClass = MASTER_TYPE_ICONS[n.type] || 'bi-info-circle-fill';
@@ -1339,8 +1346,8 @@ function toggleSubmenu(id) {
                             <i class="bi ${iconClass}" style="font-size:16px;flex-shrink:0;margin-top:2px;color:${iconColor};"></i>
                             <div style="flex:1;min-width:0;">
                               <div style="font-size:12px;font-weight:600;color:#1a1d23;margin-bottom:2px;">${n.title}</div>
-                              <div style="font-size:11px;color:#6b7280;line-height:1.4;">${n.body}</div>
-                              <div style="font-size:10px;color:#9ca3af;margin-top:3px;">${ts}</div>
+                              <div style="font-size:11px;color:#677489;line-height:1.4;">${n.body}</div>
+                              <div style="font-size:10px;color:#97A3B7;margin-top:3px;">${ts}</div>
                             </div>
                           </div>
                         </div>`;
@@ -1362,8 +1369,8 @@ function toggleSubmenu(id) {
                         <span style="font-size:18px;flex-shrink:0;margin-top:1px;">${icon}</span>
                         <div style="flex:1;min-width:0;">
                           <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.contact_name}</div>
-                          <div style="font-size:11px;color:#6b7280;margin:2px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${s.context}</div>
-                          <div style="font-size:10px;color:#9ca3af;">${s.time_ago}</div>
+                          <div style="font-size:11px;color:#677489;margin:2px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${s.context}</div>
+                          <div style="font-size:10px;color:#97A3B7;">${s.time_ago}</div>
                         </div>
                         ${convBtn}
                       </div>
@@ -1383,8 +1390,8 @@ function toggleSubmenu(id) {
                             <span style="font-size:16px;flex-shrink:0;">${icon}</span>
                             <div style="flex:1;min-width:0;">
                               <div style="font-size:12px;font-weight:600;color:#065f46;">${s.lead_name}</div>
-                              <div style="font-size:11px;color:#6b7280;">${s.type_label}</div>
-                              <div style="font-size:10px;color:#9ca3af;">${s.time_ago}</div>
+                              <div style="font-size:11px;color:#677489;">${s.type_label}</div>
+                              <div style="font-size:10px;color:#97A3B7;">${s.time_ago}</div>
                             </div>
                             ${convLink}
                           </div>
@@ -1393,7 +1400,7 @@ function toggleSubmenu(id) {
         ].join('') : '';
 
         if (!intentHtml && !analystHtml && !masterHtml) {
-            el.innerHTML = '<div style="padding:24px;text-align:center;color:#9ca3af;font-size:12px;">Nenhuma notificação</div>';
+            el.innerHTML = '<div style="padding:24px;text-align:center;color:#97A3B7;font-size:12px;">Nenhuma notificação</div>';
             return;
         }
 
@@ -1508,19 +1515,21 @@ function toggleSubmenu(id) {
             Trial Expirado
         </div>
         <h2 style="font-size:20px;font-weight:700;color:#1a1d23;margin:0 0 12px;">Seu período gratuito encerrou</h2>
-        <p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0 0 28px;">
+        <p style="font-size:14px;color:#677489;line-height:1.6;margin:0 0 28px;">
             O trial gratuito da conta <strong>{{ auth()->user()->tenant->name }}</strong> expirou.<br>
             Entre em contato com o suporte para ativar um plano e continuar usando a plataforma.
         </p>
         <form method="POST" action="{{ route('logout') }}">
             @csrf
-            <button type="submit" style="display:inline-flex;align-items:center;gap:8px;padding:11px 28px;background:transparent;color:#6b7280;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;">
+            <button type="submit" style="display:inline-flex;align-items:center;gap:8px;padding:11px 28px;background:transparent;color:#677489;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;">
                 <i class="bi bi-box-arrow-right"></i> Sair da conta
             </button>
         </form>
     </div>
 </div>
 @endif
+
+@include('components.cookie-consent')
 
 </body>
 </html>

@@ -202,11 +202,11 @@
     }
     .tcm-input:focus { border-color: #3B82F6; }
     .tcm-send {
-        background: #3B82F6; color: #fff; border: none; border-radius: 12px;
+        background: #0085f3; color: #fff; border: none; border-radius: 100px;
         width: 40px; height: 38px; display: flex; align-items: center; justify-content: center;
         cursor: pointer; font-size: 16px; flex-shrink: 0; transition: background .15s;
     }
-    .tcm-send:hover { background: #2563eb; }
+    .tcm-send:hover { background: #0070d1; }
     .tcm-send:disabled { opacity: .5; cursor: not-allowed; }
 
     .tcm-reset {
@@ -266,22 +266,22 @@
         border:1.5px solid #e8eaf0; border-radius:11px; padding:12px 14px;
         cursor:pointer; transition:border-color .15s, background .15s;
     }
-    .quota-pack-card:hover, .quota-pack-card.selected { border-color:#3B82F6; background:#eff6ff; }
+    .quota-pack-card:hover, .quota-pack-card.selected { border-color:#0085f3; background:#eff6ff; }
     .quota-pack-tokens { font-size:14px; font-weight:700; color:#1a1d23; }
     .quota-pack-name   { font-size:12px; color:#9ca3af; margin-top:1px; }
-    .quota-pack-price  { font-size:15px; font-weight:700; color:#3B82F6; }
+    .quota-pack-price  { font-size:15px; font-weight:700; color:#0085f3; }
     .quota-pix-wrap { background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:11px; padding:16px; text-align:center; margin-top:14px; }
     .quota-pix-title { font-size:13px; font-weight:700; color:#15803d; margin-bottom:10px; }
     .quota-pix-img { max-width:160px; margin:0 auto 10px; display:block; }
     .quota-pix-code { background:#fff; border:1px solid #d1d5db; border-radius:8px; padding:8px 12px; font-size:11.5px; word-break:break-all; color:#374151; margin-bottom:10px; }
-    .quota-pix-copy { font-size:12px; font-weight:600; color:#3B82F6; cursor:pointer; background:none; border:none; padding:0; }
+    .quota-pix-copy { font-size:12px; font-weight:600; color:#0085f3; cursor:pointer; background:none; border:none; padding:0; }
     .quota-pix-copy:hover { color:#2563eb; text-decoration:underline; }
     .quota-btn-buy {
-        width:100%; padding:11px; border-radius:10px; border:none;
-        background:#3B82F6; color:#fff; font-size:14px; font-weight:600;
+        width:100%; padding:11px; border-radius:100px; border:none;
+        background:#0085f3; color:#fff; font-size:14px; font-weight:600;
         cursor:pointer; transition:background .15s;
     }
-    .quota-btn-buy:hover { background:#2563eb; }
+    .quota-btn-buy:hover { background:#0070d1; }
     .quota-btn-buy:disabled { opacity:.5; cursor:not-allowed; }
 
     /* ── Delete Confirmation Modal ── */

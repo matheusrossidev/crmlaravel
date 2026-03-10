@@ -15,7 +15,7 @@
 }
 
 #toast-container > div {
-    font-family: 'Inter', sans-serif !important;
+    font-family: 'DM Sans', sans-serif !important;
     border-radius: 12px !important;
     box-shadow: 0 8px 28px rgba(0, 0, 0, .10), 0 2px 6px rgba(0, 0, 0, .06) !important;
     background-color: #ffffff !important;
@@ -69,12 +69,12 @@
 #toast-container .toast-title + .toast-message {
     font-size: 13px !important;
     font-weight: 400 !important;
-    color: #9ca3af !important;
+    color: #97A3B7 !important;
 }
 
 /* Botão fechar */
 #toast-container .toast-close-button {
-    color: #9ca3af !important;
+    color: #97A3B7 !important;
     font-size: 16px !important;
     font-weight: 300 !important;
     opacity: 1 !important;
@@ -129,19 +129,19 @@
 
 /* ── Info ── */
 #toast-container .toast-info {
-    border-left-color: #3B82F6 !important;
+    border-left-color: #007DFF !important;
 }
 #toast-container .toast-info .toast-progress {
-    background: #3B82F6 !important;
+    background: #007DFF !important;
 }
 #toast-container .toast-info::before {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%233B82F6'%3E%3Cpath d='M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23007DFF'%3E%3Cpath d='M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z'/%3E%3C/svg%3E");
 }
 
 /* ===== Customizações da Plataforma 360 ===== */
 
 :root {
-    --primary-color: #3B82F6;
+    --primary-color: #007DFF;
     --success-color: #10B981;
     --danger-color: #EF4444;
     --warning-color: #F59E0B;
@@ -155,7 +155,7 @@
 
 .kanban-placeholder {
     background: #e5e7eb;
-    border: 2px dashed #9ca3af;
+    border: 2px dashed #97A3B7;
     border-radius: 8px;
     min-height: 80px;
     margin-bottom: 8px;
@@ -190,7 +190,7 @@
     padding: 2px 8px;
     border-radius: 12px;
     font-size: 0.7rem;
-    background-color: #6B7280;
+    background-color: #677489;
     color: #fff;
     margin-right: 2px;
 }
@@ -199,6 +199,19 @@
 .nav-sidebar .nav-item .nav-link.active {
     background-color: rgba(59, 130, 246, 0.15);
     color: var(--primary-color);
+}
+
+/* ===== Scrollbar — Style Guide ===== */
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #F2F8FF; }
+::-webkit-scrollbar-thumb { background: #007DFF; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #0066cc; }
+
+/* Scrollbar Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #007DFF #F2F8FF;
 }
 
 /* Loading overlay */

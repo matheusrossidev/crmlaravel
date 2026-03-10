@@ -169,8 +169,8 @@
     }
 
     .pagination-wrap nav .pagination .page-item.active .page-link {
-        background: #3B82F6;
-        border-color: #3B82F6;
+        background: #0085f3;
+        border-color: #0085f3;
         color: #fff;
     }
 
@@ -185,7 +185,7 @@
         gap: 5px;
         padding: 7px 14px;
         border: 1.5px solid #e8eaf0;
-        border-radius: 9px;
+        border-radius: 100px;
         background: #fff;
         font-size: 13px;
         font-weight: 600;
@@ -194,7 +194,7 @@
         transition: all .15s;
         font-family: inherit;
     }
-    .btn-secondary-sm:hover { background: #f0f4ff; border-color: #dbeafe; color: #3B82F6; }
+    .btn-secondary-sm:hover { background: #f0f4ff; border-color: #dbeafe; color: #0085f3; }
 
     .resp-badge {
         display: inline-flex;
@@ -357,8 +357,8 @@
         </form>
         <div id="importResult" style="display:none;margin-top:14px;padding:10px 14px;border-radius:9px;font-size:13px;"></div>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;">
-            <button onclick="closeImportModal()" style="padding:8px 18px;border-radius:8px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;">Cancelar</button>
-            <button id="btnDoImport" onclick="doImport()" style="padding:8px 20px;border-radius:8px;border:none;background:#3B82F6;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Importar</button>
+            <button onclick="closeImportModal()" style="padding:8px 18px;border-radius:100px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;">Cancelar</button>
+            <button id="btnDoImport" onclick="doImport()" style="padding:8px 20px;border-radius:100px;border:none;background:#0085f3;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Importar</button>
         </div>
     </div>
 </div>

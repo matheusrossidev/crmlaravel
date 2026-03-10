@@ -35,7 +35,7 @@
     overflow: hidden;
 }
 .current-plan-header {
-    background: linear-gradient(135deg, #0085f3 0%, #0066cc 100%);
+    background: #0085f3;
     padding: 24px;
     color: #fff;
 }
@@ -139,7 +139,7 @@
     background: #0085f3;
     color: #fff;
     border: none;
-    border-radius: 10px;
+    border-radius: 100px;
     font-size: 14px;
     font-weight: 700;
     text-align: center;
@@ -156,7 +156,7 @@
     background: transparent;
     color: #ef4444;
     border: 1.5px solid #fecaca;
-    border-radius: 10px;
+    border-radius: 100px;
     font-size: 13px;
     font-weight: 600;
     text-align: center;
@@ -191,7 +191,7 @@
     background: #0085f3;
     color: #fff;
     border: none;
-    border-radius: 8px;
+    border-radius: 100px;
     font-size: 12.5px;
     font-weight: 600;
     text-decoration: none;
@@ -257,7 +257,7 @@
     background: #0085f3;
     color: #fff;
     border: none;
-    border-radius: 9px;
+    border-radius: 100px;
     font-size: 13px;
     font-weight: 700;
     text-decoration: none;

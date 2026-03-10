@@ -43,7 +43,7 @@
     color: #1a1d23; outline: none; transition: border-color .15s;
     font-family: inherit;
 }
-.af-name-input:focus { border-color: #3b82f6; }
+.af-name-input:focus { border-color: #0085f3; }
 .af-name-input::placeholder { font-weight: 400; color: #9ca3af; }
 .af-header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .af-status-badge {
@@ -111,7 +111,7 @@
     position: absolute; left: 0; top: 0; bottom: 0;
     width: 4px;
 }
-.af-node.trigger  .af-node-bar { background: #3b82f6; }
+.af-node.trigger  .af-node-bar { background: #0085f3; }
 .af-node.condition .af-node-bar { background: #f59e0b; }
 .af-node.action   .af-node-bar { background: #10b981; }
 
@@ -189,7 +189,7 @@
     cursor: pointer; transition: all .15s;
     margin-top: 4px;
 }
-.af-add-action:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
+.af-add-action:hover { border-color: #0085f3; color: #0085f3; background: #eff6ff; }
 
 /* ── Conditions group header ──────────────────────────────────────── */
 .af-group-label {
@@ -214,7 +214,7 @@
     transition: border-color .15s;
 }
 .af-node-body .form-control:focus,
-.af-node-body .form-select:focus { border-color: #3b82f6; }
+.af-node-body .form-select:focus { border-color: #0085f3; }
 .af-node-body textarea.form-control { resize: vertical; min-height: 64px; }
 .af-node-body .row-pair { display: flex; gap: 8px; }
 .af-node-body .row-pair > * { flex: 1; min-width: 0; }
@@ -226,7 +226,7 @@
     padding: 5px 8px; cursor: text; min-height: 36px;
     background: #fff; transition: border-color .15s;
 }
-.tag-select-wrap:focus-within { border-color: #3b82f6; }
+.tag-select-wrap:focus-within { border-color: #0085f3; }
 .tag-chip-item {
     display: inline-flex; align-items: center; gap: 4px;
     background: #eff6ff; color: #2563eb;
@@ -256,16 +256,16 @@
 /* ── Buttons ──────────────────────────────────────────────────────── */
 .btn-primary-sm {
     display: inline-flex; align-items: center; gap: 6px;
-    padding: 8px 18px; background: #3b82f6; color: #fff;
-    border: none; border-radius: 9px; font-size: 13.5px;
+    padding: 8px 18px; background: #0085f3; color: #fff;
+    border: none; border-radius: 100px; font-size: 13.5px;
     font-weight: 600; cursor: pointer; transition: background .15s;
     text-decoration: none; font-family: inherit;
 }
-.btn-primary-sm:hover { background: #2563eb; color: #fff; }
+.btn-primary-sm:hover { background: #0070d1; color: #fff; }
 .btn-cancel-sm {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 8px 16px; background: #fff; color: #374151;
-    border: 1.5px solid #e8eaf0; border-radius: 9px; font-size: 13.5px;
+    border: 1.5px solid #e8eaf0; border-radius: 100px; font-size: 13.5px;
     font-weight: 600; cursor: pointer; transition: all .15s;
     text-decoration: none; font-family: inherit;
 }
@@ -885,7 +885,7 @@ function showTagSugs(id, query) {
     const filtered = suggestions.filter(s => !existing.includes(s) && (!lower || s.toLowerCase().includes(lower)));
     let html = filtered.map(s => `<div class="tag-sug-item" onmousedown="addTagChip('${id}','${h(s)}')">${h(s)}</div>`).join('');
     if (lower && !suggestions.some(s => s.toLowerCase() === lower) && !existing.includes(lower)) {
-        html += `<div class="tag-sug-item" style="color:#3b82f6;" onmousedown="addTagChip('${id}','${lower}')"><i class="bi bi-plus me-1"></i>Adicionar "${lower}"</div>`;
+        html += `<div class="tag-sug-item" style="color:#0085f3;" onmousedown="addTagChip('${id}','${lower}')"><i class="bi bi-plus me-1"></i>Adicionar "${lower}"</div>`;
     }
     sug.innerHTML = html || '<div class="tag-sug-item" style="color:#9ca3af;font-size:12px;">Sem sugestões</div>';
     sug.style.display = 'block';

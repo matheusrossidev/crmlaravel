@@ -69,10 +69,10 @@
 
     .btn-apply {
         padding: 8px 18px;
-        background: #3B82F6;
+        background: #0085f3;
         color: #fff;
         border: none;
-        border-radius: 8px;
+        border-radius: 100px;
         font-size: 13px;
         font-weight: 600;
         cursor: pointer;
@@ -80,14 +80,14 @@
         transition: background .15s;
     }
 
-    .btn-apply:hover { background: #2563EB; }
+    .btn-apply:hover { background: #0070d1; }
 
     .btn-clear {
         padding: 8px 14px;
         background: #fff;
         color: #6b7280;
         border: 1.5px solid #e8eaf0;
-        border-radius: 8px;
+        border-radius: 100px;
         font-size: 13px;
         font-weight: 600;
         cursor: pointer;

@@ -90,7 +90,7 @@
         background: #f3f4f6;
         color: #9ca3af;
         border: 1.5px solid #e8eaf0;
-        border-radius: 9px;
+        border-radius: 100px;
         font-size: 13px;
         font-weight: 600;
         cursor: not-allowed;
@@ -199,7 +199,7 @@
         background: #fff;
         color: #374151;
         border: 1.5px solid #e8eaf0;
-        border-radius: 9px;
+        border-radius: 100px;
         font-size: 13px;
         font-weight: 600;
         cursor: pointer;
@@ -262,10 +262,10 @@
         align-items: center;
         gap: 6px;
         padding: 9px 18px;
-        background: #3B82F6;
+        background: #0085f3;
         color: #fff;
         border: none;
-        border-radius: 9px;
+        border-radius: 100px;
         font-size: 13px;
         font-weight: 600;
         cursor: pointer;
@@ -273,7 +273,7 @@
         transition: background .15s;
     }
 
-    .btn-connect:hover { background: #2563EB; color: #fff; }
+    .btn-connect:hover { background: #0070d1; color: #fff; }
 
     .btn-sync {
         display: inline-flex;
@@ -283,14 +283,14 @@
         background: #fff;
         color: #374151;
         border: 1.5px solid #e8eaf0;
-        border-radius: 9px;
+        border-radius: 100px;
         font-size: 13px;
         font-weight: 600;
         cursor: pointer;
         transition: all .15s;
     }
 
-    .btn-sync:hover { background: #f0f4ff; border-color: #dbeafe; color: #3B82F6; }
+    .btn-sync:hover { background: #f0f4ff; border-color: #dbeafe; color: #0085f3; }
 
     .btn-disconnect {
         display: inline-flex;
@@ -300,7 +300,7 @@
         background: #fff;
         color: #EF4444;
         border: 1.5px solid #fecaca;
-        border-radius: 9px;
+        border-radius: 100px;
         font-size: 13px;
         font-weight: 600;
         cursor: pointer;

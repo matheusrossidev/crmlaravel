@@ -336,7 +336,7 @@
         .btn-back {
             padding: 10px 20px;
             border: 1.5px solid #E5E7EB;
-            border-radius: 10px;
+            border-radius: 100px;
             background: #fff;
             color: #6B7280;
             font-family: 'Inter', sans-serif;
@@ -354,10 +354,10 @@
         .btn-next {
             flex: 1;
             padding: 12px 24px;
-            background: #3B82F6;
+            background: #0085f3;
             color: #fff;
             border: none;
-            border-radius: 10px;
+            border-radius: 100px;
             font-family: 'Inter', sans-serif;
             font-size: 15px;
             font-weight: 600;
@@ -369,7 +369,7 @@
             gap: 8px;
         }
 
-        .btn-next:hover { background: #2563EB; }
+        .btn-next:hover { background: #0070d1; }
         .btn-next:active { transform: scale(.98); }
         .btn-next:disabled { background: #93C5FD; cursor: not-allowed; }
 
@@ -502,7 +502,7 @@
             flex: 1;
             padding: 10px;
             border: 1.5px solid #E5E7EB;
-            border-radius: 10px;
+            border-radius: 100px;
             background: #fff;
             color: #374151;
             font-family: 'Inter', sans-serif;
@@ -518,7 +518,7 @@
             flex: 1;
             padding: 10px;
             border: none;
-            border-radius: 10px;
+            border-radius: 100px;
             background: #F3F4F6;
             color: #374151;
             font-family: 'Inter', sans-serif;

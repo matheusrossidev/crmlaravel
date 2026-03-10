@@ -63,16 +63,16 @@
         align-items: center;
         gap: 6px;
         padding: 9px 20px;
-        background: #3B82F6;
+        background: #0085f3;
         color: #fff;
         border: none;
-        border-radius: 9px;
-        font-size: 13.5px;
+        border-radius: 100px;
+        font-size: 13px;
         font-weight: 600;
         cursor: pointer;
         transition: background .15s;
     }
-    .btn-save:hover { background: #2563EB; }
+    .btn-save:hover { background: #0070d1; }
     .btn-save:disabled { opacity: .6; cursor: not-allowed; }
 
     /* Avatar card */

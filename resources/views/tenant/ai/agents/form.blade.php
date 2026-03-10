@@ -23,7 +23,7 @@
     .section-card-header:hover { background: #f5f7fb; }
     .section-card-header .section-icon {
         width: 32px; height: 32px; border-radius: 8px;
-        background: #eff6ff; color: #3B82F6;
+        background: #eff6ff; color: #0085f3;
         display: flex; align-items: center; justify-content: center;
         font-size: 15px;
     }
@@ -47,7 +47,7 @@
         font-size: 13.5px; outline: none; font-family: inherit;
         transition: border-color .15s; box-sizing: border-box;
     }
-    .form-control:focus { border-color: #3B82F6; }
+    .form-control:focus { border-color: #0085f3; }
     textarea.form-control { resize: vertical; min-height: 90px; }
     select.form-control { background: #fff; }
 
@@ -60,7 +60,7 @@
     }
     .stage-num {
         width: 24px; height: 24px; border-radius: 6px;
-        background: #eff6ff; color: #3B82F6;
+        background: #eff6ff; color: #0085f3;
         display: flex; align-items: center; justify-content: center;
         font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 8px;
     }
@@ -78,7 +78,7 @@
         font-size: 12.5px; font-weight: 600; color: #6b7280;
         cursor: pointer; transition: all .15s; margin-top: 8px;
     }
-    .btn-add-stage:hover { border-color: #3B82F6; color: #3B82F6; background: #f0f8ff; }
+    .btn-add-stage:hover { border-color: #0085f3; color: #0085f3; background: #f0f8ff; }
 
     /* Toggle ativo */
     .toggle-wrap {
@@ -92,7 +92,7 @@
         background: #e5e7eb; position: relative; cursor: pointer;
         transition: background .2s; flex-shrink: 0;
     }
-    .toggle-switch.on { background: #3B82F6; }
+    .toggle-switch.on { background: #0085f3; }
     .toggle-switch::after {
         content: ''; position: absolute; top: 3px; left: 3px;
         width: 18px; height: 18px; border-radius: 50%; background: #fff;
@@ -105,14 +105,14 @@
         padding: 20px 0;
     }
     .btn-primary {
-        padding: 10px 28px; border-radius: 9px; border: none;
-        background: #3B82F6; color: #fff;
+        padding: 10px 28px; border-radius: 100px; border: none;
+        background: #0085f3; color: #fff;
         font-size: 13.5px; font-weight: 600; cursor: pointer;
         transition: background .15s;
     }
-    .btn-primary:hover { background: #2563eb; }
+    .btn-primary:hover { background: #0070d1; }
     .btn-cancel {
-        padding: 10px 20px; border-radius: 9px;
+        padding: 10px 20px; border-radius: 100px;
         border: 1.5px solid #e8eaf0; background: #fff;
         font-size: 13.5px; font-weight: 600; color: #6b7280;
         cursor: pointer; transition: all .15s; text-decoration: none;
@@ -131,7 +131,7 @@
         @if(!$isEdit) display: none; @endif
     }
     .test-chat-header {
-        padding: 13px 16px; background: #3B82F6;
+        padding: 13px 16px; background: #0085f3;
         display: flex; align-items: center; justify-content: space-between;
         cursor: pointer;
     }
@@ -148,14 +148,14 @@
         flex: 1; padding: 8px 10px; border: 1.5px solid #e8eaf0;
         border-radius: 9px; font-size: 13px; outline: none; font-family: inherit;
     }
-    .test-chat-input:focus { border-color: #3B82F6; }
+    .test-chat-input:focus { border-color: #0085f3; }
     .test-send-btn {
-        width: 36px; height: 36px; border-radius: 9px;
-        background: #3B82F6; border: none; color: #fff;
+        width: 36px; height: 36px; border-radius: 100px;
+        background: #0085f3; border: none; color: #fff;
         cursor: pointer; display: flex; align-items: center; justify-content: center;
         font-size: 15px; flex-shrink: 0; transition: background .15s;
     }
-    .test-send-btn:hover { background: #2563eb; }
+    .test-send-btn:hover { background: #0070d1; }
     .test-send-btn:disabled { opacity: .6; cursor: not-allowed; }
 
     .chat-bubble {
@@ -164,7 +164,7 @@
         white-space: pre-wrap; word-break: break-word;
     }
     .chat-bubble.user {
-        align-self: flex-end; background: #3B82F6; color: #fff;
+        align-self: flex-end; background: #0085f3; color: #fff;
         border-bottom-right-radius: 4px;
     }
     .chat-bubble.agent {
@@ -194,7 +194,7 @@
     .kb-status-badge.failed  { background: #fee2e2; color: #dc2626; }
     .kb-status-badge.pending { background: #fef9c3; color: #ca8a04; }
     .kb-preview-btn {
-        font-size: 11px; color: #3B82F6; border: none; background: none;
+        font-size: 11px; color: #0085f3; border: none; background: none;
         padding: 0; cursor: pointer; margin-left: 6px;
     }
     .kb-del-btn {
@@ -215,7 +215,7 @@
         display: flex; align-items: center; gap: 8px;
         padding: 10px 12px; border: 1px dashed #93c5fd;
         border-radius: 9px; margin-bottom: 7px; background: #eff6ff;
-        font-size: 12.5px; color: #3B82F6;
+        font-size: 12.5px; color: #0085f3;
     }
 
     .channel-card {
@@ -225,7 +225,7 @@
         transition: all .15s; text-align: center;
     }
     .channel-card:hover { border-color: #93c5fd; background: #f0f8ff; color: #2563eb; }
-    .channel-card.selected { border-color: #3B82F6; background: #eff6ff; color: #2563eb; }
+    .channel-card.selected { border-color: #0085f3; background: #eff6ff; color: #0085f3; }
 </style>
 @endpush
 
@@ -456,7 +456,7 @@
                     {{-- Dropzone --}}
                     <div id="kbDropzone" style="border:2px dashed #d1d5db;border-radius:10px;padding:20px 16px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px;"
                          onclick="document.getElementById('kbFileInput').click()"
-                         ondragover="event.preventDefault();this.style.borderColor='#3B82F6';this.style.background='#eff6ff';"
+                         ondragover="event.preventDefault();this.style.borderColor='#0085f3';this.style.background='#eff6ff';"
                          ondragleave="this.style.borderColor='#d1d5db';this.style.background='';"
                          ondrop="handleKbDrop(event)">
                         <i class="bi bi-cloud-arrow-up" style="font-size:26px;color:#9ca3af;display:block;margin-bottom:6px;"></i>
@@ -477,7 +477,7 @@
                                 @elseif($kbFile->mime_type === 'application/pdf')
                                     <i class="bi bi-file-earmark-pdf" style="color:#ef4444;"></i>
                                 @else
-                                    <i class="bi bi-file-earmark-text" style="color:#3B82F6;"></i>
+                                    <i class="bi bi-file-earmark-text" style="color:#0085f3;"></i>
                                 @endif
                             </div>
                             <div class="kb-file-info">
@@ -922,7 +922,7 @@ const KB_DELETE = '{{ $isEdit ? url('/ia/agentes/' . $agent->id . '/knowledge-fi
 function fileIcon(mime) {
     if (mime.startsWith('image/')) return '<i class="bi bi-file-earmark-image" style="color:#8b5cf6;font-size:22px;"></i>';
     if (mime === 'application/pdf') return '<i class="bi bi-file-earmark-pdf" style="color:#ef4444;font-size:22px;"></i>';
-    return '<i class="bi bi-file-earmark-text" style="color:#3B82F6;font-size:22px;"></i>';
+    return '<i class="bi bi-file-earmark-text" style="color:#0085f3;font-size:22px;"></i>';
 }
 
 function handleKbDrop(e) {

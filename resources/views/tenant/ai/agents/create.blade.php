@@ -29,7 +29,7 @@
 }
 .wizard-progress-fill {
     height: 4px;
-    background: linear-gradient(90deg, #3B82F6, #6366F1);
+    background: #0085f3;
     transition: width .4s ease;
     border-radius: 0 4px 4px 0;
 }
@@ -206,16 +206,16 @@
     align-items: center;
     gap: 8px;
     padding: 11px 24px;
-    background: #3B82F6;
+    background: #0085f3;
     color: #fff;
     border: none;
-    border-radius: 10px;
+    border-radius: 100px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: background .15s;
 }
-.btn-wizard-next:hover { background: #2563EB; }
+.btn-wizard-next:hover { background: #0070d1; }
 .btn-wizard-next:disabled { background: #93c5fd; cursor: not-allowed; }
 
 .btn-wizard-create {
@@ -223,16 +223,16 @@
     align-items: center;
     gap: 8px;
     padding: 11px 28px;
-    background: linear-gradient(135deg, #3B82F6, #6366F1);
+    background: #0085f3;
     color: #fff;
     border: none;
-    border-radius: 10px;
+    border-radius: 100px;
     font-size: 14.5px;
     font-weight: 700;
     cursor: pointer;
-    transition: opacity .15s;
+    transition: background .15s;
 }
-.btn-wizard-create:hover { opacity: .9; }
+.btn-wizard-create:hover { background: #0070d1; }
 .btn-wizard-create:disabled { opacity: .5; cursor: not-allowed; }
 
 @media (max-width: 580px) {

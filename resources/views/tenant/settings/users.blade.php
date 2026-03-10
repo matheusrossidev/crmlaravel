@@ -139,19 +139,19 @@
     .btn-save {
         display: inline-flex; align-items: center; gap: 6px;
         padding: 9px 20px;
-        background: #3B82F6; color: #fff;
-        border: none; border-radius: 9px;
-        font-size: 13.5px; font-weight: 600;
+        background: #0085f3; color: #fff;
+        border: none; border-radius: 100px;
+        font-size: 13px; font-weight: 600;
         cursor: pointer; transition: background .15s;
     }
-    .btn-save:hover { background: #2563EB; }
+    .btn-save:hover { background: #0070d1; }
     .btn-save:disabled { opacity: .6; cursor: not-allowed; }
     .btn-cancel {
         display: inline-flex; align-items: center; gap: 6px;
         padding: 9px 20px;
         background: #f4f6fb; color: #374151;
-        border: 1px solid #e8eaf0; border-radius: 9px;
-        font-size: 13.5px; font-weight: 600;
+        border: 1px solid #e8eaf0; border-radius: 100px;
+        font-size: 13px; font-weight: 600;
         cursor: pointer; transition: background .15s;
     }
     .btn-cancel:hover { background: #e8eaf0; }
@@ -159,12 +159,12 @@
     .btn-new {
         display: inline-flex; align-items: center; gap: 6px;
         padding: 8px 16px;
-        background: #3B82F6; color: #fff;
-        border: none; border-radius: 9px;
+        background: #0085f3; color: #fff;
+        border: none; border-radius: 100px;
         font-size: 13px; font-weight: 600;
         cursor: pointer; transition: background .15s;
     }
-    .btn-new:hover { background: #2563EB; }
+    .btn-new:hover { background: #0070d1; }
 
     .user-av {
         width: 32px; height: 32px;

@@ -22,7 +22,7 @@
     <meta name="twitter:image"       content="{{ asset('images/shared-image.jpg') }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 
@@ -31,10 +31,16 @@
     @stack('styles')
 
     <style>
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: #d5d5d5 transparent; }
+
+        /* ===== Scrollbar ===== */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d5d5d5; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: #bbb; }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             background: #f0f2f8;
             margin: 0;
             color: #1a1d23;
@@ -111,7 +117,7 @@
 
         .m-nav-item.active {
             background: rgba(59,130,246,.15);
-            border-left-color: #3B82F6;
+            border-left-color: #007DFF;
             color: #93c5fd;
         }
 
@@ -130,7 +136,7 @@
             width: 34px;
             height: 34px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #3B82F6, #2563EB);
+            background: linear-gradient(135deg, #007DFF, #0066FF);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -162,6 +168,7 @@
         }
 
         .m-topbar-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
             font-size: 16px;
             font-weight: 700;
             color: #1a1d23;
@@ -170,7 +177,7 @@
             gap: 8px;
         }
 
-        .m-topbar-title i { color: #3B82F6; font-size: 18px; }
+        .m-topbar-title i { color: #007DFF; font-size: 18px; }
 
         .m-topbar-spacer { flex: 1; }
 
@@ -187,7 +194,7 @@
             width: 34px;
             height: 34px;
             border-radius: 9px;
-            background: linear-gradient(135deg, #3B82F6, #2563EB);
+            background: linear-gradient(135deg, #007DFF, #0066FF);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -226,6 +233,7 @@
         }
 
         .m-card-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
             font-size: 14px;
             font-weight: 700;
             color: #1a1d23;
@@ -234,7 +242,7 @@
             gap: 8px;
         }
 
-        .m-card-title i { color: #3B82F6; }
+        .m-card-title i { color: #007DFF; }
 
         .m-card-body { padding: 22px; }
 
@@ -253,12 +261,12 @@
             padding: 18px 20px;
         }
 
-        .m-stat-label { font-size: 12px; color: #6b7280; font-weight: 500; margin-bottom: 6px; }
+        .m-stat-label { font-size: 12px; color: #677489; font-weight: 500; margin-bottom: 6px; }
         .m-stat-value { font-size: 26px; font-weight: 700; color: #1a1d23; }
 
         /* ── TABLE ─────────────────────────────────────────────────────────── */
         .m-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-        .m-table th { padding: 10px 14px; text-align: left; font-size: 11.5px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid #f0f2f7; }
+        .m-table th { padding: 10px 14px; text-align: left; font-size: 11.5px; font-weight: 600; color: #677489; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid #f0f2f7; }
         .m-table td { padding: 12px 14px; color: #374151; border-bottom: 1px solid #f7f8fa; vertical-align: middle; }
         .m-table tr:last-child td { border-bottom: none; }
         .m-table tr:hover td { background: #f9fafb; }
@@ -274,7 +282,7 @@
         .m-badge-active   { background: #D1FAE5; color: #065F46; }
         .m-badge-trial    { background: #FEF3C7; color: #92400E; }
         .m-badge-partner  { background: #EDE9FE; color: #5B21B6; }
-        .m-badge-inactive { background: #F3F4F6; color: #6B7280; }
+        .m-badge-inactive { background: #F3F4F6; color: #677489; }
         .m-badge-suspended{ background: #FEE2E2; color: #991B1B; }
 
         /* ── BUTTONS ──────────────────────────────────────────────────────── */
@@ -291,9 +299,9 @@
             transition: background .15s, color .15s;
             text-decoration: none;
         }
-        .m-btn-primary { background: #3B82F6; color: #fff; }
-        .m-btn-primary:hover { background: #2563EB; color: #fff; }
-        .m-btn-ghost { background: transparent; color: #6b7280; border: 1.5px solid #e5e7eb; }
+        .m-btn-primary { background: linear-gradient(148deg, #2C83FB 0%, #1970EA 100%); color: #fff; border-radius: 100px; }
+        .m-btn-primary:hover { background: #0066FF; color: #fff; }
+        .m-btn-ghost { background: transparent; color: #677489; border: 1px solid #CDDEF6; border-radius: 100px; }
         .m-btn-ghost:hover { background: #f3f4f6; color: #374151; }
         .m-btn-danger { background: #FEE2E2; color: #DC2626; }
         .m-btn-danger:hover { background: #FECACA; }
@@ -439,7 +447,7 @@ toastr.options = { positionClass: 'toast-top-right', timeOut: 4000, progressBar:
             </div>
             <div style="flex:1;min-width:0;">
                 <h5 id="confirmModalTitle" style="font-size:16px;font-weight:700;color:#111827;margin:0 0 6px;"></h5>
-                <p id="confirmModalMessage" style="font-size:14px;color:#6b7280;margin:0 0 10px;line-height:1.5;"></p>
+                <p id="confirmModalMessage" style="font-size:14px;color:#677489;margin:0 0 10px;line-height:1.5;"></p>
                 <p style="font-size:12px;color:#EF4444;font-weight:500;margin:0;display:flex;align-items:center;gap:5px;">
                     <i class="bi bi-shield-exclamation"></i> Esta ação é irreversível e não pode ser desfeita.
                 </p>
@@ -447,7 +455,7 @@ toastr.options = { positionClass: 'toast-top-right', timeOut: 4000, progressBar:
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:24px;">
             <button id="confirmModalCancel" type="button"
-                style="padding:9px 20px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#374151;font-size:13px;font-weight:500;cursor:pointer;">
+                style="padding:9px 20px;border-radius:8px;border:1px solid #CDDEF6;background:#fff;color:#374151;font-size:13px;font-weight:500;cursor:pointer;">
                 Cancelar
             </button>
             <button id="confirmModalConfirm" type="button"

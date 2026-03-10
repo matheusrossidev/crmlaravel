@@ -88,7 +88,7 @@
         cursor: pointer; border-top: 1px solid #f0f2f7; background: #fafafa;
         transition: background .1s; border: none; width: 100%; text-align: left;
     }
-    .add-stage-btn:hover { background: #f0f4ff; color: #3B82F6; }
+    .add-stage-btn:hover { background: #f0f4ff; color: #0085f3; }
 
     .reason-table-wrap { background: #fff; border: 1px solid #e8eaf0; border-radius: 12px; overflow: hidden; }
     .reason-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
@@ -141,17 +141,17 @@
     .checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #374151; cursor: pointer; }
     .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
     .btn-cancel {
-        padding: 8px 18px; border-radius: 8px; border: 1.5px solid #e8eaf0;
+        padding: 8px 18px; border-radius: 100px; border: 1.5px solid #e8eaf0;
         background: #fff; font-size: 13px; font-weight: 600; color: #6b7280;
         cursor: pointer; transition: all .15s;
     }
     .btn-cancel:hover { background: #f0f2f7; }
     .btn-save {
-        padding: 8px 20px; border-radius: 8px; border: none;
-        background: #3B82F6; color: #fff; font-size: 13px; font-weight: 600;
+        padding: 8px 20px; border-radius: 100px; border: none;
+        background: #0085f3; color: #fff; font-size: 13px; font-weight: 600;
         cursor: pointer; transition: background .15s;
     }
-    .btn-save:hover { background: #2563eb; }
+    .btn-save:hover { background: #0070d1; }
     .btn-save:disabled { opacity: .6; cursor: not-allowed; }
 
     .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
