@@ -227,6 +227,7 @@ class LeadController extends Controller
             'leadNotes.author',
             'events.performedBy',
             'customFieldValues.fieldDefinition',
+            'attachments.uploader',
         ]);
 
         $waConversation = WhatsappConversation::where('lead_id', $lead->id)
@@ -499,13 +500,16 @@ class LeadController extends Controller
         ]);
 
         return response()->json([
-            'id'            => $record->id,
-            'original_name' => $record->original_name,
-            'mime_type'     => $record->mime_type,
-            'file_size'     => $record->file_size,
-            'url'           => Storage::disk('public')->url($record->storage_path),
-            'created_at'    => $record->created_at->format('d/m/Y H:i'),
-            'uploaded_by'   => auth()->user()->name,
+            'success'    => true,
+            'attachment' => [
+                'id'            => $record->id,
+                'original_name' => $record->original_name,
+                'mime_type'     => $record->mime_type,
+                'file_size'     => $record->file_size,
+                'url'           => Storage::disk('public')->url($record->storage_path),
+                'created_at'    => $record->created_at->format('d/m/Y H:i'),
+                'uploaded_by'   => auth()->user()->name,
+            ],
         ]);
     }
 

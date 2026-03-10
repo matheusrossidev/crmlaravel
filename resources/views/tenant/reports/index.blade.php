@@ -441,9 +441,39 @@
 
     /* ── Mobile ── */
     @media (max-width: 768px) {
+        .report-filter-wrap { padding: 12px 16px; }
+        .report-filter-inner {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            align-items: end;
+        }
+        .report-filter-inner > div { min-width: 0; }
         .report-filter-inner input,
-        .report-filter-inner select { min-height: 40px; font-size: 14px; }
-        .btn-apply, .btn-clear { min-height: 40px; padding: 10px 16px; font-size: 14px; }
+        .report-filter-inner select {
+            width: 100%;
+            min-height: 40px;
+            font-size: 14px;
+            border-radius: 100px;
+        }
+        .report-filter-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 8px;
+        }
+        .btn-apply {
+            flex: 1;
+            min-height: 42px;
+            font-size: 14px;
+            justify-content: center;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-clear {
+            min-height: 42px;
+            font-size: 14px;
+        }
     }
     @media (max-width: 480px) {
         .kpi-grid { grid-template-columns: 1fr 1fr; }
@@ -472,7 +502,7 @@
 
             <div>
                 <label>Campanha</label>
-                <select name="campaign_id" style="min-width:150px;">
+                <select name="campaign_id">
                     <option value="">Todas</option>
                     @foreach($campaigns as $camp)
                     <option value="{{ $camp->id }}" @selected($filterCampaign == $camp->id)>{{ $camp->name }}</option>
@@ -482,7 +512,7 @@
 
             <div>
                 <label>Pipeline</label>
-                <select name="pipeline_id" style="min-width:140px;">
+                <select name="pipeline_id">
                     <option value="">Todos</option>
                     @foreach($pipelines as $pipe)
                     <option value="{{ $pipe->id }}" @selected($filterPipeline == $pipe->id)>{{ $pipe->name }}</option>
@@ -490,15 +520,17 @@
                 </select>
             </div>
 
-            <button type="submit" class="btn-apply">
-                <i class="bi bi-funnel"></i> Aplicar
-            </button>
+            <div class="report-filter-actions">
+                <button type="submit" class="btn-apply">
+                    <i class="bi bi-funnel"></i> Aplicar
+                </button>
 
-            @if($filterCampaign || $filterPipeline || $filterUser || request('date_from') || request('date_to'))
-            <a href="{{ route('reports.index') }}" class="btn-clear">
-                <i class="bi bi-x"></i> Limpar
-            </a>
-            @endif
+                @if($filterCampaign || $filterPipeline || $filterUser || request('date_from') || request('date_to'))
+                <a href="{{ route('reports.index') }}" class="btn-clear">
+                    <i class="bi bi-x"></i> Limpar
+                </a>
+                @endif
+            </div>
 
         </div>
     </form>

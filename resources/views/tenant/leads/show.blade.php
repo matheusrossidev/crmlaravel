@@ -505,6 +505,42 @@ $pageIcon = 'person-badge';
 }
 .lp-sm-cancel:hover { color: #ef4444; }
 
+/* ── Attachments ── */
+.lp-attach-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid #f0f2f7;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    transition: background .1s;
+}
+.lp-attach-item:hover { background: #fafbfc; }
+.lp-attach-icon { font-size: 22px; flex-shrink: 0; line-height: 1; }
+.lp-attach-info { flex: 1; min-width: 0; }
+.lp-attach-name {
+    font-size: 13px; font-weight: 600; color: #1a1d23;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lp-attach-meta { font-size: 11.5px; color: #9ca3af; margin-top: 2px; }
+.lp-attach-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.lp-attach-btn {
+    width: 30px; height: 30px; border-radius: 7px;
+    border: 1px solid #e8eaf0; background: #fff; color: #6b7280;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; cursor: pointer; transition: all .15s;
+    text-decoration: none;
+}
+.lp-attach-btn:hover { background: #f3f4f6; color: #374151; }
+.lp-attach-del:hover { background: #fee2e2; color: #ef4444; border-color: #fca5a5; }
+.lp-attach-uploading {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; border: 1px dashed #93c5fd;
+    border-radius: 10px; margin-bottom: 8px;
+    background: #eff6ff; font-size: 12.5px; color: #0085f3;
+}
+
 /* ── Schedule Modal ── */
 .sched-overlay {
     position: fixed;
@@ -729,6 +765,12 @@ $pageIcon = 'person-badge';
                 @endif
             </button>
             @endif
+            <button class="lp-tab-btn" data-tab="attachments">
+                <i class="bi bi-paperclip"></i> Anexos
+                @if($lead->attachments->count() > 0)
+                <span style="background:#eff6ff;color:#0085f3;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">{{ $lead->attachments->count() }}</span>
+                @endif
+            </button>
             <button class="lp-tab-btn" data-tab="scheduled">
                 <i class="bi bi-clock"></i> Msg. Agendadas
                 @if($scheduledMessages->where('status', 'pending')->count() > 0)
@@ -940,6 +982,62 @@ $pageIcon = 'person-badge';
             @endif
         </div>
         @endif
+
+        {{-- ── Tab: Anexos ── --}}
+        <div class="lp-tab-panel" id="tab-attachments">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <span style="font-size:13px;color:#6b7280;">
+                    @if($lead->attachments->count() === 0) Nenhum anexo
+                    @elseif($lead->attachments->count() === 1) 1 anexo
+                    @else {{ $lead->attachments->count() }} anexos
+                    @endif
+                </span>
+                <label for="attachFileInput" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#eff6ff;color:#0085f3;border:none;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;">
+                    <i class="bi bi-plus-lg"></i> Enviar Arquivo
+                </label>
+                <input type="file" id="attachFileInput" style="display:none;" onchange="uploadAttachment(this.files[0])">
+            </div>
+
+            <div id="attachmentsList">
+                @forelse($lead->attachments as $att)
+                <div class="lp-attach-item" id="attach-{{ $att->id }}">
+                    <div class="lp-attach-icon">
+                        @if(str_starts_with($att->mime_type, 'image/'))
+                            <i class="bi bi-file-earmark-image" style="color:#8b5cf6;"></i>
+                        @elseif($att->mime_type === 'application/pdf')
+                            <i class="bi bi-file-earmark-pdf" style="color:#ef4444;"></i>
+                        @elseif(str_contains($att->mime_type, 'spreadsheet') || str_contains($att->mime_type, 'excel'))
+                            <i class="bi bi-file-earmark-spreadsheet" style="color:#10b981;"></i>
+                        @elseif(str_contains($att->mime_type, 'word') || str_contains($att->mime_type, 'document'))
+                            <i class="bi bi-file-earmark-word" style="color:#0085f3;"></i>
+                        @else
+                            <i class="bi bi-file-earmark" style="color:#6b7280;"></i>
+                        @endif
+                    </div>
+                    <div class="lp-attach-info">
+                        <div class="lp-attach-name">{{ $att->original_name }}</div>
+                        <div class="lp-attach-meta">
+                            {{ $att->uploader?->name ?? 'Sistema' }} · {{ $att->created_at->format('d/m/Y H:i') }}
+                            · {{ number_format($att->file_size / 1024, 0) }} KB
+                        </div>
+                    </div>
+                    <div class="lp-attach-actions">
+                        <a href="{{ Storage::disk('public')->url($att->storage_path) }}" target="_blank" class="lp-attach-btn" title="Abrir">
+                            <i class="bi bi-download"></i>
+                        </a>
+                        <button class="lp-attach-btn lp-attach-del" onclick="deleteAttachment({{ $att->id }})" title="Excluir">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </div>
+                </div>
+                @empty
+                <div id="attachEmpty" style="text-align:center;padding:40px 20px;color:#9ca3af;">
+                    <i class="bi bi-paperclip" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
+                    Nenhum anexo adicionado.
+                </div>
+                @endforelse
+            </div>
+        </div>
 
         {{-- ── Tab: Agendamentos ── --}}
         <div class="lp-tab-panel" id="tab-scheduled">
@@ -1517,6 +1615,100 @@ async function deletePageNote(noteId) {
     } catch(e) {
         alert('Erro: ' + e.message);
     }
+}
+
+// ── Anexos ─────────────────────────────────────────────────────────────────
+async function uploadAttachment(file) {
+    if (!file) return;
+
+    const list = document.getElementById('attachmentsList');
+    const emptyEl = document.getElementById('attachEmpty');
+    if (emptyEl) emptyEl.remove();
+
+    const tempId = 'att-temp-' + Date.now();
+    list.insertAdjacentHTML('afterbegin', `
+        <div class="lp-attach-uploading" id="${tempId}">
+            <i class="bi bi-arrow-repeat spin"></i> Enviando ${file.name}...
+        </div>
+    `);
+
+    const fd = new FormData();
+    fd.append('file', file);
+
+    try {
+        const res = await fetch('{{ route("leads.attachments.store", $lead->id) }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content },
+            body: fd,
+        });
+        const data = await res.json();
+        document.getElementById(tempId)?.remove();
+
+        if (data.success) {
+            const a = data.attachment;
+            list.insertAdjacentHTML('afterbegin', buildAttachHtml(a));
+            toastr.success('Anexo enviado!');
+        } else {
+            toastr.error(data.message || 'Erro ao enviar anexo.');
+        }
+    } catch (e) {
+        document.getElementById(tempId)?.remove();
+        toastr.error('Erro de conexão ao enviar anexo.');
+    }
+
+    document.getElementById('attachFileInput').value = '';
+}
+
+async function deleteAttachment(id) {
+    if (!confirm('Excluir este anexo?')) return;
+    try {
+        const base = '{{ route("leads.attachments.destroy", [$lead->id, "__ID__"]) }}'.replace('__ID__', id);
+        const res = await fetch(base, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content,
+                'Content-Type': 'application/json',
+            },
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('attach-' + id)?.remove();
+            toastr.success('Anexo excluído.');
+            if (!document.querySelector('#attachmentsList .lp-attach-item')) {
+                document.getElementById('attachmentsList').innerHTML = `
+                    <div id="attachEmpty" style="text-align:center;padding:40px 20px;color:#9ca3af;">
+                        <i class="bi bi-paperclip" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
+                        Nenhum anexo adicionado.
+                    </div>`;
+            }
+        } else {
+            toastr.error(data.message || 'Erro ao excluir.');
+        }
+    } catch (e) {
+        toastr.error('Erro de conexão.');
+    }
+}
+
+function buildAttachHtml(a) {
+    let icon = '<i class="bi bi-file-earmark" style="color:#6b7280;"></i>';
+    if (a.mime_type?.startsWith('image/')) icon = '<i class="bi bi-file-earmark-image" style="color:#8b5cf6;"></i>';
+    else if (a.mime_type === 'application/pdf') icon = '<i class="bi bi-file-earmark-pdf" style="color:#ef4444;"></i>';
+    else if (a.mime_type?.includes('spreadsheet') || a.mime_type?.includes('excel')) icon = '<i class="bi bi-file-earmark-spreadsheet" style="color:#10b981;"></i>';
+    else if (a.mime_type?.includes('word') || a.mime_type?.includes('document')) icon = '<i class="bi bi-file-earmark-word" style="color:#0085f3;"></i>';
+
+    const sizeKb = a.file_size ? Math.round(a.file_size / 1024) : 0;
+
+    return `<div class="lp-attach-item" id="attach-${a.id}">
+        <div class="lp-attach-icon">${icon}</div>
+        <div class="lp-attach-info">
+            <div class="lp-attach-name">${a.original_name}</div>
+            <div class="lp-attach-meta">${a.uploaded_by || 'Você'} · ${a.created_at} · ${sizeKb} KB</div>
+        </div>
+        <div class="lp-attach-actions">
+            <a href="${a.url}" target="_blank" class="lp-attach-btn" title="Abrir"><i class="bi bi-download"></i></a>
+            <button class="lp-attach-btn lp-attach-del" onclick="deleteAttachment(${a.id})" title="Excluir"><i class="bi bi-trash3"></i></button>
+        </div>
+    </div>`;
 }
 </script>
 @endpush
