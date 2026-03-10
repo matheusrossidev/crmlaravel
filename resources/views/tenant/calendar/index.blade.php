@@ -885,17 +885,23 @@ async function saveEvent() {
 }
 
 // ── Delete ────────────────────────────────────────────────────────────────
-async function deleteEvent() {
+function deleteEvent() {
     if (!currentEventId) return;
-    if (!confirm('Excluir este evento do Google Calendar?')) return;
-    try {
-        const res  = await fetch(ROUTES.destroy(currentEventId), {
-            method: 'DELETE', headers: { 'X-CSRF-TOKEN': CSRF, Accept: 'application/json' },
-        });
-        const data = await res.json();
-        if (data.success) { closeCalDrawer(); calendar.refetchEvents(); }
-        else showErr(data.message || 'Erro ao excluir.');
-    } catch { showErr('Erro de conexao.'); }
+    confirmAction({
+        title: 'Excluir evento',
+        message: 'Tem certeza que deseja excluir este evento do Google Calendar?',
+        confirmText: 'Excluir',
+        onConfirm: async () => {
+            try {
+                const res  = await fetch(ROUTES.destroy(currentEventId), {
+                    method: 'DELETE', headers: { 'X-CSRF-TOKEN': CSRF, Accept: 'application/json' },
+                });
+                const data = await res.json();
+                if (data.success) { closeCalDrawer(); calendar.refetchEvents(); }
+                else showErr(data.message || 'Erro ao excluir.');
+            } catch { showErr('Erro de conexao.'); }
+        },
+    });
 }
 
 // ── Drag/resize update ────────────────────────────────────────────────────
