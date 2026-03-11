@@ -240,6 +240,7 @@ class ProcessAiResponse implements ShouldQueue
         }
 
         // ── Roteamento: Agno ou LLM direto ───────────────────────────────────
+        $service     = new AiAgentService();
         $reply       = '';
         $actions     = [];
         $replyBlocks = [];
@@ -281,7 +282,6 @@ class ProcessAiResponse implements ShouldQueue
 
         if (! $agent->use_agno || $reply === '') {
             // ── Caminho LLM direto (original) ────────────────────────────────
-            $service            = new AiAgentService();
             $enableIntentNotify = (bool) ($agent->enable_intent_notify ?? false);
             $system             = $service->buildSystemPrompt($agent, $stages, $availTags, $enableIntentNotify, $calendarEvents, $lead);
             $history = $service->buildHistory($conv, limit: 50);
