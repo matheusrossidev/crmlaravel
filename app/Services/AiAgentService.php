@@ -177,6 +177,30 @@ class AiAgentService
             $lines[] = "--- FIM DAS TAGS ---";
         }
 
+        // ── Dados atuais do lead + ferramenta update_lead ───────────────────
+        if ($lead) {
+            $lines[] = "\n--- DADOS DO LEAD (CADASTRO ATUAL) ---";
+            $lines[] = "Nome: " . ($lead->name ?: '(vazio)');
+            $lines[] = "Telefone: " . ($lead->phone ?: '(vazio)');
+            $lines[] = "E-mail: " . ($lead->email ?: '(vazio)');
+            $lines[] = "Empresa: " . ($lead->company ?: '(vazio)');
+            $lines[] = "Data de nascimento: " . ($lead->birthday ? $lead->birthday->format('d/m/Y') : '(vazio)');
+            $lines[] = "--- FIM DOS DADOS DO LEAD ---";
+        }
+
+        $lines[] = <<<'UPDLEAD'
+
+--- ATUALIZAÇÃO DE DADOS DO LEAD ---
+Sempre que o contato mencionar NATURALMENTE durante a conversa informações pessoais como nome completo, e-mail, empresa onde trabalha ou data de nascimento, ATUALIZE o cadastro usando a ação update_lead.
+Campos permitidos: name, email, company, birthday
+Para birthday use o formato YYYY-MM-DD.
+NÃO pergunte dados sem contexto — colete apenas o que surgir naturalmente na conversa ou que for relevante para o atendimento.
+Se o campo já estiver preenchido com o mesmo valor, NÃO emita update_lead.
+Exemplo: {"type": "update_lead", "field": "email", "value": "joao@empresa.com"}
+Exemplo: {"type": "update_lead", "field": "birthday", "value": "1990-05-15"}
+--- FIM DA ATUALIZAÇÃO DE DADOS ---
+UPDLEAD;
+
         $lines[] = "\nResponda sempre em {$agent->language}. Seja conciso (máximo {$agent->max_message_length} caracteres por mensagem).";
 
         // ── Ferramenta de Agenda (Google Calendar) ────────────────────────────
@@ -343,6 +367,7 @@ NUNCA inclua texto fora do JSON.
 Ações disponíveis:
 - set_stage: mova o lead para uma etapa do funil (use o stage_id correto da lista acima).
 - add_tags: adicione tags à conversa/lead.
+- update_lead: atualize dados do cadastro do lead (name, email, company, birthday). Ex: {"type":"update_lead","field":"email","value":"joao@email.com"}
 - assign_human: use quando o cliente pedir explicitamente para falar com uma pessoa ou quando você não conseguir responder. Inclua essa action junto com a resposta de transferência.$calendarActions
 JSONINSTR;
         }

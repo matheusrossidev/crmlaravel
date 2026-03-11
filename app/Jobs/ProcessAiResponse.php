@@ -12,6 +12,7 @@ use App\Models\AiIntentSignal;
 use App\Models\AiUsageLog;
 use App\Models\Department;
 use App\Models\Lead;
+use App\Models\LeadEvent;
 use App\Models\OAuthConnection;
 use App\Models\TenantTokenIncrement;
 use App\Models\PlanDefinition;
@@ -167,10 +168,10 @@ class ProcessAiResponse implements ShouldQueue
             'model'           => $model,
         ]);
 
-        // ── Carregar lead — para pipeline e/ou calendar tool ─────────────────
+        // ── Carregar lead — para pipeline, calendar tool e update_lead ──────
         $lead   = null;
         $stages = [];
-        if ($conv->lead_id && ($agent->enable_pipeline_tool || $agent->enable_calendar_tool)) {
+        if ($conv->lead_id) {
             $lead = Lead::withoutGlobalScope('tenant')
                 ->with('stage.pipeline.stages')
                 ->find($conv->lead_id);
@@ -500,6 +501,8 @@ class ProcessAiResponse implements ShouldQueue
                         ]);
                     }
                 }
+            } elseif ($type === 'update_lead') {
+                $this->applyUpdateLead($conv, $action, $lead);
             } elseif (in_array($type, ['calendar_create', 'calendar_reschedule', 'calendar_cancel', 'calendar_list'], true)) {
                 if ($calendarService !== null) {
                     $extra = $this->applyCalendarAction($conv, $action, $calendarService, $lead ?? null);
@@ -618,6 +621,69 @@ class ProcessAiResponse implements ShouldQueue
     }
 
     // ── Ações ─────────────────────────────────────────────────────────────────
+
+    private function applyUpdateLead(WhatsappConversation $conv, array $action, ?Lead $lead): void
+    {
+        $field = (string) ($action['field'] ?? '');
+        $value = trim((string) ($action['value'] ?? ''));
+
+        $allowed = ['name', 'email', 'company', 'birthday'];
+        if ($field === '' || $value === '' || ! in_array($field, $allowed, true)) {
+            return;
+        }
+
+        $lead = $lead ?? ($conv->lead_id ? Lead::withoutGlobalScope('tenant')->find($conv->lead_id) : null);
+        if (! $lead) {
+            return;
+        }
+
+        // Validate birthday format
+        if ($field === 'birthday') {
+            try {
+                $value = \Carbon\Carbon::parse($value)->format('Y-m-d');
+            } catch (\Throwable) {
+                Log::channel('whatsapp')->warning('AI update_lead: data de nascimento inválida', [
+                    'conversation_id' => $conv->id,
+                    'value' => $value,
+                ]);
+                return;
+            }
+        }
+
+        // Skip if value is the same
+        $currentValue = (string) ($lead->{$field} ?? '');
+        if ($field === 'birthday' && $lead->birthday) {
+            $currentValue = $lead->birthday->format('Y-m-d');
+        }
+        if ($currentValue === $value) {
+            return;
+        }
+
+        $lead->update([$field => $value]);
+
+        $labels = ['name' => 'nome', 'email' => 'e-mail', 'company' => 'empresa', 'birthday' => 'data de nascimento'];
+        $label  = $labels[$field] ?? $field;
+        $displayValue = $field === 'birthday'
+            ? \Carbon\Carbon::parse($value)->format('d/m/Y')
+            : $value;
+
+        LeadEvent::create([
+            'tenant_id'    => $lead->tenant_id,
+            'lead_id'      => $lead->id,
+            'event_type'   => 'ai_data_updated',
+            'description'  => "🤖 IA atualizou {$label}: {$displayValue}",
+            'data_json'    => ['source' => 'ai_agent', 'field' => $field, 'value' => $value],
+            'performed_by' => null,
+            'created_at'   => now(),
+        ]);
+
+        Log::channel('whatsapp')->info('AI update_lead aplicado', [
+            'conversation_id' => $conv->id,
+            'lead_id'         => $lead->id,
+            'field'           => $field,
+            'value'           => $displayValue,
+        ]);
+    }
 
     private function applySetStage(WhatsappConversation $conv, int $stageId, AiAgent $agent, array $stages): void
     {

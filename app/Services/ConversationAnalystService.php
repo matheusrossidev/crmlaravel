@@ -417,23 +417,34 @@ PROMPT;
     private function applyUpdateLead(Lead $lead, array $payload): void
     {
         $field = (string) ($payload['field'] ?? '');
-        $value = (string) ($payload['value'] ?? '');
+        $value = trim((string) ($payload['value'] ?? ''));
 
-        $allowed = ['name', 'email', 'phone'];
+        $allowed = ['name', 'email', 'phone', 'company', 'birthday'];
         if ($field === '' || $value === '' || ! in_array($field, $allowed, true)) {
             return;
         }
 
+        if ($field === 'birthday') {
+            try {
+                $value = \Carbon\Carbon::parse($value)->format('Y-m-d');
+            } catch (\Throwable) {
+                return;
+            }
+        }
+
         $lead->update([$field => $value]);
 
-        $labels = ['name' => 'nome', 'email' => 'e-mail', 'phone' => 'telefone'];
+        $labels = ['name' => 'nome', 'email' => 'e-mail', 'phone' => 'telefone', 'company' => 'empresa', 'birthday' => 'data de nascimento'];
         $label  = $labels[$field] ?? $field;
+        $displayValue = $field === 'birthday'
+            ? \Carbon\Carbon::parse($value)->format('d/m/Y')
+            : $value;
 
         LeadEvent::create([
             'tenant_id'    => $lead->tenant_id,
             'lead_id'      => $lead->id,
             'event_type'   => 'ai_data_updated',
-            'description'  => "🤖 IA atualizou {$label}: {$value}",
+            'description'  => "🤖 IA atualizou {$label}: {$displayValue}",
             'data_json'    => ['source' => 'ai_analyst', 'field' => $field, 'value' => $value],
             'performed_by' => null,
             'created_at'   => now(),

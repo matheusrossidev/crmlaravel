@@ -238,6 +238,8 @@ class LeadController extends Controller
             'name'          => $lead->name,
             'phone'         => $lead->phone,
             'email'         => $lead->email,
+            'company'       => $lead->company,
+            'birthday'      => $lead->birthday?->format('Y-m-d'),
             'value'         => $lead->value,
             'source'        => $lead->source,
             'tags'          => $lead->tags ?? [],
