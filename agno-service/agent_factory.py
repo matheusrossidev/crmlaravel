@@ -60,17 +60,17 @@ def get_or_create_agent(
     instructions = _build_instructions(config, memories or [])
 
     agent = Agent(
-        agent_id=f"agent_{agent_id}",
+        name=f"agent_{agent_id}",
         model=model,
-        description=instructions,
-        response_model=AgnoReply,
+        instructions=instructions,
+        output_schema=AgnoReply,
         db=PostgresDb(
             db_url=PGVECTOR_URL,
             session_table=f"sessions_{tenant_id}_{agent_id}",
         ),
         tools=tools if tools else None,
-        add_history_to_messages=True,
-        num_history_responses=10,
+        add_history_to_context=True,
+        num_history_runs=10,
     )
 
     if not has_contextual:
