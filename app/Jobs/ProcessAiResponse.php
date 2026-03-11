@@ -659,6 +659,12 @@ class ProcessAiResponse implements ShouldQueue
                 $chatId = $conv->phone . '@c.us';
             }
 
+            Log::channel('whatsapp')->info('TTS: enviando áudio ao WAHA', [
+                'conversation_id' => $conv->id,
+                'file_size_kb'    => round(filesize($audioPath) / 1024, 1),
+                'characters'      => mb_strlen($ttsText),
+            ]);
+
             $waha->sendVoiceBase64($chatId, $audioPath, 'audio/mpeg');
 
             // Log usage

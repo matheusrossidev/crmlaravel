@@ -52,7 +52,7 @@ async def chat(req: ChatRequest) -> AgentResponse:
         )
 
         result = await agent.arun(
-            message=req.message,
+            input=req.message,
             user_id=f"tenant_{req.tenant_id}_contact_{req.contact_phone}",
         )
 

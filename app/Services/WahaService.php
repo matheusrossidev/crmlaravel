@@ -231,7 +231,7 @@ class WahaService
     public function sendVoiceBase64(string $chatId, string $filePath, string $mimeType): array
     {
         $base64 = base64_encode(file_get_contents($filePath));
-        $response = $this->client()->timeout(60)->post('/api/sendVoice', [
+        $response = $this->client()->timeout(90)->post('/api/sendVoice', [
             'session' => $this->session,
             'chatId'  => $chatId,
             'file'    => ['data' => "data:{$mimeType};base64,{$base64}", 'mimetype' => $mimeType],
