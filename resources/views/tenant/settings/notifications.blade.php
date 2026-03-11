@@ -190,6 +190,11 @@
                     <i class="bi bi-question-circle"></i> Verificando...
                 </span>
             </div>
+            <div id="iosHint" style="display:none; margin-top:12px; padding:12px 16px; background:#eff6ff; border-radius:10px; border:1px solid #bfdbfe; font-size:12.5px; color:#1e40af; line-height:1.5;">
+                <i class="bi bi-phone" style="margin-right:4px;"></i>
+                <strong>iPhone/iPad:</strong> Para receber notificações, adicione o Syncro à tela inicial.
+                Toque em <strong>Compartilhar</strong> <i class="bi bi-box-arrow-up"></i> &rarr; <strong>Adicionar à Tela de Início</strong>.
+            </div>
             <div class="perm-actions">
                 <button class="btn-save-prefs" id="btnRequestPerm" onclick="requestNotifPermission()" style="padding:8px 18px; font-size:12.5px;">
                     <i class="bi bi-bell"></i> Permitir Notificações
@@ -368,6 +373,13 @@
         badge.innerHTML = '<i class="bi ' + s.icon + '"></i> ' + s.text;
 
         btnReq.style.display = (status === 'granted' || status === 'unsupported') ? 'none' : '';
+
+        // Show iOS hint when unsupported on Apple devices
+        var iosHint = document.getElementById('iosHint');
+        var isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+        if (iosHint) {
+            iosHint.style.display = (status === 'unsupported' && isIOS) ? 'block' : 'none';
+        }
     }
 
     function updatePushStatus() {

@@ -7,6 +7,12 @@
     <title>{{ $title ?? 'Syncro CRM' }} — {{ auth()->user()->tenant?->name ?? 'Syncro CRM' }}</title>
     <meta name="description" content="CRM completo com atendimento automático via WhatsApp, agente de IA, funil de vendas e agenda integrada.">
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0085f3">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Syncro CRM">
+    <link rel="apple-touch-icon" href="{{ asset('images/favicon-192.png') }}">
 
     {{-- Open Graph / Social Sharing --}}
     <meta property="og:type"         content="website">
