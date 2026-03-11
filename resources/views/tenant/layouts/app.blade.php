@@ -1590,6 +1590,27 @@ document.addEventListener('click', function (e) {
                 loadIntentSignals();
             });
 
+            // ── Laravel Notifications via broadcast (canal do usuário) ──
+            const userChannel = window.Echo.private('App.Models.User.{{ auth()->id() }}');
+            userChannel.notification(function (notif) {
+                if (window.toastr) {
+                    toastr.info(
+                        '<b>' + (notif.title || 'Notificação') + '</b><br><small>' + (notif.body || '') + '</small>',
+                        'Notificação',
+                        { timeOut: 8000, closeButton: true, progressBar: true, escapeHtml: false }
+                    );
+                }
+                if (window.NotifManager) {
+                    window.NotifManager.notify(
+                        notif.title || 'Notificação',
+                        notif.body || '',
+                        notif.url || null,
+                        notif.notification_type || 'master_notification',
+                        null
+                    );
+                }
+            });
+
             channel.listen('.master.notification', function (data) {
                 if (window.toastr) {
                     const typeMap = {
