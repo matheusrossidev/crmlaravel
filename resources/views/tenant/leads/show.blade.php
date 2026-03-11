@@ -9,8 +9,9 @@ $pageIcon = 'person-badge';
     <a href="{{ route('leads.index') }}" class="btn-secondary-sm" style="padding:8px 10px;text-decoration:none;" title="Voltar">
         <i class="bi bi-arrow-left"></i>
     </a>
-    <button class="btn-primary-sm" id="btnEditLead" onclick="openLeadDrawer({{ $lead->id }})" style="padding:8px 10px;" title="Editar Lead">
+    <button class="btn-primary-sm" id="btnEditLead" onclick="openLeadDrawer({{ $lead->id }})" style="padding:8px 14px;" title="Editar Lead">
         <i class="bi bi-pencil"></i>
+        <span class="d-none d-md-inline" style="margin-left:4px;">Editar</span>
     </button>
 </div>
 @endsection

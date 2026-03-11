@@ -75,10 +75,18 @@
             display: flex;
             flex-direction: column;
             z-index: 100;
-            overflow-y: auto;
-            overflow-x: hidden;
+            overflow: hidden;
             transition: width .22s ease;
         }
+
+        .sidebar-nav-scroll {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: none;
+        }
+        .sidebar-nav-scroll::-webkit-scrollbar { display: none; }
 
         .sidebar-logo {
             padding: 14px 16px;
@@ -450,10 +458,14 @@
             border-bottom: 2px solid #e8eaf0;
             margin-bottom: 24px;
             overflow-x: auto;
+            overflow-y: hidden;
             -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
+            scrollbar-width: thin;
+            scrollbar-color: #0085f3 transparent;
         }
-        .settings-nav-tabs::-webkit-scrollbar { display: none; }
+        .settings-nav-tabs::-webkit-scrollbar { height: 4px; }
+        .settings-nav-tabs::-webkit-scrollbar-track { background: transparent; border-radius: 99px; }
+        .settings-nav-tabs::-webkit-scrollbar-thumb { background: #0085f3; border-radius: 99px; }
         .settings-nav-tab {
             padding: 10px 18px;
             font-size: 13px;
@@ -658,8 +670,21 @@
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); transition: transform .25s; width: 260px !important; }
             .sidebar.open { transform: translateX(0); }
-            .sidebar--collapsed { transform: translateX(-100%); }
+            .sidebar--collapsed { transform: translateX(-100%); width: 260px !important; }
             .sidebar--collapsed.open { transform: translateX(0); }
+            /* Forçar sidebar expandido no mobile mesmo se collapsed no desktop */
+            .sidebar--collapsed .nav-label { display: block !important; }
+            .sidebar--collapsed .nav-group-label { display: block !important; }
+            .sidebar--collapsed .nav-item { justify-content: flex-start !important; padding: 9px 14px !important; gap: 11px !important; }
+            .sidebar--collapsed .nav-submenu-toggle { justify-content: flex-start !important; padding: 9px 14px !important; gap: 11px !important; }
+            .sidebar--collapsed .nav-chevron { display: block !important; }
+            .sidebar--collapsed .logo-full { display: block !important; }
+            .sidebar--collapsed .logo-icon-only { display: none !important; }
+            .sidebar--collapsed .sidebar-logo { padding: 18px 18px 12px !important; }
+            .sidebar--collapsed .user-info { display: block !important; }
+            .sidebar--collapsed .user-dots { display: block !important; }
+            .sidebar--collapsed .user-card { justify-content: flex-start !important; padding: 12px 14px !important; }
+            .sidebar--collapsed .nav-submenu { position: static !important; width: auto !important; border: none !important; box-shadow: none !important; background: transparent !important; padding: 0 !important; }
             .topbar { left: 0 !important; padding: 0 12px; gap: 8px; }
             .main-content { margin-left: 0 !important; }
             .sidebar-collapse-btn { display: none; }
@@ -678,11 +703,19 @@
             .section-subtitle { font-size: 12px; }
         }
     </style>
+    <script>
+        // Aplica estado da sidebar ANTES do render para evitar flash
+        (function(){
+            var s = localStorage.getItem('sidebar_collapsed');
+            window.__sidebarCollapsed = s === null ? true : s === '1';
+        }());
+    </script>
 </head>
 <body>
 
 {{-- ===== SIDEBAR ===== --}}
 <aside class="sidebar" id="sidebar">
+<script>if(window.__sidebarCollapsed) document.getElementById('sidebar').classList.add('sidebar--collapsed');</script>
 
     {{-- Logo --}}
     <div class="sidebar-logo">
@@ -781,6 +814,7 @@
     </div>
 
     {{-- Nav: Geral --}}
+    <div class="sidebar-nav-scroll">
     <nav class="nav-group">
         <div class="nav-group-label">Geral</div>
 
@@ -865,6 +899,7 @@
         </a>
     </nav>
     @endif
+    </div>{{-- /.sidebar-nav-scroll --}}
 
     {{-- Footer: User --}}
     <div class="sidebar-footer">
@@ -905,7 +940,8 @@
 <div id="sidebarOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99;"></div>
 
 {{-- ===== TOPBAR ===== --}}
-<header class="topbar" id="topbar">
+<header class="topbar" id="topbar" style="transition:none;">
+<script>if(window.__sidebarCollapsed && window.innerWidth > 768) document.getElementById('topbar').style.left='72px';</script>
     <button class="topbar-btn d-md-none" id="sidebarToggle" style="border:none;">
         <i class="bi bi-list"></i>
     </button>
@@ -973,7 +1009,8 @@
 </header>
 
 {{-- ===== CONTEÚDO PRINCIPAL ===== --}}
-<main class="main-content" id="mainContent">
+<main class="main-content" id="mainContent" style="transition:none;">
+<script>if(window.__sidebarCollapsed && window.innerWidth > 768) document.getElementById('mainContent').style.marginLeft='72px';</script>
     @if(session('impersonating_tenant_id'))
     @php $impTarget = \App\Models\Tenant::withoutGlobalScope('tenant')->find(session('impersonating_tenant_id')); @endphp
     @if($impTarget)
@@ -1133,9 +1170,14 @@ window.confirmAction = function ({ title = 'Confirmar ação', message = '', con
         }
     }
 
-    // Restaura estado salvo (sem animação)
-    const saved = localStorage.getItem(STORAGE_KEY) === '1';
-    applyState(saved, false);
+    // Estado já aplicado por inline scripts — só atualiza ícone e restaura transições
+    const saved = window.__sidebarCollapsed;
+    if (icon) { icon.className = saved ? 'bi bi-layout-sidebar-reverse' : 'bi bi-layout-sidebar'; }
+    requestAnimationFrame(() => {
+        sidebar.style.transition = '';
+        topbar.style.transition  = '';
+        main.style.transition    = '';
+    });
 
     // Botão toggle
     document.getElementById('sidebarCollapseBtn')?.addEventListener('click', function () {
