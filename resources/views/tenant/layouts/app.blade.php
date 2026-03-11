@@ -1345,6 +1345,9 @@ toastr.options = { positionClass: 'toast-bottom-right', timeOut: 4000, closeButt
 @if(session('warning'))
     toastr.warning("{{ session('warning') }}");
 @endif
+@if(session('limit_error'))
+    toastr.warning("{!! session('limit_error') !!}");
+@endif
 
 // ── API Helper ────────────────────────────────────────────────────────────
 window.API = {

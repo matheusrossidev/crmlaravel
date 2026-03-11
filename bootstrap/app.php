@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AgnoInternalMiddleware;
 use App\Http\Middleware\ApiKeyMiddleware;
+use App\Http\Middleware\CheckPlanLimit;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SuperAdminMiddleware;
@@ -40,6 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api_key'       => ApiKeyMiddleware::class,
             'agno_internal' => AgnoInternalMiddleware::class,
             'role'          => RoleMiddleware::class,
+            'plan.limit'    => CheckPlanLimit::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {

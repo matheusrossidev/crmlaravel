@@ -155,9 +155,9 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     // Lead write operations (admin + manager)
     Route::middleware('role:admin,manager')->group(function () {
-        Route::post('/contatos/importar', [LeadController::class, 'import'])->name('leads.import');
+        Route::post('/contatos/importar', [LeadController::class, 'import'])->name('leads.import')->middleware('plan.limit:leads');
         Route::post('/contatos/custom-fields/upload', [LeadController::class, 'uploadCustomFieldFile'])->name('leads.cf-upload');
-        Route::post('/contatos', [LeadController::class, 'store'])->name('leads.store');
+        Route::post('/contatos', [LeadController::class, 'store'])->name('leads.store')->middleware('plan.limit:leads');
         Route::put('/contatos/{lead}', [LeadController::class, 'update'])->name('leads.update');
         Route::delete('/kanban/leads/{lead}', [LeadController::class, 'removeFromPipeline'])->name('leads.kanban-remove');
         Route::delete('/contatos/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
@@ -295,8 +295,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::get('onboarding',    [ChatbotFlowController::class, 'onboarding'])->name('onboarding');
         Route::get('{flow}/resultados', [ChatbotFlowController::class, 'results'])->name('results');
         Route::middleware('role:admin')->group(function () {
-            Route::get('criar',          [ChatbotFlowController::class, 'create'])->name('create');
-            Route::post('',              [ChatbotFlowController::class, 'store'])->name('store');
+            Route::get('criar',          [ChatbotFlowController::class, 'create'])->name('create')->middleware('plan.limit:chatbot_flows');
+            Route::post('',              [ChatbotFlowController::class, 'store'])->name('store')->middleware('plan.limit:chatbot_flows');
             Route::get('{flow}/editar',  [ChatbotFlowController::class, 'edit'])->name('edit');
             Route::put('{flow}',         [ChatbotFlowController::class, 'update'])->name('update');
             Route::delete('{flow}',      [ChatbotFlowController::class, 'destroy'])->name('destroy');
@@ -344,7 +344,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         // Admin only — escrita em configurações
         Route::middleware('role:admin')->group(function () {
             // Pipelines + Stages
-            Route::post('pipelines', [PipelineController::class, 'store'])->name('pipelines.store');
+            Route::post('pipelines', [PipelineController::class, 'store'])->name('pipelines.store')->middleware('plan.limit:pipelines');
             Route::put('pipelines/{pipeline}', [PipelineController::class, 'update'])->name('pipelines.update');
             Route::delete('pipelines/{pipeline}', [PipelineController::class, 'destroy'])->name('pipelines.destroy');
             Route::post('pipelines/{pipeline}/stages/reorder', [PipelineController::class, 'reorderStages'])->name('pipelines.stages.reorder');
@@ -376,17 +376,17 @@ Route::middleware(['auth', 'tenant'])->group(function () {
             Route::post('agencia-parceira', [AgencyAccessController::class, 'linkCode'])->name('agency.link');
 
             // Usuários
-            Route::post('usuarios',           [UserController::class, 'store'])->name('users.store');
+            Route::post('usuarios',           [UserController::class, 'store'])->name('users.store')->middleware('plan.limit:users');
             Route::put('usuarios/{user}',     [UserController::class, 'update'])->name('users.update');
             Route::delete('usuarios/{user}',  [UserController::class, 'destroy'])->name('users.destroy');
 
             // Campos Personalizados
-            Route::post('campos-extras',              [CustomFieldController::class, 'store'])->name('custom-fields.store');
+            Route::post('campos-extras',              [CustomFieldController::class, 'store'])->name('custom-fields.store')->middleware('plan.limit:custom_fields');
             Route::put('campos-extras/{field}',       [CustomFieldController::class, 'update'])->name('custom-fields.update');
             Route::delete('campos-extras/{field}',    [CustomFieldController::class, 'destroy'])->name('custom-fields.destroy');
 
             // Departamentos
-            Route::post('departamentos',                    [DepartmentController::class, 'store'])->name('departments.store');
+            Route::post('departamentos',                    [DepartmentController::class, 'store'])->name('departments.store')->middleware('plan.limit:departments');
             Route::put('departamentos/{department}',        [DepartmentController::class, 'update'])->name('departments.update');
             Route::delete('departamentos/{department}',     [DepartmentController::class, 'destroy'])->name('departments.destroy');
 
@@ -414,8 +414,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::get('onboarding',                 [AiAgentController::class, 'onboarding'])->name('onboarding');
         Route::middleware('role:admin')->group(function () {
             Route::get('voices',                     [AiAgentController::class, 'voices'])->name('voices');
-            Route::get('criar',                      [AiAgentController::class, 'create'])->name('create');
-            Route::post('',                          [AiAgentController::class, 'store'])->name('store');
+            Route::get('criar',                      [AiAgentController::class, 'create'])->name('create')->middleware('plan.limit:ai_agents');
+            Route::post('',                          [AiAgentController::class, 'store'])->name('store')->middleware('plan.limit:ai_agents');
             Route::get('{agent}/editar',             [AiAgentController::class, 'edit'])->name('edit');
             Route::put('{agent}',                    [AiAgentController::class, 'update'])->name('update');
             Route::delete('{agent}',                 [AiAgentController::class, 'destroy'])->name('destroy');
