@@ -86,6 +86,7 @@
     .lead-name-cell {
         font-weight: 600;
         color: #1a1d23;
+        position: relative;
     }
 
     .lead-name-cell small {
@@ -179,6 +180,12 @@
         border-color: #dbeafe;
     }
 
+    /* Esconder texto "Showing X to Y of Z results" do Laravel */
+    .pagination-wrap nav p.text-muted,
+    .pagination-wrap nav p.small {
+        display: none !important;
+    }
+
     .btn-secondary-sm {
         display: inline-flex;
         align-items: center;
@@ -224,7 +231,7 @@
 
     .fab-novo-lead {
         display: none;
-        position: fixed; bottom: 24px; right: 20px; z-index: 90;
+        position: fixed; bottom: 80px; right: 20px; z-index: 90;
         width: 52px; height: 52px; border-radius: 50%;
         background: #0085f3; color: #fff; border: none;
         align-items: center; justify-content: center;
@@ -239,6 +246,36 @@
         #searchInput { width: 120px !important; font-size: 12px !important; padding: 6px 10px 6px 28px !important; }
         .leads-hide-mobile { display: none !important; }
         .fab-novo-lead { display: flex; }
+
+        /* Primeira coluna fixa */
+        .leads-table thead th:first-child,
+        .leads-table tbody td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background: #fff;
+            min-width: 160px;
+            max-width: 200px;
+        }
+        .leads-table thead th:first-child {
+            background: #fafafa;
+            z-index: 3;
+        }
+        .leads-table tbody tr:hover td:first-child {
+            background: #f8faff;
+        }
+        /* Sombra na borda da coluna fixa */
+        .leads-table thead th:first-child::after,
+        .leads-table tbody td:first-child::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -6px;
+            bottom: 0;
+            width: 6px;
+            background: linear-gradient(to right, rgba(0,0,0,.06), transparent);
+            pointer-events: none;
+        }
     }
     @media (max-width: 480px) {
         .leads-table { min-width: 500px; }

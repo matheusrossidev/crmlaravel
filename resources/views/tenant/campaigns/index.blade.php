@@ -6,7 +6,7 @@
 
 @section('topbar_actions')
 <div class="topbar-actions" style="display:flex;gap:8px;align-items:center;">
-    <a href="{{ route('campaigns.reports.pdf', ['days' => $days]) }}" style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;background:#0085f3;color:#fff;border-radius:100px;font-size:12.5px;font-weight:600;text-decoration:none;transition:background .15s;" onmouseover="this.style.background='#0070d1'" onmouseout="this.style.background='#0085f3'">
+    <a href="{{ route('campaigns.reports.pdf', ['days' => $days]) }}" class="campaigns-download-btn d-none d-md-inline-flex" style="align-items:center;gap:6px;padding:7px 16px;background:#0085f3;color:#fff;border-radius:100px;font-size:12.5px;font-weight:600;text-decoration:none;transition:background .15s;" onmouseover="this.style.background='#0070d1'" onmouseout="this.style.background='#0085f3'">
         <i class="bi bi-download"></i> Baixar relatório
     </a>
     <select id="periodFilter" onchange="window.location.href='?days='+this.value"
@@ -20,6 +20,27 @@
 
 @push('styles')
 <style>
+    /* ── FAB Download Mobile ── */
+    .fab-download-report {
+        position: fixed;
+        bottom: 24px;
+        right: 20px;
+        z-index: 90;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: #0085f3;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        text-decoration: none;
+        box-shadow: 0 4px 14px rgba(0,133,243,.4);
+        transition: background .15s;
+    }
+    .fab-download-report:hover { background: #0070d1; color: #fff; }
+
     /* ── KPI Cards ── */
     .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
     @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -687,6 +708,11 @@ function exportCSV() {
 
 @section('content')
 <div class="page-container">
+
+    {{-- FAB download mobile --}}
+    <a href="{{ route('campaigns.reports.pdf', ['days' => $days]) }}" class="fab-download-report d-md-none" title="Baixar relatório">
+        <i class="bi bi-download"></i>
+    </a>
 
     {{-- KPI Cards --}}
     <div class="kpi-grid">

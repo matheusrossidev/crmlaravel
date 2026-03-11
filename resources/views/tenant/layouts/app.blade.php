@@ -439,6 +439,100 @@
 
         .btn-primary-sm:hover { background: #0070d1; color: #fff; }
 
+        /* ===== TRIAL WIDGET ===== */
+        .trial-widget {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 120px;
+        }
+        .trial-widget-text {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+        .trial-widget-text i { font-size: 13px; color: #F97316; }
+        .trial-widget-bar {
+            width: 100%;
+            height: 4px;
+            background: #f3f4f6;
+            border-radius: 99px;
+            overflow: hidden;
+        }
+        .trial-widget-bar-fill {
+            height: 100%;
+            border-radius: 99px;
+            position: relative;
+            overflow: hidden;
+            background: #F97316;
+        }
+        .trial-widget-bar-fill::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                -45deg,
+                transparent,
+                transparent 4px,
+                rgba(255,255,255,.35) 4px,
+                rgba(255,255,255,.35) 8px
+            );
+            animation: barber-pole .6s linear infinite;
+        }
+        @keyframes barber-pole {
+            0% { background-position: 0 0; }
+            100% { background-position: 11.3px 0; }
+        }
+        /* Mobile: trial banner no topo */
+        .trial-mobile-banner {
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .trial-widget { display: none !important; }
+            .trial-mobile-banner {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                background: #FFEDD5;
+                padding: 8px 16px;
+                font-size: 12px;
+                font-weight: 600;
+                color: #C2410C;
+            }
+            .trial-mobile-banner i { font-size: 14px; }
+            .trial-mobile-bar {
+                flex: 1;
+                height: 4px;
+                background: rgba(194,65,12,.15);
+                border-radius: 99px;
+                overflow: hidden;
+                margin-left: 4px;
+            }
+            .trial-mobile-bar-fill {
+                height: 100%;
+                border-radius: 99px;
+                position: relative;
+                overflow: hidden;
+                background: #C2410C;
+            }
+            .trial-mobile-bar-fill::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: repeating-linear-gradient(
+                    -45deg,
+                    transparent,
+                    transparent 4px,
+                    rgba(255,255,255,.35) 4px,
+                    rgba(255,255,255,.35) 8px
+                );
+                animation: barber-pole .6s linear infinite;
+            }
+        }
+
         /* ===== MAIN CONTENT ===== */
         .main-content {
             margin-left: 260px;
@@ -958,6 +1052,29 @@
         @yield('topbar_actions')
     @endif
 
+    {{-- Trial badge --}}
+    @php
+        $__tenant = auth()->user()->tenant;
+        $__showTrial = $__tenant
+            && $__tenant->status === 'trial'
+            && $__tenant->trial_ends_at
+            && !$__tenant->trial_ends_at->isPast();
+        $__trialDays = $__showTrial ? (int) now()->diffInDays($__tenant->trial_ends_at, false) : 0;
+        $__trialTotal = $__showTrial && $__tenant->created_at ? (int) $__tenant->created_at->diffInDays($__tenant->trial_ends_at) : 14;
+        $__trialPct = $__trialTotal > 0 ? max(0, min(100, ($__trialDays / $__trialTotal) * 100)) : 0;
+    @endphp
+    @if($__showTrial)
+    <div class="trial-widget" title="Seu período de teste termina em {{ $__trialDays }} dias">
+        <div class="trial-widget-text">
+            <i class="bi bi-clock-history"></i>
+            <span>Trial: <strong>{{ $__trialDays }} {{ $__trialDays === 1 ? 'dia' : 'dias' }}</strong></span>
+        </div>
+        <div class="trial-widget-bar">
+            <div class="trial-widget-bar-fill" style="width:{{ $__trialPct }}%"></div>
+        </div>
+    </div>
+    @endif
+
     {{-- Bell de notificações + avatar — sempre visíveis --}}
     <div class="topbar-actions">
         <div class="dropdown">
@@ -1011,6 +1128,15 @@
 {{-- ===== CONTEÚDO PRINCIPAL ===== --}}
 <main class="main-content" id="mainContent" style="transition:none;">
 <script>if(window.__sidebarCollapsed && window.innerWidth > 768) document.getElementById('mainContent').style.marginLeft='72px';</script>
+    @if($__showTrial ?? false)
+    <div class="trial-mobile-banner">
+        <i class="bi bi-clock-history"></i>
+        <span>Trial: {{ $__trialDays }} {{ $__trialDays === 1 ? 'dia' : 'dias' }} restantes</span>
+        <div class="trial-mobile-bar">
+            <div class="trial-mobile-bar-fill" style="width:{{ $__trialPct }}%"></div>
+        </div>
+    </div>
+    @endif
     @if(session('impersonating_tenant_id'))
     @php $impTarget = \App\Models\Tenant::withoutGlobalScope('tenant')->find(session('impersonating_tenant_id')); @endphp
     @if($impTarget)
