@@ -1654,52 +1654,7 @@ document.addEventListener('click', function (e) {
 })();
 </script>
 
-{{-- PWA Install Banner (Android Chrome) --}}
-<div id="pwaInstallBanner" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:9999; padding:12px 16px; background:#fff; border-top:2px solid #0085f3; box-shadow:0 -4px 20px rgba(0,0,0,.12); animation:pwaSlideUp .3s ease-out;">
-    <div style="display:flex; align-items:center; gap:12px; max-width:600px; margin:0 auto;">
-        <img src="/images/favicon-192.png" alt="Syncro" style="width:44px; height:44px; border-radius:10px; flex-shrink:0;">
-        <div style="flex:1; min-width:0;">
-            <div style="font-weight:700; font-size:14px; color:#1a1d23;">Instalar Syncro CRM</div>
-            <div style="font-size:12px; color:#6b7280; margin-top:2px;">Acesse direto da tela inicial</div>
-        </div>
-        <button id="pwaInstallBtn" style="background:#0085f3; color:#fff; border:none; border-radius:9px; padding:9px 18px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;">Instalar</button>
-        <button id="pwaDismissBtn" style="background:none; border:none; color:#9ca3af; font-size:18px; cursor:pointer; padding:4px;" aria-label="Fechar">&times;</button>
-    </div>
-</div>
-<style>@keyframes pwaSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }</style>
-<script>
-(function() {
-    var deferredPrompt = null;
-    var banner = document.getElementById('pwaInstallBanner');
-    if (window.matchMedia('(display-mode: standalone)').matches) return;
-    if (localStorage.getItem('pwa_dismissed') === 'true') return;
-
-    window.addEventListener('beforeinstallprompt', function(e) {
-        e.preventDefault();
-        deferredPrompt = e;
-        banner.style.display = 'block';
-    });
-
-    document.getElementById('pwaInstallBtn').addEventListener('click', function() {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(function() {
-            banner.style.display = 'none';
-            deferredPrompt = null;
-        });
-    });
-
-    document.getElementById('pwaDismissBtn').addEventListener('click', function() {
-        banner.style.display = 'none';
-        localStorage.setItem('pwa_dismissed', 'true');
-    });
-
-    window.addEventListener('appinstalled', function() {
-        banner.style.display = 'none';
-        deferredPrompt = null;
-    });
-})();
-</script>
+{{-- PWA Install Banner (Android Chrome) — versão removida, usar a de baixo --}}
 
 @php
     $trialExpired = false;
@@ -1771,15 +1726,15 @@ document.getElementById('limitReachedModal').addEventListener('click', function(
 </script>
 
 {{-- PWA Install Banner (Android Chrome) --}}
-<div id="pwaInstallBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;padding:14px 16px;background:#fff;border-top:2px solid #0085f3;box-shadow:0 -4px 24px rgba(0,0,0,.12);animation:pwaSlideUp .3s ease-out;">
-    <div style="display:flex;align-items:center;gap:12px;max-width:600px;margin:0 auto;">
-        <img src="{{ asset('images/favicon-192.png') }}" alt="Syncro" style="width:46px;height:46px;border-radius:11px;flex-shrink:0;">
+<div id="pwaInstallBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;padding:12px 24px;background:#fff;border-top:2px solid #0085f3;box-shadow:0 -4px 24px rgba(0,0,0,.12);animation:pwaSlideUp .3s ease-out;">
+    <div style="display:flex;align-items:center;gap:14px;width:100%;">
+        <img src="{{ asset('images/favicon-192.png') }}" alt="Syncro" style="width:42px;height:42px;border-radius:10px;flex-shrink:0;">
         <div style="flex:1;min-width:0;">
             <div style="font-weight:700;font-size:14px;color:#1a1d23;">Instalar Syncro CRM</div>
-            <div style="font-size:12px;color:#6b7280;margin-top:2px;">Acesse direto da tela inicial, rápido e sem abrir o navegador</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:2px;">Acesse direto da tela inicial</div>
         </div>
-        <button id="pwaInstallBtn" style="background:#0085f3;color:#fff;border:none;border-radius:9px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Instalar</button>
-        <button id="pwaDismissBtn" style="background:none;border:none;color:#9ca3af;font-size:20px;cursor:pointer;padding:4px;line-height:1;" aria-label="Fechar">&times;</button>
+        <button id="pwaInstallBtn" style="background:#0085f3;color:#fff;border:none;border-radius:100px;padding:10px 24px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Instalar</button>
+        <button id="pwaDismissBtn" style="background:none;border:none;color:#9ca3af;font-size:22px;cursor:pointer;padding:4px 0 4px 4px;line-height:1;" aria-label="Fechar">&times;</button>
     </div>
 </div>
 <style>@keyframes pwaSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}</style>
