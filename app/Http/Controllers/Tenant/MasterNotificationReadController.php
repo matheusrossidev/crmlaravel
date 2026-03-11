@@ -17,7 +17,7 @@ class MasterNotificationReadController extends Controller
         $notifications = MasterNotification::where(function ($q) use ($tenantId) {
                 $q->whereNull('tenant_id')->orWhere('tenant_id', $tenantId);
             })
-            ->where('created_at', '>=', now()->subDays(7))
+            ->whereDate('created_at', '>=', now()->toDateString())
             ->orderByDesc('created_at')
             ->limit(30)
             ->get(['id', 'title', 'body', 'type', 'created_at']);
