@@ -605,7 +605,25 @@ class ProcessAiResponse implements ShouldQueue
                 return;
             }
 
-            $audioPath = $tts->textToSpeech($reply, $agent->elevenlabs_voice_id);
+            // Limitar texto para TTS: máximo 500 caracteres para economizar créditos
+            $ttsText = $reply;
+            $maxTtsChars = 500;
+            if (mb_strlen($ttsText) > $maxTtsChars) {
+                // Truncar no último ponto/exclamação/interrogação antes do limite
+                $truncated = mb_substr($ttsText, 0, $maxTtsChars);
+                $lastSentence = max(
+                    (int) mb_strrpos($truncated, '.'),
+                    (int) mb_strrpos($truncated, '!'),
+                    (int) mb_strrpos($truncated, '?'),
+                );
+                if ($lastSentence > $maxTtsChars * 0.3) {
+                    $ttsText = mb_substr($truncated, 0, $lastSentence + 1);
+                } else {
+                    $ttsText = $truncated;
+                }
+            }
+
+            $audioPath = $tts->textToSpeech($ttsText, $agent->elevenlabs_voice_id);
             if (! $audioPath) {
                 return;
             }
@@ -648,13 +666,13 @@ class ProcessAiResponse implements ShouldQueue
                 'tenant_id'       => $conv->tenant_id,
                 'agent_id'        => $agent->id,
                 'conversation_id' => $conv->id,
-                'characters_used' => mb_strlen($reply),
+                'characters_used' => mb_strlen($ttsText),
                 'created_at'      => now(),
             ]);
 
             Log::channel('whatsapp')->info('TTS: áudio enviado com sucesso', [
                 'conversation_id' => $conv->id,
-                'characters'      => mb_strlen($reply),
+                'characters'      => mb_strlen($ttsText),
             ]);
 
             @unlink($audioPath);
