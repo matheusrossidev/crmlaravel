@@ -529,26 +529,35 @@ class ProcessAiResponse implements ShouldQueue
             }
         }
 
-        // ── Dividir em mensagens e enviar com delay ───────────────────────────
-        $delay = max(1, $agent->response_delay_seconds ?? 1);
+        // ── Detectar se última mensagem inbound foi áudio ─────────────────────
+        $lastInboundType = WhatsappMessage::withoutGlobalScope('tenant')
+            ->where('conversation_id', $conv->id)
+            ->where('direction', 'inbound')
+            ->latest('sent_at')
+            ->value('type');
 
-        $messages = $service->splitIntoMessages($reply, $maxLength);
+        $shouldReplyWithVoice = $agent->enable_voice_reply && $lastInboundType === 'audio';
 
-        foreach ($extraMessages as $extra) {
-            $messages[] = $extra;
-        }
-
-        Log::channel('whatsapp')->info('AI job: enviando resposta', [
-            'conversation_id' => $this->conversationId,
-            'parts'           => count($messages),
-            'delay_seconds'   => $delay,
-        ]);
-
-        $service->sendWhatsappReplies($conv, $messages, $delay);
-
-        // ── TTS: responder com áudio APÓS o texto (para não bloquear) ────────
-        if ($agent->enable_voice_reply) {
+        if ($shouldReplyWithVoice) {
+            // ── Cliente mandou áudio → responder SOMENTE com áudio ───────────
             $this->maybeReplyWithVoice($conv, $agent, $reply);
+        } else {
+            // ── Cliente mandou texto → responder SOMENTE com texto ───────────
+            $delay = max(1, $agent->response_delay_seconds ?? 1);
+
+            $messages = $service->splitIntoMessages($reply, $maxLength);
+
+            foreach ($extraMessages as $extra) {
+                $messages[] = $extra;
+            }
+
+            Log::channel('whatsapp')->info('AI job: enviando resposta', [
+                'conversation_id' => $this->conversationId,
+                'parts'           => count($messages),
+                'delay_seconds'   => $delay,
+            ]);
+
+            $service->sendWhatsappReplies($conv, $messages, $delay);
         }
     }
 
