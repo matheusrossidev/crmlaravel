@@ -35,8 +35,11 @@ class LeadController extends Controller
 {
     public function index(Request $request): View
     {
+        $allowedPipelineIds = auth()->user()->allowedPipelineIds();
+
         $query = Lead::with(['stage', 'pipeline', 'campaign', 'assignedTo', 'whatsappConversation.aiAgent'])
             ->where(fn ($q) => $q->where('exclude_from_pipeline', false)->orWhereNull('exclude_from_pipeline'))
+            ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
             ->orderByDesc('created_at');
 
         if ($search = $request->get('search')) {
@@ -79,7 +82,8 @@ class LeadController extends Controller
         $stages  = PipelineStage::whereHas('pipeline', fn ($q) => $q->where('tenant_id', auth()->user()->tenant_id))
             ->orderBy('position')
             ->get();
-        $pipelines = Pipeline::orderBy('sort_order')->get();
+        $pipelines = Pipeline::when($allowedPipelineIds, fn ($q) => $q->whereIn('id', $allowedPipelineIds))
+            ->orderBy('sort_order')->get();
         // Lista de origens distintas para filtro
         $sources = Lead::distinct()->pluck('source')->filter()->sort()->values();
 
@@ -178,7 +182,10 @@ class LeadController extends Controller
 
         $lead->load(['stage', 'pipeline', 'assignedTo', 'events.performedBy', 'customFieldValues.fieldDefinition', 'leadNotes.author', 'attachments.uploader']);
 
-        $pipelines = Pipeline::with('stages')->orderBy('sort_order')->get();
+        $allowedIds = auth()->user()->allowedPipelineIds();
+        $pipelines = Pipeline::with('stages')
+            ->when($allowedIds, fn ($q) => $q->whereIn('id', $allowedIds))
+            ->orderBy('sort_order')->get();
 
         $customFieldDefs = CustomFieldDefinition::where('is_active', true)
             ->orderBy('sort_order')
@@ -246,7 +253,9 @@ class LeadController extends Controller
             ->with(['messages' => fn ($q) => $q->orderBy('sent_at')->limit(100)])
             ->first();
 
+        $allowedIds = auth()->user()->allowedPipelineIds();
         $pipelines = Pipeline::with('stages:id,pipeline_id,name,color,position,is_won,is_lost')
+            ->when($allowedIds, fn ($q) => $q->whereIn('id', $allowedIds))
             ->orderBy('sort_order')
             ->get(['id', 'name', 'is_default']);
 

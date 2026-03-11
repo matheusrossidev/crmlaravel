@@ -54,6 +54,28 @@ class User extends Authenticatable
         return $this->belongsToMany(Department::class);
     }
 
+    public function pipelines(): BelongsToMany
+    {
+        return $this->belongsToMany(Pipeline::class);
+    }
+
+    /**
+     * Retorna IDs das pipelines permitidas, ou null se sem restrição.
+     * Admin sempre vê tudo. Se nenhuma pipeline atribuída = sem restrição.
+     *
+     * @return int[]|null
+     */
+    public function allowedPipelineIds(): ?array
+    {
+        if ($this->isAdmin()) {
+            return null;
+        }
+
+        $ids = $this->pipelines()->pluck('pipelines.id')->toArray();
+
+        return count($ids) > 0 ? $ids : null;
+    }
+
     public function isSuperAdmin(): bool
     {
         return (bool) $this->is_super_admin;

@@ -46,7 +46,7 @@ class WhatsappController extends Controller
         $whatsappTags    = collect();
 
         $authUser = auth()->user();
-        $restrictByDept = !$authUser->isAdmin() && !$authUser->can_see_all_conversations;
+        $restrictByDept = !$authUser->isAdmin();
         $userDeptIds = $restrictByDept ? $authUser->departments()->pluck('departments.id') : collect();
 
         if ($connected) {
@@ -300,7 +300,7 @@ class WhatsappController extends Controller
         }
 
         $pollUser = auth()->user();
-        $pollRestrict = !$pollUser->isAdmin() && !$pollUser->can_see_all_conversations;
+        $pollRestrict = !$pollUser->isAdmin();
         $pollDeptIds  = $pollRestrict ? $pollUser->departments()->pluck('departments.id') : collect();
 
         $waQuery = WhatsappConversation::with(['latestMessage', 'assignedUser', 'department', 'instance:id,label,phone_number'])

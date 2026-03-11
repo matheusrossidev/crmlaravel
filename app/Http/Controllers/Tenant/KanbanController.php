@@ -33,14 +33,20 @@ class KanbanController extends Controller
 {
     public function index(Request $request): View
     {
-        $pipelines = Pipeline::orderBy('sort_order')->get();
+        $allowedPipelineIds = auth()->user()->allowedPipelineIds();
+
+        $pipelines = Pipeline::when($allowedPipelineIds, fn ($q) => $q->whereIn('id', $allowedPipelineIds))
+            ->orderBy('sort_order')->get();
 
         $pipelineId = $request->get('pipeline_id');
 
+        $pipelineQuery = Pipeline::with('stages')
+            ->when($allowedPipelineIds, fn ($q) => $q->whereIn('id', $allowedPipelineIds));
+
         $pipeline = $pipelineId
-            ? Pipeline::with('stages')->findOrFail($pipelineId)
-            : Pipeline::with('stages')->where('is_default', true)->first()
-                ?? Pipeline::with('stages')->first();
+            ? $pipelineQuery->findOrFail($pipelineId)
+            : (clone $pipelineQuery)->where('is_default', true)->first()
+                ?? (clone $pipelineQuery)->first();
 
         $stages = collect();
         if ($pipeline) {
@@ -434,6 +440,12 @@ class KanbanController extends Controller
         $pipelineId = (int) $request->get('pipeline_id', 0);
 
         if (!$pipelineId) {
+            return response()->json(['leads' => [], 'server_time' => now()->timestamp]);
+        }
+
+        // Verificar acesso à pipeline
+        $allowedIds = auth()->user()->allowedPipelineIds();
+        if ($allowedIds && !in_array($pipelineId, $allowedIds)) {
             return response()->json(['leads' => [], 'server_time' => now()->timestamp]);
         }
 

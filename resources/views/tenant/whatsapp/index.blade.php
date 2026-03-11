@@ -1248,6 +1248,12 @@ $pageIcon = 'chat-dots';
                 <i class="bi bi-eye" style="margin-right:5px;"></i> Modo visualização — agência parceira não pode enviar mensagens
             </div>
         </div>
+        @elseif(auth()->user()->isViewer())
+        <div class="wa-compose-area" id="composeArea" style="display:none;">
+            <div style="padding:12px 16px;text-align:center;color:#9ca3af;font-size:13px;background:#f9fafb;border-top:1px solid #e8eaf0;">
+                <i class="bi bi-eye" style="margin-right:5px;"></i> Modo visualização — você não tem permissão para enviar mensagens
+            </div>
+        </div>
         @else
         <div class="wa-compose-area" id="composeArea" style="display:none;">
             <div class="wa-compose-tabs">
@@ -1481,7 +1487,7 @@ $pageIcon = 'chat-dots';
 
         <div class="wa-details-section">
             <div class="wa-details-label">Atribuído a</div>
-            <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="assignSelect" onchange="assignUser()">
+            <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="assignSelect" onchange="assignUser()" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
                 <option value="">Sem atribuição</option>
                 @foreach($users as $u)
                 <option value="{{ $u->id }}">{{ $u->name }}</option>
@@ -1493,7 +1499,7 @@ $pageIcon = 'chat-dots';
         @if(isset($departments) && $departments->isNotEmpty())
         <div class="wa-details-section">
             <div class="wa-details-label"><i class="bi bi-building" style="margin-right:4px;color:#0085f3;"></i> Setor</div>
-            <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="departmentSelect" onchange="assignDepartment()">
+            <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="departmentSelect" onchange="assignDepartment()" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
                 <option value="">Sem setor</option>
                 @foreach($departments as $dept)
                 <option value="{{ $dept->id }}" data-color="{{ $dept->color }}">{{ $dept->name }}</option>
@@ -1509,7 +1515,7 @@ $pageIcon = 'chat-dots';
                 <span><i class="bi bi-robot" style="margin-right:4px;color:#6366f1;"></i> Agente de IA</span>
                 <span id="aiAgentStatus" style="font-size:11px;font-weight:600;"></span>
             </div>
-            <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="aiAgentSelect" onchange="assignAiAgent()">
+            <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="aiAgentSelect" onchange="assignAiAgent()" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
                 <option value="">Sem agente (IA desativada)</option>
                 @foreach($aiAgents as $ag)
                 <option value="{{ $ag->id }}">{{ $ag->name }}</option>
@@ -1524,7 +1530,7 @@ $pageIcon = 'chat-dots';
                     <i class="fas fa-external-link-alt"></i>
                 </a>
             </div>
-            <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="chatbotFlowSelect" onchange="assignChatbotFlow()">
+            <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="chatbotFlowSelect" onchange="assignChatbotFlow()" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
                 <option value="">Sem fluxo (chatbot desativado)</option>
                 @foreach($chatbotFlows as $cf)
                 <option value="{{ $cf->id }}">{{ $cf->name }}</option>

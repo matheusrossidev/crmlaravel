@@ -96,10 +96,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
     Route::post('onboarding/skip',     [OnboardingController::class, 'skip'])->name('onboarding.skip');
 
-    // Cobrança / Checkout
+    // Cobrança / Checkout (admin only)
     Route::get('cobranca/checkout', [BillingController::class, 'showCheckout'])->name('billing.checkout');
-    Route::post('cobranca/assinar',  [BillingController::class, 'subscribe'])->name('billing.subscribe');
-    Route::post('cobranca/cancelar', [BillingController::class, 'cancel'])->name('billing.cancel');
+    Route::middleware('role:admin')->group(function () {
+        Route::post('cobranca/assinar',  [BillingController::class, 'subscribe'])->name('billing.subscribe');
+        Route::post('cobranca/cancelar', [BillingController::class, 'cancel'])->name('billing.cancel');
+    });
 
     // Upsell banner (dismiss/click)
     Route::post('upsell/{log}/dismiss', [UpsellBannerController::class, 'dismiss'])->name('upsell.dismiss');
@@ -109,9 +111,11 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::prefix('agenda')->name('calendar.')->group(function () {
         Route::get('/',                [CalendarController::class, 'index'])->name('index');
         Route::get('/eventos',         [CalendarController::class, 'events'])->name('events');
-        Route::post('/eventos',        [CalendarController::class, 'store'])->name('store');
-        Route::put('/eventos/{id}',    [CalendarController::class, 'update'])->name('update');
-        Route::delete('/eventos/{id}', [CalendarController::class, 'destroy'])->name('destroy');
+        Route::middleware('role:admin,manager')->group(function () {
+            Route::post('/eventos',        [CalendarController::class, 'store'])->name('store');
+            Route::put('/eventos/{id}',    [CalendarController::class, 'update'])->name('update');
+            Route::delete('/eventos/{id}', [CalendarController::class, 'destroy'])->name('destroy');
+        });
     });
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -132,120 +136,139 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/crm', [KanbanController::class, 'index'])->name('crm.kanban');
     Route::get('/crm/poll', [KanbanController::class, 'poll'])->name('crm.poll');
     Route::get('/crm/exportar', [KanbanController::class, 'export'])->name('crm.export');
-    Route::post('/crm/importar/preview', [KanbanController::class, 'preview'])->name('crm.import.preview');
-    Route::post('/crm/importar', [KanbanController::class, 'import'])->name('crm.import');
     Route::get('/crm/template', [KanbanController::class, 'template'])->name('crm.template');
-    Route::post('/crm/lead/{lead}/stage', [KanbanController::class, 'updateStage'])->name('crm.lead.stage');
+    Route::middleware('role:admin,manager')->group(function () {
+        Route::post('/crm/importar/preview', [KanbanController::class, 'preview'])->name('crm.import.preview');
+        Route::post('/crm/importar', [KanbanController::class, 'import'])->name('crm.import');
+        Route::post('/crm/lead/{lead}/stage', [KanbanController::class, 'updateStage'])->name('crm.lead.stage');
+    });
 
     // Leads / Contatos — exportar e importar ANTES do {lead} wildcard
     Route::get('/contatos/exportar', [LeadController::class, 'export'])->name('leads.export');
-    Route::post('/contatos/importar', [LeadController::class, 'import'])->name('leads.import');
-    Route::post('/contatos/custom-fields/upload', [LeadController::class, 'uploadCustomFieldFile'])->name('leads.cf-upload');
 
     Route::get('/contatos', [LeadController::class, 'index'])->name('leads.index');
-    Route::post('/contatos', [LeadController::class, 'store'])->name('leads.store');
     Route::get('/contatos/{lead}', [LeadController::class, 'show'])->name('leads.show');
-    Route::put('/contatos/{lead}', [LeadController::class, 'update'])->name('leads.update');
-    Route::delete('/kanban/leads/{lead}', [LeadController::class, 'removeFromPipeline'])->name('leads.kanban-remove');
-    Route::delete('/contatos/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
-
-    // Lead notes
-    Route::post('/contatos/{lead}/notas', [LeadController::class, 'addNote'])->name('leads.notes.store');
-    Route::delete('/contatos/{lead}/notas/{note}', [LeadController::class, 'deleteNote'])->name('leads.notes.destroy');
-
-    // Lead attachments
-    Route::post('/contatos/{lead}/anexos', [LeadController::class, 'uploadAttachment'])->name('leads.attachments.store');
-    Route::delete('/contatos/{lead}/anexos/{attachment}', [LeadController::class, 'deleteAttachment'])->name('leads.attachments.destroy');
-
-    // Lead profile page
     Route::get('/contatos/{lead}/perfil', [LeadController::class, 'showPage'])->name('leads.profile');
 
-    // Mensagens agendadas
-    Route::get   ('/contatos/{lead}/mensagens-agendadas',            [ScheduledMessageController::class, 'index'])  ->name('leads.scheduled.index');
-    Route::post  ('/contatos/{lead}/mensagens-agendadas',            [ScheduledMessageController::class, 'store'])  ->name('leads.scheduled.store');
-    Route::delete('/contatos/{lead}/mensagens-agendadas/{scheduled}',[ScheduledMessageController::class, 'destroy'])->name('leads.scheduled.destroy');
+    // Lead write operations (admin + manager)
+    Route::middleware('role:admin,manager')->group(function () {
+        Route::post('/contatos/importar', [LeadController::class, 'import'])->name('leads.import');
+        Route::post('/contatos/custom-fields/upload', [LeadController::class, 'uploadCustomFieldFile'])->name('leads.cf-upload');
+        Route::post('/contatos', [LeadController::class, 'store'])->name('leads.store');
+        Route::put('/contatos/{lead}', [LeadController::class, 'update'])->name('leads.update');
+        Route::delete('/kanban/leads/{lead}', [LeadController::class, 'removeFromPipeline'])->name('leads.kanban-remove');
+        Route::delete('/contatos/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
+
+        // Lead notes
+        Route::post('/contatos/{lead}/notas', [LeadController::class, 'addNote'])->name('leads.notes.store');
+        Route::delete('/contatos/{lead}/notas/{note}', [LeadController::class, 'deleteNote'])->name('leads.notes.destroy');
+
+        // Lead attachments
+        Route::post('/contatos/{lead}/anexos', [LeadController::class, 'uploadAttachment'])->name('leads.attachments.store');
+        Route::delete('/contatos/{lead}/anexos/{attachment}', [LeadController::class, 'deleteAttachment'])->name('leads.attachments.destroy');
+
+        // Mensagens agendadas
+        Route::post  ('/contatos/{lead}/mensagens-agendadas',            [ScheduledMessageController::class, 'store'])  ->name('leads.scheduled.store');
+        Route::delete('/contatos/{lead}/mensagens-agendadas/{scheduled}',[ScheduledMessageController::class, 'destroy'])->name('leads.scheduled.destroy');
+    });
+
+    // Mensagens agendadas (leitura)
+    Route::get('/contatos/{lead}/mensagens-agendadas', [ScheduledMessageController::class, 'index'])->name('leads.scheduled.index');
 
     // Relatórios
     Route::get('/relatorios', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/relatorios/pdf', [ReportController::class, 'exportPdf'])->name('reports.pdf');
 
-    // Campanhas
-    Route::get   ('/campanhas',                     [CampaignController::class, 'index'])  ->name('campaigns.index');
-    Route::post  ('/campanhas',                     [CampaignController::class, 'store'])  ->name('campaigns.store');
-    Route::put   ('/campanhas/{campaign}',          [CampaignController::class, 'update']) ->name('campaigns.update');
-    Route::delete('/campanhas/{campaign}',          [CampaignController::class, 'destroy'])->name('campaigns.destroy');
-    Route::get   ('/campanhas/relatorios',          [CampaignController::class, 'reports'])->name('campaigns.reports');
-    Route::get   ('/campanhas/relatorios/pdf',      [CampaignController::class, 'exportReportPdf'])->name('campaigns.reports.pdf');
-    Route::get   ('/campanhas/drill-down',          [CampaignController::class, 'drillDown'])->name('campaigns.drill-down');
-    Route::get   ('/campanhas/analytics',           [CampaignController::class, 'analytics'])->name('campaigns.analytics');
+    // Campanhas (leitura para todos, escrita admin+manager)
+    Route::get('/campanhas',                     [CampaignController::class, 'index'])->name('campaigns.index');
+    Route::get('/campanhas/relatorios',          [CampaignController::class, 'reports'])->name('campaigns.reports');
+    Route::get('/campanhas/relatorios/pdf',      [CampaignController::class, 'exportReportPdf'])->name('campaigns.reports.pdf');
+    Route::get('/campanhas/drill-down',          [CampaignController::class, 'drillDown'])->name('campaigns.drill-down');
+    Route::get('/campanhas/analytics',           [CampaignController::class, 'analytics'])->name('campaigns.analytics');
+    Route::middleware('role:admin,manager')->group(function () {
+        Route::post  ('/campanhas',                     [CampaignController::class, 'store'])->name('campaigns.store');
+        Route::put   ('/campanhas/{campaign}',          [CampaignController::class, 'update'])->name('campaigns.update');
+        Route::delete('/campanhas/{campaign}',          [CampaignController::class, 'destroy'])->name('campaigns.destroy');
+    });
 
-    // Integrações
+    // Integrações (leitura para todos, escrita admin only)
     Route::prefix('configuracoes/integracoes')->name('settings.integrations.')->group(function () {
         Route::get('/',                 [IntegrationController::class, 'index'])->name('index');
-        Route::get('facebook/redirect', [IntegrationController::class, 'redirectFacebook'])->name('facebook.redirect');
-        Route::get('facebook/callback', [IntegrationController::class, 'callbackFacebook'])->name('facebook.callback');
-        Route::get('google/redirect',   [IntegrationController::class, 'redirectGoogle'])->name('google.redirect');
-        Route::get('google/callback',   [IntegrationController::class, 'callbackGoogle'])->name('google.callback');
-        // WhatsApp — rotas específicas ANTES dos wildcards
-        Route::post('whatsapp/connect',                          [IntegrationController::class, 'connectWhatsapp'])->name('whatsapp.connect');
-        Route::get('whatsapp/{instance}/qr',                     [IntegrationController::class, 'getWhatsappQr'])->name('whatsapp.qr');
-        Route::post('whatsapp/{instance}/import',                [IntegrationController::class, 'importHistoryWhatsapp'])->name('whatsapp.import');
-        Route::put('whatsapp/{instance}',                        [IntegrationController::class, 'updateWhatsappInstance'])->name('whatsapp.update');
-        Route::delete('whatsapp/{instance}/disconnect',          [IntegrationController::class, 'disconnectWhatsapp'])->name('whatsapp.disconnect');
-        Route::delete('whatsapp/{instance}',                     [IntegrationController::class, 'deleteWhatsappInstance'])->name('whatsapp.delete');
-        // Instagram OAuth
-        Route::get('instagram/redirect', [IntegrationController::class, 'redirectInstagram'])->name('instagram.redirect');
-        Route::get('instagram/callback', [IntegrationController::class, 'callbackInstagram'])->name('instagram.callback');
-        Route::delete('instagram',        [IntegrationController::class, 'disconnectInstagram'])->name('instagram.disconnect');
-        // Wildcards (OAuth) — após as rotas específicas
-        Route::delete('{platform}',     [IntegrationController::class, 'disconnect'])->name('disconnect');
-        Route::post('{platform}/sync',  [IntegrationController::class, 'syncNow'])->name('sync');
+        Route::middleware('role:admin')->group(function () {
+            Route::get('facebook/redirect', [IntegrationController::class, 'redirectFacebook'])->name('facebook.redirect');
+            Route::get('facebook/callback', [IntegrationController::class, 'callbackFacebook'])->name('facebook.callback');
+            Route::get('google/redirect',   [IntegrationController::class, 'redirectGoogle'])->name('google.redirect');
+            Route::get('google/callback',   [IntegrationController::class, 'callbackGoogle'])->name('google.callback');
+            // WhatsApp
+            Route::post('whatsapp/connect',                          [IntegrationController::class, 'connectWhatsapp'])->name('whatsapp.connect');
+            Route::get('whatsapp/{instance}/qr',                     [IntegrationController::class, 'getWhatsappQr'])->name('whatsapp.qr');
+            Route::post('whatsapp/{instance}/import',                [IntegrationController::class, 'importHistoryWhatsapp'])->name('whatsapp.import');
+            Route::put('whatsapp/{instance}',                        [IntegrationController::class, 'updateWhatsappInstance'])->name('whatsapp.update');
+            Route::delete('whatsapp/{instance}/disconnect',          [IntegrationController::class, 'disconnectWhatsapp'])->name('whatsapp.disconnect');
+            Route::delete('whatsapp/{instance}',                     [IntegrationController::class, 'deleteWhatsappInstance'])->name('whatsapp.delete');
+            // Instagram OAuth
+            Route::get('instagram/redirect', [IntegrationController::class, 'redirectInstagram'])->name('instagram.redirect');
+            Route::get('instagram/callback', [IntegrationController::class, 'callbackInstagram'])->name('instagram.callback');
+            Route::delete('instagram',        [IntegrationController::class, 'disconnectInstagram'])->name('instagram.disconnect');
+            // Wildcards (OAuth)
+            Route::delete('{platform}',     [IntegrationController::class, 'disconnect'])->name('disconnect');
+            Route::post('{platform}/sync',  [IntegrationController::class, 'syncNow'])->name('sync');
+        });
     });
 
     // Chat Inbox (WhatsApp e outros canais)
     Route::prefix('chats')->name('chats.')->group(function () {
+        // Leitura — todos os roles
         Route::get('/',                                       [WhatsappController::class, 'index'])->name('index');
         Route::get('/poll',                                   [WhatsappController::class, 'poll'])->name('poll');
         Route::get('/conversations/{conversation}',           [WhatsappController::class, 'show'])->name('conversations.show');
         Route::post('/conversations/{conversation}/read',     [WhatsappController::class, 'markRead'])->name('conversations.read');
-        Route::put('/conversations/{conversation}/assign',    [WhatsappController::class, 'assign'])->name('conversations.assign');
-        Route::put('/conversations/{conversation}/status',    [WhatsappController::class, 'updateStatus'])->name('conversations.status');
-        Route::put('/conversations/{conversation}/lead',      [WhatsappController::class, 'updateLead'])->name('conversations.lead');
-        Route::put('/conversations/{conversation}/link-lead',   [WhatsappController::class, 'linkLead'])->name('conversations.link-lead');
-        Route::put('/conversations/{conversation}/unlink-lead',[WhatsappController::class, 'unlinkLead'])->name('conversations.unlink-lead');
-        Route::put('/conversations/{conversation}/contact',    [WhatsappController::class, 'updateContact'])->name('conversations.contact');
-        Route::post('/conversations/{conversation}/messages', [WhatsappMessageController::class, 'store'])->name('messages.store');
-        Route::post('/conversations/{conversation}/react',    [WhatsappMessageController::class, 'react'])->name('messages.react');
-        Route::put('/conversations/{conversation}/ai-agent',      [WhatsappController::class, 'assignAiAgent'])->name('conversations.ai-agent');
-        Route::put('/conversations/{conversation}/chatbot-flow',   [WhatsappController::class, 'assignChatbotFlow'])->name('conversations.chatbot-flow');
-        Route::put('/conversations/{conversation}/department',     [WhatsappController::class, 'assignDepartment'])->name('conversations.department');
-        Route::delete('/conversations/{conversation}',             [WhatsappController::class, 'destroy'])->name('conversations.destroy');
-        // Instagram conversations
         Route::get ('/instagram-conversations/{conversation}',         [WhatsappController::class, 'showInstagram'])->name('ig-conversations.show');
         Route::post('/instagram-conversations/{conversation}/read',    [WhatsappController::class, 'markReadInstagram'])->name('ig-conversations.read');
-        Route::post  ('/instagram-conversations/{conversation}/messages',[WhatsappController::class, 'sendInstagramMessage'])->name('ig-conversations.messages');
-        Route::delete('/instagram-conversations/{conversation}',         [WhatsappController::class, 'destroyInstagram'])->name('ig-conversations.destroy');
-        Route::put('/instagram-conversations/{conversation}/link-lead',   [WhatsappController::class, 'linkLeadInstagram'])->name('ig-conversations.link-lead');
-        Route::put('/instagram-conversations/{conversation}/unlink-lead', [WhatsappController::class, 'unlinkLeadInstagram'])->name('ig-conversations.unlink-lead');
         Route::get ('/leads/search',                                       [WhatsappController::class, 'searchLeads'])->name('leads.search');
-        // Website conversations
         Route::get ('/website-conversations/{websiteConversation}',               [WhatsappController::class, 'showWebsite'])->name('website-conversations.show');
         Route::post('/website-conversations/{websiteConversation}/read',          [WhatsappController::class, 'markReadWebsite'])->name('website-conversations.read');
-        Route::put ('/website-conversations/{websiteConversation}/status',        [WhatsappController::class, 'updateStatusWebsite'])->name('website-conversations.status');
-        Route::put ('/website-conversations/{websiteConversation}/link-lead',     [WhatsappController::class, 'linkLeadWebsite'])->name('website-conversations.link-lead');
-        Route::put   ('/website-conversations/{websiteConversation}/unlink-lead',   [WhatsappController::class, 'unlinkLeadWebsite'])->name('website-conversations.unlink-lead');
-        Route::delete('/website-conversations/{websiteConversation}',               [WhatsappController::class, 'destroyWebsite'])->name('website-conversations.destroy');
 
-        // AI Analyst — sugestões por conversa
+        // AI Analyst — leitura
         Route::get ('{conversation}/analyst-suggestions',             [AiAnalystController::class, 'index'])->name('analyst.index');
-        Route::post('{conversation}/analyst-suggestions/approve-all', [AiAnalystController::class, 'approveAll'])->name('analyst.approve-all');
-        Route::post('{conversation}/analyze',                         [AiAnalystController::class, 'trigger'])->name('analyst.trigger');
 
-        // Mensagens Rápidas
-        Route::get   ('/quick-messages',      [QuickMessageController::class, 'index'])->name('quick-messages.index');
-        Route::post  ('/quick-messages',      [QuickMessageController::class, 'store'])->name('quick-messages.store');
-        Route::put   ('/quick-messages/{qm}', [QuickMessageController::class, 'update'])->name('quick-messages.update');
-        Route::delete('/quick-messages/{qm}', [QuickMessageController::class, 'destroy'])->name('quick-messages.destroy');
+        // Mensagens Rápidas — leitura
+        Route::get('/quick-messages', [QuickMessageController::class, 'index'])->name('quick-messages.index');
+
+        // Escrita — admin + manager
+        Route::middleware('role:admin,manager')->group(function () {
+            Route::put('/conversations/{conversation}/assign',    [WhatsappController::class, 'assign'])->name('conversations.assign');
+            Route::put('/conversations/{conversation}/status',    [WhatsappController::class, 'updateStatus'])->name('conversations.status');
+            Route::put('/conversations/{conversation}/lead',      [WhatsappController::class, 'updateLead'])->name('conversations.lead');
+            Route::put('/conversations/{conversation}/link-lead',   [WhatsappController::class, 'linkLead'])->name('conversations.link-lead');
+            Route::put('/conversations/{conversation}/unlink-lead',[WhatsappController::class, 'unlinkLead'])->name('conversations.unlink-lead');
+            Route::put('/conversations/{conversation}/contact',    [WhatsappController::class, 'updateContact'])->name('conversations.contact');
+            Route::post('/conversations/{conversation}/messages', [WhatsappMessageController::class, 'store'])->name('messages.store');
+            Route::post('/conversations/{conversation}/react',    [WhatsappMessageController::class, 'react'])->name('messages.react');
+            Route::put('/conversations/{conversation}/ai-agent',      [WhatsappController::class, 'assignAiAgent'])->name('conversations.ai-agent');
+            Route::put('/conversations/{conversation}/chatbot-flow',   [WhatsappController::class, 'assignChatbotFlow'])->name('conversations.chatbot-flow');
+            Route::put('/conversations/{conversation}/department',     [WhatsappController::class, 'assignDepartment'])->name('conversations.department');
+            Route::delete('/conversations/{conversation}',             [WhatsappController::class, 'destroy'])->name('conversations.destroy');
+            // Instagram write
+            Route::post  ('/instagram-conversations/{conversation}/messages',[WhatsappController::class, 'sendInstagramMessage'])->name('ig-conversations.messages');
+            Route::delete('/instagram-conversations/{conversation}',         [WhatsappController::class, 'destroyInstagram'])->name('ig-conversations.destroy');
+            Route::put('/instagram-conversations/{conversation}/link-lead',   [WhatsappController::class, 'linkLeadInstagram'])->name('ig-conversations.link-lead');
+            Route::put('/instagram-conversations/{conversation}/unlink-lead', [WhatsappController::class, 'unlinkLeadInstagram'])->name('ig-conversations.unlink-lead');
+            // Website write
+            Route::put ('/website-conversations/{websiteConversation}/status',        [WhatsappController::class, 'updateStatusWebsite'])->name('website-conversations.status');
+            Route::put ('/website-conversations/{websiteConversation}/link-lead',     [WhatsappController::class, 'linkLeadWebsite'])->name('website-conversations.link-lead');
+            Route::put   ('/website-conversations/{websiteConversation}/unlink-lead',   [WhatsappController::class, 'unlinkLeadWebsite'])->name('website-conversations.unlink-lead');
+            Route::delete('/website-conversations/{websiteConversation}',               [WhatsappController::class, 'destroyWebsite'])->name('website-conversations.destroy');
+
+            // AI Analyst — ações
+            Route::post('{conversation}/analyst-suggestions/approve-all', [AiAnalystController::class, 'approveAll'])->name('analyst.approve-all');
+            Route::post('{conversation}/analyze',                         [AiAnalystController::class, 'trigger'])->name('analyst.trigger');
+
+            // Mensagens Rápidas — escrita
+            Route::post  ('/quick-messages',      [QuickMessageController::class, 'store'])->name('quick-messages.store');
+            Route::put   ('/quick-messages/{qm}', [QuickMessageController::class, 'update'])->name('quick-messages.update');
+            Route::delete('/quick-messages/{qm}', [QuickMessageController::class, 'destroy'])->name('quick-messages.destroy');
+        });
     });
 
     // AI Analyst — ações globais por sugestão
@@ -254,102 +277,112 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get ('/analyst-suggestions/pending-count',        [AiAnalystController::class, 'pendingCount'])->name('analyst.pending-count');
     Route::get ('/notificacoes/master',                      [MasterNotificationReadController::class, 'index'])->name('master-notifications.index');
 
-    // Chatbot Builder
+    // Chatbot Builder (admin only, leitura para todos)
     Route::prefix('chatbot/fluxos')->name('chatbot.flows.')->group(function () {
         Route::get('pipelines',      [ChatbotFlowController::class, 'getPipelines'])->name('pipelines');
         Route::get('',               [ChatbotFlowController::class, 'index'])->name('index');
-        Route::get('criar',          [ChatbotFlowController::class, 'create'])->name('create');
         Route::get('onboarding',    [ChatbotFlowController::class, 'onboarding'])->name('onboarding');
-        Route::post('',              [ChatbotFlowController::class, 'store'])->name('store');
-        Route::get('{flow}/editar',  [ChatbotFlowController::class, 'edit'])->name('edit');
-        Route::put('{flow}',         [ChatbotFlowController::class, 'update'])->name('update');
-        Route::delete('{flow}',      [ChatbotFlowController::class, 'destroy'])->name('destroy');
-        Route::post('upload-image',  [ChatbotFlowController::class, 'uploadImage'])->name('upload-image');
-        Route::post('{flow}/toggle',    [ChatbotFlowController::class, 'toggle'])->name('toggle');
-        Route::put('{flow}/graph',      [ChatbotFlowController::class, 'saveGraph'])->name('graph');
         Route::get('{flow}/resultados', [ChatbotFlowController::class, 'results'])->name('results');
+        Route::middleware('role:admin')->group(function () {
+            Route::get('criar',          [ChatbotFlowController::class, 'create'])->name('create');
+            Route::post('',              [ChatbotFlowController::class, 'store'])->name('store');
+            Route::get('{flow}/editar',  [ChatbotFlowController::class, 'edit'])->name('edit');
+            Route::put('{flow}',         [ChatbotFlowController::class, 'update'])->name('update');
+            Route::delete('{flow}',      [ChatbotFlowController::class, 'destroy'])->name('destroy');
+            Route::post('upload-image',  [ChatbotFlowController::class, 'uploadImage'])->name('upload-image');
+            Route::post('{flow}/toggle',    [ChatbotFlowController::class, 'toggle'])->name('toggle');
+            Route::put('{flow}/graph',      [ChatbotFlowController::class, 'saveGraph'])->name('graph');
+        });
     });
 
-    // Automações de Instagram
+    // Automações de Instagram (admin only)
     Route::prefix('configuracoes/instagram-automacoes')->name('settings.ig-automations.')->group(function () {
         Route::get('posts',                 [InstagramAutomationController::class, 'posts'])->name('posts');
         Route::get('',                      [InstagramAutomationController::class, 'index'])->name('index');
-        Route::post('',                     [InstagramAutomationController::class, 'store'])->name('store');
-        Route::put('{automation}',          [InstagramAutomationController::class, 'update'])->name('update');
-        Route::delete('{automation}',       [InstagramAutomationController::class, 'destroy'])->name('destroy');
-        Route::patch('{automation}/toggle', [InstagramAutomationController::class, 'toggleActive'])->name('toggle');
+        Route::middleware('role:admin')->group(function () {
+            Route::post('',                     [InstagramAutomationController::class, 'store'])->name('store');
+            Route::put('{automation}',          [InstagramAutomationController::class, 'update'])->name('update');
+            Route::delete('{automation}',       [InstagramAutomationController::class, 'destroy'])->name('destroy');
+            Route::patch('{automation}/toggle', [InstagramAutomationController::class, 'toggleActive'])->name('toggle');
+        });
     });
 
-    // Configurações — Pipelines + Stages
+    // Configurações
     Route::prefix('configuracoes')->name('settings.')->group(function () {
+        // Leitura — todos os roles
         Route::get('pipelines', [PipelineController::class, 'index'])->name('pipelines');
-        Route::post('pipelines', [PipelineController::class, 'store'])->name('pipelines.store');
-        Route::put('pipelines/{pipeline}', [PipelineController::class, 'update'])->name('pipelines.update');
-        Route::delete('pipelines/{pipeline}', [PipelineController::class, 'destroy'])->name('pipelines.destroy');
-        Route::post('pipelines/{pipeline}/stages/reorder', [PipelineController::class, 'reorderStages'])->name('pipelines.stages.reorder');
-        Route::post('pipelines/{pipeline}/stages', [PipelineController::class, 'storeStage'])->name('pipelines.stages.store');
-        Route::put('pipelines/{pipeline}/stages/{stage}', [PipelineController::class, 'updateStage'])->name('pipelines.stages.update');
-        Route::delete('pipelines/{pipeline}/stages/{stage}', [PipelineController::class, 'destroyStage'])->name('pipelines.stages.destroy');
-
-        // Motivos de Perda
         Route::get('motivos-perda', [LostSaleReasonController::class, 'index'])->name('lost-reasons');
-        Route::post('motivos-perda', [LostSaleReasonController::class, 'store'])->name('lost-reasons.store');
-        Route::put('motivos-perda/{reason}', [LostSaleReasonController::class, 'update'])->name('lost-reasons.update');
-        Route::delete('motivos-perda/{reason}', [LostSaleReasonController::class, 'destroy'])->name('lost-reasons.destroy');
+        Route::get('tags',              [WhatsappTagController::class, 'index'])->name('tags');
+        Route::get('cobranca', [BillingController::class, 'index'])->name('billing');
+        Route::get('departamentos',     [DepartmentController::class, 'index'])->name('departments');
+        Route::get('automacoes',        [AutomationController::class, 'index'])->name('automations');
+        Route::get('campos-extras',     [CustomFieldController::class, 'index'])->name('custom-fields');
+        Route::get('api-keys',          [ApiKeyController::class, 'index'])->name('api-keys');
+        Route::get('usuarios',          [UserController::class, 'index'])->name('users');
 
-        // API Keys
-        Route::get('api-keys',              [ApiKeyController::class, 'index'])->name('api-keys');
-        Route::post('api-keys',             [ApiKeyController::class, 'store'])->name('api-keys.store');
-        Route::delete('api-keys/{apiKey}',  [ApiKeyController::class, 'destroy'])->name('api-keys.destroy');
-
-        // Perfil
+        // Perfil (todos podem editar o próprio perfil)
         Route::get('perfil',         [ProfileController::class, 'index'])->name('profile');
         Route::put('perfil',         [ProfileController::class, 'update'])->name('profile.update');
         Route::put('perfil/senha',   [ProfileController::class, 'updatePassword'])->name('profile.password');
         Route::post('perfil/avatar',         [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
-        Route::post('workspace/logo',        [ProfileController::class, 'uploadWorkspaceLogo'])->name('workspace.logo');
 
-        // Usuários (admin+)
-        Route::get('usuarios',            [UserController::class, 'index'])->name('users');
-        Route::post('usuarios',           [UserController::class, 'store'])->name('users.store');
-        Route::put('usuarios/{user}',     [UserController::class, 'update'])->name('users.update');
-        Route::delete('usuarios/{user}',  [UserController::class, 'destroy'])->name('users.destroy');
+        // Admin only — escrita em configurações
+        Route::middleware('role:admin')->group(function () {
+            // Pipelines + Stages
+            Route::post('pipelines', [PipelineController::class, 'store'])->name('pipelines.store');
+            Route::put('pipelines/{pipeline}', [PipelineController::class, 'update'])->name('pipelines.update');
+            Route::delete('pipelines/{pipeline}', [PipelineController::class, 'destroy'])->name('pipelines.destroy');
+            Route::post('pipelines/{pipeline}/stages/reorder', [PipelineController::class, 'reorderStages'])->name('pipelines.stages.reorder');
+            Route::post('pipelines/{pipeline}/stages', [PipelineController::class, 'storeStage'])->name('pipelines.stages.store');
+            Route::put('pipelines/{pipeline}/stages/{stage}', [PipelineController::class, 'updateStage'])->name('pipelines.stages.update');
+            Route::delete('pipelines/{pipeline}/stages/{stage}', [PipelineController::class, 'destroyStage'])->name('pipelines.stages.destroy');
 
-        // Campos Personalizados (admin+)
-        Route::get('campos-extras',               [CustomFieldController::class, 'index'])->name('custom-fields');
-        Route::post('campos-extras',              [CustomFieldController::class, 'store'])->name('custom-fields.store');
-        Route::put('campos-extras/{field}',       [CustomFieldController::class, 'update'])->name('custom-fields.update');
-        Route::delete('campos-extras/{field}',    [CustomFieldController::class, 'destroy'])->name('custom-fields.destroy');
+            // Motivos de Perda
+            Route::post('motivos-perda', [LostSaleReasonController::class, 'store'])->name('lost-reasons.store');
+            Route::put('motivos-perda/{reason}', [LostSaleReasonController::class, 'update'])->name('lost-reasons.update');
+            Route::delete('motivos-perda/{reason}', [LostSaleReasonController::class, 'destroy'])->name('lost-reasons.destroy');
 
-        // Tags
-        Route::get('tags',              [WhatsappTagController::class, 'index'])->name('tags');
-        Route::post('tags',             [WhatsappTagController::class, 'store'])->name('tags.store');
-        Route::put('tags/{tag}',        [WhatsappTagController::class, 'update'])->name('tags.update');
-        Route::delete('tags/{tag}',     [WhatsappTagController::class, 'destroy'])->name('tags.destroy');
+            // API Keys
+            Route::post('api-keys',             [ApiKeyController::class, 'store'])->name('api-keys.store');
+            Route::delete('api-keys/{apiKey}',  [ApiKeyController::class, 'destroy'])->name('api-keys.destroy');
 
-        // Cobrança
-        Route::get('cobranca', [BillingController::class, 'index'])->name('billing');
+            // Tags
+            Route::post('tags',             [WhatsappTagController::class, 'store'])->name('tags.store');
+            Route::put('tags/{tag}',        [WhatsappTagController::class, 'update'])->name('tags.update');
+            Route::delete('tags/{tag}',     [WhatsappTagController::class, 'destroy'])->name('tags.destroy');
 
-        // Incremento de tokens
-        Route::post('tokens/comprar', [TokenIncrementController::class, 'purchase'])->name('tokens.purchase');
+            // Incremento de tokens
+            Route::post('tokens/comprar', [TokenIncrementController::class, 'purchase'])->name('tokens.purchase');
 
-        // Vínculo de agência parceira para usuários existentes
-        Route::post('agencia-parceira', [AgencyAccessController::class, 'linkCode'])->name('agency.link');
+            // Workspace logo
+            Route::post('workspace/logo',        [ProfileController::class, 'uploadWorkspaceLogo'])->name('workspace.logo');
 
-        // Departamentos
-        Route::get('departamentos',                     [DepartmentController::class, 'index'])->name('departments');
-        Route::post('departamentos',                    [DepartmentController::class, 'store'])->name('departments.store');
-        Route::put('departamentos/{department}',        [DepartmentController::class, 'update'])->name('departments.update');
-        Route::delete('departamentos/{department}',     [DepartmentController::class, 'destroy'])->name('departments.destroy');
+            // Vínculo de agência parceira
+            Route::post('agencia-parceira', [AgencyAccessController::class, 'linkCode'])->name('agency.link');
 
-        // Automações
-        Route::get('automacoes',                        [AutomationController::class, 'index'])->name('automations');
-        Route::get('automacoes/criar',                  [AutomationController::class, 'create'])->name('automations.create');
-        Route::get('automacoes/{automation}/editar',    [AutomationController::class, 'edit'])->name('automations.edit');
-        Route::post('automacoes',                       [AutomationController::class, 'store'])->name('automations.store');
-        Route::put('automacoes/{automation}',           [AutomationController::class, 'update'])->name('automations.update');
-        Route::delete('automacoes/{automation}',        [AutomationController::class, 'destroy'])->name('automations.destroy');
-        Route::patch('automacoes/{automation}/toggle',  [AutomationController::class, 'toggle'])->name('automations.toggle');
+            // Usuários
+            Route::post('usuarios',           [UserController::class, 'store'])->name('users.store');
+            Route::put('usuarios/{user}',     [UserController::class, 'update'])->name('users.update');
+            Route::delete('usuarios/{user}',  [UserController::class, 'destroy'])->name('users.destroy');
+
+            // Campos Personalizados
+            Route::post('campos-extras',              [CustomFieldController::class, 'store'])->name('custom-fields.store');
+            Route::put('campos-extras/{field}',       [CustomFieldController::class, 'update'])->name('custom-fields.update');
+            Route::delete('campos-extras/{field}',    [CustomFieldController::class, 'destroy'])->name('custom-fields.destroy');
+
+            // Departamentos
+            Route::post('departamentos',                    [DepartmentController::class, 'store'])->name('departments.store');
+            Route::put('departamentos/{department}',        [DepartmentController::class, 'update'])->name('departments.update');
+            Route::delete('departamentos/{department}',     [DepartmentController::class, 'destroy'])->name('departments.destroy');
+
+            // Automações
+            Route::get('automacoes/criar',                  [AutomationController::class, 'create'])->name('automations.create');
+            Route::get('automacoes/{automation}/editar',    [AutomationController::class, 'edit'])->name('automations.edit');
+            Route::post('automacoes',                       [AutomationController::class, 'store'])->name('automations.store');
+            Route::put('automacoes/{automation}',           [AutomationController::class, 'update'])->name('automations.update');
+            Route::delete('automacoes/{automation}',        [AutomationController::class, 'destroy'])->name('automations.destroy');
+            Route::patch('automacoes/{automation}/toggle',  [AutomationController::class, 'toggle'])->name('automations.toggle');
+        });
     });
 
     // Sinais de intenção do Agente IA
@@ -360,21 +393,23 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::get('nao-lidas/contagem', [AiIntentSignalController::class, 'unreadCount'])->name('unread-count');
     });
 
-    // Agentes de IA
+    // Agentes de IA (admin only para escrita)
     Route::prefix('ia/agentes')->name('ai.agents.')->group(function () {
         Route::get('',                           [AiAgentController::class, 'index'])->name('index');
         Route::get('onboarding',                 [AiAgentController::class, 'onboarding'])->name('onboarding');
-        Route::get('criar',                      [AiAgentController::class, 'create'])->name('create');
-        Route::post('',                          [AiAgentController::class, 'store'])->name('store');
-        Route::get('{agent}/editar',             [AiAgentController::class, 'edit'])->name('edit');
-        Route::put('{agent}',                    [AiAgentController::class, 'update'])->name('update');
-        Route::delete('{agent}',                 [AiAgentController::class, 'destroy'])->name('destroy');
-        Route::post('{agent}/toggle',            [AiAgentController::class, 'toggleActive'])->name('toggle');
-        Route::post('{agent}/test-chat',         [AiAgentController::class, 'testChat'])->name('test-chat');
-        Route::post('{agent}/knowledge-files',           [AiAgentController::class, 'uploadKnowledgeFile'])->name('knowledge-files.store');
-        Route::delete('{agent}/knowledge-files/{file}',  [AiAgentController::class, 'deleteKnowledgeFile'])->name('knowledge-files.destroy');
-        Route::post('{agent}/media',             [AiAgentController::class, 'uploadMedia'])->name('media.store');
-        Route::delete('{agent}/media/{media}',   [AiAgentController::class, 'deleteMedia'])->name('media.destroy');
+        Route::middleware('role:admin')->group(function () {
+            Route::get('criar',                      [AiAgentController::class, 'create'])->name('create');
+            Route::post('',                          [AiAgentController::class, 'store'])->name('store');
+            Route::get('{agent}/editar',             [AiAgentController::class, 'edit'])->name('edit');
+            Route::put('{agent}',                    [AiAgentController::class, 'update'])->name('update');
+            Route::delete('{agent}',                 [AiAgentController::class, 'destroy'])->name('destroy');
+            Route::post('{agent}/toggle',            [AiAgentController::class, 'toggleActive'])->name('toggle');
+            Route::post('{agent}/test-chat',         [AiAgentController::class, 'testChat'])->name('test-chat');
+            Route::post('{agent}/knowledge-files',           [AiAgentController::class, 'uploadKnowledgeFile'])->name('knowledge-files.store');
+            Route::delete('{agent}/knowledge-files/{file}',  [AiAgentController::class, 'deleteKnowledgeFile'])->name('knowledge-files.destroy');
+            Route::post('{agent}/media',             [AiAgentController::class, 'uploadMedia'])->name('media.store');
+            Route::delete('{agent}/media/{media}',   [AiAgentController::class, 'deleteMedia'])->name('media.destroy');
+        });
     });
 });
 

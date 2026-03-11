@@ -58,7 +58,10 @@ class DashboardController extends Controller
             ],
         };
 
+        $allowedPipelineIds = auth()->user()->allowedPipelineIds();
+
         $raw = Lead::where('exclude_from_pipeline', false)
+            ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
             ->selectRaw("{$groupExpr} as period, source, COUNT(*) as total")
             ->where('created_at', '>=', $since)
             ->groupBy('period', 'source')
@@ -126,13 +129,17 @@ class DashboardController extends Controller
 
     private function buildDashboardData(): array
     {
+        $allowedPipelineIds = auth()->user()->allowedPipelineIds();
+
         // ── Métricas principais ────────────────────────────────────────────
         $leadsThisMonth = Lead::where('exclude_from_pipeline', false)
+            ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->count();
 
         $leadsLastMonth = Lead::where('exclude_from_pipeline', false)
+            ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
             ->whereMonth('created_at', now()->subMonth()->month)
             ->whereYear('created_at', now()->subMonth()->year)
             ->count();
@@ -165,7 +172,9 @@ class DashboardController extends Controller
             ->count();
 
         // Taxa de conversão geral (vendas totais / leads totais)
-        $totalLeads     = Lead::where('exclude_from_pipeline', false)->count();
+        $totalLeads     = Lead::where('exclude_from_pipeline', false)
+            ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
+            ->count();
         $wonTotal       = Sale::count();
         $conversionRate = $totalLeads > 0 ? round($wonTotal / $totalLeads * 100, 1) : 0;
 
@@ -206,6 +215,7 @@ class DashboardController extends Controller
             $monthLabels[] = ucfirst($m->translatedFormat('M/y'));
 
             $leadsPerMonth[] = Lead::where('exclude_from_pipeline', false)
+                ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
                 ->whereYear('created_at', $m->year)
                 ->whereMonth('created_at', $m->month)
                 ->count();
@@ -220,6 +230,7 @@ class DashboardController extends Controller
         $dayLabels   = range(1, $daysInMonth);
 
         $rawBySourceDay = Lead::where('exclude_from_pipeline', false)
+            ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
             ->selectRaw('DAY(created_at) as day, source, COUNT(*) as total')
             ->whereYear('created_at', now()->year)
             ->whereMonth('created_at', now()->month)
@@ -240,6 +251,7 @@ class DashboardController extends Controller
 
         // ── Leads por origem (top 6) ───────────────────────────────────────
         $leadsBySource = Lead::where('exclude_from_pipeline', false)
+            ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
             ->selectRaw('source, count(*) as total')
             ->whereNotNull('source')
             ->where('source', '!=', '')
@@ -250,8 +262,12 @@ class DashboardController extends Controller
             ->toArray();
 
         // ── Funil do pipeline padrão ───────────────────────────────────────
-        $pipeline = Pipeline::where('is_default', true)->with('stages')->first()
-            ?? Pipeline::with('stages')->first();
+        $pipeline = Pipeline::where('is_default', true)->with('stages')
+            ->when($allowedPipelineIds, fn ($q) => $q->whereIn('id', $allowedPipelineIds))
+            ->first()
+            ?? Pipeline::with('stages')
+                ->when($allowedPipelineIds, fn ($q) => $q->whereIn('id', $allowedPipelineIds))
+                ->first();
 
         $stagesWithCount = [];
         if ($pipeline) {

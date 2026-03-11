@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AgnoInternalMiddleware;
 use App\Http\Middleware\ApiKeyMiddleware;
+use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SuperAdminMiddleware;
 use App\Http\Middleware\TenantMiddleware;
@@ -38,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'super_admin'   => SuperAdminMiddleware::class,
             'api_key'       => ApiKeyMiddleware::class,
             'agno_internal' => AgnoInternalMiddleware::class,
+            'role'          => RoleMiddleware::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {

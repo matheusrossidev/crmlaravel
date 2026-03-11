@@ -278,7 +278,7 @@
                         @if($u->id !== auth()->id() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
                         <div style="display:flex;gap:4px;">
                             <button class="btn-icon" title="Editar"
-                                onclick="editUser({{ $u->id }}, '{{ addslashes($u->name) }}', '{{ $u->email }}', '{{ $u->role }}', {{ json_encode($u->departments->pluck('id')) }}, {{ $u->can_see_all_conversations ? 'true' : 'false' }})">
+                                onclick="editUser({{ $u->id }}, '{{ addslashes($u->name) }}', '{{ $u->email }}', '{{ $u->role }}', {{ json_encode($u->departments->pluck('id')) }}, {{ $u->can_see_all_conversations ? 'true' : 'false' }}, {{ json_encode($u->pipelines->pluck('id')) }})">
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <button class="btn-icon danger" title="Excluir"
@@ -365,6 +365,22 @@
             </div>
         </div>
         @endif
+        @if(isset($pipelines) && $pipelines->count())
+        <div class="form-group">
+            <label>Pipelines visíveis</label>
+            <div style="font-size:11.5px;color:#9ca3af;margin-bottom:6px;">
+                Se nenhuma selecionada, o usuário vê todas as pipelines.
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;border:1px solid #e8eaf0;border-radius:9px;padding:8px;">
+                @foreach($pipelines as $pl)
+                <label style="display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:13px;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='transparent'">
+                    <input type="checkbox" class="pipeline-check" value="{{ $pl->id }}" style="accent-color:#0085f3;">
+                    <span style="font-weight:600;color:#1a1d23;">{{ $pl->name }}</span>
+                </label>
+                @endforeach
+            </div>
+        </div>
+        @endif
     </div>
     <div class="drawer-footer">
         <button class="btn-cancel" onclick="closeDrawer()">Cancelar</button>
@@ -392,6 +408,12 @@ function resetDeptChecks(selectedIds = []) {
     if (seeAll) seeAll.checked = true;
 }
 
+function resetPipelineChecks(selectedIds = []) {
+    document.querySelectorAll('.pipeline-check').forEach(cb => {
+        cb.checked = selectedIds.includes(parseInt(cb.value));
+    });
+}
+
 function openDrawer(mode = 'create') {
     editingId = null;
     document.getElementById('drawerTitle').textContent = 'Novo Usuário';
@@ -402,12 +424,13 @@ function openDrawer(mode = 'create') {
     document.getElementById('drawerRole').value = 'viewer';
     document.getElementById('pwdGroup').style.display = '';
     resetDeptChecks([]);
+    resetPipelineChecks([]);
     clearDrawerErrors();
     document.getElementById('drawerOverlay').classList.add('open');
     document.getElementById('drawer').classList.add('open');
 }
 
-function editUser(id, name, email, role, deptIds = [], canSeeAll = true) {
+function editUser(id, name, email, role, deptIds = [], canSeeAll = true, pipelineIds = []) {
     editingId = id;
     document.getElementById('drawerTitle').textContent = 'Editar Usuário';
     document.getElementById('editUserId').value = id;
@@ -416,6 +439,7 @@ function editUser(id, name, email, role, deptIds = [], canSeeAll = true) {
     document.getElementById('drawerRole').value = role;
     document.getElementById('pwdGroup').style.display = 'none';
     resetDeptChecks(deptIds);
+    resetPipelineChecks(pipelineIds);
     const seeAll = document.getElementById('drawerSeeAll');
     if (seeAll) seeAll.checked = canSeeAll;
     clearDrawerErrors();
@@ -439,6 +463,8 @@ async function saveUser() {
 
     const deptIds = [];
     document.querySelectorAll('.dept-check:checked').forEach(cb => deptIds.push(parseInt(cb.value)));
+    const pipelineIds = [];
+    document.querySelectorAll('.pipeline-check:checked').forEach(cb => pipelineIds.push(parseInt(cb.value)));
     const seeAllEl = document.getElementById('drawerSeeAll');
 
     const body = {
@@ -446,6 +472,7 @@ async function saveUser() {
         email: document.getElementById('drawerEmail').value,
         role:  document.getElementById('drawerRole').value,
         department_ids: deptIds,
+        pipeline_ids: pipelineIds,
         can_see_all_conversations: seeAllEl ? seeAllEl.checked : true,
     };
     if (!isEdit) body.password = document.getElementById('drawerPassword').value;

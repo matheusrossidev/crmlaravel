@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Mail\VerifyEmail;
 use App\Models\Department;
+use App\Models\Pipeline;
 use App\Models\User;
 use App\Services\PlanLimitChecker;
 use Illuminate\Http\JsonResponse;
@@ -30,7 +31,7 @@ class UserController extends Controller
         $this->authorizeAdmin();
 
         $users = User::where('tenant_id', auth()->user()->tenant_id)
-            ->with('departments')
+            ->with(['departments', 'pipelines'])
             ->orderBy('name')
             ->paginate(20)
             ->withQueryString();
@@ -39,7 +40,9 @@ class UserController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'color']);
 
-        return view('tenant.settings.users', compact('users', 'departments'));
+        $pipelines = Pipeline::orderBy('sort_order')->get(['id', 'name']);
+
+        return view('tenant.settings.users', compact('users', 'departments', 'pipelines'));
     }
 
     public function store(Request $request): JsonResponse
@@ -56,6 +59,8 @@ class UserController extends Controller
             'role'                       => 'required|in:admin,manager,viewer',
             'department_ids'             => 'nullable|array',
             'department_ids.*'           => 'integer|exists:departments,id',
+            'pipeline_ids'               => 'nullable|array',
+            'pipeline_ids.*'             => 'integer|exists:pipelines,id',
             'can_see_all_conversations'  => 'nullable|boolean',
         ]);
 
@@ -91,6 +96,8 @@ class UserController extends Controller
             $user->departments()->sync($request->input('department_ids', []));
         }
 
+        $user->pipelines()->sync($request->input('pipeline_ids', []));
+
         try {
             Mail::to($user->email)->send(new VerifyEmail($user, $tenant));
         } catch (\Throwable $e) {
@@ -109,6 +116,7 @@ class UserController extends Controller
                 'role'                        => $user->role,
                 'can_see_all_conversations'   => $user->can_see_all_conversations,
                 'department_ids'              => $user->departments->pluck('id')->toArray(),
+                'pipeline_ids'                => $user->pipelines->pluck('id')->toArray(),
                 'created_at'                  => $user->created_at->format('d/m/Y'),
             ],
         ], 201);
@@ -139,6 +147,8 @@ class UserController extends Controller
             'role'                       => 'required|in:admin,manager,viewer',
             'department_ids'             => 'nullable|array',
             'department_ids.*'           => 'integer|exists:departments,id',
+            'pipeline_ids'               => 'nullable|array',
+            'pipeline_ids.*'             => 'integer|exists:pipelines,id',
             'can_see_all_conversations'  => 'nullable|boolean',
         ]);
 
@@ -161,6 +171,8 @@ class UserController extends Controller
         if ($request->has('department_ids')) {
             $user->departments()->sync($request->input('department_ids', []));
         }
+
+        $user->pipelines()->sync($request->input('pipeline_ids', []));
 
         return response()->json(['success' => true, 'message' => 'Usuário atualizado.']);
     }

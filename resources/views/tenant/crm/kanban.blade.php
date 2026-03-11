@@ -25,11 +25,11 @@
         <i class="bi bi-download"></i>
     </button>
 
-    <button class="topbar-btn hide-mobile" title="Importar leads" onclick="openImportModal()">
+    <button class="topbar-btn hide-mobile" title="Importar leads" onclick="openImportModal()" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
         <i class="bi bi-upload"></i>
     </button>
 
-    <button class="btn-primary-sm hide-mobile" id="btnNovoLead">
+    <button class="btn-primary-sm hide-mobile" id="btnNovoLead" {{ auth()->user()->isViewer() ? 'disabled style=opacity:.5;pointer-events:none;' : '' }}>
         <i class="bi bi-plus-lg"></i>
         Novo Lead
     </button>
@@ -998,6 +998,7 @@ let _wonPending  = null;
 let _lostPending = null;
 
 // ── Inicializa SortableJS em cada coluna ──────────────────────────────────
+if (!window.isViewer) {
 document.querySelectorAll('.sortable-zone').forEach(zone => {
     Sortable.create(zone, {
         group:     'kanban',
@@ -1035,6 +1036,7 @@ document.querySelectorAll('.sortable-zone').forEach(zone => {
         },
     });
 });
+} // end if (!window.isViewer)
 
 function saveStageChange(leadId, stageId, pipId, extra = {}) {
     $.ajax({

@@ -35,7 +35,7 @@
                class="drawer-icon-btn" title="Ver perfil completo">
                 <i class="bi bi-box-arrow-up-right"></i>
             </a>
-            <button id="btnDeleteLead" style="display:none;" class="drawer-icon-btn danger" title="Excluir lead">
+            <button id="btnDeleteLead" style="display:none;" class="drawer-icon-btn danger" title="Excluir lead" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
                 <i class="bi bi-trash"></i>
             </button>
             <button onclick="closeLeadDrawer()" class="drawer-icon-btn" title="Fechar">
@@ -250,7 +250,7 @@
         <button type="button" onclick="closeLeadDrawer()" style="flex:0;padding:10px 18px;border:1.5px solid #e8eaf0;border-radius:100px;background:#fff;font-size:13.5px;font-weight:600;color:#6b7280;cursor:pointer;">
             Cancelar
         </button>
-        <button type="button" id="btnSaveLead" style="flex:1;padding:10px;background:#0085f3;color:#fff;border:none;border-radius:100px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s;">
+        <button type="button" id="btnSaveLead" style="flex:1;padding:10px;background:#0085f3;color:#fff;border:none;border-radius:100px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s;" {{ auth()->user()->isViewer() ? 'disabled style=opacity:.5;pointer-events:none;' : '' }}>
             <i class="bi bi-check-lg"></i>
             Salvar
         </button>

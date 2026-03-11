@@ -31,11 +31,11 @@
         <i class="bi bi-download"></i> Exportar
     </a>
 
-    <button class="btn-secondary-sm leads-hide-mobile" id="btnImportLead" style="display:flex;align-items:center;gap:5px;">
+    <button class="btn-secondary-sm leads-hide-mobile" id="btnImportLead" style="display:flex;align-items:center;gap:5px;" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
         <i class="bi bi-upload"></i> Importar
     </button>
 
-    <button class="btn-primary-sm leads-hide-mobile" id="btnNovoLead">
+    <button class="btn-primary-sm leads-hide-mobile" id="btnNovoLead" {{ auth()->user()->isViewer() ? 'disabled style=opacity:.5;pointer-events:none;' : '' }}>
         <i class="bi bi-plus-lg"></i> Novo Lead
     </button>
 </div>
@@ -363,7 +363,7 @@
     </div>
 </div>
 
-<button class="fab-novo-lead" id="fabNovoLead" title="Novo Lead">
+<button class="fab-novo-lead" id="fabNovoLead" title="Novo Lead" {{ auth()->user()->isViewer() ? 'disabled style=opacity:.5;pointer-events:none;' : '' }}>
     <i class="bi bi-plus-lg"></i>
 </button>
 @endsection

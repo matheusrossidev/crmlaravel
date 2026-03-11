@@ -1204,6 +1204,10 @@ window.escapeHtml = (t) => {
     const m = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'};
     return String(t ?? '').replace(/[&<>"']/g, c => m[c]);
 };
+
+window.userRole    = '{{ auth()->user()->role ?? '' }}';
+window.isViewer    = {{ auth()->user()?->isViewer() ? 'true' : 'false' }};
+window.isAdmin     = {{ auth()->user()?->isAdmin() ? 'true' : 'false' }};
 </script>
 
 @stack('scripts')
