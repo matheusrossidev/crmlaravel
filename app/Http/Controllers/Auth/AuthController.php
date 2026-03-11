@@ -87,6 +87,10 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
+        if ($user->isSuperAdmin()) {
+            return redirect()->intended(route('master.dashboard'));
+        }
+
         return redirect()->intended(route('dashboard'));
     }
 

@@ -368,6 +368,10 @@
            class="m-nav-item {{ request()->routeIs('master.toolbox*') ? 'active' : '' }}">
             <i class="bi bi-tools"></i> Ferramentas
         </a>
+        <a href="/pulse" target="_blank"
+           class="m-nav-item">
+            <i class="bi bi-activity"></i> Pulse
+        </a>
 
         <div class="m-nav-group">
             <div class="m-nav-group-label">Comunicação</div>

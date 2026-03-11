@@ -10,6 +10,7 @@
         "barryvdh/laravel-dompdf": "^3.1",
         "laravel-notification-channels/webpush": "^10.5",
         "laravel/framework": "^11.31",
+        "laravel/pulse": "^1.7",
         "laravel/reverb": "^1.7",
         "laravel/sanctum": "^4.3",
         "laravel/socialite": "^5.24",
