@@ -92,10 +92,13 @@
     }
     .stat-bottom {
         display: flex;
-        align-items: baseline;
-        gap: 7px;
-        flex-wrap: wrap;
         flex-direction: column;
+        gap: 4px;
+    }
+    .stat-value-row {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
     }
     .stat-value {
         font-size: 22px;
@@ -413,13 +416,13 @@
                 <span class="stat-label" title="Leads criados de 1 a {{ now()->endOfMonth()->day }} de {{ now()->translatedFormat('F/Y') }}">Leads este mês</span>
             </div>
             <div class="stat-bottom">
-                <span class="stat-value" data-val="{{ $leadsThisMonth }}" data-prefix="" data-suffix="">{{ $cfLeads }}</span>
-                @if($leadsTrend !== null)
+                <div class="stat-value-row">
+                    <span class="stat-value" data-val="{{ $leadsThisMonth }}" data-prefix="" data-suffix="">{{ $cfLeads }}</span>
+                    @if($leadsTrend !== null)
                     <span class="trend-badge {{ $leadsTrend >= 0 ? 'up' : 'down' }}">{{ $leadsTrend >= 0 ? '↗' : '↘' }} {{ abs($leadsTrend) }}%</span>
-                    <span class="stat-sub">vs mês ant.</span>
-                @else
-                    <span class="stat-sub">sem dados anteriores</span>
-                @endif
+                    @endif
+                </div>
+                <span class="stat-sub">{{ $leadsTrend !== null ? 'vs mês ant.' : 'sem dados anteriores' }}</span>
             </div>
         </div>
         @break
@@ -430,13 +433,13 @@
                 <span class="stat-label">Vendas este mês</span>
             </div>
             <div class="stat-bottom">
-                <span class="stat-value" data-val="{{ $totalSales }}" data-prefix="R$ " data-suffix="">{{ $cfSales }}</span>
-                @if($salesTrend !== null)
+                <div class="stat-value-row">
+                    <span class="stat-value" data-val="{{ $totalSales }}" data-prefix="R$ " data-suffix="">{{ $cfSales }}</span>
+                    @if($salesTrend !== null)
                     <span class="trend-badge {{ $salesTrend >= 0 ? 'up' : 'down' }}">{{ $salesTrend >= 0 ? '↗' : '↘' }} {{ abs($salesTrend) }}%</span>
-                    <span class="stat-sub">vs mês ant.</span>
-                @else
-                    <span class="stat-sub">receita fechada</span>
-                @endif
+                    @endif
+                </div>
+                <span class="stat-sub">{{ $salesTrend !== null ? 'vs mês ant.' : 'receita fechada' }}</span>
             </div>
         </div>
         @break
@@ -447,7 +450,9 @@
                 <span class="stat-label">Taxa de Conversão</span>
             </div>
             <div class="stat-bottom">
-                <span class="stat-value" data-val="{{ $conversionRate }}" data-prefix="" data-suffix="%" data-decimals="1">{{ $conversionRate }}%</span>
+                <div class="stat-value-row">
+                    <span class="stat-value" data-val="{{ $conversionRate }}" data-prefix="" data-suffix="%" data-decimals="1">{{ $conversionRate }}%</span>
+                </div>
                 <span class="stat-sub">leads → vendas</span>
             </div>
         </div>
@@ -459,7 +464,9 @@
                 <span class="stat-label">Ticket Médio</span>
             </div>
             <div class="stat-bottom">
-                <span class="stat-value" data-val="{{ $ticketMedio }}" data-prefix="R$ " data-suffix="">{{ $cfTicket }}</span>
+                <div class="stat-value-row">
+                    <span class="stat-value" data-val="{{ $ticketMedio }}" data-prefix="R$ " data-suffix="">{{ $cfTicket }}</span>
+                </div>
                 <span class="stat-sub">{{ $leadsGanhos }} negócio{{ $leadsGanhos !== 1 ? 's' : '' }} este mês</span>
             </div>
         </div>
@@ -471,7 +478,9 @@
                 <span class="stat-label">Leads Perdidos</span>
             </div>
             <div class="stat-bottom">
-                <span class="stat-value" data-val="{{ $leadsPerdidos }}" data-prefix="" data-suffix="">{{ $cfPerdidos }}</span>
+                <div class="stat-value-row">
+                    <span class="stat-value" data-val="{{ $leadsPerdidos }}" data-prefix="" data-suffix="">{{ $cfPerdidos }}</span>
+                </div>
                 <span class="stat-sub">perdidos este mês</span>
             </div>
         </div>
