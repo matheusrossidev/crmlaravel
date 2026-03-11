@@ -51,8 +51,18 @@ async def chat(req: ChatRequest) -> AgentResponse:
             memories=req.memories if req.memories else None,
         )
 
+        # Build input with conversation history for context
+        if req.history:
+            history_text = "\n".join(
+                f"{'Cliente' if m.role == 'user' else 'Você'}: {m.content}"
+                for m in req.history[-20:]
+            )
+            full_input = f"[HISTÓRICO DA CONVERSA]\n{history_text}\n\n[MENSAGEM ATUAL]\n{req.message}"
+        else:
+            full_input = req.message
+
         result = await agent.arun(
-            input=req.message,
+            input=full_input,
             user_id=f"tenant_{req.tenant_id}_contact_{req.contact_phone}",
         )
 

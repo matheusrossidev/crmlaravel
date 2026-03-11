@@ -2,12 +2,18 @@ from pydantic import BaseModel
 from typing import Any
 
 
+class ChatMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+
+
 class ChatRequest(BaseModel):
     agent_id: int
     tenant_id: int
     conversation_id: int
     contact_phone: str
     message: str
+    history: list[ChatMessage] = []
     history_limit: int = 20
     pipeline_stages: list[dict[str, Any]] = []
     available_tags: list[str] = []

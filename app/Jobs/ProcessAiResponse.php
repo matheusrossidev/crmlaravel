@@ -514,11 +514,6 @@ class ProcessAiResponse implements ShouldQueue
             }
         }
 
-        // ── TTS: responder com áudio se a última msg inbound foi áudio ───────
-        if ($agent->enable_voice_reply) {
-            $this->maybeReplyWithVoice($conv, $agent, $reply);
-        }
-
         // ── Dividir em mensagens e enviar com delay ───────────────────────────
         $delay = max(1, $agent->response_delay_seconds ?? 1);
 
@@ -535,6 +530,11 @@ class ProcessAiResponse implements ShouldQueue
         ]);
 
         $service->sendWhatsappReplies($conv, $messages, $delay);
+
+        // ── TTS: responder com áudio APÓS o texto (para não bloquear) ────────
+        if ($agent->enable_voice_reply) {
+            $this->maybeReplyWithVoice($conv, $agent, $reply);
+        }
     }
 
     // ── Agno: verificação de cota ─────────────────────────────────────────────
@@ -636,7 +636,7 @@ class ProcessAiResponse implements ShouldQueue
 
             $waha = new \App\Services\WahaService($instance->session_name);
 
-            // Resolve chatId from the last inbound message
+            // Resolve chatId — mesma lógica do sendWhatsappReplies (suporta @lid e @c.us)
             $chatId = null;
             $lastMsg = WhatsappMessage::withoutGlobalScope('tenant')
                 ->where('conversation_id', $conv->id)
@@ -645,14 +645,11 @@ class ProcessAiResponse implements ShouldQueue
                 ->latest('sent_at')
                 ->first();
 
-            if ($lastMsg?->waha_message_id) {
-                $parts = explode('@', $lastMsg->waha_message_id);
-                if (count($parts) >= 2) {
-                    $chatId = explode('_', end($parts))[0] ?? null;
-                    if ($chatId && ! str_contains($chatId, '@')) {
-                        $chatId .= '@c.us';
-                    }
-                }
+            if ($lastMsg?->waha_message_id && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $lastMsg->waha_message_id, $m)) {
+                $jid = $m[1];
+                $chatId = str_ends_with($jid, '@lid')
+                    ? preg_replace('/[:@].+$/', '', $jid) . '@lid'
+                    : preg_replace('/[:@].+$/', '', $jid) . '@c.us';
             }
 
             if (! $chatId) {
@@ -661,6 +658,7 @@ class ProcessAiResponse implements ShouldQueue
 
             Log::channel('whatsapp')->info('TTS: enviando áudio ao WAHA', [
                 'conversation_id' => $conv->id,
+                'chat_id'         => $chatId,
                 'file_size_kb'    => round(filesize($audioPath) / 1024, 1),
                 'characters'      => mb_strlen($ttsText),
             ]);
@@ -777,12 +775,21 @@ class ProcessAiResponse implements ShouldQueue
             ]);
         }
 
+        // Build conversation history for Agno context
+        $aiService = new AiAgentService();
+        $rawHistory = $aiService->buildHistory($conv, limit: 20);
+        $history = array_map(fn ($m) => [
+            'role'    => $m['role'],
+            'content' => $m['content'],
+        ], $rawHistory);
+
         $agnoResult = app(AgnoService::class)->chat([
             'agent_id'        => $agent->id,
             'tenant_id'       => $agent->tenant_id,
             'conversation_id' => $conv->id,
             'contact_phone'   => $conv->phone,
             'message'         => $lastMessage->content ?? '',
+            'history'         => $history,
             'history_limit'   => 20,
             'pipeline_stages' => $stages,
             'available_tags'  => $availTags,
