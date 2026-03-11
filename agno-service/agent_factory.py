@@ -41,13 +41,14 @@ def get_or_create_agent(
     available_tags: list[str] | None = None,
     lead_id: int | None = None,
     conversation_id: int | None = None,
+    memories: list[str] | None = None,
 ) -> Agent:
     """Return a cached Agent, creating it on first call or after config update."""
 
-    has_contextual_tools = bool(lead_id or conversation_id)
+    has_contextual = bool(lead_id or conversation_id or memories)
     cache_key = _make_key(agent_id, tenant_id)
 
-    if not has_contextual_tools and cache_key in _agent_cache:
+    if not has_contextual and cache_key in _agent_cache:
         return _agent_cache[cache_key]
 
     config = _agent_configs.get(agent_id, {})
@@ -56,11 +57,12 @@ def get_or_create_agent(
 
     model = _build_model(config)
     tools = _build_tools(config, lead_id, pipeline_stages or [], available_tags or [], conversation_id)
+    instructions = _build_instructions(config, memories or [])
 
     agent = Agent(
         agent_id=f"agent_{agent_id}",
         model=model,
-        description=_build_instructions(config),
+        description=instructions,
         response_model=AgnoReply,
         db=PostgresDb(
             db_url=PGVECTOR_URL,
@@ -71,7 +73,7 @@ def get_or_create_agent(
         num_history_responses=10,
     )
 
-    if not has_contextual_tools:
+    if not has_contextual:
         _agent_cache[cache_key] = agent
 
     return agent
@@ -94,7 +96,7 @@ def _build_model(config: dict) -> Any:
     return OpenAIChat(id=model_id, api_key=api_key or None)
 
 
-def _build_instructions(config: dict) -> str:
+def _build_instructions(config: dict, memories: list[str] | None = None) -> str:
     name = config.get("name", "Assistente")
     objective = config.get("objective", "ajudar clientes")
     company = config.get("company_name", "")
@@ -165,6 +167,25 @@ reply_blocks: [
   "Agente de IA — qualifica leads automaticamente.",
   "Tem alguma que quer entender melhor?"
 ]
+""" + (_build_memories_section(memories) if memories else "")
+
+
+def _build_memories_section(memories: list[str]) -> str:
+    """Build the memories section to inject into agent instructions."""
+    if not memories:
+        return ""
+    items = "\n".join(f"- {m}" for m in memories)
+    return f"""
+
+═══════════════════════════════════════
+EXPERIÊNCIA ANTERIOR COM ESTE CONTATO
+═══════════════════════════════════════
+
+Use estas informações de conversas anteriores para personalizar seu atendimento.
+NÃO mencione explicitamente que você tem memórias ou registros anteriores.
+Apenas use o contexto para ser mais relevante e natural.
+
+{items}
 """
 
 

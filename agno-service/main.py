@@ -7,12 +7,25 @@ from fastapi import FastAPI, HTTPException
 
 from agent_factory import AgnoReply, get_agent_config, get_or_create_agent, store_agent_config
 from formatter import format_as_whatsapp_blocks
-from schemas import AgentResponse, ChatRequest, ConfigureRequest, IndexFileRequest
+from memory_store import init_memory_tables, search_memories, store_memory
+from schemas import (
+    AgentResponse,
+    ChatRequest,
+    ConfigureRequest,
+    IndexFileRequest,
+    SearchMemoryRequest,
+    StoreMemoryRequest,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Agno service starting...")
+    try:
+        init_memory_tables()
+        print("Memory tables initialized.")
+    except Exception as e:
+        print(f"Warning: memory tables init failed: {e}")
     yield
     print("Agno service shutting down.")
 
@@ -35,6 +48,7 @@ async def chat(req: ChatRequest) -> AgentResponse:
             available_tags=req.available_tags,
             lead_id=None,
             conversation_id=req.conversation_id,
+            memories=req.memories if req.memories else None,
         )
 
         result = await agent.arun(
@@ -93,6 +107,34 @@ async def configure(agent_id: int, req: ConfigureRequest) -> dict:
 @app.post("/agents/{agent_id}/index-file")
 async def index_file(agent_id: int, req: IndexFileRequest) -> dict:
     return {"ok": True, "agent_id": agent_id, "filename": req.filename, "note": "RAG indexing not yet enabled"}
+
+
+@app.post("/agents/{agent_id}/memories/store")
+async def store_agent_memory(agent_id: int, req: StoreMemoryRequest) -> dict:
+    memory_id = await store_memory(
+        tenant_id=req.tenant_id,
+        agent_id=agent_id,
+        summary=req.summary,
+        conversation_id=req.conversation_id,
+        contact_phone=req.contact_phone,
+        customer_profile=req.customer_profile,
+        key_learnings=req.key_learnings,
+    )
+    if memory_id is None:
+        raise HTTPException(status_code=500, detail="Failed to store memory")
+    return {"ok": True, "memory_id": memory_id}
+
+
+@app.post("/agents/{agent_id}/memories/search")
+async def search_agent_memories(agent_id: int, req: SearchMemoryRequest) -> dict:
+    results = await search_memories(
+        tenant_id=req.tenant_id,
+        agent_id=agent_id,
+        query=req.query,
+        top_k=req.top_k,
+        contact_phone=req.contact_phone,
+    )
+    return {"ok": True, "memories": results}
 
 
 MAX_BLOCK_CHARS = 150

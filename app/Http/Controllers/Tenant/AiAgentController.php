@@ -15,7 +15,9 @@ use App\Models\TenantTokenIncrement;
 use App\Models\TokenIncrementPlan;
 use App\Models\Department;
 use App\Models\User;
+use App\Models\WhatsappInstance;
 use App\Services\AgnoService;
+use App\Services\ElevenLabsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -60,8 +62,9 @@ class AiAgentController extends Controller
         $knowledgeFiles = collect();
         $users          = $this->tenantUsers();
         $departments    = $this->activeDepartments();
+        $whatsappInstances = WhatsappInstance::orderBy('label')->get(['id', 'label', 'phone_number', 'session_name']);
 
-        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles', 'users', 'departments'));
+        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles', 'users', 'departments', 'whatsappInstances'));
     }
 
     public function store(Request $request): JsonResponse|\Illuminate\Http\RedirectResponse
@@ -83,6 +86,10 @@ class AiAgentController extends Controller
 
         $agent = AiAgent::create($data);
 
+        if ($request->has('whatsapp_instance_ids')) {
+            $agent->whatsappInstances()->sync($request->input('whatsapp_instance_ids', []));
+        }
+
         $this->syncToAgno($agent);
 
         if ($request->expectsJson()) {
@@ -98,16 +105,17 @@ class AiAgentController extends Controller
     public function edit(AiAgent $agent): View
     {
         $knowledgeFiles = $agent->knowledgeFiles()->orderBy('created_at')->get();
-        $agent->load('mediaFiles');
+        $agent->load('mediaFiles', 'whatsappInstances');
         $users       = $this->tenantUsers();
         $departments = $this->activeDepartments();
+        $whatsappInstances = WhatsappInstance::orderBy('label')->get(['id', 'label', 'phone_number', 'session_name']);
 
         $embedScriptUrl = null;
         if ($agent->website_token) {
             $embedScriptUrl = rtrim((string) config('app.url'), '/') . '/api/widget/' . $agent->website_token . '.js';
         }
 
-        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles', 'users', 'departments', 'embedScriptUrl'));
+        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles', 'users', 'departments', 'whatsappInstances', 'embedScriptUrl'));
     }
 
     public function update(Request $request, AiAgent $agent): \Illuminate\Http\RedirectResponse|JsonResponse
@@ -120,6 +128,11 @@ class AiAgentController extends Controller
         }
 
         $agent->update($data);
+
+        if ($request->has('whatsapp_instance_ids')) {
+            $agent->whatsappInstances()->sync($request->input('whatsapp_instance_ids', []));
+        }
+
         $agent->refresh();
 
         $this->syncToAgno($agent);
@@ -189,6 +202,19 @@ class AiAgentController extends Controller
         $media->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    public function voices(): JsonResponse
+    {
+        $service = app(ElevenLabsService::class);
+
+        if (! $service->isAvailable()) {
+            return response()->json(['success' => false, 'voices' => [], 'message' => 'ElevenLabs API Key não configurada.']);
+        }
+
+        $voices = $service->getVoices();
+
+        return response()->json(['success' => true, 'voices' => $voices]);
     }
 
     public function toggleActive(AiAgent $agent): JsonResponse
@@ -445,6 +471,8 @@ class AiAgentController extends Controller
             'welcome_message'            => 'nullable|string|max:1000',
             'widget_type'                => 'nullable|in:bubble,inline',
             'widget_color'               => 'nullable|string|max:10',
+            'enable_voice_reply'         => 'nullable|boolean',
+            'elevenlabs_voice_id'        => 'nullable|string|max:100',
         ]);
 
         $data['is_active']              = $request->boolean('is_active');
@@ -454,6 +482,7 @@ class AiAgentController extends Controller
         $data['enable_intent_notify']   = $request->boolean('enable_intent_notify');
         $data['followup_enabled']       = $request->boolean('followup_enabled');
         $data['enable_calendar_tool']   = $request->boolean('enable_calendar_tool');
+        $data['enable_voice_reply']     = $request->boolean('enable_voice_reply');
         $data['use_agno']               = true; // Todos os agentes usam Agno
         $data['transfer_to_user_id']         = $request->input('transfer_to_user_id') ?: null;
         $data['transfer_to_department_id']   = $request->input('transfer_to_department_id') ?: null;

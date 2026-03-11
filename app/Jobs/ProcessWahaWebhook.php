@@ -455,6 +455,10 @@ class ProcessWahaWebhook implements ShouldQueue
                     ->where('is_active', true)
                     ->where('auto_assign', true)
                     ->where('channel', 'whatsapp')
+                    ->where(fn ($q) => $q
+                        ->whereHas('whatsappInstances', fn ($r) => $r->where('whatsapp_instance_id', $instance->id))
+                        ->orWhereDoesntHave('whatsappInstances'))
+                    ->orderByRaw('(SELECT COUNT(*) FROM ai_agent_whatsapp_instance WHERE ai_agent_id = ai_agents.id) = 0')
                     ->first();
                 if ($autoAgent) {
                     WhatsappConversation::withoutGlobalScope('tenant')

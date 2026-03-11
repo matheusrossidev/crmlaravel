@@ -413,6 +413,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::get('',                           [AiAgentController::class, 'index'])->name('index');
         Route::get('onboarding',                 [AiAgentController::class, 'onboarding'])->name('onboarding');
         Route::middleware('role:admin')->group(function () {
+            Route::get('voices',                     [AiAgentController::class, 'voices'])->name('voices');
             Route::get('criar',                      [AiAgentController::class, 'create'])->name('create');
             Route::post('',                          [AiAgentController::class, 'store'])->name('store');
             Route::get('{agent}/editar',             [AiAgentController::class, 'edit'])->name('edit');

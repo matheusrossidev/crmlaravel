@@ -11,6 +11,7 @@ class ChatRequest(BaseModel):
     history_limit: int = 20
     pipeline_stages: list[dict[str, Any]] = []
     available_tags: list[str] = []
+    memories: list[str] = []
 
 
 class AgentAction(BaseModel):
@@ -53,3 +54,19 @@ class IndexFileRequest(BaseModel):
     tenant_id: int
     text: str
     filename: str
+
+
+class StoreMemoryRequest(BaseModel):
+    tenant_id: int
+    conversation_id: int | None = None
+    contact_phone: str | None = None
+    summary: str
+    customer_profile: str | None = None
+    key_learnings: str | None = None
+
+
+class SearchMemoryRequest(BaseModel):
+    tenant_id: int
+    query: str
+    top_k: int = 3
+    contact_phone: str | None = None

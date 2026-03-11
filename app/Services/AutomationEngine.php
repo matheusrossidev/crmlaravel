@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Jobs\SummarizeConversation;
 use App\Models\AiAgent;
 use App\Models\Automation;
 use App\Models\ChatbotFlow;
@@ -342,6 +343,9 @@ class AutomationEngine
             WhatsappConversation::withoutGlobalScope('tenant')
                 ->where('id', $conv->id)
                 ->update(['status' => 'closed', 'closed_at' => now()]);
+            if ($conv->ai_agent_id) {
+                SummarizeConversation::dispatch($conv->id);
+            }
         } elseif ($conv instanceof InstagramConversation) {
             InstagramConversation::withoutGlobalScope('tenant')
                 ->where('id', $conv->id)

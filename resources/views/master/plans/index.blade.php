@@ -30,7 +30,9 @@
                     <th>Campos</th>
                     <th>Deptos</th>
                     <th>WA</th>
-                    <th>IA</th>
+                    <th>Agentes</th>
+                    <th>Chatbots</th>
+                    <th>TTS</th>
                     <th>Features</th>
                     <th>Status</th>
                     <th>Visível</th>
@@ -57,10 +59,27 @@
                     <td>{{ $plan->features_json['max_departments'] ?? '—' }}</td>
                     <td>{{ $plan->features_json['max_whatsapp_instances'] ?? '1' }}</td>
                     <td>
-                        @if($plan->features_json['ai_agents'] ?? false)
-                            <i class="bi bi-check-circle-fill" style="color:#10B981;"></i>
+                        @php $maxAi = $plan->features_json['max_ai_agents'] ?? 0; @endphp
+                        @if($maxAi > 0)
+                            <span style="font-weight:600;">{{ $maxAi }}</span>
                         @else
-                            <i class="bi bi-x-circle" style="color:#D1D5DB;"></i>
+                            <span style="color:#9ca3af;">—</span>
+                        @endif
+                    </td>
+                    <td>
+                        @php $maxCb = $plan->features_json['max_chatbot_flows'] ?? 0; @endphp
+                        @if($maxCb > 0)
+                            <span style="font-weight:600;">{{ $maxCb }}</span>
+                        @else
+                            <span style="color:#9ca3af;">—</span>
+                        @endif
+                    </td>
+                    <td>
+                        @php $ttsChars = $plan->features_json['elevenlabs_characters_monthly'] ?? 0; @endphp
+                        @if($ttsChars > 0)
+                            <span style="font-size:12px;font-weight:600;">{{ number_format($ttsChars, 0, ',', '.') }}</span>
+                        @else
+                            <span style="color:#9ca3af;">—</span>
                         @endif
                     </td>
                     <td>
@@ -162,6 +181,18 @@
                 <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Max números WhatsApp</label>
                 <input type="number" id="fMaxWhatsappInstances" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
             </div>
+            <div>
+                <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Max agentes IA</label>
+                <input type="number" id="fMaxAiAgents" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
+            </div>
+            <div>
+                <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Max fluxos chatbot</label>
+                <input type="number" id="fMaxChatbotFlows" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
+            </div>
+            <div>
+                <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Caracteres ElevenLabs/mês</label>
+                <input type="number" id="fElevenLabsChars" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
+            </div>
         </div>
         <div style="margin-bottom:14px;">
             <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Tokens IA/mês</label>
@@ -169,13 +200,7 @@
         </div>
         <div style="display:flex;gap:20px;margin-bottom:20px;flex-wrap:wrap;">
             <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
-                <input type="checkbox" id="fAiAgents"> Agentes IA
-            </label>
-            <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
                 <input type="checkbox" id="fInstagram"> Instagram
-            </label>
-            <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
-                <input type="checkbox" id="fChatbot"> Chatbot
             </label>
             <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
                 <input type="checkbox" id="fIsActive"> Plano ativo
@@ -296,10 +321,11 @@ function openNewPlan() {
     document.getElementById('fMaxCustomFields').value = '10';
     document.getElementById('fMaxDepartments').value = '5';
     document.getElementById('fMaxWhatsappInstances').value = '1';
+    document.getElementById('fMaxAiAgents').value = '1';
+    document.getElementById('fMaxChatbotFlows').value = '1';
+    document.getElementById('fElevenLabsChars').value = '0';
     document.getElementById('fAiTokens').value = '500000';
-    document.getElementById('fAiAgents').checked = true;
     document.getElementById('fInstagram').checked = false;
-    document.getElementById('fChatbot').checked = false;
     document.getElementById('fIsActive').checked = true;
     document.getElementById('fIsVisible').checked = true;
     document.getElementById('featureInput').value = '';
@@ -326,10 +352,11 @@ function editPlan(id, plan) {
     document.getElementById('fMaxCustomFields').value = f.max_custom_fields ?? 10;
     document.getElementById('fMaxDepartments').value = f.max_departments ?? 5;
     document.getElementById('fMaxWhatsappInstances').value = f.max_whatsapp_instances ?? 1;
+    document.getElementById('fMaxAiAgents').value    = f.max_ai_agents ?? 0;
+    document.getElementById('fMaxChatbotFlows').value = f.max_chatbot_flows ?? 0;
+    document.getElementById('fElevenLabsChars').value = f.elevenlabs_characters_monthly ?? 0;
     document.getElementById('fAiTokens').value    = f.ai_tokens_monthly ?? 0;
-    document.getElementById('fAiAgents').checked   = !!f.ai_agents;
     document.getElementById('fInstagram').checked  = !!f.instagram;
-    document.getElementById('fChatbot').checked    = !!f.chatbot;
     document.getElementById('fIsActive').checked   = !!plan.is_active;
     document.getElementById('fIsVisible').checked  = plan.is_visible !== false && plan.is_visible !== 0;
     document.getElementById('featureInput').value = '';
@@ -357,10 +384,13 @@ async function savePlan() {
             max_custom_fields:  parseInt(document.getElementById('fMaxCustomFields').value) || 0,
             max_departments:    parseInt(document.getElementById('fMaxDepartments').value) || 0,
             max_whatsapp_instances: parseInt(document.getElementById('fMaxWhatsappInstances').value) || 0,
+            max_ai_agents:      parseInt(document.getElementById('fMaxAiAgents').value) || 0,
+            max_chatbot_flows:  parseInt(document.getElementById('fMaxChatbotFlows').value) || 0,
+            elevenlabs_characters_monthly: parseInt(document.getElementById('fElevenLabsChars').value) || 0,
             ai_tokens_monthly:  parseInt(document.getElementById('fAiTokens').value) || 0,
-            ai_agents:          document.getElementById('fAiAgents').checked,
+            ai_agents:          (parseInt(document.getElementById('fMaxAiAgents').value) || 0) > 0,
             instagram:          document.getElementById('fInstagram').checked,
-            chatbot:            document.getElementById('fChatbot').checked,
+            chatbot:            (parseInt(document.getElementById('fMaxChatbotFlows').value) || 0) > 0,
             features_list:      featuresList,
         },
     };

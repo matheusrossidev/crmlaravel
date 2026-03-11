@@ -61,6 +61,45 @@ class AgnoService
     }
 
     /**
+     * Store a conversation memory (summary) for an agent.
+     */
+    public function storeMemory(int $agentId, array $payload): bool
+    {
+        try {
+            $response = Http::timeout(30)->post("{$this->baseUrl}/agents/{$agentId}/memories/store", $payload);
+            return $response->successful();
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->warning('AgnoService: storeMemory failed', [
+                'agent_id' => $agentId,
+                'error'    => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Search for relevant memories for an agent based on a query.
+     *
+     * @return array<int, array{summary: string, customer_profile: string|null, similarity: float}>
+     */
+    public function searchMemories(int $agentId, array $payload): array
+    {
+        try {
+            $response = Http::timeout(15)->post("{$this->baseUrl}/agents/{$agentId}/memories/search", $payload);
+            if ($response->successful()) {
+                return $response->json('memories') ?? [];
+            }
+            return [];
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->warning('AgnoService: searchMemories failed', [
+                'agent_id' => $agentId,
+                'error'    => $e->getMessage(),
+            ]);
+            return [];
+        }
+    }
+
+    /**
      * Index a knowledge file in the Agno vector store (called after file upload).
      */
     public function indexFile(int $agentId, int $tenantId, string $text, string $filename): void

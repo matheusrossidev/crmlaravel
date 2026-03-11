@@ -26,6 +26,7 @@ use App\Services\InstagramService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Jobs\ProcessAiResponse;
+use App\Jobs\SummarizeConversation;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -415,6 +416,11 @@ class WhatsappController extends Controller
             'status'    => $status,
             'closed_at' => $status === 'closed' ? now() : null,
         ]);
+
+        // Summarize conversation for AI memory when closing a conversation with an AI agent
+        if ($status === 'closed' && $conversation->ai_agent_id) {
+            SummarizeConversation::dispatch($conversation->id);
+        }
 
         return response()->json(['success' => true]);
     }

@@ -18,6 +18,7 @@ use App\Models\TenantTokenIncrement;
 use App\Models\PlanDefinition;
 use App\Models\Tenant;
 use App\Models\WhatsappConversation;
+use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
 use App\Services\AgnoService;
 use App\Services\AiAgentService;
@@ -513,6 +514,11 @@ class ProcessAiResponse implements ShouldQueue
             }
         }
 
+        // ── TTS: responder com áudio se a última msg inbound foi áudio ───────
+        if ($agent->enable_voice_reply) {
+            $this->maybeReplyWithVoice($conv, $agent, $reply);
+        }
+
         // ── Dividir em mensagens e enviar com delay ───────────────────────────
         $delay = max(1, $agent->response_delay_seconds ?? 1);
 
@@ -572,6 +578,128 @@ class ProcessAiResponse implements ShouldQueue
         return true;
     }
 
+    // ── TTS: gerar e enviar áudio via ElevenLabs ──────────────────────────
+
+    private function maybeReplyWithVoice(WhatsappConversation $conv, AiAgent $agent, string $reply): void
+    {
+        try {
+            $lastInbound = WhatsappMessage::withoutGlobalScope('tenant')
+                ->where('conversation_id', $conv->id)
+                ->where('direction', 'inbound')
+                ->latest('sent_at')
+                ->first();
+
+            if (! $lastInbound || $lastInbound->type !== 'audio') {
+                return;
+            }
+
+            if (! $this->checkElevenLabsQuota($conv)) {
+                Log::channel('whatsapp')->info('TTS: quota de caracteres esgotada', [
+                    'conversation_id' => $conv->id,
+                ]);
+                return;
+            }
+
+            $tts = app(\App\Services\ElevenLabsService::class);
+            if (! $tts->isAvailable()) {
+                return;
+            }
+
+            $audioPath = $tts->textToSpeech($reply, $agent->elevenlabs_voice_id);
+            if (! $audioPath) {
+                return;
+            }
+
+            $instance = WhatsappInstance::withoutGlobalScope('tenant')->find($conv->instance_id);
+            if (! $instance) {
+                @unlink($audioPath);
+                return;
+            }
+
+            $waha = new \App\Services\WahaService($instance->session_name);
+
+            // Resolve chatId from the last inbound message
+            $chatId = null;
+            $lastMsg = WhatsappMessage::withoutGlobalScope('tenant')
+                ->where('conversation_id', $conv->id)
+                ->where('direction', 'inbound')
+                ->whereNotNull('waha_message_id')
+                ->latest('sent_at')
+                ->first();
+
+            if ($lastMsg?->waha_message_id) {
+                $parts = explode('@', $lastMsg->waha_message_id);
+                if (count($parts) >= 2) {
+                    $chatId = explode('_', end($parts))[0] ?? null;
+                    if ($chatId && ! str_contains($chatId, '@')) {
+                        $chatId .= '@c.us';
+                    }
+                }
+            }
+
+            if (! $chatId) {
+                $chatId = $conv->phone . '@c.us';
+            }
+
+            $waha->sendVoiceBase64($chatId, $audioPath, 'audio/mpeg');
+
+            // Log usage
+            \App\Models\ElevenlabsUsageLog::create([
+                'tenant_id'       => $conv->tenant_id,
+                'agent_id'        => $agent->id,
+                'conversation_id' => $conv->id,
+                'characters_used' => mb_strlen($reply),
+                'created_at'      => now(),
+            ]);
+
+            Log::channel('whatsapp')->info('TTS: áudio enviado com sucesso', [
+                'conversation_id' => $conv->id,
+                'characters'      => mb_strlen($reply),
+            ]);
+
+            @unlink($audioPath);
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->error('TTS: falha ao gerar/enviar áudio', [
+                'conversation_id' => $conv->id,
+                'error'           => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function checkElevenLabsQuota(WhatsappConversation $conv): bool
+    {
+        $tenant = Tenant::withoutGlobalScope('tenant')->find($conv->tenant_id);
+        if (! $tenant) {
+            return true;
+        }
+        if ($tenant->isExemptFromBilling()) {
+            return true;
+        }
+
+        $plan = PlanDefinition::where('name', $tenant->plan)->first();
+        $base = (int) ($plan?->features_json['elevenlabs_characters_monthly'] ?? 0);
+
+        if ($base === 0) {
+            return false;
+        }
+
+        $used = (int) \App\Models\ElevenlabsUsageLog::where('tenant_id', $tenant->id)
+            ->whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->sum('characters_used');
+
+        if ($used >= $base) {
+            if (! $tenant->tts_characters_exhausted) {
+                Tenant::withoutGlobalScope('tenant')
+                    ->where('id', $tenant->id)
+                    ->update(['tts_characters_exhausted' => true]);
+            }
+            return false;
+        }
+
+        return true;
+    }
+
     // ── Agno: chamada ao microsserviço Python ─────────────────────────────────
 
     private function callAgnoService(
@@ -598,6 +726,33 @@ class ProcessAiResponse implements ShouldQueue
             ];
         }
 
+        // Search for relevant memories from past conversations
+        $memories = [];
+        try {
+            $agnoService = app(AgnoService::class);
+            $memoryResults = $agnoService->searchMemories($agent->id, [
+                'tenant_id'     => $agent->tenant_id,
+                'query'         => $lastMessage->content ?? '',
+                'top_k'         => 3,
+                'contact_phone' => $conv->phone ?? null,
+            ]);
+            foreach ($memoryResults as $mem) {
+                $parts = [$mem['summary'] ?? ''];
+                if (! empty($mem['customer_profile'])) {
+                    $parts[] = "Perfil: {$mem['customer_profile']}";
+                }
+                if (! empty($mem['key_learnings'])) {
+                    $parts[] = "Aprendizado: {$mem['key_learnings']}";
+                }
+                $memories[] = implode(' | ', $parts);
+            }
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->debug('AI job: memory search failed (non-blocking)', [
+                'conversation_id' => $this->conversationId,
+                'error'           => $e->getMessage(),
+            ]);
+        }
+
         $agnoResult = app(AgnoService::class)->chat([
             'agent_id'        => $agent->id,
             'tenant_id'       => $agent->tenant_id,
@@ -607,6 +762,7 @@ class ProcessAiResponse implements ShouldQueue
             'history_limit'   => 20,
             'pipeline_stages' => $stages,
             'available_tags'  => $availTags,
+            'memories'        => $memories,
         ]);
 
         // Flatten nested payload in actions to match the existing PHP action executor format.

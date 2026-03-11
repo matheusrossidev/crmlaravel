@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Models\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AiAgent extends Model
@@ -25,6 +26,7 @@ class AiAgent extends Model
         'is_active', 'auto_assign',
         'enable_pipeline_tool', 'enable_tags_tool', 'enable_intent_notify',
         'enable_calendar_tool', 'calendar_tool_instructions',
+        'enable_voice_reply', 'elevenlabs_voice_id',
         'followup_enabled', 'followup_delay_minutes', 'followup_max_count',
         'followup_hour_start', 'followup_hour_end',
         'transfer_to_user_id', 'transfer_to_department_id',
@@ -42,6 +44,7 @@ class AiAgent extends Model
         'enable_tags_tool'       => 'boolean',
         'enable_intent_notify'   => 'boolean',
         'enable_calendar_tool'   => 'boolean',
+        'enable_voice_reply'     => 'boolean',
         'followup_enabled'       => 'boolean',
         'followup_delay_minutes' => 'integer',
         'followup_max_count'     => 'integer',
@@ -73,5 +76,10 @@ class AiAgent extends Model
     public function transferDepartment(): BelongsTo
     {
         return $this->belongsTo(Department::class, 'transfer_to_department_id');
+    }
+
+    public function whatsappInstances(): BelongsToMany
+    {
+        return $this->belongsToMany(WhatsappInstance::class, 'ai_agent_whatsapp_instance');
     }
 }
