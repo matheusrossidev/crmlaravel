@@ -254,6 +254,21 @@ class ProcessAiResponse implements ShouldQueue
                 $reply   = implode("\n\n", $replyBlocks);
                 $actions = $agnoResult['actions'] ?? [];
 
+                // Detectar respostas que são erros do LLM (não enviar ao cliente)
+                if ($reply !== '' && (
+                    str_contains($reply, 'API_KEY') ||
+                    str_contains($reply, 'api_key') ||
+                    str_contains($reply, 'environment variable') ||
+                    str_contains($reply, 'Error code:') ||
+                    str_contains($reply, 'Rate limit')
+                )) {
+                    Log::channel('whatsapp')->error('AI job (Agno): resposta contém erro do LLM, descartando', [
+                        'conversation_id' => $this->conversationId,
+                        'reply_preview'   => mb_substr($reply, 0, 200),
+                    ]);
+                    $reply = '';
+                }
+
                 try {
                     AiUsageLog::create([
                         'tenant_id'         => $conv->tenant_id,

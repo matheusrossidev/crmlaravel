@@ -82,7 +82,7 @@ def get_or_create_agent(
 def _build_model(config: dict) -> Any:
     provider = config.get("llm_provider", "openai")
     model_id = config.get("llm_model", "gpt-4o-mini")
-    api_key = config.get("llm_api_key", "")
+    api_key = config.get("llm_api_key", "") or os.getenv("LLM_API_KEY", "")
 
     if provider == "anthropic":
         from agno.models.anthropic import Claude
