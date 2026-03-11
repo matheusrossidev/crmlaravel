@@ -4,6 +4,7 @@
 
     $settingsTabs = [
         ['route' => 'settings.profile',             'match' => ['settings.profile*'],                        'label' => 'Perfil'],
+        ['route' => 'settings.notifications',        'match' => ['settings.notifications*'],                 'label' => 'Notificacoes'],
         ['route' => 'settings.pipelines',            'match' => ['settings.pipelines*'],                     'label' => 'Pipelines'],
         ['route' => 'settings.lost-reasons',         'match' => ['settings.lost-reasons*'],                  'label' => 'Motivos de Perda'],
     ];

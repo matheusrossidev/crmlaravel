@@ -1850,6 +1850,16 @@ $pageIcon = 'chat-dots';
                         }
                     });
                 }
+                // Sound + browser notification for inbound messages
+                if (data.direction === 'inbound' && window.NotifManager) {
+                    window.NotifManager.notify(
+                        data.user_name || 'Nova mensagem',
+                        data.body ? data.body.substring(0, 100) : 'Nova mensagem WhatsApp',
+                        '/chats?conv=' + data.conversation_id,
+                        'whatsapp_message',
+                        'message-received'
+                    );
+                }
                 // Keep lastPollAt in sync so fallback doesn't re-deliver
                 lastPollAt = data.sent_at ?? new Date().toISOString();
             });
@@ -1863,6 +1873,15 @@ $pageIcon = 'chat-dots';
                         'Nova atribuição',
                         { timeOut: 8000, closeButton: true, progressBar: true }
                     );
+                    if (window.NotifManager) {
+                        window.NotifManager.notify(
+                            'Conversa Atribuída',
+                            'Conversa de ' + name + ' foi atribuída a você',
+                            '/chats?conv=' + data.id,
+                            'whatsapp_assigned',
+                            'notification-chime'
+                        );
+                    }
                 }
             });
 

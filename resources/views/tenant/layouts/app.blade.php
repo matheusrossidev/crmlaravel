@@ -41,6 +41,9 @@
             wssPort:  {{ (int) config('reverb.apps.apps.0.options.port', 443) }},
             forceTLS: {{ config('reverb.apps.apps.0.options.scheme', 'https') === 'https' ? 'true' : 'false' }},
         };
+        window.vapidPublicKey = '{{ config('webpush.vapid.public_key') }}';
+        window.pushSubscriptionUrl = '{{ route('push.store') }}';
+        window.notificationPrefs = {!! json_encode(auth()->user()->notification_preferences ?? new \stdClass) !!};
     </script>
 
     {{-- Vite Assets --}}
@@ -1569,6 +1572,15 @@ document.addEventListener('click', function (e) {
                         { timeOut: 8000, closeButton: true, progressBar: true, escapeHtml: false }
                     );
                 }
+                if (window.NotifManager) {
+                    window.NotifManager.notify(
+                        'Sinal de Intenção',
+                        (data.contact_name || '') + ': ' + (data.context || ''),
+                        data.conversation_id ? '/chats?conv=' + data.conversation_id : null,
+                        'ai_intent',
+                        'notification-chime'
+                    );
+                }
                 loadIntentSignals();
             });
 
@@ -1584,6 +1596,15 @@ document.addEventListener('click', function (e) {
                         `<b>${data.title}</b><br><small>${data.body}</small>`,
                         t.title,
                         { timeOut: 12000, closeButton: true, progressBar: true, escapeHtml: false }
+                    );
+                }
+                if (window.NotifManager) {
+                    window.NotifManager.notify(
+                        data.title || 'Notificação',
+                        data.body || '',
+                        null,
+                        'master_notification',
+                        'alert'
                     );
                 }
                 loadIntentSignals();

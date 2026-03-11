@@ -1,4 +1,5 @@
 import './bootstrap';
+import './notification-manager';
 
 // Laravel Echo + Reverb WebSocket
 // Config is injected server-side via window.reverbConfig in the Blade layout

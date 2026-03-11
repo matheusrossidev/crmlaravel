@@ -43,6 +43,9 @@ use App\Http\Controllers\Tenant\MasterNotificationReadController;
 use App\Http\Controllers\Tenant\ScheduledMessageController;
 use App\Http\Controllers\Tenant\InstagramAutomationController;
 use App\Http\Controllers\Tenant\DepartmentController;
+use App\Http\Controllers\Tenant\NotificationController;
+use App\Http\Controllers\Tenant\NotificationPreferenceController;
+use App\Http\Controllers\Tenant\PushSubscriptionController;
 use App\Http\Controllers\Tenant\UpsellBannerController;
 use App\Http\Controllers\WhatsappWebhookController;
 use App\Http\Controllers\Master\UpsellTriggerController as MasterUpsellTriggerController;
@@ -277,6 +280,14 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get ('/analyst-suggestions/pending-count',        [AiAnalystController::class, 'pendingCount'])->name('analyst.pending-count');
     Route::get ('/notificacoes/master',                      [MasterNotificationReadController::class, 'index'])->name('master-notifications.index');
 
+    // Notificações — lista, leitura, push subscriptions
+    Route::get ('/notificacoes',              [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notificacoes/{id}/lida',    [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('/notificacoes/marcar-todas', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::get ('/notificacoes/nao-lidas',    [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::post  ('/push-subscriptions',      [PushSubscriptionController::class, 'store'])->name('push.store');
+    Route::delete('/push-subscriptions',      [PushSubscriptionController::class, 'destroy'])->name('push.destroy');
+
     // Chatbot Builder (admin only, leitura para todos)
     Route::prefix('chatbot/fluxos')->name('chatbot.flows.')->group(function () {
         Route::get('pipelines',      [ChatbotFlowController::class, 'getPipelines'])->name('pipelines');
@@ -309,6 +320,10 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     // Configurações
     Route::prefix('configuracoes')->name('settings.')->group(function () {
+        // Notificações — todos os roles
+        Route::get('notificacoes',  [NotificationPreferenceController::class, 'index'])->name('notifications');
+        Route::put('notificacoes',  [NotificationPreferenceController::class, 'update'])->name('notifications.update');
+
         // Leitura — todos os roles
         Route::get('pipelines', [PipelineController::class, 'index'])->name('pipelines');
         Route::get('motivos-perda', [LostSaleReasonController::class, 'index'])->name('lost-reasons');
