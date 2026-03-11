@@ -12,7 +12,9 @@ import httpx
 from sqlalchemy import Column, DateTime, Integer, String, Text, create_engine, text
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
-PGVECTOR_URL = os.getenv("PGVECTOR_URL", "postgresql://agno:agno@pgvector:5432/agno")
+_raw_url = os.getenv("PGVECTOR_URL", "postgresql+psycopg://agno:agno@pgvector:5432/agno")
+# Ensure we use the psycopg3 driver (not psycopg2)
+PGVECTOR_URL = _raw_url.replace("postgresql://", "postgresql+psycopg://") if _raw_url.startswith("postgresql://") else _raw_url
 OPENAI_API_KEY = os.getenv("LLM_API_KEY", "")
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIM = 1536
