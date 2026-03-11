@@ -205,6 +205,36 @@
         font-size: 13px; transition: all .15s;
     }
     .kb-del-btn:hover { background: #fee2e2; color: #ef4444; border-color: #fca5a5; }
+
+    /* Media cards (grid) */
+    .media-card {
+        position: relative; border: 1.5px solid #e8eaf0; border-radius: 11px;
+        overflow: hidden; background: #fff; transition: box-shadow .15s;
+    }
+    .media-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+    .media-card-thumb {
+        width: 100%; height: 110px; background: #f4f6fb;
+        display: flex; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .media-card-body { padding: 9px 10px 8px; }
+    .media-card-name {
+        font-size: 11.5px; font-weight: 600; color: #1a1d23;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .media-card-desc {
+        font-size: 11px; color: #6b7280; margin-top: 3px;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        overflow: hidden; line-height: 1.35;
+    }
+    .media-card-del {
+        position: absolute; top: 6px; right: 6px; width: 26px; height: 26px;
+        border: none; border-radius: 7px; background: rgba(255,255,255,.9);
+        color: #9ca3af; cursor: pointer; display: flex; align-items: center;
+        justify-content: center; font-size: 12px; transition: all .15s;
+        opacity: 0; backdrop-filter: blur(4px);
+    }
+    .media-card:hover .media-card-del { opacity: 1; }
+    .media-card-del:hover { background: #fee2e2; color: #ef4444; }
     .kb-file-preview {
         font-size: 11.5px; color: #6b7280; background: #f8fafc;
         border: 1px solid #e8eaf0; border-radius: 7px;
@@ -528,6 +558,25 @@
                     Diferente da Base de Conhecimento, que é apenas para contexto interno.
                 </p>
 
+                {{-- Upload preview area --}}
+                <div id="mediaPendingPreview" style="display:none;margin-bottom:14px;">
+                    <div style="border:1.5px solid #e8eaf0;border-radius:12px;overflow:hidden;background:#fafbfc;">
+                        <div id="mediaPendingThumb" style="display:flex;align-items:center;justify-content:center;background:#f4f6fb;min-height:140px;max-height:220px;overflow:hidden;">
+                            {{-- filled by JS --}}
+                        </div>
+                        <div style="padding:12px 14px;">
+                            <div id="mediaPendingName" style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+                            <input type="text" id="mediaDescEdit" style="width:100%;border:1.5px solid #e8eaf0;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;transition:border-color .15s;"
+                                   placeholder="Descreva quando o agente deve enviar este arquivo" maxlength="500"
+                                   onfocus="this.style.borderColor='#0085f3'" onblur="this.style.borderColor='#e8eaf0'">
+                            <div style="display:flex;gap:8px;margin-top:10px;">
+                                <button type="button" onclick="cancelMediaPending()" style="flex:1;padding:9px;background:#f3f4f6;color:#374151;border:1.5px solid #e8eaf0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Cancelar</button>
+                                <button type="button" id="mediaUploadBtnEdit" onclick="uploadMediaEdit()" style="flex:1;padding:9px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Enviar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="mediaDropzone" style="border:2px dashed #d1d5db;border-radius:10px;padding:20px 16px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px;"
                      onclick="document.getElementById('mediaFileInput').click()"
                      ondragover="event.preventDefault();this.style.borderColor='#0085f3';this.style.background='#eff6ff';"
@@ -541,23 +590,23 @@
                        accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.doc,.docx"
                        onchange="prepareMediaEdit(this.files[0])">
 
-                <div id="mediaDescRowEdit" style="display:none;gap:8px;margin-bottom:12px;">
-                    <input type="text" id="mediaDescEdit" style="flex:1;border:1.5px solid #e8eaf0;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;"
-                           placeholder="Descreva quando enviar este arquivo" maxlength="500">
-                    <button type="button" id="mediaUploadBtnEdit" onclick="uploadMediaEdit()" style="padding:8px 16px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Enviar</button>
-                </div>
-
-                <div id="mediaFilesList">
+                <div id="mediaFilesList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;">
                     @foreach($agent->mediaFiles ?? [] as $media)
-                    <div class="kb-file-item" id="media-file-{{ $media->id }}">
-                        <div class="kb-file-icon" style="background:{{ str_starts_with($media->mime_type, 'image/') ? '#f3e8ff;color:#9333ea' : (str_contains($media->mime_type, 'pdf') ? '#fee2e2;color:#dc2626' : '#dbeafe;color:#2563eb') }};">
-                            <i class="bi {{ str_starts_with($media->mime_type, 'image/') ? 'bi-file-earmark-image' : (str_contains($media->mime_type, 'pdf') ? 'bi-file-earmark-pdf' : 'bi-file-earmark-text') }}"></i>
+                    <div class="media-card" id="media-file-{{ $media->id }}">
+                        <div class="media-card-thumb">
+                            @if(str_starts_with($media->mime_type, 'image/'))
+                                <img src="{{ asset('storage/' . $media->storage_path) }}" alt="{{ $media->original_name }}" style="width:100%;height:100%;object-fit:cover;">
+                            @elseif(str_contains($media->mime_type, 'pdf'))
+                                <i class="bi bi-file-earmark-pdf" style="font-size:32px;color:#dc2626;"></i>
+                            @else
+                                <i class="bi bi-file-earmark-text" style="font-size:32px;color:#2563eb;"></i>
+                            @endif
                         </div>
-                        <div class="kb-file-info">
-                            <div class="kb-file-name">{{ $media->original_name }}</div>
-                            <div style="font-size:11px;color:#6b7280;">{{ $media->description }}</div>
+                        <div class="media-card-body">
+                            <div class="media-card-name" title="{{ $media->original_name }}">{{ $media->original_name }}</div>
+                            <div class="media-card-desc">{{ $media->description ?: 'Sem descrição' }}</div>
                         </div>
-                        <button type="button" class="kb-del-btn" onclick="deleteMediaEdit({{ $media->id }}, '{{ e($media->original_name) }}')" title="Remover">
+                        <button type="button" class="media-card-del" onclick="deleteMediaEdit({{ $media->id }}, '{{ e($media->original_name) }}')" title="Remover">
                             <i class="bi bi-trash3"></i>
                         </button>
                     </div>
@@ -1063,12 +1112,41 @@ function prepareMediaEdit(file) {
     if (!file) return;
     if (file.size > 20 * 1024 * 1024) { toastr.error('Arquivo muito grande (máx. 20 MB).'); return; }
     _pendingMediaFile = file;
-    const row = document.getElementById('mediaDescRowEdit');
-    row.style.display = 'flex';
+
+    const preview = document.getElementById('mediaPendingPreview');
+    const thumb = document.getElementById('mediaPendingThumb');
+    const dropzone = document.getElementById('mediaDropzone');
+
+    // Build thumbnail
+    const isImg = file.type.startsWith('image/');
+    const isPdf = file.type.includes('pdf');
+
+    if (isImg) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            thumb.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;max-height:220px;">`;
+        };
+        reader.readAsDataURL(file);
+    } else if (isPdf) {
+        thumb.innerHTML = '<i class="bi bi-file-earmark-pdf" style="font-size:40px;color:#dc2626;"></i>';
+    } else {
+        thumb.innerHTML = '<i class="bi bi-file-earmark-text" style="font-size:40px;color:#2563eb;"></i>';
+    }
+
+    document.getElementById('mediaPendingName').textContent = file.name;
     document.getElementById('mediaDescEdit').value = '';
     document.getElementById('mediaDescEdit').placeholder = `Descreva "${file.name}" (ex: catálogo de produtos)`;
+
+    preview.style.display = 'block';
+    dropzone.style.display = 'none';
     document.getElementById('mediaDescEdit').focus();
     document.getElementById('mediaFileInput').value = '';
+}
+
+function cancelMediaPending() {
+    _pendingMediaFile = null;
+    document.getElementById('mediaPendingPreview').style.display = 'none';
+    document.getElementById('mediaDropzone').style.display = 'block';
 }
 
 async function uploadMediaEdit() {
@@ -1100,26 +1178,29 @@ async function uploadMediaEdit() {
 
         const isImg = (data.mime_type || '').startsWith('image/');
         const isPdf = (data.mime_type || '').includes('pdf');
-        const iconClass = isImg ? 'bi-file-earmark-image' : (isPdf ? 'bi-file-earmark-pdf' : 'bi-file-earmark-text');
-        const iconBg = isImg ? '#f3e8ff;color:#9333ea' : (isPdf ? '#fee2e2;color:#dc2626' : '#dbeafe;color:#2563eb');
+        const thumbHtml = isImg
+            ? `<img src="${data.url}" alt="${data.original_name}" style="width:100%;height:100%;object-fit:cover;">`
+            : isPdf
+                ? '<i class="bi bi-file-earmark-pdf" style="font-size:32px;color:#dc2626;"></i>'
+                : '<i class="bi bi-file-earmark-text" style="font-size:32px;color:#2563eb;"></i>';
 
+        const safeName = data.original_name.replace(/'/g, "\\'").replace(/</g, '&lt;');
         document.getElementById('mediaFilesList').insertAdjacentHTML('beforeend', `
-            <div class="kb-file-item" id="media-file-${data.id}">
-                <div class="kb-file-icon" style="background:${iconBg};">
-                    <i class="bi ${iconClass}"></i>
+            <div class="media-card" id="media-file-${data.id}">
+                <div class="media-card-thumb">${thumbHtml}</div>
+                <div class="media-card-body">
+                    <div class="media-card-name" title="${data.original_name}">${data.original_name}</div>
+                    <div class="media-card-desc">${data.description}</div>
                 </div>
-                <div class="kb-file-info">
-                    <div class="kb-file-name">${data.original_name}</div>
-                    <div style="font-size:11px;color:#6b7280;">${data.description}</div>
-                </div>
-                <button type="button" class="kb-del-btn" onclick="deleteMediaEdit(${data.id}, '${data.original_name.replace(/'/g, "\\'")}')" title="Remover">
+                <button type="button" class="media-card-del" onclick="deleteMediaEdit(${data.id}, '${safeName}')" title="Remover">
                     <i class="bi bi-trash3"></i>
                 </button>
             </div>
         `);
 
         _pendingMediaFile = null;
-        document.getElementById('mediaDescRowEdit').style.display = 'none';
+        document.getElementById('mediaPendingPreview').style.display = 'none';
+        document.getElementById('mediaDropzone').style.display = 'block';
         toastr.success('Arquivo enviado!');
     } catch {
         btn.disabled = false; btn.textContent = 'Enviar';
