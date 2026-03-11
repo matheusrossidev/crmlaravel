@@ -531,6 +531,10 @@
                     <i class="bi bi-x"></i> Limpar
                 </a>
                 @endif
+
+                <a href="{{ route('reports.pdf', request()->query()) }}" class="btn-apply" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+                    <i class="bi bi-download"></i> Baixar relatório
+                </a>
             </div>
 
         </div>

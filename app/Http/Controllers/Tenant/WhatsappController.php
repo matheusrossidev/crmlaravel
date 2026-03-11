@@ -34,8 +34,10 @@ class WhatsappController extends Controller
 {
     public function index(): View
     {
-        $instance  = WhatsappInstance::first();
-        $connected = $instance && $instance->status === 'connected';
+        $allInstances  = WhatsappInstance::orderBy('id')->get();
+        $instance      = $allInstances->first();
+        $connected     = $allInstances->where('status', 'connected')->isNotEmpty();
+        $instanceCount = $allInstances->count();
 
         $conversations   = [];
         $igConversations = collect();
@@ -48,7 +50,7 @@ class WhatsappController extends Controller
         $userDeptIds = $restrictByDept ? $authUser->departments()->pluck('departments.id') : collect();
 
         if ($connected) {
-            $waQuery = WhatsappConversation::with(['latestMessage', 'assignedUser', 'department']);
+            $waQuery = WhatsappConversation::with(['latestMessage', 'assignedUser', 'department', 'instance:id,label,phone_number']);
             if ($restrictByDept) {
                 $waQuery->where(function ($q) use ($authUser, $userDeptIds) {
                     $q->whereIn('department_id', $userDeptIds)
@@ -116,7 +118,7 @@ class WhatsappController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'color', 'icon']);
 
-        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'igConversations', 'allConversations', 'users', 'pipelines', 'whatsappTags', 'aiAgents', 'chatbotFlows', 'quickMessages', 'isPartnerView', 'departments'));
+        return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'igConversations', 'allConversations', 'users', 'pipelines', 'whatsappTags', 'aiAgents', 'chatbotFlows', 'quickMessages', 'isPartnerView', 'departments', 'instanceCount'));
     }
 
     // ── Instagram Conversations ───────────────────────────────────────────────
@@ -301,7 +303,7 @@ class WhatsappController extends Controller
         $pollRestrict = !$pollUser->isAdmin() && !$pollUser->can_see_all_conversations;
         $pollDeptIds  = $pollRestrict ? $pollUser->departments()->pluck('departments.id') : collect();
 
-        $waQuery = WhatsappConversation::with(['latestMessage', 'assignedUser', 'department'])
+        $waQuery = WhatsappConversation::with(['latestMessage', 'assignedUser', 'department', 'instance:id,label,phone_number'])
             ->where('last_message_at', '>=', $since);
         if ($pollRestrict) {
             $waQuery->where(function ($q) use ($pollUser, $pollDeptIds) {
@@ -381,6 +383,10 @@ class WhatsappController extends Controller
             'phone'               => $conversation->phone,
             'is_group'            => $conversation->is_group,
             'contact_picture_url' => $conversation->contact_picture_url,
+            'department_id'       => $conversation->department_id,
+            'department_name'     => $conversation->department?->name,
+            'department_color'    => $conversation->department?->color,
+            'instance_label'      => $conversation->instance?->label,
         ]);
     }
 
@@ -688,6 +694,7 @@ class WhatsappController extends Controller
             'department_id'     => $c->department_id,
             'department_name'   => $c->department?->name,
             'department_color'  => $c->department?->color,
+            'instance_label'    => $c->instance?->label,
             'channel'           => 'whatsapp',
         ];
     }

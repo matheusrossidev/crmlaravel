@@ -125,6 +125,7 @@ class TenantController extends Controller
             'max_custom_fields'          => 'nullable|integer|min:0',
             'max_chatbot_flows'          => 'nullable|integer|min:0',
             'max_ai_agents'              => 'nullable|integer|min:0',
+            'max_whatsapp_instances'     => 'nullable|integer|min:0',
             'ai_analyst_enabled'            => 'nullable|boolean',
             'integration_whatsapp'          => 'nullable|boolean',
             'integration_google_calendar'   => 'nullable|boolean',
@@ -143,7 +144,7 @@ class TenantController extends Controller
         $settings['integration_google_ads']      = $request->boolean('integration_google_ads');
 
         $tenant->update(array_merge(
-            $request->only('status', 'plan', 'trial_ends_at', 'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields', 'max_chatbot_flows', 'max_ai_agents', 'max_departments', 'partner_billing_starts_at'),
+            $request->only('status', 'plan', 'trial_ends_at', 'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields', 'max_chatbot_flows', 'max_ai_agents', 'max_departments', 'max_whatsapp_instances', 'partner_billing_starts_at'),
             ['settings_json' => $settings]
         ));
 

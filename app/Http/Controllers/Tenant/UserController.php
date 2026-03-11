@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Mail\VerifyEmail;
 use App\Models\Department;
 use App\Models\User;
 use App\Services\PlanLimitChecker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -71,17 +74,30 @@ class UserController extends Controller
             return response()->json(['success' => false, 'message' => $limitMsg, 'limit_reached' => true], 422);
         }
 
+        $token = Str::random(64);
+
         $user = User::create([
-            'tenant_id'                  => $authUser->tenant_id,
-            'name'                       => $request->input('name'),
-            'email'                      => $request->input('email'),
-            'password'                   => $request->input('password'),
-            'role'                       => $role,
-            'can_see_all_conversations'  => $request->boolean('can_see_all_conversations', true),
+            'tenant_id'                      => $authUser->tenant_id,
+            'name'                           => $request->input('name'),
+            'email'                          => $request->input('email'),
+            'password'                       => $request->input('password'),
+            'role'                           => $role,
+            'can_see_all_conversations'      => $request->boolean('can_see_all_conversations', true),
+            'verification_token'             => $token,
+            'verification_token_expires_at'  => now()->addHours(48),
         ]);
 
         if ($request->has('department_ids')) {
             $user->departments()->sync($request->input('department_ids', []));
+        }
+
+        try {
+            Mail::to($user->email)->send(new VerifyEmail($user, $tenant));
+        } catch (\Throwable $e) {
+            \Log::warning('Falha ao enviar email de verificação', [
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return response()->json([

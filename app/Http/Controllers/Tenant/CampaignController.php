@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class CampaignController extends Controller
 {
@@ -644,6 +645,152 @@ class CampaignController extends Controller
             'barLabels', 'barData', 'barColors',
             'lineLabels', 'lineDatasets'
         ));
+    }
+
+    public function exportReportPdf(Request $request)
+    {
+        $days  = (int) $request->get('days', 30);
+        $since = Carbon::now()->subDays($days)->startOfDay();
+        $prevSince = Carbon::now()->subDays($days * 2)->startOfDay();
+
+        $utmFilter = function ($q) {
+            $q->whereNotNull('leads.utm_source')
+              ->orWhereNotNull('leads.utm_medium')
+              ->orWhereNotNull('leads.utm_campaign');
+        };
+
+        // ── UTM Breakdown ────────────────────────────────────────────────────
+        $utmBreakdown = Lead::query()
+            ->select([
+                DB::raw('COALESCE(leads.utm_source, "(direto)") as utm_source'),
+                DB::raw('COALESCE(leads.utm_medium, "(direto)") as utm_medium'),
+                DB::raw('COALESCE(leads.utm_campaign, "(direto)") as utm_campaign'),
+                DB::raw('COUNT(DISTINCT leads.id) as leads_count'),
+                DB::raw('COUNT(DISTINCT sales.id) as conversions'),
+                DB::raw('COALESCE(SUM(sales.value), 0) as revenue'),
+            ])
+            ->leftJoin('sales', 'sales.lead_id', '=', 'leads.id')
+            ->where('leads.created_at', '>=', $since)
+            ->where($utmFilter)
+            ->groupBy('utm_source', 'utm_medium', 'utm_campaign')
+            ->orderByDesc('leads_count')
+            ->limit(200)
+            ->get()
+            ->map(function ($row) {
+                $leads = (int) $row->leads_count;
+                $conv  = (int) $row->conversions;
+                return [
+                    'utm_source'   => $row->utm_source,
+                    'utm_medium'   => $row->utm_medium,
+                    'utm_campaign' => $row->utm_campaign,
+                    'leads'        => $leads,
+                    'conversions'  => $conv,
+                    'revenue'      => (float) $row->revenue,
+                    'conv_rate'    => $leads > 0 ? round($conv / $leads * 100, 1) : 0,
+                ];
+            });
+
+        // ── KPIs ─────────────────────────────────────────────────────────────
+        $totalLeads       = $utmBreakdown->sum('leads');
+        $totalConversions = $utmBreakdown->sum('conversions');
+        $totalRevenue     = $utmBreakdown->sum('revenue');
+        $convRate         = $totalLeads > 0 ? round($totalConversions / $totalLeads * 100, 1) : 0;
+
+        // ── Deltas (período anterior) ────────────────────────────────────────
+        $prevKpis = Lead::query()
+            ->select([
+                DB::raw('COUNT(DISTINCT leads.id) as leads_count'),
+                DB::raw('COUNT(DISTINCT sales.id) as conversions'),
+                DB::raw('COALESCE(SUM(sales.value), 0) as revenue'),
+            ])
+            ->leftJoin('sales', 'sales.lead_id', '=', 'leads.id')
+            ->where('leads.created_at', '>=', $prevSince)
+            ->where('leads.created_at', '<', $since)
+            ->where($utmFilter)
+            ->first();
+
+        $prevLeads = (int) ($prevKpis->leads_count ?? 0);
+        $prevConv  = (int) ($prevKpis->conversions ?? 0);
+        $prevRev   = (float) ($prevKpis->revenue ?? 0);
+
+        $deltaLeads = $prevLeads > 0 ? round(($totalLeads - $prevLeads) / $prevLeads * 100, 1) : null;
+        $deltaConv  = $prevConv > 0 ? round(($totalConversions - $prevConv) / $prevConv * 100, 1) : null;
+        $deltaRev   = $prevRev > 0 ? round(($totalRevenue - $prevRev) / $prevRev * 100, 1) : null;
+
+        // ── Top Performers ───────────────────────────────────────────────────
+        $topSource = $utmBreakdown->groupBy('utm_source')->map(fn ($g) => $g->sum('leads'))->sortDesc()->first();
+        $topSourceName = $utmBreakdown->groupBy('utm_source')->map(fn ($g) => $g->sum('leads'))->sortDesc()->keys()->first() ?? '—';
+
+        $topMedium = $utmBreakdown->groupBy('utm_medium')->map(fn ($g) => $g->sum('leads'))->sortDesc()->first();
+        $topMediumName = $utmBreakdown->groupBy('utm_medium')->map(fn ($g) => $g->sum('leads'))->sortDesc()->keys()->first() ?? '—';
+
+        $topCampaign = $utmBreakdown->where('leads', '>=', 3)->sortByDesc('conv_rate')->first();
+
+        // ── Performance por Source (analytics dimension) ─────────────────────
+        $dimensionData = Lead::query()
+            ->select([
+                DB::raw("COALESCE(leads.utm_source, '(vazio)') as dimension_value"),
+                DB::raw('COUNT(DISTINCT leads.id) as leads_count'),
+                DB::raw('COUNT(DISTINCT sales.id) as conversions'),
+                DB::raw('COALESCE(SUM(sales.value), 0) as revenue'),
+            ])
+            ->leftJoin('sales', 'sales.lead_id', '=', 'leads.id')
+            ->where('leads.created_at', '>=', $since)
+            ->where($utmFilter)
+            ->groupBy('dimension_value')
+            ->orderByDesc('leads_count')
+            ->limit(20)
+            ->get()
+            ->map(function ($row) {
+                $leads = (int) $row->leads_count;
+                $conv  = (int) $row->conversions;
+                return [
+                    'value'       => $row->dimension_value,
+                    'leads'       => $leads,
+                    'conversions' => $conv,
+                    'revenue'     => (float) $row->revenue,
+                    'conv_rate'   => $leads > 0 ? round($conv / $leads * 100, 1) : 0,
+                ];
+            });
+
+        // ── Funil por Source ─────────────────────────────────────────────────
+        $funnelRaw = Lead::query()
+            ->select([
+                DB::raw("COALESCE(leads.utm_source, '(vazio)') as dimension_value"),
+                'pipeline_stages.name as stage_name',
+                'pipeline_stages.position',
+                DB::raw('COUNT(leads.id) as lead_count'),
+            ])
+            ->join('pipeline_stages', 'pipeline_stages.id', '=', 'leads.stage_id')
+            ->where('leads.created_at', '>=', $since)
+            ->where($utmFilter)
+            ->groupBy('dimension_value', 'pipeline_stages.id', 'pipeline_stages.name', 'pipeline_stages.position')
+            ->orderBy('dimension_value')
+            ->orderBy('pipeline_stages.position')
+            ->get();
+
+        $funnelMatrix = [];
+        $funnelStagesMap = [];
+        foreach ($funnelRaw as $row) {
+            $funnelMatrix[$row->dimension_value][$row->stage_name] = (int) $row->lead_count;
+            if (!isset($funnelStagesMap[$row->stage_name])) {
+                $funnelStagesMap[$row->stage_name] = (int) $row->position;
+            }
+        }
+        asort($funnelStagesMap);
+        $funnelStages = array_keys($funnelStagesMap);
+
+        $pdf = Pdf::loadView('tenant.campaigns.report-pdf', compact(
+            'utmBreakdown', 'days',
+            'totalLeads', 'totalConversions', 'totalRevenue', 'convRate',
+            'deltaLeads', 'deltaConv', 'deltaRev',
+            'topSourceName', 'topSource', 'topMediumName', 'topMedium', 'topCampaign',
+            'dimensionData', 'funnelMatrix', 'funnelStages'
+        ))->setPaper('a4', 'portrait');
+
+        $filename = 'relatorio-campanhas-' . now()->format('Y-m-d') . '.pdf';
+
+        return $pdf->download($filename);
     }
 
     private function formatCampaign(Campaign $c): array

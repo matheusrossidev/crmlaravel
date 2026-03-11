@@ -6,6 +6,9 @@
 
 @section('topbar_actions')
 <div class="topbar-actions" style="display:flex;gap:8px;align-items:center;">
+    <a href="{{ route('campaigns.reports.pdf', ['days' => $days]) }}" style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;background:#0085f3;color:#fff;border-radius:100px;font-size:12.5px;font-weight:600;text-decoration:none;transition:background .15s;" onmouseover="this.style.background='#0070d1'" onmouseout="this.style.background='#0085f3'">
+        <i class="bi bi-download"></i> Baixar relatório
+    </a>
     <select id="periodFilter" onchange="window.location.href='?days='+this.value"
             style="border:1.5px solid #e8eaf0;border-radius:8px;padding:6px 12px;font-size:12.5px;color:#374151;background:#fff;outline:none;">
         @foreach([7 => '7 dias', 30 => '30 dias', 60 => '60 dias', 90 => '90 dias', 180 => '6 meses', 365 => '1 ano'] as $d => $label)

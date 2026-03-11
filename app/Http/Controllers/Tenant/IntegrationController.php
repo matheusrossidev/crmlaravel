@@ -12,11 +12,13 @@ use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
 use App\Services\InstagramService;
+use App\Services\PlanLimitChecker;
 use App\Services\WahaService;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -33,10 +35,12 @@ class IntegrationController extends Controller
 
         $facebook  = $connections->get('facebook');
         $google    = $connections->get('google');
-        $whatsapp  = WhatsappInstance::first();
-        $instagram = InstagramInstance::first();
+        $whatsappInstances = WhatsappInstance::orderBy('id')->get();
+        $whatsapp          = $whatsappInstances->first(); // retrocompat
+        $instagram         = InstagramInstance::first();
 
-        $s = auth()->user()->tenant->settings_json ?? [];
+        $tenant = auth()->user()->tenant;
+        $s = $tenant->settings_json ?? [];
         $enabledIntegrations = [
             'whatsapp'        => $s['integration_whatsapp']        ?? true,
             'google_calendar' => $s['integration_google_calendar'] ?? true,
@@ -45,7 +49,13 @@ class IntegrationController extends Controller
             'google_ads'      => $s['integration_google_ads']      ?? false,
         ];
 
-        return view('tenant.settings.integrations', compact('facebook', 'google', 'whatsapp', 'instagram', 'enabledIntegrations'));
+        $maxWhatsappInstances    = $tenant->max_whatsapp_instances ?: 1;
+        $whatsappInstancesRemain = PlanLimitChecker::remaining('whatsapp_instances');
+
+        return view('tenant.settings.integrations', compact(
+            'facebook', 'google', 'whatsapp', 'whatsappInstances', 'instagram',
+            'enabledIntegrations', 'maxWhatsappInstances', 'whatsappInstancesRemain'
+        ));
     }
 
     // ── Facebook ──────────────────────────────────────────────────────────────
@@ -167,16 +177,30 @@ class IntegrationController extends Controller
 
     // ── WhatsApp ──────────────────────────────────────────────────────────────
 
-    public function connectWhatsapp(): JsonResponse
+    public function connectWhatsapp(Request $request): JsonResponse
     {
-        $tenant  = auth()->user()->tenant;
-        $session = Str::slug($tenant->name, '_') . '_' . $tenant->id;
+        $tenant = auth()->user()->tenant;
+        $label  = $request->input('label', '');
+
+        // Se já existe alguma instância, verificar limite do plano
+        $existingCount = WhatsappInstance::where('tenant_id', $tenant->id)->count();
+        if ($existingCount > 0) {
+            $limitMsg = PlanLimitChecker::check('whatsapp_instances');
+            if ($limitMsg) {
+                return response()->json(['success' => false, 'message' => $limitMsg, 'limit_reached' => true], 422);
+            }
+        }
+
+        $suffix  = $existingCount > 0 ? '_' . ($existingCount + 1) : '';
+        $session = Str::slug($tenant->name, '_') . '_' . $tenant->id . $suffix;
 
         try {
-            $instance = WhatsappInstance::firstOrCreate(
-                ['tenant_id' => $tenant->id],
-                ['session_name' => $session, 'status' => 'disconnected']
-            );
+            $instance = WhatsappInstance::create([
+                'tenant_id'    => $tenant->id,
+                'session_name' => $session,
+                'status'       => 'disconnected',
+                'label'        => $label ?: null,
+            ]);
 
             // Monta webhook URL usando APP_URL para garantir https://
             $webhookUrl    = rtrim(config('app.url'), '/') . '/webhook/whatsapp';
@@ -187,24 +211,27 @@ class IntegrationController extends Controller
 
             if (isset($result['error'])) {
                 if (($result['status'] ?? 0) === 422) {
-                    // Sessão já existe no WAHA — para, atualiza webhook e reinicia para gerar QR novo
                     $waha->patchSession($webhookUrl, $webhookSecret);
                     $waha->stopSession();
                     $waha->startSession();
                 } else {
+                    $instance->delete();
                     return response()->json([
                         'success' => false,
                         'message' => 'Falha ao criar sessão no WAHA: ' . ($result['body'] ?? 'erro desconhecido'),
                     ], 500);
                 }
             } else {
-                // Sessão criada com sucesso — precisa iniciar (WAHA cria em estado STOPPED)
                 $waha->startSession();
             }
 
             $instance->update(['status' => 'qr']);
 
-            return response()->json(['success' => true, 'session_name' => $instance->session_name]);
+            return response()->json([
+                'success'      => true,
+                'instance_id'  => $instance->id,
+                'session_name' => $instance->session_name,
+            ]);
 
         } catch (\Throwable $e) {
             return response()->json([
@@ -214,19 +241,12 @@ class IntegrationController extends Controller
         }
     }
 
-    public function getWhatsappQr(): JsonResponse
+    public function getWhatsappQr(WhatsappInstance $instance): JsonResponse
     {
-        $instance = WhatsappInstance::first();
-
-        if (! $instance) {
-            return response()->json(['error' => 'Instância não encontrada.'], 404);
-        }
-
         $waha     = new WahaService($instance->session_name);
         $response = $waha->getQrResponse();
 
         if ($response->failed()) {
-            // QR indisponível — verificar se a sessão já está conectada
             $session    = $waha->getSession();
             $wahaStatus = $session['status'] ?? null;
 
@@ -238,12 +258,10 @@ class IntegrationController extends Controller
             return response()->json(['status' => $instance->status, 'qr_base64' => null]);
         }
 
-        // Atualizar status se necessário
         if ($instance->status !== 'qr') {
             $instance->update(['status' => 'qr']);
         }
 
-        // WAHA retorna PNG binário quando format=image
         $contentType = $response->header('Content-Type') ?? '';
         if (str_contains($contentType, 'image/')) {
             return response()->json([
@@ -252,7 +270,6 @@ class IntegrationController extends Controller
             ]);
         }
 
-        // Fallback: JSON com campo "value", "qr" ou "data" (varia conforme versão do WAHA)
         $json     = $response->json() ?? [];
         $qrBase64 = $json['value'] ?? $json['qr'] ?? $json['data'] ?? null;
         return response()->json([
@@ -261,9 +278,9 @@ class IntegrationController extends Controller
         ]);
     }
 
-    public function importHistoryWhatsapp(Request $request): JsonResponse
+    public function importHistoryWhatsapp(Request $request, ?WhatsappInstance $instance = null): JsonResponse
     {
-        $instance = WhatsappInstance::first();
+        $instance ??= WhatsappInstance::first();
 
         if (! $instance || $instance->status !== 'connected') {
             return response()->json(['success' => false, 'message' => 'WhatsApp não está conectado.'], 422);
@@ -404,18 +421,38 @@ class IntegrationController extends Controller
         }
     }
 
-    public function disconnectWhatsapp(): JsonResponse
+    public function disconnectWhatsapp(WhatsappInstance $instance): JsonResponse
     {
-        $instance = WhatsappInstance::first();
+        $waha = new WahaService($instance->session_name);
+        $waha->stopSession();
+        $waha->deleteSession();
+        $instance->update(['status' => 'disconnected', 'phone_number' => null, 'display_name' => null, 'label' => null]);
 
-        if ($instance) {
+        return response()->json(['success' => true]);
+    }
+
+    public function deleteWhatsappInstance(WhatsappInstance $instance): JsonResponse
+    {
+        if ($instance->status === 'connected') {
             $waha = new WahaService($instance->session_name);
             $waha->stopSession();
             $waha->deleteSession();
-            $instance->update(['status' => 'disconnected', 'phone_number' => null, 'display_name' => null]);
         }
 
+        $instance->delete();
+
         return response()->json(['success' => true]);
+    }
+
+    public function updateWhatsappInstance(Request $request, WhatsappInstance $instance): JsonResponse
+    {
+        $request->validate([
+            'label' => 'required|string|max:100',
+        ]);
+
+        $instance->update(['label' => $request->input('label')]);
+
+        return response()->json(['success' => true, 'label' => $instance->label]);
     }
 
     // ── Instagram ─────────────────────────────────────────────────────────────

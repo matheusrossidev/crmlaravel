@@ -18,6 +18,7 @@ class WhatsappInstance extends Model
         'status',
         'phone_number',
         'display_name',
+        'label',
     ];
 
     public function conversations(): HasMany

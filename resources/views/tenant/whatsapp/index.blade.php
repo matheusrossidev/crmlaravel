@@ -1128,6 +1128,8 @@ $pageIcon = 'chat-dots';
                 data-channel="{{ $ch }}"
                 data-tags="{{ json_encode($conv->tags ?? []) }}"
                 data-assigned-user-id="{{ $conv->assigned_user_id ?? '' }}"
+                data-department-id="{{ $conv->department_id ?? '' }}"
+                data-instance-label="{{ ($ch === 'whatsapp' && $conv->instance) ? ($conv->instance->label ?: $conv->instance->phone_number) : '' }}"
                 data-picture="{{ $conv->contact_picture_url }}"
                 onclick="openConversation({{ $conv->id }}, this)">
                 <div class="wa-conv-avatar-wrap">
@@ -1169,9 +1171,15 @@ $pageIcon = 'chat-dots';
                         <span class="wa-unread-dot">{{ $conv->unread_count }}</span>
                         @endif
                     </div>
-                    @if(!empty($conv->tags))
+                    @if(!empty($conv->tags) || ($instanceCount > 1 && $ch === 'whatsapp' && $conv->instance) || $conv->department)
                     <div class="wa-conv-tags">
-                        @foreach($conv->tags as $tag)
+                        @if($instanceCount > 1 && $ch === 'whatsapp' && $conv->instance)
+                        <span class="wa-tag" style="background:#dcfce71a;color:#15803d;border:1px solid #15803d40;font-size:10px;">{{ $conv->instance->label ?: $conv->instance->phone_number }}</span>
+                        @endif
+                        @if($conv->department)
+                        <span class="wa-tag" style="background:{{ $conv->department->color ?? '#6b7280' }}1a;color:{{ $conv->department->color ?? '#6b7280' }};border:1px solid {{ $conv->department->color ?? '#6b7280' }}40;font-size:10px;">{{ $conv->department->name }}</span>
+                        @endif
+                        @foreach(($conv->tags ?? []) as $tag)
                         @php $tagDef = $whatsappTags->firstWhere('name', $tag); $tagColor = $tagDef?->color ?? null; @endphp
                         @if($tagColor)
                         <span class="wa-tag" style="background:{{ $tagColor }}1a;color:{{ $tagColor }};border:1px solid {{ $tagColor }}40;">{{ $tag }}</span>
@@ -1480,6 +1488,19 @@ $pageIcon = 'chat-dots';
                 @endforeach
             </select>
         </div>
+
+        {{-- Setor / Departamento --}}
+        @if(isset($departments) && $departments->isNotEmpty())
+        <div class="wa-details-section">
+            <div class="wa-details-label"><i class="bi bi-building" style="margin-right:4px;color:#0085f3;"></i> Setor</div>
+            <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="departmentSelect" onchange="assignDepartment()">
+                <option value="">Sem setor</option>
+                @foreach($departments as $dept)
+                <option value="{{ $dept->id }}" data-color="{{ $dept->color }}">{{ $dept->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        @endif
 
         {{-- Agente de IA --}}
         @if(isset($aiAgents) && $aiAgents->isNotEmpty())
@@ -2067,6 +2088,12 @@ $pageIcon = 'chat-dots';
             assignSel.value = data.assigned_user_id;
         } else if (assignSel) {
             assignSel.value = '';
+        }
+
+        // Atualiza select de departamento
+        const deptSel = document.getElementById('departmentSelect');
+        if (deptSel) {
+            deptSel.value = data.department_id ?? '';
         }
 
         // Atualiza select de agente de IA
@@ -2873,6 +2900,32 @@ $pageIcon = 'chat-dots';
     }
 
     // ── Atribuição ────────────────────────────────────────────────────────────────
+    async function assignDepartment() {
+        if (!activeConvId) return;
+        const sel = document.getElementById('departmentSelect');
+        if (!sel) return;
+        const deptId = sel.value;
+
+        try {
+            const res = await fetch(`${convBaseUrl(activeConvId)}/department`, {
+                method: 'PUT',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                body: JSON.stringify({ department_id: deptId || null }),
+            });
+            const data = await res.json();
+            if (data.success !== false) {
+                toastr.success('Setor atualizado.');
+                // Atualizar badge na sidebar
+                const el = document.querySelector(`.wa-conv-item[data-conv-id="${activeConvId}"]`);
+                if (el) el.dataset.departmentId = deptId || '';
+            } else {
+                toastr.error(data.message || 'Erro ao atualizar setor.');
+            }
+        } catch (e) {
+            toastr.error('Erro de conexão.');
+        }
+    }
+
     async function assignUser() {
         if (!activeConvId) return;
         const userId = document.getElementById('assignSelect').value;
@@ -3130,6 +3183,8 @@ $pageIcon = 'chat-dots';
             el.dataset.status          = conv.status || 'open';
             el.dataset.channel         = conv.channel || 'whatsapp';
             el.dataset.assignedUserId  = conv.assigned_user_id || '';
+            el.dataset.departmentId    = conv.department_id || '';
+            el.dataset.instanceLabel   = conv.instance_label || '';
             el.dataset.tags            = JSON.stringify(conv.tags || []);
             el.onclick = function() {
                 openConversation(conv.id, this);

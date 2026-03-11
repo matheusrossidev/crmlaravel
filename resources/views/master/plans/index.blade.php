@@ -29,6 +29,7 @@
                     <th>Pipelines</th>
                     <th>Campos</th>
                     <th>Deptos</th>
+                    <th>WA</th>
                     <th>IA</th>
                     <th>Features</th>
                     <th>Status</th>
@@ -54,6 +55,7 @@
                     <td>{{ $plan->features_json['max_pipelines'] ?? '—' }}</td>
                     <td>{{ $plan->features_json['max_custom_fields'] ?? '—' }}</td>
                     <td>{{ $plan->features_json['max_departments'] ?? '—' }}</td>
+                    <td>{{ $plan->features_json['max_whatsapp_instances'] ?? '1' }}</td>
                     <td>
                         @if($plan->features_json['ai_agents'] ?? false)
                             <i class="bi bi-check-circle-fill" style="color:#10B981;"></i>
@@ -155,6 +157,10 @@
             <div>
                 <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Max departamentos</label>
                 <input type="number" id="fMaxDepartments" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
+            </div>
+            <div>
+                <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Max números WhatsApp</label>
+                <input type="number" id="fMaxWhatsappInstances" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
             </div>
         </div>
         <div style="margin-bottom:14px;">
@@ -289,6 +295,7 @@ function openNewPlan() {
     document.getElementById('fMaxPipelines').value = '3';
     document.getElementById('fMaxCustomFields').value = '10';
     document.getElementById('fMaxDepartments').value = '5';
+    document.getElementById('fMaxWhatsappInstances').value = '1';
     document.getElementById('fAiTokens').value = '500000';
     document.getElementById('fAiAgents').checked = true;
     document.getElementById('fInstagram').checked = false;
@@ -318,6 +325,7 @@ function editPlan(id, plan) {
     document.getElementById('fMaxPipelines').value   = f.max_pipelines ?? 3;
     document.getElementById('fMaxCustomFields').value = f.max_custom_fields ?? 10;
     document.getElementById('fMaxDepartments').value = f.max_departments ?? 5;
+    document.getElementById('fMaxWhatsappInstances').value = f.max_whatsapp_instances ?? 1;
     document.getElementById('fAiTokens').value    = f.ai_tokens_monthly ?? 0;
     document.getElementById('fAiAgents').checked   = !!f.ai_agents;
     document.getElementById('fInstagram').checked  = !!f.instagram;
@@ -348,6 +356,7 @@ async function savePlan() {
             max_pipelines:      parseInt(document.getElementById('fMaxPipelines').value) || 0,
             max_custom_fields:  parseInt(document.getElementById('fMaxCustomFields').value) || 0,
             max_departments:    parseInt(document.getElementById('fMaxDepartments').value) || 0,
+            max_whatsapp_instances: parseInt(document.getElementById('fMaxWhatsappInstances').value) || 0,
             ai_tokens_monthly:  parseInt(document.getElementById('fAiTokens').value) || 0,
             ai_agents:          document.getElementById('fAiAgents').checked,
             instagram:          document.getElementById('fInstagram').checked,

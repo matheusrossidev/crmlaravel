@@ -15,6 +15,7 @@ use App\Models\Sale;
 use App\Models\User;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappMessage;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,23 @@ use Illuminate\View\View;
 class ReportController extends Controller
 {
     public function index(Request $request): View
+    {
+        return view('tenant.reports.index', $this->getReportData($request));
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $data = $this->getReportData($request);
+
+        $pdf = Pdf::loadView('tenant.reports.pdf', $data)
+            ->setPaper('a4', 'portrait');
+
+        $filename = 'relatorio-' . now()->format('Y-m-d') . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    private function getReportData(Request $request): array
     {
         // ── Período ────────────────────────────────────────────────────────────
         $dateTo   = $request->get('date_to')
@@ -370,7 +388,7 @@ class ReportController extends Controller
             ->sortByDesc('total')
             ->values();
 
-        return view('tenant.reports.index', compact(
+        return compact(
             // filtros aplicados
             'dateFrom', 'dateTo', 'filterCampaign', 'filterPipeline', 'filterUser',
             'campaigns', 'pipelines',
@@ -395,6 +413,6 @@ class ReportController extends Controller
             'funnelEmAberto',
             // atividade
             'teamActivity',
-        ));
+        );
     }
 }

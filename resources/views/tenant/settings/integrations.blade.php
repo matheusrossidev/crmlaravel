@@ -308,6 +308,89 @@
     }
 
     .btn-disconnect:hover { background: #fef2f2; }
+
+    /* ── WhatsApp Instances (dentro do card) ───────────────────── */
+    .wa-instance-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        background: #f8fafc;
+        border-radius: 8px;
+        margin-bottom: 8px;
+    }
+    .wa-instance-item:last-child { margin-bottom: 0; }
+
+    .wa-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .wa-dot.connected {
+        background: #10b981;
+        animation: pulse-green 2s ease-in-out infinite;
+    }
+    .wa-dot.qr       { background: #f59e0b; animation: pulse-yellow 2s ease-in-out infinite; }
+    .wa-dot.offline   { background: #d1d5db; }
+
+    @keyframes pulse-green {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, .5); }
+        50%      { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
+    }
+    @keyframes pulse-yellow {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, .5); }
+        50%      { box-shadow: 0 0 0 5px rgba(245, 158, 11, 0); }
+    }
+
+    .wa-instance-detail {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .wa-label-wrap {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .wa-label-input {
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: #1a1d23;
+        padding: 3px 8px;
+        border-radius: 6px;
+        width: 100%;
+        max-width: 160px;
+        outline: none;
+        transition: border-color .15s;
+    }
+    .wa-label-input:focus { border-color: #0085f3; }
+    .wa-label-input::placeholder { color: #b0b7c3; font-weight: 400; font-style: italic; }
+
+    .wa-edit-icon {
+        color: #9ca3af;
+        font-size: 11px;
+        flex-shrink: 0;
+    }
+
+    .wa-instance-phone {
+        font-size: 11.5px;
+        color: #6b7280;
+        display: block;
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .wa-instance-actions {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+    }
 </style>
 @endpush
 
@@ -329,10 +412,11 @@
                     <h3>WhatsApp Business</h3>
                     <p>Receba e envie mensagens direto do CRM</p>
                 </div>
-                @if($whatsapp && $whatsapp->status === 'connected')
-                    <span class="conn-badge conn-active">Conectado</span>
-                @elseif($whatsapp && $whatsapp->status === 'qr')
-                    <span class="conn-badge conn-expired">Aguardando QR</span>
+                @php
+                    $waConnected = $whatsappInstances->where('status', 'connected')->count();
+                @endphp
+                @if($waConnected > 0)
+                    <span class="conn-badge conn-active">{{ $waConnected }} ativo(s)</span>
                 @else
                     <span class="conn-badge conn-none">Desconectado</span>
                 @endif
@@ -345,33 +429,54 @@
                     <li>Transcrição de áudios via IA</li>
                 </ul>
 
-                @if($whatsapp && $whatsapp->status === 'connected')
-                <div class="conn-detail">
-                    <strong>{{ $whatsapp->display_name ?? $whatsapp->phone_number ?? 'Número conectado' }}</strong><br>
-                    <span>Conectado {{ $whatsapp->updated_at?->diffForHumans() ?? '' }}</span>
+                {{-- Instâncias conectadas --}}
+                <div id="waInstancesList" style="margin-bottom:16px;">
+                @foreach($whatsappInstances as $inst)
+                    <div class="wa-instance-item" data-instance-id="{{ $inst->id }}">
+                        <span class="wa-dot {{ $inst->status === 'connected' ? 'connected' : ($inst->status === 'qr' ? 'qr' : 'offline') }}"></span>
+                        <div class="wa-instance-detail">
+                            <div class="wa-label-wrap">
+                                <input type="text" class="wa-label-input" value="{{ $inst->label ?? '' }}"
+                                       placeholder="Dar um nome..."
+                                       data-instance-id="{{ $inst->id }}" onblur="saveWaLabel(this)">
+                                <i class="bi bi-pencil wa-edit-icon"></i>
+                            </div>
+                            <span class="wa-instance-phone">{{ $inst->phone_number ?? $inst->display_name ?? $inst->session_name }}</span>
+                        </div>
+                        <div class="wa-instance-actions">
+                            @if($inst->status === 'connected')
+                                <button class="btn-disconnect" style="padding:5px 12px;font-size:11.5px;" onclick="disconnectWhatsapp(this, {{ $inst->id }})">
+                                    <i class="bi bi-x-circle"></i> Desconectar
+                                </button>
+                            @elseif($inst->status === 'qr')
+                                <button class="btn-connect" style="padding:5px 12px;font-size:11.5px;" onclick="openWaModal({{ $inst->id }})">
+                                    <i class="bi bi-qr-code"></i> QR
+                                </button>
+                                <button class="btn-disconnect" style="padding:5px 8px;font-size:11.5px;" onclick="deleteWhatsappInstance(this, {{ $inst->id }})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            @else
+                                <button class="btn-connect" style="padding:5px 12px;font-size:11.5px;" onclick="reconnectWhatsapp(this, {{ $inst->id }})">
+                                    <i class="bi bi-arrow-clockwise"></i> Reconectar
+                                </button>
+                                <button class="btn-disconnect" style="padding:5px 8px;font-size:11.5px;" onclick="deleteWhatsappInstance(this, {{ $inst->id }})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
                 </div>
-                @else
-                <div class="conn-detail" style="color:#9ca3af;">
-                    Nenhum número conectado.
-                </div>
-                @endif
 
                 <div class="integration-actions">
-                    @if($whatsapp && $whatsapp->status === 'connected')
-                        <button class="btn-disconnect" onclick="disconnectWhatsapp(this)">
-                            <i class="bi bi-x-circle"></i> Desconectar
-                        </button>
-                    @elseif($whatsapp && $whatsapp->status === 'qr')
-                        <button class="btn-connect" onclick="openWaModal(true)">
-                            <i class="bi bi-qr-code"></i> Ver QR Code
-                        </button>
-                        <button class="btn-disconnect" onclick="disconnectWhatsapp(this)">
-                            <i class="bi bi-x-circle"></i> Cancelar
+                    @if($whatsappInstancesRemain === null || $whatsappInstancesRemain > 0)
+                        <button class="btn-connect" id="btnAddWaNumber" onclick="startWhatsappConnect(this)">
+                            <i class="bi bi-plus-lg"></i> Adicionar número
                         </button>
                     @else
-                        <button class="btn-connect" onclick="startWhatsappConnect(this)">
-                            <i class="bi bi-whatsapp"></i> Conectar WhatsApp
-                        </button>
+                        <span class="btn-coming-soon">
+                            <i class="bi bi-lock"></i> Limite de {{ $maxWhatsappInstances }} número(s)
+                        </span>
                     @endif
                 </div>
             </div>
@@ -638,13 +743,12 @@
 const SYNC_URL            = @json(route('settings.integrations.sync',       ['platform' => '__P__']));
 const DISCONNECT_URL      = @json(route('settings.integrations.disconnect', ['platform' => '__P__']));
 const WA_CONNECT_URL      = @json(route('settings.integrations.whatsapp.connect'));
-const WA_QR_URL           = @json(route('settings.integrations.whatsapp.qr'));
-const WA_DISCONNECT_URL   = @json(route('settings.integrations.whatsapp.disconnect'));
-const WA_IMPORT_URL       = @json(route('settings.integrations.whatsapp.import'));
+const WA_BASE_URL         = @json(rtrim(route('settings.integrations.whatsapp.connect'), '/connect'));
 const IG_DISCONNECT_URL   = @json(route('settings.integrations.instagram.disconnect'));
 
 let waQrPollInterval = null;
 let waQrNullCount    = 0;
+let waCurrentInstanceId = null;
 
 // ── WhatsApp ──────────────────────────────────────────────────────────────────
 
@@ -658,31 +762,34 @@ async function startWhatsappConnect(btn) {
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 'Accept': 'application/json',
+                'Content-Type': 'application/json',
             },
+            body: JSON.stringify({ label: '' }),
         });
         const data = await res.json();
 
         if (data.success) {
-            openWaModal(false);
+            waCurrentInstanceId = data.instance_id;
+            openWaModal(data.instance_id);
         } else {
-            toastr.error('Erro ao iniciar conexão. Tente novamente.');
+            toastr.error(data.message || 'Erro ao iniciar conexão.');
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-whatsapp"></i> Conectar WhatsApp';
+            btn.innerHTML = '<i class="bi bi-plus-lg"></i> Adicionar número';
         }
     } catch (e) {
         toastr.error('Erro de conexão.');
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-whatsapp"></i> Conectar WhatsApp';
+        btn.innerHTML = '<i class="bi bi-plus-lg"></i> Adicionar número';
     }
 }
 
-function openWaModal(skipCreate) {
+function openWaModal(instanceId) {
+    waCurrentInstanceId = instanceId;
     document.getElementById('waQrModal').classList.add('open');
     document.getElementById('waQrStatus').textContent = 'Aguardando QR Code...';
     document.getElementById('waQrStatus').className = '';
     document.getElementById('waQrArea').innerHTML = '<i class="bi bi-arrow-clockwise spin" style="font-size:36px;color:#9ca3af;"></i>';
 
-    // Iniciar polling do QR
     waQrNullCount = 0;
     clearInterval(waQrPollInterval);
     pollWaQr();
@@ -695,8 +802,9 @@ function closeWaModal() {
 }
 
 async function pollWaQr() {
+    if (!waCurrentInstanceId) return;
     try {
-        const res  = await fetch(WA_QR_URL, {
+        const res  = await fetch(`${WA_BASE_URL}/${waCurrentInstanceId}/qr`, {
             headers: { 'Accept': 'application/json' }
         });
         const data = await res.json();
@@ -727,8 +835,7 @@ async function pollWaQr() {
                     document.getElementById('waQrArea').innerHTML = '<i class="bi bi-arrow-clockwise spin" style="font-size:36px;color:#9ca3af;"></i>';
                     document.getElementById('waQrStatus').textContent = 'Aguardando QR Code...';
                     waQrNullCount = 0;
-                    const dummyBtn = { disabled: false, innerHTML: '' };
-                    await startWhatsappConnect(dummyBtn);
+                    openWaModal(waCurrentInstanceId);
                 });
             }
         }
@@ -737,15 +844,21 @@ async function pollWaQr() {
     }
 }
 
-async function disconnectWhatsapp(btn) {
+async function reconnectWhatsapp(btn, instanceId) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
+    openWaModal(instanceId);
+}
+
+async function disconnectWhatsapp(btn, instanceId) {
     confirmAction({
         title: 'Desconectar WhatsApp',
-        message: 'Tem certeza que deseja desconectar o número de WhatsApp?',
+        message: 'Tem certeza que deseja desconectar este número?',
         confirmText: 'Desconectar',
         onConfirm: async () => {
             btn.disabled = true;
             try {
-                const res  = await fetch(WA_DISCONNECT_URL, {
+                const res  = await fetch(`${WA_BASE_URL}/${instanceId}/disconnect`, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -768,39 +881,54 @@ async function disconnectWhatsapp(btn) {
     });
 }
 
-async function importWhatsappHistory(btn) {
-    if (! confirm('Isso irá importar conversas e mensagens dos últimos 5 dias do WhatsApp. Pode levar alguns minutos. Continuar?')) {
-        return;
-    }
-    btn.disabled = true;
-    const original = btn.innerHTML;
-    btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Importando...';
+async function deleteWhatsappInstance(btn, instanceId) {
+    confirmAction({
+        title: 'Remover número',
+        message: 'Tem certeza que deseja remover este número? As conversas serão mantidas.',
+        confirmText: 'Remover',
+        onConfirm: async () => {
+            btn.disabled = true;
+            try {
+                const res  = await fetch(`${WA_BASE_URL}/${instanceId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                });
+                const data = await res.json();
+                if (data.success) {
+                    toastr.success('Número removido.');
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    toastr.error('Erro ao remover.');
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                toastr.error('Erro de conexão.');
+                btn.disabled = false;
+            }
+        },
+    });
+}
+
+async function saveWaLabel(input) {
+    const instanceId = input.dataset.instanceId;
+    const label = input.value.trim();
+    if (!label) return;
 
     try {
-        const res  = await fetch(WA_IMPORT_URL, {
-            method: 'POST',
+        await fetch(`${WA_BASE_URL}/${instanceId}`, {
+            method: 'PUT',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ days: 5 }),
+            body: JSON.stringify({ label }),
         });
-        const data = await res.json();
-        if (data.success) {
-            toastr.success(
-                `Importação concluída! ${data.imported_chats} conversa(s) e ${data.imported_messages} mensagem(ns) importadas.`,
-                'Histórico importado',
-                { timeOut: 6000 }
-            );
-        } else {
-            toastr.error(data.message || 'Erro ao importar histórico.');
-        }
     } catch (e) {
-        toastr.error('Erro de conexão ao importar histórico.');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = original;
+        // silenciar
     }
 }
 

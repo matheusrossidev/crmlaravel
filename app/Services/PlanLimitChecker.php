@@ -12,6 +12,7 @@ use App\Models\Lead;
 use App\Models\Pipeline;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\WhatsappInstance;
 
 class PlanLimitChecker
 {
@@ -108,6 +109,11 @@ class PlanLimitChecker
                 'max'   => $tenant->max_ai_agents ?: 1,
                 'count' => fn () => AiAgent::count(),
                 'label' => 'agentes de IA',
+            ],
+            'whatsapp_instances' => [
+                'max'   => $tenant->max_whatsapp_instances ?: 1,
+                'count' => fn () => WhatsappInstance::where('tenant_id', $tenant->id)->count(),
+                'label' => 'números de WhatsApp',
             ],
         ];
 

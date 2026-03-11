@@ -167,6 +167,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     // Relatórios
     Route::get('/relatorios', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/relatorios/pdf', [ReportController::class, 'exportPdf'])->name('reports.pdf');
 
     // Campanhas
     Route::get   ('/campanhas',                     [CampaignController::class, 'index'])  ->name('campaigns.index');
@@ -174,6 +175,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::put   ('/campanhas/{campaign}',          [CampaignController::class, 'update']) ->name('campaigns.update');
     Route::delete('/campanhas/{campaign}',          [CampaignController::class, 'destroy'])->name('campaigns.destroy');
     Route::get   ('/campanhas/relatorios',          [CampaignController::class, 'reports'])->name('campaigns.reports');
+    Route::get   ('/campanhas/relatorios/pdf',      [CampaignController::class, 'exportReportPdf'])->name('campaigns.reports.pdf');
     Route::get   ('/campanhas/drill-down',          [CampaignController::class, 'drillDown'])->name('campaigns.drill-down');
     Route::get   ('/campanhas/analytics',           [CampaignController::class, 'analytics'])->name('campaigns.analytics');
 
@@ -185,10 +187,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::get('google/redirect',   [IntegrationController::class, 'redirectGoogle'])->name('google.redirect');
         Route::get('google/callback',   [IntegrationController::class, 'callbackGoogle'])->name('google.callback');
         // WhatsApp — rotas específicas ANTES dos wildcards
-        Route::post('whatsapp/connect', [IntegrationController::class, 'connectWhatsapp'])->name('whatsapp.connect');
-        Route::get('whatsapp/qr',       [IntegrationController::class, 'getWhatsappQr'])->name('whatsapp.qr');
-        Route::post('whatsapp/import',  [IntegrationController::class, 'importHistoryWhatsapp'])->name('whatsapp.import');
-        Route::delete('whatsapp',       [IntegrationController::class, 'disconnectWhatsapp'])->name('whatsapp.disconnect');
+        Route::post('whatsapp/connect',                          [IntegrationController::class, 'connectWhatsapp'])->name('whatsapp.connect');
+        Route::get('whatsapp/{instance}/qr',                     [IntegrationController::class, 'getWhatsappQr'])->name('whatsapp.qr');
+        Route::post('whatsapp/{instance}/import',                [IntegrationController::class, 'importHistoryWhatsapp'])->name('whatsapp.import');
+        Route::put('whatsapp/{instance}',                        [IntegrationController::class, 'updateWhatsappInstance'])->name('whatsapp.update');
+        Route::delete('whatsapp/{instance}/disconnect',          [IntegrationController::class, 'disconnectWhatsapp'])->name('whatsapp.disconnect');
+        Route::delete('whatsapp/{instance}',                     [IntegrationController::class, 'deleteWhatsappInstance'])->name('whatsapp.delete');
         // Instagram OAuth
         Route::get('instagram/redirect', [IntegrationController::class, 'redirectInstagram'])->name('instagram.redirect');
         Route::get('instagram/callback', [IntegrationController::class, 'callbackInstagram'])->name('instagram.callback');

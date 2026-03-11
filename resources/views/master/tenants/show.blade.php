@@ -382,6 +382,11 @@
                                value="{{ $tenant->max_ai_agents ?? 0 }}" min="0">
                     </div>
                     <div class="form-group">
+                        <label>Máx. números WhatsApp <small style="color:#9ca3af;">(0 = ilimitado)</small></label>
+                        <input type="number" class="form-control" id="editMaxWhatsappInstances"
+                               value="{{ $tenant->max_whatsapp_instances ?? 1 }}" min="0">
+                    </div>
+                    <div class="form-group">
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;font-size:13px;">
                             <input type="checkbox" id="editAiAnalyst"
                                    {{ ($tenant->settings_json['ai_analyst_enabled'] ?? false) ? 'checked' : '' }}
@@ -511,6 +516,7 @@ async function updateTenant() {
                 max_custom_fields:  parseInt(document.getElementById('editMaxCustomFields').value) || 0,
                 max_chatbot_flows:  parseInt(document.getElementById('editMaxChatbotFlows').value) || 0,
                 max_ai_agents:      parseInt(document.getElementById('editMaxAiAgents').value) || 0,
+                max_whatsapp_instances: parseInt(document.getElementById('editMaxWhatsappInstances').value) || 0,
                 ai_analyst_enabled:          document.getElementById('editAiAnalyst').checked,
                 integration_whatsapp:        document.getElementById('edit_integration_whatsapp').checked,
                 integration_google_calendar: document.getElementById('edit_integration_google_calendar').checked,
