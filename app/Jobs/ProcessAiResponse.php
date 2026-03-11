@@ -241,6 +241,7 @@ class ProcessAiResponse implements ShouldQueue
 
         // ── Roteamento: Agno ou LLM direto ───────────────────────────────────
         $service     = new AiAgentService();
+        $maxLength   = max(200, $agent->max_message_length ?? 500);
         $reply       = '';
         $actions     = [];
         $replyBlocks = [];
@@ -293,7 +294,6 @@ class ProcessAiResponse implements ShouldQueue
                 return;
             }
 
-            $maxLength   = max(200, $agent->max_message_length ?? 500);
             $extraTokens = (! empty($stages) || ! empty($availTags)) ? 300 : 0;
             $maxTokens   = $maxLength + 200 + $extraTokens;
 
