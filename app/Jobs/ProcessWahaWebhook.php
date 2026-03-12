@@ -433,7 +433,7 @@ class ProcessWahaWebhook implements ShouldQueue
                 'instance_id'         => $instance->id,
                 'phone'               => $phone,
                 'is_group'            => $isGroup,
-                'contact_name'        => $contactName,
+                'contact_name'        => $contactName ?: $phone,
                 'contact_picture_url' => $pictureUrl,
                 'status'              => 'open',
                 'started_at'          => now(),
@@ -508,7 +508,7 @@ class ProcessWahaWebhook implements ShouldQueue
                 }
             }
             // Retry nome para contatos individuais sem nome
-            if (! $isGroup && empty($conversation->contact_name)) {
+            if (! $isGroup && (empty($conversation->contact_name) || $conversation->contact_name === $phone)) {
                 $resolvedName = $contactName; // extraído do payload desta mensagem
 
                 if (! $resolvedName) {
