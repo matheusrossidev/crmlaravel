@@ -43,10 +43,11 @@ class ApiKeyController extends Controller
         $prefix  = substr($rawKey, 0, 12) . '...';
 
         $apiKey = ApiKey::create([
-            'name'       => $request->input('name'),
-            'key_hash'   => $keyHash,
-            'key_prefix' => $prefix,
-            'is_active'  => true,
+            'name'             => $request->input('name'),
+            'key_hash'         => $keyHash,
+            'key_prefix'       => $prefix,
+            'permissions_json' => ['*'],
+            'is_active'        => true,
         ]);
 
         // Retorna o raw key UMA ÚNICA VEZ — nunca mais será exibido
