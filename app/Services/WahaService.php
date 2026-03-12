@@ -28,7 +28,7 @@ class WahaService
         if ($webhookUrl) {
             $webhook = [
                 'url'    => $webhookUrl,
-                'events' => ['message', 'message.any', 'message.reaction', 'message.ack', 'message.revoked', 'session.status'],
+                'events' => ['message', 'message.any', 'message.ack', 'session.status'],
             ];
             if ($webhookSecret) {
                 $webhook['hmac'] = ['key' => $webhookSecret];
@@ -38,7 +38,17 @@ class WahaService
 
         return $this->post('/api/sessions', [
             'name'   => $this->session,
-            'config' => ['webhooks' => $webhooks],
+            'config' => [
+                'webhooks' => $webhooks,
+                'chats' => [
+                    'filters' => [
+                        'statuses'  => false,
+                        'groups'    => true,
+                        'channels'  => false,
+                        'broadcast' => false,
+                    ],
+                ],
+            ],
         ]);
     }
 
@@ -50,14 +60,24 @@ class WahaService
     {
         $webhook = [
             'url'    => $webhookUrl,
-            'events' => ['message', 'message.any', 'message.reaction', 'message.ack', 'message.revoked', 'session.status'],
+            'events' => ['message', 'message.any', 'message.ack', 'session.status'],
         ];
         if ($webhookSecret) {
             $webhook['hmac'] = ['key' => $webhookSecret];
         }
 
         return $this->patch("/api/sessions/{$this->session}", [
-            'config' => ['webhooks' => [$webhook]],
+            'config' => [
+                'webhooks' => [$webhook],
+                'chats' => [
+                    'filters' => [
+                        'statuses'  => false,
+                        'groups'    => true,
+                        'channels'  => false,
+                        'broadcast' => false,
+                    ],
+                ],
+            ],
         ]);
     }
 
@@ -304,7 +324,7 @@ class WahaService
     public function setWebhook(string $url, array $events = []): array
     {
         if (empty($events)) {
-            $events = ['message', 'message.any', 'message.reaction', 'message.ack', 'message.revoked', 'session.status'];
+            $events = ['message', 'message.any', 'message.ack', 'session.status'];
         }
 
         return $this->put("/api/{$this->session}/webhooks", [

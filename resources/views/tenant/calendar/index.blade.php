@@ -5,6 +5,7 @@
     $pageIcon = 'calendar3';
 @endphp
 
+@if($calendarConnected)
 @section('topbar_actions')
 <div class="topbar-actions" style="gap:8px;">
     <button class="btn-primary-sm" onclick="openCreateModal()">
@@ -12,6 +13,7 @@
     </button>
 </div>
 @endsection
+@endif
 
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
@@ -402,6 +404,26 @@
 
 @section('content')
 <div class="page-container">
+
+    @if(! $calendarConnected)
+    {{-- ── Empty State — Google Calendar não conectado ──────────────────── --}}
+    <div class="cal-main" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:500px;text-align:center;padding:60px 24px;">
+        <div style="width:80px;height:80px;border-radius:20px;background:#eff6ff;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
+            <i class="bi bi-calendar3" style="font-size:36px;color:#0085f3;"></i>
+        </div>
+        <h2 style="font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 8px;">Sua agenda está quase pronta</h2>
+        <p style="font-size:14px;color:#6b7280;max-width:420px;margin:0 0 28px;line-height:1.6;">
+            Conecte sua conta do Google Calendar para visualizar, criar e gerenciar seus eventos diretamente pelo Syncro.
+        </p>
+        <a href="{{ route('settings.integrations.index') }}"
+           style="display:inline-flex;align-items:center;gap:8px;background:#0085f3;color:#fff;border:none;border-radius:9px;padding:10px 24px;font-size:13px;font-weight:600;text-decoration:none;transition:background .15s;">
+            <i class="bi bi-google"></i> Conectar Google Calendar
+        </a>
+        <p style="font-size:12px;color:#9ca3af;margin-top:16px;">
+            Você será redirecionado para as configurações de integrações
+        </p>
+    </div>
+    @else
     {{-- ── Main Calendar ───────────────────────────────────────────────── --}}
     <div class="cal-main">
 
@@ -430,8 +452,10 @@
 
         <div id="calendar"></div>
     </div>
+    @endif
 </div>
 
+@if($calendarConnected)
 {{-- ── FAB mobile ─────────────────────────────────────────────────────── --}}
 <button class="cal-fab" onclick="openCreateModal()">
     <i class="bi bi-plus-lg"></i>
@@ -566,9 +590,11 @@
         ">Salvar</button>
     </div>
 </aside>
+@endif
 
 @endsection
 
+@if($calendarConnected)
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/locales/pt-br.global.min.js"></script>
@@ -930,3 +956,4 @@ function toISO(dtl) { return new Date(dtl).toISOString(); }
 function addHour(iso) { const d = new Date(iso); d.setHours(d.getHours()+1); return d.toISOString(); }
 </script>
 @endpush
+@endif

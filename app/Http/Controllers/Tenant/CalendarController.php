@@ -8,7 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Models\OAuthConnection;
 use App\Services\GoogleCalendarService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -28,16 +27,14 @@ class CalendarController extends Controller
         return in_array('https://www.googleapis.com/auth/calendar', $scopes, true);
     }
 
-    public function index(): View|RedirectResponse
+    public function index(): View
     {
         $conn = $this->getConnection();
+        $connected = $conn && $this->hasCalendarScope($conn);
 
-        if (! $conn || ! $this->hasCalendarScope($conn)) {
-            return redirect()->route('settings.integrations.index')
-                ->with('info', 'Conecte sua conta Google com permissão de Agenda para usar este recurso.');
-        }
-
-        return view('tenant.calendar.index');
+        return view('tenant.calendar.index', [
+            'calendarConnected' => $connected,
+        ]);
     }
 
     public function events(Request $request): JsonResponse
