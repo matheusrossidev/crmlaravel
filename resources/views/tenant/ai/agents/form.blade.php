@@ -711,34 +711,9 @@
                     </div>
                 </div>
 
-                {{-- Toggle enable_voice_reply (ElevenLabs TTS) --}}
-                <div class="toggle-wrap" style="margin-top:12px;" onclick="toggleVoiceReply()">
-                    <div class="toggle-switch {{ ($agent->enable_voice_reply ?? false) ? 'on' : '' }}" id="voiceReplySwitch"></div>
-                    <div style="margin-left:10px;">
-                        <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="voiceReplyLabel">
-                            {{ ($agent->enable_voice_reply ?? false) ? 'Resposta por Áudio Ativada' : 'Resposta por Áudio Desativada' }}
-                        </div>
-                        <div style="font-size:11px;color:#9ca3af;">Quando o contato enviar áudio, o agente responde com áudio também (ElevenLabs TTS)</div>
-                    </div>
-                </div>
-                <input type="hidden" name="enable_voice_reply" id="voiceReplyInput" value="{{ ($agent->enable_voice_reply ?? false) ? '1' : '0' }}">
-
-                {{-- Voice selection panel --}}
-                <div id="voiceReplyOptions" style="{{ ($agent->enable_voice_reply ?? false) ? '' : 'display:none' }}">
-                    <div style="margin-top:12px;padding:14px;background:#f9fafb;border-radius:10px;border:1px solid #e8eaf0;">
-                        <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:10px;">
-                            <i class="bi bi-mic" style="margin-right:4px;"></i> Selecione a Voz
-                        </div>
-                        <input type="hidden" name="elevenlabs_voice_id" id="elevenlabsVoiceId" value="{{ old('elevenlabs_voice_id', $agent->elevenlabs_voice_id ?? '') }}">
-
-                        <div id="voicesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
-                            <div style="text-align:center;padding:20px;color:#9ca3af;font-size:12px;grid-column:1/-1;">
-                                <i class="bi bi-arrow-clockwise spin" style="font-size:18px;"></i><br>
-                                Carregando vozes...
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {{-- Voice reply hidden (feature temporarily disabled from UI) --}}
+                <input type="hidden" name="enable_voice_reply" value="0">
+                <input type="hidden" name="elevenlabs_voice_id" value="">
 
                 {{-- Departamento de transferência --}}
                 <div style="margin-top:16px;">
@@ -1413,99 +1388,7 @@ function toggleCalendarTool() {
     options.style.display = isOn ? 'none' : '';
 }
 
-/* ── Toggle Voice Reply (ElevenLabs TTS) ── */
-let voicesLoaded = false;
-
-function toggleVoiceReply() {
-    const sw      = document.getElementById('voiceReplySwitch');
-    const input   = document.getElementById('voiceReplyInput');
-    const label   = document.getElementById('voiceReplyLabel');
-    const options = document.getElementById('voiceReplyOptions');
-    const isOn    = input.value === '1';
-    input.value = isOn ? '0' : '1';
-    sw.classList.toggle('on', !isOn);
-    label.textContent = isOn ? 'Resposta por Áudio Desativada' : 'Resposta por Áudio Ativada';
-    options.style.display = isOn ? 'none' : '';
-
-    if (!isOn && !voicesLoaded) {
-        loadVoices();
-    }
-}
-
-async function loadVoices() {
-    const grid = document.getElementById('voicesGrid');
-    const selectedId = document.getElementById('elevenlabsVoiceId').value;
-
-    try {
-        const res  = await fetch('/ia/agentes/voices', {
-            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-        });
-        const data = await res.json();
-
-        if (!data.success || !data.voices.length) {
-            grid.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af;font-size:12px;grid-column:1/-1;">Nenhuma voz disponível. Verifique a API Key do ElevenLabs.</div>';
-            return;
-        }
-
-        voicesLoaded = true;
-        grid.innerHTML = '';
-
-        data.voices.forEach(v => {
-            const isSelected = v.voice_id === selectedId;
-            const labels = v.labels || {};
-            const tags = [labels.gender, labels.age, labels.accent, labels.use_case].filter(Boolean).join(' · ');
-            const card = document.createElement('div');
-            card.className = 'voice-card' + (isSelected ? ' selected' : '');
-            card.dataset.voiceId = v.voice_id;
-            card.style.cssText = 'padding:12px;border-radius:10px;border:1.5px solid ' + (isSelected ? '#0085f3' : '#e8eaf0') + ';background:' + (isSelected ? '#eff6ff' : '#fff') + ';cursor:pointer;transition:all .15s;';
-            card.innerHTML = `
-                <div style="font-size:13px;font-weight:700;color:#1a1d23;margin-bottom:4px;">${escapeHtml(v.name)}</div>
-                <div style="font-size:10px;color:#6b7280;margin-bottom:8px;">${escapeHtml(tags || v.category || '')}</div>
-                <div style="display:flex;align-items:center;gap:6px;">
-                    ${v.preview_url ? `<button type="button" class="btn btn-sm" style="padding:2px 8px;font-size:11px;background:#eff6ff;color:#0085f3;border:1px solid #bfdbfe;border-radius:6px;" onclick="event.stopPropagation();playVoicePreview(this,'${escapeHtml(v.preview_url)}')"><i class="bi bi-play-fill"></i> Ouvir</button>` : ''}
-                    ${isSelected ? '<span style="font-size:10px;color:#0085f3;font-weight:600;">✓ Selecionada</span>' : ''}
-                </div>
-            `;
-            card.addEventListener('click', () => selectVoice(v.voice_id));
-            grid.appendChild(card);
-        });
-    } catch (e) {
-        grid.innerHTML = '<div style="text-align:center;padding:20px;color:#ef4444;font-size:12px;grid-column:1/-1;">Erro ao carregar vozes.</div>';
-    }
-}
-
-function selectVoice(voiceId) {
-    document.getElementById('elevenlabsVoiceId').value = voiceId;
-    document.querySelectorAll('.voice-card').forEach(c => {
-        const isSel = c.dataset.voiceId === voiceId;
-        c.classList.toggle('selected', isSel);
-        c.style.borderColor = isSel ? '#0085f3' : '#e8eaf0';
-        c.style.background  = isSel ? '#eff6ff' : '#fff';
-        const checkSpan = c.querySelector('span[style*="color:#0085f3"]');
-        if (checkSpan) checkSpan.remove();
-        if (isSel) {
-            const btnArea = c.querySelector('div:last-child');
-            if (btnArea) btnArea.insertAdjacentHTML('beforeend', '<span style="font-size:10px;color:#0085f3;font-weight:600;">✓ Selecionada</span>');
-        }
-    });
-}
-
-let currentAudio = null;
-function playVoicePreview(btn, url) {
-    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-    const audio = new Audio(url);
-    currentAudio = audio;
-    const origHtml = btn.innerHTML;
-    btn.innerHTML = '<i class="bi bi-pause-fill"></i> Tocando';
-    audio.play();
-    audio.onended = () => { btn.innerHTML = origHtml; currentAudio = null; };
-    audio.onerror = () => { btn.innerHTML = origHtml; currentAudio = null; };
-}
-
-// Auto-load voices if toggle is already on
-if (document.getElementById('voiceReplyInput')?.value === '1') {
-    loadVoices();
-}
+/* Voice reply JS removed — feature temporarily disabled from UI */
 
 function toggleFollowup() {
     const sw      = document.getElementById('followupSwitch');

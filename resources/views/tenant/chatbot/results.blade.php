@@ -161,6 +161,60 @@ function toggleTranscript(btn, convId, channel) {
         .finally(() => { btn.disabled = false; });
 }
 
+function toggleSelectAll(master) {
+    document.querySelectorAll('.result-check').forEach(cb => {
+        const row = cb.closest('tr');
+        if (row.style.display !== 'none') cb.checked = master.checked;
+    });
+    updateDeleteBtn();
+}
+
+function updateDeleteBtn() {
+    const checked = document.querySelectorAll('.result-check:checked').length;
+    const btn = document.getElementById('btnDeleteSelected');
+    if (btn) {
+        btn.style.display = checked > 0 ? 'inline-flex' : 'none';
+        btn.querySelector('.delete-count').textContent = checked;
+    }
+}
+
+async function deleteSelected() {
+    const checks = document.querySelectorAll('.result-check:checked');
+    if (!checks.length) return;
+    if (!confirm(`Excluir ${checks.length} resultado(s)? Esta ação não pode ser desfeita.`)) return;
+
+    const csrf = document.querySelector('meta[name="csrf-token"]').content;
+    const channel = '{{ $flow->channel }}';
+    let deleted = 0;
+
+    for (const cb of checks) {
+        const convId = cb.dataset.convId;
+        let url;
+        if (channel === 'website') url = `/chats/website-conversations/${convId}`;
+        else if (channel === 'instagram') url = `/chats/instagram-conversations/${convId}`;
+        else url = `/chats/conversations/${convId}`;
+        try {
+            const res = await fetch(url, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            if (res.ok) {
+                const tr = cb.closest('tr');
+                const next = tr.nextElementSibling;
+                if (next && next.classList.contains('transcript-row')) next.remove();
+                tr.remove();
+                deleted++;
+            }
+        } catch (e) { /* skip */ }
+    }
+
+    if (deleted > 0 && typeof toastr !== 'undefined') {
+        toastr.success(`${deleted} resultado(s) excluído(s).`);
+    }
+    document.getElementById('selectAllCheck').checked = false;
+    updateDeleteBtn();
+}
+
 function exportCSV() {
     const table = document.getElementById('resultsTable');
     if (!table) return;
@@ -229,6 +283,10 @@ function exportCSV() {
                 <button class="btn-export" onclick="exportCSV()">
                     <i class="bi bi-download"></i> CSV
                 </button>
+                <button id="btnDeleteSelected" onclick="deleteSelected()"
+                        style="display:none;align-items:center;gap:5px;background:#fee2e2;color:#ef4444;border:1.5px solid #fecaca;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">
+                    <i class="bi bi-trash"></i> Excluir (<span class="delete-count">0</span>)
+                </button>
             </div>
         </div>
 
@@ -242,6 +300,7 @@ function exportCSV() {
                 <table class="results-table" id="resultsTable">
                     <thead>
                         <tr>
+                            <th style="width:36px;"><input type="checkbox" id="selectAllCheck" onchange="toggleSelectAll(this)" style="cursor:pointer;"></th>
                             @foreach($fixedColumns as $col)
                             <th>{{ $col }}</th>
                             @endforeach
@@ -255,6 +314,7 @@ function exportCSV() {
                     <tbody>
                         @foreach($rows as $row)
                         <tr class="result-row" data-status="{{ $row['status'] }}">
+                            <td><input type="checkbox" class="result-check" data-conv-id="{{ $row['id'] }}" onchange="updateDeleteBtn()" style="cursor:pointer;"></td>
                             {{-- Fixed columns --}}
                             <td>{{ $row['date'] ?? '—' }}</td>
                             <td>{{ $row['name'] ?? '—' }}</td>

@@ -768,6 +768,15 @@
             justify-content: center;
             padding: 8px;
         }
+        .sidebar--collapsed .sidebar-footer .dropdown-menu {
+            position: fixed !important;
+            left: 72px !important;
+            bottom: 12px !important;
+            top: auto !important;
+            transform: none !important;
+            min-width: 180px;
+            z-index: 300;
+        }
 
         /* ===== RESPONSIVO ===== */
         @media (max-width: 768px) {

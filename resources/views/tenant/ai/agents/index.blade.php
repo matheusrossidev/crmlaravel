@@ -419,24 +419,24 @@
 
                 <div class="agent-actions">
                     <a href="{{ route('ai.agents.edit', $agent) }}"
-                       class="btn btn-sm btn-light"
-                       style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;text-decoration:none;color:#374151;">
+                       class="btn btn-sm"
+                       style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;text-decoration:none;background:#E0EEFF;color:#007DFF;border:none;">
                         <i class="bi bi-pencil"></i> Editar
                     </a>
-                    <button class="btn btn-sm btn-light"
+                    <button class="btn btn-sm"
                             onclick="openTestChat({{ $agent->id }}, '{{ addslashes($agent->name) }}')"
-                            style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;">
+                            style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;background:#E0EEFF;color:#007DFF;border:none;">
                         <i class="bi bi-chat-dots"></i> Testar
                     </button>
-                    <button class="btn btn-sm btn-light"
+                    <button class="btn btn-sm"
                             onclick="toggleActive({{ $agent->id }}, {{ $agent->is_active ? 'true' : 'false' }}, this)"
-                            style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;">
+                            style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;background:#E0EEFF;color:#007DFF;border:none;">
                         <i class="bi bi-{{ $agent->is_active ? 'pause' : 'play' }}"></i>
                         {{ $agent->is_active ? 'Pausar' : 'Ativar' }}
                     </button>
-                    <button class="btn btn-sm btn-light btn-delete-agent"
+                    <button class="btn btn-sm btn-delete-agent"
                             onclick="deleteAgent({{ $agent->id }}, this)"
-                            style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;color:#9ca3af;">
+                            style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:7px 18px;border-radius:45px;background:#f3f4f6;color:#9ca3af;border:none;">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>

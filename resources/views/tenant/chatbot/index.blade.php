@@ -640,45 +640,45 @@ function closeWidgetTest() {
                     {{-- Actions --}}
                     <div class="flow-actions">
                         <a href="{{ route('chatbot.flows.edit', $flow) }}"
-                           class="btn btn-sm btn-light"
-                           style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;text-decoration:none;color:#374151;">
+                           class="btn btn-sm"
+                           style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;text-decoration:none;background:#E0EEFF;color:#007DFF;border:none;">
                             <i class="bi bi-pencil"></i> Editar
                         </a>
                         <a href="{{ route('chatbot.flows.results', $flow) }}"
-                           class="btn btn-sm btn-light"
-                           style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;text-decoration:none;color:#374151;">
+                           class="btn btn-sm"
+                           style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;text-decoration:none;background:#E0EEFF;color:#007DFF;border:none;">
                             <i class="bi bi-bar-chart-line"></i> Resultados
                         </a>
                         @if($flow->website_token)
-                        <button type="button" class="btn btn-sm btn-light"
+                        <button type="button" class="btn btn-sm"
                                 onclick="openWidgetTest('{{ $flow->website_token }}')"
-                                style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;">
+                                style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;background:#E0EEFF;color:#007DFF;border:none;">
                             <i class="bi bi-play-circle"></i> Testar
                         </button>
                         @if($flow->slug)
-                        <button type="button" class="btn btn-sm btn-light"
+                        <button type="button" class="btn btn-sm"
                                 onclick="copyFlowLink('{{ config('app.url') }}/chat/{{ auth()->user()->tenant->slug }}/{{ $flow->slug }}')"
-                                style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;">
+                                style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;background:#E0EEFF;color:#007DFF;border:none;">
                             <i class="bi bi-link-45deg"></i> Link
                         </button>
                         @endif
-                        <button type="button" class="btn btn-sm btn-light"
+                        <button type="button" class="btn btn-sm"
                                 onclick="openEmbedModal('{{ config('app.url') }}/api/widget/{{ $flow->website_token }}.js', '{{ $flow->widget_type ?? 'bubble' }}', '{{ $flow->slug ? config('app.url') . '/chat/' . auth()->user()->tenant->slug . '/' . $flow->slug : '' }}')"
-                                style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;">
+                                style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;background:#E0EEFF;color:#007DFF;border:none;">
                             <i class="bi bi-code-slash"></i> Embed
                         </button>
                         @endif
-                        <button type="button" class="btn btn-sm btn-light"
+                        <button type="button" class="btn btn-sm"
                                 onclick="toggleFlowActive({{ $flow->id }}, {{ $flow->is_active ? 'true' : 'false' }}, this)"
-                                style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;">
+                                style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;background:#E0EEFF;color:#007DFF;border:none;">
                             <i class="bi bi-{{ $flow->is_active ? 'pause' : 'play' }}"></i>
                             {{ $flow->is_active ? 'Pausar' : 'Ativar' }}
                         </button>
                         <form method="POST" action="{{ route('chatbot.flows.destroy', $flow) }}" style="margin-left:auto;">
                             @csrf @method('DELETE')
-                            <button type="button" class="btn btn-sm btn-light btn-delete-flow"
+                            <button type="button" class="btn btn-sm btn-delete-flow"
                                     onclick="openFlowDeleteModal(this.closest('form'), '{{ addslashes($flow->name) }}')"
-                                    style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 16px;border-radius:9px;color:#9ca3af;">
+                                    style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:7px 18px;border-radius:45px;background:#f3f4f6;color:#9ca3af;border:none;">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </form>
