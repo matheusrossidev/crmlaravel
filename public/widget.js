@@ -147,7 +147,7 @@
 
         /* ── Input row ─────────────────────────────────────── */
         '.syncro-input-row{display:flex;gap:8px;padding:10px 14px;border-top:none;flex-shrink:0;align-items:center;}',
-        '.syncro-input{flex:1;padding:11px 16px;border:1.5px solid #e2e6ed !important;border-radius:28px !important;font-size:14px;outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s;background:#fff;}',
+        '.syncro-input{flex:1;padding:11px 16px;border:1.5px solid #e2e6ed !important;border-radius:28px !important;font-size:16px;outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s;background:#fff;}',
         '.syncro-input:focus{border-color:' + colorPrimary + ' !important;box-shadow:0 0 0 3px ' + colorPrimary + '18;}',
         '.syncro-input.syncro-input-error{border-color:#ef4444 !important;animation:syncro-shake .4s ease-in-out;}',
 
