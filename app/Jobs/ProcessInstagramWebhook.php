@@ -126,16 +126,13 @@ class ProcessInstagramWebhook implements ShouldQueue
 
         $msgId    = $messageData['mid'] ?? null;
         // entry.id é a referência mais confiável — identifica a conta que recebeu o webhook
-        $isFromMe = ($senderId === $entryId)
-            || ($senderId === $instance->instagram_account_id)
-            || ($instance->ig_business_account_id && $senderId === $instance->ig_business_account_id);
+        $isFromMe = ($senderId === $entryId);
 
         Log::channel('instagram')->debug('isFromMe check', [
-            'sender_id'             => $senderId,
-            'entry_id'              => $entryId,
-            'instagram_account_id'  => $instance->instagram_account_id,
-            'ig_business_account_id'=> $instance->ig_business_account_id,
-            'is_from_me'            => $isFromMe,
+            'sender_id'    => $senderId,
+            'recipient_id' => $recipientId,
+            'entry_id'     => $entryId,
+            'is_from_me'   => $isFromMe,
         ]);
 
         // Dedup via Cache (atomic): Meta pode entregar o mesmo evento mais de uma vez
