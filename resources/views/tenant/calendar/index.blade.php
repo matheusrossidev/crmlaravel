@@ -218,6 +218,25 @@
 /* Force block display — hide dot style */
 .fc .fc-daygrid-dot-event { display: none !important; }
 
+/* All-day events — faixa fina estilo Google Calendar */
+.fc .fc-daygrid-event.fc-allday-custom {
+    padding: 1px 8px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    border-radius: 4px !important;
+    opacity: .85;
+    min-height: auto !important;
+    line-height: 1.4 !important;
+    margin-bottom: 0;
+}
+.fc .fc-daygrid-event.fc-allday-custom .fc-event-title {
+    font-weight: 600 !important;
+    font-size: 11px !important;
+}
+.fc .fc-daygrid-event.fc-allday-custom .fc-event-time {
+    display: none !important;
+}
+
 .fc a { text-decoration: none !important; }
 .fc a:hover { color: inherit; }
 
@@ -735,6 +754,11 @@ document.addEventListener('DOMContentLoaded', () => {
         nowIndicator: true,
         eventDisplay: 'block',
         dayMaxEvents: 3,
+        moreLinkText: 'mais',
+
+        eventClassNames(arg) {
+            return arg.event.allDay ? ['fc-allday-custom'] : [];
+        },
 
         events(info, ok, fail) {
             fetch(`${ROUTES.events}?start=${info.startStr}&end=${info.endStr}`, {
