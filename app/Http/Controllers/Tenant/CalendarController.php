@@ -9,6 +9,7 @@ use App\Models\OAuthConnection;
 use App\Models\Tenant;
 use App\Services\GoogleCalendarService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -117,12 +118,17 @@ class CalendarController extends Controller
 
             $allEvents = [];
             foreach ($prefs['visible_ids'] as $calId) {
-                $svc    = new GoogleCalendarService($conn, $calId);
-                $events = $svc->listEvents($start, $end);
-                foreach ($events as &$event) {
-                    $event['calendarId'] = $calId;
+                try {
+                    $svc    = new GoogleCalendarService($conn, $calId);
+                    $events = $svc->listEvents($start, $end);
+                    foreach ($events as &$event) {
+                        $event['calendarId'] = $calId;
+                    }
+                    $allEvents = array_merge($allEvents, $events);
+                } catch (\Throwable $e) {
+                    Log::warning('Calendar skip: ' . $calId . ' — ' . $e->getMessage());
+                    continue;
                 }
-                $allEvents = array_merge($allEvents, $events);
             }
 
             return response()->json($allEvents);
