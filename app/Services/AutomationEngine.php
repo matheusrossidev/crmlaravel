@@ -355,29 +355,127 @@ class AutomationEngine
 
     private function actionSendWhatsappMessage(array $config, array $ctx, Automation $automation): void
     {
-        $conv = $ctx['conversation'] ?? null;
-        if (! ($conv instanceof WhatsappConversation) || empty($config['message'])) {
+        if (empty($config['message'])) {
             return;
         }
 
-        $instance = WhatsappInstance::withoutGlobalScope('tenant')
-            ->where('tenant_id', $automation->tenant_id)
-            ->where('status', 'connected')
-            ->first();
+        // Resolver conversa: do contexto direto, ou buscar via lead
+        $conv = $ctx['conversation'] ?? null;
+        if (! ($conv instanceof WhatsappConversation)) {
+            $lead = $this->resolveLead($ctx);
+            if ($lead) {
+                $conv = WhatsappConversation::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $automation->tenant_id)
+                    ->where('lead_id', $lead->id)
+                    ->latest('last_message_at')
+                    ->first();
+            }
+        }
+
+        // Determinar o telefone de destino
+        $lead  = $this->resolveLead($ctx);
+        $phone = null;
+        if ($conv instanceof WhatsappConversation) {
+            $phone = $conv->phone;
+        } elseif ($lead) {
+            $phone = $lead->phone;
+        }
+
+        if (! $phone) {
+            Log::channel('whatsapp')->warning('AutomationEngine: send_whatsapp_message sem phone', [
+                'automation_id' => $automation->id,
+            ]);
+            return;
+        }
+
+        // Selecionar instância conectada — preferir a da conversa, senão primeira do tenant
+        $instance = null;
+        if ($conv instanceof WhatsappConversation && $conv->instance_id) {
+            $instance = WhatsappInstance::withoutGlobalScope('tenant')
+                ->where('id', $conv->instance_id)
+                ->where('status', 'connected')
+                ->first();
+        }
+        if (! $instance) {
+            $instance = WhatsappInstance::withoutGlobalScope('tenant')
+                ->where('tenant_id', $automation->tenant_id)
+                ->where('status', 'connected')
+                ->first();
+        }
 
         if (! $instance) {
+            Log::channel('whatsapp')->warning('AutomationEngine: nenhuma instância WhatsApp conectada', [
+                'automation_id' => $automation->id,
+                'tenant_id'     => $automation->tenant_id,
+            ]);
             return;
         }
 
-        $text  = $this->interpolate((string) $config['message'], $ctx);
-        $waha  = new WahaService($instance->session_name);
-        $chatId = $conv->phone . '@c.us';
+        // Sem conversa existente: criar automaticamente para rastreabilidade completa
+        if (! ($conv instanceof WhatsappConversation)) {
+            $conv = WhatsappConversation::withoutGlobalScope('tenant')->create([
+                'tenant_id'       => $automation->tenant_id,
+                'instance_id'     => $instance->id,
+                'phone'           => $phone,
+                'lead_id'         => $lead?->id,
+                'is_group'        => false,
+                'contact_name'    => $lead?->name ?? $phone,
+                'status'          => 'open',
+                'started_at'      => now(),
+                'last_message_at' => now(),
+                'unread_count'    => 0,
+            ]);
+
+            Log::channel('whatsapp')->info('AutomationEngine: conversa criada para envio', [
+                'automation_id'   => $automation->id,
+                'conversation_id' => $conv->id,
+                'phone'           => $phone,
+            ]);
+
+            // Vincular conversa ao lead se ainda não vinculado
+            if ($lead && ! $lead->whatsapp_conversation_id) {
+                Lead::withoutGlobalScope('tenant')
+                    ->where('id', $lead->id)
+                    ->whereNull('whatsapp_conversation_id')
+                    ->update([]);
+            }
+        }
+
+        $text   = $this->interpolate((string) $config['message'], $ctx);
+        $waha   = new WahaService($instance->session_name);
+        $chatId = $phone . '@c.us';
 
         try {
-            $waha->sendText($chatId, $text);
+            $result = $waha->sendText($chatId, $text);
+
+            // Salvar mensagem enviada no banco (para aparecer no chat)
+            if (empty($result['error'])) {
+                \App\Models\WhatsappMessage::create([
+                    'tenant_id'       => $automation->tenant_id,
+                    'conversation_id' => $conv->id,
+                    'waha_message_id' => $result['id'] ?? ('auto_' . uniqid()),
+                    'direction'       => 'outbound',
+                    'type'            => 'text',
+                    'body'            => $text,
+                    'ack'             => 'sent',
+                    'sent_at'         => now(),
+                ]);
+
+                WhatsappConversation::withoutGlobalScope('tenant')
+                    ->where('id', $conv->id)
+                    ->update(['last_message_at' => now()]);
+            }
+
+            Log::channel('whatsapp')->info('AutomationEngine: mensagem enviada', [
+                'automation_id' => $automation->id,
+                'phone'         => $phone,
+                'instance'      => $instance->session_name,
+            ]);
         } catch (\Throwable $e) {
             Log::channel('whatsapp')->warning('AutomationEngine: falha ao enviar mensagem', [
+                'automation_id'   => $automation->id,
                 'conversation_id' => $conv->id,
+                'phone'           => $phone,
                 'error'           => $e->getMessage(),
             ]);
         }

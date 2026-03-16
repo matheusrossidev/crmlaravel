@@ -173,7 +173,7 @@ class ProcessWahaWebhook implements ShouldQueue
         if (! $isGroup && strlen($phone) > 13 && ctype_digit($phone)) {
             try {
                 $wahaLid     = new \App\Services\WahaService($instance->session_name);
-                $contactInfo = $wahaLid->getContactInfo($from); // passa o JID completo "@lid"
+                $contactInfo = $wahaLid->getContactInfo($this->normalizeJidForApi($from));
                 $resolvedJid = $contactInfo['id'] ?? '';
                 if ($resolvedJid && ! str_ends_with($resolvedJid, '@lid')) {
                     $resolved = (string) preg_replace('/[:@].+$/', '', $resolvedJid);
@@ -188,10 +188,23 @@ class ProcessWahaWebhook implements ShouldQueue
             } catch (\Throwable) {}
         }
 
+        // Extrair LID numérico da mensagem (para mapeamento LID↔phone persistente)
+        $currentLid = null;
+        if (! $isGroup) {
+            $info = $msg['_data']['Info'] ?? [];
+            foreach ([$msg['from'] ?? '', $info['Chat'] ?? '', $info['Sender'] ?? '', $msg['participant'] ?? ''] as $lidCandidate) {
+                if ($lidCandidate && str_ends_with($lidCandidate, '@lid')) {
+                    $currentLid = (string) preg_replace('/[:@].+$/', '', $lidCandidate);
+                    break;
+                }
+            }
+        }
+
         Log::channel('whatsapp')->info('Processando mensagem', [
             'event'  => $event,
             'from'   => $from,
             'phone'  => $phone,
+            'lid'    => $currentLid,
             'msg_id' => $msg['id'] ?? null,
         ]);
 
@@ -199,6 +212,27 @@ class ProcessWahaWebhook implements ShouldQueue
             ->where('tenant_id', $instance->tenant_id)
             ->where('phone', $phone)
             ->first();
+
+        // Fallback: buscar conversa pela coluna `lid` (mapeamento persistente LID↔phone)
+        if (! $conversation && $currentLid) {
+            $conversation = WhatsappConversation::withoutGlobalScope('tenant')
+                ->where('tenant_id', $instance->tenant_id)
+                ->where('lid', $currentLid)
+                ->first();
+
+            if ($conversation && $conversation->phone !== $phone) {
+                Log::channel('whatsapp')->info('Conversa encontrada via lid — migrando phone', [
+                    'conversation_id' => $conversation->id,
+                    'old_phone'       => $conversation->phone,
+                    'new_phone'       => $phone,
+                    'lid'             => $currentLid,
+                ]);
+                WhatsappConversation::withoutGlobalScope('tenant')
+                    ->where('id', $conversation->id)
+                    ->update(['phone' => $phone]);
+                $conversation->phone = $phone;
+            }
+        }
 
         // Fallback: procurar conversa que tenha o telefone armazenado no formato @lid
         // (dados antigos antes da correção de normalização).
@@ -377,7 +411,7 @@ class ProcessWahaWebhook implements ShouldQueue
                 }
                 try {
                     $wahaForContact = new \App\Services\WahaService($instance->session_name);
-                    $contactInfo    = $wahaForContact->getContactInfo($jidForName);
+                    $contactInfo    = $wahaForContact->getContactInfo($this->normalizeJidForApi($jidForName));
                     $contactName    = $contactInfo['name'] ?? $contactInfo['pushName'] ?? null;
                 } catch (\Throwable) {}
             } else {
@@ -425,13 +459,14 @@ class ProcessWahaWebhook implements ShouldQueue
                 $wahaForPic = new \App\Services\WahaService($instance->session_name);
                 $pictureUrl = $isGroup
                     ? $wahaForPic->getGroupPicture($from)
-                    : $wahaForPic->getContactPicture($from);
+                    : $wahaForPic->getContactPicture($this->normalizeJidForApi($from));
             } catch (\Throwable) {}
 
             $conversation = WhatsappConversation::withoutGlobalScope('tenant')->create([
                 'tenant_id'           => $instance->tenant_id,
                 'instance_id'         => $instance->id,
                 'phone'               => $phone,
+                'lid'                 => $currentLid,
                 'is_group'            => $isGroup,
                 'contact_name'        => $contactName ?: $phone,
                 'contact_picture_url' => $pictureUrl,
@@ -492,13 +527,18 @@ class ProcessWahaWebhook implements ShouldQueue
             // Atualizar foto de perfil: URLs do WhatsApp expiram.
             // Re-fetch a cada 6h (throttle via Cache) ou quando ausente.
             $convUpdates = [];
+
+            // Persistir LID se ainda não salvo (mapeamento LID↔phone)
+            if ($currentLid && empty($conversation->lid)) {
+                $convUpdates['lid'] = $currentLid;
+            }
             $picCacheKey = "waha:pic_refresh:{$conversation->id}";
             if (! Cache::has($picCacheKey)) {
                 try {
                     $wahaForPic  = new \App\Services\WahaService($instance->session_name);
                     $pic         = $isGroup
                         ? $wahaForPic->getGroupPicture($from)
-                        : $wahaForPic->getContactPicture($from);
+                        : $wahaForPic->getContactPicture($this->normalizeJidForApi($from));
                     if ($pic && $pic !== $conversation->contact_picture_url) {
                         $convUpdates['contact_picture_url'] = $pic;
                     }
@@ -507,31 +547,48 @@ class ProcessWahaWebhook implements ShouldQueue
                     Cache::put($picCacheKey, 1, 3600); // 1h se falhou
                 }
             }
-            // Retry nome para contatos individuais sem nome
-            if (! $isGroup && (empty($conversation->contact_name) || $conversation->contact_name === $phone)) {
+            // Retry nome para contatos individuais sem nome ou com LID/phone como nome
+            $nameIsPlaceholder = empty($conversation->contact_name)
+                || $conversation->contact_name === $phone
+                || ($currentLid && $conversation->contact_name === $currentLid)
+                || (strlen($conversation->contact_name) > 13 && ctype_digit($conversation->contact_name));
+            if (! $isGroup && $nameIsPlaceholder) {
                 $resolvedName = $contactName; // extraído do payload desta mensagem
 
                 if (! $resolvedName) {
                     try {
                         $jidForName   = $from;
+                        $senderAlt    = $msg['_data']['Info']['SenderAlt']    ?? '';
                         $recipientAlt = $msg['_data']['Info']['RecipientAlt'] ?? '';
-                        if (str_ends_with($from, '@lid') && $recipientAlt && ! str_ends_with($recipientAlt, '@lid')) {
+                        // Inbound com @lid: SenderAlt tem o JID real do remetente
+                        if (str_ends_with($from, '@lid') && ! $isFromMe && $senderAlt && ! str_ends_with($senderAlt, '@lid')) {
+                            $jidForName = $senderAlt;
+                        }
+                        // FromMe com @lid: RecipientAlt tem o JID real do destinatário
+                        if (str_ends_with($from, '@lid') && $isFromMe && $recipientAlt && ! str_ends_with($recipientAlt, '@lid')) {
                             $jidForName = $recipientAlt;
                         }
                         $wahaContact  = new \App\Services\WahaService($instance->session_name);
-                        $contactInfo  = $wahaContact->getContactInfo($jidForName);
+                        $contactInfo  = $wahaContact->getContactInfo($this->normalizeJidForApi($jidForName));
                         $resolvedName = $contactInfo['name'] ?? $contactInfo['pushName'] ?? null;
                     } catch (\Throwable) {}
                 }
 
                 if ($resolvedName) {
                     $convUpdates['contact_name'] = $resolvedName;
-                    // Atualizar lead vinculado se o nome ainda for o telefone (fallback original)
+                    // Atualizar lead vinculado se o nome ainda for phone ou LID (fallback original)
                     if ($conversation->lead_id) {
-                        Lead::withoutGlobalScope('tenant')
+                        $leadNameQuery = Lead::withoutGlobalScope('tenant')
                             ->where('id', $conversation->lead_id)
-                            ->where('name', $phone)
-                            ->update(['name' => $resolvedName]);
+                            ->where(function ($q) use ($phone, $currentLid) {
+                                $q->where('name', $phone);
+                                if ($currentLid) {
+                                    $q->orWhere('name', $currentLid);
+                                }
+                                // Nome que parece LID (>13 dígitos, apenas números)
+                                $q->orWhereRaw("LENGTH(name) > 13 AND name REGEXP '^[0-9]+$'");
+                            });
+                        $leadNameQuery->update(['name' => $resolvedName]);
                     }
                 }
             }
@@ -565,6 +622,11 @@ class ProcessWahaWebhook implements ShouldQueue
 
         // Vincular a conversa a um Lead — apenas para conversas individuais (não grupos)
         if (! $isGroup && ! $conversation->lead_id) {
+            $leadExisted = Lead::withoutGlobalScope('tenant')
+                ->where('tenant_id', $instance->tenant_id)
+                ->where('phone', $phone)
+                ->exists();
+
             $lead = $this->findOrCreateLead($instance->tenant_id, $phone, $contactName);
             if ($lead) {
                 WhatsappConversation::withoutGlobalScope('tenant')
@@ -572,6 +634,18 @@ class ProcessWahaWebhook implements ShouldQueue
                     ->update(['lead_id' => $lead->id]);
                 $conversation->lead_id = $lead->id;
                 Log::channel('whatsapp')->info('Lead vinculado', ['lead_id' => $lead->id, 'phone' => $phone]);
+
+                // Disparar automação lead_created (com conversation no contexto para envio de msg)
+                if (! $leadExisted) {
+                    try {
+                        (new AutomationEngine())->run('lead_created', [
+                            'tenant_id'    => $instance->tenant_id,
+                            'channel'      => 'whatsapp',
+                            'lead'         => $lead,
+                            'conversation' => $conversation,
+                        ]);
+                    } catch (\Throwable) {}
+                }
             } else {
                 Log::channel('whatsapp')->warning('Lead não criado — tenant sem pipeline configurado', ['phone' => $phone]);
             }
@@ -943,37 +1017,41 @@ class ProcessWahaWebhook implements ShouldQueue
 
     private function normalizePhone(string $from, array $msg = [], bool $isFromMe = false): string
     {
-        // WAHA GOWS engine sometimes identifies contacts via LID (internal WhatsApp numeric ID)
+        // WAHA GOWS engine identifies contacts via LID (internal WhatsApp numeric ID)
         // instead of their real phone number. When this happens, Chat/Sender arrive as
-        // "83296646115442@lid" but SenderAlt contains the real JID:
-        //   _data.Info.Chat:      "83296646115442@lid"          ← LID (internal ID)
-        //   _data.Info.SenderAlt: "556181749938@s.whatsapp.net" ← real phone
+        // "83296646115442@lid" but SenderAlt/RecipientAlt contain the real JID:
+        //   _data.Info.Chat:         "83296646115442@lid"          ← LID (internal ID)
+        //   _data.Info.SenderAlt:    "556181749938@s.whatsapp.net" ← real phone (inbound)
+        //   _data.Info.RecipientAlt: "556181749938@s.whatsapp.net" ← real phone (fromMe)
         //
-        // Discriminator: any JID ending in "@lid" is an internal WhatsApp ID, not a phone.
-        // Any JID ending in "@c.us", "@s.whatsapp.net", etc. is a real phone number.
-        //
-        // Check candidates in order; skip LIDs and group/broadcast JIDs; return the first
-        // real phone found. Works for any country (not restricted to Brazilian numbers).
+        // Priority: Alt fields first (most reliable), then Chat, then $from (pre-processed).
         $info = $msg['_data']['Info'] ?? [];
 
-        $chatJid    = $info['Chat'] ?? '';
-        $candidates = [
-            $chatJid,                                                                    // conversation JID — contact in 1:1 chats
-            str_ends_with($chatJid, '@lid') ? ($info['SenderAlt']    ?? '') : '',       // SenderAlt only when Chat is LID (not for groups)
-            str_ends_with($chatJid, '@lid') ? ($info['RecipientAlt'] ?? '') : '',       // RecipientAlt: real phone in fromMe @lid messages
-            $from,                                                                       // pre-processed in handleInbound() for fromMe messages
-        ];
+        $chatJid      = $info['Chat']         ?? '';
+        $senderAlt    = $info['SenderAlt']    ?? '';
+        $recipientAlt = $info['RecipientAlt'] ?? '';
+        $chatIsLid    = str_ends_with($chatJid, '@lid');
+
+        // Build candidates: Alt fields FIRST when Chat is LID (they have the real phone)
+        $candidates = [];
+        if ($chatIsLid && ! $isFromMe && $senderAlt) {
+            $candidates[] = $senderAlt;       // inbound: SenderAlt = real phone of sender
+        }
+        if ($chatIsLid && $isFromMe && $recipientAlt) {
+            $candidates[] = $recipientAlt;    // fromMe: RecipientAlt = real phone of recipient
+        }
+        $candidates[] = $chatJid;             // conversation JID — contact in 1:1 chats
+        $candidates[] = $from;                // pre-processed in handleInbound() for fromMe
 
         foreach ($candidates as $jid) {
             if (! $jid
                 || str_contains($jid, '@g.us')
                 || str_contains($jid, '@broadcast')
-                || str_ends_with($jid, '@lid')   // LID = internal WhatsApp ID, skip
+                || str_ends_with($jid, '@lid')
             ) {
                 continue;
             }
 
-            // Strip @server-suffix and optional :device-id — keep only the phone digits
             $digits = (string) preg_replace('/[:@].+$/u', '', $jid);
             if ($digits) {
                 return $digits;
@@ -982,6 +1060,17 @@ class ProcessWahaWebhook implements ShouldQueue
 
         // All candidates were LIDs — last resort: strip suffix from 'from' as-is
         return (string) preg_replace('/[:@].+$/u', '', $from) ?: $from;
+    }
+
+    /**
+     * Normaliza JID para formato @c.us aceito pela WAHA API.
+     * "556192008997@s.whatsapp.net" → "556192008997@c.us"
+     * "556192008997@c.us" → inalterado
+     * "36576092528787@lid" → inalterado (API tenta resolver)
+     */
+    private function normalizeJidForApi(string $jid): string
+    {
+        return (string) preg_replace('/@s\.whatsapp\.net$/', '@c.us', $jid);
     }
 
     private function extractMedia(array $msg): array

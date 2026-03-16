@@ -17,7 +17,7 @@ class WhatsappConversation extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'tenant_id', 'instance_id', 'lead_id', 'phone', 'is_group',
+        'tenant_id', 'instance_id', 'lead_id', 'phone', 'lid', 'is_group',
         'contact_name', 'contact_picture_url', 'tags',
         'whatsapp_message_id', 'referral_source', 'referral_campaign_id',
         'status', 'assigned_user_id', 'department_id', 'ai_agent_id',
