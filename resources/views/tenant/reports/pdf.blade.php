@@ -107,14 +107,14 @@
                 <div class="kpi-label">Leads</div>
                 <div class="kpi-value">{{ number_format($totalLeads, 0, ',', '.') }}</div>
                 <div class="kpi-delta {{ $deltaLeads === null ? 'kpi-delta-neutral' : ($deltaLeads >= 0 ? 'kpi-delta-up' : 'kpi-delta-down') }}">
-                    @if($deltaLeads !== null) {{ $deltaLeads >= 0 ? '↑' : '↓' }} {{ number_format(abs($deltaLeads), 1, ',', '.') }}% vs anterior @else Sem dados anteriores @endif
+                    @if($deltaLeads !== null) {{ $deltaLeads >= 0 ? '+' : '-' }}{{ number_format(abs($deltaLeads), 1, ',', '.') }}% vs anterior @else Sem dados anteriores @endif
                 </div>
             </td>
             <td>
                 <div class="kpi-label">Receita</div>
                 <div class="kpi-value-green">R$ {{ number_format($totalRevenue, 0, ',', '.') }}</div>
                 <div class="kpi-delta {{ $deltaRevenue === null ? 'kpi-delta-neutral' : ($deltaRevenue >= 0 ? 'kpi-delta-up' : 'kpi-delta-down') }}">
-                    @if($deltaRevenue !== null) {{ $deltaRevenue >= 0 ? '↑' : '↓' }} {{ number_format(abs($deltaRevenue), 1, ',', '.') }}% vs anterior @else Sem dados anteriores @endif
+                    @if($deltaRevenue !== null) {{ $deltaRevenue >= 0 ? '+' : '-' }}{{ number_format(abs($deltaRevenue), 1, ',', '.') }}% vs anterior @else Sem dados anteriores @endif
                 </div>
             </td>
             <td>

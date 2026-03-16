@@ -419,7 +419,7 @@
                 <div class="stat-value-row">
                     <span class="stat-value" data-val="{{ $leadsThisMonth }}" data-prefix="" data-suffix="">{{ $cfLeads }}</span>
                     @if($leadsTrend !== null)
-                    <span class="trend-badge {{ $leadsTrend >= 0 ? 'up' : 'down' }}">{{ $leadsTrend >= 0 ? '↗' : '↘' }} {{ abs($leadsTrend) }}%</span>
+                    <span class="trend-badge {{ $leadsTrend >= 0 ? 'up' : 'down' }}"><i class="bi bi-arrow-{{ $leadsTrend >= 0 ? 'up' : 'down' }}-right"></i> {{ abs($leadsTrend) }}%</span>
                     @endif
                 </div>
                 <span class="stat-sub">{{ $leadsTrend !== null ? 'vs mês ant.' : 'sem dados anteriores' }}</span>
@@ -436,7 +436,7 @@
                 <div class="stat-value-row">
                     <span class="stat-value" data-val="{{ $totalSales }}" data-prefix="R$ " data-suffix="">{{ $cfSales }}</span>
                     @if($salesTrend !== null)
-                    <span class="trend-badge {{ $salesTrend >= 0 ? 'up' : 'down' }}">{{ $salesTrend >= 0 ? '↗' : '↘' }} {{ abs($salesTrend) }}%</span>
+                    <span class="trend-badge {{ $salesTrend >= 0 ? 'up' : 'down' }}"><i class="bi bi-arrow-{{ $salesTrend >= 0 ? 'up' : 'down' }}-right"></i> {{ abs($salesTrend) }}%</span>
                     @endif
                 </div>
                 <span class="stat-sub">{{ $salesTrend !== null ? 'vs mês ant.' : 'receita fechada' }}</span>

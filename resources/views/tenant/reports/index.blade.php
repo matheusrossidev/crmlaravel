@@ -553,7 +553,7 @@
             <div class="kpi-value">{{ number_format($totalLeads, 0, ',', '.') }}</div>
             @if($deltaLeads !== null)
             <div class="kpi-delta {{ $deltaLeads >= 0 ? 'up' : 'down' }}">
-                {{ $deltaLeads >= 0 ? '↑' : '↓' }} {{ abs($deltaLeads) }}% vs período anterior
+                <i class="bi bi-arrow-{{ $deltaLeads >= 0 ? 'up' : 'down' }}"></i> {{ abs($deltaLeads) }}% vs período anterior
             </div>
             @else
             <div class="kpi-delta neu">Sem dados anteriores</div>
@@ -566,7 +566,7 @@
             <div class="kpi-value" style="color:#10B981;">R$ {{ number_format($totalRevenue, 0, ',', '.') }}</div>
             @if($deltaRevenue !== null)
             <div class="kpi-delta {{ $deltaRevenue >= 0 ? 'up' : 'down' }}">
-                {{ $deltaRevenue >= 0 ? '↑' : '↓' }} {{ abs($deltaRevenue) }}% vs período anterior
+                <i class="bi bi-arrow-{{ $deltaRevenue >= 0 ? 'up' : 'down' }}"></i> {{ abs($deltaRevenue) }}% vs período anterior
             </div>
             @else
             <div class="kpi-delta neu">Sem dados anteriores</div>
