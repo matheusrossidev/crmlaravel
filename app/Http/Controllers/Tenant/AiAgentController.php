@@ -465,6 +465,7 @@ class AiAgentController extends Controller
             'followup_hour_end'          => 'nullable|integer|min:1|max:23',
             'enable_calendar_tool'       => 'nullable|boolean',
             'calendar_tool_instructions' => 'nullable|string|max:2000',
+            'calendar_id'                => 'nullable|string|max:191',
             // Widget fields (web_chat channel)
             'bot_name'                   => 'nullable|string|max:100',
             'bot_avatar'                 => 'nullable|string|max:500',
@@ -482,6 +483,7 @@ class AiAgentController extends Controller
         $data['enable_intent_notify']   = $request->boolean('enable_intent_notify');
         $data['followup_enabled']       = $request->boolean('followup_enabled');
         $data['enable_calendar_tool']   = $request->boolean('enable_calendar_tool');
+        $data['calendar_id']            = $request->input('calendar_id') ?: null;
         $data['enable_voice_reply']     = $request->boolean('enable_voice_reply');
         $data['use_agno']               = true; // Todos os agentes usam Agno
         $data['transfer_to_user_id']         = $request->input('transfer_to_user_id') ?: null;

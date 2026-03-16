@@ -158,7 +158,7 @@
             padding: 11px 14px 11px 38px;
             border: 1px solid #CDDEF6;
             border-radius: 100px;
-            font-size: 14px;
+            font-size: 16px;
             font-family: 'DM Sans', sans-serif;
             color: #1a1d23;
             outline: none;

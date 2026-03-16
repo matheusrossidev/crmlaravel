@@ -37,17 +37,23 @@
     .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
     .form-group { margin-bottom: 14px; }
     .form-label {
-        display: block; font-size: 11.5px; font-weight: 700;
-        color: #6b7280; margin-bottom: 5px;
-        text-transform: uppercase; letter-spacing: .05em;
+        display: block; font-size: 12.5px; font-weight: 600;
+        color: #374151; margin-bottom: 4px;
     }
     .form-control {
         width: 100%; padding: 9px 12px;
         border: 1.5px solid #e8eaf0; border-radius: 9px;
-        font-size: 13.5px; outline: none; font-family: inherit;
-        transition: border-color .15s; box-sizing: border-box;
+        font-size: 16px; outline: none;
+        font-family: 'Inter', sans-serif;
+        color: #1a1d23; background: #fafafa;
+        transition: border-color .15s, box-shadow .15s;
+        box-sizing: border-box;
     }
-    .form-control:focus { border-color: #0085f3; }
+    .form-control:focus {
+        border-color: #3B82F6;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+    }
     textarea.form-control { resize: vertical; min-height: 90px; }
     select.form-control { background: #fff; }
 
@@ -696,6 +702,18 @@
 
                 {{-- Instruções de agenda (visível só quando habilitado) --}}
                 <div id="calendarToolOptions" style="{{ ($agent->enable_calendar_tool ?? false) ? '' : 'display:none' }}">
+                    {{-- Seleção de agenda --}}
+                    <div style="margin-top:12px;">
+                        <label class="form-label fw-semibold" style="font-size:13px;">Agenda do Google Calendar</label>
+                        <select name="calendar_id" id="calendarIdSelect" class="form-select form-select-sm" style="max-width:320px;">
+                            <option value="">Agenda principal (primary)</option>
+                        </select>
+                        <div class="form-text" style="font-size:11px;color:#9ca3af;margin-top:4px;">
+                            Selecione em qual agenda o agente criará eventos. As agendas são carregadas da conta Google conectada.
+                            <a href="#" onclick="loadAgentCalendars(); return false;" style="color:#0085f3;">Recarregar lista</a>
+                        </div>
+                    </div>
+
                     <div style="margin-top:12px;">
                         <label class="form-label fw-semibold" style="font-size:13px;">Como o agente deve usar a agenda</label>
                         <textarea name="calendar_tool_instructions"
@@ -1386,6 +1404,44 @@ function toggleCalendarTool() {
     sw.classList.toggle('on', !isOn);
     label.textContent = isOn ? 'Agenda Google Calendar Desativada' : 'Agenda Google Calendar Ativada';
     options.style.display = isOn ? 'none' : '';
+    // Load calendars when enabling for the first time
+    if (!isOn) loadAgentCalendars();
+}
+
+const SAVED_CALENDAR_ID = @json(old('calendar_id', $agent->calendar_id ?? ''));
+let agentCalendarsLoaded = false;
+
+function loadAgentCalendars() {
+    if (agentCalendarsLoaded) return;
+    const select = document.getElementById('calendarIdSelect');
+    select.innerHTML = '<option value="">Carregando...</option>';
+
+    fetch('{{ route("calendar.calendars") }}', {
+        headers: { Accept: 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content },
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            select.innerHTML = '<option value="">Agenda principal (primary)</option>';
+            return;
+        }
+        let html = '<option value="">Agenda principal (primary)</option>';
+        data.forEach(c => {
+            const label    = c.summary + (c.primary ? ' (principal)' : '');
+            const selected = (SAVED_CALENDAR_ID === c.id) ? ' selected' : '';
+            html += `<option value="${c.id}"${selected}>${label}</option>`;
+        });
+        select.innerHTML = html;
+        agentCalendarsLoaded = true;
+    })
+    .catch(() => {
+        select.innerHTML = '<option value="">Agenda principal (primary)</option>';
+    });
+}
+
+// Auto-load if calendar tool is already enabled
+if (document.getElementById('calendarToolInput')?.value === '1') {
+    document.addEventListener('DOMContentLoaded', () => loadAgentCalendars());
 }
 
 /* Voice reply JS removed — feature temporarily disabled from UI */

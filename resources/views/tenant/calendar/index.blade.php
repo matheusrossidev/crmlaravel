@@ -8,6 +8,9 @@
 @if($calendarConnected)
 @section('topbar_actions')
 <div class="topbar-actions" style="gap:8px;">
+    <button class="btn-outline-sm" onclick="openCalendarSelector()" title="Selecionar agendas">
+        <i class="bi bi-collection"></i> Agendas
+    </button>
     <button class="btn-primary-sm" onclick="openCreateModal()">
         <i class="bi bi-plus-lg"></i> Novo evento
     </button>
@@ -399,6 +402,54 @@
     flex: 1;
     text-align: center;
 }
+
+/* ── Calendar Selector Modal ────────────────────────────────────────────── */
+.cal-selector-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.35); z-index: 1070;
+}
+.cal-selector-overlay.open { display: block; }
+.cal-selector-modal {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: #fff; border-radius: 16px; width: 440px; max-width: calc(100vw - 32px);
+    max-height: 80vh; z-index: 1071;
+    box-shadow: 0 16px 64px rgba(0,0,0,.18);
+    display: none; flex-direction: column;
+    animation: popIn .15s cubic-bezier(.4,0,.2,1);
+}
+.cal-selector-modal.open { display: flex; }
+.cal-selector-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 22px; border-bottom: 1px solid #f0f2f7;
+}
+.cal-selector-header h3 { font-size: 15px; font-weight: 700; color: #1a1d23; margin: 0; }
+.cal-selector-body { flex: 1; overflow-y: auto; padding: 16px 22px; }
+.cal-selector-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid #f7f8fa;
+}
+.cal-selector-item:last-child { border-bottom: none; }
+.cal-selector-dot {
+    width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+}
+.cal-selector-name { flex: 1; font-size: 13px; font-weight: 500; color: #374151; }
+.cal-selector-badges { display: flex; gap: 6px; align-items: center; }
+.cal-selector-default {
+    font-size: 10px; font-weight: 600; color: #0085f3; background: #eff6ff;
+    border: 1px solid #bfdbfe; border-radius: 10px; padding: 2px 8px;
+    cursor: pointer; white-space: nowrap;
+}
+.cal-selector-default.active { background: #0085f3; color: #fff; border-color: #0085f3; }
+.cal-selector-check {
+    width: 18px; height: 18px; border-radius: 5px; cursor: pointer; accent-color: #0085f3;
+}
+.cal-selector-footer {
+    display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+    padding: 14px 22px; border-top: 1px solid #f0f2f7;
+}
+.cal-selector-loading {
+    text-align: center; padding: 32px 0; color: #9ca3af; font-size: 13px;
+}
 </style>
 @endpush
 
@@ -456,6 +507,22 @@
 </div>
 
 @if($calendarConnected)
+{{-- ── Calendar Selector Modal ───────────────────────────────────────── --}}
+<div class="cal-selector-overlay" id="calSelectorOverlay" onclick="closeCalendarSelector()"></div>
+<div class="cal-selector-modal" id="calSelectorModal">
+    <div class="cal-selector-header">
+        <h3><i class="bi bi-collection" style="margin-right:6px;color:#0085f3"></i>Selecionar Agendas</h3>
+        <button onclick="closeCalendarSelector()" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:20px;line-height:1;padding:4px;">x</button>
+    </div>
+    <div class="cal-selector-body" id="calSelectorBody">
+        <div class="cal-selector-loading"><i class="bi bi-arrow-repeat"></i> Carregando agendas...</div>
+    </div>
+    <div class="cal-selector-footer">
+        <button onclick="closeCalendarSelector()" style="padding:8px 18px;background:#f1f5f9;border:1px solid #e2e8f0;color:#374151;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">Cancelar</button>
+        <button onclick="saveCalendarPrefs()" id="btnSaveCalPrefs" style="padding:8px 20px;background:#0085f3;border:none;color:#fff;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">Salvar</button>
+    </div>
+</div>
+
 {{-- ── FAB mobile ─────────────────────────────────────────────────────── --}}
 <button class="cal-fab" onclick="openCreateModal()">
     <i class="bi bi-plus-lg"></i>
@@ -603,15 +670,20 @@
 
 const CSRF   = document.querySelector('meta[name=csrf-token]')?.content;
 const ROUTES = {
-    events:  '{{ route('calendar.events') }}',
-    store:   '{{ route('calendar.store') }}',
-    update:  id => '{{ url('agenda/eventos') }}/' + id,
-    destroy: id => '{{ url('agenda/eventos') }}/' + id,
+    events:      '{{ route('calendar.events') }}',
+    store:       '{{ route('calendar.store') }}',
+    update:      id => '{{ url('agenda/eventos') }}/' + id,
+    destroy:     id => '{{ url('agenda/eventos') }}/' + id,
+    calendars:   '{{ route('calendar.calendars') }}',
+    preferences: '{{ route('calendar.preferences') }}',
 };
 
 // ── Slothui Color palette (vibrant) ──────────────────────────────────────
 const PALETTE = ['#6366f1','#22c55e','#f59e0b','#3b82f6','#ef4444','#8b5cf6','#14b8a6','#f97316','#ec4899','#06b6d4'];
+const calendarColorMap = {}; // calendarId → color (populated from API or hash)
 function eventColor(str) {
+    // Prefer calendar-level color if available
+    if (str && calendarColorMap[str]) return calendarColorMap[str];
     let h = 0;
     for (let i = 0; i < (str || '').length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
     return PALETTE[Math.abs(h) % PALETTE.length];
@@ -674,12 +746,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     fail(data.error);
                     return;
                 }
-                const colored = data.map(e => ({
-                    ...e,
-                    backgroundColor: eventColor(e.id || e.title || ''),
-                    borderColor:     eventColor(e.id || e.title || ''),
-                    textColor:       '#fff',
-                }));
+                const colored = data.map(e => {
+                    const color = eventColor(e.calendarId || e.id || e.title || '');
+                    return {
+                        ...e,
+                        backgroundColor: color,
+                        borderColor:     color,
+                        textColor:       '#fff',
+                    };
+                });
                 ok(colored);
             })
             .catch(err => {
@@ -954,6 +1029,127 @@ function toDTL(iso) {
 }
 function toISO(dtl) { return new Date(dtl).toISOString(); }
 function addHour(iso) { const d = new Date(iso); d.setHours(d.getHours()+1); return d.toISOString(); }
+
+// ══════════════════════════════════════════════════════════════════════════
+// Calendar Selector (multi-agenda)
+// ══════════════════════════════════════════════════════════════════════════
+let availableCalendars = [];
+let selectedVisibleIds = {!! json_encode($calendarVisibleIds) !!};
+let selectedDefaultId  = {!! json_encode($calendarDefaultId) !!};
+
+function openCalendarSelector() {
+    document.getElementById('calSelectorOverlay').classList.add('open');
+    document.getElementById('calSelectorModal').classList.add('open');
+    loadCalendarList();
+}
+
+function closeCalendarSelector() {
+    document.getElementById('calSelectorOverlay').classList.remove('open');
+    document.getElementById('calSelectorModal').classList.remove('open');
+}
+
+async function loadCalendarList() {
+    const body = document.getElementById('calSelectorBody');
+    body.innerHTML = '<div class="cal-selector-loading"><i class="bi bi-arrow-repeat"></i> Carregando agendas...</div>';
+
+    try {
+        const res  = await fetch(ROUTES.calendars, { headers: { Accept: 'application/json', 'X-CSRF-TOKEN': CSRF } });
+        const data = await res.json();
+        if (data.error) { body.innerHTML = `<div class="cal-selector-loading" style="color:#ef4444">${esc(data.error)}</div>`; return; }
+
+        availableCalendars = data;
+        // Build color map from Google-provided colors
+        data.forEach(c => { calendarColorMap[c.id] = c.backgroundColor || eventColor(c.id); });
+
+        renderCalendarList();
+    } catch {
+        body.innerHTML = '<div class="cal-selector-loading" style="color:#ef4444">Erro ao carregar agendas.</div>';
+    }
+}
+
+function renderCalendarList() {
+    const body = document.getElementById('calSelectorBody');
+    if (!availableCalendars.length) {
+        body.innerHTML = '<div class="cal-selector-loading">Nenhuma agenda encontrada.</div>';
+        return;
+    }
+
+    body.innerHTML = availableCalendars.map(c => {
+        const checked  = selectedVisibleIds.includes(c.id) ? 'checked' : '';
+        const isDefault = selectedDefaultId === c.id;
+        const color    = calendarColorMap[c.id] || eventColor(c.id);
+        const label    = c.summary + (c.primary ? ' (principal)' : '');
+        return `
+        <div class="cal-selector-item">
+            <input type="checkbox" class="cal-selector-check" value="${esc(c.id)}" ${checked}
+                   onchange="toggleCalVisible(this)">
+            <div class="cal-selector-dot" style="background:${color}"></div>
+            <div class="cal-selector-name">${esc(label)}</div>
+            <div class="cal-selector-badges">
+                <span class="cal-selector-default ${isDefault ? 'active' : ''}"
+                      onclick="setDefaultCalendar('${esc(c.id)}')"
+                      data-cal-id="${esc(c.id)}"
+                      title="Usar como agenda padrao para criar eventos">
+                    ${isDefault ? '&#10003; Padrao' : 'Definir padrao'}
+                </span>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function toggleCalVisible(checkbox) {
+    const id = checkbox.value;
+    if (checkbox.checked) {
+        if (!selectedVisibleIds.includes(id)) selectedVisibleIds.push(id);
+    } else {
+        selectedVisibleIds = selectedVisibleIds.filter(v => v !== id);
+        // If unchecking the default, reset default to first visible or primary
+        if (selectedDefaultId === id && selectedVisibleIds.length) {
+            selectedDefaultId = selectedVisibleIds[0];
+            renderCalendarList();
+        }
+    }
+}
+
+function setDefaultCalendar(id) {
+    selectedDefaultId = id;
+    // Also ensure it's visible
+    if (!selectedVisibleIds.includes(id)) {
+        selectedVisibleIds.push(id);
+        const cb = document.querySelector(`.cal-selector-check[value="${CSS.escape(id)}"]`);
+        if (cb) cb.checked = true;
+    }
+    renderCalendarList();
+}
+
+async function saveCalendarPrefs() {
+    if (!selectedVisibleIds.length) {
+        toastr.warning('Selecione ao menos uma agenda.');
+        return;
+    }
+
+    const btn = document.getElementById('btnSaveCalPrefs');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+
+    try {
+        const res = await fetch(ROUTES.preferences, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, Accept: 'application/json' },
+            body: JSON.stringify({ visible_ids: selectedVisibleIds, default_id: selectedDefaultId }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            closeCalendarSelector();
+            calendar.refetchEvents();
+            toastr.success('Preferencias de agenda salvas!');
+        } else {
+            toastr.error(data.message || 'Erro ao salvar preferencias.');
+        }
+    } catch {
+        toastr.error('Erro de conexao.');
+    }
+    btn.disabled = false; btn.textContent = 'Salvar';
+}
 </script>
 @endpush
 @endif

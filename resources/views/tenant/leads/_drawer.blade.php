@@ -285,7 +285,7 @@
         padding: 9px 12px;
         border: 1.5px solid #e8eaf0;
         border-radius: 9px;
-        font-size: 13.5px;
+        font-size: 16px;
         font-family: 'Inter', sans-serif;
         color: #1a1d23;
         background: #fafafa;

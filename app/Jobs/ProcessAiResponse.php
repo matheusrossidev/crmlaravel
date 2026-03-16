@@ -224,7 +224,7 @@ class ProcessAiResponse implements ShouldQueue
                 $scopes = (array) ($calendarConn->scopes_json ?? []);
                 if (in_array('https://www.googleapis.com/auth/calendar', $scopes, true)) {
                     try {
-                        $calendarService = new GoogleCalendarService($calendarConn);
+                        $calendarService = new GoogleCalendarService($calendarConn, $agent->calendar_id ?? 'primary');
                         $calendarEvents  = $calendarService->listEvents(
                             now()->toIso8601String(),
                             now()->addDays(7)->toIso8601String(),

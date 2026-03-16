@@ -114,10 +114,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::prefix('agenda')->name('calendar.')->group(function () {
         Route::get('/',                [CalendarController::class, 'index'])->name('index');
         Route::get('/eventos',         [CalendarController::class, 'events'])->name('events');
+        Route::get('/calendarios',     [CalendarController::class, 'calendars'])->name('calendars');
         Route::middleware('role:admin,manager')->group(function () {
             Route::post('/eventos',        [CalendarController::class, 'store'])->name('store');
             Route::put('/eventos/{id}',    [CalendarController::class, 'update'])->name('update');
             Route::delete('/eventos/{id}', [CalendarController::class, 'destroy'])->name('destroy');
+            Route::post('/preferencias',   [CalendarController::class, 'savePreferences'])->name('preferences');
         });
     });
 

@@ -143,7 +143,7 @@
             padding: 11px 14px 11px 38px;
             border: 1.5px solid #e5e7eb;
             border-radius: 10px;
-            font-size: 14px;
+            font-size: 16px;
             font-family: 'Inter', sans-serif;
             color: #1a1d23;
             outline: none;
@@ -158,7 +158,7 @@
         }
 
         .form-control.is-invalid { border-color: #ef4444; }
-        .form-control.code-input { font-family: monospace; font-size: 15px; font-weight: 700; letter-spacing: .06em; }
+        .form-control.code-input { font-family: monospace; font-size: 16px; font-weight: 700; letter-spacing: .06em; }
 
         .invalid-feedback {
             font-size: 12px;

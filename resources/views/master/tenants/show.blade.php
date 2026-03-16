@@ -102,7 +102,7 @@
     .form-control {
         width: 100%; padding: 9px 12px;
         border: 1px solid #d1d5db; border-radius: 9px;
-        font-size: 13.5px; color: #1a1d23;
+        font-size: 16px; color: #1a1d23;
         outline: none; transition: border-color .15s; background: #fff;
     }
     .form-control:focus { border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }

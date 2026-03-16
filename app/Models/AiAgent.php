@@ -25,7 +25,7 @@ class AiAgent extends Model
         'welcome_message', 'widget_type', 'widget_color',
         'is_active', 'auto_assign',
         'enable_pipeline_tool', 'enable_tags_tool', 'enable_intent_notify',
-        'enable_calendar_tool', 'calendar_tool_instructions',
+        'enable_calendar_tool', 'calendar_tool_instructions', 'calendar_id',
         'enable_voice_reply', 'elevenlabs_voice_id',
         'followup_enabled', 'followup_delay_minutes', 'followup_max_count',
         'followup_hour_start', 'followup_hour_end',

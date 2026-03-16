@@ -11,9 +11,11 @@ use Illuminate\Support\Facades\Log;
 class GoogleCalendarService
 {
     private const BASE = 'https://www.googleapis.com/calendar/v3';
-    private const CALENDAR_ID = 'primary';
 
-    public function __construct(private OAuthConnection $conn) {}
+    public function __construct(
+        private OAuthConnection $conn,
+        private string $calendarId = 'primary',
+    ) {}
 
     // ── Token Management ────────────────────────────────────────────────────
 
@@ -92,7 +94,7 @@ class GoogleCalendarService
     public function listEvents(string $timeMin, string $timeMax): array
     {
         $response = Http::withToken($this->token())
-            ->get(self::BASE . '/calendars/' . self::CALENDAR_ID . '/events', [
+            ->get(self::BASE . '/calendars/' . urlencode($this->calendarId) . '/events', [
                 'timeMin'      => $this->toRfc3339($timeMin),
                 'timeMax'      => $this->toRfc3339($timeMax),
                 'singleEvents' => 'true',
@@ -117,7 +119,7 @@ class GoogleCalendarService
     public function getEvent(string $eventId): array
     {
         $response = Http::withToken($this->token())
-            ->get(self::BASE . '/calendars/' . self::CALENDAR_ID . '/events/' . $eventId);
+            ->get(self::BASE . '/calendars/' . urlencode($this->calendarId) . '/events/' . $eventId);
 
         if (! $response->successful()) {
             throw new \RuntimeException('Evento não encontrado: ' . $eventId);
@@ -151,7 +153,7 @@ class GoogleCalendarService
             }
         }
 
-        $url = self::BASE . '/calendars/' . self::CALENDAR_ID . '/events'
+        $url = self::BASE . '/calendars/' . urlencode($this->calendarId) . '/events'
              . ($hasAttendees ? '?sendUpdates=all' : '');
 
         $response = Http::withToken($this->token())
@@ -173,7 +175,7 @@ class GoogleCalendarService
     {
         // Busca o evento atual para fazer PATCH parcial
         $current = Http::withToken($this->token())
-            ->get(self::BASE . '/calendars/' . self::CALENDAR_ID . '/events/' . $eventId)
+            ->get(self::BASE . '/calendars/' . urlencode($this->calendarId) . '/events/' . $eventId)
             ->json();
 
         $tz = config('app.timezone', 'America/Sao_Paulo');
@@ -203,7 +205,7 @@ class GoogleCalendarService
             }
         }
 
-        $url = self::BASE . '/calendars/' . self::CALENDAR_ID . '/events/' . $eventId
+        $url = self::BASE . '/calendars/' . urlencode($this->calendarId) . '/events/' . $eventId
              . ($hasAttendees ? '?sendUpdates=all' : '');
 
         $response = Http::withToken($this->token())->put($url, $payload);
@@ -221,11 +223,38 @@ class GoogleCalendarService
     public function deleteEvent(string $eventId): void
     {
         $response = Http::withToken($this->token())
-            ->delete(self::BASE . '/calendars/' . self::CALENDAR_ID . '/events/' . $eventId);
+            ->delete(self::BASE . '/calendars/' . urlencode($this->calendarId) . '/events/' . $eventId);
 
         if ($response->status() !== 204 && ! $response->successful()) {
             throw new \RuntimeException('Erro ao excluir evento: ' . $response->status());
         }
+    }
+
+    // ── Calendar List ─────────────────────────────────────────────────────
+
+    /**
+     * Lista todas as agendas acessíveis pela conta Google conectada.
+     */
+    public function listCalendars(): array
+    {
+        $response = Http::withToken($this->token())
+            ->get(self::BASE . '/users/me/calendarList', [
+                'minAccessRole' => 'writer',
+            ]);
+
+        if (! $response->successful()) {
+            throw new \RuntimeException('Erro ao listar agendas: ' . ($response->json('error.message') ?? $response->status()));
+        }
+
+        return collect($response->json('items', []))
+            ->map(fn (array $c) => [
+                'id'              => $c['id'],
+                'summary'         => $c['summary'] ?? '(sem nome)',
+                'primary'         => $c['primary'] ?? false,
+                'backgroundColor' => $c['backgroundColor'] ?? '#0085f3',
+            ])
+            ->values()
+            ->all();
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────
