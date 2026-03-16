@@ -126,7 +126,7 @@
             padding: 11px 14px 11px 38px;
             border: 1px solid #CDDEF6;
             border-radius: 100px;
-            font-size: 16px;
+            font-size: 14px;
             font-family: 'DM Sans', sans-serif;
             color: #1a1d23;
             outline: none;
@@ -195,6 +195,9 @@
         @media (max-width: 960px) {
             .auth-right { display: none; }
             .auth-left  { flex: none; width: 100%; padding: 40px 24px; }
+        }
+        @media (max-width: 768px) {
+            .form-control { font-size: 16px !important; }
         }
     </style>
 </head>

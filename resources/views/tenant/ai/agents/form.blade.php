@@ -43,7 +43,7 @@
     .form-control {
         width: 100%; padding: 9px 12px;
         border: 1.5px solid #e8eaf0; border-radius: 9px;
-        font-size: 16px; outline: none;
+        font-size: 13.5px; outline: none;
         font-family: 'Inter', sans-serif;
         color: #1a1d23; background: #fafafa;
         transition: border-color .15s, box-shadow .15s;
@@ -262,6 +262,9 @@
     }
     .channel-card:hover { border-color: #93c5fd; background: #f0f8ff; color: #2563eb; }
     .channel-card.selected { border-color: #0085f3; background: #eff6ff; color: #0085f3; }
+    @media (max-width: 768px) {
+        .form-control { font-size: 16px !important; }
+    }
 </style>
 @endpush
 

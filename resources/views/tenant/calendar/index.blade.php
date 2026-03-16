@@ -11,7 +11,7 @@
     <button class="btn-outline-sm" onclick="openCalendarSelector()" title="Selecionar agendas">
         <i class="bi bi-collection"></i> Agendas
     </button>
-    <button class="btn-primary-sm" onclick="openCreateModal()">
+    <button class="btn-primary-sm cal-hide-mobile" onclick="openCreateModal()">
         <i class="bi bi-plus-lg"></i> Novo evento
     </button>
 </div>
@@ -374,6 +374,7 @@
     .fc .fc-daygrid-day-frame { min-height: 65px; }
     .fc .fc-col-header-cell-cushion { font-size: 11px; padding: 6px 4px; }
     .cal-fab { display: flex; }
+    .cal-hide-mobile { display: none !important; }
     .ev-popup { width: calc(100vw - 32px); left: 16px !important; right: 16px; }
 }
 @media (max-width: 480px) {

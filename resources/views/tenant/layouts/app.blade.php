@@ -448,6 +448,28 @@
 
         .btn-primary-sm:hover { background: #0070d1; color: #fff; }
 
+        .btn-outline-sm {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border: 1.5px solid #e8eaf0;
+            background: #fff;
+            color: #374151;
+            border-radius: 100px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all .15s;
+            white-space: nowrap;
+        }
+        .btn-outline-sm:hover {
+            background: #f0f4ff;
+            border-color: #bfdbfe;
+            color: #0085f3;
+        }
+
         /* ===== TRIAL WIDGET ===== */
         .trial-widget {
             display: flex;

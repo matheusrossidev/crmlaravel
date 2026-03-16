@@ -31,7 +31,7 @@
     .form-control {
         width: 100%; padding: 9px 12px;
         border: 1.5px solid #e8eaf0; border-radius: 9px;
-        font-size: 16px; outline: none; font-family: inherit;
+        font-size: 13.5px; outline: none; font-family: inherit;
         transition: border-color .15s; box-sizing: border-box;
         background: #fff;
     }
@@ -84,6 +84,9 @@
     }
     .test-result.ok  { background: #d1fae5; color: #065f46; }
     .test-result.err { background: #fee2e2; color: #991b1b; }
+    @media (max-width: 768px) {
+        .form-control { font-size: 16px !important; }
+    }
 </style>
 @endpush
 

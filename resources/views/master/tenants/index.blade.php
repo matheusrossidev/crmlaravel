@@ -142,7 +142,7 @@
     .form-control {
         width: 100%; padding: 9px 12px;
         border: 1px solid #d1d5db; border-radius: 9px;
-        font-size: 16px; color: #1a1d23;
+        font-size: 13.5px; color: #1a1d23;
         outline: none; transition: border-color .15s; background: #fff;
         box-sizing: border-box;
     }
@@ -164,6 +164,9 @@
         font-size: 13.5px; font-weight: 600; cursor: pointer;
     }
     .btn-cancel:hover { background: #e8eaf0; }
+    @media (max-width: 768px) {
+        .form-control { font-size: 16px !important; }
+    }
 </style>
 @endpush
 
