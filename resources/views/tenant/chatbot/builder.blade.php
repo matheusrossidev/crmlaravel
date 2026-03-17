@@ -101,6 +101,8 @@
     min-width: 520px;
     margin: 0 auto;
     padding: 0 40px;
+    transform-origin: top center;
+    transition: transform .1s ease;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -500,7 +502,13 @@
             <a href="{{ route('chatbot.flows.edit', ['flow' => $flow->id, 'settings' => 1]) }}" class="btn-cancel-sm">
                 <i class="bi bi-gear"></i> Config
             </a>
-            <button class="btn-cancel-sm" onclick="centerCanvas()" title="Centralizar canvas">
+            <button class="btn-cancel-sm" onclick="zoomOut()" title="Zoom out">
+                <i class="bi bi-dash-lg"></i>
+            </button>
+            <button class="btn-cancel-sm" onclick="zoomIn()" title="Zoom in">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+            <button class="btn-cancel-sm" onclick="zoomReset(); centerCanvas();" title="Centralizar canvas">
                 <i class="bi bi-fullscreen"></i>
             </button>
             <button class="btn-primary-sm" onclick="saveFlow()">
@@ -898,22 +906,35 @@
                 html += '<label>Pergunta para o visitante</label>';
                 html += '<div class="cb-editable" contenteditable="true" id="inp-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="text" data-placeholder="Digite a pergunta...">' + textToHtml(c.text || '') + '</div>';
                 html += renderVarHint('inp-' + step.id);
+                var hideSave = c.field_type === 'buttons' ? 'display:none' : '';
+                var stepUid  = step.id;
                 html += '<div class="row-pair" style="margin-top:8px;">';
                 html += '<div><label>Tipo do campo</label>';
-                html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'field_type\', this.value)">';
-                ['text', 'email', 'phone', 'number'].forEach(function(t) {
-                    html += '<option value="' + t + '" ' + (c.field_type === t ? 'selected' : '') + '>' + t + '</option>';
+                html += '<select class="form-select" onchange="var v=this.value; cbUpdateConfig(' + pathStr + ', ' + index + ', \'field_type\', v); if(v===\'buttons\'){ cbUpdateConfig(' + pathStr + ', ' + index + ', \'show_buttons\', true); } var h=v===\'buttons\'; document.getElementById(\'save-wrap-' + stepUid + '\').style.display=h?\'none\':\'\'; document.getElementById(\'chk-wrap-' + stepUid + '\').style.display=h?\'none\':\'\';">';
+                var fieldTypes = [
+                    { value: 'text',    label: 'Texto livre' },
+                    { value: 'name',    label: 'Nome' },
+                    { value: 'email',   label: 'E-mail' },
+                    { value: 'phone',   label: 'Telefone' },
+                    { value: 'number',  label: 'Número' },
+                    { value: 'buttons', label: 'Botões de resposta rápida' },
+                ];
+                fieldTypes.forEach(function(t) {
+                    html += '<option value="' + t.value + '" ' + (c.field_type === t.value ? 'selected' : '') + '>' + t.label + '</option>';
                 });
                 html += '</select></div>';
-                html += '<div><label>Salvar em</label>';
+                html += '<div id="save-wrap-' + stepUid + '" style="' + hideSave + '"><label>Salvar em</label>';
                 html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'save_to\', this.value)">';
                 html += '<option value="">Não salvar</option>';
                 flowVariables.forEach(function(v) {
                     var name = v.name || v;
                     html += '<option value="' + esc(name) + '" ' + (c.save_to === name ? 'selected' : '') + '>' + esc(name) + '</option>';
                 });
-                html += '</select></div></div>';
+                html += '</select></div>';
+                html += '</div>';
+                html += '<div id="chk-wrap-' + stepUid + '" style="' + hideSave + '">';
                 html += '<label class="cb-checkbox"><input type="checkbox" ' + (c.show_buttons ? 'checked' : '') + ' onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'show_buttons\', this.checked)"> Exibir botões de resposta rápida</label>';
+                html += '</div>';
                 break;
 
             case 'condition':
@@ -958,7 +979,14 @@
                     html += '</div>';
                     html += '<input class="form-control" placeholder="Título" value="' + esc(item.title || '') + '" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'title\',this.value)" style="margin-bottom:4px;">';
                     html += '<textarea class="form-control" placeholder="Descrição" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'description\',this.value)" style="margin-bottom:4px;min-height:38px;">' + esc(item.description || '') + '</textarea>';
-                    html += '<input class="form-control" placeholder="URL da imagem (opcional)" value="' + esc(item.image_url || '') + '" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'image_url\',this.value)" style="margin-bottom:4px;">';
+                    if (item.image_url) {
+                        html += '<div style="position:relative;margin-bottom:4px;">';
+                        html += '<img src="' + esc(item.image_url) + '" style="width:100%;max-height:120px;object-fit:cover;border-radius:6px;border:1px solid #e8eaf0;">';
+                        html += '<button onclick="cbRemoveCardImage(' + pathStr + ',' + index + ',' + i + ')" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;" title="Remover imagem">&times;</button>';
+                        html += '</div>';
+                    } else {
+                        html += '<button onclick="cbUploadCardImage(' + pathStr + ',' + index + ',' + i + ')" style="width:100%;padding:10px;margin-bottom:4px;border:1.5px dashed #d1d5db;border-radius:6px;background:#f9fafb;color:#6b7280;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:border-color .15s;" onmouseover="this.style.borderColor=\'#0085f3\'" onmouseout="this.style.borderColor=\'#d1d5db\'"><i class="bi bi-image" style="font-size:14px;"></i> Enviar imagem</button>';
+                    }
                     html += '<div style="display:flex;gap:6px;margin-top:2px;">';
                     html += '<input class="form-control" placeholder="Texto do botão (opcional)" value="' + esc(item.button_label || '') + '" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'button_label\',this.value)">';
                     html += '<select class="form-select" style="max-width:140px;" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'button_action\',this.value);renderFlow();">';
@@ -1694,6 +1722,41 @@
             });
         };
         input.click();
+    };
+
+    // ── Card image upload ─────────────────────────────────────────────
+    window.cbUploadCardImage = function(path, index, cardIndex) {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = function() {
+            var file = input.files[0];
+            if (!file) return;
+            var fd = new FormData();
+            fd.append('image', file);
+            fetch(UPLOAD_URL, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF },
+                body: fd
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.url) {
+                    cbUpdateCardItem(path, index, cardIndex, 'image_url', data.url);
+                    renderFlow();
+                }
+            })
+            .catch(function(err) {
+                console.error('Card image upload error:', err);
+                toastr.error('Erro ao enviar imagem');
+            });
+        };
+        input.click();
+    };
+
+    window.cbRemoveCardImage = function(path, index, cardIndex) {
+        cbUpdateCardItem(path, index, cardIndex, 'image_url', '');
+        renderFlow();
     };
 
     // ── Toggle active ────────────────────────────────────────────────
@@ -2579,6 +2642,27 @@
             canvas.scrollTop = scrollTop - (e.pageY - startY);
         });
         function stop() { isDown = false; canvas.classList.remove('is-panning'); }
+    })();
+
+    // ── Zoom via Ctrl+Wheel ─────────────────────────────────────────
+    (function() {
+        var canvas = document.querySelector('.cb-canvas');
+        var flow   = document.getElementById('cbFlow');
+        if (!canvas || !flow) return;
+        var zoomLevel = 1;
+        var MIN_ZOOM = 0.3, MAX_ZOOM = 1.5;
+
+        canvas.addEventListener('wheel', function(e) {
+            if (!e.ctrlKey && !e.metaKey) return;
+            e.preventDefault();
+            var delta = e.deltaY > 0 ? -0.05 : 0.05;
+            zoomLevel = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoomLevel + delta));
+            flow.style.transform = 'scale(' + zoomLevel + ')';
+        }, { passive: false });
+
+        window.zoomIn    = function() { zoomLevel = Math.min(MAX_ZOOM, zoomLevel + 0.1); flow.style.transform = 'scale(' + zoomLevel + ')'; };
+        window.zoomOut   = function() { zoomLevel = Math.max(MIN_ZOOM, zoomLevel - 0.1); flow.style.transform = 'scale(' + zoomLevel + ')'; };
+        window.zoomReset = function() { zoomLevel = 1; flow.style.transform = 'scale(1)'; };
     })();
 
 })();

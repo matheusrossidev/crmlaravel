@@ -189,10 +189,33 @@ class WebsiteWidgetController extends Controller
             'buttons'         => $buttons,
             'input_type'      => $inputType,
             'bot_name'        => $entity->bot_name,
-            'bot_avatar'      => $entity->bot_avatar,
+            'bot_avatar'      => $this->resolveAvatarUrl($entity->bot_avatar),
             'welcome_message' => $entity->welcome_message,
             'widget_type'     => $entity->widget_type ?? 'bubble',
         ])->header('Access-Control-Allow-Origin', '*');
+    }
+
+    private function resolveAvatarUrl(?string $avatar): ?string
+    {
+        if (! $avatar) {
+            return null;
+        }
+
+        // Already a relative path (e.g. /images/avatars/agent-1.png) — resolve to full URL
+        if (str_starts_with($avatar, '/')) {
+            return asset($avatar);
+        }
+
+        // Full URL from any domain — extract the path and re-resolve with current app URL
+        if (preg_match('#^https?://#i', $avatar)) {
+            // Extract path after the domain (handles both localhost and production URLs)
+            $path = (string) parse_url($avatar, PHP_URL_PATH);
+            // Remove common Laravel public prefixes
+            $path = preg_replace('#^/crm/public#', '', $path) ?? $path;
+            return asset($path);
+        }
+
+        return asset($avatar);
     }
 
     private function truncate(?string $value, int $max): ?string

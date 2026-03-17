@@ -164,7 +164,10 @@
         '.syncro-brand img{height:13px;}',
 
         /* ── Cards ────────────────────────────────────────── */
-        '.syncro-cards-row{display:flex;gap:10px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none;max-width:320px;}',
+        '.syncro-cards-wrap{position:relative;max-width:100%;}',
+        '.syncro-cards-wrap::after{content:"";position:absolute;top:0;right:0;width:32px;height:100%;background:linear-gradient(to right,transparent,rgba(255,255,255,.95));pointer-events:none;border-radius:0 12px 12px 0;z-index:1;transition:opacity .2s;}',
+        '.syncro-cards-wrap.scrolled-end::after{opacity:0;}',
+        '.syncro-cards-row{display:flex;gap:10px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none;max-width:100%;}',
         '.syncro-cards-row::-webkit-scrollbar{display:none;}',
         '.syncro-card{background:#fff;border:1.5px solid #e8eaf0;border-radius:12px;min-width:200px;max-width:200px;overflow:hidden;flex-shrink:0;}',
         '.syncro-card-img{width:100%;height:130px;object-fit:cover;display:block;}',
@@ -315,14 +318,26 @@
                 avPh.innerHTML = '<svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:' + colorPrimary + '"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>';
                 row.appendChild(avPh);
             }
+            var cardsWrap = document.createElement('div');
+            cardsWrap.className = 'syncro-cards-wrap';
             var wrapper = document.createElement('div');
             wrapper.className = 'syncro-cards-row';
+            wrapper.addEventListener('scroll', function() {
+                var atEnd = wrapper.scrollLeft + wrapper.clientWidth >= wrapper.scrollWidth - 5;
+                cardsWrap.classList.toggle('scrolled-end', atEnd);
+            });
+            // Hide gradient if no overflow
+            setTimeout(function() {
+                if (wrapper.scrollWidth <= wrapper.clientWidth) {
+                    cardsWrap.classList.add('scrolled-end');
+                }
+            }, 100);
             (reply.cards || []).forEach(function(card) {
                 var el = document.createElement('div');
                 el.className = 'syncro-card';
                 if (card.image_url) {
                     var img = document.createElement('img');
-                    img.src = card.image_url;
+                    img.src = resolveUrl(card.image_url);
                     img.className = 'syncro-card-img';
                     img.alt = '';
                     img.onerror = function() { img.style.display = 'none'; };
@@ -367,7 +382,8 @@
                 el.appendChild(body);
                 wrapper.appendChild(el);
             });
-            row.appendChild(wrapper);
+            cardsWrap.appendChild(wrapper);
+            row.appendChild(cardsWrap);
             msgsEl.appendChild(row);
             msgsEl.scrollTop = msgsEl.scrollHeight;
             return row;
