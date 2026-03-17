@@ -1679,6 +1679,7 @@
             ['condition', 'bi-question-diamond', 'Condição'],
             ['action', 'bi-lightning', 'Ação'],
             ['delay', 'bi-hourglass-split', 'Aguardar'],
+            ['cards', 'bi-card-heading', 'Cards'],
             ['end', 'bi-stop-circle', 'Fim'],
         ];
 
