@@ -127,8 +127,8 @@ class ImportWhatsappHistory implements ShouldQueue
             $chatOffset += $chatLimit;
         } while (count($chats) >= $chatLimit);
 
-        // Só marcar importado se de fato importou mensagens
-        if ($importedMessages > 0) {
+        // Marcar como importado se processou chats (mesmo que todas msgs sejam duplicatas)
+        if ($importedMessages > 0 || $skipped > 0) {
             WhatsappInstance::withoutGlobalScope('tenant')
                 ->where('id', $this->instance->id)
                 ->update(['history_imported' => true]);
@@ -302,6 +302,16 @@ class ImportWhatsappHistory implements ShouldQueue
 
         try {
             $msgs = $waha->getChatMessages($chatId, 200, 0, false, $since);
+
+            // GOWS pode não suportar filter.timestamp.gte — retry sem filtro se retornou vazio
+            if ($since !== null && is_array($msgs) && empty($msgs)) {
+                Log::channel('whatsapp')->info('Import: getChatMessages vazio com filtro, retentando sem filtro', [
+                    'chatId' => $chatId,
+                    'since'  => $since,
+                ]);
+                usleep(200_000);
+                $msgs = $waha->getChatMessages($chatId, 200, 0, false, null);
+            }
 
             Log::channel('whatsapp')->debug('Import: getChatMessages raw', [
                 'chatId'    => $chatId,

@@ -300,6 +300,20 @@
         <span class="tool-badge badge-blue">WhatsApp</span>
     </div>
 
+    {{-- 12. Sincronizar Fotos de Perfil --}}
+    <div class="tool-card" onclick="openTool('sync-profile-pictures')">
+        <div class="tool-card-header">
+            <div class="tool-icon" style="background:#eff6ff;">
+                <i class="bi bi-image" style="color:#3B82F6;"></i>
+            </div>
+            <div class="tool-info">
+                <h6>Sincronizar Fotos de Perfil</h6>
+                <p>Busca e atualiza fotos de perfil de contatos e grupos WhatsApp que estão sem imagem.</p>
+            </div>
+        </div>
+        <span class="tool-badge badge-blue">WhatsApp</span>
+    </div>
+
 </div>
 
 {{-- ── MODAL ──────────────────────────────────────────────────────────────── --}}
@@ -440,6 +454,14 @@ var USERS   = <?php echo json_encode($users->toArray()); ?>;
             params: [
                 { name: 'tenant_id', label: 'Tenant', type: 'select-tenant', required: true },
                 { name: 'days',      label: 'Dias para importar', type: 'text', hint: 'Número de dias (padrão: 30, máx: 30)', required: false },
+            ],
+        },
+        'sync-profile-pictures': {
+            label: 'Sincronizar Fotos de Perfil',
+            iconHtml: '<i class="bi bi-image" style="color:#3B82F6;"></i>',
+            iconBg: '#eff6ff',
+            params: [
+                { name: 'tenant_id', label: 'Tenant', type: 'select-tenant', required: true },
             ],
         },
     };

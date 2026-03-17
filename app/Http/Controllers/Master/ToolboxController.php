@@ -35,6 +35,7 @@ class ToolboxController extends Controller
         'check-user-account',
         'cleanup-lid-conversations',
         'reimport-wa-history',
+        'sync-profile-pictures',
     ];
 
     public function index(): View
@@ -482,5 +483,90 @@ class ToolboxController extends Controller
                 'Acompanhe o progresso via logs do WhatsApp.',
             ],
         ]);
+    }
+
+    private function syncProfilePictures(Request $request): JsonResponse
+    {
+        $tenantId = $request->input('tenant_id');
+
+        if (! $tenantId) {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] Selecione um tenant.']]);
+        }
+
+        $tenant = Tenant::find($tenantId);
+
+        if (! $tenant) {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] Tenant não encontrado.']]);
+        }
+
+        $instance = WhatsappInstance::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('status', 'connected')
+            ->first();
+
+        if (! $instance) {
+            return response()->json(['success' => false, 'lines' => [
+                "Tenant: {$tenant->name}",
+                '[ERRO] Nenhuma instância WhatsApp conectada para este tenant.',
+            ]]);
+        }
+
+        $conversations = WhatsappConversation::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where(function ($q) {
+                $q->whereNull('contact_picture_url')->orWhere('contact_picture_url', '');
+            })
+            ->get();
+
+        if ($conversations->isEmpty()) {
+            return response()->json(['success' => true, 'lines' => [
+                "Tenant: {$tenant->name}",
+                'Todas as conversas já possuem foto de perfil.',
+            ]]);
+        }
+
+        $waha    = new WahaService($instance->session_name);
+        $updated = 0;
+        $noPhoto = 0;
+        $errors  = 0;
+        $lines   = ["Tenant: {$tenant->name}", "Encontradas {$conversations->count()} conversa(s) sem foto.", ''];
+
+        foreach ($conversations as $conv) {
+            try {
+                $phone = $conv->phone;
+                $pic   = null;
+
+                if ($conv->is_group) {
+                    $jid = str_contains($phone, '@') ? $phone : $phone . '@g.us';
+                    $pic = $waha->getGroupPicture($jid);
+                } else {
+                    $jid = $phone . '@c.us';
+                    $pic = $waha->getContactPicture($jid);
+                }
+
+                if ($pic) {
+                    WhatsappConversation::withoutGlobalScope('tenant')
+                        ->where('id', $conv->id)
+                        ->update(['contact_picture_url' => $pic]);
+                    $updated++;
+                } else {
+                    $noPhoto++;
+                }
+            } catch (\Throwable $e) {
+                $errors++;
+            }
+
+            usleep(300_000); // Rate limit: 300ms
+        }
+
+        $lines[] = "{$updated} foto(s) atualizada(s)";
+        $lines[] = "{$noPhoto} contato(s) sem foto disponível no WhatsApp";
+        if ($errors > 0) {
+            $lines[] = "[ERRO] {$errors} erro(s) ao buscar fotos";
+        }
+        $lines[] = '';
+        $lines[] = 'Sincronização concluída.';
+
+        return response()->json(['success' => $errors === 0, 'lines' => $lines]);
     }
 }
