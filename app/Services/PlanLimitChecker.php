@@ -82,32 +82,32 @@ class PlanLimitChecker
             ],
             'leads' => [
                 'max'   => $tenant->max_leads,
-                'count' => fn () => Lead::count(),
+                'count' => fn () => Lead::where('tenant_id', $tenant->id)->count(),
                 'label' => 'leads',
             ],
             'pipelines' => [
                 'max'   => $tenant->max_pipelines,
-                'count' => fn () => Pipeline::count(),
+                'count' => fn () => Pipeline::where('tenant_id', $tenant->id)->count(),
                 'label' => 'pipelines',
             ],
             'custom_fields' => [
                 'max'   => $tenant->max_custom_fields,
-                'count' => fn () => CustomFieldDefinition::count(),
+                'count' => fn () => CustomFieldDefinition::where('tenant_id', $tenant->id)->count(),
                 'label' => 'campos personalizados',
             ],
             'departments' => [
                 'max'   => $tenant->max_departments,
-                'count' => fn () => Department::count(),
+                'count' => fn () => Department::where('tenant_id', $tenant->id)->count(),
                 'label' => 'departamentos',
             ],
             'chatbot_flows' => [
                 'max'   => $tenant->max_chatbot_flows,
-                'count' => fn () => ChatbotFlow::count(),
+                'count' => fn () => ChatbotFlow::where('tenant_id', $tenant->id)->count(),
                 'label' => 'fluxos de chatbot',
             ],
             'ai_agents' => [
                 'max'   => $tenant->max_ai_agents ?: 1,
-                'count' => fn () => AiAgent::count(),
+                'count' => fn () => AiAgent::where('tenant_id', $tenant->id)->count(),
                 'label' => 'agentes de IA',
             ],
             'whatsapp_instances' => [
