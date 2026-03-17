@@ -802,8 +802,8 @@
             stepEl.innerHTML = renderStep(step, path, i, steps.length);
             container.appendChild(stepEl);
 
-            // Branches (tree layout)
-            if ((step.type === 'input' || step.type === 'condition') && (step.branches || step.default_branch)) {
+            // Branches (tree layout) — for input nodes, only show when branches exist
+            if ((step.type === 'condition' || (step.type === 'input' && step.branches && step.branches.length > 0)) && (step.branches || step.default_branch)) {
                 const branchEl = document.createElement('div');
                 branchEl.style.cssText = 'display:flex;flex-direction:column;align-items:center;width:100%;';
                 branchEl.innerHTML = renderBranches(step, path, i);
@@ -910,7 +910,7 @@
                 var stepUid  = step.id;
                 html += '<div class="row-pair" style="margin-top:8px;">';
                 html += '<div><label>Tipo do campo</label>';
-                html += '<select class="form-select" onchange="var v=this.value; cbUpdateConfig(' + pathStr + ', ' + index + ', \'field_type\', v); if(v===\'buttons\'){ cbUpdateConfig(' + pathStr + ', ' + index + ', \'show_buttons\', true); } var h=v===\'buttons\'; document.getElementById(\'save-wrap-' + stepUid + '\').style.display=h?\'none\':\'\'; document.getElementById(\'chk-wrap-' + stepUid + '\').style.display=h?\'none\':\'\';">';
+                html += '<select class="form-select" onchange="var v=this.value; cbUpdateConfig(' + pathStr + ', ' + index + ', \'field_type\', v); if(v===\'buttons\'){ cbToggleButtons(' + pathStr + ', ' + index + ', true); } else { cbToggleButtons(' + pathStr + ', ' + index + ', false); } var h=v===\'buttons\'; document.getElementById(\'save-wrap-' + stepUid + '\').style.display=h?\'none\':\'\'; document.getElementById(\'chk-wrap-' + stepUid + '\').style.display=h?\'none\':\'\';">';
                 var fieldTypes = [
                     { value: 'text',    label: 'Texto livre' },
                     { value: 'name',    label: 'Nome' },
@@ -933,7 +933,7 @@
                 html += '</select></div>';
                 html += '</div>';
                 html += '<div id="chk-wrap-' + stepUid + '" style="' + hideSave + '">';
-                html += '<label class="cb-checkbox"><input type="checkbox" ' + (c.show_buttons ? 'checked' : '') + ' onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'show_buttons\', this.checked)"> Exibir botões de resposta rápida</label>';
+                html += '<label class="cb-checkbox"><input type="checkbox" ' + (c.show_buttons ? 'checked' : '') + ' onchange="cbToggleButtons(' + pathStr + ', ' + index + ', this.checked)"> Exibir botões de resposta rápida</label>';
                 html += '</div>';
                 break;
 
@@ -1357,6 +1357,7 @@
     function populateBranchBodies(step, path, index) {
         if (step.type !== 'input' && step.type !== 'condition') return;
         if (!step.branches && !step.default_branch) return;
+        if (step.type === 'input' && (!step.branches || !step.branches.length)) return;
 
         // Regular branches
         (step.branches || []).forEach(function(b, bi) {
@@ -1375,7 +1376,7 @@
                 container.appendChild(stepEl);
 
                 // Recursively populate nested branches
-                if ((bs.type === 'input' || bs.type === 'condition') && (bs.branches || bs.default_branch)) {
+                if ((bs.type === 'condition' || (bs.type === 'input' && bs.branches && bs.branches.length > 0)) && (bs.branches || bs.default_branch)) {
                     const nestedEl = document.createElement('div');
                     nestedEl.style.cssText = 'display:flex;flex-direction:column;align-items:center;width:100%;';
                     nestedEl.innerHTML = renderBranches(bs, branchPath, bsi);
@@ -1419,7 +1420,7 @@
             stepEl.innerHTML = renderStep(ds, defPath, dsi, defSteps.length);
             defContainer.appendChild(stepEl);
 
-            if ((ds.type === 'input' || ds.type === 'condition') && (ds.branches || ds.default_branch)) {
+            if ((ds.type === 'condition' || (ds.type === 'input' && ds.branches && ds.branches.length > 0)) && (ds.branches || ds.default_branch)) {
                 const nestedEl = document.createElement('div');
                 nestedEl.style.cssText = 'display:flex;flex-direction:column;align-items:center;width:100%;';
                 nestedEl.innerHTML = renderBranches(ds, defPath, dsi);
@@ -1510,7 +1511,7 @@
                 lastEl = nodeEl;
 
                 // If step has branches, connect to branch columns
-                if ((step.type === 'input' || step.type === 'condition') && (step.branches || step.default_branch)) {
+                if ((step.type === 'condition' || (step.type === 'input' && step.branches && step.branches.length > 0)) && (step.branches || step.default_branch)) {
                     var branches = step.branches || [];
                     var allBranches = branches.slice();
                     // Add default branch
@@ -1598,6 +1599,22 @@
         const arr = resolveParentSteps(path);
         if (!arr[index].config) arr[index].config = {};
         arr[index].config[field] = value;
+    };
+
+    window.cbToggleButtons = function(path, index, enabled) {
+        const step = resolveParentSteps(path)[index];
+        if (!step.config) step.config = {};
+        step.config.show_buttons = enabled;
+        if (enabled) {
+            if (!step.branches || !step.branches.length) {
+                step.branches = [{ id: 'b' + Date.now().toString(36) + (idCounter++), label: 'Opção 1', keywords: [], steps: [] }];
+            }
+            if (!step.default_branch) step.default_branch = { steps: [] };
+        } else {
+            step.branches = [];
+            step.default_branch = { steps: [] };
+        }
+        renderFlow();
     };
 
     window.cbAddCard = function(path, index) {

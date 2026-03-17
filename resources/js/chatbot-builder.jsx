@@ -326,13 +326,15 @@ function MessageNode({ id, data, selected }) {
 
 function InputNode({ id, data, selected }) {
     const branches = data.branches || [];
-    // Right handles: one per branch + default at the end
-    const rightHandles = [
-        ...branches.map((b, i) => ({ id: b.handle || `branch-${i}`, label: b.label || `Branch ${i + 1}` })),
-        { id: 'default', label: 'Padrão' },
-    ];
+    const hasBranches = branches.length > 0;
+    const rightHandles = hasBranches
+        ? [
+            ...branches.map((b, i) => ({ id: b.handle || `branch-${i}`, label: b.label || `Branch ${i + 1}` })),
+            { id: 'default', label: 'Padrão' },
+          ]
+        : [];
     return (
-        <BaseNode type="input" data={data} selected={selected} hasDefaultHandle={false} rightHandles={rightHandles}>
+        <BaseNode type="input" data={data} selected={selected} hasDefaultHandle={!hasBranches} rightHandles={rightHandles}>
             <Preview text={data.text} />
             {data.save_to && <Tag><i className="bi bi-floppy" style={{ marginRight: 4, fontSize: 9 }} />{data.save_to}</Tag>}
         </BaseNode>
@@ -788,29 +790,31 @@ function InputForm({ data, update, textareaRef, saveCursor, variables }) {
                     </div>
                 )}
             </FieldGroup>
-            <FieldGroup label="Botões de resposta rápida (Website)">
+            <FieldGroup label="Botões de resposta rápida">
                 <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer', marginBottom: 0 }}>
                     <input
                         type="checkbox"
                         checked={!!data.show_buttons}
-                        onChange={e => update('show_buttons', e.target.checked)}
+                        onChange={e => {
+                            update('show_buttons', e.target.checked);
+                            if (!e.target.checked) {
+                                update('branches', []);
+                            } else if (!branches.length) {
+                                update('branches', [{ handle: 'branch-0', keywords: [], label: 'Opção 1' }]);
+                            }
+                        }}
                         style={{ width: 14, height: 14, cursor: 'pointer' }}
                     />
                     <span style={{ fontSize: 12, color: '#374151', fontFamily: "'Inter', sans-serif" }}>
-                        Exibir branches como botões clicáveis (canal Website)
+                        Exibir botões de resposta rápida
                     </span>
                 </label>
-                {data.show_buttons && (
-                    <p style={{ fontSize: 11, color: '#6b7280', margin: '6px 0 0', fontFamily: "'Inter', sans-serif" }}>
-                        O <strong>rótulo</strong> de cada branch será o texto do botão.
-                        O primeiro keyword será o valor enviado ao clicar.
-                    </p>
-                )}
             </FieldGroup>
+            {!!data.show_buttons && (
             <div style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <label style={field.label}>Branches por keyword</label>
-                    <button onClick={addBranch} style={field.smallBtn}>+ Branch</button>
+                    <label style={field.label}>Opções de resposta</label>
+                    <button onClick={addBranch} style={field.smallBtn}>+ Opção</button>
                 </div>
                 {branches.map((b, i) => (
                     <div key={i} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, marginBottom: 8 }}>
@@ -822,12 +826,13 @@ function InputForm({ data, update, textareaRef, saveCursor, variables }) {
                             style={field.input}
                             value={(b.keywords || []).join(', ')}
                             onChange={e => updateBranch(i, 'keywords', e.target.value.split(',').map(k => k.trim()).filter(Boolean))}
-                            placeholder="Keywords: sim, s, yes"
+                            placeholder="Keywords (vírgula): sim, s, yes"
                         />
                     </div>
                 ))}
-                <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>Handle "Padrão" ativa quando nenhuma keyword bater.</p>
+                <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>A rota "Padrão" é usada quando nenhuma keyword corresponder.</p>
             </div>
+            )}
         </>
     );
 }
