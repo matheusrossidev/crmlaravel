@@ -169,20 +169,38 @@ class ProcessWahaWebhook implements ShouldQueue
         $phone = $this->normalizePhone($from, $msg, $isFromMe);
 
         // Se o phone parece um LID numérico (> 13 dígitos, apenas dígitos),
-        // tentar resolver para o número real via WAHA contacts API.
+        // tentar resolver para o número real via endpoints dedicados de LID.
         if (! $isGroup && strlen($phone) > 13 && ctype_digit($phone)) {
             try {
-                $wahaLid     = new \App\Services\WahaService($instance->session_name);
-                $contactInfo = $wahaLid->getContactInfo($this->normalizeJidForApi($from));
-                $resolvedJid = $contactInfo['id'] ?? '';
-                if ($resolvedJid && ! str_ends_with($resolvedJid, '@lid')) {
-                    $resolved = (string) preg_replace('/[:@].+$/', '', $resolvedJid);
-                    if ($resolved && ctype_digit($resolved)) {
-                        Log::channel('whatsapp')->info('LID resolvido via WAHA contacts', [
+                $wahaLid = new \App\Services\WahaService($instance->session_name);
+
+                // 1) Endpoint dedicado: GET /api/{session}/lids/{lid}
+                $lidResult     = $wahaLid->getPhoneByLid($phone . '@lid');
+                $resolvedPhone = $lidResult['phoneNumber'] ?? $lidResult['phone'] ?? $lidResult['chatId'] ?? null;
+                if ($resolvedPhone) {
+                    $resolved = ltrim((string) preg_replace('/[:@].+$/', '', $resolvedPhone), '+');
+                    if ($resolved && ctype_digit($resolved) && strlen($resolved) <= 15) {
+                        Log::channel('whatsapp')->info('LID resolvido via /lids endpoint', [
                             'lid'      => $phone,
                             'resolved' => $resolved,
                         ]);
                         $phone = $resolved;
+                    }
+                }
+
+                // 2) Fallback: contacts API (método antigo)
+                if (strlen($phone) > 13 && ctype_digit($phone)) {
+                    $contactInfo = $wahaLid->getContactInfo($this->normalizeJidForApi($from));
+                    $resolvedJid = $contactInfo['id'] ?? '';
+                    if ($resolvedJid && ! str_ends_with($resolvedJid, '@lid')) {
+                        $resolved = (string) preg_replace('/[:@].+$/', '', $resolvedJid);
+                        if ($resolved && ctype_digit($resolved)) {
+                            Log::channel('whatsapp')->info('LID resolvido via contacts API (fallback)', [
+                                'lid'      => $phone,
+                                'resolved' => $resolved,
+                            ]);
+                            $phone = $resolved;
+                        }
                     }
                 }
             } catch (\Throwable) {}
@@ -467,9 +485,7 @@ class ProcessWahaWebhook implements ShouldQueue
             $pictureUrl = null;
             try {
                 $wahaForPic = new \App\Services\WahaService($instance->session_name);
-                $pictureUrl = $isGroup
-                    ? $wahaForPic->getGroupPicture($from)
-                    : $wahaForPic->getContactPicture($this->normalizeJidForApi($from));
+                $pictureUrl = $wahaForPic->getChatPicture($from);
             } catch (\Throwable) {}
 
             $conversation = WhatsappConversation::withoutGlobalScope('tenant')->create([
@@ -546,9 +562,7 @@ class ProcessWahaWebhook implements ShouldQueue
             if (! Cache::has($picCacheKey)) {
                 try {
                     $wahaForPic  = new \App\Services\WahaService($instance->session_name);
-                    $pic         = $isGroup
-                        ? $wahaForPic->getGroupPicture($from)
-                        : $wahaForPic->getContactPicture($this->normalizeJidForApi($from));
+                    $pic         = $wahaForPic->getChatPicture($from);
                     if ($pic && $pic !== $conversation->contact_picture_url) {
                         $convUpdates['contact_picture_url'] = $pic;
                     }

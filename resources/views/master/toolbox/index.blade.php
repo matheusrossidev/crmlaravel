@@ -314,6 +314,34 @@
         <span class="tool-badge badge-blue">WhatsApp</span>
     </div>
 
+    {{-- 13. Reimportar Mensagens de Conversas Vazias --}}
+    <div class="tool-card" onclick="openTool('reimport-empty-conversations')">
+        <div class="tool-card-header">
+            <div class="tool-icon" style="background:#f0fdf4;">
+                <i class="bi bi-chat-square-text" style="color:#16a34a;"></i>
+            </div>
+            <div class="tool-info">
+                <h6>Reimportar Mensagens Vazias</h6>
+                <p>Busca e importa mensagens do WAHA para conversas que foram criadas sem mensagens.</p>
+            </div>
+        </div>
+        <span class="tool-badge badge-green">Mensagens</span>
+    </div>
+
+    {{-- 14. Resolver LIDs Pendentes --}}
+    <div class="tool-card" onclick="openTool('resolve-lid-conversations')">
+        <div class="tool-card-header">
+            <div class="tool-icon" style="background:#fffbeb;">
+                <i class="bi bi-phone-flip" style="color:#d97706;"></i>
+            </div>
+            <div class="tool-info">
+                <h6>Resolver LIDs Pendentes</h6>
+                <p>Resolve contatos com LID (ID interno do WhatsApp) para o número de telefone real via API dedicada.</p>
+            </div>
+        </div>
+        <span class="tool-badge badge-amber">LID</span>
+    </div>
+
 </div>
 
 {{-- ── MODAL ──────────────────────────────────────────────────────────────── --}}
@@ -460,6 +488,22 @@ var USERS   = <?php echo json_encode($users->toArray()); ?>;
             label: 'Sincronizar Fotos de Perfil',
             iconHtml: '<i class="bi bi-image" style="color:#3B82F6;"></i>',
             iconBg: '#eff6ff',
+            params: [
+                { name: 'tenant_id', label: 'Tenant', type: 'select-tenant', required: true },
+            ],
+        },
+        'reimport-empty-conversations': {
+            label: 'Reimportar Mensagens Vazias',
+            iconHtml: '<i class="bi bi-chat-square-text" style="color:#16a34a;"></i>',
+            iconBg: '#f0fdf4',
+            params: [
+                { name: 'tenant_id', label: 'Tenant', type: 'select-tenant', required: true },
+            ],
+        },
+        'resolve-lid-conversations': {
+            label: 'Resolver LIDs Pendentes',
+            iconHtml: '<i class="bi bi-phone-flip" style="color:#d97706;"></i>',
+            iconBg: '#fffbeb',
             params: [
                 { name: 'tenant_id', label: 'Tenant', type: 'select-tenant', required: true },
             ],

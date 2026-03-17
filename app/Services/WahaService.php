@@ -143,37 +143,53 @@ class WahaService
     }
 
     /**
-     * Fetches the profile picture URL for a contact or group.
-     * Returns null if the picture is private or unavailable.
-     * contactJid format: "556192008997@c.us" or "120363...@g.us"
+     * Fetch picture for any chat (contact or group) via the correct WAHA endpoint.
+     * GET /api/{session}/chats/{chatId}/picture
+     * chatId format: "556192008997@c.us", "120363xxx@g.us", or "123456@lid"
      */
-    public function getContactPicture(string $contactJid): ?string
+    public function getChatPicture(string $chatId): ?string
     {
         try {
-            $result = $this->get('/api/contacts/profile-picture', [
-                'session'   => $this->session,
-                'contactId' => $contactJid,
-            ]);
+            $encodedChatId = rawurlencode($chatId);
+            $result = $this->get("/api/{$this->session}/chats/{$encodedChatId}/picture");
             return $result['profilePictureURL'] ?? $result['url'] ?? $result['eurl'] ?? null;
         } catch (\Throwable) {
             return null;
         }
     }
 
-    /**
-     * Fetch group picture URL using the dedicated group endpoint.
-     * GET /api/{session}/groups/{id}/picture → {"url": "..."}
-     * Returns null if unavailable or private.
-     */
+    /** @deprecated Use getChatPicture() instead */
+    public function getContactPicture(string $contactJid): ?string
+    {
+        return $this->getChatPicture($contactJid);
+    }
+
+    /** @deprecated Use getChatPicture() instead */
     public function getGroupPicture(string $groupJid): ?string
     {
-        try {
-            $groupId = rawurlencode($groupJid);
-            $result  = $this->get("/api/{$this->session}/groups/{$groupId}/picture");
-            return $result['url'] ?? null;
-        } catch (\Throwable) {
-            return null;
-        }
+        return $this->getChatPicture($groupJid);
+    }
+
+    // ── LIDs (WhatsApp internal IDs) ────────────────────────────────────────
+
+    /**
+     * Get ALL known LID→phone mappings in one request.
+     * GET /api/{session}/lids
+     */
+    public function getAllLids(): array
+    {
+        return $this->get("/api/{$this->session}/lids");
+    }
+
+    /**
+     * Resolve a single LID to phone number.
+     * GET /api/{session}/lids/{lid}
+     * @param string $lid e.g. "123456789@lid"
+     */
+    public function getPhoneByLid(string $lid): array
+    {
+        $encodedLid = rawurlencode($lid);
+        return $this->get("/api/{$this->session}/lids/{$encodedLid}");
     }
 
     // ── Presence ─────────────────────────────────────────────────────────────

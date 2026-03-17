@@ -60,6 +60,31 @@ class ImportWhatsappHistory implements ShouldQueue
             'since'     => $since ? date('Y-m-d H:i:s', $since) : 'all',
         ]);
 
+        // Carregar TODOS os mapeamentos LID→phone em memória (1 request)
+        $lidMap = [];
+        try {
+            $allLids = $waha->getAllLids();
+            if (is_array($allLids) && ! isset($allLids['error'])) {
+                foreach ($allLids as $entry) {
+                    if (! is_array($entry)) {
+                        continue;
+                    }
+                    $lid   = $entry['lid'] ?? $entry['id'] ?? null;
+                    $phone = $entry['phoneNumber'] ?? $entry['phone'] ?? $entry['chatId'] ?? null;
+                    if ($lid && $phone) {
+                        $numericLid   = (string) preg_replace('/[:@].+$/', '', $lid);
+                        $numericPhone = ltrim((string) preg_replace('/[:@].+$/', '', $phone), '+');
+                        if ($numericLid && $numericPhone) {
+                            $lidMap[$numericLid] = $numericPhone;
+                        }
+                    }
+                }
+            }
+            Log::channel('whatsapp')->info('Import: LID map carregado', ['count' => count($lidMap)]);
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->warning('Import: falha ao carregar LID map', ['error' => $e->getMessage()]);
+        }
+
         // Progresso inicial
         $this->updateProgress('running', 0, 0, 0, 0, '', $startedAt);
 
@@ -98,7 +123,7 @@ class ImportWhatsappHistory implements ShouldQueue
 
                 $chatName = $chat['name'] ?? $this->normalizePhone($chat['id']);
 
-                $result = $this->importChat($waha, $chat, $since);
+                $result = $this->importChat($waha, $chat, $since, $lidMap);
                 $importedChats    += $result['chats'];
                 $importedMessages += $result['messages'];
                 $skipped          += $result['skipped'];
@@ -173,36 +198,62 @@ class ImportWhatsappHistory implements ShouldQueue
         ]);
     }
 
-    private function importChat(WahaService $waha, array $chat, ?int $since): array
+    private function importChat(WahaService $waha, array $chat, ?int $since, array $lidMap = []): array
     {
         $chatId      = $chat['id'];
         $isGroup     = (bool) ($chat['isGroup'] ?? false);
         $contactName = $chat['name'] ?? null;
         $phone       = $this->normalizePhone($chatId);
+        $originalLid = null; // Guardar LID para salvar na coluna
 
         if ($phone === '') {
             return ['chats' => 0, 'messages' => 0, 'skipped' => 0];
         }
 
-        // Resolver LID para telefone real (13+ dígitos = provável LID)
+        // Resolver LID para telefone real
         if (! $isGroup && strlen($phone) > 13 && ctype_digit($phone)) {
-            try {
-                $jid  = $phone . '@c.us';
-                $info = $waha->getContactInfo($jid);
-                $realId = $info['id'] ?? null;
-                if ($realId && ! str_contains($realId, '@lid')) {
-                    $resolved = preg_replace('/[:@].+$/', '', $realId);
-                    if ($resolved && $resolved !== $phone) {
-                        Log::channel('whatsapp')->info('Import: LID resolvido', [
-                            'lid' => $phone, 'resolved' => $resolved,
-                        ]);
-                        $phone = ltrim($resolved, '+');
+            $originalLid = $phone;
+
+            // 1) Lookup no mapa batch (instantâneo)
+            if (isset($lidMap[$phone])) {
+                Log::channel('whatsapp')->info('Import: LID resolvido via batch map', [
+                    'lid' => $phone, 'resolved' => $lidMap[$phone],
+                ]);
+                $phone = $lidMap[$phone];
+            } else {
+                // 2) Endpoint dedicado /lids/{lid}
+                try {
+                    $lidResult = $waha->getPhoneByLid($phone . '@lid');
+                    $resolvedPhone = $lidResult['phoneNumber'] ?? $lidResult['phone'] ?? $lidResult['chatId'] ?? null;
+                    if ($resolvedPhone) {
+                        $resolved = ltrim((string) preg_replace('/[:@].+$/', '', $resolvedPhone), '+');
+                        if ($resolved && ctype_digit($resolved) && strlen($resolved) <= 15) {
+                            Log::channel('whatsapp')->info('Import: LID resolvido via /lids endpoint', [
+                                'lid' => $phone, 'resolved' => $resolved,
+                            ]);
+                            $phone = $resolved;
+                        }
                     }
+                } catch (\Throwable) {
                 }
-            } catch (\Throwable) {
-                // Manter o telefone original
+                usleep(200_000);
+
+                // 3) Fallback: contacts API (método antigo)
+                if (strlen($phone) > 13 && ctype_digit($phone)) {
+                    try {
+                        $info   = $waha->getContactInfo($phone . '@c.us');
+                        $realId = $info['id'] ?? null;
+                        if ($realId && ! str_contains($realId, '@lid')) {
+                            $resolved = ltrim((string) preg_replace('/[:@].+$/', '', $realId), '+');
+                            if ($resolved && $resolved !== $phone) {
+                                $phone = $resolved;
+                            }
+                        }
+                    } catch (\Throwable) {
+                    }
+                    usleep(200_000);
+                }
             }
-            usleep(200_000); // Rate limit: 200ms
         }
 
         // BLOQUEAR: LID não resolvido — não importar este chat
@@ -242,22 +293,15 @@ class ImportWhatsappHistory implements ShouldQueue
 
         $newChat = false;
         if (! $conv) {
-            // Buscar foto do contato
-            $pictureUrl = null;
-            try {
-                if ($isGroup) {
-                    $pictureUrl = $waha->getGroupPicture($chatId);
-                } else {
-                    $pictureUrl = $waha->getContactPicture($phone . '@c.us');
-                }
-            } catch (\Throwable) {
-            }
+            // Buscar foto via endpoint correto: /api/{session}/chats/{chatId}/picture
+            $pictureUrl = $waha->getChatPicture($chatId);
             usleep(200_000);
 
             $conv = WhatsappConversation::withoutGlobalScope('tenant')->create([
                 'tenant_id'           => $this->instance->tenant_id,
                 'instance_id'         => $this->instance->id,
                 'phone'               => $phone,
+                'lid'                 => $originalLid,
                 'is_group'            => $isGroup,
                 'contact_name'        => $contactName ?: $this->formatPhoneName($phone),
                 'contact_picture_url' => $pictureUrl,
@@ -275,18 +319,18 @@ class ImportWhatsappHistory implements ShouldQueue
                 $convUpdates['contact_name'] = $contactName;
             }
 
-            // Atualizar foto se não tinha
+            // Atualizar foto se não tinha (endpoint correto: /chats/{chatId}/picture)
             if (empty($conv->contact_picture_url)) {
-                try {
-                    $pic = $isGroup
-                        ? $waha->getGroupPicture($chatId)
-                        : $waha->getContactPicture($phone . '@c.us');
-                    if ($pic) {
-                        $convUpdates['contact_picture_url'] = $pic;
-                    }
-                } catch (\Throwable) {
+                $pic = $waha->getChatPicture($chatId);
+                if ($pic) {
+                    $convUpdates['contact_picture_url'] = $pic;
                 }
                 usleep(200_000);
+            }
+
+            // Salvar LID se não tinha
+            if ($originalLid && empty($conv->lid)) {
+                $convUpdates['lid'] = $originalLid;
             }
 
             if ($convUpdates) {
