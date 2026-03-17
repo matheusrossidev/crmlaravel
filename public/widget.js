@@ -80,7 +80,7 @@
         '#syncro-launcher{position:fixed;bottom:24px;right:20px;width:60px;height:60px;border-radius:50%;background:' + colorPrimary + ';color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:99998;opacity:0;animation:syncro-super-pop-in .5s ' + EASE_POP + ' 1s forwards;}',
         '#syncro-launcher:hover{box-shadow:0 6px 28px rgba(0,0,0,.32);cursor:pointer;}',
         '#syncro-launcher svg{width:28px;height:28px;fill:currentColor;}',
-        '#syncro-launcher img{width:60px;height:60px;border-radius:50%;object-fit:cover;}',
+        '#syncro-launcher img{width:60px !important;height:60px !important;max-width:60px !important;border-radius:50% !important;object-fit:cover !important;object-position:top center !important;display:block !important;}',
         '#syncro-launcher::after{content:"";position:absolute;bottom:2px;right:2px;width:14px;height:14px;background:#22c55e;border-radius:50%;border:2.5px solid #fff;}',
 
         /* ── Welcome bubble (invite) ───────────────────────── */
@@ -99,7 +99,7 @@
 
         /* ── Header ────────────────────────────────────────── */
         '.syncro-header{background:' + colorPrimary + ';color:#fff;padding:16px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0;min-height:68px;}',
-        '.syncro-header-avatar{width:42px;height:42px;border-radius:50% !important;object-fit:cover;border:2.5px solid rgba(255,255,255,0.5);flex-shrink:0;}',
+        '.syncro-header-avatar{width:42px !important;height:42px !important;max-width:42px !important;border-radius:50% !important;object-fit:cover !important;object-position:top center !important;border:2.5px solid rgba(255,255,255,0.5) !important;flex-shrink:0 !important;display:block !important;}',
         '.syncro-header-avatar-placeholder{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
         '.syncro-header-info{flex:1;min-width:0;}',
         '.syncro-header-title{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
@@ -119,8 +119,11 @@
         '.syncro-msg-row{display:flex;align-items:flex-end;gap:8px;animation:syncro-msg-in .4s ' + EASE_POP + ';}',
         '.syncro-msg-row.out-row{flex-direction:row-reverse;}',
         '.syncro-msg-row.instant{animation:none;}',
-        '.syncro-msg-avatar{width:36px;height:36px;border-radius:50% !important;object-fit:cover;flex-shrink:0;}',
+        '.syncro-msg-avatar{width:36px !important;height:36px !important;max-width:36px !important;border-radius:50% !important;object-fit:cover !important;object-position:top center !important;flex-shrink:0 !important;display:block !important;}',
         '.syncro-msg-avatar-placeholder{width:36px;height:36px;border-radius:50%;background:' + colorPrimary + '18;display:flex;align-items:center;justify-content:center;flex-shrink:0;}',
+
+        /* ── CSS reset for widget images (prevent host site CSS interference) ── */
+        '#syncro-panel img,#syncro-launcher img{box-sizing:border-box !important;margin:0 !important;padding:0 !important;border:none !important;box-shadow:none !important;float:none !important;vertical-align:middle !important;}',
 
         /* ── Bubbles ───────────────────────────────────────── */
         '.syncro-bubble{max-width:78%;padding:14px 20px;border-radius:20px;font-size:14px;line-height:1.55;word-break:break-word;}',
@@ -550,7 +553,7 @@
         }
 
         if (launcher && botAvatar) {
-            launcher.innerHTML = '<img src="' + botAvatar + '" alt="' + botName + '" style="width:60px;height:60px;border-radius:50%;object-fit:cover;">';
+            launcher.innerHTML = '<img src="' + botAvatar + '" alt="' + botName + '" style="width:60px!important;height:60px!important;max-width:60px!important;border-radius:50%!important;object-fit:cover!important;object-position:top center!important;display:block!important;">';
         }
     }
 

@@ -1316,19 +1316,32 @@ document.getElementById('agentAvatarUploadInput')?.addEventListener('change', fu
     if (!file) return;
     const reader = new FileReader();
     reader.onload = function(e) {
-        const url = e.target.result;
-        document.getElementById('agentAvatarValue').value = url;
-        const preview = document.getElementById('agentAvatarPreview');
-        preview.src = url;
-        preview.style.display = '';
-        const icon = document.getElementById('agentAvatarIcon');
-        if (icon) icon.style.display = 'none';
-        const uploadCard = document.getElementById('agentAvatarUploadCard');
-        uploadCard.style.borderColor = '#0085f3';
-        document.getElementById('agentAvatarGrid').querySelectorAll('.avatar-option').forEach(el => {
-            el.style.borderColor = '#e8eaf0';
-            el.classList.remove('selected');
-        });
+        // Crop to square (centered on top) before saving
+        const img = new Image();
+        img.onload = function() {
+            const size = Math.min(img.width, img.height, 512);
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            const sx = (img.width - size) / 2;
+            const sy = 0; // top-aligned to keep face visible
+            ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
+            const url = canvas.toDataURL('image/jpeg', 0.85);
+            document.getElementById('agentAvatarValue').value = url;
+            const preview = document.getElementById('agentAvatarPreview');
+            preview.src = url;
+            preview.style.display = '';
+            const icon = document.getElementById('agentAvatarIcon');
+            if (icon) icon.style.display = 'none';
+            const uploadCard = document.getElementById('agentAvatarUploadCard');
+            uploadCard.style.borderColor = '#0085f3';
+            document.getElementById('agentAvatarGrid').querySelectorAll('.avatar-option').forEach(el => {
+                el.style.borderColor = '#e8eaf0';
+                el.classList.remove('selected');
+            });
+        };
+        img.src = e.target.result;
     };
     reader.readAsDataURL(file);
 });
