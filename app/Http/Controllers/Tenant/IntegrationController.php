@@ -5,17 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ImportWhatsappHistory;
 use App\Jobs\SyncCampaignsJob;
 use App\Models\InstagramInstance;
 use App\Models\OAuthConnection;
-use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
-use App\Models\WhatsappMessage;
 use App\Services\InstagramService;
 use App\Services\PlanLimitChecker;
 use App\Services\WahaService;
-use Carbon\Carbon;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -286,139 +283,14 @@ class IntegrationController extends Controller
             return response()->json(['success' => false, 'message' => 'WhatsApp não está conectado.'], 422);
         }
 
-        $days  = min((int) $request->input('days', 5), 30);
-        $since = $days > 0 ? (int) now()->subDays($days)->timestamp : null;
+        $days = min((int) $request->input('days', 30), 30);
 
-        try {
-            $waha             = new WahaService($instance->session_name);
-            $importedChats    = 0;
-            $importedMessages = 0;
-            $skipped          = 0;
+        ImportWhatsappHistory::dispatch($instance, $days);
 
-            $chatLimit = 50;
-            $chatOffset = 0;
-
-            do {
-                $chats = $waha->getChats($chatLimit, $chatOffset);
-
-                if (isset($chats['error']) || ! is_array($chats) || empty($chats)) {
-                    break;
-                }
-
-                foreach ($chats as $chat) {
-                    if (! is_array($chat) || empty($chat['id'])) {
-                        continue;
-                    }
-
-                    $chatId      = $chat['id'];
-                    $isGroup     = (bool) ($chat['isGroup'] ?? false);
-                    $contactName = $chat['name'] ?? null;
-                    $phone       = $this->normalizePhone($chatId);
-
-                    if ($phone === '') {
-                        continue;
-                    }
-
-                    // Busca ou cria conversa
-                    $conv = WhatsappConversation::withoutGlobalScope('tenant')
-                        ->where('tenant_id', $instance->tenant_id)
-                        ->where('phone', $phone)
-                        ->first();
-
-                    if (! $conv) {
-                        $conv = WhatsappConversation::withoutGlobalScope('tenant')->create([
-                            'tenant_id'      => $instance->tenant_id,
-                            'instance_id'    => $instance->id,
-                            'phone'          => $phone,
-                            'is_group'       => $isGroup,
-                            'contact_name'   => $contactName,
-                            'status'         => 'open',
-                            'started_at'     => now(),
-                            'last_message_at'=> now(),
-                            'unread_count'   => 0,
-                        ]);
-                        $importedChats++;
-                    }
-
-                    // Buscar mensagens (sem download de mídia, máx 200 por chat, filtrado por data)
-                    $msgs = $waha->getChatMessages($chatId, 200, 0, false, $since);
-
-                    if (is_array($msgs) && ! isset($msgs['error'])) {
-                        foreach ($msgs as $msg) {
-                            if (! is_array($msg) || empty($msg['id'])) {
-                                continue;
-                            }
-
-                            $rawType  = $msg['type'] ?? 'chat';
-                            $type     = match ($rawType) {
-                                'image'               => 'image',
-                                'audio', 'ptt'        => 'audio',
-                                'video'               => 'video',
-                                'document', 'sticker' => 'document',
-                                default               => 'text',
-                            };
-
-                            $ts = isset($msg['timestamp']) ? (int) $msg['timestamp'] : null;
-                            $sentAt = $ts
-                                ? Carbon::createFromTimestamp($ts, config('app.timezone', 'America/Sao_Paulo'))
-                                : now();
-
-                            try {
-                                WhatsappMessage::withoutGlobalScope('tenant')->create([
-                                    'tenant_id'       => $instance->tenant_id,
-                                    'conversation_id' => $conv->id,
-                                    'waha_message_id' => $msg['id'],
-                                    'direction'       => ($msg['fromMe'] ?? false) ? 'outbound' : 'inbound',
-                                    'type'            => $type,
-                                    'body'            => $msg['body'] ?? null,
-                                    'ack'             => 'delivered',
-                                    'sent_at'         => $sentAt,
-                                ]);
-                                $importedMessages++;
-                            } catch (QueryException) {
-                                $skipped++;
-                            }
-                        }
-
-                        // Atualiza last_message_at com a mensagem mais recente
-                        $latestSentAt = WhatsappMessage::withoutGlobalScope('tenant')
-                            ->where('conversation_id', $conv->id)
-                            ->orderByDesc('sent_at')
-                            ->value('sent_at');
-
-                        if ($latestSentAt) {
-                            WhatsappConversation::withoutGlobalScope('tenant')
-                                ->where('id', $conv->id)
-                                ->update(['last_message_at' => $latestSentAt]);
-                        }
-                    }
-                }
-
-                $chatOffset += $chatLimit;
-            } while (count($chats) >= $chatLimit);
-
-            Log::info('WhatsApp history import', [
-                'tenant_id'        => $instance->tenant_id,
-                'days'             => $days,
-                'imported_chats'   => $importedChats,
-                'imported_messages'=> $importedMessages,
-                'skipped'          => $skipped,
-            ]);
-
-            return response()->json([
-                'success'          => true,
-                'imported_chats'   => $importedChats,
-                'imported_messages'=> $importedMessages,
-                'skipped'          => $skipped,
-            ]);
-
-        } catch (\Throwable $e) {
-            Log::error('WhatsApp history import failed', ['error' => $e->getMessage()]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao importar histórico: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => "Importação dos últimos {$days} dias iniciada em segundo plano.",
+        ]);
     }
 
     public function disconnectWhatsapp(WhatsappInstance $instance): JsonResponse

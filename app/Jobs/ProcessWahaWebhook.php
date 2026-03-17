@@ -940,6 +940,11 @@ class ProcessWahaWebhook implements ShouldQueue
         WhatsappInstance::withoutGlobalScope('tenant')
             ->where('id', $instance->id)
             ->update($update);
+
+        // Auto-import de 30 dias na primeira conexão
+        if ($status === 'WORKING' && ! $instance->history_imported) {
+            ImportWhatsappHistory::dispatch($instance, 30);
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

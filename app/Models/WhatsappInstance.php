@@ -20,6 +20,11 @@ class WhatsappInstance extends Model
         'phone_number',
         'display_name',
         'label',
+        'history_imported',
+    ];
+
+    protected $casts = [
+        'history_imported' => 'boolean',
     ];
 
     public function conversations(): HasMany

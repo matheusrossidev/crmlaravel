@@ -445,6 +445,9 @@
                         </div>
                         <div class="wa-instance-actions">
                             @if($inst->status === 'connected')
+                                <button class="btn-sync" style="padding:5px 12px;font-size:11.5px;" onclick="openImportModal({{ $inst->id }})" title="Importar histórico de mensagens">
+                                    <i class="bi bi-cloud-download"></i> Importar
+                                </button>
                                 <button class="btn-disconnect" style="padding:5px 12px;font-size:11.5px;" onclick="disconnectWhatsapp(this, {{ $inst->id }})">
                                     <i class="bi bi-x-circle"></i> Desconectar
                                 </button>
@@ -736,6 +739,31 @@
     </div>
 </div>
 
+{{-- ─── Modal Importar Histórico ──────────────────────────────────── --}}
+<div id="waImportModal" class="wa-modal-overlay">
+    <div class="wa-modal" style="max-width:380px;">
+        <h4><i class="bi bi-cloud-download" style="color:#0085f3;margin-right:6px;"></i>Importar Mensagens</h4>
+        <p>Importa o histórico de conversas do WhatsApp para o CRM</p>
+
+        <div style="text-align:left;margin-bottom:20px;">
+            <label style="font-size:13px;font-weight:600;color:#1a1d23;display:block;margin-bottom:6px;">Período</label>
+            <select id="importDaysSelect" style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:13px;color:#374151;background:#fff;outline:none;">
+                <option value="7">Últimos 7 dias</option>
+                <option value="15">Últimos 15 dias</option>
+                <option value="30" selected>Últimos 30 dias</option>
+            </select>
+            <p style="font-size:11.5px;color:#9ca3af;margin:8px 0 0;">A importação roda em segundo plano. Mensagens já existentes serão ignoradas.</p>
+        </div>
+
+        <div style="display:flex;gap:8px;justify-content:center;">
+            <button class="btn-wa-cancel" onclick="closeImportModal()">Cancelar</button>
+            <button class="btn-connect" id="btnStartImport" onclick="startImport()">
+                <i class="bi bi-cloud-download"></i> Importar
+            </button>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -936,6 +964,59 @@ async function saveWaLabel(input) {
 document.getElementById('waQrModal').addEventListener('click', function(e) {
     if (e.target === this) closeWaModal();
 });
+
+// ── Import histórico ────────────────────────────────────────────────────────
+
+let waImportInstanceId = null;
+
+function openImportModal(instanceId) {
+    waImportInstanceId = instanceId;
+    document.getElementById('importDaysSelect').value = '30';
+    document.getElementById('waImportModal').classList.add('open');
+}
+
+function closeImportModal() {
+    document.getElementById('waImportModal').classList.remove('open');
+    waImportInstanceId = null;
+}
+
+document.getElementById('waImportModal').addEventListener('click', function(e) {
+    if (e.target === this) closeImportModal();
+});
+
+async function startImport() {
+    if (!waImportInstanceId) return;
+
+    const days = document.getElementById('importDaysSelect').value;
+    const btn  = document.getElementById('btnStartImport');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Iniciando...';
+
+    try {
+        const res  = await fetch(`${WA_BASE_URL}/${waImportInstanceId}/import`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ days: parseInt(days) }),
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            toastr.success(data.message || 'Importação iniciada em segundo plano.');
+            closeImportModal();
+        } else {
+            toastr.error(data.message || 'Erro ao iniciar importação.');
+        }
+    } catch (e) {
+        toastr.error('Erro de conexão.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-cloud-download"></i> Importar';
+    }
+}
 
 async function syncNow(platform, btn) {
     const url = SYNC_URL.replace('__P__', platform);
