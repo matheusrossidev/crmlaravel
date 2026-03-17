@@ -127,10 +127,12 @@ class ImportWhatsappHistory implements ShouldQueue
             $chatOffset += $chatLimit;
         } while (count($chats) >= $chatLimit);
 
-        // Marcar que já importou histórico
-        WhatsappInstance::withoutGlobalScope('tenant')
-            ->where('id', $this->instance->id)
-            ->update(['history_imported' => true]);
+        // Só marcar importado se de fato importou mensagens
+        if ($importedMessages > 0) {
+            WhatsappInstance::withoutGlobalScope('tenant')
+                ->where('id', $this->instance->id)
+                ->update(['history_imported' => true]);
+        }
 
         // Progresso final
         $this->updateProgress(
@@ -201,6 +203,15 @@ class ImportWhatsappHistory implements ShouldQueue
                 // Manter o telefone original
             }
             usleep(200_000); // Rate limit: 200ms
+        }
+
+        // BLOQUEAR: LID não resolvido — não importar este chat
+        if (! $isGroup && strlen($phone) > 13 && ctype_digit($phone)) {
+            Log::channel('whatsapp')->info('Import: LID ignorado — sem número real', [
+                'chatId' => $chatId,
+                'phone'  => $phone,
+            ]);
+            return ['chats' => 0, 'messages' => 0, 'skipped' => 0];
         }
 
         // Se 1:1 sem nome, tentar resolver via WAHA contacts API
@@ -291,6 +302,18 @@ class ImportWhatsappHistory implements ShouldQueue
 
         try {
             $msgs = $waha->getChatMessages($chatId, 200, 0, false, $since);
+
+            Log::channel('whatsapp')->debug('Import: getChatMessages raw', [
+                'chatId'    => $chatId,
+                'count'     => is_array($msgs) ? count($msgs) : 'not_array',
+                'has_error' => isset($msgs['error']),
+                'sample'    => is_array($msgs) ? array_map(fn($m) => [
+                    'id'        => $m['id'] ?? null,
+                    'timestamp' => $m['timestamp'] ?? null,
+                    'fromMe'    => $m['fromMe'] ?? null,
+                    'hasBody'   => ! empty($m['body']),
+                ], array_slice($msgs, 0, 3)) : null,
+            ]);
         } catch (\Throwable $e) {
             Log::channel('whatsapp')->warning('Import: error fetching messages', [
                 'chatId' => $chatId,
@@ -339,7 +362,13 @@ class ImportWhatsappHistory implements ShouldQueue
         }
 
         foreach ($msgs as $msg) {
-            if (! is_array($msg) || empty($msg['id'])) {
+            if (! is_array($msg)) {
+                continue;
+            }
+
+            // ID da mensagem: WAHA pode usar formatos diferentes
+            $msgId = $msg['id'] ?? $msg['key']['id'] ?? null;
+            if (empty($msgId)) {
                 continue;
             }
 
@@ -352,26 +381,34 @@ class ImportWhatsappHistory implements ShouldQueue
                 default               => 'text',
             };
 
-            $ts     = isset($msg['timestamp']) ? (int) $msg['timestamp'] : null;
-            $sentAt = $ts
+            $ts = isset($msg['timestamp']) ? (int) $msg['timestamp'] : 0;
+            // GOWS pode retornar milissegundos em vez de segundos
+            if ($ts > 9999999999) {
+                $ts = intdiv($ts, 1000);
+            }
+            // Validar: timestamp deve ser > 2020-01-01 e < agora+1dia
+            $sentAt = ($ts > 1577836800 && $ts < time() + 86400)
                 ? Carbon::createFromTimestamp($ts, config('app.timezone', 'America/Sao_Paulo'))
                 : now();
 
             try {
+                // Body: GOWS pode usar campo diferente
+                $msgBody = $msg['body'] ?? $msg['text'] ?? $msg['caption'] ?? null;
+
                 WhatsappMessage::withoutGlobalScope('tenant')->create([
                     'tenant_id'       => $this->instance->tenant_id,
                     'conversation_id' => $conv->id,
-                    'waha_message_id' => $msg['id'],
+                    'waha_message_id' => $msgId,
                     'direction'       => ($msg['fromMe'] ?? false) ? 'outbound' : 'inbound',
                     'type'            => $type,
-                    'body'            => $msg['body'] ?? null,
+                    'body'            => $msgBody,
                     'ack'             => 'delivered',
                     'sent_at'         => $sentAt,
                 ]);
                 $importedMessages++;
             } catch (QueryException $e) {
                 Log::channel('whatsapp')->debug('Import: msg duplicada ou erro', [
-                    'waha_id' => $msg['id'] ?? null,
+                    'waha_id' => $msgId,
                     'error'   => $e->getMessage(),
                 ]);
                 $skipped++;

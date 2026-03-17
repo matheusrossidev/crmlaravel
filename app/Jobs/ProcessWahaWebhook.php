@@ -200,6 +200,16 @@ class ProcessWahaWebhook implements ShouldQueue
             }
         }
 
+        // BLOQUEAR: se phone continua sendo LID (>13 dígitos, somente números) após resolução
+        if (! $isGroup && ! empty($phone) && strlen($phone) > 13 && ctype_digit($phone)) {
+            Log::channel('whatsapp')->info('BLOQUEADO: LID não resolvido — conversa ignorada', [
+                'phone'  => $phone,
+                'from'   => $from,
+                'msg_id' => $msg['id'] ?? null,
+            ]);
+            return;
+        }
+
         Log::channel('whatsapp')->info('Processando mensagem', [
             'event'  => $event,
             'from'   => $from,
@@ -941,10 +951,7 @@ class ProcessWahaWebhook implements ShouldQueue
             ->where('id', $instance->id)
             ->update($update);
 
-        // Auto-import de 30 dias na primeira conexão
-        if ($status === 'WORKING' && ! $instance->history_imported) {
-            ImportWhatsappHistory::dispatch($instance, 30);
-        }
+        // Auto-import REMOVIDO — importação só ocorre via ação manual do cliente
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

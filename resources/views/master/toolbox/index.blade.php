@@ -272,6 +272,34 @@
         <span class="tool-badge badge-blue">Conta</span>
     </div>
 
+    {{-- 10. Limpar Conversas LID --}}
+    <div class="tool-card" onclick="openTool('cleanup-lid-conversations')">
+        <div class="tool-card-header">
+            <div class="tool-icon" style="background:#fef2f2;">
+                <i class="bi bi-phone-vibrate" style="color:#ef4444;"></i>
+            </div>
+            <div class="tool-info">
+                <h6>Limpar Conversas LID</h6>
+                <p>Remove conversas, mensagens e leads vinculados a contatos com LID (IDs internos do WhatsApp sem telefone real).</p>
+            </div>
+        </div>
+        <span class="tool-badge badge-red">Limpeza</span>
+    </div>
+
+    {{-- 11. Reimportar Histórico WA --}}
+    <div class="tool-card" onclick="openTool('reimport-wa-history')">
+        <div class="tool-card-header">
+            <div class="tool-icon" style="background:#eff6ff;">
+                <i class="bi bi-cloud-download" style="color:#3B82F6;"></i>
+            </div>
+            <div class="tool-info">
+                <h6>Reimportar Histórico WA</h6>
+                <p>Reseta o flag de importação e dispara reimportação do histórico de conversas de um tenant.</p>
+            </div>
+        </div>
+        <span class="tool-badge badge-blue">WhatsApp</span>
+    </div>
+
 </div>
 
 {{-- ── MODAL ──────────────────────────────────────────────────────────────── --}}
@@ -394,6 +422,24 @@ var USERS   = <?php echo json_encode($users->toArray()); ?>;
                 { name: 'tenant_id',    label: 'Tenant', type: 'select-tenant', required: true },
                 { name: 'user_id',      label: 'Usuário', type: 'select-user', required: true },
                 { name: 'resend_email', label: 'Reenviar email de verificação (apenas se não verificado)', type: 'checkbox' },
+            ],
+        },
+        'cleanup-lid-conversations': {
+            label: 'Limpar Conversas LID',
+            iconHtml: '<i class="bi bi-phone-vibrate" style="color:#ef4444;"></i>',
+            iconBg: '#fef2f2',
+            params: [
+                { name: 'tenant_id', label: 'Tenant', type: 'select-tenant', required: true },
+                { name: 'confirm',   label: 'Confirmação', type: 'confirm', hint: 'Digite CONFIRMAR (em maiúsculas) para prosseguir', required: true },
+            ],
+        },
+        'reimport-wa-history': {
+            label: 'Reimportar Histórico WA',
+            iconHtml: '<i class="bi bi-cloud-download" style="color:#3B82F6;"></i>',
+            iconBg: '#eff6ff',
+            params: [
+                { name: 'tenant_id', label: 'Tenant', type: 'select-tenant', required: true },
+                { name: 'days',      label: 'Dias para importar', type: 'text', hint: 'Número de dias (padrão: 30, máx: 30)', required: false },
             ],
         },
     };

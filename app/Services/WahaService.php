@@ -309,7 +309,7 @@ class WahaService
         $params = [
             'limit'         => $limit,
             'offset'        => $offset,
-            'downloadMedia' => $downloadMedia ? 'true' : 'false',
+            'downloadMedia' => $downloadMedia,
         ];
 
         if ($timestampGte !== null) {
@@ -317,7 +317,15 @@ class WahaService
         }
 
         $encodedChatId = rawurlencode($chatId);
-        return $this->get("/api/{$this->session}/chats/{$encodedChatId}/messages", $params);
+
+        // Timeout maior para import de histórico (pode retornar muitas mensagens)
+        $response = Http::baseUrl($this->baseUrl)
+            ->withHeader('X-Api-Key', $this->apiKey)
+            ->acceptJson()
+            ->timeout(60)
+            ->get("/api/{$this->session}/chats/{$encodedChatId}/messages", $params);
+
+        return $this->parse($response);
     }
 
     // ── Webhook ───────────────────────────────────────────────────────────────

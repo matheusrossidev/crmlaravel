@@ -16,6 +16,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
+use App\Jobs\ImportWhatsappHistory;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
@@ -31,6 +33,8 @@ class ToolboxController extends Controller
         'close-conversations',
         'export-tenant-stats',
         'check-user-account',
+        'cleanup-lid-conversations',
+        'reimport-wa-history',
     ];
 
     public function index(): View
@@ -366,5 +370,117 @@ class ToolboxController extends Controller
         }
 
         return response()->json(['success' => true, 'lines' => $lines]);
+    }
+
+    private function cleanupLidConversations(Request $request): JsonResponse
+    {
+        $tenantId = $request->input('tenant_id');
+        $confirm  = $request->input('confirm', '');
+
+        if (strtoupper(trim($confirm)) !== 'CONFIRMAR') {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] Confirmação inválida. Digite CONFIRMAR no campo.']]);
+        }
+
+        if (! $tenantId) {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] Selecione um tenant.']]);
+        }
+
+        $tenant = Tenant::find($tenantId);
+
+        if (! $tenant) {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] Tenant não encontrado.']]);
+        }
+
+        // Buscar conversas LID: phone > 13 dígitos, somente números, não é grupo
+        $lidConversations = WhatsappConversation::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('is_group', false)
+            ->whereRaw('LENGTH(phone) > 13')
+            ->whereRaw("phone REGEXP '^[0-9]+$'")
+            ->get();
+
+        if ($lidConversations->isEmpty()) {
+            return response()->json(['success' => true, 'lines' => [
+                "Tenant: {$tenant->name}",
+                'Nenhuma conversa com LID encontrada.',
+            ]]);
+        }
+
+        $convIds    = $lidConversations->pluck('id')->toArray();
+        $lidPhones  = $lidConversations->pluck('phone')->toArray();
+
+        // Deletar mensagens dessas conversas
+        $deletedMessages = WhatsappMessage::withoutGlobalScope('tenant')
+            ->whereIn('conversation_id', $convIds)
+            ->delete();
+
+        // Desvincular leads (não deleta, apenas remove o phone LID)
+        $updatedLeads = Lead::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->whereIn('phone', $lidPhones)
+            ->update(['phone' => null]);
+
+        // Deletar as conversas
+        $deletedConvs = WhatsappConversation::withoutGlobalScope('tenant')
+            ->whereIn('id', $convIds)
+            ->delete();
+
+        return response()->json([
+            'success' => true,
+            'lines'   => [
+                "Tenant: {$tenant->name}",
+                '',
+                "{$deletedConvs} conversa(s) LID removida(s)",
+                "{$deletedMessages} mensagem(ns) removida(s)",
+                "{$updatedLeads} lead(s) com phone LID limpo(s)",
+                '',
+                'Limpeza concluída com sucesso.',
+            ],
+        ]);
+    }
+
+    private function reimportWaHistory(Request $request): JsonResponse
+    {
+        $tenantId = $request->input('tenant_id');
+        $days     = max(1, min(30, (int) ($request->input('days') ?: 30)));
+
+        if (! $tenantId) {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] Selecione um tenant.']]);
+        }
+
+        $tenant = Tenant::find($tenantId);
+
+        if (! $tenant) {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] Tenant não encontrado.']]);
+        }
+
+        $instance = WhatsappInstance::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('status', 'connected')
+            ->first();
+
+        if (! $instance) {
+            return response()->json(['success' => false, 'lines' => [
+                "Tenant: {$tenant->name}",
+                '[ERRO] Nenhuma instância WhatsApp conectada para este tenant.',
+            ]]);
+        }
+
+        // Resetar flag para permitir reimportação
+        $instance->update(['history_imported' => false]);
+
+        // Disparar job de importação
+        ImportWhatsappHistory::dispatch($instance, $days);
+
+        return response()->json([
+            'success' => true,
+            'lines'   => [
+                "Tenant: {$tenant->name}",
+                "Instância: {$instance->session_name}",
+                '',
+                "Importação dos últimos {$days} dias iniciada em segundo plano.",
+                'Acompanhe o progresso via logs do WhatsApp.',
+            ],
+        ]);
     }
 }
