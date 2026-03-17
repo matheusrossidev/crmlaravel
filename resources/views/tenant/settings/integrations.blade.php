@@ -741,25 +741,71 @@
 
 {{-- ─── Modal Importar Histórico ──────────────────────────────────── --}}
 <div id="waImportModal" class="wa-modal-overlay">
-    <div class="wa-modal" style="max-width:380px;">
-        <h4><i class="bi bi-cloud-download" style="color:#0085f3;margin-right:6px;"></i>Importar Mensagens</h4>
-        <p>Importa o histórico de conversas do WhatsApp para o CRM</p>
+    <div class="wa-modal" style="max-width:420px;">
+        {{-- Estado 1: Configuração --}}
+        <div id="importConfigState">
+            <h4 style="margin:0 0 4px;font-size:16px;font-weight:700;color:#1a1d23;">
+                <i class="bi bi-cloud-download" style="color:#0085f3;margin-right:6px;"></i>Importar Mensagens
+            </h4>
+            <p style="font-size:13px;color:#6b7280;margin:0 0 18px;">Importa o histórico de conversas do WhatsApp para o CRM</p>
 
-        <div style="text-align:left;margin-bottom:20px;">
-            <label style="font-size:13px;font-weight:600;color:#1a1d23;display:block;margin-bottom:6px;">Período</label>
-            <select id="importDaysSelect" style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:13px;color:#374151;background:#fff;outline:none;">
-                <option value="7">Últimos 7 dias</option>
-                <option value="15">Últimos 15 dias</option>
-                <option value="30" selected>Últimos 30 dias</option>
-            </select>
-            <p style="font-size:11.5px;color:#9ca3af;margin:8px 0 0;">A importação roda em segundo plano. Mensagens já existentes serão ignoradas.</p>
+            <div style="text-align:left;margin-bottom:20px;">
+                <label style="font-size:13px;font-weight:600;color:#1a1d23;display:block;margin-bottom:6px;">Período</label>
+                <select id="importDaysSelect" style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:13px;color:#374151;background:#fff;outline:none;">
+                    <option value="7">Últimos 7 dias</option>
+                    <option value="15">Últimos 15 dias</option>
+                    <option value="30" selected>Últimos 30 dias</option>
+                </select>
+                <p style="font-size:11.5px;color:#9ca3af;margin:8px 0 0;">A importação roda em segundo plano. Mensagens já existentes serão ignoradas.</p>
+            </div>
+
+            <div style="display:flex;gap:8px;justify-content:center;">
+                <button class="btn-wa-cancel" onclick="closeImportModal()">Cancelar</button>
+                <button class="btn-connect" id="btnStartImport" onclick="startImport()">
+                    <i class="bi bi-cloud-download"></i> Importar
+                </button>
+            </div>
         </div>
 
-        <div style="display:flex;gap:8px;justify-content:center;">
-            <button class="btn-wa-cancel" onclick="closeImportModal()">Cancelar</button>
-            <button class="btn-connect" id="btnStartImport" onclick="startImport()">
-                <i class="bi bi-cloud-download"></i> Importar
-            </button>
+        {{-- Estado 2: Progresso --}}
+        <div id="importProgressState" style="display:none;">
+            <h4 id="importProgressTitle" style="margin:0 0 4px;font-size:16px;font-weight:700;color:#1a1d23;">
+                <i class="bi bi-arrow-clockwise spin" style="color:#0085f3;margin-right:6px;"></i>Importando Mensagens...
+            </h4>
+            <p id="importProgressSubtitle" style="font-size:13px;color:#6b7280;margin:0 0 18px;">Buscando conversas do WhatsApp...</p>
+
+            {{-- Barra de progresso --}}
+            <div style="background:#f3f4f6;border-radius:8px;height:10px;overflow:hidden;margin-bottom:18px;">
+                <div id="importProgressBar" style="height:100%;background:#0085f3;border-radius:8px;transition:width .5s ease;width:0%;"></div>
+            </div>
+
+            {{-- Contadores --}}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+                <div style="background:#f0f7ff;border-radius:10px;padding:12px 14px;text-align:center;">
+                    <div style="font-size:22px;font-weight:700;color:#0085f3;" id="importCountChats">0</div>
+                    <div style="font-size:11px;color:#6b7280;font-weight:600;">Conversas</div>
+                </div>
+                <div style="background:#ecfdf5;border-radius:10px;padding:12px 14px;text-align:center;">
+                    <div style="font-size:22px;font-weight:700;color:#059669;" id="importCountMessages">0</div>
+                    <div style="font-size:11px;color:#6b7280;font-weight:600;">Mensagens</div>
+                </div>
+                <div style="background:#fef3c7;border-radius:10px;padding:12px 14px;text-align:center;">
+                    <div style="font-size:22px;font-weight:700;color:#d97706;" id="importCountSkipped">0</div>
+                    <div style="font-size:11px;color:#6b7280;font-weight:600;">Duplicadas</div>
+                </div>
+                <div style="background:#f3f4f6;border-radius:10px;padding:12px 14px;text-align:center;">
+                    <div style="font-size:22px;font-weight:700;color:#374151;" id="importCountTime">0:00</div>
+                    <div style="font-size:11px;color:#6b7280;font-weight:600;">Tempo</div>
+                </div>
+            </div>
+
+            {{-- Chat atual --}}
+            <div id="importCurrentChat" style="font-size:12px;color:#9ca3af;text-align:center;margin-bottom:16px;min-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+
+            {{-- Botão fechar --}}
+            <div style="text-align:center;">
+                <button class="btn-wa-cancel" id="importCloseBtn" onclick="closeImportModal()">Fechar</button>
+            </div>
         </div>
     </div>
 </div>
@@ -968,21 +1014,45 @@ document.getElementById('waQrModal').addEventListener('click', function(e) {
 // ── Import histórico ────────────────────────────────────────────────────────
 
 let waImportInstanceId = null;
+let importPollTimer    = null;
+let importStartedTime  = null;
+let importTimeTimer    = null;
 
 function openImportModal(instanceId) {
     waImportInstanceId = instanceId;
     document.getElementById('importDaysSelect').value = '30';
+    document.getElementById('importConfigState').style.display = '';
+    document.getElementById('importProgressState').style.display = 'none';
     document.getElementById('waImportModal').classList.add('open');
+
+    // Checar se já tem import rodando
+    checkExistingImport(instanceId);
 }
 
 function closeImportModal() {
     document.getElementById('waImportModal').classList.remove('open');
+    if (importPollTimer) { clearInterval(importPollTimer); importPollTimer = null; }
+    if (importTimeTimer) { clearInterval(importTimeTimer); importTimeTimer = null; }
     waImportInstanceId = null;
 }
 
 document.getElementById('waImportModal').addEventListener('click', function(e) {
     if (e.target === this) closeImportModal();
 });
+
+async function checkExistingImport(instanceId) {
+    try {
+        const res  = await fetch(`${WA_BASE_URL}/${instanceId}/import/progress`, {
+            headers: { 'Accept': 'application/json' },
+        });
+        const data = await res.json();
+        if (data.status === 'running') {
+            showProgressState();
+            updateProgressUI(data);
+            startProgressPolling(instanceId);
+        }
+    } catch (e) {}
+}
 
 async function startImport() {
     if (!waImportInstanceId) return;
@@ -1005,16 +1075,102 @@ async function startImport() {
         const data = await res.json();
 
         if (data.success) {
-            toastr.success(data.message || 'Importação iniciada em segundo plano.');
-            closeImportModal();
+            showProgressState();
+            startProgressPolling(waImportInstanceId);
         } else {
             toastr.error(data.message || 'Erro ao iniciar importação.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-cloud-download"></i> Importar';
         }
     } catch (e) {
         toastr.error('Erro de conexão.');
-    } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-cloud-download"></i> Importar';
+    }
+}
+
+function showProgressState() {
+    document.getElementById('importConfigState').style.display = 'none';
+    document.getElementById('importProgressState').style.display = '';
+    document.getElementById('importProgressBar').style.width = '0%';
+    document.getElementById('importCountChats').textContent = '0';
+    document.getElementById('importCountMessages').textContent = '0';
+    document.getElementById('importCountSkipped').textContent = '0';
+    document.getElementById('importCountTime').textContent = '0:00';
+    document.getElementById('importCurrentChat').textContent = '';
+    document.getElementById('importProgressTitle').innerHTML = '<i class="bi bi-arrow-clockwise spin" style="color:#0085f3;margin-right:6px;"></i>Importando Mensagens...';
+    document.getElementById('importProgressSubtitle').textContent = 'Buscando conversas do WhatsApp...';
+
+    importStartedTime = Date.now();
+    if (importTimeTimer) clearInterval(importTimeTimer);
+    importTimeTimer = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - importStartedTime) / 1000);
+        const min = Math.floor(elapsed / 60);
+        const sec = String(elapsed % 60).padStart(2, '0');
+        document.getElementById('importCountTime').textContent = `${min}:${sec}`;
+    }, 1000);
+}
+
+function startProgressPolling(instanceId) {
+    if (importPollTimer) clearInterval(importPollTimer);
+
+    importPollTimer = setInterval(async () => {
+        try {
+            const res  = await fetch(`${WA_BASE_URL}/${instanceId}/import/progress`, {
+                headers: { 'Accept': 'application/json' },
+            });
+            const data = await res.json();
+            updateProgressUI(data);
+
+            if (data.status === 'completed' || data.status === 'failed' || data.status === 'idle') {
+                clearInterval(importPollTimer);
+                importPollTimer = null;
+                if (importTimeTimer) { clearInterval(importTimeTimer); importTimeTimer = null; }
+            }
+        } catch (e) {}
+    }, 2000);
+}
+
+function updateProgressUI(data) {
+    if (!data || data.status === 'idle') return;
+
+    const processed = data.processed || 0;
+    const total     = data.total || 0;
+    const messages  = data.messages || 0;
+    const skipped   = data.skipped || 0;
+    const current   = data.current || '';
+    const pct       = total > 0 ? Math.min(Math.round((processed / total) * 100), 100) : 0;
+
+    document.getElementById('importProgressBar').style.width = (total > 0 ? pct : 30) + '%';
+    document.getElementById('importCountChats').textContent = total > 0 ? `${processed}/${total}` : processed;
+    document.getElementById('importCountMessages').textContent = messages.toLocaleString('pt-BR');
+    document.getElementById('importCountSkipped').textContent = skipped.toLocaleString('pt-BR');
+
+    if (data.started_at && importStartedTime) {
+        // Sincronizar com o tempo real do servidor
+        const serverStart = new Date(data.started_at).getTime();
+        if (Math.abs(serverStart - importStartedTime) > 5000) {
+            importStartedTime = serverStart;
+        }
+    }
+
+    if (current) {
+        document.getElementById('importCurrentChat').textContent = `Processando: ${current}`;
+        document.getElementById('importProgressSubtitle').textContent = `Processando conversas...`;
+    }
+
+    if (data.status === 'completed') {
+        document.getElementById('importProgressTitle').innerHTML = '<i class="bi bi-check-circle-fill" style="color:#059669;margin-right:6px;"></i>Importação Concluída';
+        document.getElementById('importProgressSubtitle').textContent = `${processed} conversas processadas com sucesso.`;
+        document.getElementById('importProgressBar').style.width = '100%';
+        document.getElementById('importProgressBar').style.background = '#059669';
+        document.getElementById('importCurrentChat').textContent = '';
+        document.getElementById('importCloseBtn').textContent = 'Fechar';
+    } else if (data.status === 'failed') {
+        document.getElementById('importProgressTitle').innerHTML = '<i class="bi bi-exclamation-triangle-fill" style="color:#dc2626;margin-right:6px;"></i>Erro na Importação';
+        document.getElementById('importProgressSubtitle').textContent = data.error || 'Ocorreu um erro durante a importação.';
+        document.getElementById('importProgressBar').style.background = '#dc2626';
+        document.getElementById('importCurrentChat').textContent = '';
     }
 }
 

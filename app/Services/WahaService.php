@@ -316,7 +316,8 @@ class WahaService
             $params['filter.timestamp.gte'] = $timestampGte;
         }
 
-        return $this->get("/api/{$this->session}/chats/{$chatId}/messages", $params);
+        $encodedChatId = rawurlencode($chatId);
+        return $this->get("/api/{$this->session}/chats/{$encodedChatId}/messages", $params);
     }
 
     // ── Webhook ───────────────────────────────────────────────────────────────

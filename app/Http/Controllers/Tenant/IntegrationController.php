@@ -16,6 +16,7 @@ use App\Services\WahaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -291,6 +292,17 @@ class IntegrationController extends Controller
             'success' => true,
             'message' => "Importação dos últimos {$days} dias iniciada em segundo plano.",
         ]);
+    }
+
+    public function importProgress(WhatsappInstance $instance): JsonResponse
+    {
+        $data = Cache::get("wa_import:{$instance->id}");
+
+        if (! $data) {
+            return response()->json(['status' => 'idle']);
+        }
+
+        return response()->json($data);
     }
 
     public function disconnectWhatsapp(WhatsappInstance $instance): JsonResponse

@@ -208,6 +208,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
             Route::post('whatsapp/connect',                          [IntegrationController::class, 'connectWhatsapp'])->name('whatsapp.connect');
             Route::get('whatsapp/{instance}/qr',                     [IntegrationController::class, 'getWhatsappQr'])->name('whatsapp.qr');
             Route::post('whatsapp/{instance}/import',                [IntegrationController::class, 'importHistoryWhatsapp'])->name('whatsapp.import');
+            Route::get('whatsapp/{instance}/import/progress',        [IntegrationController::class, 'importProgress'])->name('whatsapp.import.progress');
             Route::put('whatsapp/{instance}',                        [IntegrationController::class, 'updateWhatsappInstance'])->name('whatsapp.update');
             Route::delete('whatsapp/{instance}/disconnect',          [IntegrationController::class, 'disconnectWhatsapp'])->name('whatsapp.disconnect');
             Route::delete('whatsapp/{instance}',                     [IntegrationController::class, 'deleteWhatsappInstance'])->name('whatsapp.delete');
