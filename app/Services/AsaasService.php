@@ -88,6 +88,15 @@ class AsaasService
         return $this->get("/payments/{$paymentId}");
     }
 
+    /**
+     * Lista cobranças de um customer.
+     * Aceita filtros opcionais: offset, limit, status, billingType, etc.
+     */
+    public function listCustomerPayments(string $customerId, array $filters = []): array
+    {
+        return $this->get('/payments', array_merge(['customer' => $customerId], $filters));
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Helpers HTTP
     // ─────────────────────────────────────────────────────────────────────────
@@ -100,10 +109,10 @@ class AsaasService
         return $this->handleResponse($response, 'POST', $path);
     }
 
-    private function get(string $path): array
+    private function get(string $path, array $query = []): array
     {
         $response = Http::withHeaders($this->headers())
-            ->get($this->baseUrl . $path);
+            ->get($this->baseUrl . $path, $query);
 
         return $this->handleResponse($response, 'GET', $path);
     }

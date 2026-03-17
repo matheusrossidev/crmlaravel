@@ -491,6 +491,54 @@ textarea.form-control { resize: vertical; min-height: 68px; }
 }
 .dm-add-btn:hover { background: #e5e7eb; }
 
+/* ── Quick Reply Buttons Section ────────────────── */
+.dm-buttons-section {
+    padding: 10px 14px;
+    border-top: 1px dashed #e5e7eb;
+}
+.dm-buttons-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.dm-buttons-label .text-muted { font-weight: 400; color: #9ca3af; }
+.dm-buttons-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.dm-btn-input-wrap {
+    display: flex;
+    gap: 6px;
+}
+.dm-btn-input-wrap input {
+    flex: 1;
+    font-size: 13px;
+    padding: 6px 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 7px;
+}
+.dm-btn-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+.dm-btn-preview-pill {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1d4ed8;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 14px;
+}
+
 /* ── Buttons ─────────────────────────────────────── */
 .btn-primary-ig {
     background: #2a84ef;
@@ -1107,12 +1155,13 @@ function updateDmPreview(idx, text) {
 function loadDmMessages(auto) {
     if (auto && auto.dm_messages && auto.dm_messages.length > 0) {
         dmBlocks = auto.dm_messages.map(m => ({
-            type: m.type ?? 'text',
-            text: m.text ?? '',
-            url:  m.url  ?? '',
+            type:    m.type ?? 'text',
+            text:    m.text ?? '',
+            url:     m.url  ?? '',
+            buttons: m.buttons ?? [],
         }));
     } else if (auto && auto.dm_message) {
-        dmBlocks = [{ type: 'text', text: auto.dm_message, url: '' }];
+        dmBlocks = [{ type: 'text', text: auto.dm_message, url: '', buttons: [] }];
     } else {
         dmBlocks = [];
     }
@@ -1120,7 +1169,7 @@ function loadDmMessages(auto) {
 }
 
 function addDmBlock(type) {
-    dmBlocks.push({ type, text: '', url: '' });
+    dmBlocks.push({ type, text: '', url: '', buttons: [] });
     renderDmBuilder();
 }
 
@@ -1170,7 +1219,22 @@ function renderDmBuilder() {
                         <div class="dm-preview-wrap">
                             <div class="dm-preview-label">Prévia Instagram DM</div>
                             <div class="dm-preview-bubble" id="dmPreview-${idx}"><span style="color:#4b5563;font-style:italic;font-size:12px;">Prévia aparecerá aqui...</span></div>
+                            <div class="dm-btn-preview" id="dmBtnPreview-${idx}"></div>
                         </div>
+                    </div>
+                </div>
+                <div class="dm-buttons-section">
+                    <div class="dm-buttons-label">
+                        <i class="bi bi-hand-index"></i> Quick Reply Buttons <span class="text-muted">(opcional, max. 13)</span>
+                    </div>
+                    <div class="dm-buttons-chips" id="dmBtnChips-${idx}"></div>
+                    <div class="dm-btn-input-wrap">
+                        <input type="text" class="form-control" id="dmBtnInput-${idx}"
+                               placeholder="Texto do botao (max. 20 chars)"
+                               maxlength="20"
+                               onkeydown="if(event.key==='Enter'){event.preventDefault();addButton(${idx});}">
+                        <button type="button" class="dm-add-btn" onclick="addButton(${idx})"
+                                style="white-space:nowrap;">+ Botao</button>
                     </div>
                 </div>`;
         }
@@ -1200,8 +1264,46 @@ function renderDmBuilder() {
                     if (count) count.textContent = `${block.text.length}/1000`;
                 }
             }
+            // Renderizar botões existentes
+            renderButtonChips(idx);
         }
     });
+}
+
+// ── Quick Reply Buttons ──────────────────────────────────────────────────
+function addButton(idx) {
+    const input = document.getElementById(`dmBtnInput-${idx}`);
+    const text = input.value.trim();
+    if (!text) return;
+    if (!dmBlocks[idx].buttons) dmBlocks[idx].buttons = [];
+    if (dmBlocks[idx].buttons.length >= 13) {
+        toastr.warning('Maximo de 13 botoes por mensagem.');
+        return;
+    }
+    dmBlocks[idx].buttons.push(text.substring(0, 20));
+    input.value = '';
+    renderButtonChips(idx);
+}
+
+function removeButton(blockIdx, btnIdx) {
+    dmBlocks[blockIdx].buttons.splice(btnIdx, 1);
+    renderButtonChips(blockIdx);
+}
+
+function renderButtonChips(idx) {
+    const container = document.getElementById(`dmBtnChips-${idx}`);
+    if (!container) return;
+    const btns = dmBlocks[idx].buttons || [];
+    container.innerHTML = btns.map((btn, bi) =>
+        `<span class="kw-chip">${escHtml(btn)}<button type="button" onclick="removeButton(${idx},${bi})">×</button></span>`
+    ).join('');
+    // Atualizar preview dos botões
+    const preview = document.getElementById(`dmBtnPreview-${idx}`);
+    if (preview) {
+        preview.innerHTML = btns.map(btn =>
+            `<span class="dm-btn-preview-pill">${escHtml(btn)}</span>`
+        ).join('');
+    }
 }
 
 function updateImgPreview(idx) {
@@ -1226,7 +1328,10 @@ function serializeDmMessages() {
             // Ler do editor para garantir conteúdo mais recente
             const el   = document.getElementById(`dmEditor-${idx}`);
             const text = el ? getEditorText(el).trim() : b.text.trim();
-            return text ? { type: 'text', text } : null;
+            if (!text) return null;
+            const obj = { type: 'text', text };
+            if (b.buttons && b.buttons.length > 0) obj.buttons = b.buttons;
+            return obj;
         })
         .filter(Boolean);
 }

@@ -16,20 +16,30 @@ class TokenIncrementController extends Controller
     public function purchase(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'plan_id' => 'required|exists:token_increment_plans,id',
+            'plan_id'  => 'required|exists:token_increment_plans,id',
+            'cpf_cnpj' => 'nullable|string|max:18',
+            'email'    => 'nullable|email|max:100',
         ]);
 
         $plan   = TokenIncrementPlan::where('id', $data['plan_id'])->where('is_active', true)->firstOrFail();
         $tenant = auth()->user()->tenant;
 
-        if (!$tenant->asaas_customer_id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Seu cadastro de cobrança ainda não foi criado. Finalize a assinatura primeiro.',
-            ], 422);
-        }
-
         try {
+            // Se não tem customer no Asaas, criar on-the-fly
+            if (!$tenant->asaas_customer_id) {
+                $request->validate([
+                    'cpf_cnpj' => 'required|string|max:18',
+                    'email'    => 'required|email|max:100',
+                ]);
+
+                $asaas    = app(AsaasService::class);
+                $customer = $asaas->createCustomer([
+                    'name'    => $tenant->name,
+                    'cpfCnpj' => preg_replace('/\D/', '', $data['cpf_cnpj']),
+                    'email'   => $data['email'],
+                ]);
+                $tenant->update(['asaas_customer_id' => $customer['id']]);
+            }
             // Cria registro pending
             $increment = TenantTokenIncrement::create([
                 'tenant_id'               => $tenant->id,

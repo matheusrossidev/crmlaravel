@@ -7,6 +7,7 @@ namespace App\Jobs;
 use App\Events\InstagramConversationUpdated;
 use App\Events\InstagramMessageCreated;
 use App\Models\AiAgent;
+use App\Models\ChatbotFlow;
 use App\Models\InstagramAutomation;
 use App\Models\InstagramConversation;
 use App\Models\InstagramInstance;
@@ -247,6 +248,33 @@ class ProcessInstagramWebhook implements ShouldQueue
             Log::channel('instagram')->info('Broadcast enviado', ['tenant_id' => $instance->tenant_id]);
         } catch (\Throwable $e) {
             Log::channel('instagram')->error('Broadcast FALHOU', ['error' => $e->getMessage()]);
+        }
+
+        // Chatbot flow: trigger por keyword ou continuar fluxo ativo
+        if (! $isFromMe) {
+            $conversation->refresh();
+
+            // Se já tem chatbot ativo, processar próximo step
+            if ($conversation->chatbot_flow_id) {
+                try {
+                    (new ProcessChatbotStep($conversation->id, $body ?? '', 'instagram'))->handle();
+                } catch (\Throwable $e) {
+                    Log::channel('instagram')->error('Chatbot step falhou', [
+                        'conversation_id' => $conversation->id,
+                        'error'           => $e->getMessage(),
+                    ]);
+                }
+                return; // Chatbot consome a mensagem — não passa para AutomationEngine
+            }
+
+            // Tentar ativar chatbot por keyword
+            if (! $conversation->ai_agent_id && $body) {
+                $this->triggerChatbotFlow($instance, $conversation, $body);
+                // Se chatbot foi ativado, não continua para AutomationEngine
+                if ($conversation->chatbot_flow_id) {
+                    return;
+                }
+            }
         }
 
         // Automação: mensagem recebida (apenas inbound)
@@ -503,6 +531,50 @@ class ProcessInstagramWebhook implements ShouldQueue
         return ['text', null, null];
     }
 
+    // ── Chatbot Flow Trigger ──────────────────────────────────────────────────
+
+    private function triggerChatbotFlow(InstagramInstance $instance, InstagramConversation $conv, string $body): void
+    {
+        $bodyLower = strtolower(trim($body));
+
+        $flow = ChatbotFlow::withoutGlobalScope('tenant')
+            ->where('tenant_id', $instance->tenant_id)
+            ->where('channel', 'instagram')
+            ->where('is_active', true)
+            ->get()
+            ->first(function ($f) use ($bodyLower) {
+                foreach ($f->trigger_keywords ?? [] as $kw) {
+                    if (strtolower(trim($kw)) === $bodyLower) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+
+        if (! $flow) {
+            return;
+        }
+
+        InstagramConversation::withoutGlobalScope('tenant')
+            ->where('id', $conv->id)
+            ->update(['chatbot_flow_id' => $flow->id]);
+        $conv->chatbot_flow_id = $flow->id;
+
+        Log::channel('instagram')->info('Chatbot flow ativado', [
+            'conversation_id' => $conv->id,
+            'flow_id'         => $flow->id,
+        ]);
+
+        try {
+            (new ProcessChatbotStep($conv->id, $body, 'instagram'))->handle();
+        } catch (\Throwable $e) {
+            Log::channel('instagram')->error('Chatbot trigger step falhou', [
+                'conversation_id' => $conv->id,
+                'error'           => $e->getMessage(),
+            ]);
+        }
+    }
+
     // ── Comment Automation ────────────────────────────────────────────────────
 
     private function processComment(InstagramInstance $instance, array $value): void
@@ -573,7 +645,12 @@ class ProcessInstagramWebhook implements ShouldQueue
                         if ($type === 'image' && ! empty($msg['url'])) {
                             $service->sendImageAttachment($fromId, $msg['url']);
                         } elseif ($type === 'text' && ! empty($msg['text'])) {
-                            $service->sendMessage($fromId, $msg['text']);
+                            $buttons = $msg['buttons'] ?? [];
+                            if (! empty($buttons)) {
+                                $service->sendMessageWithButtons($fromId, $msg['text'], $buttons);
+                            } else {
+                                $service->sendMessage($fromId, $msg['text']);
+                            }
                         }
                     } catch (\Throwable $e) {
                         Log::channel('instagram')->error('Falha ao enviar DM (sequência)', [

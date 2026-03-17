@@ -8,11 +8,13 @@ use App\Models\ChatbotFlowEdge;
 use App\Models\ChatbotFlowNode;
 use App\Models\CustomFieldDefinition;
 use App\Models\CustomFieldValue;
+use App\Models\InstagramConversation;
 use App\Models\Lead;
 use App\Models\Tenant;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappMessage;
 use App\Services\ChatbotVariableService;
+use App\Services\InstagramService;
 use App\Services\WahaService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -27,13 +29,12 @@ class ProcessChatbotStep
     public function __construct(
         private readonly int    $conversationId,
         private readonly string $inboundBody,
+        private readonly string $channel = 'whatsapp',
     ) {}
 
     public function handle(): void
     {
-        $conv = WhatsappConversation::withoutGlobalScope('tenant')
-            ->with(['chatbotFlow.nodes', 'chatbotFlow.edges'])
-            ->find($this->conversationId);
+        $conv = $this->loadConversation();
 
         if (! $conv || ! $conv->chatbot_flow_id || ! $conv->chatbotFlow) {
             return;
@@ -42,7 +43,7 @@ class ProcessChatbotStep
         // Bloquear se tenant com serviço bloqueado (trial expirado, suspenso, etc.)
         $tenant = Tenant::find($conv->tenant_id);
         if ($tenant && $tenant->isServiceBlocked()) {
-            Log::channel('whatsapp')->info('Chatbot: tenant com serviço bloqueado', [
+            Log::channel($this->logChannel())->info('Chatbot: tenant com serviço bloqueado', [
                 'conversation_id' => $conv->id,
                 'tenant_id'       => $conv->tenant_id,
             ]);
@@ -54,9 +55,10 @@ class ProcessChatbotStep
             return;
         }
 
-        Log::channel('whatsapp')->info('Chatbot: iniciando step', [
+        Log::channel($this->logChannel())->info('Chatbot: iniciando step', [
             'conversation_id' => $conv->id,
             'flow_id'         => $flow->id,
+            'channel'         => $this->channel,
             'waiting_node_id' => $conv->chatbot_node_id,
             'body'            => mb_substr($this->inboundBody, 0, 80),
         ]);
@@ -100,7 +102,7 @@ class ProcessChatbotStep
         while ($currentNode && $iterations < self::MAX_ITERATIONS) {
             $iterations++;
 
-            Log::channel('whatsapp')->info('Chatbot: executando nó', [
+            Log::channel($this->logChannel())->info('Chatbot: executando nó', [
                 'conversation_id' => $conv->id,
                 'node_id'         => $currentNode->id,
                 'type'            => $currentNode->type,
@@ -133,7 +135,7 @@ class ProcessChatbotStep
 
                 case 'delay':
                     $seconds = max(1, min(30, (int) ($currentNode->config['seconds'] ?? 3)));
-                    Log::channel('whatsapp')->info('Chatbot: aguardando', [
+                    Log::channel($this->logChannel())->info('Chatbot: aguardando', [
                         'conversation_id' => $conv->id,
                         'seconds'         => $seconds,
                     ]);
@@ -158,7 +160,7 @@ class ProcessChatbotStep
         $this->persistVars($conv, $vars);
 
         if ($iterations >= self::MAX_ITERATIONS) {
-            Log::channel('whatsapp')->warning('Chatbot: limite de iterações atingido', [
+            Log::channel($this->logChannel())->warning('Chatbot: limite de iterações atingido', [
                 'conversation_id' => $conv->id,
                 'flow_id'         => $flow->id,
             ]);
@@ -167,36 +169,50 @@ class ProcessChatbotStep
 
     // ── Nó: message ──────────────────────────────────────────────────────────
 
-    private function executeMessage(ChatbotFlowNode $node, WhatsappConversation $conv, array $vars): void
+    private function executeMessage(ChatbotFlowNode $node, WhatsappConversation|InstagramConversation $conv, array $vars): void
     {
         $text     = ChatbotVariableService::interpolate((string) ($node->config['text'] ?? ''), $vars);
         $imageUrl = (string) ($node->config['image_url'] ?? '');
 
         if ($imageUrl !== '') {
-            // Envia imagem com o texto como legenda (pode ser vazio)
-            $this->sendWahaImage($conv, $imageUrl, $text);
+            $this->sendImage($conv, $imageUrl, $text);
         } elseif ($text !== '') {
-            $this->sendWahaMessage($conv, $text);
+            $this->sendText($conv, $text);
         }
     }
 
     // ── Nó: input — envio da pergunta ────────────────────────────────────────
 
-    private function executeInputSend(ChatbotFlowNode $node, WhatsappConversation $conv, array $vars): void
+    private function executeInputSend(ChatbotFlowNode $node, WhatsappConversation|InstagramConversation $conv, array $vars): void
     {
         $text     = ChatbotVariableService::interpolate((string) ($node->config['text'] ?? ''), $vars);
         $imageUrl = (string) ($node->config['image_url'] ?? '');
 
         if ($imageUrl !== '') {
-            $this->sendWahaImage($conv, $imageUrl, $text);
+            $this->sendImage($conv, $imageUrl, $text);
         } elseif ($text !== '') {
-            $this->sendWahaMessage($conv, $text);
+            // Instagram: enviar quick reply buttons se há branches
+            $branches = $node->config['branches'] ?? [];
+            if ($this->channel === 'instagram' && ! empty($branches)) {
+                $buttons = [];
+                foreach ($branches as $branch) {
+                    $keywords = (array) ($branch['keywords'] ?? []);
+                    if (! empty($keywords)) {
+                        $buttons[] = mb_substr($keywords[0], 0, 20);
+                    }
+                }
+                if (! empty($buttons) && $conv instanceof InstagramConversation) {
+                    $this->sendInstagramButtons($conv, $text, $buttons);
+                    return;
+                }
+            }
+            $this->sendText($conv, $text);
         }
     }
 
     // ── Nó: input — processar resposta recebida ───────────────────────────────
 
-    private function processInputReply(ChatbotFlowNode $node, WhatsappConversation $conv, array $vars): array
+    private function processInputReply(ChatbotFlowNode $node, WhatsappConversation|InstagramConversation $conv, array $vars): array
     {
         $body     = trim($this->inboundBody);
         $flowId   = $node->flow_id;
@@ -262,10 +278,11 @@ class ProcessChatbotStep
 
     // ── Nó: action ───────────────────────────────────────────────────────────
 
-    private function executeAction(ChatbotFlowNode $node, WhatsappConversation $conv, array $vars): array
+    private function executeAction(ChatbotFlowNode $node, WhatsappConversation|InstagramConversation $conv, array $vars): array
     {
         $config = $node->config;
         $type   = $config['type'] ?? '';
+        $model  = $this->getConversationModel();
 
         switch ($type) {
             case 'change_stage':
@@ -273,7 +290,7 @@ class ProcessChatbotStep
                     Lead::withoutGlobalScope('tenant')
                         ->where('id', $conv->lead_id)
                         ->update(['stage_id' => (int) $config['stage_id']]);
-                    Log::channel('whatsapp')->info('Chatbot: lead movido de etapa', [
+                    Log::channel($this->logChannel())->info('Chatbot: lead movido de etapa', [
                         'lead_id'  => $conv->lead_id,
                         'stage_id' => $config['stage_id'],
                     ]);
@@ -293,22 +310,22 @@ class ProcessChatbotStep
                 if (! empty($config['user_id'])) {
                     $updateData['assigned_user_id'] = (int) $config['user_id'];
                 }
-                WhatsappConversation::withoutGlobalScope('tenant')
+                $model::withoutGlobalScope('tenant')
                     ->where('id', $conv->id)
                     ->update($updateData);
                 $conv->chatbot_flow_id = null;
                 $conv->chatbot_node_id = null;
-                Log::channel('whatsapp')->info('Chatbot: conversa transferida para humano', [
+                Log::channel($this->logChannel())->info('Chatbot: conversa transferida para humano', [
                     'id'      => $conv->id,
                     'user_id' => $config['user_id'] ?? null,
                 ]);
                 break;
 
             case 'close_conversation':
-                WhatsappConversation::withoutGlobalScope('tenant')
+                $model::withoutGlobalScope('tenant')
                     ->where('id', $conv->id)
                     ->update(['status' => 'closed', 'closed_at' => now()]);
-                Log::channel('whatsapp')->info('Chatbot: conversa fechada', ['id' => $conv->id]);
+                Log::channel($this->logChannel())->info('Chatbot: conversa fechada', ['id' => $conv->id]);
                 break;
 
             case 'save_variable':
@@ -330,7 +347,7 @@ class ProcessChatbotStep
                 $fieldValue = ChatbotVariableService::interpolate((string) ($config['value'] ?? ''), $vars);
                 if ($fieldName && $conv->lead_id) {
                     $this->setChatbotCustomField($conv->lead_id, $fieldName, $fieldValue);
-                    Log::channel('whatsapp')->info('Chatbot: campo personalizado preenchido', [
+                    Log::channel($this->logChannel())->info('Chatbot: campo personalizado preenchido', [
                         'lead_id'    => $conv->lead_id,
                         'field_name' => $fieldName,
                         'value'      => $fieldValue,
@@ -339,26 +356,29 @@ class ProcessChatbotStep
                 break;
 
             case 'send_whatsapp':
-                $phoneMode = $config['phone_mode'] ?? 'variable';
-                if ($phoneMode === 'custom' && ! empty($config['custom_phone'])) {
-                    $phone   = preg_replace('/\D/', '', (string) $config['custom_phone']);
-                    $message = ChatbotVariableService::interpolate((string) ($config['message'] ?? ''), $vars);
-                    if ($message !== '') {
-                        $chatId = $phone . '@c.us';
-                        $instance = $conv->instance;
-                        if ($instance) {
-                            try {
-                                (new WahaService($instance->session_name))->sendText($chatId, $message);
-                                Log::channel('whatsapp')->info('Chatbot: WhatsApp enviado para número fixo', ['conv' => $conv->id, 'phone' => $phone]);
-                            } catch (\Throwable $e) {
-                                Log::channel('whatsapp')->error('Chatbot: erro ao enviar WhatsApp', ['conv' => $conv->id, 'error' => $e->getMessage()]);
+                // Ação WhatsApp-específica — só executa no canal WhatsApp
+                if ($this->channel === 'whatsapp' && $conv instanceof WhatsappConversation) {
+                    $phoneMode = $config['phone_mode'] ?? 'variable';
+                    if ($phoneMode === 'custom' && ! empty($config['custom_phone'])) {
+                        $phone   = preg_replace('/\D/', '', (string) $config['custom_phone']);
+                        $message = ChatbotVariableService::interpolate((string) ($config['message'] ?? ''), $vars);
+                        if ($message !== '') {
+                            $chatId = $phone . '@c.us';
+                            $instance = $conv->instance;
+                            if ($instance) {
+                                try {
+                                    (new WahaService($instance->session_name))->sendText($chatId, $message);
+                                    Log::channel('whatsapp')->info('Chatbot: WhatsApp enviado para número fixo', ['conv' => $conv->id, 'phone' => $phone]);
+                                } catch (\Throwable $e) {
+                                    Log::channel('whatsapp')->error('Chatbot: erro ao enviar WhatsApp', ['conv' => $conv->id, 'error' => $e->getMessage()]);
+                                }
                             }
                         }
-                    }
-                } else {
-                    $message = ChatbotVariableService::interpolate((string) ($config['message'] ?? ''), $vars);
-                    if ($message !== '') {
-                        $this->sendWahaMessage($conv, $message);
+                    } else {
+                        $message = ChatbotVariableService::interpolate((string) ($config['message'] ?? ''), $vars);
+                        if ($message !== '') {
+                            $this->sendWahaMessage($conv, $message);
+                        }
                     }
                 }
                 break;
@@ -369,65 +389,105 @@ class ProcessChatbotStep
 
     // ── Nó: end ──────────────────────────────────────────────────────────────
 
-    private function executeEnd(ChatbotFlowNode $node, WhatsappConversation $conv, array $vars): void
+    private function executeEnd(ChatbotFlowNode $node, WhatsappConversation|InstagramConversation $conv, array $vars): void
     {
         $text = ChatbotVariableService::interpolate((string) ($node->config['text'] ?? ''), $vars);
         if ($text !== '') {
-            $this->sendWahaMessage($conv, $text);
+            $this->sendText($conv, $text);
         }
-        Log::channel('whatsapp')->info('Chatbot: fluxo concluído', [
+        Log::channel($this->logChannel())->info('Chatbot: fluxo concluído', [
             'conversation_id' => $conv->id,
             'flow_id'         => $conv->chatbot_flow_id,
         ]);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // ── Métodos-ponte (multi-canal) ──────────────────────────────────────────
 
-    private function resolveEdge(int $flowId, int $sourceNodeId, string $sourceHandle): ?int
+    private function sendText(WhatsappConversation|InstagramConversation $conv, string $text): void
     {
-        $edge = ChatbotFlowEdge::withoutGlobalScope('tenant')
-            ->where('flow_id', $flowId)
-            ->where('source_node_id', $sourceNodeId)
-            ->where('source_handle', $sourceHandle)
-            ->first();
-
-        return $edge?->target_node_id;
-    }
-
-    private function findStartNode(int $flowId): ?ChatbotFlowNode
-    {
-        // Nó de início = nó que não é alvo de nenhuma edge no flow
-        $targetIds = ChatbotFlowEdge::withoutGlobalScope('tenant')
-            ->where('flow_id', $flowId)
-            ->pluck('target_node_id')
-            ->toArray();
-
-        return ChatbotFlowNode::withoutGlobalScope('tenant')
-            ->where('flow_id', $flowId)
-            ->when(! empty($targetIds), fn ($q) => $q->whereNotIn('id', $targetIds))
-            ->orderBy('canvas_y')
-            ->first();
-    }
-
-    private function resolveChatId(WhatsappConversation $conv): ?string
-    {
-        $sampleId = WhatsappMessage::withoutGlobalScope('tenant')
-            ->where('conversation_id', $conv->id)
-            ->whereNotNull('waha_message_id')
-            ->where('direction', 'inbound')
-            ->latest('sent_at')
-            ->value('waha_message_id');
-
-        if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
-            $jid = $m[1];
-            return str_ends_with($jid, '@lid')
-                ? preg_replace('/[:@].+$/', '', $jid) . '@lid'
-                : preg_replace('/[:@].+$/', '', $jid) . '@c.us';
+        if ($this->channel === 'instagram' && $conv instanceof InstagramConversation) {
+            $this->sendInstagramMessage($conv, $text);
+        } else {
+            $this->sendWahaMessage($conv, $text);
         }
-
-        $rawPhone = ltrim((string) preg_replace('/[:@\s].+$/', '', $conv->phone), '+');
-        return $rawPhone . '@c.us';
     }
+
+    private function sendImage(WhatsappConversation|InstagramConversation $conv, string $imageUrl, string $caption = ''): void
+    {
+        if ($this->channel === 'instagram' && $conv instanceof InstagramConversation) {
+            $this->sendInstagramImage($conv, $imageUrl, $caption);
+        } else {
+            $this->sendWahaImage($conv, $imageUrl, $caption);
+        }
+    }
+
+    // ── Instagram senders ────────────────────────────────────────────────────
+
+    private function sendInstagramMessage(InstagramConversation $conv, string $text): void
+    {
+        try {
+            $instance = $conv->instance;
+            if (! $instance) {
+                Log::channel('instagram')->warning('Chatbot: instância IG não encontrada', ['conv' => $conv->id]);
+                return;
+            }
+
+            $service = new InstagramService(decrypt($instance->access_token));
+            $service->sendMessage($conv->igsid, $text);
+            sleep(self::DEFAULT_MESSAGE_DELAY);
+        } catch (\Throwable $e) {
+            Log::channel('instagram')->error('Chatbot: erro ao enviar mensagem IG', [
+                'conversation_id' => $conv->id,
+                'error'           => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function sendInstagramImage(InstagramConversation $conv, string $imageUrl, string $caption = ''): void
+    {
+        try {
+            $instance = $conv->instance;
+            if (! $instance) {
+                Log::channel('instagram')->warning('Chatbot: instância IG não encontrada para imagem', ['conv' => $conv->id]);
+                return;
+            }
+
+            $service = new InstagramService(decrypt($instance->access_token));
+            $service->sendImageAttachment($conv->igsid, $imageUrl);
+            if ($caption !== '') {
+                $service->sendMessage($conv->igsid, $caption);
+            }
+            sleep(self::DEFAULT_MESSAGE_DELAY);
+        } catch (\Throwable $e) {
+            Log::channel('instagram')->error('Chatbot: erro ao enviar imagem IG', [
+                'conversation_id' => $conv->id,
+                'image_url'       => $imageUrl,
+                'error'           => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function sendInstagramButtons(InstagramConversation $conv, string $text, array $buttons): void
+    {
+        try {
+            $instance = $conv->instance;
+            if (! $instance) {
+                Log::channel('instagram')->warning('Chatbot: instância IG não encontrada para buttons', ['conv' => $conv->id]);
+                return;
+            }
+
+            $service = new InstagramService(decrypt($instance->access_token));
+            $service->sendMessageWithButtons($conv->igsid, $text, $buttons);
+            sleep(self::DEFAULT_MESSAGE_DELAY);
+        } catch (\Throwable $e) {
+            Log::channel('instagram')->error('Chatbot: erro ao enviar buttons IG', [
+                'conversation_id' => $conv->id,
+                'error'           => $e->getMessage(),
+            ]);
+        }
+    }
+
+    // ── WhatsApp senders ─────────────────────────────────────────────────────
 
     private function sendWahaMessage(WhatsappConversation $conv, string $text): void
     {
@@ -464,11 +524,9 @@ class ProcessChatbotStep
             $localPath = $this->resolveLocalImagePath($imageUrl);
 
             if ($localPath !== null && file_exists($localPath)) {
-                // Arquivo local: envia via base64 (evita problema de URL inacessível do WAHA)
                 $mime = mime_content_type($localPath) ?: 'image/jpeg';
                 $waha->sendImageBase64($chatId, $localPath, $mime, $caption);
             } else {
-                // URL externa: WAHA baixa diretamente
                 $waha->sendImage($chatId, $imageUrl, $caption);
             }
 
@@ -480,6 +538,78 @@ class ProcessChatbotStep
                 'error'           => $e->getMessage(),
             ]);
         }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private function loadConversation(): WhatsappConversation|InstagramConversation|null
+    {
+        if ($this->channel === 'instagram') {
+            return InstagramConversation::withoutGlobalScope('tenant')
+                ->with(['chatbotFlow.nodes', 'chatbotFlow.edges', 'instance'])
+                ->find($this->conversationId);
+        }
+
+        return WhatsappConversation::withoutGlobalScope('tenant')
+            ->with(['chatbotFlow.nodes', 'chatbotFlow.edges'])
+            ->find($this->conversationId);
+    }
+
+    private function getConversationModel(): string
+    {
+        return $this->channel === 'instagram'
+            ? InstagramConversation::class
+            : WhatsappConversation::class;
+    }
+
+    private function logChannel(): string
+    {
+        return $this->channel === 'instagram' ? 'instagram' : 'whatsapp';
+    }
+
+    private function resolveEdge(int $flowId, int $sourceNodeId, string $sourceHandle): ?int
+    {
+        $edge = ChatbotFlowEdge::withoutGlobalScope('tenant')
+            ->where('flow_id', $flowId)
+            ->where('source_node_id', $sourceNodeId)
+            ->where('source_handle', $sourceHandle)
+            ->first();
+
+        return $edge?->target_node_id;
+    }
+
+    private function findStartNode(int $flowId): ?ChatbotFlowNode
+    {
+        $targetIds = ChatbotFlowEdge::withoutGlobalScope('tenant')
+            ->where('flow_id', $flowId)
+            ->pluck('target_node_id')
+            ->toArray();
+
+        return ChatbotFlowNode::withoutGlobalScope('tenant')
+            ->where('flow_id', $flowId)
+            ->when(! empty($targetIds), fn ($q) => $q->whereNotIn('id', $targetIds))
+            ->orderBy('canvas_y')
+            ->first();
+    }
+
+    private function resolveChatId(WhatsappConversation $conv): ?string
+    {
+        $sampleId = WhatsappMessage::withoutGlobalScope('tenant')
+            ->where('conversation_id', $conv->id)
+            ->whereNotNull('waha_message_id')
+            ->where('direction', 'inbound')
+            ->latest('sent_at')
+            ->value('waha_message_id');
+
+        if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
+            $jid = $m[1];
+            return str_ends_with($jid, '@lid')
+                ? preg_replace('/[:@].+$/', '', $jid) . '@lid'
+                : preg_replace('/[:@].+$/', '', $jid) . '@c.us';
+        }
+
+        $rawPhone = ltrim((string) preg_replace('/[:@\s].+$/', '', $conv->phone), '+');
+        return $rawPhone . '@c.us';
     }
 
     private function resolveLocalImagePath(string $url): ?string
@@ -495,7 +625,7 @@ class ProcessChatbotStep
         return null;
     }
 
-    private function modifyTag(WhatsappConversation $conv, string $tagName, string $action): void
+    private function modifyTag(WhatsappConversation|InstagramConversation $conv, string $tagName, string $action): void
     {
         if ($tagName === '') {
             return;
@@ -508,7 +638,8 @@ class ProcessChatbotStep
             $tags = array_values(array_filter($tags, fn ($t) => $t !== $tagName));
         }
 
-        WhatsappConversation::withoutGlobalScope('tenant')
+        $model = $this->getConversationModel();
+        $model::withoutGlobalScope('tenant')
             ->where('id', $conv->id)
             ->update(['tags' => json_encode($tags)]);
         $conv->tags = $tags;
@@ -521,7 +652,7 @@ class ProcessChatbotStep
             ->first();
 
         if (! $def) {
-            Log::channel('whatsapp')->warning('Chatbot: campo personalizado não encontrado', ['name' => $fieldName]);
+            Log::channel($this->logChannel())->warning('Chatbot: campo personalizado não encontrado', ['name' => $fieldName]);
             return;
         }
 
@@ -563,7 +694,6 @@ class ProcessChatbotStep
                 }
             }
 
-            // Auto-inject Content-Type: application/json for methods with body
             $hasBody = $body !== '' && in_array($method, ['POST', 'PUT', 'PATCH'], true);
             $headersNorm = array_change_key_case($headers, CASE_LOWER);
             if ($hasBody && ! isset($headersNorm['content-type'])) {
@@ -579,13 +709,13 @@ class ProcessChatbotStep
                 $vars[$saveResponseTo] = $response->body();
             }
 
-            Log::channel('whatsapp')->info('Chatbot: webhook enviado', [
+            Log::channel($this->logChannel())->info('Chatbot: webhook enviado', [
                 'conversation_id' => $convId,
                 'url'             => $url,
                 'status'          => $response->status(),
             ]);
         } catch (\Throwable $e) {
-            Log::channel('whatsapp')->error('Chatbot: webhook falhou', [
+            Log::channel($this->logChannel())->error('Chatbot: webhook falhou', [
                 'conversation_id' => $convId,
                 'error'           => $e->getMessage(),
             ]);
@@ -594,9 +724,10 @@ class ProcessChatbotStep
         return $vars;
     }
 
-    private function clearFlow(WhatsappConversation $conv): void
+    private function clearFlow(WhatsappConversation|InstagramConversation $conv): void
     {
-        WhatsappConversation::withoutGlobalScope('tenant')
+        $model = $this->getConversationModel();
+        $model::withoutGlobalScope('tenant')
             ->where('id', $conv->id)
             ->update([
                 'chatbot_flow_id'    => null,
@@ -605,12 +736,13 @@ class ProcessChatbotStep
             ]);
     }
 
-    private function persistVars(WhatsappConversation $conv, array $vars): void
+    private function persistVars(WhatsappConversation|InstagramConversation $conv, array $vars): void
     {
         // Salvar apenas variáveis de sessão (sem prefixo $)
         $session = array_filter($vars, fn ($k) => ! str_starts_with($k, '$'), ARRAY_FILTER_USE_KEY);
 
-        WhatsappConversation::withoutGlobalScope('tenant')
+        $model = $this->getConversationModel();
+        $model::withoutGlobalScope('tenant')
             ->where('id', $conv->id)
             ->update([
                 'chatbot_node_id'   => $conv->chatbot_node_id,

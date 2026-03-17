@@ -70,10 +70,22 @@ class BillingController extends Controller
             ->orderBy('day')
             ->get();
 
+        // Buscar histórico de cobranças do Asaas
+        $charges = collect();
+        if ($tenant->asaas_customer_id) {
+            try {
+                $asaas = app(AsaasService::class);
+                $resp  = $asaas->listCustomerPayments($tenant->asaas_customer_id, ['limit' => 50]);
+                $charges = collect($resp['data'] ?? []);
+            } catch (\Throwable $e) {
+                \Log::warning('BillingController: falha ao buscar cobranças Asaas', ['error' => $e->getMessage()]);
+            }
+        }
+
         return view('tenant.settings.billing', compact(
             'tenant', 'plan', 'plans',
             'tokenUsedMonth', 'tokenLimit', 'tokenExtra',
-            'tokenIncrementPlans', 'dailyUsage'
+            'tokenIncrementPlans', 'dailyUsage', 'charges'
         ));
     }
 

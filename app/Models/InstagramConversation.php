@@ -20,17 +20,19 @@ class InstagramConversation extends Model
         'tenant_id', 'instance_id', 'lead_id',
         'igsid', 'contact_name', 'contact_username', 'contact_picture_url',
         'tags', 'assigned_user_id', 'department_id', 'ai_agent_id',
+        'chatbot_flow_id', 'chatbot_node_id', 'chatbot_variables',
         'status', 'unread_count',
         'started_at', 'last_message_at', 'closed_at',
     ];
 
     protected $casts = [
-        'tags'           => 'array',
-        'started_at'     => 'datetime',
-        'last_message_at'=> 'datetime',
-        'closed_at'      => 'datetime',
-        'unread_count'   => 'integer',
-        'ai_agent_id'    => 'integer',
+        'tags'               => 'array',
+        'chatbot_variables'  => 'array',
+        'started_at'         => 'datetime',
+        'last_message_at'    => 'datetime',
+        'closed_at'          => 'datetime',
+        'unread_count'       => 'integer',
+        'ai_agent_id'        => 'integer',
     ];
 
     public function instance(): BelongsTo
@@ -56,6 +58,11 @@ class InstagramConversation extends Model
     public function aiAgent(): BelongsTo
     {
         return $this->belongsTo(AiAgent::class, 'ai_agent_id');
+    }
+
+    public function chatbotFlow(): BelongsTo
+    {
+        return $this->belongsTo(ChatbotFlow::class, 'chatbot_flow_id');
     }
 
     public function messages(): HasMany

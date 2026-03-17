@@ -276,6 +276,82 @@
     color: #9ca3af;
     font-size: 14px;
 }
+
+/* ── Charges table ── */
+.charges-card {
+    background: #fff;
+    border: 1.5px solid #e8eaf0;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-top: 24px;
+}
+.charges-header {
+    padding: 16px 22px;
+    border-bottom: 1px solid #f0f2f7;
+}
+.charges-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1d23;
+}
+.charges-subtitle {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 2px;
+}
+.charges-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.charges-table th {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid #f3f4f6;
+    background: #fafbfc;
+}
+.charges-table td {
+    font-size: 13px;
+    color: #374151;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f9fafb;
+}
+.charges-table tr:last-child td { border-bottom: none; }
+.charges-table tr:hover td { background: #fafbfc; }
+.charge-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.charge-status.st-received,
+.charge-status.st-confirmed { background: #ecfdf5; color: #059669; }
+.charge-status.st-pending   { background: #eff6ff; color: #2563eb; }
+.charge-status.st-overdue   { background: #fef9c3; color: #b45309; }
+.charge-status.st-refunded  { background: #f3f4f6; color: #6b7280; }
+.charge-status.st-deleted,
+.charge-status.st-cancelled { background: #fef2f2; color: #ef4444; }
+.charge-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #6b7280;
+}
+.charges-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 13px;
+}
 </style>
 @endpush
 
@@ -440,6 +516,87 @@
             @endif
         </div>
 
+    </div>
+
+    {{-- ── Histórico de cobranças ── --}}
+    <div class="charges-card">
+        <div class="charges-header">
+            <div class="charges-title">Histórico de cobranças</div>
+            <div class="charges-subtitle">Todas as cobranças e pagamentos da sua conta.</div>
+        </div>
+
+        @if(isset($charges) && $charges->count() > 0)
+        <table class="charges-table">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Descrição</th>
+                    <th>Valor</th>
+                    <th>Tipo</th>
+                    <th>Status</th>
+                    <th>Fatura</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($charges as $charge)
+                @php
+                    $statusMap = [
+                        'PENDING'            => ['Pendente', 'st-pending'],
+                        'RECEIVED'           => ['Pago', 'st-received'],
+                        'CONFIRMED'          => ['Confirmado', 'st-confirmed'],
+                        'OVERDUE'            => ['Atrasado', 'st-overdue'],
+                        'REFUNDED'           => ['Estornado', 'st-refunded'],
+                        'RECEIVED_IN_CASH'   => ['Pago', 'st-received'],
+                        'REFUND_REQUESTED'   => ['Estorno solicitado', 'st-refunded'],
+                        'CHARGEBACK_REQUESTED' => ['Chargeback', 'st-overdue'],
+                        'CHARGEBACK_DISPUTE' => ['Em disputa', 'st-overdue'],
+                        'DUNNING_REQUESTED'  => ['Negativação', 'st-overdue'],
+                        'DUNNING_RECEIVED'   => ['Recuperado', 'st-received'],
+                    ];
+                    $st = $statusMap[$charge['status'] ?? ''] ?? [$charge['status'] ?? '-', 'st-pending'];
+                    $typeLabel = match($charge['billingType'] ?? '') {
+                        'PIX'         => 'PIX',
+                        'CREDIT_CARD' => 'Cartão',
+                        'BOLETO'      => 'Boleto',
+                        default       => $charge['billingType'] ?? '-',
+                    };
+                    $typeIcon = match($charge['billingType'] ?? '') {
+                        'PIX'         => 'bi-qr-code',
+                        'CREDIT_CARD' => 'bi-credit-card',
+                        'BOLETO'      => 'bi-upc-scan',
+                        default       => 'bi-receipt',
+                    };
+                @endphp
+                <tr>
+                    <td>{{ \Carbon\Carbon::parse($charge['dateCreated'] ?? now())->format('d/m/Y') }}</td>
+                    <td>{{ $charge['description'] ?? '-' }}</td>
+                    <td style="font-weight:600;">R$ {{ number_format((float)($charge['value'] ?? 0), 2, ',', '.') }}</td>
+                    <td>
+                        <span class="charge-type-badge">
+                            <i class="bi {{ $typeIcon }}"></i> {{ $typeLabel }}
+                        </span>
+                    </td>
+                    <td><span class="charge-status {{ $st[1] }}">{{ $st[0] }}</span></td>
+                    <td>
+                        @if(!empty($charge['invoiceUrl']))
+                            <a href="{{ $charge['invoiceUrl'] }}" target="_blank"
+                               style="font-size:12px;color:#0085f3;font-weight:600;text-decoration:none;">
+                                <i class="bi bi-box-arrow-up-right"></i> Ver
+                            </a>
+                        @else
+                            <span style="color:#d1d5db;">-</span>
+                        @endif
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @else
+        <div class="charges-empty">
+            <i class="bi bi-receipt" style="font-size:28px;display:block;margin-bottom:10px;color:#d1d5db;"></i>
+            Nenhuma cobrança encontrada.
+        </div>
+        @endif
     </div>
 
 </div>

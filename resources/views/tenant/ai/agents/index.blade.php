@@ -561,6 +561,23 @@
             @endforeach
         </div>
 
+        {{-- Campos de cadastro (primeira compra, sem asaas_customer_id) --}}
+        @if(!auth()->user()->tenant->asaas_customer_id)
+        <div id="quotaBillingFields" style="margin-top:14px;">
+            <div style="font-size:12px;font-weight:600;color:#6b7280;margin-bottom:8px;">Dados para cobrança (primeira compra)</div>
+            <div style="margin-bottom:10px;">
+                <input type="text" id="quotaCpfCnpj" placeholder="CPF ou CNPJ"
+                       style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;"
+                       maxlength="18">
+            </div>
+            <div>
+                <input type="email" id="quotaEmail" placeholder="Email para nota fiscal"
+                       value="{{ auth()->user()->email }}"
+                       style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;">
+            </div>
+        </div>
+        @endif
+
         {{-- PIX result --}}
         <div id="quotaPixResult" style="display:none;" class="quota-pix-wrap">
             <div class="quota-pix-title"><i class="bi bi-qr-code"></i> Pague via PIX</div>
@@ -760,6 +777,27 @@ async function buyTokens() {
         toastr.warning('Selecione um pacote antes de continuar.');
         return;
     }
+
+    const payload = { plan_id: selectedPackId };
+
+    // Campos de cadastro (primeira compra)
+    const cpfEl   = document.getElementById('quotaCpfCnpj');
+    const emailEl = document.getElementById('quotaEmail');
+    if (cpfEl) {
+        if (!cpfEl.value.trim()) {
+            toastr.warning('Informe o CPF ou CNPJ para continuar.');
+            return;
+        }
+        payload.cpf_cnpj = cpfEl.value.trim();
+    }
+    if (emailEl) {
+        if (!emailEl.value.trim() || !emailEl.value.includes('@')) {
+            toastr.warning('Informe um email válido.');
+            return;
+        }
+        payload.email = emailEl.value.trim();
+    }
+
     const btn = document.getElementById('quotaBuyBtn');
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processando...';
@@ -768,7 +806,7 @@ async function buyTokens() {
         const res  = await fetch('{{ route("settings.tokens.purchase") }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            body: JSON.stringify({ plan_id: selectedPackId }),
+            body: JSON.stringify(payload),
         });
         const data = await res.json();
 
@@ -776,6 +814,10 @@ async function buyTokens() {
             toastr.error(data.message || 'Erro ao gerar cobrança.');
             return;
         }
+
+        // Esconde campos de cadastro após sucesso (customer já criado)
+        const billingFields = document.getElementById('quotaBillingFields');
+        if (billingFields) billingFields.style.display = 'none';
 
         // Exibe resultado PIX
         const pixWrap = document.getElementById('quotaPixResult');
@@ -820,5 +862,22 @@ function copyPixCode() {
 // Abre automaticamente se tokens esgotados
 document.addEventListener('DOMContentLoaded', () => setTimeout(openQuotaModal, 400));
 @endif
+
+// Máscara CPF/CNPJ
+document.getElementById('quotaCpfCnpj')?.addEventListener('input', function() {
+    let v = this.value.replace(/\D/g, '');
+    if (v.length <= 11) {
+        v = v.replace(/(\d{3})(\d)/, '$1.$2')
+             .replace(/(\d{3})(\d)/, '$1.$2')
+             .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    } else {
+        v = v.substring(0, 14)
+             .replace(/(\d{2})(\d)/, '$1.$2')
+             .replace(/(\d{3})(\d)/, '$1.$2')
+             .replace(/(\d{3})(\d)/, '$1/$2')
+             .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+    }
+    this.value = v;
+});
 </script>
 @endpush
