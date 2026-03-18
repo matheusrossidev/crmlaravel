@@ -1533,7 +1533,7 @@ $pageIcon = 'chat-dots';
             <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="chatbotFlowSelect" onchange="assignChatbotFlow()" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
                 <option value="">Sem fluxo (chatbot desativado)</option>
                 @foreach($chatbotFlows as $cf)
-                <option value="{{ $cf->id }}">{{ $cf->name }}</option>
+                <option value="{{ $cf->id }}" data-channel="{{ $cf->channel }}">{{ $cf->name }}</option>
                 @endforeach
             </select>
             <div id="chatbotVarsInfo" style="display:none;font-size:11px;color:#8b5cf6;margin-top:4px;"></div>
@@ -2128,10 +2128,14 @@ $pageIcon = 'chat-dots';
             updateAiAgentStatusBadge(data.ai_agent_id);
         }
 
-        // Atualiza select de chatbot flow
+        // Atualiza select de chatbot flow — filtra por canal da conversa
         const chatbotSel = document.getElementById('chatbotFlowSelect');
         const chatbotInfo = document.getElementById('chatbotVarsInfo');
         if (chatbotSel) {
+            // Mostrar apenas bots do canal desta conversa (whatsapp/instagram)
+            chatbotSel.querySelectorAll('option[data-channel]').forEach(opt => {
+                opt.style.display = opt.dataset.channel === activeConvChannel ? '' : 'none';
+            });
             chatbotSel.value = data.chatbot_flow_id ?? '';
             if (chatbotInfo) {
                 chatbotInfo.style.display = data.chatbot_flow_id ? 'block' : 'none';

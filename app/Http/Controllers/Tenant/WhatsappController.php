@@ -105,8 +105,9 @@ class WhatsappController extends Controller
             ->get(['id', 'name']);
 
         $chatbotFlows = ChatbotFlow::where('is_active', true)
+            ->whereIn('channel', ['whatsapp', 'instagram'])
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'channel']);
 
         $quickMessages = WhatsappQuickMessage::orderBy('sort_order')
             ->orderBy('title')

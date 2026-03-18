@@ -191,8 +191,9 @@ class ProcessChatbotStep
         if ($imageUrl !== '') {
             $this->sendImage($conv, $imageUrl, $text);
         } elseif ($text !== '') {
-            // Instagram: enviar quick reply buttons se há branches
             $branches = $node->config['branches'] ?? [];
+
+            // Instagram: enviar quick reply buttons se há branches
             if ($this->channel === 'instagram' && ! empty($branches)) {
                 $buttons = [];
                 foreach ($branches as $branch) {
@@ -206,6 +207,26 @@ class ProcessChatbotStep
                     return;
                 }
             }
+
+            // WhatsApp: enviar lista interativa se há branches com labels
+            if ($this->channel === 'whatsapp' && ! empty($branches) && $conv instanceof WhatsappConversation) {
+                $rows = [];
+                foreach ($branches as $i => $branch) {
+                    $label = $branch['label'] ?? '';
+                    if ($label !== '') {
+                        $rows[] = [
+                            'title'       => mb_substr($label, 0, 24),
+                            'rowId'       => 'btn_' . $i,
+                            'description' => null,
+                        ];
+                    }
+                }
+                if (! empty($rows)) {
+                    $this->sendWahaList($conv, $text, $rows);
+                    return;
+                }
+            }
+
             $this->sendText($conv, $text);
         }
     }
@@ -226,10 +247,22 @@ class ProcessChatbotStep
 
         // Verificar branches (keywords especiais)
         $branches = $config['branches'] ?? [];
+        $lowerBody = strtolower($body);
         foreach ($branches as $branch) {
             $handle   = $branch['handle'] ?? '';
             $keywords = array_map('strtolower', (array) ($branch['keywords'] ?? []));
-            if (in_array(strtolower($body), $keywords, true)) {
+            if (in_array($lowerBody, $keywords, true)) {
+                $nextId = $this->resolveEdge($flowId, $node->id, $handle);
+                return [$nextId, $vars];
+            }
+        }
+
+        // Fallback: match por label do branch (lista interativa WhatsApp
+        // envia o título da row como body — pode não estar nas keywords)
+        foreach ($branches as $branch) {
+            $handle = $branch['handle'] ?? '';
+            $label  = $branch['label'] ?? '';
+            if ($label !== '' && $lowerBody === strtolower($label)) {
                 $nextId = $this->resolveEdge($flowId, $node->id, $handle);
                 return [$nextId, $vars];
             }
@@ -537,6 +570,29 @@ class ProcessChatbotStep
                 'image_url'       => $imageUrl,
                 'error'           => $e->getMessage(),
             ]);
+        }
+    }
+
+    private function sendWahaList(WhatsappConversation $conv, string $description, array $rows): void
+    {
+        try {
+            $instance = $conv->instance;
+            if (! $instance) {
+                Log::channel('whatsapp')->warning('Chatbot: instância não encontrada para lista', ['conv' => $conv->id]);
+                return;
+            }
+
+            $chatId = $this->resolveChatId($conv);
+            $waha   = new WahaService($instance->session_name);
+            $waha->sendList($chatId, $description, $rows);
+            sleep(self::DEFAULT_MESSAGE_DELAY);
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->error('Chatbot: erro ao enviar lista interativa', [
+                'conversation_id' => $conv->id,
+                'error'           => $e->getMessage(),
+            ]);
+            // Fallback: enviar como texto puro se lista falhar
+            $this->sendWahaMessage($conv, $description);
         }
     }
 
