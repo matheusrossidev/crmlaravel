@@ -15,6 +15,9 @@ class WhatsappQuickMessage extends Model
         'tenant_id',
         'title',
         'body',
+        'image_path',
+        'image_mime',
+        'image_filename',
         'sort_order',
     ];
 

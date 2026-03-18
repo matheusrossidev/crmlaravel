@@ -270,7 +270,7 @@ class WahaService
         $response = $this->client()->timeout(90)->post('/api/sendVoice', [
             'session' => $this->session,
             'chatId'  => $chatId,
-            'file'    => ['data' => "data:{$mimeType};base64,{$base64}", 'mimetype' => $mimeType],
+            'file'    => ['data' => $base64, 'mimetype' => $mimeType, 'filename' => 'audio.ogg'],
             'convert' => true,
         ]);
         return $this->parse($response);

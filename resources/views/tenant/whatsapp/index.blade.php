@@ -784,7 +784,6 @@ $pageIcon = 'chat-dots';
 
     .wa-compose-row {
         display: flex;
-        align-items: flex-end;
         gap: 8px;
     }
 

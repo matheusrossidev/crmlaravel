@@ -86,6 +86,10 @@ class WhatsappMessageController extends Controller
             $wahaMessageId = $result['id'] ?? null;
         } elseif ($type === 'audio' && $request->hasFile('file')) {
             [$storagePath, $mediaMime, $mediaFilename, $mediaUrl] = $this->handleUpload($request, 'audio');
+            // Chrome pode gravar como video/webm — forçar audio/webm para WAHA
+            if (str_starts_with($mediaMime, 'video/')) {
+                $mediaMime = 'audio/ogg';
+            }
             // Envia via base64 direto ao WAHA
             $absolutePath = storage_path('app/public/' . $storagePath);
             $result       = $waha->sendVoiceBase64($chatId, $absolutePath, $mediaMime);
