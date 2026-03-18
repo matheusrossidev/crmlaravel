@@ -342,6 +342,20 @@
         <span class="tool-badge badge-amber">LID</span>
     </div>
 
+    {{-- 15. Importar Pagamentos Asaas --}}
+    <div class="tool-card" onclick="openTool('import-asaas-payments')">
+        <div class="tool-card-header">
+            <div class="tool-icon" style="background:#f0fdf4;">
+                <i class="bi bi-cash-coin" style="color:#16a34a;"></i>
+            </div>
+            <div class="tool-info">
+                <h6>Importar Pagamentos Asaas</h6>
+                <p>Importa histórico de pagamentos recebidos e confirmados da API Asaas para a tabela de recebimentos.</p>
+            </div>
+        </div>
+        <span class="tool-badge" style="background:#f0fdf4;color:#16a34a;">Financeiro</span>
+    </div>
+
 </div>
 
 {{-- ── MODAL ──────────────────────────────────────────────────────────────── --}}
@@ -507,6 +521,12 @@ var USERS   = <?php echo json_encode($users->toArray()); ?>;
             params: [
                 { name: 'tenant_id', label: 'Tenant', type: 'select-tenant', required: true },
             ],
+        },
+        'import-asaas-payments': {
+            label: 'Importar Pagamentos Asaas',
+            iconHtml: '<i class="bi bi-cash-coin" style="color:#16a34a;"></i>',
+            iconBg: '#f0fdf4',
+            params: [],
         },
     };
 

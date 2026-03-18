@@ -1,5 +1,7 @@
 /.phpunit.cache
 /.claude
+CLAUDE.md
+style-guide.html
 /node_modules
 /public/build
 /public/hot

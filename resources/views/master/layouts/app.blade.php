@@ -332,6 +332,10 @@
            class="m-nav-item {{ request()->routeIs('master.tenants*') ? 'active' : '' }}">
             <i class="bi bi-building"></i> Empresas
         </a>
+        <a href="{{ route('master.payments') }}"
+           class="m-nav-item {{ request()->routeIs('master.payments*') ? 'active' : '' }}">
+            <i class="bi bi-cash-stack"></i> Recebimentos
+        </a>
         <a href="{{ route('master.plans') }}"
            class="m-nav-item {{ request()->routeIs('master.plans*') ? 'active' : '' }}">
             <i class="bi bi-layers"></i> Planos

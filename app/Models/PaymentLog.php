@@ -1,0 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class PaymentLog extends Model
+{
+    protected $fillable = [
+        'tenant_id',
+        'type',
+        'description',
+        'amount',
+        'asaas_payment_id',
+        'status',
+        'paid_at',
+    ];
+
+    protected $casts = [
+        'amount'  => 'decimal:2',
+        'paid_at' => 'datetime',
+    ];
+
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+}

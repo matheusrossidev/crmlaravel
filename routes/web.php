@@ -8,6 +8,7 @@ use App\Http\Controllers\Master\PlanController as MasterPlanController;
 use App\Http\Controllers\Master\TokenIncrementPlanController as MasterTokenIncrementPlanController;
 use App\Http\Controllers\Master\SystemController as MasterSystemController;
 use App\Http\Controllers\Master\TenantController as MasterTenantController;
+use App\Http\Controllers\Master\PaymentController as MasterPaymentController;
 use App\Http\Controllers\Master\ToolboxController as MasterToolboxController;
 use App\Http\Controllers\Master\UsageController as MasterUsageController;
 use App\Http\Controllers\Master\UserController as MasterUserController;
@@ -491,6 +492,9 @@ Route::middleware(['auth', 'super_admin'])->prefix('master')->name('master.')->g
     // Notificações
     Route::get('notificacoes',                         [MasterNotificationController::class, 'index'])->name('notifications');
     Route::post('notificacoes',                        [MasterNotificationController::class, 'store'])->name('notifications.store');
+
+    // Recebimentos
+    Route::get('recebimentos', [MasterPaymentController::class, 'index'])->name('payments');
 
     // Ferramentas
     Route::get ('ferramentas',        [MasterToolboxController::class, 'index'])->name('toolbox');

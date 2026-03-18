@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Master;
 
 use App\Http\Controllers\Controller;
 use App\Models\Lead;
+use App\Models\PaymentLog;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\WhatsappConversation;
@@ -16,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use App\Jobs\ImportWhatsappHistory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -38,6 +40,7 @@ class ToolboxController extends Controller
         'sync-profile-pictures',
         'reimport-empty-conversations',
         'resolve-lid-conversations',
+        'import-asaas-payments',
     ];
 
     public function index(): View
@@ -897,6 +900,209 @@ class ToolboxController extends Controller
         $lines[] = "{$blocked} LID(s) sem mapeamento disponível";
         $lines[] = '';
         $lines[] = 'Resolução concluída.';
+
+        return response()->json(['success' => true, 'lines' => $lines]);
+    }
+
+    // ── Import Asaas Payments ──────────────────────────────────────────────────
+
+    private function importAsaasPayments(Request $request): JsonResponse
+    {
+        $apiUrl = config('services.asaas.api_url', 'https://www.asaas.com/api/v3');
+        $apiKey = config('services.asaas.api_key');
+
+        if (! $apiKey) {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] ASAAS_API_KEY não configurada.']]);
+        }
+
+        // Cache de tenants por subscription_id
+        $tenantsBySubscription = Tenant::whereNotNull('asaas_subscription_id')
+            ->where('asaas_subscription_id', '!=', '')
+            ->pluck('id', 'asaas_subscription_id')
+            ->toArray();
+
+        $lines     = [];
+        $imported  = 0;
+        $skipped   = 0;
+        $noTenant  = 0;
+        $offset    = 0;
+        $limit     = 100;
+        $hasMore   = true;
+
+        $lines[] = 'Iniciando importação de pagamentos do Asaas...';
+        $lines[] = 'Tenants com subscription: ' . count($tenantsBySubscription);
+        $lines[] = '';
+
+        while ($hasMore) {
+            $response = Http::withHeaders([
+                'access_token' => $apiKey,
+                'Content-Type' => 'application/json',
+            ])->get("{$apiUrl}/payments", [
+                'offset' => $offset,
+                'limit'  => $limit,
+                'status' => 'RECEIVED',
+            ]);
+
+            if (! $response->ok()) {
+                $lines[] = "[ERRO] API retornou status {$response->status()}";
+                break;
+            }
+
+            $data     = $response->json();
+            $payments = $data['data'] ?? [];
+            $hasMore  = $data['hasMore'] ?? false;
+            $offset  += $limit;
+
+            foreach ($payments as $payment) {
+                $asaasId       = $payment['id'] ?? null;
+                $subscriptionId = $payment['subscription'] ?? null;
+                $extRef        = $payment['externalReference'] ?? '';
+                $value         = (float) ($payment['value'] ?? 0);
+                $paidAt        = $payment['confirmedDate'] ?? $payment['paymentDate'] ?? null;
+
+                if (! $asaasId) {
+                    continue;
+                }
+
+                // Skip se já importado
+                $exists = PaymentLog::where('asaas_payment_id', $asaasId)->exists();
+                if ($exists) {
+                    $skipped++;
+                    continue;
+                }
+
+                // Identificar tenant
+                $tenantId    = null;
+                $type        = 'subscription';
+                $description = 'Assinatura';
+
+                // Token increment?
+                if (str_starts_with($extRef, 'token_increment:')) {
+                    $type        = 'token_increment';
+                    $description = 'Pacote de tokens';
+                    $incrementId = (int) str_replace('token_increment:', '', $extRef);
+                    $increment   = \App\Models\TenantTokenIncrement::find($incrementId);
+                    if ($increment) {
+                        $tenantId    = $increment->tenant_id;
+                        $description = "Pacote de {$increment->tokens_added} tokens";
+                    }
+                } elseif ($subscriptionId && isset($tenantsBySubscription[$subscriptionId])) {
+                    $tenantId = $tenantsBySubscription[$subscriptionId];
+                    $tenant   = Tenant::find($tenantId);
+                    if ($tenant) {
+                        $description = "Assinatura plano {$tenant->plan}";
+                    }
+                }
+
+                if (! $tenantId) {
+                    $noTenant++;
+                    continue;
+                }
+
+                PaymentLog::create([
+                    'tenant_id'        => $tenantId,
+                    'type'             => $type,
+                    'description'      => $description,
+                    'amount'           => $value,
+                    'asaas_payment_id' => $asaasId,
+                    'status'           => 'confirmed',
+                    'paid_at'          => $paidAt ? \Carbon\Carbon::parse($paidAt) : now(),
+                ]);
+
+                $imported++;
+            }
+
+            // Segurança: máximo 10 páginas (1000 pagamentos)
+            if ($offset >= 1000) {
+                $lines[] = 'Limite de 1000 pagamentos atingido.';
+                break;
+            }
+        }
+
+        // Buscar também pagamentos CONFIRMED (PIX pendente confirmação)
+        $offset  = 0;
+        $hasMore = true;
+
+        while ($hasMore) {
+            $response = Http::withHeaders([
+                'access_token' => $apiKey,
+                'Content-Type' => 'application/json',
+            ])->get("{$apiUrl}/payments", [
+                'offset' => $offset,
+                'limit'  => $limit,
+                'status' => 'CONFIRMED',
+            ]);
+
+            if (! $response->ok()) {
+                break;
+            }
+
+            $data     = $response->json();
+            $payments = $data['data'] ?? [];
+            $hasMore  = $data['hasMore'] ?? false;
+            $offset  += $limit;
+
+            foreach ($payments as $payment) {
+                $asaasId        = $payment['id'] ?? null;
+                $subscriptionId = $payment['subscription'] ?? null;
+                $extRef         = $payment['externalReference'] ?? '';
+                $value          = (float) ($payment['value'] ?? 0);
+                $paidAt         = $payment['confirmedDate'] ?? $payment['paymentDate'] ?? null;
+
+                if (! $asaasId || PaymentLog::where('asaas_payment_id', $asaasId)->exists()) {
+                    $skipped++;
+                    continue;
+                }
+
+                $tenantId    = null;
+                $type        = 'subscription';
+                $description = 'Assinatura';
+
+                if (str_starts_with($extRef, 'token_increment:')) {
+                    $type        = 'token_increment';
+                    $description = 'Pacote de tokens';
+                    $incrementId = (int) str_replace('token_increment:', '', $extRef);
+                    $increment   = \App\Models\TenantTokenIncrement::find($incrementId);
+                    if ($increment) {
+                        $tenantId    = $increment->tenant_id;
+                        $description = "Pacote de {$increment->tokens_added} tokens";
+                    }
+                } elseif ($subscriptionId && isset($tenantsBySubscription[$subscriptionId])) {
+                    $tenantId = $tenantsBySubscription[$subscriptionId];
+                    $tenant   = Tenant::find($tenantId);
+                    if ($tenant) {
+                        $description = "Assinatura plano {$tenant->plan}";
+                    }
+                }
+
+                if (! $tenantId) {
+                    $noTenant++;
+                    continue;
+                }
+
+                PaymentLog::create([
+                    'tenant_id'        => $tenantId,
+                    'type'             => $type,
+                    'description'      => $description,
+                    'amount'           => $value,
+                    'asaas_payment_id' => $asaasId,
+                    'status'           => 'confirmed',
+                    'paid_at'          => $paidAt ? \Carbon\Carbon::parse($paidAt) : now(),
+                ]);
+
+                $imported++;
+            }
+
+            if ($offset >= 1000) {
+                break;
+            }
+        }
+
+        $lines[] = "{$imported} pagamento(s) importado(s)";
+        $lines[] = "{$skipped} já existente(s) (ignorados)";
+        $lines[] = "{$noTenant} sem tenant associado (ignorados)";
+        $lines[] = '';
+        $lines[] = 'Importação concluída.';
 
         return response()->json(['success' => true, 'lines' => $lines]);
     }

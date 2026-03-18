@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Mail\PaymentFailed;
+use App\Models\PaymentLog;
 use App\Models\Tenant;
 use App\Models\TenantTokenIncrement;
 use Illuminate\Http\Request;
@@ -73,7 +74,7 @@ class AsaasWebhookController extends Controller
 
         match($event) {
             'PAYMENT_RECEIVED',
-            'PAYMENT_CONFIRMED'      => $this->handlePaymentConfirmed($tenant),
+            'PAYMENT_CONFIRMED'      => $this->handlePaymentConfirmed($tenant, $payload),
             'PAYMENT_OVERDUE'        => $this->handlePaymentOverdue($tenant),
             'SUBSCRIPTION_INACTIVATED',
             'PAYMENT_DELETED'        => $this->handleSubscriptionInactivated($tenant),
@@ -97,6 +98,17 @@ class AsaasWebhookController extends Controller
             ->where('id', $increment->tenant_id)
             ->update(['ai_tokens_exhausted' => false]);
 
+        // Registrar pagamento
+        PaymentLog::create([
+            'tenant_id'        => $increment->tenant_id,
+            'type'             => 'token_increment',
+            'description'      => "Pacote de {$increment->tokens_added} tokens",
+            'amount'           => $increment->price_paid ?? 0,
+            'asaas_payment_id' => null,
+            'status'           => 'confirmed',
+            'paid_at'          => now(),
+        ]);
+
         \Log::info('AsaasWebhook: incremento de tokens confirmado', [
             'increment_id' => $increment->id,
             'tenant_id'    => $increment->tenant_id,
@@ -104,12 +116,29 @@ class AsaasWebhookController extends Controller
         ]);
     }
 
-    private function handlePaymentConfirmed(Tenant $tenant): void
+    private function handlePaymentConfirmed(Tenant $tenant, array $payload = []): void
     {
         $tenant->update([
             'subscription_status' => 'active',
             'status'              => $tenant->plan === 'partner' ? 'partner' : 'active',
         ]);
+
+        // Registrar pagamento
+        $paymentValue = $payload['payment']['value'] ?? null;
+        $paymentId    = $payload['payment']['id'] ?? null;
+
+        if ($paymentValue) {
+            PaymentLog::create([
+                'tenant_id'        => $tenant->id,
+                'type'             => 'subscription',
+                'description'      => "Assinatura plano {$tenant->plan}",
+                'amount'           => (float) $paymentValue,
+                'asaas_payment_id' => $paymentId,
+                'status'           => 'confirmed',
+                'paid_at'          => now(),
+            ]);
+        }
+
         \Log::info("AsaasWebhook: pagamento confirmado para tenant {$tenant->id}");
     }
 
