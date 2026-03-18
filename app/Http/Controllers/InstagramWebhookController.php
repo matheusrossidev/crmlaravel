@@ -62,8 +62,14 @@ class InstagramWebhookController extends Controller
             return response('', 200);
         }
 
-        // Dispatch async: retorna 200 imediatamente ao Meta, processa em background.
-        ProcessInstagramWebhook::dispatch($payload)->onQueue('webhooks');
+        try {
+            ProcessInstagramWebhook::dispatchSync($payload);
+        } catch (\Throwable $e) {
+            Log::channel('instagram')->error('Webhook processamento falhou', [
+                'error' => $e->getMessage(),
+                'file'  => $e->getFile() . ':' . $e->getLine(),
+            ]);
+        }
 
         return response('', 200);
     }

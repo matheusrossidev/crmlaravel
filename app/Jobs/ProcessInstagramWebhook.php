@@ -254,9 +254,16 @@ class ProcessInstagramWebhook implements ShouldQueue
         if (! $isFromMe) {
             $conversation->refresh();
 
-            // Se já tem chatbot ativo, dispatch async na fila 'chatbot'
+            // Se já tem chatbot ativo, processar próximo step
             if ($conversation->chatbot_flow_id) {
-                ProcessChatbotStep::dispatch($conversation->id, $body ?? '', 'instagram');
+                try {
+                    (new ProcessChatbotStep($conversation->id, $body ?? '', 'instagram'))->handle();
+                } catch (\Throwable $e) {
+                    Log::channel('instagram')->error('Chatbot step falhou', [
+                        'conversation_id' => $conversation->id,
+                        'error'           => $e->getMessage(),
+                    ]);
+                }
                 return; // Chatbot consome a mensagem — não passa para AutomationEngine
             }
 

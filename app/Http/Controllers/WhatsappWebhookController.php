@@ -61,9 +61,19 @@ class WhatsappWebhookController extends Controller
             $instance->updateQuietly(['session_name' => $session]);
         }
 
-        // Dispatch async: retorna 200 imediatamente ao WAHA, processa em background.
-        // Worker dedicado: php artisan queue:work --queue=webhooks
-        ProcessWahaWebhook::dispatch($payload)->onQueue('webhooks');
+        // dispatchSync: processa imediatamente, sem depender do queue worker.
+        // Envolvido em try/catch para que erros internos (ex: migration pendente,
+        // DB indisponível) não retornem 500 ao WAHA — o que faria o WAHA parar
+        // de enviar webhooks para essa sessão.
+        try {
+            ProcessWahaWebhook::dispatchSync($payload);
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->error('Webhook processamento falhou', [
+                'error'   => $e->getMessage(),
+                'event'   => $event,
+                'session' => $session,
+            ]);
+        }
 
         return response('', 200);
     }
