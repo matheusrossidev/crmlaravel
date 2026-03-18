@@ -690,6 +690,10 @@
             background: #f4f6fb;
             color: #007DFF;
         }
+        .nav-submenu-toggle.active {
+            color: #007DFF;
+            font-weight: 600;
+        }
 
         .nav-submenu {
             padding-left: 14px;
@@ -765,22 +769,27 @@
         .sidebar--collapsed .nav-chevron { display: none; }
         .sidebar--collapsed .nav-submenu-wrap { overflow: visible; }
 
-        /* Submenu: oculto no modo colapsado; reabre como flyout no hover */
+        /* Submenu: oculto no modo colapsado; reabre como flyout no hover via JS */
         .sidebar--collapsed .nav-submenu { display: none !important; }
-        .sidebar--collapsed .nav-submenu-wrap:hover .nav-submenu {
+        .sidebar--collapsed .nav-submenu.flyout-open {
             display: block !important;
             position: fixed;
-            left: 72px;
-            width: 190px;
+            width: 200px;
             background: #fff;
             border: 1px solid #e8eaf0;
             border-radius: 10px;
             padding: 6px;
             box-shadow: 0 6px 20px rgba(0,0,0,.1);
-            z-index: 300;
+            z-index: 1100;
         }
-        .sidebar--collapsed .nav-submenu-wrap:hover .nav-subitem {
-            white-space: normal;
+        .sidebar--collapsed .nav-submenu.flyout-open .nav-subitem {
+            white-space: nowrap;
+            justify-content: flex-start;
+            gap: 8px;
+            padding: 8px 12px;
+        }
+        .sidebar--collapsed .nav-submenu.flyout-open .nav-label {
+            display: inline !important;
         }
 
         /* Footer: só avatar */
@@ -947,11 +956,10 @@
         @endif
     </div>
 
-    {{-- Nav: Geral --}}
     <div class="sidebar-nav-scroll">
     <nav class="nav-group">
-        <div class="nav-group-label">Geral</div>
 
+        {{-- Início (sem submenu) --}}
         <a href="{{ route('inicio') }}"
            class="nav-item {{ request()->routeIs('inicio', 'dashboard') ? 'active' : '' }}"
            title="Início">
@@ -959,27 +967,7 @@
             <span class="nav-label">Início</span>
         </a>
 
-        <a href="{{ route('crm.kanban') }}"
-           class="nav-item {{ request()->routeIs('crm*') ? 'active' : '' }}"
-           title="CRM">
-            <i class="bi bi-kanban nav-icon"></i>
-            <span class="nav-label">CRM</span>
-        </a>
-
-        <a href="{{ route('leads.index') }}"
-           class="nav-item {{ request()->routeIs('leads*') ? 'active' : '' }}"
-           title="Contatos">
-            <i class="bi bi-people nav-icon"></i>
-            <span class="nav-label">Contatos</span>
-        </a>
-
-        <a href="{{ route('campaigns.index') }}"
-           class="nav-item {{ request()->routeIs('campaigns*') ? 'active' : '' }}"
-           title="Campanhas">
-            <i class="bi bi-megaphone nav-icon"></i>
-            <span class="nav-label">Campanhas</span>
-        </a>
-
+        {{-- Chats (sem submenu — acesso rápido) --}}
         <a href="{{ route('chats.index') }}"
            class="nav-item {{ request()->routeIs('chats.*') ? 'active' : '' }}"
            title="Chats">
@@ -987,39 +975,142 @@
             <span class="nav-label">Chats</span>
         </a>
 
-        <a href="{{ route('calendar.index') }}"
-           class="nav-item {{ request()->routeIs('calendar.*') ? 'active' : '' }}"
-           title="Agenda">
-            <i class="bi bi-calendar3 nav-icon"></i>
-            <span class="nav-label">Agenda</span>
-        </a>
-        <a href="{{ route('reports.index') }}"
-           class="nav-item {{ request()->routeIs('reports*') ? 'active' : '' }}"
-           title="Relatórios">
-            <i class="bi bi-bar-chart-line nav-icon"></i>
-            <span class="nav-label">Relatórios</span>
-        </a>
+        @php
+            $crmActive = request()->routeIs('crm*', 'leads*', 'calendar.*');
+            $autoActive = request()->routeIs('chatbot.flows.*', 'ai.agents.*', 'ai.intent-signals.*', 'settings.ig-automations.*');
+            $reportActive = request()->routeIs('reports*', 'campaigns*');
+        @endphp
 
-        <a href="{{ route('chatbot.flows.index') }}"
-           class="nav-item {{ request()->routeIs('chatbot.flows.*') ? 'active' : '' }}"
-           title="Chatbot Builder">
-            <i class="bi bi-diagram-3 nav-icon"></i>
-            <span class="nav-label">Chatbot</span>
-        </a>
+        {{-- CRM (submenu) --}}
+        <div class="nav-submenu-wrap">
+            <div class="nav-submenu-toggle {{ $crmActive ? 'active' : '' }}" onclick="toggleSubmenu(this)" style="cursor:pointer;">
+                <i class="bi bi-kanban nav-icon"></i>
+                <span class="nav-label" style="flex:1;">CRM</span>
+                <i class="bi bi-chevron-down nav-chevron" style="font-size:11px;color:#97A3B7;transition:transform .2s;{{ $crmActive ? 'transform:rotate(180deg);' : '' }}"></i>
+            </div>
+            <div class="nav-submenu" style="{{ $crmActive ? '' : 'display:none;' }}">
+                <a href="{{ route('crm.kanban') }}" class="nav-subitem {{ request()->routeIs('crm*') ? 'active' : '' }}" title="Negócios">
+                    <i class="bi bi-kanban nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Negócios</span>
+                </a>
+                <a href="{{ route('leads.index') }}" class="nav-subitem {{ request()->routeIs('leads*') ? 'active' : '' }}" title="Contatos">
+                    <i class="bi bi-people nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Contatos</span>
+                </a>
+                <a href="{{ route('calendar.index') }}" class="nav-subitem {{ request()->routeIs('calendar.*') ? 'active' : '' }}" title="Agenda">
+                    <i class="bi bi-calendar3 nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Agenda</span>
+                </a>
+            </div>
+        </div>
 
-        <a href="{{ route('ai.agents.index') }}"
-           class="nav-item {{ request()->routeIs('ai.agents.*') ? 'active' : '' }}"
-           title="Agentes de IA">
-            <i class="bi bi-robot nav-icon"></i>
-            <span class="nav-label">Agentes de IA</span>
-        </a>
+        {{-- Automação (submenu) --}}
+        <div class="nav-submenu-wrap">
+            <div class="nav-submenu-toggle {{ $autoActive ? 'active' : '' }}" onclick="toggleSubmenu(this)" style="cursor:pointer;">
+                <i class="bi bi-lightning nav-icon"></i>
+                <span class="nav-label" style="flex:1;">Automação</span>
+                <i class="bi bi-chevron-down nav-chevron" style="font-size:11px;color:#97A3B7;transition:transform .2s;{{ $autoActive ? 'transform:rotate(180deg);' : '' }}"></i>
+            </div>
+            <div class="nav-submenu" style="{{ $autoActive ? '' : 'display:none;' }}">
+                <a href="{{ route('chatbot.flows.index') }}" class="nav-subitem {{ request()->routeIs('chatbot.flows.*') ? 'active' : '' }}" title="Chatbot">
+                    <i class="bi bi-diagram-3 nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Chatbot</span>
+                </a>
+                <a href="{{ route('ai.agents.index') }}" class="nav-subitem {{ request()->routeIs('ai.agents.*', 'ai.intent-signals.*') ? 'active' : '' }}" title="Agentes de IA">
+                    <i class="bi bi-robot nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Agentes de IA</span>
+                </a>
+                @if(\App\Models\InstagramInstance::where('status', 'connected')->exists())
+                <a href="{{ route('settings.ig-automations.index') }}" class="nav-subitem {{ request()->routeIs('settings.ig-automations.*') ? 'active' : '' }}" title="Automações Instagram">
+                    <i class="bi bi-instagram nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Autom. Instagram</span>
+                </a>
+                @endif
+            </div>
+        </div>
 
-        <a href="{{ route('settings.profile') }}"
-           class="nav-item {{ request()->routeIs('settings.*') || request()->routeIs('billing.*') ? 'active' : '' }}"
-           title="Configurações">
-            <i class="bi bi-gear nav-icon"></i>
-            <span class="nav-label">Configurações</span>
-        </a>
+        {{-- Relatórios (submenu) --}}
+        <div class="nav-submenu-wrap">
+            <div class="nav-submenu-toggle {{ $reportActive ? 'active' : '' }}" onclick="toggleSubmenu(this)" style="cursor:pointer;">
+                <i class="bi bi-bar-chart-line nav-icon"></i>
+                <span class="nav-label" style="flex:1;">Relatórios</span>
+                <i class="bi bi-chevron-down nav-chevron" style="font-size:11px;color:#97A3B7;transition:transform .2s;{{ $reportActive ? 'transform:rotate(180deg);' : '' }}"></i>
+            </div>
+            <div class="nav-submenu" style="{{ $reportActive ? '' : 'display:none;' }}">
+                <a href="{{ route('reports.index') }}" class="nav-subitem {{ request()->routeIs('reports*') ? 'active' : '' }}" title="Relatórios">
+                    <i class="bi bi-graph-up nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Indicadores</span>
+                </a>
+                <a href="{{ route('campaigns.index') }}" class="nav-subitem {{ request()->routeIs('campaigns*') ? 'active' : '' }}" title="Campanhas">
+                    <i class="bi bi-megaphone nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Campanhas</span>
+                </a>
+            </div>
+        </div>
+
+        {{-- Configurações (submenu) --}}
+        @php $settingsActive = request()->routeIs('settings.*') || request()->routeIs('billing.*'); @endphp
+        <div class="nav-submenu-wrap">
+            <div class="nav-submenu-toggle {{ $settingsActive ? 'active' : '' }}" onclick="toggleSubmenu(this)" style="cursor:pointer;">
+                <i class="bi bi-gear nav-icon"></i>
+                <span class="nav-label" style="flex:1;">Configurações</span>
+                <i class="bi bi-chevron-down nav-chevron" style="font-size:11px;color:#97A3B7;transition:transform .2s;{{ $settingsActive ? 'transform:rotate(180deg);' : '' }}"></i>
+            </div>
+            <div class="nav-submenu" style="{{ $settingsActive ? '' : 'display:none;' }}">
+                <a href="{{ route('settings.profile') }}" class="nav-subitem {{ request()->routeIs('settings.profile*') ? 'active' : '' }}">
+                    <i class="bi bi-person nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Perfil</span>
+                </a>
+                <a href="{{ route('settings.notifications') }}" class="nav-subitem {{ request()->routeIs('settings.notifications*') ? 'active' : '' }}">
+                    <i class="bi bi-bell nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Notificações</span>
+                </a>
+                <a href="{{ route('settings.pipelines') }}" class="nav-subitem {{ request()->routeIs('settings.pipelines*') ? 'active' : '' }}">
+                    <i class="bi bi-funnel nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Pipelines</span>
+                </a>
+                <a href="{{ route('settings.lost-reasons') }}" class="nav-subitem {{ request()->routeIs('settings.lost-reasons*') ? 'active' : '' }}">
+                    <i class="bi bi-x-circle nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Motivos de Perda</span>
+                </a>
+                <a href="{{ route('settings.users') }}" class="nav-subitem {{ request()->routeIs('settings.users*') ? 'active' : '' }}">
+                    <i class="bi bi-person-badge nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Usuários</span>
+                </a>
+                <a href="{{ route('settings.custom-fields') }}" class="nav-subitem {{ request()->routeIs('settings.custom-fields*') ? 'active' : '' }}">
+                    <i class="bi bi-sliders nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Campos Extras</span>
+                </a>
+                <a href="{{ route('settings.products') }}" class="nav-subitem {{ request()->routeIs('settings.products*') ? 'active' : '' }}">
+                    <i class="bi bi-box-seam nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Produtos</span>
+                </a>
+                <a href="{{ route('settings.integrations.index') }}" class="nav-subitem {{ request()->routeIs('settings.integrations*') ? 'active' : '' }}">
+                    <i class="bi bi-plug nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Integrações</span>
+                </a>
+                <a href="{{ route('settings.tags') }}" class="nav-subitem {{ request()->routeIs('settings.tags*') ? 'active' : '' }}">
+                    <i class="bi bi-tags nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Tags</span>
+                </a>
+                <a href="{{ route('settings.departments') }}" class="nav-subitem {{ request()->routeIs('settings.departments*') ? 'active' : '' }}">
+                    <i class="bi bi-building nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Departamentos</span>
+                </a>
+                <a href="{{ route('settings.automations') }}" class="nav-subitem {{ request()->routeIs('settings.automations*') ? 'active' : '' }}">
+                    <i class="bi bi-lightning nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Automações</span>
+                </a>
+                <a href="{{ route('settings.billing') }}" class="nav-subitem {{ request()->routeIs('settings.billing*', 'billing.*') ? 'active' : '' }}">
+                    <i class="bi bi-credit-card nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Cobrança</span>
+                </a>
+                <a href="{{ route('settings.api-keys') }}" class="nav-subitem {{ request()->routeIs('settings.api-keys*') ? 'active' : '' }}">
+                    <i class="bi bi-code-slash nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">API / Webhooks</span>
+                </a>
+            </div>
+        </div>
     </nav>
 
     @if(auth()->user()->isSuperAdmin())
@@ -1350,6 +1441,51 @@ window.confirmAction = function ({ title = 'Confirmar ação', message = '', con
         const willCollapse = !sidebar.classList.contains('sidebar--collapsed');
         applyState(willCollapse, true);
         localStorage.setItem(STORAGE_KEY, willCollapse ? '1' : '0');
+    });
+}());
+
+// ── Sidebar submenu toggle ────────────────────────────────────────────────
+function toggleSubmenu(toggleEl) {
+    const isCollapsed = document.getElementById('sidebar').classList.contains('sidebar--collapsed');
+    if (isCollapsed) return; // No toggle in collapsed mode — flyout handles it
+
+    const wrap = toggleEl.closest('.nav-submenu-wrap');
+    const sub  = wrap.querySelector('.nav-submenu');
+    const chev = toggleEl.querySelector('.nav-chevron');
+    const isOpen = sub.style.display !== 'none';
+    sub.style.display = isOpen ? 'none' : '';
+    if (chev) chev.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+// ── Collapsed sidebar: flyout on hover ───────────────────────────────────
+(function() {
+    let _flyoutTimeout;
+    document.querySelectorAll('.nav-submenu-wrap').forEach(wrap => {
+        const toggle = wrap.querySelector('.nav-submenu-toggle');
+        const sub = wrap.querySelector('.nav-submenu');
+        if (!toggle || !sub) return;
+
+        wrap.addEventListener('mouseenter', () => {
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar.classList.contains('sidebar--collapsed')) return;
+            clearTimeout(_flyoutTimeout);
+            // Close other flyouts
+            document.querySelectorAll('.nav-submenu.flyout-open').forEach(s => s.classList.remove('flyout-open'));
+            // Position
+            const rect = toggle.getBoundingClientRect();
+            sub.style.left = (rect.right + 4) + 'px';
+            sub.style.top = rect.top + 'px';
+            sub.classList.add('flyout-open');
+        });
+
+        wrap.addEventListener('mouseleave', () => {
+            _flyoutTimeout = setTimeout(() => sub.classList.remove('flyout-open'), 150);
+        });
+
+        sub.addEventListener('mouseenter', () => clearTimeout(_flyoutTimeout));
+        sub.addEventListener('mouseleave', () => {
+            _flyoutTimeout = setTimeout(() => sub.classList.remove('flyout-open'), 150);
+        });
     });
 }());
 

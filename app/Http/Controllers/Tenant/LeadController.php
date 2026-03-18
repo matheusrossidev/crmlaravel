@@ -554,6 +554,94 @@ class LeadController extends Controller
         return response()->json(['success' => true]);
     }
 
+    // ── Lead Products ─────────────────────────────────────────────────────────
+
+    public function getProducts(Lead $lead): JsonResponse
+    {
+        $items = $lead->products()->with('product:id,name,price,unit')->get();
+
+        // Sync lead value if products exist but value is out of sync
+        $productsTotal = (float) $items->sum('total');
+        if ($productsTotal > 0 && (float) $lead->value !== $productsTotal) {
+            $lead->update(['value' => $productsTotal]);
+        }
+
+        return response()->json(['success' => true, 'products' => $items]);
+    }
+
+    public function addProduct(Request $request, Lead $lead): JsonResponse
+    {
+        $data = $request->validate([
+            'product_id'       => 'required|integer|exists:products,id',
+            'quantity'         => 'nullable|numeric|min:0.01',
+            'unit_price'       => 'nullable|numeric|min:0',
+            'discount_percent' => 'nullable|numeric|min:0|max:100',
+            'notes'            => 'nullable|string|max:500',
+        ]);
+
+        $product = \App\Models\Product::findOrFail($data['product_id']);
+
+        $lp = \App\Models\LeadProduct::create([
+            'tenant_id'        => $lead->tenant_id,
+            'lead_id'          => $lead->id,
+            'product_id'       => $product->id,
+            'quantity'         => $data['quantity'] ?? 1,
+            'unit_price'       => $data['unit_price'] ?? $product->price,
+            'discount_percent' => $data['discount_percent'] ?? 0,
+            'total'            => 0, // auto-calculated in saving event
+            'notes'            => $data['notes'] ?? null,
+        ]);
+
+        $lp->load('product:id,name,price,unit');
+        $this->syncLeadValueFromProducts($lead);
+
+        return response()->json([
+            'success'      => true,
+            'lead_product' => $lp,
+            'lead_value'   => (float) $lead->fresh()->value,
+        ], 201);
+    }
+
+    public function updateProduct(Request $request, Lead $lead, \App\Models\LeadProduct $leadProduct): JsonResponse
+    {
+        abort_unless((int) $leadProduct->lead_id === (int) $lead->id, 404);
+
+        $data = $request->validate([
+            'quantity'         => 'nullable|numeric|min:0.01',
+            'unit_price'       => 'nullable|numeric|min:0',
+            'discount_percent' => 'nullable|numeric|min:0|max:100',
+            'notes'            => 'nullable|string|max:500',
+        ]);
+
+        $leadProduct->update($data);
+        $leadProduct->load('product:id,name,price,unit');
+        $this->syncLeadValueFromProducts($lead);
+
+        return response()->json([
+            'success'      => true,
+            'lead_product' => $leadProduct,
+            'lead_value'   => (float) $lead->fresh()->value,
+        ]);
+    }
+
+    public function removeProduct(Lead $lead, \App\Models\LeadProduct $leadProduct): JsonResponse
+    {
+        abort_unless((int) $leadProduct->lead_id === (int) $lead->id, 404);
+        $leadProduct->delete();
+        $this->syncLeadValueFromProducts($lead);
+
+        return response()->json([
+            'success'    => true,
+            'lead_value' => (float) $lead->fresh()->value,
+        ]);
+    }
+
+    private function syncLeadValueFromProducts(Lead $lead): void
+    {
+        $total = \App\Models\LeadProduct::where('lead_id', $lead->id)->sum('total');
+        $lead->update(['value' => $total]);
+    }
+
     private function saveCustomFields(Lead $lead, array $fields): void
     {
         if (empty($fields)) {

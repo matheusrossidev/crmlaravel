@@ -52,6 +52,8 @@ def get_or_create_agent(
     lead_data: dict | None = None,
     custom_fields: list[dict] | None = None,
     lead_notes: list[dict] | None = None,
+    products: list[dict] | None = None,
+    lead_products: list[dict] | None = None,
 ) -> Agent:
     """Return a cached Agent, creating it on first call or after config update."""
 
@@ -75,6 +77,8 @@ def get_or_create_agent(
         lead_data,
         custom_fields or [],
         lead_notes or [],
+        products or [],
+        lead_products or [],
     )
 
     agent = Agent(
@@ -122,6 +126,8 @@ def _build_instructions(
     lead_data: dict | None = None,
     custom_fields: list[dict] | None = None,
     lead_notes: list[dict] | None = None,
+    products: list[dict] | None = None,
+    lead_products: list[dict] | None = None,
 ) -> str:
     name = config.get("name", "Assistente")
     objective = config.get("objective", "ajudar clientes")
@@ -252,6 +258,47 @@ NOTAS DO LEAD (últimas {len(lead_notes)})
 ═══════════════════════════════════════
 {chr(10).join(notes_lines)}""")
 
+    # ── Products catalog ─────────────────────────────────────────────
+    if products:
+        prod_lines = []
+        for p in products:
+            price_str = f"R$ {p['price']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            unit_str = f"/{p['unit']}" if p.get('unit') else ""
+            media_str = ""
+            if p.get('media'):
+                media_parts = [f"{m['id']}({m['type']})" for m in p['media']]
+                media_str = f" [mídias: {', '.join(media_parts)}]"
+            desc = f" — {p['description']}" if p.get('description') else ""
+            prod_lines.append(f"  - id={p['id']}: {p['name']} ({price_str}{unit_str}){desc}{media_str}")
+
+        sections.append(f"""
+═══════════════════════════════════════
+CATÁLOGO DE PRODUTOS/SERVIÇOS
+═══════════════════════════════════════
+{chr(10).join(prod_lines)}
+
+Para enviar foto/vídeo de produto: {{"type": "send_product_media", "payload": {{"product_id": <id>, "media_id": <media_id>}}}}
+Para vincular produto ao lead: {{"type": "add_product_to_lead", "payload": {{"product_id": <id>, "quantity": 1}}}}
+Para remover produto do lead: {{"type": "remove_product_from_lead", "payload": {{"product_id": <id>}}}}
+Informe preços e detalhes NATURALMENTE durante a conversa.
+Envie fotos quando o cliente perguntar sobre um produto específico.
+NÃO liste todos os produtos de uma vez — apresente conforme o interesse do cliente.""")
+
+    if lead_products:
+        lp_lines = []
+        for lp in lead_products:
+            total_str = f"R$ {lp['total']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            lp_lines.append(f"  - {lp['name']} (x{lp['quantity']}) = {total_str}")
+
+        grand_total = sum(lp['total'] for lp in lead_products)
+        gt_str = f"R$ {grand_total:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        sections.append(f"""
+═══════════════════════════════════════
+PRODUTOS VINCULADOS AO LEAD
+═══════════════════════════════════════
+{chr(10).join(lp_lines)}
+TOTAL: {gt_str}""")
+
     # ── Actions instructions ─────────────────────────────────────────
     sections.append(f"""
 ═══════════════════════════════════════
@@ -265,6 +312,9 @@ Inclua ações em "actions" quando necessário. O sistema PHP as executará.
 - create_note: registrar observação estratégica. {{"type": "create_note", "payload": {{"body": "Cliente pediu proposta por email"}}}}
 - update_custom_field: preencher campo personalizado. {{"type": "update_custom_field", "payload": {{"field": "interesse", "value": "premium"}}}}
 - assign_human: transferir para humano. {{"type": "assign_human", "payload": {{}}}}
+- send_product_media: enviar foto/vídeo de produto. {{"type": "send_product_media", "payload": {{"product_id": 1, "media_id": 42}}}}
+- add_product_to_lead: vincular produto ao lead. {{"type": "add_product_to_lead", "payload": {{"product_id": 1, "quantity": 2}}}}
+- remove_product_from_lead: remover produto do lead. {{"type": "remove_product_from_lead", "payload": {{"product_id": 1}}}}
 
 REGRAS para actions:
 - NÃO crie nota para cada mensagem — apenas informações estratégicas.

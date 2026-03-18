@@ -32,39 +32,44 @@
     .toggle input:checked + .toggle-slider { background: #10B981; }
     .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
 
-    .modal-overlay {
+    /* Drawer */
+    .drawer-overlay {
         display: none; position: fixed; inset: 0;
-        background: rgba(0,0,0,.45); z-index: 1000;
-        align-items: center; justify-content: center;
+        background: rgba(0,0,0,.35); z-index: 300;
     }
-    .modal-overlay.open { display: flex; }
-    .modal-box {
-        background: #fff; border-radius: 14px; padding: 28px;
-        width: 440px; max-width: 95vw;
-        box-shadow: 0 20px 60px rgba(0,0,0,.18);
+    .drawer-overlay.open { display: block; }
+    .drawer {
+        position: fixed; top: 0; right: -440px;
+        width: 440px; height: 100vh; background: #fff;
+        z-index: 301; transition: right .25s cubic-bezier(.4,0,.2,1);
+        display: flex; flex-direction: column;
+        box-shadow: -4px 0 24px rgba(0,0,0,.1);
     }
-    .modal-title { font-size: 16px; font-weight: 700; color: #1a1d23; margin-bottom: 18px; }
-    .form-group { margin-bottom: 14px; }
-    .form-label { display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em; }
-    .form-control {
-        width: 100%; padding: 9px 12px; border: 1.5px solid #e8eaf0;
-        border-radius: 9px; font-size: 13.5px; outline: none;
-        font-family: inherit; transition: border-color .15s; box-sizing: border-box;
+    .drawer.open { right: 0; }
+    .drawer-header {
+        padding: 18px 22px; border-bottom: 1px solid #f0f2f7;
+        display: flex; align-items: center; justify-content: space-between;
+        font-size: 15px; font-weight: 700; color: #1a1d23;
     }
-    .form-control:focus { border-color: #3B82F6; }
-    .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
-    .btn-cancel {
-        padding: 8px 18px; border-radius: 100px; border: 1.5px solid #e8eaf0;
-        background: #fff; font-size: 13px; font-weight: 600; color: #6b7280;
-        cursor: pointer; transition: all .15s;
+    .drawer-body { padding: 22px; flex: 1; overflow-y: auto; }
+    .drawer-footer {
+        padding: 16px 22px; border-top: 1px solid #f0f2f7;
+        display: flex; gap: 10px; justify-content: flex-end;
     }
-    .btn-cancel:hover { background: #f0f2f7; }
-    .btn-save {
-        padding: 8px 20px; border-radius: 100px; border: none;
-        background: #0085f3; color: #fff; font-size: 13px; font-weight: 600;
-        cursor: pointer; transition: background .15s;
+
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+        display: block; font-size: 12.5px; font-weight: 600;
+        color: #374151; margin-bottom: 6px;
     }
-    .btn-save:hover { background: #0070d1; }
+    .form-input {
+        width: 100%; padding: 9px 12px;
+        border: 1px solid #d1d5db; border-radius: 9px;
+        font-size: 13.5px; color: #1a1d23;
+        outline: none; transition: border-color .15s; background: #fff;
+        font-family: inherit; box-sizing: border-box;
+    }
+    .form-input:focus { border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
 
     .btn-icon {
         width: 28px; height: 28px; border-radius: 7px; border: 1px solid #e8eaf0;
@@ -74,6 +79,21 @@
     }
     .btn-icon:hover { background: #f0f4ff; color: #374151; }
     .btn-icon.danger:hover { background: #fee2e2; color: #ef4444; border-color: #fca5a5; }
+
+    .btn-save {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 9px 20px; background: #0085f3; color: #fff;
+        border: none; border-radius: 100px; font-size: 13px; font-weight: 600;
+        cursor: pointer; transition: background .15s;
+    }
+    .btn-save:hover { background: #0070d1; }
+    .btn-cancel {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 9px 20px; background: #f4f6fb; color: #374151;
+        border: 1px solid #e8eaf0; border-radius: 100px;
+        font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s;
+    }
+    .btn-cancel:hover { background: #e8eaf0; }
 
     .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
     .section-title  { font-size: 15px; font-weight: 700; color: #1a1d23; }
@@ -134,19 +154,27 @@
 
 </div>
 
-{{-- MODAL: Motivo de Perda --}}
-<div class="modal-overlay" id="modalReason">
-    <div class="modal-box">
-        <div class="modal-title" id="modalReasonTitle">Novo Motivo</div>
+{{-- Drawer: Motivo de Perda --}}
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+    <div class="drawer-header">
+        <span id="drawerTitle">Novo Motivo</span>
+        <button onclick="closeDrawer()" style="background:none;border:none;font-size:18px;color:#6b7280;cursor:pointer;">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+    <div class="drawer-body">
         <input type="hidden" id="reasonId">
         <div class="form-group">
             <label class="form-label">Nome do Motivo</label>
-            <input type="text" id="reasonName" class="form-control" placeholder="Ex: Sem orçamento">
+            <input type="text" id="reasonName" class="form-input" placeholder="Ex: Sem orçamento">
         </div>
-        <div class="modal-footer">
-            <button class="btn-cancel" onclick="closeReasonModal()">Cancelar</button>
-            <button class="btn-save" onclick="saveReason()">Salvar</button>
-        </div>
+    </div>
+    <div class="drawer-footer">
+        <button class="btn-cancel" onclick="closeDrawer()">Cancelar</button>
+        <button class="btn-save" onclick="saveReason()">
+            <i class="bi bi-check2"></i> Salvar
+        </button>
     </div>
 </div>
 @endsection
@@ -158,24 +186,34 @@ const REASON_UPD   = @json(route('settings.lost-reasons.update',  ['reason' => '
 const REASON_DEL   = @json(route('settings.lost-reasons.destroy', ['reason' => '__ID__']));
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
 
-/* ---- Reason Modal ---- */
+/* ---- Drawer open/close ---- */
+function openDrawer() {
+    document.getElementById('drawerOverlay').classList.add('open');
+    document.getElementById('drawer').classList.add('open');
+    setTimeout(() => document.getElementById('reasonName').focus(), 200);
+}
+
+function closeDrawer() {
+    document.getElementById('drawerOverlay').classList.remove('open');
+    document.getElementById('drawer').classList.remove('open');
+}
+
+/* ---- New / Edit ---- */
 document.getElementById('btnNovoMotivo').addEventListener('click', () => {
-    document.getElementById('modalReasonTitle').textContent = 'Novo Motivo';
+    document.getElementById('drawerTitle').textContent = 'Novo Motivo';
     document.getElementById('reasonId').value = '';
     document.getElementById('reasonName').value = '';
-    document.getElementById('modalReason').classList.add('open');
-    setTimeout(() => document.getElementById('reasonName').focus(), 100);
+    openDrawer();
 });
 
 function openEditReason(id, name) {
-    document.getElementById('modalReasonTitle').textContent = 'Editar Motivo';
+    document.getElementById('drawerTitle').textContent = 'Editar Motivo';
     document.getElementById('reasonId').value = id;
     document.getElementById('reasonName').value = name;
-    document.getElementById('modalReason').classList.add('open');
+    openDrawer();
 }
 
-function closeReasonModal() { document.getElementById('modalReason').classList.remove('open'); }
-
+/* ---- Save ---- */
 async function saveReason() {
     const id   = document.getElementById('reasonId').value;
     const name = document.getElementById('reasonName').value.trim();
@@ -192,7 +230,7 @@ async function saveReason() {
     const data = await res.json();
     if (!data.success) { alert(data.message || 'Erro.'); return; }
 
-    closeReasonModal();
+    closeDrawer();
     const r = data.reason;
     const body = document.getElementById('reasonsBody');
     document.getElementById('emptyReasons')?.remove();
@@ -219,6 +257,7 @@ async function saveReason() {
     }
 }
 
+/* ---- Toggle active ---- */
 async function toggleReason(id, name, active) {
     await fetch(REASON_UPD.replace('__ID__', id), {
         method: 'PUT',
@@ -227,6 +266,7 @@ async function toggleReason(id, name, active) {
     });
 }
 
+/* ---- Delete ---- */
 function deleteReason(id, btn) {
     confirmAction({
         title: 'Excluir motivo',
@@ -254,11 +294,5 @@ function escapeHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function escapeJs(s) { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
-
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-    overlay.addEventListener('click', e => {
-        if (e.target === overlay) overlay.classList.remove('open');
-    });
-});
 </script>
 @endpush

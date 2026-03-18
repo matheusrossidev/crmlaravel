@@ -12,6 +12,7 @@
     if ($isAdmin) {
         $settingsTabs[] = ['route' => 'settings.users',          'match' => ['settings.users*'],             'label' => 'Usuários'];
         $settingsTabs[] = ['route' => 'settings.custom-fields',  'match' => ['settings.custom-fields*'],     'label' => 'Campos Extras'];
+        $settingsTabs[] = ['route' => 'settings.products',       'match' => ['settings.products*'],          'label' => 'Produtos'];
     }
 
     $settingsTabs[] = ['route' => 'settings.integrations.index', 'match' => ['settings.integrations*'],      'label' => 'Integrações'];

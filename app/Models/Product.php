@@ -1,0 +1,48 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use App\Models\Traits\BelongsToTenant;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Product extends Model
+{
+    use BelongsToTenant;
+
+    protected $fillable = [
+        'tenant_id',
+        'name',
+        'description',
+        'sku',
+        'price',
+        'cost_price',
+        'category',
+        'unit',
+        'is_active',
+        'sort_order',
+    ];
+
+    protected $casts = [
+        'price'      => 'decimal:2',
+        'cost_price' => 'decimal:2',
+        'is_active'  => 'boolean',
+    ];
+
+    public function media(): HasMany
+    {
+        return $this->hasMany(ProductMedia::class)->orderBy('sort_order');
+    }
+
+    public function leadProducts(): HasMany
+    {
+        return $this->hasMany(LeadProduct::class);
+    }
+
+    public function saleItems(): HasMany
+    {
+        return $this->hasMany(SaleItem::class);
+    }
+}

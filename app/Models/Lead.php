@@ -92,6 +92,11 @@ class Lead extends Model
         return $this->hasMany(LeadAttachment::class)->orderByDesc('created_at');
     }
 
+    public function products(): HasMany
+    {
+        return $this->hasMany(LeadProduct::class);
+    }
+
     public function getCustomFieldsAttribute(): array
     {
         return $this->customFieldValues

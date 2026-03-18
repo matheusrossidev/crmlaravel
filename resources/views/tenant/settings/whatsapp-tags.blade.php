@@ -71,46 +71,49 @@
     .section-title { font-size: 15px; font-weight: 700; color: #1a1d23; }
     .section-subtitle { font-size: 13px; color: #9ca3af; margin-top: 3px; }
 
-    /* Modal */
-    .wt-modal-overlay {
-        display: none;
-        position: fixed; inset: 0;
-        background: rgba(0,0,0,.45);
-        z-index: 1000;
-        align-items: center;
-        justify-content: center;
+    /* Drawer */
+    .drawer-overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,.35); z-index: 300;
     }
-    .wt-modal-overlay.open { display: flex; }
-    .wt-modal {
-        background: #fff;
-        border-radius: 14px;
-        padding: 28px;
-        width: 420px;
-        max-width: 95vw;
-        box-shadow: 0 20px 60px rgba(0,0,0,.18);
+    .drawer-overlay.open { display: block; }
+    .drawer {
+        position: fixed; top: 0; right: -440px;
+        width: 440px; height: 100vh; background: #fff;
+        z-index: 301; transition: right .25s cubic-bezier(.4,0,.2,1);
+        display: flex; flex-direction: column;
+        box-shadow: -4px 0 24px rgba(0,0,0,.1);
     }
-    .wt-modal-title {
-        font-size: 16px; font-weight: 700; color: #1a1d23;
-        margin-bottom: 20px;
+    .drawer.open { right: 0; }
+    .drawer-header {
+        padding: 18px 22px; border-bottom: 1px solid #f0f2f7;
+        display: flex; align-items: center; justify-content: space-between;
+        font-size: 15px; font-weight: 700; color: #1a1d23;
     }
-    .form-group { margin-bottom: 14px; }
+    .drawer-body { padding: 22px; flex: 1; overflow-y: auto; }
+    .drawer-footer {
+        padding: 16px 22px; border-top: 1px solid #f0f2f7;
+        display: flex; gap: 10px; justify-content: flex-end;
+    }
+
+    .form-group { margin-bottom: 16px; }
     .form-label {
-        display: block; font-size: 11.5px; font-weight: 700;
-        color: #6b7280; margin-bottom: 5px;
-        text-transform: uppercase; letter-spacing: .05em;
+        display: block; font-size: 12.5px; font-weight: 600;
+        color: #374151; margin-bottom: 6px;
     }
-    .form-control {
+    .form-input {
         width: 100%; padding: 9px 12px;
-        border: 1.5px solid #e8eaf0; border-radius: 9px;
-        font-size: 13.5px; outline: none; font-family: inherit;
-        transition: border-color .15s; box-sizing: border-box;
+        border: 1px solid #d1d5db; border-radius: 9px;
+        font-size: 13.5px; color: #1a1d23;
+        outline: none; transition: border-color .15s; background: #fff;
+        box-sizing: border-box; font-family: inherit;
     }
-    .form-control:focus { border-color: #3B82F6; }
+    .form-input:focus { border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
 
     .color-row { display: flex; gap: 8px; align-items: center; }
     .color-picker-input {
         width: 46px; height: 38px; padding: 3px;
-        border: 1.5px solid #e8eaf0; border-radius: 9px;
+        border: 1px solid #d1d5db; border-radius: 9px;
         cursor: pointer; background: #fff; flex-shrink: 0;
     }
 
@@ -130,24 +133,21 @@
         font-size: 12px; color: #9ca3af;
     }
 
-    .modal-footer {
-        display: flex; gap: 8px; justify-content: flex-end;
-        margin-top: 22px;
-    }
     .btn-cancel {
-        padding: 8px 18px; border-radius: 8px;
-        border: 1.5px solid #e8eaf0; background: #fff;
-        font-size: 13px; font-weight: 600; color: #6b7280;
-        cursor: pointer; transition: background .15s;
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 9px 20px; background: #f4f6fb; color: #374151;
+        border: 1px solid #e8eaf0; border-radius: 100px;
+        font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s;
     }
-    .btn-cancel:hover { background: #f0f2f7; }
+    .btn-cancel:hover { background: #e8eaf0; }
     .btn-save {
-        padding: 8px 22px; border-radius: 8px; border: none;
-        background: #3B82F6; color: #fff;
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 9px 20px; background: #0085f3; color: #fff;
+        border: none; border-radius: 100px;
         font-size: 13px; font-weight: 600;
         cursor: pointer; transition: background .15s;
     }
-    .btn-save:hover { background: #2563eb; }
+    .btn-save:hover { background: #0070d1; }
     .btn-save:disabled { opacity: .6; cursor: not-allowed; }
 
     .empty-state {
@@ -228,15 +228,21 @@
 
 </div>
 
-{{-- Modal --}}
-<div class="wt-modal-overlay" id="tagModal">
-    <div class="wt-modal">
-        <div class="wt-modal-title" id="modalTitle">Nova Tag</div>
+{{-- Drawer --}}
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+    <div class="drawer-header">
+        <span id="drawerTitle">Nova Tag</span>
+        <button onclick="closeDrawer()" style="background:none;border:none;font-size:18px;color:#6b7280;cursor:pointer;">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+    <div class="drawer-body">
         <input type="hidden" id="tagId">
 
         <div class="form-group">
             <label class="form-label">Nome</label>
-            <input type="text" id="tagName" class="form-control"
+            <input type="text" id="tagName" class="form-input"
                    placeholder="Ex: VIP, Urgente, Suporte..."
                    oninput="updatePreview()">
         </div>
@@ -246,7 +252,7 @@
             <div class="color-row">
                 <input type="color" id="tagColorPicker" class="color-picker-input" value="#3B82F6"
                        oninput="syncFromPicker()">
-                <input type="text" id="tagColorText" class="form-control"
+                <input type="text" id="tagColorText" class="form-input"
                        value="#3B82F6" placeholder="#3B82F6"
                        oninput="syncFromText()" style="flex:1;font-family:monospace;">
             </div>
@@ -262,26 +268,12 @@
             <span style="font-size:11px;color:#9ca3af;white-space:nowrap;">Preview:</span>
             <span id="previewChip" class="tag-chip">Tag</span>
         </div>
-
-        <div class="modal-footer">
-            <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-            <button class="btn-save" id="btnSave" onclick="saveTag()">Salvar</button>
-        </div>
     </div>
-</div>
-
-{{-- Modal: confirmar exclusão de tag --}}
-<div class="wt-modal-overlay" id="deleteTagModal">
-    <div class="wt-modal" style="text-align:center;">
-        <div style="font-size:36px;color:#EF4444;margin-bottom:12px;"><i class="bi bi-trash3-fill"></i></div>
-        <div class="wt-modal-title" style="margin-bottom:8px;">Excluir tag?</div>
-        <p style="font-size:13.5px;color:#6b7280;margin-bottom:24px;line-height:1.5;">
-            As conversas que a utilizam manterão o nome, mas perderão a cor.<br>Esta ação não pode ser desfeita.
-        </p>
-        <div style="display:flex;justify-content:center;gap:10px;">
-            <button class="btn-cancel" onclick="document.getElementById('deleteTagModal').classList.remove('open')">Cancelar</button>
-            <button class="btn-save" style="background:#EF4444;" onclick="_doDeleteTag()">Excluir</button>
-        </div>
+    <div class="drawer-footer">
+        <button class="btn-cancel" onclick="closeDrawer()">Cancelar</button>
+        <button class="btn-save" id="btnSave" onclick="saveTag()">
+            <i class="bi bi-check2"></i> Salvar
+        </button>
     </div>
 </div>
 @endsection
@@ -342,31 +334,34 @@ function highlightPreset(hex) {
     });
 }
 
-/* ── Modal ── */
+/* ── Drawer ── */
+function openDrawer() {
+    document.getElementById('drawerOverlay').classList.add('open');
+    document.getElementById('drawer').classList.add('open');
+}
+
+function closeDrawer() {
+    document.getElementById('drawerOverlay').classList.remove('open');
+    document.getElementById('drawer').classList.remove('open');
+}
+
 document.getElementById('btnNewTag').addEventListener('click', () => {
-    document.getElementById('modalTitle').textContent = 'Nova Tag';
+    document.getElementById('drawerTitle').textContent = 'Nova Tag';
     document.getElementById('tagId').value   = '';
     document.getElementById('tagName').value = '';
     setPreset('#3B82F6');
-    document.getElementById('tagModal').classList.add('open');
-    setTimeout(() => document.getElementById('tagName').focus(), 80);
+    openDrawer();
+    setTimeout(() => document.getElementById('tagName').focus(), 200);
 });
 
 function openEdit(id, name, color) {
-    document.getElementById('modalTitle').textContent = 'Editar Tag';
+    document.getElementById('drawerTitle').textContent = 'Editar Tag';
     document.getElementById('tagId').value   = id;
     document.getElementById('tagName').value = name;
     setPreset(color);
-    document.getElementById('tagModal').classList.add('open');
+    openDrawer();
 }
 
-function closeModal() {
-    document.getElementById('tagModal').classList.remove('open');
-}
-
-document.getElementById('tagModal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-});
 document.getElementById('tagName').addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); saveTag(); }
 });
@@ -399,7 +394,7 @@ async function saveTag() {
             return;
         }
 
-        closeModal();
+        closeDrawer();
         const t = data.tag;
 
         if (id) {
@@ -455,39 +450,34 @@ function updateRow(t) {
         `openEdit(${t.id},'${t.name.replace(/'/g,"\\'")}','${t.color}')`);
 }
 
-let _deleteTagId  = null;
-let _deleteTagBtn = null;
-
 function deleteTag(id, btn) {
-    _deleteTagId  = id;
-    _deleteTagBtn = btn;
-    document.getElementById('deleteTagModal').classList.add('open');
-}
+    confirmAction({
+        title: 'Excluir tag',
+        message: 'As conversas que a utilizam manterão o nome, mas perderão a cor.<br>Esta ação não pode ser desfeita.',
+        confirmText: 'Excluir',
+        onConfirm: async () => {
+            const row = btn.closest('tr');
+            const res  = await fetch(URL_DESTROY.replace('__ID__', id), {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': CSRF },
+            });
+            const data = await res.json();
+            if (!data.success) { toastr.error('Erro ao excluir.'); return; }
 
-async function _doDeleteTag() {
-    document.getElementById('deleteTagModal').classList.remove('open');
-    if (!_deleteTagId) return;
+            row.remove();
+            toastr.success('Tag excluída.');
 
-    const row = _deleteTagBtn.closest('tr');
-    const res  = await fetch(URL_DESTROY.replace('__ID__', _deleteTagId), {
-        method: 'DELETE',
-        headers: { 'X-CSRF-TOKEN': CSRF },
+            if (!document.querySelector('#tagsBody tr[data-id]')) {
+                document.getElementById('tagsBody').innerHTML = `
+                    <tr id="emptyRow"><td colspan="3">
+                        <div class="empty-state">
+                            <i class="bi bi-tag"></i>
+                            Nenhuma tag criada.
+                        </div>
+                    </td></tr>`;
+            }
+        },
     });
-    const data = await res.json();
-    if (!data.success) { toastr.error('Erro ao excluir.'); return; }
-
-    row.remove();
-    toastr.success('Tag excluída.');
-
-    if (!document.querySelector('#tagsBody tr[data-id]')) {
-        document.getElementById('tagsBody').innerHTML = `
-            <tr id="emptyRow"><td colspan="3">
-                <div class="empty-state">
-                    <i class="bi bi-tag"></i>
-                    Nenhuma tag criada.
-                </div>
-            </td></tr>`;
-    }
 }
 
 // init

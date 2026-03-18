@@ -21,6 +21,8 @@ class ChatRequest(BaseModel):
     lead_data: dict[str, Any] | None = None
     custom_fields: list[dict[str, Any]] = []
     lead_notes: list[dict[str, Any]] = []
+    products: list[dict[str, Any]] = []
+    lead_products: list[dict[str, Any]] = []
 
 
 class AgentAction(BaseModel):

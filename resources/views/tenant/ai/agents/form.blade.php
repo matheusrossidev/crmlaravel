@@ -703,6 +703,18 @@
                 </div>
                 <input type="hidden" name="enable_calendar_tool" id="calendarToolInput" value="{{ ($agent->enable_calendar_tool ?? false) ? '1' : '0' }}">
 
+                {{-- Toggle enable_products_tool --}}
+                <div class="toggle-wrap" style="margin-top:12px;" onclick="toggleProductsTool()">
+                    <div class="toggle-switch {{ ($agent->enable_products_tool ?? false) ? 'on' : '' }}" id="productsToolSwitch"></div>
+                    <div style="margin-left:10px;">
+                        <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="productsToolLabel">
+                            {{ ($agent->enable_products_tool ?? false) ? 'Catálogo de Produtos Ativado' : 'Catálogo de Produtos Desativado' }}
+                        </div>
+                        <div style="font-size:11px;color:#9ca3af;">O agente consulta preços, envia fotos/vídeos dos produtos e vincula itens ao lead automaticamente</div>
+                    </div>
+                </div>
+                <input type="hidden" name="enable_products_tool" id="productsToolInput" value="{{ ($agent->enable_products_tool ?? false) ? '1' : '0' }}">
+
                 {{-- Instruções de agenda (visível só quando habilitado) --}}
                 <div id="calendarToolOptions" style="{{ ($agent->enable_calendar_tool ?? false) ? '' : 'display:none' }}">
                     {{-- Seleção de agenda --}}
@@ -1422,6 +1434,16 @@ function toggleCalendarTool() {
     options.style.display = isOn ? 'none' : '';
     // Load calendars when enabling for the first time
     if (!isOn) loadAgentCalendars();
+}
+
+function toggleProductsTool() {
+    const sw    = document.getElementById('productsToolSwitch');
+    const input = document.getElementById('productsToolInput');
+    const label = document.getElementById('productsToolLabel');
+    const isOn  = input.value === '1';
+    input.value = isOn ? '0' : '1';
+    sw.classList.toggle('on', !isOn);
+    label.textContent = isOn ? 'Catálogo de Produtos Desativado' : 'Catálogo de Produtos Ativado';
 }
 
 const SAVED_CALENDAR_ID = @json(old('calendar_id', $agent->calendar_id ?? ''));

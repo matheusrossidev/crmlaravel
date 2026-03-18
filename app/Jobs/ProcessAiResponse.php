@@ -534,6 +534,35 @@ class ProcessAiResponse implements ShouldQueue
                         $extraMessages[] = $extra;
                     }
                 }
+            } elseif ($type === 'send_product_media') {
+                $productId = (int) ($action['product_id'] ?? 0);
+                $pMediaId  = (int) ($action['media_id'] ?? 0);
+                if ($productId && $pMediaId) {
+                    try {
+                        $this->sendProductMedia($conv, $agent, $productId, $pMediaId);
+                    } catch (\Throwable $e) {
+                        Log::channel('whatsapp')->error('AI send_product_media falhou', [
+                            'conversation_id' => $conv->id,
+                            'product_id'      => $productId,
+                            'media_id'        => $pMediaId,
+                            'error'           => $e->getMessage(),
+                        ]);
+                    }
+                }
+            } elseif ($type === 'add_product_to_lead') {
+                $productId = (int) ($action['product_id'] ?? 0);
+                $qty       = (float) ($action['quantity'] ?? 1);
+                if ($productId && $lead) {
+                    $this->applyAddProductToLead($lead, $productId, $qty);
+                }
+            } elseif ($type === 'remove_product_from_lead') {
+                $productId = (int) ($action['product_id'] ?? 0);
+                if ($productId && $lead) {
+                    \App\Models\LeadProduct::withoutGlobalScope('tenant')
+                        ->where('lead_id', $lead->id)
+                        ->where('product_id', $productId)
+                        ->delete();
+                }
             }
         }
 
@@ -871,6 +900,46 @@ class ProcessAiResponse implements ShouldQueue
             }
         }
 
+        // ── Catálogo de produtos do tenant (se habilitado) ──
+        $productsCtx = [];
+        $leadProductsCtx = [];
+        try {
+            if (! ($agent->enable_products_tool ?? false)) throw new \RuntimeException('skip');
+            $productsCtx = \App\Models\Product::withoutGlobalScope('tenant')
+                ->where('tenant_id', $conv->tenant_id)
+                ->where('is_active', true)
+                ->with('media')
+                ->orderBy('sort_order')
+                ->get()
+                ->map(fn ($p) => [
+                    'id'          => $p->id,
+                    'name'        => $p->name,
+                    'description' => $p->description ? Str::limit($p->description, 150) : null,
+                    'price'       => (float) $p->price,
+                    'unit'        => $p->unit,
+                    'category'    => $p->category,
+                    'media'       => $p->media->map(fn ($m) => [
+                        'id'       => $m->id,
+                        'type'     => str_starts_with($m->mime_type, 'image/') ? 'foto' : (str_starts_with($m->mime_type, 'video/') ? 'video' : 'arquivo'),
+                        'filename' => $m->original_name,
+                    ])->toArray(),
+                ])->toArray();
+
+            if ($lead) {
+                $leadProductsCtx = \App\Models\LeadProduct::withoutGlobalScope('tenant')
+                    ->where('lead_id', $lead->id)
+                    ->with('product:id,name')
+                    ->get()
+                    ->map(fn ($lp) => [
+                        'product_id' => $lp->product_id,
+                        'name'       => $lp->product?->name ?? '?',
+                        'quantity'   => (float) $lp->quantity,
+                        'unit_price' => (float) $lp->unit_price,
+                        'total'      => (float) $lp->total,
+                    ])->toArray();
+            }
+        } catch (\Throwable) {}
+
         $agnoResult = app(AgnoService::class)->chat([
             'agent_id'        => $agent->id,
             'tenant_id'       => $agent->tenant_id,
@@ -885,6 +954,8 @@ class ProcessAiResponse implements ShouldQueue
             'lead_data'       => $leadData,
             'custom_fields'   => $customFieldsCtx,
             'lead_notes'      => $notesCtx,
+            'products'        => $productsCtx,
+            'lead_products'   => $leadProductsCtx,
         ]);
 
         // Flatten nested payload in actions to match the existing PHP action executor format.
@@ -1537,5 +1608,97 @@ class ProcessAiResponse implements ShouldQueue
             ]);
             return "Erro ao executar {$type}: " . $e->getMessage();
         }
+    }
+
+    // ── Product Actions ─────────────────────────────────────────────────────
+
+    private function sendProductMedia(WhatsappConversation $conv, AiAgent $agent, int $productId, int $mediaId): void
+    {
+        $media = \App\Models\ProductMedia::where('id', $mediaId)
+            ->where('product_id', $productId)
+            ->first();
+
+        if (! $media) return;
+
+        $instance = WhatsappInstance::withoutGlobalScope('tenant')
+            ->where('id', $conv->instance_id)
+            ->first();
+
+        if (! $instance || $instance->status !== 'connected') return;
+
+        // Resolve chat ID
+        $sampleId = WhatsappMessage::withoutGlobalScope('tenant')
+            ->where('conversation_id', $conv->id)
+            ->whereNotNull('waha_message_id')
+            ->where('direction', 'inbound')
+            ->latest('sent_at')
+            ->value('waha_message_id');
+
+        $chatId = null;
+        if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
+            $jid    = $m[1];
+            $chatId = str_ends_with($jid, '@lid')
+                ? preg_replace('/[:@].+$/', '', $jid) . '@lid'
+                : preg_replace('/[:@].+$/', '', $jid) . '@c.us';
+        }
+        if (! $chatId) {
+            $chatId = ltrim((string) preg_replace('/[:@\s].+$/', '', $conv->phone), '+') . '@c.us';
+        }
+
+        $localPath = Storage::disk('public')->path($media->storage_path);
+        if (! file_exists($localPath)) return;
+
+        $waha    = new \App\Services\WahaService($instance->session_name);
+        $caption = $media->description ?? '';
+        $isImage = str_starts_with($media->mime_type, 'image/');
+
+        if ($isImage) {
+            $result = $waha->sendImageBase64($chatId, $localPath, $media->mime_type, $caption);
+        } else {
+            $result = $waha->sendFileBase64($chatId, $localPath, $media->mime_type, $media->original_name, $caption);
+        }
+
+        // Log message
+        $msg = WhatsappMessage::withoutGlobalScope('tenant')->create([
+            'tenant_id'       => $conv->tenant_id,
+            'conversation_id' => $conv->id,
+            'waha_message_id' => $result['id'] ?? null,
+            'direction'       => 'outbound',
+            'type'            => $isImage ? 'image' : 'document',
+            'body'            => $caption,
+            'media_url'       => '/storage/' . $media->storage_path,
+            'media_mime'      => $media->mime_type,
+            'media_filename'  => $media->original_name,
+            'user_id'         => null,
+            'ack'             => 'sent',
+            'sent_at'         => now(),
+        ]);
+
+        try {
+            WhatsappMessageCreated::dispatch($msg, $conv->tenant_id);
+            $conv->refresh();
+            WhatsappConversationUpdated::dispatch($conv, $conv->tenant_id);
+        } catch (\Throwable) {}
+    }
+
+    private function applyAddProductToLead(Lead $lead, int $productId, float $quantity): void
+    {
+        $product = \App\Models\Product::withoutGlobalScope('tenant')
+            ->where('id', $productId)
+            ->where('tenant_id', $lead->tenant_id)
+            ->first();
+
+        if (! $product) return;
+
+        \App\Models\LeadProduct::withoutGlobalScope('tenant')->updateOrCreate(
+            ['lead_id' => $lead->id, 'product_id' => $product->id],
+            [
+                'tenant_id'        => $lead->tenant_id,
+                'quantity'         => $quantity,
+                'unit_price'       => $product->price,
+                'discount_percent' => 0,
+                'total'            => round($quantity * (float) $product->price, 2),
+            ],
+        );
     }
 }

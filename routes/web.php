@@ -21,6 +21,7 @@ use App\Http\Controllers\Tenant\LeadController;
 use App\Http\Controllers\Tenant\LostSaleReasonController;
 use App\Http\Controllers\Tenant\PipelineController;
 use App\Http\Controllers\Tenant\CustomFieldController;
+use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\ProfileController;
 use App\Http\Controllers\Tenant\ReportController;
 use App\Http\Controllers\Tenant\UserController;
@@ -172,6 +173,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         // Lead attachments
         Route::post('/contatos/{lead}/anexos', [LeadController::class, 'uploadAttachment'])->name('leads.attachments.store');
         Route::delete('/contatos/{lead}/anexos/{attachment}', [LeadController::class, 'deleteAttachment'])->name('leads.attachments.destroy');
+
+        // Lead products
+        Route::get('/contatos/{lead}/produtos', [LeadController::class, 'getProducts'])->name('leads.products.index');
+        Route::post('/contatos/{lead}/produtos', [LeadController::class, 'addProduct'])->name('leads.products.store');
+        Route::put('/contatos/{lead}/produtos/{leadProduct}', [LeadController::class, 'updateProduct'])->name('leads.products.update');
+        Route::delete('/contatos/{lead}/produtos/{leadProduct}', [LeadController::class, 'removeProduct'])->name('leads.products.destroy');
 
         // Mensagens agendadas
         Route::post  ('/contatos/{lead}/mensagens-agendadas',            [ScheduledMessageController::class, 'store'])  ->name('leads.scheduled.store');
@@ -336,6 +343,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::get('departamentos',     [DepartmentController::class, 'index'])->name('departments');
         Route::get('automacoes',        [AutomationController::class, 'index'])->name('automations');
         Route::get('campos-extras',     [CustomFieldController::class, 'index'])->name('custom-fields');
+        Route::get('produtos',          [ProductController::class, 'index'])->name('products');
         Route::get('api-keys',          [ApiKeyController::class, 'index'])->name('api-keys');
         Route::get('usuarios',          [UserController::class, 'index'])->name('users');
 
@@ -388,6 +396,13 @@ Route::middleware(['auth', 'tenant'])->group(function () {
             Route::post('campos-extras',              [CustomFieldController::class, 'store'])->name('custom-fields.store')->middleware('plan.limit:custom_fields');
             Route::put('campos-extras/{field}',       [CustomFieldController::class, 'update'])->name('custom-fields.update');
             Route::delete('campos-extras/{field}',    [CustomFieldController::class, 'destroy'])->name('custom-fields.destroy');
+
+            // Produtos / Serviços
+            Route::post('produtos',                          [ProductController::class, 'store'])->name('products.store');
+            Route::put('produtos/{product}',                 [ProductController::class, 'update'])->name('products.update');
+            Route::delete('produtos/{product}',              [ProductController::class, 'destroy'])->name('products.destroy');
+            Route::post('produtos/{product}/media',          [ProductController::class, 'uploadMedia'])->name('products.media.upload');
+            Route::delete('produtos/{product}/media/{media}', [ProductController::class, 'deleteMedia'])->name('products.media.delete');
 
             // Departamentos
             Route::post('departamentos',                    [DepartmentController::class, 'store'])->name('departments.store')->middleware('plan.limit:departments');

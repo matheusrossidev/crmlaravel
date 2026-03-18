@@ -83,6 +83,11 @@
                 <input type="date" id="fBirthday" name="birthday" class="drawer-input">
             </div>
 
+            <div class="drawer-group">
+                <label>Valor (R$)</label>
+                <input type="number" id="fValue" name="value" placeholder="0,00" min="0" step="0.01" class="drawer-input">
+            </div>
+
             {{-- Tags (movido para cima para visibilidade) --}}
             <div class="drawer-group" style="margin-top:6px;">
                 <label>Tags</label>
@@ -121,10 +126,6 @@
             <div class="drawer-section-label" style="margin-top:18px;">Negócio</div>
 
             <div class="drawer-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                <div class="drawer-group">
-                    <label>Valor (R$)</label>
-                    <input type="number" id="fValue" name="value" placeholder="0,00" min="0" step="0.01" class="drawer-input">
-                </div>
                 <div class="drawer-group">
                     <label>Origem</label>
                     <select id="fSource" name="source" class="drawer-input">
@@ -174,6 +175,38 @@
             </div>
 
         </form>
+
+        {{-- Produtos vinculados (só em modo edição) --}}
+        <div id="productsSection" style="display:none;margin-top:18px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div class="drawer-section-label" style="margin-bottom:0;">Produtos</div>
+                <button type="button" id="btnAddProduct" onclick="toggleProductForm()"
+                        style="font-size:12px;font-weight:600;color:#0085f3;background:none;border:none;cursor:pointer;padding:0;">
+                    <i class="bi bi-plus-lg"></i> Adicionar
+                </button>
+            </div>
+
+            {{-- Mini-form inline para adicionar --}}
+            <div id="addProductForm" style="display:none;background:#f8fafc;border:1px solid #e8eaf0;border-radius:10px;padding:12px;margin-bottom:10px;">
+                <div style="display:grid;grid-template-columns:1fr 80px;gap:8px;align-items:end;">
+                    <div>
+                        <label style="font-size:11px;font-weight:600;color:#6b7280;display:block;margin-bottom:3px;">Produto</label>
+                        <select id="addProductSelect" class="drawer-input" style="padding:7px 10px;font-size:12.5px;"></select>
+                    </div>
+                    <div>
+                        <label style="font-size:11px;font-weight:600;color:#6b7280;display:block;margin-bottom:3px;">Qtd</label>
+                        <input type="number" id="addProductQty" value="1" min="0.01" step="0.01" class="drawer-input" style="padding:7px 10px;font-size:12.5px;">
+                    </div>
+                </div>
+                <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end;">
+                    <button type="button" onclick="toggleProductForm()" style="font-size:12px;color:#6b7280;background:none;border:1px solid #e8eaf0;border-radius:7px;padding:5px 12px;cursor:pointer;">Cancelar</button>
+                    <button type="button" onclick="addDrawerProduct()" style="font-size:12px;font-weight:600;color:#fff;background:#0085f3;border:none;border-radius:7px;padding:5px 12px;cursor:pointer;">Vincular</button>
+                </div>
+            </div>
+
+            <div id="productsList" style="display:flex;flex-direction:column;gap:4px;"></div>
+            <div id="productsTotal" style="display:none;margin-top:8px;padding:8px 12px;background:#f0fdf4;border-radius:8px;font-size:13px;font-weight:600;color:#059669;text-align:right;"></div>
+        </div>
 
         {{-- Campos Personalizados --}}
         <div id="customFieldsSection" style="display:none;margin-top:18px;">
@@ -782,6 +815,9 @@ function populateDrawer(res) {
     renderAttachments(res.attachments || []);
     document.getElementById('attachmentsSection').style.display = '';
 
+    // Produtos
+    loadDrawerProducts(lead.id);
+
     // Agendamentos
     loadDrawerScheduled(lead.id);
 }
@@ -1147,6 +1183,11 @@ function resetDrawerForm() {
     document.getElementById('customFieldsContainer').innerHTML = '';
     document.getElementById('attachmentsSection').style.display = 'none';
     document.getElementById('attachmentsList').innerHTML = '';
+    document.getElementById('productsSection').style.display = 'none';
+    document.getElementById('productsList').innerHTML = '';
+    document.getElementById('productsTotal').style.display = 'none';
+    document.getElementById('addProductForm').style.display = 'none';
+    _drawerLeadProducts = [];
     document.getElementById('drawerUtmSection').style.display = 'none';
     document.getElementById('fUtmId').value       = '';
     document.getElementById('fUtmSource').value   = '';
@@ -1189,6 +1230,148 @@ function maskPhone(input) {
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeLeadDrawer();
 });
+
+// ── Produtos vinculados ──────────────────────────────────────────────────
+
+let _drawerLeadProducts = [];
+
+async function loadDrawerProducts(leadId) {
+    try {
+        const res = await fetch(`{{ url('contatos') }}/${leadId}/produtos`, {
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+        });
+        const data = await res.json();
+        _drawerLeadProducts = data.products || [];
+        renderProductsList(_drawerLeadProducts);
+        document.getElementById('productsSection').style.display = '';
+
+        // Sync valor do lead com total dos produtos
+        const total = _drawerLeadProducts.reduce((s, p) => s + (parseFloat(p.total) || 0), 0);
+        if (total > 0) {
+            document.getElementById('fValue').value = total;
+        }
+    } catch (_) {}
+}
+
+function renderProductsList(products) {
+    const list = document.getElementById('productsList');
+    const totalEl = document.getElementById('productsTotal');
+
+    if (!products.length) {
+        list.innerHTML = '<span style="font-size:12.5px;color:#9ca3af;padding:4px 0;">Nenhum produto vinculado.</span>';
+        totalEl.style.display = 'none';
+        return;
+    }
+
+    let grandTotal = 0;
+    list.innerHTML = products.map(p => {
+        const total = parseFloat(p.total) || 0;
+        grandTotal += total;
+        const name = p.product ? p.product.name : 'Produto #' + p.product_id;
+        return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fafbfc;border-radius:8px;border:1px solid #f0f2f7;">
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:600;color:#1a1d23;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(name)}</div>
+                <div style="font-size:11.5px;color:#6b7280;">${parseFloat(p.quantity)} × R$ ${parseFloat(p.unit_price).toFixed(2).replace('.',',')}${p.discount_percent > 0 ? ' (-' + p.discount_percent + '%)' : ''}</div>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:#059669;white-space:nowrap;">R$ ${total.toFixed(2).replace('.',',')}</div>
+            <button type="button" onclick="removeDrawerProduct(${p.id})" style="background:none;border:none;color:#d1d5db;cursor:pointer;font-size:14px;padding:2px;" title="Remover">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>`;
+    }).join('');
+
+    totalEl.textContent = 'Total: R$ ' + grandTotal.toFixed(2).replace('.', ',');
+    totalEl.style.display = '';
+}
+
+// Products catalog loaded from server
+@php
+    $allProducts = \App\Models\Product::where('is_active', true)->orderBy('name')->get(['id', 'name', 'price', 'unit']);
+@endphp
+const ALL_PRODUCTS = @json($allProducts);
+
+function populateProductSelect() {
+    const sel = document.getElementById('addProductSelect');
+    const linkedIds = _drawerLeadProducts.map(p => p.product_id);
+    sel.innerHTML = '<option value="">Selecione...</option>' +
+        ALL_PRODUCTS.filter(p => !linkedIds.includes(p.id)).map(p =>
+            `<option value="${p.id}" data-price="${p.price}">` +
+            `${escapeHtml(p.name)} — R$ ${parseFloat(p.price).toFixed(2).replace('.',',')}`+
+            `${p.unit ? '/' + p.unit : ''}</option>`
+        ).join('');
+}
+
+function toggleProductForm() {
+    const form = document.getElementById('addProductForm');
+    const visible = form.style.display !== 'none';
+    form.style.display = visible ? 'none' : '';
+    if (!visible) {
+        populateProductSelect();
+        document.getElementById('addProductQty').value = '1';
+    }
+}
+
+async function addDrawerProduct() {
+    const sel = document.getElementById('addProductSelect');
+    const productId = parseInt(sel.value);
+    const qty = parseFloat(document.getElementById('addProductQty').value) || 1;
+    if (!productId) { toastr.error('Selecione um produto.'); return; }
+
+    const leadId = document.getElementById('leadId').value;
+    if (!leadId) return;
+
+    const product = ALL_PRODUCTS.find(p => p.id === productId);
+
+    try {
+        const res = await $.ajax({
+            url: `{{ url('contatos') }}/${leadId}/produtos`,
+            method: 'POST',
+            contentType: 'application/json',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'), 'Accept': 'application/json' },
+            data: JSON.stringify({ product_id: productId, quantity: qty }),
+        });
+
+        if (res.success) {
+            _drawerLeadProducts.push(res.lead_product);
+            renderProductsList(_drawerLeadProducts);
+            toggleProductForm();
+            // Atualiza valor do lead no drawer e callback
+            if (res.lead_value !== undefined) {
+                document.getElementById('fValue').value = res.lead_value || '';
+                if (typeof window.onLeadSaved === 'function') {
+                    window.onLeadSaved({ id: parseInt(leadId), value: res.lead_value }, false);
+                }
+            }
+            toastr.success('Produto vinculado.');
+        }
+    } catch (e) {
+        toastr.error('Erro ao vincular produto.');
+    }
+}
+
+async function removeDrawerProduct(leadProductId) {
+    const leadId = document.getElementById('leadId').value;
+    if (!leadId) return;
+
+    try {
+        await $.ajax({
+            url: `{{ url('contatos') }}/${leadId}/produtos/${leadProductId}`,
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'), 'Accept': 'application/json' },
+        });
+        _drawerLeadProducts = _drawerLeadProducts.filter(p => p.id !== leadProductId);
+        renderProductsList(_drawerLeadProducts);
+        // Atualiza valor do lead
+        const newTotal = _drawerLeadProducts.reduce((s, p) => s + (parseFloat(p.total) || 0), 0);
+        document.getElementById('fValue').value = newTotal || '';
+        if (typeof window.onLeadSaved === 'function') {
+            window.onLeadSaved({ id: parseInt(leadId), value: newTotal }, false);
+        }
+        toastr.success('Produto removido.');
+    } catch (e) {
+        toastr.error('Erro ao remover.');
+    }
+}
 
 // ── Campos Personalizados ─────────────────────────────────────────────────
 

@@ -80,18 +80,6 @@
     .toggle input:checked + .toggle-slider { background: #10B981; }
     .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
 
-    .modal-overlay {
-        display: none; position: fixed; inset: 0;
-        background: rgba(0,0,0,.45); z-index: 1000;
-        align-items: center; justify-content: center;
-    }
-    .modal-overlay.open { display: flex; }
-    .modal-box {
-        background: #fff; border-radius: 14px; padding: 28px;
-        width: 440px; max-width: 95vw;
-        box-shadow: 0 20px 60px rgba(0,0,0,.18);
-    }
-    .modal-title { font-size: 16px; font-weight: 700; color: #1a1d23; margin-bottom: 18px; }
     .form-group { margin-bottom: 14px; }
     .form-label { display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em; }
     .form-control {
@@ -104,7 +92,73 @@
     .color-input { width: 42px; height: 36px; padding: 2px; border: 1.5px solid #e8eaf0; border-radius: 9px; cursor: pointer; }
     .checkbox-row { display: flex; gap: 16px; }
     .checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #374151; cursor: pointer; }
-    .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .section-title  { font-size: 15px; font-weight: 700; color: #1a1d23; }
+
+    /* ---- Drawer ---- */
+    .drawer-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.45);
+        z-index: 300;
+    }
+    .drawer-overlay.open { display: block; }
+
+    .drawer {
+        position: fixed;
+        top: 0;
+        right: -480px;
+        width: 480px;
+        max-width: 95vw;
+        height: 100vh;
+        z-index: 301;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        box-shadow: -8px 0 30px rgba(0,0,0,.12);
+        transition: right .25s cubic-bezier(.4,0,.2,1);
+    }
+    .drawer.open { right: 0; }
+
+    .drawer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px;
+        border-bottom: 1px solid #f0f2f7;
+        flex-shrink: 0;
+    }
+    .drawer-header h4 {
+        font-size: 16px;
+        font-weight: 700;
+        color: #1a1d23;
+        margin: 0;
+    }
+    .drawer-close {
+        width: 30px; height: 30px; border-radius: 8px; border: 1px solid #e8eaf0;
+        background: #fff; color: #6b7280;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; font-size: 16px; transition: all .15s;
+    }
+    .drawer-close:hover { background: #f0f2f7; color: #374151; }
+
+    .drawer-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 22px;
+    }
+
+    .drawer-footer {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        padding: 16px 22px;
+        border-top: 1px solid #f0f2f7;
+        flex-shrink: 0;
+    }
+
     .btn-cancel {
         padding: 8px 18px; border-radius: 100px; border: 1.5px solid #e8eaf0;
         background: #fff; font-size: 13px; font-weight: 600; color: #6b7280;
@@ -119,8 +173,60 @@
     .btn-save:hover { background: #0070d1; }
     .btn-save:disabled { opacity: .6; cursor: not-allowed; }
 
-    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-    .section-title  { font-size: 15px; font-weight: 700; color: #1a1d23; }
+    /* ---- Drawer Stages List ---- */
+    .drawer-stages-section {
+        margin-top: 20px;
+        border-top: 1px solid #f0f2f7;
+        padding-top: 16px;
+    }
+    .drawer-stages-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: 10px;
+    }
+    .drawer-stages-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+    .drawer-stage-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 6px;
+        border: 1px solid #e8eaf0;
+        border-radius: 8px;
+        margin-bottom: 6px;
+        background: #fff;
+        transition: background .1s;
+    }
+    .drawer-stage-row:hover { background: #f9fafb; }
+    .drawer-stage-row .stage-drag-handle { color: #d1d5db; cursor: grab; font-size: 14px; flex-shrink: 0; }
+    .drawer-stage-row .form-control { padding: 6px 10px; font-size: 13px; }
+    .drawer-stage-row .color-input { width: 34px; height: 30px; padding: 1px; flex-shrink: 0; }
+    .drawer-stage-checkbox {
+        display: flex; align-items: center; gap: 3px;
+        font-size: 10px; color: #6b7280; white-space: nowrap; flex-shrink: 0;
+    }
+    .drawer-stage-checkbox input { margin: 0; }
+    .drawer-stage-delete {
+        width: 26px; height: 26px; border-radius: 6px; border: 1px solid #e8eaf0;
+        background: #fff; color: #9ca3af;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; font-size: 12px; transition: all .15s; flex-shrink: 0;
+    }
+    .drawer-stage-delete:hover { background: #fee2e2; color: #ef4444; border-color: #fca5a5; }
+
+    .btn-add-stage-drawer {
+        display: flex; align-items: center; gap: 6px;
+        padding: 8px 14px; font-size: 12.5px; font-weight: 600; color: #0085f3;
+        cursor: pointer; border: 1.5px dashed #bfdbfe; border-radius: 8px;
+        background: #eff6ff; transition: all .15s; width: 100%; margin-top: 4px;
+    }
+    .btn-add-stage-drawer:hover { background: #dbeafe; border-color: #93c5fd; }
 </style>
 @endpush
 
@@ -149,7 +255,7 @@
                     <button class="btn-icon" title="Definir como padrão" onclick="setDefaultPipeline({{ $pipeline->id }}, '{{ addslashes($pipeline->name) }}', '{{ $pipeline->color }}')">
                         <i class="bi bi-star{{ $pipeline->is_default ? '-fill' : '' }}" style="{{ $pipeline->is_default ? 'color:#f59e0b;' : '' }}"></i>
                     </button>
-                    <button class="btn-icon" title="Editar" onclick="openEditPipeline({{ $pipeline->id }}, '{{ addslashes($pipeline->name) }}', '{{ $pipeline->color }}', {{ $pipeline->auto_create_lead ? 'true' : 'false' }}, {{ $pipeline->auto_create_from_whatsapp ? 'true' : 'false' }}, {{ $pipeline->auto_create_from_instagram ? 'true' : 'false' }})">
+                    <button class="btn-icon" title="Editar" onclick="openEditPipelineDrawer({{ $pipeline->id }})">
                         <i class="bi bi-pencil"></i>
                     </button>
                     <button class="btn-icon danger" title="Excluir" onclick="deletePipeline({{ $pipeline->id }}, this)">
@@ -168,7 +274,7 @@
                         @if($stage->is_won)  <span class="stage-badge won-badge">Ganho</span>  @endif
                         @if($stage->is_lost) <span class="stage-badge lost-badge">Perdido</span> @endif
                         <div style="display:flex;gap:5px;">
-                            <button class="btn-icon" onclick="openEditStage({{ $pipeline->id }}, {{ $stage->id }}, '{{ addslashes($stage->name) }}', '{{ $stage->color }}', {{ $stage->is_won ? 'true' : 'false' }}, {{ $stage->is_lost ? 'true' : 'false' }})">
+                            <button class="btn-icon" onclick="openEditPipelineDrawer({{ $pipeline->id }})">
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <button class="btn-icon danger" onclick="deleteStage({{ $pipeline->id }}, {{ $stage->id }}, this)">
@@ -178,7 +284,7 @@
                     </li>
                     @endforeach
                 </ul>
-                <button class="add-stage-btn" onclick="openAddStage({{ $pipeline->id }})">
+                <button class="add-stage-btn" onclick="openEditPipelineDrawer({{ $pipeline->id }})">
                     <i class="bi bi-plus-lg"></i> Adicionar etapa
                 </button>
             </div>
@@ -193,11 +299,16 @@
 
 </div>
 
-{{-- MODAL: Pipeline --}}
-<div class="modal-overlay" id="modalPipeline">
-    <div class="modal-box">
-        <div class="modal-title" id="modalPipelineTitle">Novo Funil</div>
+{{-- DRAWER: Pipeline + Stages --}}
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<div class="drawer" id="drawerPipeline">
+    <div class="drawer-header">
+        <h4 id="drawerTitle">Novo Funil</h4>
+        <button class="drawer-close" onclick="closeDrawer()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="drawer-body">
         <input type="hidden" id="pipelineId">
+
         <div class="form-group">
             <label class="form-label">Nome do Funil</label>
             <input type="text" id="pipelineName" class="form-control" placeholder="Ex: Vendas Principais">
@@ -235,41 +346,19 @@
                 </div>
             </div>
         </div>
-        <div class="modal-footer">
-            <button class="btn-cancel" onclick="closePipelineModal()">Cancelar</button>
-            <button class="btn-save" id="btnSavePipeline" onclick="savePipeline()">Salvar</button>
+
+        {{-- Stages section --}}
+        <div class="drawer-stages-section">
+            <div class="drawer-stages-title">Etapas</div>
+            <ul class="drawer-stages-list" id="drawerStagesList"></ul>
+            <button type="button" class="btn-add-stage-drawer" onclick="addDrawerStageRow()">
+                <i class="bi bi-plus-lg"></i> Nova Etapa
+            </button>
         </div>
     </div>
-</div>
-
-{{-- MODAL: Stage --}}
-<div class="modal-overlay" id="modalStage">
-    <div class="modal-box">
-        <div class="modal-title" id="modalStageTitle">Nova Etapa</div>
-        <input type="hidden" id="stagePipelineId">
-        <input type="hidden" id="stageId">
-        <div class="form-group">
-            <label class="form-label">Nome da Etapa</label>
-            <input type="text" id="stageName" class="form-control" placeholder="Ex: Qualificação">
-        </div>
-        <div class="form-group">
-            <label class="form-label">Cor</label>
-            <div class="color-row">
-                <input type="color" id="stageColor" class="color-input" value="#6366F1">
-                <input type="text" id="stageColorText" class="form-control" value="#6366F1" placeholder="#6366F1" style="flex:1;">
-            </div>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Tipo da Etapa</label>
-            <div class="checkbox-row">
-                <label class="checkbox-label"><input type="checkbox" id="stageIsWon"> Etapa de Ganho</label>
-                <label class="checkbox-label"><input type="checkbox" id="stageIsLost"> Etapa de Perda</label>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-cancel" onclick="closeStageModal()">Cancelar</button>
-            <button class="btn-save" id="btnSaveStage" onclick="saveStage()">Salvar</button>
-        </div>
+    <div class="drawer-footer">
+        <button class="btn-cancel" onclick="closeDrawer()">Cancelar</button>
+        <button class="btn-save" id="btnSaveDrawer" onclick="saveDrawer()">Salvar</button>
     </div>
 </div>
 @endsection
@@ -286,6 +375,24 @@ const STAGE_DEL   = @json(route('settings.pipelines.stages.destroy',['pipeline' 
 const STAGE_REORD = @json(route('settings.pipelines.stages.reorder',['pipeline' => '__ID__']));
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
 
+/* ---- Pipelines data from server (for edit drawer) ---- */
+const pipelinesData = {};
+@foreach($pipelines as $pipeline)
+pipelinesData[{{ $pipeline->id }}] = {
+    id: {{ $pipeline->id }},
+    name: @json($pipeline->name),
+    color: @json($pipeline->color),
+    auto_create_lead: {{ $pipeline->auto_create_lead ? 'true' : 'false' }},
+    auto_create_from_whatsapp: {{ $pipeline->auto_create_from_whatsapp ? 'true' : 'false' }},
+    auto_create_from_instagram: {{ $pipeline->auto_create_from_instagram ? 'true' : 'false' }},
+    stages: [
+        @foreach($pipeline->stages as $stage)
+        { id: {{ $stage->id }}, name: @json($stage->name), color: @json($stage->color), is_won: {{ $stage->is_won ? 'true' : 'false' }}, is_lost: {{ $stage->is_lost ? 'true' : 'false' }} },
+        @endforeach
+    ]
+};
+@endforeach
+
 /* ---- Accordion ---- */
 function togglePipeline(header) {
     const card    = header.closest('.pipeline-card');
@@ -297,7 +404,7 @@ function togglePipeline(header) {
     chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
-/* ---- Sortable ---- */
+/* ---- Sortable (accordion stages) ---- */
 document.querySelectorAll('.stages-list').forEach(el => initSortable(el));
 
 function initSortable(el) {
@@ -317,30 +424,109 @@ function initSortable(el) {
     });
 }
 
-/* ---- Pipeline Modal ---- */
+/* ---- Drawer open / close ---- */
+function openDrawer() {
+    document.getElementById('drawerOverlay').classList.add('open');
+    document.getElementById('drawerPipeline').classList.add('open');
+}
+
+function closeDrawer() {
+    document.getElementById('drawerOverlay').classList.remove('open');
+    document.getElementById('drawerPipeline').classList.remove('open');
+}
+
+document.getElementById('drawerOverlay').addEventListener('click', () => closeDrawer());
+
+/* ---- Drawer stage row counter ---- */
+let drawerStageCounter = 0;
+
+function addDrawerStageRow(data) {
+    const list = document.getElementById('drawerStagesList');
+    const idx = drawerStageCounter++;
+    const stageId = (data && data.id) ? data.id : '';
+    const name = (data && data.name) ? data.name : '';
+    const color = (data && data.color) ? data.color : '#6366F1';
+    const isWon = (data && data.is_won) ? true : false;
+    const isLost = (data && data.is_lost) ? true : false;
+
+    const li = document.createElement('li');
+    li.className = 'drawer-stage-row';
+    li.dataset.stageId = stageId;
+    li.dataset.idx = idx;
+    li.innerHTML = `
+        <i class="bi bi-grip-vertical stage-drag-handle"></i>
+        <input type="text" class="form-control" style="flex:1;min-width:0;" placeholder="Nome da etapa" value="${escapeHtml(name)}" data-field="name">
+        <input type="color" class="color-input" value="${color}" data-field="color">
+        <label class="drawer-stage-checkbox" title="Ganho"><input type="checkbox" data-field="is_won" ${isWon ? 'checked' : ''}> G</label>
+        <label class="drawer-stage-checkbox" title="Perdido"><input type="checkbox" data-field="is_lost" ${isLost ? 'checked' : ''}> P</label>
+        <button type="button" class="drawer-stage-delete" onclick="removeDrawerStageRow(this)" title="Remover etapa"><i class="bi bi-trash"></i></button>
+    `;
+    list.appendChild(li);
+
+    if (!list._sortable) {
+        list._sortable = Sortable.create(list, {
+            handle: '.stage-drag-handle',
+            animation: 150,
+        });
+    }
+}
+
+function removeDrawerStageRow(btn) {
+    const row = btn.closest('.drawer-stage-row');
+    const stageId = row.dataset.stageId;
+    if (stageId) {
+        row.dataset.deleted = 'true';
+        row.style.display = 'none';
+    } else {
+        row.remove();
+    }
+}
+
+function clearDrawerStages() {
+    const list = document.getElementById('drawerStagesList');
+    list.innerHTML = '';
+    if (list._sortable) { list._sortable.destroy(); list._sortable = null; }
+    drawerStageCounter = 0;
+}
+
+/* ---- Open drawer: New pipeline ---- */
 document.getElementById('btnNovoPipeline').addEventListener('click', () => {
-    document.getElementById('modalPipelineTitle').textContent = 'Novo Funil';
+    document.getElementById('drawerTitle').textContent = 'Novo Funil';
     document.getElementById('pipelineId').value = '';
     document.getElementById('pipelineName').value = '';
     document.getElementById('pipelineColor').value = '#3B82F6';
     document.getElementById('pipelineColorText').value = '#3B82F6';
-    document.getElementById('modalPipeline').classList.add('open');
+    document.getElementById('autoCreateLead').checked = true;
+    document.getElementById('autoCreateWhatsapp').checked = true;
+    document.getElementById('autoCreateInstagram').checked = true;
+    toggleChannelToggles();
+    clearDrawerStages();
+    openDrawer();
     setTimeout(() => document.getElementById('pipelineName').focus(), 100);
 });
 
-function openEditPipeline(id, name, color, autoCreate = true, autoWa = true, autoIg = true) {
-    document.getElementById('modalPipelineTitle').textContent = 'Editar Funil';
-    document.getElementById('pipelineId').value = id;
-    document.getElementById('pipelineName').value = name;
-    document.getElementById('pipelineColor').value = color;
-    document.getElementById('pipelineColorText').value = color;
-    document.getElementById('autoCreateLead').checked = autoCreate;
-    document.getElementById('autoCreateWhatsapp').checked = autoWa;
-    document.getElementById('autoCreateInstagram').checked = autoIg;
+/* ---- Open drawer: Edit existing pipeline ---- */
+function openEditPipelineDrawer(pipelineId) {
+    const p = pipelinesData[pipelineId];
+    if (!p) return;
+
+    document.getElementById('drawerTitle').textContent = 'Editar Funil';
+    document.getElementById('pipelineId').value = p.id;
+    document.getElementById('pipelineName').value = p.name;
+    document.getElementById('pipelineColor').value = p.color;
+    document.getElementById('pipelineColorText').value = p.color;
+    document.getElementById('autoCreateLead').checked = p.auto_create_lead;
+    document.getElementById('autoCreateWhatsapp').checked = p.auto_create_from_whatsapp;
+    document.getElementById('autoCreateInstagram').checked = p.auto_create_from_instagram;
     toggleChannelToggles();
-    document.getElementById('modalPipeline').classList.add('open');
+
+    clearDrawerStages();
+    p.stages.forEach(s => addDrawerStageRow(s));
+
+    openDrawer();
 }
 
+/* ---- Toggle channel toggles ---- */
 function toggleChannelToggles() {
     const enabled = document.getElementById('autoCreateLead').checked;
     document.getElementById('channelToggles').style.opacity = enabled ? '1' : '.4';
@@ -348,8 +534,7 @@ function toggleChannelToggles() {
     document.getElementById('autoCreateInstagram').disabled = !enabled;
 }
 
-function closePipelineModal() { document.getElementById('modalPipeline').classList.remove('open'); }
-
+/* ---- Color sync ---- */
 document.getElementById('pipelineColor').addEventListener('input', e => {
     document.getElementById('pipelineColorText').value = e.target.value;
 });
@@ -357,21 +542,23 @@ document.getElementById('pipelineColorText').addEventListener('input', e => {
     if (/^#[0-9a-f]{6}$/i.test(e.target.value)) document.getElementById('pipelineColor').value = e.target.value;
 });
 
-async function savePipeline() {
+/* ---- Save drawer (pipeline + stages) ---- */
+async function saveDrawer() {
     const id    = document.getElementById('pipelineId').value;
     const name  = document.getElementById('pipelineName').value.trim();
     const color = document.getElementById('pipelineColorText').value.trim() || document.getElementById('pipelineColor').value;
     if (!name) { document.getElementById('pipelineName').focus(); return; }
 
-    const btn = document.getElementById('btnSavePipeline');
+    const btn = document.getElementById('btnSaveDrawer');
     btn.disabled = true;
 
-    const url    = id ? PIPE_UPD.replace('__ID__', id) : PIPE_STORE;
-    const method = id ? 'PUT' : 'POST';
-
     try {
-        const res  = await fetch(url, {
-            method,
+        /* -- 1. Save pipeline -- */
+        const pipeUrl    = id ? PIPE_UPD.replace('__ID__', id) : PIPE_STORE;
+        const pipeMethod = id ? 'PUT' : 'POST';
+
+        const pipeRes  = await fetch(pipeUrl, {
+            method: pipeMethod,
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
             body: JSON.stringify({
                 name, color,
@@ -380,48 +567,107 @@ async function savePipeline() {
                 auto_create_from_instagram: document.getElementById('autoCreateInstagram').checked,
             })
         });
-        const data = await res.json();
-        if (!data.success) {
-            if (checkLimitReached(data)) return;
-            alert(data.message || 'Erro ao salvar.'); return;
+        const pipeData = await pipeRes.json();
+        if (!pipeData.success) {
+            if (checkLimitReached(pipeData)) return;
+            alert(pipeData.message || 'Erro ao salvar funil.'); return;
         }
 
-        closePipelineModal();
+        const pipelineId = pipeData.pipeline.id;
+
+        /* -- 2. Process stages -- */
+        const rows = [...document.querySelectorAll('#drawerStagesList .drawer-stage-row')];
+        const stageOrder = [];
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const existingId = row.dataset.stageId;
+            const deleted = row.dataset.deleted === 'true';
+
+            if (deleted && existingId) {
+                // Delete existing stage
+                await fetch(STAGE_DEL.replace('__P__', pipelineId).replace('__S__', existingId), {
+                    method: 'DELETE', headers: { 'X-CSRF-TOKEN': CSRF }
+                });
+                continue;
+            }
+
+            if (deleted) continue;
+
+            const stageName  = row.querySelector('[data-field="name"]').value.trim();
+            const stageColor = row.querySelector('[data-field="color"]').value;
+            const stageIsWon = row.querySelector('[data-field="is_won"]').checked;
+            const stageIsLost = row.querySelector('[data-field="is_lost"]').checked;
+
+            if (!stageName) continue; // skip empty rows
+
+            const payload = { name: stageName, color: stageColor, is_won: stageIsWon, is_lost: stageIsLost };
+
+            if (existingId) {
+                // Update existing stage
+                const stageRes = await fetch(STAGE_UPD.replace('__P__', pipelineId).replace('__S__', existingId), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+                    body: JSON.stringify(payload)
+                });
+                const stageData = await stageRes.json();
+                if (stageData.success) stageOrder.push(stageData.stage.id);
+            } else {
+                // Create new stage
+                const stageRes = await fetch(STAGE_STORE.replace('__ID__', pipelineId), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+                    body: JSON.stringify(payload)
+                });
+                const stageData = await stageRes.json();
+                if (stageData.success) stageOrder.push(stageData.stage.id);
+            }
+        }
+
+        // Reorder stages
+        if (stageOrder.length > 0) {
+            await fetch(STAGE_REORD.replace('__ID__', pipelineId), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+                body: JSON.stringify({ order: stageOrder })
+            });
+        }
+
+        closeDrawer();
+
+        /* -- 3. Update DOM -- */
         if (id) {
+            // Update existing pipeline card
             const card = document.querySelector(`.pipeline-card[data-pipeline-id="${id}"]`);
             if (card) {
                 card.querySelector('.pipeline-color-dot').style.background = color;
                 card.querySelector('.pipeline-name').textContent = name;
+
+                // Rebuild stages list in accordion
+                const stagesList = document.getElementById('stages-' + id);
+                if (stagesList) {
+                    stagesList.innerHTML = '';
+                    if (stagesList._sortable) { stagesList._sortable.destroy(); stagesList._sortable = null; }
+                }
             }
+
+            // Update local data + reload to get fresh stages
+            pipelinesData[id].name = name;
+            pipelinesData[id].color = color;
+            pipelinesData[id].auto_create_lead = document.getElementById('autoCreateLead').checked;
+            pipelinesData[id].auto_create_from_whatsapp = document.getElementById('autoCreateWhatsapp').checked;
+            pipelinesData[id].auto_create_from_instagram = document.getElementById('autoCreateInstagram').checked;
+            location.reload();
         } else {
-            document.getElementById('emptyPipelines')?.remove();
-            const container = document.getElementById('pipelinesContainer');
-            container.insertAdjacentHTML('beforeend', buildPipelineCard(data.pipeline));
+            // New pipeline — reload to get fresh rendered card
+            location.reload();
         }
     } finally {
         btn.disabled = false;
     }
 }
 
-function buildPipelineCard(p) {
-    return `<div class="pipeline-card" data-pipeline-id="${p.id}">
-        <div class="pipeline-header" onclick="togglePipeline(this)">
-            <span class="pipeline-color-dot" style="background:${p.color};"></span>
-            <span class="pipeline-name">${escapeHtml(p.name)}</span>
-            <div class="pipeline-actions" onclick="event.stopPropagation()">
-                <button class="btn-icon" onclick="setDefaultPipeline(${p.id},'${escapeJs(p.name)}','${p.color}')"><i class="bi bi-star"></i></button>
-                <button class="btn-icon" onclick="openEditPipeline(${p.id},'${escapeJs(p.name)}','${p.color}',${p.auto_create_lead !== false},${p.auto_create_from_whatsapp !== false},${p.auto_create_from_instagram !== false})"><i class="bi bi-pencil"></i></button>
-                <button class="btn-icon danger" onclick="deletePipeline(${p.id},this)"><i class="bi bi-trash"></i></button>
-                <i class="bi bi-chevron-down" style="font-size:13px;color:#9ca3af;transition:transform .2s;" id="chevron-${p.id}"></i>
-            </div>
-        </div>
-        <div class="pipeline-body" id="body-${p.id}">
-            <ul class="stages-list" data-pipeline-id="${p.id}" id="stages-${p.id}"></ul>
-            <button class="add-stage-btn" onclick="openAddStage(${p.id})"><i class="bi bi-plus-lg"></i> Adicionar etapa</button>
-        </div>
-    </div>`;
-}
-
+/* ---- Set default pipeline ---- */
 async function setDefaultPipeline(id, name, color) {
     const res  = await fetch(PIPE_UPD.replace('__ID__', id), {
         method: 'PUT',
@@ -432,6 +678,7 @@ async function setDefaultPipeline(id, name, color) {
     if (data.success) location.reload();
 }
 
+/* ---- Delete pipeline ---- */
 function deletePipeline(id, btn) {
     confirmAction({
         title: 'Excluir funil',
@@ -444,106 +691,12 @@ function deletePipeline(id, btn) {
             const data = await res.json();
             if (!data.success) { toastr.error(data.message || 'Não foi possível excluir.'); return; }
             btn.closest('.pipeline-card').remove();
+            delete pipelinesData[id];
         },
     });
 }
 
-/* ---- Stage Modal ---- */
-function openAddStage(pipelineId) {
-    document.getElementById('modalStageTitle').textContent = 'Nova Etapa';
-    document.getElementById('stagePipelineId').value = pipelineId;
-    document.getElementById('stageId').value = '';
-    document.getElementById('stageName').value = '';
-    document.getElementById('stageColor').value = '#6366F1';
-    document.getElementById('stageColorText').value = '#6366F1';
-    document.getElementById('stageIsWon').checked  = false;
-    document.getElementById('stageIsLost').checked = false;
-    document.getElementById('modalStage').classList.add('open');
-    setTimeout(() => document.getElementById('stageName').focus(), 100);
-}
-
-function openEditStage(pipelineId, stageId, name, color, isWon, isLost) {
-    document.getElementById('modalStageTitle').textContent = 'Editar Etapa';
-    document.getElementById('stagePipelineId').value = pipelineId;
-    document.getElementById('stageId').value = stageId;
-    document.getElementById('stageName').value = name;
-    document.getElementById('stageColor').value = color;
-    document.getElementById('stageColorText').value = color;
-    document.getElementById('stageIsWon').checked  = isWon;
-    document.getElementById('stageIsLost').checked = isLost;
-    document.getElementById('modalStage').classList.add('open');
-}
-
-function closeStageModal() { document.getElementById('modalStage').classList.remove('open'); }
-
-document.getElementById('stageColor').addEventListener('input', e => {
-    document.getElementById('stageColorText').value = e.target.value;
-});
-document.getElementById('stageColorText').addEventListener('input', e => {
-    if (/^#[0-9a-f]{6}$/i.test(e.target.value)) document.getElementById('stageColor').value = e.target.value;
-});
-
-async function saveStage() {
-    const pipelineId = document.getElementById('stagePipelineId').value;
-    const stageId    = document.getElementById('stageId').value;
-    const name       = document.getElementById('stageName').value.trim();
-    const color      = document.getElementById('stageColorText').value.trim() || document.getElementById('stageColor').value;
-    const isWon      = document.getElementById('stageIsWon').checked;
-    const isLost     = document.getElementById('stageIsLost').checked;
-    if (!name) { document.getElementById('stageName').focus(); return; }
-
-    const btn = document.getElementById('btnSaveStage');
-    btn.disabled = true;
-
-    try {
-        const url    = stageId
-            ? STAGE_UPD.replace('__P__', pipelineId).replace('__S__', stageId)
-            : STAGE_STORE.replace('__ID__', pipelineId);
-        const method = stageId ? 'PUT' : 'POST';
-
-        const res  = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-            body: JSON.stringify({ name, color, is_won: isWon, is_lost: isLost })
-        });
-        const data = await res.json();
-        if (!data.success) { alert(data.message || 'Erro ao salvar.'); return; }
-
-        closeStageModal();
-        const s = data.stage;
-        const list = document.getElementById('stages-' + pipelineId);
-
-        if (stageId) {
-            const li = list.querySelector(`[data-stage-id="${stageId}"]`);
-            if (li) {
-                li.querySelector('.stage-color-dot').style.background = s.color;
-                li.querySelector('.stage-name').textContent = s.name;
-                // refresh badges
-                li.querySelectorAll('.stage-badge').forEach(b => b.remove());
-                if (s.is_won)  li.querySelector('.stage-name').insertAdjacentHTML('afterend', '<span class="stage-badge won-badge">Ganho</span>');
-                if (s.is_lost) li.querySelector('.stage-name').insertAdjacentHTML('afterend', '<span class="stage-badge lost-badge">Perdido</span>');
-            }
-        } else {
-            const li = document.createElement('li');
-            li.className = 'stage-item';
-            li.dataset.stageId = s.id;
-            li.innerHTML = `<i class="bi bi-grip-vertical stage-drag-handle"></i>
-                <span class="stage-color-dot" style="background:${s.color};"></span>
-                <span class="stage-name">${escapeHtml(s.name)}</span>
-                ${s.is_won  ? '<span class="stage-badge won-badge">Ganho</span>'   : ''}
-                ${s.is_lost ? '<span class="stage-badge lost-badge">Perdido</span>' : ''}
-                <div style="display:flex;gap:5px;">
-                    <button class="btn-icon" onclick="openEditStage(${pipelineId},${s.id},'${escapeJs(s.name)}','${s.color}',${!!s.is_won},${!!s.is_lost})"><i class="bi bi-pencil"></i></button>
-                    <button class="btn-icon danger" onclick="deleteStage(${pipelineId},${s.id},this)"><i class="bi bi-trash"></i></button>
-                </div>`;
-            list.appendChild(li);
-            initSortable(list);
-        }
-    } finally {
-        btn.disabled = false;
-    }
-}
-
+/* ---- Delete stage (from accordion) ---- */
 function deleteStage(pipelineId, stageId, btn) {
     confirmAction({
         title: 'Excluir etapa',
@@ -556,6 +709,10 @@ function deleteStage(pipelineId, stageId, btn) {
             const data = await res.json();
             if (!data.success) { toastr.error(data.message || 'Não foi possível excluir.'); return; }
             btn.closest('.stage-item').remove();
+            // Update local data
+            if (pipelinesData[pipelineId]) {
+                pipelinesData[pipelineId].stages = pipelinesData[pipelineId].stages.filter(s => s.id !== stageId);
+            }
         },
     });
 }
@@ -566,10 +723,24 @@ function escapeHtml(s) {
 }
 function escapeJs(s) { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-    overlay.addEventListener('click', e => {
-        if (e.target === overlay) overlay.classList.remove('open');
-    });
-});
+/* Legacy compat: keep buildPipelineCard for any external callers */
+function buildPipelineCard(p) {
+    return `<div class="pipeline-card" data-pipeline-id="${p.id}">
+        <div class="pipeline-header" onclick="togglePipeline(this)">
+            <span class="pipeline-color-dot" style="background:${p.color};"></span>
+            <span class="pipeline-name">${escapeHtml(p.name)}</span>
+            <div class="pipeline-actions" onclick="event.stopPropagation()">
+                <button class="btn-icon" onclick="setDefaultPipeline(${p.id},'${escapeJs(p.name)}','${p.color}')"><i class="bi bi-star"></i></button>
+                <button class="btn-icon" onclick="openEditPipelineDrawer(${p.id})"><i class="bi bi-pencil"></i></button>
+                <button class="btn-icon danger" onclick="deletePipeline(${p.id},this)"><i class="bi bi-trash"></i></button>
+                <i class="bi bi-chevron-down" style="font-size:13px;color:#9ca3af;transition:transform .2s;" id="chevron-${p.id}"></i>
+            </div>
+        </div>
+        <div class="pipeline-body" id="body-${p.id}">
+            <ul class="stages-list" data-pipeline-id="${p.id}" id="stages-${p.id}"></ul>
+            <button class="add-stage-btn" onclick="openEditPipelineDrawer(${p.id})"><i class="bi bi-plus-lg"></i> Adicionar etapa</button>
+        </div>
+    </div>`;
+}
 </script>
 @endpush

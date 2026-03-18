@@ -108,44 +108,44 @@
     .section-title { font-size: 15px; font-weight: 700; color: #1a1d23; }
     .section-subtitle { font-size: 13px; color: #9ca3af; margin-top: 3px; }
 
-    /* Modal */
-    .dept-modal-overlay {
-        display: none;
-        position: fixed; inset: 0;
-        background: rgba(0,0,0,.45);
-        z-index: 1000;
-        align-items: center;
-        justify-content: center;
+    /* Drawer */
+    .drawer-overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,.35); z-index: 300;
     }
-    .dept-modal-overlay.open { display: flex; }
-    .dept-modal {
-        background: #fff;
-        border-radius: 14px;
-        padding: 28px;
-        width: 520px;
-        max-width: 95vw;
-        max-height: 90vh;
-        overflow-y: auto;
-        box-shadow: 0 20px 60px rgba(0,0,0,.18);
+    .drawer-overlay.open { display: block; }
+    .drawer {
+        position: fixed; top: 0; right: -480px;
+        width: 480px; height: 100vh; background: #fff;
+        z-index: 301; transition: right .25s cubic-bezier(.4,0,.2,1);
+        display: flex; flex-direction: column;
+        box-shadow: -4px 0 24px rgba(0,0,0,.1);
     }
-    .dept-modal-title {
-        font-size: 16px; font-weight: 700; color: #1a1d23;
-        margin-bottom: 20px;
+    .drawer.open { right: 0; }
+    .drawer-header {
+        padding: 18px 22px; border-bottom: 1px solid #f0f2f7;
+        display: flex; align-items: center; justify-content: space-between;
+        font-size: 15px; font-weight: 700; color: #1a1d23;
     }
+    .drawer-body { padding: 22px; flex: 1; overflow-y: auto; }
+    .drawer-footer {
+        padding: 16px 22px; border-top: 1px solid #f0f2f7;
+        display: flex; gap: 10px; justify-content: flex-end;
+    }
+
     .form-group { margin-bottom: 14px; }
     .form-label {
-        display: block; font-size: 11.5px; font-weight: 700;
-        color: #6b7280; margin-bottom: 5px;
-        text-transform: uppercase; letter-spacing: .05em;
+        display: block; font-size: 12.5px; font-weight: 600;
+        color: #374151; margin-bottom: 6px;
     }
-    .form-control, .form-select {
+    .form-input {
         width: 100%; padding: 9px 12px;
-        border: 1.5px solid #e8eaf0; border-radius: 9px;
-        font-size: 13.5px; outline: none; font-family: inherit;
-        transition: border-color .15s; box-sizing: border-box;
-        background: #fff;
+        border: 1px solid #d1d5db; border-radius: 9px;
+        font-size: 13.5px; color: #1a1d23;
+        outline: none; transition: border-color .15s; background: #fff;
+        box-sizing: border-box; font-family: inherit;
     }
-    .form-control:focus, .form-select:focus { border-color: #3B82F6; }
+    .form-input:focus { border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
 
     .form-row { display: flex; gap: 12px; }
     .form-row .form-group { flex: 1; }
@@ -178,24 +178,20 @@
     .user-item-name { font-weight: 600; color: #1a1d23; }
     .user-item-email { font-size: 11.5px; color: #9ca3af; }
 
-    .modal-footer {
-        display: flex; gap: 8px; justify-content: flex-end;
-        margin-top: 22px;
-    }
     .btn-cancel {
-        padding: 8px 18px; border-radius: 8px;
-        border: 1.5px solid #e8eaf0; background: #fff;
-        font-size: 13px; font-weight: 600; color: #6b7280;
-        cursor: pointer; transition: background .15s;
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 9px 20px; background: #f4f6fb; color: #374151;
+        border: 1px solid #e8eaf0; border-radius: 100px;
+        font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s;
     }
-    .btn-cancel:hover { background: #f0f2f7; }
+    .btn-cancel:hover { background: #e8eaf0; }
     .btn-save {
-        padding: 8px 22px; border-radius: 8px; border: none;
-        background: #3B82F6; color: #fff;
-        font-size: 13px; font-weight: 600;
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 9px 20px; background: #0085f3; color: #fff;
+        border: none; border-radius: 100px; font-size: 13px; font-weight: 600;
         cursor: pointer; transition: background .15s;
     }
-    .btn-save:hover { background: #2563eb; }
+    .btn-save:hover { background: #0070d1; }
     .btn-save:disabled { opacity: .6; cursor: not-allowed; }
 
     .empty-state {
@@ -294,20 +290,26 @@
 
 </div>
 
-{{-- Modal Criar/Editar --}}
-<div class="dept-modal-overlay" id="deptModal">
-    <div class="dept-modal">
-        <div class="dept-modal-title" id="modalTitle">Novo Departamento</div>
+{{-- Drawer Criar/Editar --}}
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+    <div class="drawer-header">
+        <h4 style="margin:0;font-size:15px;font-weight:700;color:#1a1d23;" id="drawerTitle">Novo Departamento</h4>
+        <button onclick="closeDrawer()" style="background:none;border:none;font-size:18px;color:#6b7280;cursor:pointer;">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+    <div class="drawer-body">
         <input type="hidden" id="deptId">
 
         <div class="form-row">
             <div class="form-group" style="flex:2;">
                 <label class="form-label">Nome</label>
-                <input type="text" id="deptName" class="form-control" placeholder="Ex: Financeiro, Suporte...">
+                <input type="text" id="deptName" class="form-input" placeholder="Ex: Financeiro, Suporte...">
             </div>
             <div class="form-group" style="flex:1;">
                 <label class="form-label">Ícone</label>
-                <select id="deptIcon" class="form-select">
+                <select id="deptIcon" class="form-input">
                     <option value="bi-building">Prédio</option>
                     <option value="bi-headset">Headset</option>
                     <option value="bi-cash-stack">Financeiro</option>
@@ -324,7 +326,7 @@
 
         <div class="form-group">
             <label class="form-label">Descrição</label>
-            <input type="text" id="deptDescription" class="form-control" placeholder="Breve descrição do setor (opcional)">
+            <input type="text" id="deptDescription" class="form-input" placeholder="Breve descrição do setor (opcional)">
         </div>
 
         <div class="form-group">
@@ -332,7 +334,7 @@
             <div class="color-row">
                 <input type="color" id="deptColorPicker" class="color-picker-input" value="#3B82F6"
                        oninput="document.getElementById('deptColorText').value=this.value; highlightPreset(this.value);">
-                <input type="text" id="deptColorText" class="form-control"
+                <input type="text" id="deptColorText" class="form-input"
                        value="#3B82F6" placeholder="#3B82F6"
                        oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value)){document.getElementById('deptColorPicker').value=this.value;highlightPreset(this.value);}"
                        style="flex:1;font-family:monospace;">
@@ -348,7 +350,7 @@
         <div class="form-row">
             <div class="form-group">
                 <label class="form-label">Agente IA Padrão</label>
-                <select id="deptAiAgent" class="form-select">
+                <select id="deptAiAgent" class="form-input">
                     <option value="">Nenhum</option>
                     @foreach($aiAgents as $agent)
                     <option value="{{ $agent->id }}">{{ $agent->name }}</option>
@@ -357,7 +359,7 @@
             </div>
             <div class="form-group">
                 <label class="form-label">Chatbot Padrão</label>
-                <select id="deptChatbot" class="form-select">
+                <select id="deptChatbot" class="form-input">
                     <option value="">Nenhum</option>
                     @foreach($chatbotFlows as $flow)
                     <option value="{{ $flow->id }}">{{ $flow->name }}</option>
@@ -368,7 +370,7 @@
 
         <div class="form-group">
             <label class="form-label">Estratégia de Distribuição</label>
-            <select id="deptStrategy" class="form-select">
+            <select id="deptStrategy" class="form-input">
                 <option value="round_robin">Round-robin (revezamento)</option>
                 <option value="least_busy">Menos ocupado</option>
             </select>
@@ -388,26 +390,12 @@
                 @endforeach
             </div>
         </div>
-
-        <div class="modal-footer">
-            <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-            <button class="btn-save" id="btnSave" onclick="saveDept()">Salvar</button>
-        </div>
     </div>
-</div>
-
-{{-- Modal: confirmar exclusão --}}
-<div class="dept-modal-overlay" id="deleteDeptModal">
-    <div class="dept-modal" style="text-align:center;width:400px;">
-        <div style="font-size:36px;color:#EF4444;margin-bottom:12px;"><i class="bi bi-trash3-fill"></i></div>
-        <div class="dept-modal-title" style="margin-bottom:8px;">Excluir departamento?</div>
-        <p style="font-size:13.5px;color:#6b7280;margin-bottom:24px;line-height:1.5;">
-            As conversas deste setor ficarão sem departamento atribuído.<br>Esta ação não pode ser desfeita.
-        </p>
-        <div style="display:flex;justify-content:center;gap:10px;">
-            <button class="btn-cancel" onclick="document.getElementById('deleteDeptModal').classList.remove('open')">Cancelar</button>
-            <button class="btn-save" style="background:#EF4444;" onclick="_doDeleteDept()">Excluir</button>
-        </div>
+    <div class="drawer-footer">
+        <button class="btn-cancel" onclick="closeDrawer()">Cancelar</button>
+        <button class="btn-save" id="btnSave" onclick="saveDept()">
+            <i class="bi bi-check2"></i> Salvar
+        </button>
     </div>
 </div>
 @endsection
@@ -457,9 +445,19 @@ function highlightPreset(hex) {
     });
 }
 
-/* ── Modal ── */
+/* ── Drawer ── */
+function openDrawer() {
+    document.getElementById('drawerOverlay').classList.add('open');
+    document.getElementById('drawer').classList.add('open');
+}
+
+function closeDrawer() {
+    document.getElementById('drawerOverlay').classList.remove('open');
+    document.getElementById('drawer').classList.remove('open');
+}
+
 document.getElementById('btnNewDept').addEventListener('click', () => {
-    document.getElementById('modalTitle').textContent = 'Novo Departamento';
+    document.getElementById('drawerTitle').textContent = 'Novo Departamento';
     document.getElementById('deptId').value = '';
     document.getElementById('deptName').value = '';
     document.getElementById('deptDescription').value = '';
@@ -469,14 +467,14 @@ document.getElementById('btnNewDept').addEventListener('click', () => {
     document.getElementById('deptChatbot').value = '';
     document.getElementById('deptStrategy').value = 'round_robin';
     document.querySelectorAll('.user-check').forEach(cb => cb.checked = false);
-    document.getElementById('deptModal').classList.add('open');
-    setTimeout(() => document.getElementById('deptName').focus(), 80);
+    openDrawer();
+    setTimeout(() => document.getElementById('deptName').focus(), 200);
 });
 
 function openEdit(id) {
     const d = DEPTS_DATA.find(x => x.id === id);
     if (!d) return;
-    document.getElementById('modalTitle').textContent = 'Editar Departamento';
+    document.getElementById('drawerTitle').textContent = 'Editar Departamento';
     document.getElementById('deptId').value = d.id;
     document.getElementById('deptName').value = d.name;
     document.getElementById('deptDescription').value = d.description || '';
@@ -488,16 +486,8 @@ function openEdit(id) {
     document.querySelectorAll('.user-check').forEach(cb => {
         cb.checked = d.user_ids.includes(parseInt(cb.value));
     });
-    document.getElementById('deptModal').classList.add('open');
+    openDrawer();
 }
-
-function closeModal() {
-    document.getElementById('deptModal').classList.remove('open');
-}
-
-document.getElementById('deptModal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-});
 
 /* ── CRUD ── */
 async function saveDept() {
@@ -544,7 +534,7 @@ async function saveDept() {
             return;
         }
 
-        closeModal();
+        closeDrawer();
         const d = data.department;
 
         // Atualizar cache local
@@ -568,11 +558,15 @@ let _deleteBtn = null;
 function deleteDept(id, btn) {
     _deleteId  = id;
     _deleteBtn = btn;
-    document.getElementById('deleteDeptModal').classList.add('open');
+    confirmAction({
+        title: 'Excluir departamento?',
+        message: 'As conversas deste setor ficarão sem departamento atribuído. Esta ação não pode ser desfeita.',
+        confirmText: 'Excluir',
+        onConfirm: () => _doDeleteDept(),
+    });
 }
 
 async function _doDeleteDept() {
-    document.getElementById('deleteDeptModal').classList.remove('open');
     if (!_deleteId) return;
 
     const row = _deleteBtn.closest('tr');
