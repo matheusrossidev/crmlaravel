@@ -499,6 +499,8 @@ class WebsiteChatService
             'utm_campaign' => $conv->utm_campaign ?: null,
             'utm_content'  => $conv->utm_content  ?: null,
             'utm_term'     => $conv->utm_term     ?: null,
+            'fbclid'       => $conv->fbclid       ?: null,
+            'gclid'        => $conv->gclid        ?: null,
         ]);
 
         if ($lead) {
@@ -513,6 +515,8 @@ class WebsiteChatService
                 'utm_campaign' => $lead->utm_campaign ?: $conv->utm_campaign,
                 'utm_content'  => $lead->utm_content  ?: $conv->utm_content,
                 'utm_term'     => $lead->utm_term     ?: $conv->utm_term,
+                'fbclid'       => $lead->fbclid       ?: $conv->fbclid,
+                'gclid'        => $lead->gclid        ?: $conv->gclid,
             ]));
         } else {
             $lead = Lead::withoutGlobalScope('tenant')->create($leadData);

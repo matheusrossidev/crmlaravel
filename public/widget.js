@@ -50,6 +50,8 @@
             utm_campaign: p.get('utm_campaign') || undefined,
             utm_content:  p.get('utm_content')  || undefined,
             utm_term:     p.get('utm_term')     || undefined,
+            fbclid:       p.get('fbclid')       || undefined,
+            gclid:        p.get('gclid')        || undefined,
             page_url:     window.location.href  || undefined,
             referrer_url: document.referrer     || undefined,
         };

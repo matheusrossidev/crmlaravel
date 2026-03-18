@@ -38,6 +38,8 @@ class WebsiteConversation extends Model
         'utm_campaign',
         'utm_content',
         'utm_term',
+        'fbclid',
+        'gclid',
         'page_url',
         'referrer_url',
     ];

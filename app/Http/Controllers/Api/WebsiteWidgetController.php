@@ -134,6 +134,8 @@ class WebsiteWidgetController extends Controller
                 'utm_campaign' => $this->truncate($request->input('utm_campaign'), 150),
                 'utm_content'  => $this->truncate($request->input('utm_content'),  150),
                 'utm_term'     => $this->truncate($request->input('utm_term'),     150),
+                'fbclid'       => $this->truncate($request->input('fbclid'),       255),
+                'gclid'        => $this->truncate($request->input('gclid'),        255),
                 'page_url'     => $this->truncate($request->input('page_url'),     500),
                 'referrer_url' => $this->truncate($request->input('referrer_url'), 500),
             ]);
