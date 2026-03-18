@@ -639,12 +639,28 @@ class ProcessInstagramWebhook implements ShouldQueue
             }
 
             if (! empty($automation->dm_messages)) {
+                // A 1ª mensagem de texto usa Private Reply (recipient.comment_id) para
+                // abrir a janela de conversa. Mensagens subsequentes usam recipient.id.
+                // Private Reply só suporta texto puro (sem imagem, sem quick_replies).
+                $firstSent = false;
+
                 foreach ($automation->dm_messages as $msg) {
                     try {
                         $type = $msg['type'] ?? '';
-                        if ($type === 'image' && ! empty($msg['url'])) {
+
+                        if (! $firstSent && $type === 'text' && ! empty($msg['text'])) {
+                            // Private Reply: abre janela de DM via comment_id
+                            $service->sendPrivateReply($commentId, $msg['text']);
+                            $firstSent = true;
+                        } elseif ($type === 'image' && ! empty($msg['url'])) {
+                            if (! $firstSent) {
+                                // 1º bloco é imagem — enviar texto genérico como Private Reply antes
+                                $service->sendPrivateReply($commentId, '📩');
+                                $firstSent = true;
+                            }
                             $service->sendImageAttachment($fromId, $msg['url']);
                         } elseif ($type === 'text' && ! empty($msg['text'])) {
+                            // Mensagens subsequentes: DM regular (janela já aberta)
                             $buttons = $msg['buttons'] ?? [];
                             if (! empty($buttons)) {
                                 $service->sendMessageWithButtons($fromId, $msg['text'], $buttons);
@@ -661,17 +677,21 @@ class ProcessInstagramWebhook implements ShouldQueue
                         ]);
                     }
                 }
-                $automation->increment('dms_sent');
-                Log::channel('instagram')->info('Sequência de DM enviada', [
-                    'from_id'       => $fromId,
-                    'automation_id' => $automation->id,
-                    'blocks'        => count($automation->dm_messages),
-                ]);
+
+                if ($firstSent) {
+                    $automation->increment('dms_sent');
+                    Log::channel('instagram')->info('Sequência de DM enviada', [
+                        'from_id'       => $fromId,
+                        'automation_id' => $automation->id,
+                        'blocks'        => count($automation->dm_messages),
+                    ]);
+                }
             } elseif ($automation->dm_message) {
                 try {
-                    $service->sendMessage($fromId, $automation->dm_message);
+                    // Legacy: campo dm_message (texto único) — também usa Private Reply
+                    $service->sendPrivateReply($commentId, $automation->dm_message);
                     $automation->increment('dms_sent');
-                    Log::channel('instagram')->info('DM enviada para comentarista', [
+                    Log::channel('instagram')->info('DM enviada para comentarista (Private Reply)', [
                         'from_id'       => $fromId,
                         'automation_id' => $automation->id,
                     ]);

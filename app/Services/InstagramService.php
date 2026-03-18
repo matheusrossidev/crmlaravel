@@ -74,6 +74,20 @@ class InstagramService
         ]);
     }
 
+    /**
+     * Send a Private Reply DM triggered by a comment.
+     * Uses recipient.comment_id instead of recipient.id — required by Instagram
+     * when the user has NOT messaged the page first (comment-triggered automations).
+     * Only supports text (no images, no quick_replies).
+     */
+    public function sendPrivateReply(string $commentId, string $text): array
+    {
+        return $this->post('/me/messages', [
+            'recipient' => ['comment_id' => $commentId],
+            'message'   => ['text' => $text],
+        ]);
+    }
+
     // ── Profile ───────────────────────────────────────────────────────────────
 
     /**
