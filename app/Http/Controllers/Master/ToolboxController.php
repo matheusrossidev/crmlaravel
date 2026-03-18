@@ -394,12 +394,21 @@ class ToolboxController extends Controller
             return response()->json(['success' => false, 'lines' => ['[ERRO] Tenant não encontrado.']]);
         }
 
-        // Buscar conversas LID: phone > 13 dígitos, somente números, não é grupo
+        // Buscar conversas LID: detecta tanto por comprimento (>13 dígitos) quanto
+        // pela coluna lid (LIDs de 13 dígitos que ficaram armazenados como phone).
         $lidConversations = WhatsappConversation::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
             ->where('is_group', false)
-            ->whereRaw('LENGTH(phone) > 13')
-            ->whereRaw("phone REGEXP '^[0-9]+$'")
+            ->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->whereRaw('LENGTH(phone) > 13')
+                       ->whereRaw("phone REGEXP '^[0-9]+$'");
+                })->orWhere(function ($q2) {
+                    $q2->whereNotNull('lid')
+                       ->where('lid', '!=', '')
+                       ->whereColumn('phone', 'lid');
+                });
+            })
             ->get();
 
         if ($lidConversations->isEmpty()) {
@@ -544,9 +553,14 @@ class ToolboxController extends Controller
                     : $phone . '@c.us';
                 $pic = $waha->getChatPicture($chatId);
 
-                // Fallback: tentar via LID se disponível
+                // Fallback: tentar phone@lid (para LIDs não resolvidos armazenados como phone)
+                if (! $pic && ! $conv->is_group && ctype_digit($phone) && strlen($phone) >= 13) {
+                    try { $pic = $waha->getChatPicture($phone . '@lid'); } catch (\Throwable) {}
+                }
+
+                // Fallback: tentar via coluna lid se disponível
                 if (! $pic && ! empty($conv->lid)) {
-                    $pic = $waha->getChatPicture($conv->lid . '@lid');
+                    try { $pic = $waha->getChatPicture($conv->lid . '@lid'); } catch (\Throwable) {}
                 }
 
                 if ($pic) {
@@ -775,12 +789,25 @@ class ToolboxController extends Controller
         } catch (\Throwable) {
         }
 
-        // Buscar conversas com phone que parece LID (>13 dígitos, não grupo)
+        // Buscar conversas LID: comprimento >13 OU phone=lid OU phone no LID map batch.
+        $knownLidValues = array_keys($lidMap);
+
         $lidConversations = WhatsappConversation::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
             ->where('is_group', false)
-            ->whereRaw('LENGTH(phone) > 13')
-            ->whereRaw("phone REGEXP '^[0-9]+$'")
+            ->where(function ($q) use ($knownLidValues) {
+                $q->where(function ($q2) {
+                    $q2->whereRaw('LENGTH(phone) > 13')
+                       ->whereRaw("phone REGEXP '^[0-9]+$'");
+                })->orWhere(function ($q2) {
+                    $q2->whereNotNull('lid')
+                       ->where('lid', '!=', '')
+                       ->whereColumn('phone', 'lid');
+                });
+                if (! empty($knownLidValues)) {
+                    $q->orWhereIn('phone', $knownLidValues);
+                }
+            })
             ->get();
 
         if ($lidConversations->isEmpty()) {

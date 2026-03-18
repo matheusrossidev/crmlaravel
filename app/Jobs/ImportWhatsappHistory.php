@@ -204,14 +204,16 @@ class ImportWhatsappHistory implements ShouldQueue
         $isGroup     = (bool) ($chat['isGroup'] ?? false);
         $contactName = $chat['name'] ?? null;
         $phone       = $this->normalizePhone($chatId);
+        $chatIsLid   = str_ends_with($chatId, '@lid'); // Sinal definitivo de LID
         $originalLid = null; // Guardar LID para salvar na coluna
 
         if ($phone === '') {
             return ['chats' => 0, 'messages' => 0, 'skipped' => 0];
         }
 
-        // Resolver LID para telefone real
-        if (! $isGroup && strlen($phone) > 13 && ctype_digit($phone)) {
+        // Resolver LID para telefone real.
+        // Usa $chatIsLid (sufixo @lid do chatId) para capturar LIDs de 13 dígitos.
+        if (! $isGroup && ctype_digit($phone) && ($chatIsLid || strlen($phone) > 13)) {
             $originalLid = $phone;
 
             // 1) Lookup no mapa batch (instantâneo)
@@ -239,7 +241,7 @@ class ImportWhatsappHistory implements ShouldQueue
                 usleep(200_000);
 
                 // 3) Fallback: contacts API (método antigo)
-                if (strlen($phone) > 13 && ctype_digit($phone)) {
+                if (ctype_digit($phone) && ($chatIsLid || strlen($phone) > 13)) {
                     try {
                         $info   = $waha->getContactInfo($phone . '@c.us');
                         $realId = $info['id'] ?? null;
@@ -257,7 +259,7 @@ class ImportWhatsappHistory implements ShouldQueue
         }
 
         // BLOQUEAR: LID não resolvido — não importar este chat
-        if (! $isGroup && strlen($phone) > 13 && ctype_digit($phone)) {
+        if (! $isGroup && ctype_digit($phone) && ($chatIsLid || strlen($phone) > 13)) {
             Log::channel('whatsapp')->info('Import: LID ignorado — sem número real', [
                 'chatId' => $chatId,
                 'phone'  => $phone,

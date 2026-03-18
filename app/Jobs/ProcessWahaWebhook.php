@@ -166,11 +166,28 @@ class ProcessWahaWebhook implements ShouldQueue
             Log::channel('whatsapp')->info('fromMe não encontrado no banco — salvando (enviado direto do celular)', ['id' => $wahaIdCheck]);
         }
 
+        // Detectar se $from é um JID @lid — sinal definitivo de LID independente do comprimento.
+        $fromIsLid = ! $isGroup && str_ends_with($from, '@lid');
+
         $phone = $this->normalizePhone($from, $msg, $isFromMe);
 
-        // Se o phone parece um LID numérico (> 13 dígitos, apenas dígitos),
-        // tentar resolver para o número real via endpoints dedicados de LID.
-        if (! $isGroup && strlen($phone) > 13 && ctype_digit($phone)) {
+        // Extrair LID numérico da mensagem (para mapeamento LID↔phone persistente).
+        // Movido para ANTES da resolução para que $currentLid esteja disponível no blocker.
+        $currentLid = null;
+        if (! $isGroup) {
+            $info = $msg['_data']['Info'] ?? [];
+            foreach ([$msg['from'] ?? '', $info['Chat'] ?? '', $info['Sender'] ?? '', $msg['participant'] ?? ''] as $lidCandidate) {
+                if ($lidCandidate && str_ends_with($lidCandidate, '@lid')) {
+                    $currentLid = (string) preg_replace('/[:@].+$/', '', $lidCandidate);
+                    break;
+                }
+            }
+        }
+
+        // Se o phone parece um LID numérico, tentar resolver para o número real.
+        // Usa $fromIsLid (sufixo @lid) como sinal definitivo — captura LIDs de 13 dígitos
+        // que o antigo check strlen>13 não pegava.
+        if (! $isGroup && ctype_digit($phone) && ($fromIsLid || strlen($phone) > 13)) {
             try {
                 $wahaLid = new \App\Services\WahaService($instance->session_name);
 
@@ -189,7 +206,7 @@ class ProcessWahaWebhook implements ShouldQueue
                 }
 
                 // 2) Fallback: contacts API (método antigo)
-                if (strlen($phone) > 13 && ctype_digit($phone)) {
+                if (ctype_digit($phone) && ($fromIsLid || strlen($phone) > 13)) {
                     $contactInfo = $wahaLid->getContactInfo($this->normalizeJidForApi($from));
                     $resolvedJid = $contactInfo['id'] ?? '';
                     if ($resolvedJid && ! str_ends_with($resolvedJid, '@lid')) {
@@ -206,20 +223,9 @@ class ProcessWahaWebhook implements ShouldQueue
             } catch (\Throwable) {}
         }
 
-        // Extrair LID numérico da mensagem (para mapeamento LID↔phone persistente)
-        $currentLid = null;
-        if (! $isGroup) {
-            $info = $msg['_data']['Info'] ?? [];
-            foreach ([$msg['from'] ?? '', $info['Chat'] ?? '', $info['Sender'] ?? '', $msg['participant'] ?? ''] as $lidCandidate) {
-                if ($lidCandidate && str_ends_with($lidCandidate, '@lid')) {
-                    $currentLid = (string) preg_replace('/[:@].+$/', '', $lidCandidate);
-                    break;
-                }
-            }
-        }
-
-        // BLOQUEAR: se phone continua sendo LID (>13 dígitos, somente números) após resolução
-        if (! $isGroup && ! empty($phone) && strlen($phone) > 13 && ctype_digit($phone)) {
+        // BLOQUEAR: se phone continua sendo LID após resolução.
+        // Usa $fromIsLid para pegar LIDs de 13 dígitos que strlen>13 não captura.
+        if (! $isGroup && ! empty($phone) && ctype_digit($phone) && ($fromIsLid || strlen($phone) > 13)) {
             Log::channel('whatsapp')->info('BLOQUEADO: LID não resolvido — conversa ignorada', [
                 'phone'  => $phone,
                 'from'   => $from,
