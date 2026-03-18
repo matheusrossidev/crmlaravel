@@ -828,37 +828,24 @@ class ProcessWahaWebhook implements ShouldQueue
             Log::channel('whatsapp')->error('Broadcast FALHOU', ['error' => $e->getMessage()]);
         }
 
-        // Executar chatbot — apenas para mensagens inbound em conversas com fluxo ativo
+        // Executar chatbot — dispatch async na fila 'chatbot'
         if (! $isFromMe && ! $isGroup && $conversation->chatbot_flow_id) {
-            try {
-                (new ProcessChatbotStep($conversation->id, $body ?? ''))->handle();
-            } catch (\Throwable $e) {
-                Log::channel('whatsapp')->error('Chatbot step falhou', [
-                    'conversation_id' => $conversation->id,
-                    'error'           => $e->getMessage(),
-                    'file'            => $e->getFile() . ':' . $e->getLine(),
-                ]);
-            }
+            ProcessChatbotStep::dispatch($conversation->id, $body ?? '');
+            Log::channel('whatsapp')->debug('Chatbot step dispatched', [
+                'conversation_id' => $conversation->id,
+            ]);
         }
 
-        // Executar agente de IA — apenas para mensagens inbound sem chatbot ativo
+        // Executar agente de IA — dispatch async na fila 'ai'
         if (! $isFromMe && ! $isGroup
             && $conversation->ai_agent_id
             && ! $conversation->chatbot_flow_id
         ) {
-            try {
-                // Incrementar versão atomicamente — serve como debounce quando o usuário
-                // envia várias mensagens seguidas. ProcessAiResponse dorme response_wait_seconds
-                // e descarta se a versão não bater (mensagem mais recente assume o processamento).
-                $aiVersion = (int) Cache::increment("ai:version:{$conversation->id}");
-                (new ProcessAiResponse($conversation->id, $aiVersion))->process();
-            } catch (\Throwable $e) {
-                Log::channel('whatsapp')->error('AI agent falhou', [
-                    'conversation_id' => $conversation->id,
-                    'error'           => $e->getMessage(),
-                    'file'            => $e->getFile() . ':' . $e->getLine(),
-                ]);
-            }
+            // Incrementar versão atomicamente — serve como debounce quando o usuário
+            // envia várias mensagens seguidas. ProcessAiResponse dorme response_wait_seconds
+            // e descarta se a versão não bater (mensagem mais recente assume o processamento).
+            $aiVersion = (int) Cache::increment("ai:version:{$conversation->id}");
+            ProcessAiResponse::dispatch($conversation->id, $aiVersion)->onQueue('ai');
         }
 
         // Automação: mensagem recebida (apenas inbound, individuais)

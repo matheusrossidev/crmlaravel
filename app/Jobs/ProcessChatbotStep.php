@@ -16,21 +16,33 @@ use App\Models\WhatsappMessage;
 use App\Services\ChatbotVariableService;
 use App\Services\InstagramService;
 use App\Services\WahaService;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class ProcessChatbotStep
+class ProcessChatbotStep implements ShouldQueue
 {
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
     private const MAX_ITERATIONS = 30;
 
     /** Pausa automática (segundos) entre envios de mensagem para simular digitação. */
     private const DEFAULT_MESSAGE_DELAY = 3;
 
+    public int $tries   = 2;
+    public int $timeout = 120;
+
     public function __construct(
         private readonly int    $conversationId,
         private readonly string $inboundBody,
         private readonly string $channel = 'whatsapp',
-    ) {}
+    ) {
+        $this->onQueue('chatbot');
+    }
 
     public function handle(): void
     {

@@ -546,16 +546,9 @@ class WhatsappController extends Controller
             'ai_agent_id'     => $agentId,
         ]);
 
-        // Disparar resposta de IA imediatamente para cobrir mensagens pendentes
+        // Disparar resposta de IA async para cobrir mensagens pendentes
         if ($agentId) {
-            try {
-                (new ProcessAiResponse($conversation->id))->process();
-            } catch (\Throwable $e) {
-                Log::channel('whatsapp')->error('AI agent (assign) falhou', [
-                    'conversation_id' => $conversation->id,
-                    'error'           => $e->getMessage(),
-                ]);
-            }
+            ProcessAiResponse::dispatch($conversation->id)->onQueue('ai');
         }
 
         return response()->json(['success' => true, 'ai_agent_id' => $conversation->fresh()->ai_agent_id]);
