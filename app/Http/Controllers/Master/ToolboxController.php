@@ -908,8 +908,8 @@ class ToolboxController extends Controller
 
     private function importAsaasPayments(Request $request): JsonResponse
     {
-        $apiUrl = config('services.asaas.api_url', 'https://www.asaas.com/api/v3');
-        $apiKey = config('services.asaas.api_key');
+        $apiUrl = config('services.asaas.url', 'https://www.asaas.com/api/v3');
+        $apiKey = config('services.asaas.key');
 
         if (! $apiKey) {
             return response()->json(['success' => false, 'lines' => ['[ERRO] ASAAS_API_KEY não configurada.']]);
