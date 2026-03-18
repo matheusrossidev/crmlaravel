@@ -49,6 +49,9 @@ async def chat(req: ChatRequest) -> AgentResponse:
             lead_id=None,
             conversation_id=req.conversation_id,
             memories=req.memories if req.memories else None,
+            lead_data=req.lead_data,
+            custom_fields=req.custom_fields if req.custom_fields else None,
+            lead_notes=req.lead_notes if req.lead_notes else None,
         )
 
         # Build input with conversation history for context
@@ -66,7 +69,7 @@ async def chat(req: ChatRequest) -> AgentResponse:
             user_id=f"tenant_{req.tenant_id}_contact_{req.contact_phone}",
         )
 
-        reply_blocks = _extract_reply_blocks(result)
+        reply_blocks, actions = _extract_reply_and_actions(result)
 
         # Second-pass formatter: a dedicated LLM call that only splits and
         # humanizes the text — much more reliable than prompt instructions alone.
@@ -98,6 +101,7 @@ async def chat(req: ChatRequest) -> AgentResponse:
 
         return AgentResponse(
             reply_blocks=reply_blocks,
+            actions=actions,
             tokens_prompt=tokens_prompt,
             tokens_completion=tokens_completion,
             tokens_total=tokens_total,
@@ -213,38 +217,43 @@ def _enforce_max_length(blocks: list[str]) -> list[str]:
     return [b for b in result if b]
 
 
-def _extract_reply_blocks(result) -> list[str]:
+def _extract_reply_and_actions(result) -> tuple[list[str], list[dict]]:
     """
-    Extract reply_blocks from the agent result, then enforce MAX_BLOCK_CHARS.
+    Extract reply_blocks and actions from the agent result.
 
     Priority order:
     1. Parsed AgnoReply from response_model (most reliable — structured output)
     2. JSON string in result.content
     3. Fallback: split by newlines
     """
+    actions = []
+
     # 1. response_model already parsed — result.content is AgnoReply instance
     if isinstance(result.content, AgnoReply):
         blocks = [b.strip() for b in result.content.reply_blocks if b.strip()]
-        return _enforce_max_length(blocks)
+        actions = [a.model_dump() for a in result.content.actions] if result.content.actions else []
+        return (_enforce_max_length(blocks), actions)
 
     # 2. response_model parsed to dict
     if isinstance(result.content, dict):
         blocks = result.content.get("reply_blocks", [])
+        actions = result.content.get("actions", [])
         if isinstance(blocks, list) and blocks:
-            return _enforce_max_length([str(b).strip() for b in blocks if str(b).strip()])
+            return (_enforce_max_length([str(b).strip() for b in blocks if str(b).strip()]), actions)
 
     content = result.content if isinstance(result.content, str) else ""
 
     if not content:
-        return [""]
+        return ([""], [])
 
     # 3. JSON string — try multiple extraction patterns
     # Pattern A: clean JSON object
     try:
         data = json.loads(content)
         blocks = data.get("reply_blocks", [])
+        actions = data.get("actions", [])
         if isinstance(blocks, list) and blocks:
-            return _enforce_max_length([str(b).strip() for b in blocks if str(b).strip()])
+            return (_enforce_max_length([str(b).strip() for b in blocks if str(b).strip()]), actions)
     except Exception:
         pass
 
@@ -254,14 +263,21 @@ def _extract_reply_blocks(result) -> list[str]:
         if match:
             blocks = json.loads(match.group(1))
             if isinstance(blocks, list) and blocks:
-                return _enforce_max_length([str(b).strip() for b in blocks if str(b).strip()])
+                # Try to extract actions too
+                act_match = re.search(r'"actions"\s*:\s*(\[.*?\])', content, re.DOTALL)
+                if act_match:
+                    try:
+                        actions = json.loads(act_match.group(1))
+                    except Exception:
+                        pass
+                return (_enforce_max_length([str(b).strip() for b in blocks if str(b).strip()]), actions)
     except Exception:
         pass
 
     # 4. Fallback: split by ---SPLIT--- or blank lines
     if "---SPLIT---" in content:
         parts = [p.strip() for p in content.split("---SPLIT---")]
-        return _enforce_max_length([p for p in parts if p])
+        return (_enforce_max_length([p for p in parts if p]), [])
 
     parts = [p.strip() for p in re.split(r"\n{2,}", content)]
-    return _enforce_max_length([p for p in parts if p] or [content.strip()])
+    return (_enforce_max_length([p for p in parts if p] or [content.strip()]), [])

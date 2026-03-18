@@ -8,10 +8,14 @@ use App\Events\WhatsappConversationUpdated;
 use App\Events\WhatsappMessageCreated;
 use App\Models\AiAgent;
 use App\Models\AiAgentMedia;
+use App\Models\CustomFieldDefinition;
+use App\Models\CustomFieldValue;
 use App\Models\Lead;
+use App\Models\LeadNote;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -185,21 +189,75 @@ class AiAgentService
             $lines[] = "E-mail: " . ($lead->email ?: '(vazio)');
             $lines[] = "Empresa: " . ($lead->company ?: '(vazio)');
             $lines[] = "Data de nascimento: " . ($lead->birthday ? $lead->birthday->format('d/m/Y') : '(vazio)');
+            $lines[] = "Valor do lead: " . ($lead->value ? 'R$ ' . number_format((float) $lead->value, 2, ',', '.') : '(vazio)');
             $lines[] = "--- FIM DOS DADOS DO LEAD ---";
+
+            // ── Campos personalizados do lead ────────────────────────────────
+            $customFields = CustomFieldDefinition::where('tenant_id', $lead->tenant_id)
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get();
+
+            if ($customFields->isNotEmpty()) {
+                $lines[] = "\n--- CAMPOS PERSONALIZADOS DO LEAD ---";
+                foreach ($customFields as $cf) {
+                    $cfv = CustomFieldValue::where('lead_id', $lead->id)
+                        ->where('field_id', $cf->id)->first();
+                    $currentVal = $this->formatCustomFieldValue($cfv, $cf);
+                    $typeHint = match ($cf->field_type) {
+                        'number'      => '(número)',
+                        'currency'    => '(valor em R$)',
+                        'date'        => '(data: YYYY-MM-DD)',
+                        'checkbox'    => '(true/false)',
+                        'multiselect' => '(opções: ' . implode(', ', $cf->options_json ?? []) . ')',
+                        default       => '(texto)',
+                    };
+                    $lines[] = "- {$cf->label} [{$cf->name}] {$typeHint}: {$currentVal}";
+                }
+                $lines[] = "Para preencher, use: {\"type\": \"update_custom_field\", \"field\": \"nome_do_campo\", \"value\": \"valor\"}";
+                $lines[] = "Para multiselect: {\"type\": \"update_custom_field\", \"field\": \"campo\", \"value\": [\"opcao1\", \"opcao2\"]}";
+                $lines[] = "--- FIM DOS CAMPOS PERSONALIZADOS ---";
+            }
+
+            // ── Notas existentes do lead ─────────────────────────────────────
+            $notes = LeadNote::where('lead_id', $lead->id)
+                ->orderByDesc('created_at')
+                ->limit(5)
+                ->get();
+
+            if ($notes->isNotEmpty()) {
+                $lines[] = "\n--- NOTAS DO LEAD (últimas 5) ---";
+                foreach ($notes as $note) {
+                    $author = $note->created_by ? ($note->creator->name ?? 'Usuário') : 'IA';
+                    $date   = $note->created_at?->format('d/m H:i') ?? '';
+                    $lines[] = "- [{$date}] ({$author}): " . Str::limit($note->body, 150);
+                }
+                $lines[] = "--- FIM DAS NOTAS ---";
+            }
         }
 
         $lines[] = <<<'UPDLEAD'
 
 --- ATUALIZAÇÃO DE DADOS DO LEAD ---
-Sempre que o contato mencionar NATURALMENTE durante a conversa informações pessoais como nome completo, e-mail, empresa onde trabalha ou data de nascimento, ATUALIZE o cadastro usando a ação update_lead.
-Campos permitidos: name, email, company, birthday
-Para birthday use o formato YYYY-MM-DD.
+Sempre que o contato mencionar NATURALMENTE durante a conversa informações pessoais como nome completo, e-mail, empresa, data de nascimento ou valor de negócio, ATUALIZE o cadastro usando a ação update_lead.
+Campos permitidos: name, email, company, birthday, value
+Para birthday use YYYY-MM-DD. Para value use número decimal (ex: 1500.00).
 NÃO pergunte dados sem contexto — colete apenas o que surgir naturalmente na conversa ou que for relevante para o atendimento.
 Se o campo já estiver preenchido com o mesmo valor, NÃO emita update_lead.
 Exemplo: {"type": "update_lead", "field": "email", "value": "joao@empresa.com"}
-Exemplo: {"type": "update_lead", "field": "birthday", "value": "1990-05-15"}
+Exemplo: {"type": "update_lead", "field": "value", "value": "2500.00"}
 --- FIM DA ATUALIZAÇÃO DE DADOS ---
 UPDLEAD;
+
+        $lines[] = <<<'NOTES'
+
+--- CRIAR NOTAS ---
+Você pode criar notas sobre o lead para registrar observações importantes da conversa.
+Use create_note quando identificar: preferências, objeções, decisões, follow-ups necessários, informações relevantes para o time de vendas.
+NÃO crie notas para cada mensagem — apenas quando houver informação estratégica relevante.
+Exemplo: {"type": "create_note", "body": "Cliente interessado no plano Premium, pediu proposta por email. Objeção: preço alto."}
+--- FIM DAS NOTAS ---
+NOTES;
 
         $lines[] = "\nResponda sempre em {$agent->language}. Seja conciso (máximo {$agent->max_message_length} caracteres por mensagem).";
 
@@ -358,7 +416,10 @@ FORMATO DE RESPOSTA OBRIGATÓRIO — responda APENAS com JSON válido, sem markd
   "reply": "sua resposta — ou array [\"bloco 1\", \"bloco 2\"] para dividir em mensagens distintas",
   "actions": [
     {"type": "set_stage", "stage_id": <id_numérico>},
-    {"type": "add_tags", "tags": ["tag1", "tag2"]},$intentExample$calendarExample
+    {"type": "add_tags", "tags": ["tag1", "tag2"]},
+    {"type": "update_lead", "field": "email", "value": "joao@email.com"},
+    {"type": "create_note", "body": "Observação relevante sobre o lead"},
+    {"type": "update_custom_field", "field": "nome_do_campo", "value": "valor"},$intentExample$calendarExample
     {"type": "assign_human"}
   ]
 }
@@ -367,7 +428,9 @@ NUNCA inclua texto fora do JSON.
 Ações disponíveis:
 - set_stage: mova o lead para uma etapa do funil (use o stage_id correto da lista acima).
 - add_tags: adicione tags à conversa/lead.
-- update_lead: atualize dados do cadastro do lead (name, email, company, birthday). Ex: {"type":"update_lead","field":"email","value":"joao@email.com"}
+- update_lead: atualize dados do cadastro do lead (name, email, company, birthday, value). Ex: {"type":"update_lead","field":"value","value":"2500.00"}
+- create_note: registre observações estratégicas sobre o lead (preferências, objeções, decisões). NÃO crie nota para cada mensagem — apenas informações relevantes para o time.
+- update_custom_field: preencha campos personalizados do lead. Use o nome do campo (field) e valor (value). Para multiselect: {"type":"update_custom_field","field":"interesses","value":["opcao1","opcao2"]}
 - assign_human: use quando o cliente pedir explicitamente para falar com uma pessoa ou quando você não conseguir responder. Inclua essa action junto com a resposta de transferência.$calendarActions
 JSONINSTR;
         }
@@ -641,6 +704,22 @@ WEBCHAT;
         }
 
         return $history;
+    }
+
+    private function formatCustomFieldValue(?CustomFieldValue $cfv, CustomFieldDefinition $cf): string
+    {
+        if (! $cfv) {
+            return '(vazio)';
+        }
+
+        return match ($cf->field_type) {
+            'number'      => $cfv->value_number !== null ? (string) $cfv->value_number : '(vazio)',
+            'currency'    => $cfv->value_number !== null ? 'R$ ' . number_format((float) $cfv->value_number, 2, ',', '.') : '(vazio)',
+            'date'        => $cfv->value_date ? $cfv->value_date->format('d/m/Y') : '(vazio)',
+            'checkbox'    => $cfv->value_boolean ? 'Sim' : 'Não',
+            'multiselect' => ! empty($cfv->value_json) ? implode(', ', (array) $cfv->value_json) : '(vazio)',
+            default       => $cfv->value_text ?: '(vazio)',
+        };
     }
 
     /**

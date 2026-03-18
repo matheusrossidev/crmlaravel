@@ -11,8 +11,11 @@ use App\Models\AiAgent;
 use App\Models\AiIntentSignal;
 use App\Models\AiUsageLog;
 use App\Models\Department;
+use App\Models\CustomFieldDefinition;
+use App\Models\CustomFieldValue;
 use App\Models\Lead;
 use App\Models\LeadEvent;
+use App\Models\LeadNote;
 use App\Models\OAuthConnection;
 use App\Models\TenantTokenIncrement;
 use App\Models\PlanDefinition;
@@ -30,6 +33,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ProcessAiResponse implements ShouldQueue
 {
@@ -519,6 +523,10 @@ class ProcessAiResponse implements ShouldQueue
                 }
             } elseif ($type === 'update_lead') {
                 $this->applyUpdateLead($conv, $action, $lead);
+            } elseif ($type === 'create_note') {
+                $this->applyCreateNote($conv, $action, $lead);
+            } elseif ($type === 'update_custom_field') {
+                $this->applyUpdateCustomField($conv, $action, $lead);
             } elseif (in_array($type, ['calendar_create', 'calendar_reschedule', 'calendar_cancel', 'calendar_list'], true)) {
                 if ($calendarService !== null) {
                     $extra = $this->applyCalendarAction($conv, $action, $calendarService, $lead ?? null);
@@ -807,6 +815,62 @@ class ProcessAiResponse implements ShouldQueue
             'content' => $m['content'],
         ], $rawHistory);
 
+        // ── Montar contexto do lead para o Agno ──────────────────────────────
+        $leadData       = null;
+        $customFieldsCtx = [];
+        $notesCtx        = [];
+
+        $lead = $conv->lead_id ? Lead::withoutGlobalScope('tenant')->find($conv->lead_id) : null;
+        if ($lead) {
+            $leadData = [
+                'name'     => $lead->name,
+                'phone'    => $lead->phone,
+                'email'    => $lead->email,
+                'company'  => $lead->company,
+                'birthday' => $lead->birthday?->format('Y-m-d'),
+                'value'    => $lead->value ? (float) $lead->value : null,
+            ];
+
+            // Campos personalizados
+            $fieldDefs = CustomFieldDefinition::where('tenant_id', $lead->tenant_id)
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get();
+
+            foreach ($fieldDefs as $cf) {
+                $cfv = CustomFieldValue::where('lead_id', $lead->id)
+                    ->where('field_id', $cf->id)->first();
+                $currentVal = match ($cf->field_type) {
+                    'number', 'currency' => $cfv?->value_number,
+                    'date'               => $cfv?->value_date?->format('Y-m-d'),
+                    'checkbox'           => $cfv?->value_boolean,
+                    'multiselect'        => $cfv?->value_json,
+                    default              => $cfv?->value_text,
+                };
+                $customFieldsCtx[] = [
+                    'name'    => $cf->name,
+                    'label'   => $cf->label,
+                    'type'    => $cf->field_type,
+                    'options' => $cf->options_json ?? [],
+                    'value'   => $currentVal,
+                ];
+            }
+
+            // Últimas 5 notas
+            $notes = LeadNote::where('lead_id', $lead->id)
+                ->orderByDesc('created_at')
+                ->limit(5)
+                ->get();
+
+            foreach ($notes as $note) {
+                $notesCtx[] = [
+                    'author' => $note->created_by ? ($note->creator->name ?? 'Usuário') : 'IA',
+                    'date'   => $note->created_at?->format('Y-m-d H:i'),
+                    'body'   => Str::limit($note->body, 200),
+                ];
+            }
+        }
+
         $agnoResult = app(AgnoService::class)->chat([
             'agent_id'        => $agent->id,
             'tenant_id'       => $agent->tenant_id,
@@ -818,6 +882,9 @@ class ProcessAiResponse implements ShouldQueue
             'pipeline_stages' => $stages,
             'available_tags'  => $availTags,
             'memories'        => $memories,
+            'lead_data'       => $leadData,
+            'custom_fields'   => $customFieldsCtx,
+            'lead_notes'      => $notesCtx,
         ]);
 
         // Flatten nested payload in actions to match the existing PHP action executor format.
@@ -838,9 +905,17 @@ class ProcessAiResponse implements ShouldQueue
         $field = (string) ($action['field'] ?? '');
         $value = trim((string) ($action['value'] ?? ''));
 
-        $allowed = ['name', 'email', 'company', 'birthday'];
+        $allowed = ['name', 'email', 'company', 'birthday', 'value'];
         if ($field === '' || $value === '' || ! in_array($field, $allowed, true)) {
             return;
+        }
+
+        // Validar valor monetário
+        if ($field === 'value') {
+            $value = str_replace(['.', ','], ['', '.'], $value); // 1.500,00 → 1500.00
+            if (! is_numeric($value)) {
+                return;
+            }
         }
 
         $lead = $lead ?? ($conv->lead_id ? Lead::withoutGlobalScope('tenant')->find($conv->lead_id) : null);
@@ -872,7 +947,7 @@ class ProcessAiResponse implements ShouldQueue
 
         $lead->update([$field => $value]);
 
-        $labels = ['name' => 'nome', 'email' => 'e-mail', 'company' => 'empresa', 'birthday' => 'data de nascimento'];
+        $labels = ['name' => 'nome', 'email' => 'e-mail', 'company' => 'empresa', 'birthday' => 'data de nascimento', 'value' => 'valor do lead'];
         $label  = $labels[$field] ?? $field;
         $displayValue = $field === 'birthday'
             ? \Carbon\Carbon::parse($value)->format('d/m/Y')
@@ -894,6 +969,113 @@ class ProcessAiResponse implements ShouldQueue
             'field'           => $field,
             'value'           => $displayValue,
         ]);
+    }
+
+    private function applyCreateNote(WhatsappConversation $conv, array $action, ?Lead $lead): void
+    {
+        $body = trim((string) ($action['body'] ?? ''));
+        if ($body === '' || mb_strlen($body) > 1000) {
+            return;
+        }
+
+        $lead = $lead ?? ($conv->lead_id ? Lead::withoutGlobalScope('tenant')->find($conv->lead_id) : null);
+        if (! $lead) {
+            return;
+        }
+
+        LeadNote::create([
+            'tenant_id'  => $lead->tenant_id,
+            'lead_id'    => $lead->id,
+            'body'       => $body,
+            'created_by' => null, // null = IA
+        ]);
+
+        LeadEvent::create([
+            'tenant_id'    => $lead->tenant_id,
+            'lead_id'      => $lead->id,
+            'event_type'   => 'ai_note_created',
+            'description'  => '🤖 IA adicionou nota: ' . Str::limit($body, 80),
+            'data_json'    => ['source' => 'ai_agent'],
+            'performed_by' => null,
+            'created_at'   => now(),
+        ]);
+
+        Log::channel('whatsapp')->info('AI create_note aplicado', [
+            'conversation_id' => $conv->id,
+            'lead_id'         => $lead->id,
+            'body'            => Str::limit($body, 100),
+        ]);
+    }
+
+    private function applyUpdateCustomField(WhatsappConversation $conv, array $action, ?Lead $lead): void
+    {
+        $fieldName = (string) ($action['field'] ?? '');
+        $value     = $action['value'] ?? '';
+        if ($fieldName === '') {
+            return;
+        }
+
+        $lead = $lead ?? ($conv->lead_id ? Lead::withoutGlobalScope('tenant')->find($conv->lead_id) : null);
+        if (! $lead) {
+            return;
+        }
+
+        $fieldDef = CustomFieldDefinition::where('tenant_id', $lead->tenant_id)
+            ->where('name', $fieldName)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $fieldDef) {
+            Log::channel('whatsapp')->warning('AI update_custom_field: campo não encontrado', [
+                'conversation_id' => $conv->id,
+                'field'           => $fieldName,
+            ]);
+            return;
+        }
+
+        $cfv = CustomFieldValue::firstOrNew([
+            'lead_id'  => $lead->id,
+            'field_id' => $fieldDef->id,
+        ]);
+
+        // Setar valor no campo correto conforme o tipo
+        match ($fieldDef->field_type) {
+            'number', 'currency' => $cfv->value_number = is_numeric($value) ? (float) $value : null,
+            'date'               => $cfv->value_date = $this->parseDateValue($value),
+            'checkbox'           => $cfv->value_boolean = filter_var($value, FILTER_VALIDATE_BOOLEAN),
+            'multiselect'        => $cfv->value_json = is_array($value) ? $value : [$value],
+            default              => $cfv->value_text = (string) $value,
+        };
+        $cfv->save();
+
+        $displayValue = is_array($value) ? implode(', ', $value) : (string) $value;
+
+        LeadEvent::create([
+            'tenant_id'    => $lead->tenant_id,
+            'lead_id'      => $lead->id,
+            'event_type'   => 'ai_data_updated',
+            'description'  => "🤖 IA preencheu '{$fieldDef->label}': " . Str::limit($displayValue, 60),
+            'data_json'    => ['source' => 'ai_agent', 'custom_field' => $fieldName, 'value' => $value],
+            'performed_by' => null,
+            'created_at'   => now(),
+        ]);
+
+        Log::channel('whatsapp')->info('AI update_custom_field aplicado', [
+            'conversation_id' => $conv->id,
+            'lead_id'         => $lead->id,
+            'field'           => $fieldName,
+            'label'           => $fieldDef->label,
+            'value'           => $displayValue,
+        ]);
+    }
+
+    private function parseDateValue(mixed $value): ?string
+    {
+        try {
+            return \Carbon\Carbon::parse($value)->format('Y-m-d');
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     private function applySetStage(WhatsappConversation $conv, int $stageId, AiAgent $agent, array $stages): void
