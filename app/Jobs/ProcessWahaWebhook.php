@@ -223,9 +223,11 @@ class ProcessWahaWebhook implements ShouldQueue
             } catch (\Throwable) {}
         }
 
-        // BLOQUEAR: se phone continua sendo LID após resolução.
-        // Usa $fromIsLid para pegar LIDs de 13 dígitos que strlen>13 não captura.
-        if (! $isGroup && ! empty($phone) && ctype_digit($phone) && ($fromIsLid || strlen($phone) > 13)) {
+        // BLOQUEAR: se phone continua sendo o LID (resolução falhou).
+        // Se $currentLid existe e phone != currentLid → resolução funcionou, NÃO bloquear.
+        $phoneStillLid = $currentLid && $phone === $currentLid;
+        $phoneTooLong  = strlen($phone) > 13 && ctype_digit($phone);
+        if (! $isGroup && ! empty($phone) && ($phoneStillLid || $phoneTooLong)) {
             Log::channel('whatsapp')->info('BLOQUEADO: LID não resolvido — conversa ignorada', [
                 'phone'  => $phone,
                 'from'   => $from,
