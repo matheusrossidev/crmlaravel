@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Support\TenantCache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -31,8 +32,9 @@ class CampaignController extends Controller
               ->orWhereNotNull('leads.utm_campaign');
         };
 
-        // ── UTM Breakdown (agrupamento por utm_source + utm_medium + utm_campaign + utm_term + utm_content)
-        $utmBreakdown = Lead::query()
+        // ── UTM Breakdown (cached 30min per period)
+        $utmBreakdown = TenantCache::remember('campaigns:utm', 1800, function () use ($since, $utmFilter) {
+        return Lead::query()
             ->select([
                 DB::raw('COALESCE(leads.utm_source, "(direto)") as utm_source'),
                 DB::raw('COALESCE(leads.utm_medium, "(direto)") as utm_medium'),
@@ -65,6 +67,7 @@ class CampaignController extends Controller
                     'conv_rate'    => $leads > 0 ? round($conv / $leads * 100, 1) : 0,
                 ];
             });
+        }, (string) $days);
 
         // ── KPIs totais (período atual)
         $totalLeads       = $utmBreakdown->sum('leads');

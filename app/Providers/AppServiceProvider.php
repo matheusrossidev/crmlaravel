@@ -8,6 +8,12 @@ use App\Events\AiIntentDetected;
 use App\Events\MasterNotificationSent;
 use App\Events\WhatsappMessageCreated;
 use App\Http\ViewComposers\UpsellBannerComposer;
+use App\Models\Lead;
+use App\Models\LostSale;
+use App\Models\Sale;
+use App\Observers\LeadObserver;
+use App\Observers\LostSaleObserver;
+use App\Observers\SaleObserver;
 use App\Models\WhatsappTag;
 use App\Services\NotificationDispatcher;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -30,6 +36,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Schema::defaultStringLength(191);
+
+        // Cache invalidation observers
+        Lead::observe(LeadObserver::class);
+        Sale::observe(SaleObserver::class);
+        LostSale::observe(LostSaleObserver::class);
 
         Gate::define('viewPulse', fn ($user) => $user->is_super_admin === true);
 

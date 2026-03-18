@@ -9,6 +9,7 @@ use App\Models\Lead;
 use App\Models\LostSale;
 use App\Models\Pipeline;
 use App\Models\Sale;
+use App\Support\TenantCache;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
@@ -130,138 +131,135 @@ class DashboardController extends Controller
     private function buildDashboardData(): array
     {
         $allowedPipelineIds = auth()->user()->allowedPipelineIds();
+        $tenantId           = auth()->user()->tenant_id;
 
-        // ── Métricas principais ────────────────────────────────────────────
-        $leadsThisMonth = Lead::where('exclude_from_pipeline', false)
-            ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
-            ->whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
-            ->count();
-
-        $leadsLastMonth = Lead::where('exclude_from_pipeline', false)
-            ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
-            ->whereMonth('created_at', now()->subMonth()->month)
-            ->whereYear('created_at', now()->subMonth()->year)
-            ->count();
-
-        $leadsTrend = $leadsLastMonth > 0
-            ? (int) round(($leadsThisMonth - $leadsLastMonth) / $leadsLastMonth * 100)
-            : null;
-
-        $totalSales = (float) Sale::whereMonth('closed_at', now()->month)
-            ->whereYear('closed_at', now()->year)
-            ->sum('value');
-
-        $salesLastMonth = (float) Sale::whereMonth('closed_at', now()->subMonth()->month)
-            ->whereYear('closed_at', now()->subMonth()->year)
-            ->sum('value');
-
-        $salesTrend = $salesLastMonth > 0
-            ? (int) round(($totalSales - $salesLastMonth) / $salesLastMonth * 100)
-            : null;
-
-        $leadsGanhos = Sale::whereMonth('closed_at', now()->month)
-            ->whereYear('closed_at', now()->year)
-            ->count();
-
-        $ticketMedio = $leadsGanhos > 0 ? $totalSales / $leadsGanhos : 0;
-
-        // Leads perdidos este mês
-        $leadsPerdidos = LostSale::whereMonth('lost_at', now()->month)
-            ->whereYear('lost_at', now()->year)
-            ->count();
-
-        // Taxa de conversão geral (vendas totais / leads totais)
-        $totalLeads     = Lead::where('exclude_from_pipeline', false)
-            ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
-            ->count();
-        $wonTotal       = Sale::count();
-        $conversionRate = $totalLeads > 0 ? round($wonTotal / $totalLeads * 100, 1) : 0;
-
-        // ── Compact number formatting ──────────────────────────────────────
+        // ── Compact number formatting helper ─────────────────────────────────
         $cfFmt = static function (float $v, string $pre = '', string $suf = ''): string {
             if ($v >= 1_000_000) return $pre . number_format($v / 1_000_000, 1, ',', '.') . 'M' . $suf;
             if ($v >= 1_000)     return $pre . number_format($v / 1_000,     1, ',', '.') . 'K' . $suf;
             return $pre . number_format($v, 0, ',', '.') . $suf;
         };
+
+        // ── Stat cards (cached 5 min) ────────────────────────────────────────
+        $stats = TenantCache::remember('dashboard:stats', 300, function () use ($allowedPipelineIds) {
+            $leadsThisMonth = Lead::where('exclude_from_pipeline', false)
+                ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->count();
+
+            $leadsLastMonth = Lead::where('exclude_from_pipeline', false)
+                ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
+                ->whereMonth('created_at', now()->subMonth()->month)
+                ->whereYear('created_at', now()->subMonth()->year)
+                ->count();
+
+            $totalSales = (float) Sale::whereMonth('closed_at', now()->month)
+                ->whereYear('closed_at', now()->year)->sum('value');
+            $salesLastMonth = (float) Sale::whereMonth('closed_at', now()->subMonth()->month)
+                ->whereYear('closed_at', now()->subMonth()->year)->sum('value');
+            $leadsGanhos = Sale::whereMonth('closed_at', now()->month)
+                ->whereYear('closed_at', now()->year)->count();
+            $leadsPerdidos = LostSale::whereMonth('lost_at', now()->month)
+                ->whereYear('lost_at', now()->year)->count();
+            $totalLeads = Lead::where('exclude_from_pipeline', false)
+                ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))->count();
+            $wonTotal = Sale::count();
+
+            return compact('leadsThisMonth', 'leadsLastMonth', 'totalSales', 'salesLastMonth',
+                'leadsGanhos', 'leadsPerdidos', 'totalLeads', 'wonTotal');
+        });
+
+        $leadsThisMonth = $stats['leadsThisMonth'];
+        $totalSales     = $stats['totalSales'];
+        $leadsGanhos    = $stats['leadsGanhos'];
+        $leadsPerdidos  = $stats['leadsPerdidos'];
+        $ticketMedio    = $leadsGanhos > 0 ? $totalSales / $leadsGanhos : 0;
+        $conversionRate = $stats['totalLeads'] > 0 ? round($stats['wonTotal'] / $stats['totalLeads'] * 100, 1) : 0;
+        $leadsTrend     = $stats['leadsLastMonth'] > 0
+            ? (int) round(($leadsThisMonth - $stats['leadsLastMonth']) / $stats['leadsLastMonth'] * 100) : null;
+        $salesTrend     = $stats['salesLastMonth'] > 0
+            ? (int) round(($totalSales - $stats['salesLastMonth']) / $stats['salesLastMonth'] * 100) : null;
+
         $cfLeads    = $cfFmt((float) $leadsThisMonth);
         $cfSales    = $cfFmt((float) $totalSales, 'R$ ');
         $cfTicket   = $cfFmt((float) $ticketMedio, 'R$ ');
         $cfPerdidos = $cfFmt((float) $leadsPerdidos);
 
-        // Motivos de perda (todos os tempos, top 8)
-        $tenantId     = auth()->user()->tenant_id;
-        $lostByReason = DB::table('lost_sales')
-            ->select(DB::raw('lost_sale_reasons.name as reason_name'), DB::raw('count(*) as total'))
-            ->leftJoin('lost_sale_reasons', 'lost_sales.reason_id', '=', 'lost_sale_reasons.id')
-            ->where('lost_sales.tenant_id', $tenantId)
-            ->groupBy('lost_sales.reason_id', 'lost_sale_reasons.name')
-            ->orderByDesc('total')
-            ->limit(8)
-            ->get()
-            ->map(fn ($r) => [
-                'name'  => $r->reason_name ?? 'Sem motivo',
-                'total' => (int) $r->total,
-            ])
-            ->toArray();
+        // ── Lost by reason (cached 6h) ───────────────────────────────────────
+        $lostByReason = TenantCache::remember('dashboard:lostReasons', 21600, function () use ($tenantId) {
+            return DB::table('lost_sales')
+                ->select(DB::raw('lost_sale_reasons.name as reason_name'), DB::raw('count(*) as total'))
+                ->leftJoin('lost_sale_reasons', 'lost_sales.reason_id', '=', 'lost_sale_reasons.id')
+                ->where('lost_sales.tenant_id', $tenantId)
+                ->groupBy('lost_sales.reason_id', 'lost_sale_reasons.name')
+                ->orderByDesc('total')->limit(8)->get()
+                ->map(fn ($r) => ['name' => $r->reason_name ?? 'Sem motivo', 'total' => (int) $r->total])
+                ->toArray();
+        });
 
-        // ── Gráficos: últimos 6 meses ──────────────────────────────────────
-        $monthLabels   = [];
-        $leadsPerMonth = [];
-        $salesPerMonth = [];
+        // ── 6 months chart (cached 1h) — FIX N+1: single GROUP BY ────────────
+        $monthlyData = TenantCache::remember('dashboard:monthly', 3600, function () use ($allowedPipelineIds) {
+            $since = now()->subMonths(5)->startOfMonth();
 
-        for ($i = 5; $i >= 0; $i--) {
-            $m             = now()->copy()->subMonths($i);
-            $monthLabels[] = ucfirst($m->translatedFormat('M/y'));
-
-            $leadsPerMonth[] = Lead::where('exclude_from_pipeline', false)
+            $leads = Lead::where('exclude_from_pipeline', false)
                 ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
-                ->whereYear('created_at', $m->year)
-                ->whereMonth('created_at', $m->month)
-                ->count();
+                ->where('created_at', '>=', $since)
+                ->selectRaw('YEAR(created_at) as y, MONTH(created_at) as m, COUNT(*) as total')
+                ->groupByRaw('YEAR(created_at), MONTH(created_at)')
+                ->get()->mapWithKeys(fn ($r) => ["{$r->y}-{$r->m}" => (int) $r->total]);
 
-            $salesPerMonth[] = (float) Sale::whereYear('closed_at', $m->year)
-                ->whereMonth('closed_at', $m->month)
-                ->sum('value');
+            $sales = Sale::where('closed_at', '>=', $since)
+                ->selectRaw('YEAR(closed_at) as y, MONTH(closed_at) as m, SUM(value) as total')
+                ->groupByRaw('YEAR(closed_at), MONTH(closed_at)')
+                ->get()->mapWithKeys(fn ($r) => ["{$r->y}-{$r->m}" => (float) $r->total]);
+
+            return ['leads' => $leads, 'sales' => $sales];
+        });
+
+        $monthLabels = $leadsPerMonth = $salesPerMonth = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $m = now()->copy()->subMonths($i);
+            $monthLabels[]   = ucfirst($m->translatedFormat('M/y'));
+            $key             = "{$m->year}-{$m->month}";
+            $leadsPerMonth[] = $monthlyData['leads'][$key] ?? 0;
+            $salesPerMonth[] = $monthlyData['sales'][$key] ?? 0;
         }
 
-        // ── Gráfico de leads: dias do mês atual por origem ────────────────
+        // ── Leads per day by source (cached 5 min) ───────────────────────────
+        $daySourceData = TenantCache::remember('dashboard:daySource', 300, function () use ($allowedPipelineIds) {
+            return Lead::where('exclude_from_pipeline', false)
+                ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
+                ->selectRaw('DAY(created_at) as day, source, COUNT(*) as total')
+                ->whereYear('created_at', now()->year)
+                ->whereMonth('created_at', now()->month)
+                ->groupBy('day', 'source')->get();
+        });
+
         $daysInMonth = now()->daysInMonth;
         $dayLabels   = range(1, $daysInMonth);
-
-        $rawBySourceDay = Lead::where('exclude_from_pipeline', false)
-            ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
-            ->selectRaw('DAY(created_at) as day, source, COUNT(*) as total')
-            ->whereYear('created_at', now()->year)
-            ->whereMonth('created_at', now()->month)
-            ->groupBy('day', 'source')
-            ->get();
-
-        $srcKeysDay = $rawBySourceDay->pluck('source')->unique()->filter()->values();
+        $srcKeysDay  = $daySourceData->pluck('source')->unique()->filter()->values();
         $leadsPerDayBySource = [];
         foreach ($srcKeysDay as $src) {
             $leadsPerDayBySource[(string) $src] = collect($dayLabels)->map(
-                fn($day) => (int) $rawBySourceDay->where('source', $src)->where('day', $day)->sum('total')
+                fn($day) => (int) $daySourceData->where('source', $src)->where('day', $day)->sum('total')
             )->values()->all();
         }
-
         $leadsPerDay = collect($dayLabels)->map(
-            fn($day) => (int) $rawBySourceDay->where('day', $day)->sum('total')
+            fn($day) => (int) $daySourceData->where('day', $day)->sum('total')
         )->values()->all();
 
-        // ── Leads por origem (top 6) ───────────────────────────────────────
-        $leadsBySource = Lead::where('exclude_from_pipeline', false)
-            ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
-            ->selectRaw('source, count(*) as total')
-            ->whereNotNull('source')
-            ->where('source', '!=', '')
-            ->groupBy('source')
-            ->orderByDesc('total')
-            ->limit(6)
-            ->pluck('total', 'source')
-            ->toArray();
+        // ── Top sources (cached 2h) ──────────────────────────────────────────
+        $leadsBySource = TenantCache::remember('dashboard:sources', 7200, function () use ($allowedPipelineIds) {
+            return Lead::where('exclude_from_pipeline', false)
+                ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
+                ->selectRaw('source, count(*) as total')
+                ->whereNotNull('source')->where('source', '!=', '')
+                ->groupBy('source')->orderByDesc('total')->limit(6)
+                ->pluck('total', 'source')->toArray();
+        });
 
-        // ── Funil do pipeline padrão ───────────────────────────────────────
+        // ── Pipeline funnel (cached 5 min) — FIX N+1: single GROUP BY ────────
         $pipeline = Pipeline::where('is_default', true)->with('stages')
             ->when($allowedPipelineIds, fn ($q) => $q->whereIn('id', $allowedPipelineIds))
             ->first()
@@ -271,10 +269,18 @@ class DashboardController extends Controller
 
         $stagesWithCount = [];
         if ($pipeline) {
+            $stageCounts = TenantCache::remember('dashboard:stages', 300, function () use ($pipeline) {
+                return Lead::where('exclude_from_pipeline', false)
+                    ->whereIn('stage_id', $pipeline->stages->pluck('id'))
+                    ->selectRaw('stage_id, COUNT(*) as total')
+                    ->groupBy('stage_id')
+                    ->pluck('total', 'stage_id');
+            });
+
             foreach ($pipeline->stages as $stage) {
                 $stagesWithCount[] = [
                     'name'  => $stage->name,
-                    'count' => Lead::where('exclude_from_pipeline', false)->where('stage_id', $stage->id)->count(),
+                    'count' => $stageCounts[$stage->id] ?? 0,
                     'color' => $stage->color,
                 ];
             }
@@ -283,29 +289,12 @@ class DashboardController extends Controller
         $maxStageCount = collect($stagesWithCount)->max('count') ?: 1;
 
         return compact(
-            'leadsThisMonth',
-            'leadsTrend',
-            'totalSales',
-            'salesTrend',
-            'leadsGanhos',
-            'leadsPerdidos',
-            'ticketMedio',
-            'conversionRate',
-            'cfLeads',
-            'cfSales',
-            'cfTicket',
-            'cfPerdidos',
-            'lostByReason',
-            'monthLabels',
-            'leadsPerMonth',
-            'salesPerMonth',
-            'leadsBySource',
-            'dayLabels',
-            'leadsPerDay',
-            'leadsPerDayBySource',
-            'stagesWithCount',
-            'pipeline',
-            'maxStageCount',
+            'leadsThisMonth', 'leadsTrend', 'totalSales', 'salesTrend',
+            'leadsGanhos', 'leadsPerdidos', 'ticketMedio', 'conversionRate',
+            'cfLeads', 'cfSales', 'cfTicket', 'cfPerdidos',
+            'lostByReason', 'monthLabels', 'leadsPerMonth', 'salesPerMonth',
+            'leadsBySource', 'dayLabels', 'leadsPerDay', 'leadsPerDayBySource',
+            'stagesWithCount', 'pipeline', 'maxStageCount',
         );
     }
 }

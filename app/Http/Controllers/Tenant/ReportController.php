@@ -15,6 +15,7 @@ use App\Models\Sale;
 use App\Models\User;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappMessage;
+use App\Support\TenantCache;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -167,50 +168,54 @@ class ReportController extends Controller
         // 3. PIPELINE / FUNIL
         // ══════════════════════════════════════════════════════════════════════
 
-        $pipelineRows = Pipeline::when($filterPipeline, fn ($q) => $q->where('id', $filterPipeline))
+        // FIX N+1: load all stage counts + avg days in 2 queries instead of 2 per stage
+        $pipelinesRaw = Pipeline::when($filterPipeline, fn ($q) => $q->where('id', $filterPipeline))
             ->with(['stages' => fn ($q) => $q->orderBy('position')])
-            ->orderBy('sort_order')
-            ->get()
-            ->map(function (Pipeline $pipeline) use ($dateFrom, $dateTo) {
-                $stagesData = $pipeline->stages->map(function ($stage) use ($dateFrom, $dateTo) {
-                    $avgDays = Lead::where('exclude_from_pipeline', false)
-                        ->where('stage_id', $stage->id)
-                        ->selectRaw('AVG(DATEDIFF(NOW(), updated_at)) as avg_d')
-                        ->value('avg_d');
-                    return [
-                        'stage'    => $stage,
-                        'count'    => Lead::where('exclude_from_pipeline', false)
-                            ->where('stage_id', $stage->id)
-                            ->whereBetween('created_at', [$dateFrom, $dateTo])
-                            ->count(),
-                        'avg_days' => $avgDays !== null ? (int) round((float) $avgDays) : null,
-                    ];
-                });
+            ->orderBy('sort_order')->get();
 
-                // Calcula largura visual do funil: normal stages 100→32%, won/lost ambos em 28%
-                $normalStages = $stagesData->filter(fn ($s) => ! $s['stage']->is_won && ! $s['stage']->is_lost);
-                $normalCount  = max($normalStages->count(), 1);
-                $normalIdx    = 0;
-                $stagesData   = $stagesData->map(function ($s) use (&$normalIdx, $normalCount) {
-                    if ($s['stage']->is_won || $s['stage']->is_lost) {
-                        $s['bar_width'] = 28;
-                    } else {
-                        $s['bar_width'] = $normalCount > 1
-                            ? (int) round(100 - (68 * $normalIdx / ($normalCount - 1)))
-                            : 100;
-                        $normalIdx++;
-                    }
-                    return $s;
-                });
+        $allStageIds = $pipelinesRaw->flatMap(fn ($p) => $p->stages->pluck('id'))->unique();
 
-                $totalInPipeline = $stagesData->sum('count');
+        $stageCounts = $allStageIds->isNotEmpty()
+            ? Lead::where('exclude_from_pipeline', false)
+                ->whereIn('stage_id', $allStageIds)
+                ->whereBetween('created_at', [$dateFrom, $dateTo])
+                ->selectRaw('stage_id, COUNT(*) as total')
+                ->groupBy('stage_id')
+                ->pluck('total', 'stage_id')
+            : collect();
 
-                return [
-                    'pipeline'  => $pipeline,
-                    'stages'    => $stagesData,
-                    'total'     => $totalInPipeline,
-                ];
+        $stageAvgDays = $allStageIds->isNotEmpty()
+            ? Lead::where('exclude_from_pipeline', false)
+                ->whereIn('stage_id', $allStageIds)
+                ->selectRaw('stage_id, AVG(DATEDIFF(NOW(), updated_at)) as avg_d')
+                ->groupBy('stage_id')
+                ->pluck('avg_d', 'stage_id')
+            : collect();
+
+        $pipelineRows = $pipelinesRaw->map(function (Pipeline $pipeline) use ($stageCounts, $stageAvgDays) {
+            $stagesData = $pipeline->stages->map(fn ($stage) => [
+                'stage'    => $stage,
+                'count'    => (int) ($stageCounts[$stage->id] ?? 0),
+                'avg_days' => isset($stageAvgDays[$stage->id]) ? (int) round((float) $stageAvgDays[$stage->id]) : null,
+            ]);
+
+            $normalStages = $stagesData->filter(fn ($s) => ! $s['stage']->is_won && ! $s['stage']->is_lost);
+            $normalCount  = max($normalStages->count(), 1);
+            $normalIdx    = 0;
+            $stagesData   = $stagesData->map(function ($s) use (&$normalIdx, $normalCount) {
+                if ($s['stage']->is_won || $s['stage']->is_lost) {
+                    $s['bar_width'] = 28;
+                } else {
+                    $s['bar_width'] = $normalCount > 1
+                        ? (int) round(100 - (68 * $normalIdx / ($normalCount - 1)))
+                        : 100;
+                    $normalIdx++;
+                }
+                return $s;
             });
+
+            return ['pipeline' => $pipeline, 'stages' => $stagesData, 'total' => $stagesData->sum('count')];
+        });
 
         // ══════════════════════════════════════════════════════════════════════
         // 4. LEADS PERDIDOS
@@ -270,35 +275,40 @@ class ReportController extends Controller
         // 5. DESEMPENHO POR VENDEDOR
         // ══════════════════════════════════════════════════════════════════════
 
-        $tenantId   = auth()->user()->tenant_id;
-        $vendedores = User::where('tenant_id', $tenantId)
-            ->orderBy('name')
-            ->get()
-            ->map(function (User $user) use ($dateFrom, $dateTo, $filterCampaign, $filterPipeline) {
-                $leads   = Lead::where('assigned_to', $user->id)
-                    ->whereBetween('created_at', [$dateFrom, $dateTo])
-                    ->when($filterCampaign, fn ($q) => $q->where('campaign_id', $filterCampaign))
-                    ->when($filterPipeline, fn ($q) => $q->where('pipeline_id', $filterPipeline))
-                    ->count();
-                $vendas  = Sale::where('closed_by', $user->id)
-                    ->whereBetween('closed_at', [$dateFrom, $dateTo])
-                    ->when($filterCampaign, fn ($q) => $q->where('campaign_id', $filterCampaign))
-                    ->when($filterPipeline, fn ($q) => $q->where('pipeline_id', $filterPipeline))
-                    ->count();
-                $receita = (float) (Sale::where('closed_by', $user->id)
-                    ->whereBetween('closed_at', [$dateFrom, $dateTo])
-                    ->sum('value') ?? 0);
-                return [
-                    'user'    => $user,
-                    'leads'   => $leads,
-                    'vendas'  => $vendas,
-                    'receita' => $receita,
-                    'conv'    => $leads > 0 ? round($vendas / $leads * 100, 1) : 0,
-                ];
-            })
-            ->filter(fn ($r) => $r['leads'] > 0 || $r['vendas'] > 0)
-            ->sortByDesc('receita')
-            ->values();
+        // FIX N+1: 2 GROUP BY queries instead of 3 per user
+        $tenantId = auth()->user()->tenant_id;
+        $allUsers = User::where('tenant_id', $tenantId)->orderBy('name')->get();
+
+        $vendorLeadCounts = Lead::whereBetween('created_at', [$dateFrom, $dateTo])
+            ->when($filterCampaign, fn ($q) => $q->where('campaign_id', $filterCampaign))
+            ->when($filterPipeline, fn ($q) => $q->where('pipeline_id', $filterPipeline))
+            ->whereNotNull('assigned_to')
+            ->selectRaw('assigned_to, COUNT(*) as total')
+            ->groupBy('assigned_to')
+            ->pluck('total', 'assigned_to');
+
+        $vendorSaleData = Sale::whereBetween('closed_at', [$dateFrom, $dateTo])
+            ->when($filterCampaign, fn ($q) => $q->where('campaign_id', $filterCampaign))
+            ->when($filterPipeline, fn ($q) => $q->where('pipeline_id', $filterPipeline))
+            ->whereNotNull('closed_by')
+            ->selectRaw('closed_by, COUNT(*) as cnt, SUM(value) as revenue')
+            ->groupBy('closed_by')
+            ->get()->keyBy('closed_by');
+
+        $vendedores = $allUsers->map(function (User $user) use ($vendorLeadCounts, $vendorSaleData) {
+            $leads   = (int) ($vendorLeadCounts[$user->id] ?? 0);
+            $saleRow = $vendorSaleData[$user->id] ?? null;
+            $vendas  = $saleRow ? (int) $saleRow->cnt : 0;
+            $receita = $saleRow ? (float) $saleRow->revenue : 0;
+            return [
+                'user'    => $user,
+                'leads'   => $leads,
+                'vendas'  => $vendas,
+                'receita' => $receita,
+                'conv'    => $leads > 0 ? round($vendas / $leads * 100, 1) : 0,
+            ];
+        })->filter(fn ($r) => $r['leads'] > 0 || $r['vendas'] > 0)
+          ->sortByDesc('receita')->values();
 
         // ══════════════════════════════════════════════════════════════════════
         // 6. WHATSAPP ANALYTICS
@@ -309,23 +319,43 @@ class ReportController extends Controller
         $waComLead  = WhatsappConversation::whereBetween('started_at', [$dateFrom, $dateTo])->where('is_group', false)->whereNotNull('lead_id')->count();
         $waIA       = WhatsappConversation::whereBetween('started_at', [$dateFrom, $dateTo])->where('is_group', false)->whereNotNull('ai_agent_id')->count();
 
-        // Tempo médio de 1ª resposta humana (sample 300 conversas, exclui IA)
+        // Tempo médio de 1ª resposta humana — FIX: single query instead of 600 N+1
+        $tenantId = auth()->user()->tenant_id;
         $avgFirstResponse = null;
-        $convSample       = WhatsappConversation::whereBetween('started_at', [$dateFrom, $dateTo])
-            ->where('is_group', false)->whereNull('ai_agent_id')->limit(300)->pluck('id');
-        $times = [];
-        foreach ($convSample as $cid) {
-            $firstIn  = WhatsappMessage::where('conversation_id', $cid)->where('direction', 'inbound')
-                ->where('is_deleted', false)->orderBy('sent_at')->value('sent_at');
-            if (! $firstIn) continue;
-            $firstOut = WhatsappMessage::where('conversation_id', $cid)->where('direction', 'outbound')
-                ->whereNotNull('user_id')->where('is_deleted', false)
-                ->where('sent_at', '>', $firstIn)->orderBy('sent_at')->value('sent_at');
-            if (! $firstOut) continue;
-            $diff = Carbon::parse($firstIn)->diffInMinutes(Carbon::parse($firstOut));
-            if ($diff <= 1440) $times[] = $diff;
+        try {
+            $convIds = WhatsappConversation::withoutGlobalScope('tenant')
+                ->where('tenant_id', $tenantId)
+                ->whereBetween('started_at', [$dateFrom, $dateTo])
+                ->where('is_group', false)->whereNull('ai_agent_id')
+                ->pluck('id');
+
+            if ($convIds->isNotEmpty()) {
+                $result = DB::selectOne("
+                    SELECT AVG(diff_minutes) as avg_min FROM (
+                        SELECT TIMESTAMPDIFF(MINUTE, fi.first_in, fo.first_out) as diff_minutes
+                        FROM (
+                            SELECT conversation_id, MIN(sent_at) as first_in
+                            FROM whatsapp_messages
+                            WHERE direction = 'inbound' AND is_deleted = 0
+                              AND conversation_id IN ({$convIds->implode(',')})
+                            GROUP BY conversation_id
+                        ) fi
+                        JOIN (
+                            SELECT conversation_id, MIN(sent_at) as first_out
+                            FROM whatsapp_messages
+                            WHERE direction = 'outbound' AND user_id IS NOT NULL AND is_deleted = 0
+                              AND conversation_id IN ({$convIds->implode(',')})
+                            GROUP BY conversation_id
+                        ) fo ON fi.conversation_id = fo.conversation_id
+                        WHERE fo.first_out > fi.first_in
+                          AND TIMESTAMPDIFF(MINUTE, fi.first_in, fo.first_out) <= 1440
+                    ) sub
+                ");
+                $avgFirstResponse = $result && $result->avg_min !== null ? (int) round((float) $result->avg_min) : null;
+            }
+        } catch (\Throwable) {
+            $avgFirstResponse = null;
         }
-        $avgFirstResponse = count($times) > 0 ? (int) round(array_sum($times) / count($times)) : null;
 
         // Mensagens enviadas por atendente humano no período
         $waMsgByUser = WhatsappMessage::where('direction', 'outbound')
@@ -339,29 +369,26 @@ class ReportController extends Controller
         // 7. ORIGEM × CONVERSÃO
         // ══════════════════════════════════════════════════════════════════════
 
-        $sourceConversion = Lead::where('exclude_from_pipeline', false)
-            ->whereBetween('created_at', [$dateFrom, $dateTo])
-            ->selectRaw('COALESCE(source, "manual") as src, COUNT(*) as total')
-            ->groupBy('src')
-            ->get()
-            ->map(function ($row) use ($dateFrom, $dateTo) {
-                $leadIds = Lead::where('exclude_from_pipeline', false)
-                    ->whereBetween('created_at', [$dateFrom, $dateTo])
-                    ->whereRaw('COALESCE(source, "manual") = ?', [$row->src])
-                    ->pluck('id');
-                $vendas  = Sale::whereIn('lead_id', $leadIds)
-                    ->whereBetween('closed_at', [$dateFrom, $dateTo])->count();
-                $receita = (float) (Sale::whereIn('lead_id', $leadIds)
-                    ->whereBetween('closed_at', [$dateFrom, $dateTo])->sum('value') ?? 0);
-                return [
-                    'source'  => ucfirst((string) $row->src),
-                    'leads'   => (int) $row->total,
-                    'vendas'  => $vendas,
-                    'receita' => $receita,
-                    'conv'    => $row->total > 0 ? round($vendas / $row->total * 100, 1) : 0,
-                ];
+        // FIX N+1: single LEFT JOIN query instead of 2 per source
+        $sourceConversion = DB::table('leads')
+            ->where('leads.exclude_from_pipeline', false)
+            ->whereBetween('leads.created_at', [$dateFrom, $dateTo])
+            ->leftJoin('sales', function ($join) use ($dateFrom, $dateTo) {
+                $join->on('sales.lead_id', '=', 'leads.id')
+                     ->whereBetween('sales.closed_at', [$dateFrom, $dateTo]);
             })
-            ->sortByDesc('leads')
+            ->selectRaw('COALESCE(leads.source, "manual") as src, COUNT(DISTINCT leads.id) as leads_count, COUNT(DISTINCT sales.id) as sales_count, COALESCE(SUM(sales.value), 0) as revenue')
+            ->where('leads.tenant_id', $tenantId)
+            ->groupByRaw('COALESCE(leads.source, "manual")')
+            ->orderByDesc('leads_count')
+            ->get()
+            ->map(fn ($row) => [
+                'source'  => ucfirst((string) $row->src),
+                'leads'   => (int) $row->leads_count,
+                'vendas'  => (int) $row->sales_count,
+                'receita' => (float) $row->revenue,
+                'conv'    => $row->leads_count > 0 ? round($row->sales_count / $row->leads_count * 100, 1) : 0,
+            ])
             ->values();
 
         // ══════════════════════════════════════════════════════════════════════
@@ -374,19 +401,25 @@ class ReportController extends Controller
         // 9. ATIVIDADE DA EQUIPE
         // ══════════════════════════════════════════════════════════════════════
 
-        $teamActivity = User::where('tenant_id', $tenantId)
-            ->orderBy('name')
-            ->get()
-            ->map(function (User $user) use ($dateFrom, $dateTo) {
-                $msgs   = WhatsappMessage::where('user_id', $user->id)->where('direction', 'outbound')
-                    ->whereBetween('sent_at', [$dateFrom, $dateTo])->where('is_deleted', false)->count();
-                $events = LeadEvent::where('performed_by', $user->id)
-                    ->whereBetween('created_at', [$dateFrom, $dateTo])->count();
-                return ['user' => $user, 'msgs' => $msgs, 'events' => $events, 'total' => $msgs + $events];
-            })
-            ->filter(fn ($r) => $r['total'] > 0)
-            ->sortByDesc('total')
-            ->values();
+        // FIX N+1: 2 GROUP BY queries instead of 2 per user
+        $msgsByUser = WhatsappMessage::where('direction', 'outbound')
+            ->whereBetween('sent_at', [$dateFrom, $dateTo])
+            ->where('is_deleted', false)->whereNotNull('user_id')
+            ->selectRaw('user_id, COUNT(*) as total')
+            ->groupBy('user_id')
+            ->pluck('total', 'user_id');
+
+        $eventsByUser = LeadEvent::whereBetween('created_at', [$dateFrom, $dateTo])
+            ->whereNotNull('performed_by')
+            ->selectRaw('performed_by, COUNT(*) as total')
+            ->groupBy('performed_by')
+            ->pluck('total', 'performed_by');
+
+        $teamActivity = $allUsers->map(function (User $user) use ($msgsByUser, $eventsByUser) {
+            $msgs   = (int) ($msgsByUser[$user->id] ?? 0);
+            $events = (int) ($eventsByUser[$user->id] ?? 0);
+            return ['user' => $user, 'msgs' => $msgs, 'events' => $events, 'total' => $msgs + $events];
+        })->filter(fn ($r) => $r['total'] > 0)->sortByDesc('total')->values();
 
         return compact(
             // filtros aplicados

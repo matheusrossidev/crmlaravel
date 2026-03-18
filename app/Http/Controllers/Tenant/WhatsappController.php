@@ -22,6 +22,7 @@ use App\Models\WhatsappMessage;
 use App\Models\WhatsappQuickMessage;
 use App\Models\WhatsappTag;
 use App\Models\Department;
+use App\Support\TenantCache;
 use App\Services\InstagramService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -61,17 +62,18 @@ class WhatsappController extends Controller
             }
             $conversations = $waQuery->orderByDesc('last_message_at')->get();
 
-            $users = User::where('tenant_id', $authUser->tenant_id)
-                ->orderBy('name')
-                ->get(['id', 'name']);
+            $users = TenantCache::remember('config:users', 7200, fn () =>
+                User::where('tenant_id', $authUser->tenant_id)->orderBy('name')->get(['id', 'name'])
+            );
 
-            $pipelines = Pipeline::with('stages:id,pipeline_id,name,position')
-                ->orderBy('sort_order')
-                ->get(['id', 'name', 'is_default']);
+            $pipelines = TenantCache::remember('config:pipelines', 3600, fn () =>
+                Pipeline::with('stages:id,pipeline_id,name,position')->orderBy('sort_order')
+                    ->get(['id', 'name', 'is_default'])
+            );
 
-            $whatsappTags = WhatsappTag::orderBy('sort_order')
-                ->orderBy('name')
-                ->get(['id', 'name', 'color']);
+            $whatsappTags = TenantCache::remember('config:waTags', 3600, fn () =>
+                WhatsappTag::orderBy('sort_order')->orderBy('name')->get(['id', 'name', 'color'])
+            );
         }
 
         // Carregar conversas Instagram independente do WhatsApp estar conectado
@@ -100,25 +102,25 @@ class WhatsappController extends Controller
         }
         $allConversations = $allConversations->sortByDesc('last_message_at')->values();
 
-        $aiAgents     = AiAgent::where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        $aiAgents = TenantCache::remember('config:aiAgents', 1800, fn () =>
+            AiAgent::where('is_active', true)->orderBy('name')->get(['id', 'name'])
+        );
 
-        $chatbotFlows = ChatbotFlow::where('is_active', true)
-            ->whereIn('channel', ['whatsapp', 'instagram'])
-            ->orderBy('name')
-            ->get(['id', 'name', 'channel']);
+        $chatbotFlows = TenantCache::remember('config:chatbotFlows', 1800, fn () =>
+            ChatbotFlow::where('is_active', true)->whereIn('channel', ['whatsapp', 'instagram'])
+                ->orderBy('name')->get(['id', 'name', 'channel'])
+        );
 
-        $quickMessages = WhatsappQuickMessage::orderBy('sort_order')
-            ->orderBy('title')
-            ->get(['id', 'title', 'body'])
-            ->toArray();
+        $quickMessages = TenantCache::remember('config:quickMessages', 3600, fn () =>
+            WhatsappQuickMessage::orderBy('sort_order')->orderBy('title')
+                ->get(['id', 'title', 'body'])->toArray()
+        );
 
         $isPartnerView = session()->has('impersonating_tenant_id');
 
-        $departments = Department::where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'color', 'icon']);
+        $departments = TenantCache::remember('config:departments', 3600, fn () =>
+            Department::where('is_active', true)->orderBy('name')->get(['id', 'name', 'color', 'icon'])
+        );
 
         return view('tenant.whatsapp.index', compact('instance', 'connected', 'conversations', 'igConversations', 'allConversations', 'users', 'pipelines', 'whatsappTags', 'aiAgents', 'chatbotFlows', 'quickMessages', 'isPartnerView', 'departments', 'instanceCount'));
     }
