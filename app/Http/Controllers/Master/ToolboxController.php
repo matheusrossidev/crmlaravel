@@ -6,13 +6,19 @@ namespace App\Http\Controllers\Master;
 
 use App\Http\Controllers\Controller;
 use App\Models\Lead;
+use App\Models\LeadEvent;
+use App\Models\LostSale;
+use App\Models\LostSaleReason;
 use App\Models\PaymentLog;
+use App\Models\Pipeline;
+use App\Models\Sale;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
 use App\Services\WahaService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -41,6 +47,7 @@ class ToolboxController extends Controller
         'reimport-empty-conversations',
         'resolve-lid-conversations',
         'import-asaas-payments',
+        'generate-demo-data',
     ];
 
     public function index(): View
@@ -145,13 +152,26 @@ class ToolboxController extends Controller
 
         $count = Lead::withoutGlobalScope('tenant')->where('tenant_id', $tenantId)->count();
 
+        // Limpar dados relacionados primeiro
+        $salesCount = Sale::withoutGlobalScope('tenant')->where('tenant_id', $tenantId)->count();
+        Sale::withoutGlobalScope('tenant')->where('tenant_id', $tenantId)->delete();
+
+        $lostCount = LostSale::withoutGlobalScope('tenant')->where('tenant_id', $tenantId)->count();
+        LostSale::withoutGlobalScope('tenant')->where('tenant_id', $tenantId)->delete();
+
+        $eventsCount = LeadEvent::withoutGlobalScope('tenant')->where('tenant_id', $tenantId)->count();
+        LeadEvent::withoutGlobalScope('tenant')->where('tenant_id', $tenantId)->delete();
+
         Lead::withoutGlobalScope('tenant')->where('tenant_id', $tenantId)->delete();
 
         return response()->json([
             'success' => true,
             'lines'   => [
                 "Tenant: {$tenant->name}",
-                "{$count} lead(s) removido(s) com sucesso.",
+                "{$count} lead(s) removido(s).",
+                "{$salesCount} venda(s) removida(s).",
+                "{$lostCount} perda(s) removida(s).",
+                "{$eventsCount} evento(s) removido(s).",
             ],
         ]);
     }
@@ -1105,5 +1125,300 @@ class ToolboxController extends Controller
         $lines[] = 'Importação concluída.';
 
         return response()->json(['success' => true, 'lines' => $lines]);
+    }
+
+    // ─── 16. Gerar Dados Demo ────────────────────────────────────────────────
+    private function generateDemoData(Request $request): JsonResponse
+    {
+        $tenantId   = (int) $request->input('tenant_id');
+        $qty        = max(1, min(500, (int) $request->input('quantity', 50)));
+        $dateFrom   = $request->input('date_from', now()->subMonths(3)->format('Y-m-d'));
+        $dateTo     = $request->input('date_to', now()->format('Y-m-d'));
+        $valueMin   = max(0, (float) $request->input('value_min', 500));
+        $valueMax   = max($valueMin, (float) $request->input('value_max', 50000));
+        $pctWon     = max(0, min(100, (int) $request->input('pct_won', 20)));
+        $pctLost    = max(0, min(100 - $pctWon, (int) $request->input('pct_lost', 10)));
+        $withUtms   = (bool) $request->input('with_utms', false);
+        $withTags   = (bool) $request->input('with_tags', false);
+
+        $tenant = Tenant::find($tenantId);
+        if (! $tenant) {
+            return response()->json(['success' => false, 'lines' => ['Tenant não encontrado.']]);
+        }
+
+        $lines = [];
+        $lines[] = "\033[1mTenant: {$tenant->name}\033[0m";
+
+        // Pipeline
+        $pipeline = Pipeline::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('is_default', true)
+            ->first();
+
+        if (! $pipeline) {
+            $pipeline = Pipeline::withoutGlobalScope('tenant')
+                ->where('tenant_id', $tenantId)
+                ->first();
+        }
+
+        if (! $pipeline) {
+            return response()->json(['success' => false, 'lines' => ['Nenhuma pipeline encontrada para este tenant.']]);
+        }
+
+        $stages = $pipeline->stages()->orderBy('position')->get();
+        $wonStage  = $stages->firstWhere('is_won', true);
+        $lostStage = $stages->firstWhere('is_lost', true);
+        $activeStages = $stages->where('is_won', false)->where('is_lost', false)->values();
+
+        $lines[] = "Pipeline: {$pipeline->name} ({$stages->count()} etapas)";
+
+        // Users do tenant
+        $users = User::where('tenant_id', $tenantId)->pluck('id')->toArray();
+
+        // Tags
+        $tagPool = [];
+        if ($withTags) {
+            $tagPool = ['Cliente Novo', 'Recorrente', 'VIP', 'Atacado', 'Promoção', 'Indicação'];
+            $lines[] = "\033[32mTags criadas: " . count($tagPool) . "\033[0m";
+        }
+
+        // UTM combos
+        $utmCombos = [
+            ['source' => 'google',    'medium' => 'cpc',     'campaign' => 'google_ads_marca'],
+            ['source' => 'google',    'medium' => 'cpc',     'campaign' => 'google_ads_concorrentes'],
+            ['source' => 'facebook',  'medium' => 'paid',    'campaign' => 'facebook_remarketing'],
+            ['source' => 'facebook',  'medium' => 'paid',    'campaign' => 'facebook_lookalike'],
+            ['source' => 'instagram', 'medium' => 'paid',    'campaign' => 'instagram_stories'],
+            ['source' => 'instagram', 'medium' => 'social',  'campaign' => 'reels_organico'],
+            ['source' => 'newsletter','medium' => 'email',   'campaign' => 'news_marco_2026'],
+            ['source' => 'whatsapp',  'medium' => 'referral','campaign' => 'indicacao_clientes'],
+            ['source' => 'linkedin',  'medium' => 'social',  'campaign' => 'b2b_outreach'],
+            ['source' => 'youtube',   'medium' => 'video',   'campaign' => 'youtube_tutorial'],
+        ];
+
+        $firstNames = ['Ana', 'Bruno', 'Carla', 'Diego', 'Elisa', 'Fernando', 'Gabriela', 'Hugo', 'Isabela', 'João', 'Karen', 'Lucas', 'Mariana', 'Nicolas', 'Patricia', 'Rafael', 'Sophia', 'Thiago', 'Valentina', 'Wesley', 'Beatriz', 'Caio', 'Daniela', 'Eduardo', 'Fernanda', 'Gustavo', 'Helena', 'Igor', 'Julia', 'Leonardo'];
+        $lastNames  = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Lima', 'Costa', 'Ferreira', 'Rodrigues', 'Almeida', 'Pereira', 'Carvalho', 'Gomes', 'Ribeiro', 'Martins', 'Araujo', 'Vieira', 'Moreira', 'Rocha', 'Correia', 'Nascimento'];
+        $ddds       = ['11','21','31','41','51','61','71','81','91','27','47','48','62','65','67','83','84','85','92','98'];
+        $sources    = ['whatsapp', 'instagram', 'facebook', 'google', 'telefone', 'indicacao', 'site'];
+        $companies  = ['Tech Solutions', 'Casa & Decor', 'Studio Design', 'Consultoria ABC', 'Importadora XYZ', 'Loja do João', 'Clínica Vida', 'Academia Fit', 'Escritório Central', 'Padaria Pão Quente'];
+
+        $from = Carbon::parse($dateFrom)->startOfDay();
+        $to   = Carbon::parse($dateTo)->endOfDay();
+        $diffSeconds = max(1, (int) abs($to->diffInSeconds($from)));
+
+        // Calcular distribuição
+        $qtyWon  = (int) round($qty * $pctWon / 100);
+        $qtyLost = (int) round($qty * $pctLost / 100);
+        $qtyActive = $qty - $qtyWon - $qtyLost;
+
+        // Distribuição dos ativos nas stages
+        $stageWeights = [30, 25, 20, 15, 10];
+        $stageDist = [];
+        foreach ($activeStages as $i => $stage) {
+            $weight = $stageWeights[$i] ?? 5;
+            $stageDist[] = ['stage' => $stage, 'weight' => $weight];
+        }
+        $totalWeight = array_sum(array_column($stageDist, 'weight'));
+
+        // Lost sale reasons
+        $lostReasons = LostSaleReason::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->pluck('id')
+            ->toArray();
+
+        if (empty($lostReasons) && $qtyLost > 0) {
+            foreach (['Preço alto', 'Concorrência', 'Sem resposta'] as $rName) {
+                $r = new LostSaleReason();
+                $r->tenant_id = $tenantId;
+                $r->name = $rName;
+                $r->is_active = true;
+                $r->sort_order = 0;
+                $r->save();
+                $lostReasons[] = $r->id;
+            }
+            $lines[] = "Motivos de perda criados: " . count($lostReasons);
+        }
+
+        $created = 0;
+        $salesTotal = 0.0;
+        $stageCounters = [];
+        $utmCount = 0;
+
+        DB::beginTransaction();
+        try {
+            // Create won leads
+            for ($i = 0; $i < $qtyWon; $i++) {
+                $lead = $this->createDemoLead($tenantId, $pipeline, $wonStage, $firstNames, $lastNames, $ddds, $sources, $companies, $tagPool, $utmCombos, $withUtms, $users, $from, $diffSeconds, $valueMin, $valueMax, $utmCount);
+                $utmCount = $lead['_utmCount'];
+                $stageCounters[$wonStage->name] = ($stageCounters[$wonStage->name] ?? 0) + 1;
+
+                // Create Sale
+                $closedAt = Carbon::parse($lead['created_at'])->addDays(rand(1, 30));
+                if ($closedAt->gt($to)) $closedAt = $to;
+
+                Sale::withoutGlobalScope('tenant')->create([
+                    'tenant_id'   => $tenantId,
+                    'lead_id'     => $lead['id'],
+                    'pipeline_id' => $pipeline->id,
+                    'value'       => $lead['value'],
+                    'closed_by'   => !empty($users) ? $users[array_rand($users)] : null,
+                    'closed_at'   => $closedAt,
+                ]);
+                $salesTotal += (float) $lead['value'];
+                $created++;
+            }
+
+            // Create lost leads
+            for ($i = 0; $i < $qtyLost; $i++) {
+                $lead = $this->createDemoLead($tenantId, $pipeline, $lostStage, $firstNames, $lastNames, $ddds, $sources, $companies, $tagPool, $utmCombos, $withUtms, $users, $from, $diffSeconds, $valueMin, $valueMax, $utmCount);
+                $utmCount = $lead['_utmCount'];
+                $stageCounters[$lostStage->name] = ($stageCounters[$lostStage->name] ?? 0) + 1;
+
+                $lostAt = Carbon::parse($lead['created_at'])->addDays(rand(1, 20));
+                if ($lostAt->gt($to)) $lostAt = $to;
+
+                LostSale::withoutGlobalScope('tenant')->create([
+                    'tenant_id'   => $tenantId,
+                    'lead_id'     => $lead['id'],
+                    'pipeline_id' => $pipeline->id,
+                    'reason_id'   => $lostReasons[array_rand($lostReasons)],
+                    'lost_by'     => !empty($users) ? $users[array_rand($users)] : null,
+                    'lost_at'     => $lostAt,
+                ]);
+                $created++;
+            }
+
+            // Create active leads (distributed across stages)
+            for ($i = 0; $i < $qtyActive; $i++) {
+                $rand = rand(1, $totalWeight);
+                $cumulative = 0;
+                $selectedStage = $activeStages->first();
+                foreach ($stageDist as $sd) {
+                    $cumulative += $sd['weight'];
+                    if ($rand <= $cumulative) {
+                        $selectedStage = $sd['stage'];
+                        break;
+                    }
+                }
+
+                $lead = $this->createDemoLead($tenantId, $pipeline, $selectedStage, $firstNames, $lastNames, $ddds, $sources, $companies, $tagPool, $utmCombos, $withUtms, $users, $from, $diffSeconds, $valueMin, $valueMax, $utmCount);
+                $utmCount = $lead['_utmCount'];
+                $stageCounters[$selectedStage->name] = ($stageCounters[$selectedStage->name] ?? 0) + 1;
+                $created++;
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'lines' => ["Erro: {$e->getMessage()}"]]);
+        }
+
+        $lines[] = '';
+        $lines[] = "\033[32mLeads criados: {$created}\033[0m";
+        foreach ($stageCounters as $stageName => $count) {
+            $lines[] = "  → {$stageName}: {$count}";
+        }
+        if ($qtyWon > 0) {
+            $lines[] = "  → \033[32mGanhos: {$qtyWon} (R$ " . number_format($salesTotal, 2, ',', '.') . ")\033[0m";
+        }
+        if ($qtyLost > 0) {
+            $lines[] = "  → \033[31mPerdidos: {$qtyLost}\033[0m";
+        }
+        if ($withUtms) {
+            $lines[] = "Leads com UTM: {$utmCount}";
+        }
+        $lines[] = '';
+        $lines[] = 'Geração concluída.';
+
+        return response()->json(['success' => true, 'lines' => $lines]);
+    }
+
+    private function createDemoLead(
+        int $tenantId,
+        $pipeline,
+        $stage,
+        array $firstNames,
+        array $lastNames,
+        array $ddds,
+        array $sources,
+        array $companies,
+        array $tagPool,
+        array $utmCombos,
+        bool $withUtms,
+        array $users,
+        Carbon $from,
+        int $diffSeconds,
+        float $valueMin,
+        float $valueMax,
+        int &$utmCount
+    ): array {
+        $first = $firstNames[array_rand($firstNames)];
+        $last  = $lastNames[array_rand($lastNames)];
+        $name  = "{$first} {$last}";
+        $ddd   = $ddds[array_rand($ddds)];
+        $phone = "55{$ddd}9" . str_pad((string) rand(10000000, 99999999), 8, '0', STR_PAD_LEFT);
+        $email = strtolower(str_replace(' ', '.', $this->removeAccents($first))) . '.'
+               . strtolower(str_replace(' ', '', $this->removeAccents($last)))
+               . rand(10, 99) . '@gmail.com';
+
+        $value = round($valueMin + (mt_rand() / mt_getrandmax()) * ($valueMax - $valueMin), 2);
+        $createdAt = $from->copy()->addSeconds(mt_rand(0, $diffSeconds));
+
+        $tags = [];
+        if (!empty($tagPool) && rand(1, 100) <= 70) {
+            $numTags = rand(1, 3);
+            $shuffled = $tagPool;
+            shuffle($shuffled);
+            $tags = array_slice($shuffled, 0, $numTags);
+        }
+
+        $utmData = [];
+        if ($withUtms && rand(1, 100) <= 60) {
+            $utmData = $utmCombos[array_rand($utmCombos)];
+            $utmCount++;
+        }
+
+        $lead = new Lead();
+        $lead->tenant_id   = $tenantId;
+        $lead->name        = $name;
+        $lead->phone       = $phone;
+        $lead->email       = $email;
+        $lead->company     = rand(1, 100) > 50 ? $companies[array_rand($companies)] : null;
+        $lead->value       = $value;
+        $lead->source      = $sources[array_rand($sources)];
+        $lead->pipeline_id = $pipeline->id;
+        $lead->stage_id    = $stage->id;
+        $lead->tags        = !empty($tags) ? $tags : null;
+        $lead->assigned_to = !empty($users) ? $users[array_rand($users)] : null;
+        $lead->birthday    = rand(1, 100) <= 30 ? Carbon::now()->subYears(rand(20, 55))->subDays(rand(0, 365))->format('Y-m-d') : null;
+        $lead->created_at  = $createdAt;
+        $lead->updated_at  = $createdAt;
+
+        if (!empty($utmData)) {
+            $lead->utm_source   = $utmData['source'];
+            $lead->utm_medium   = $utmData['medium'];
+            $lead->utm_campaign = $utmData['campaign'];
+        }
+
+        $lead->save();
+
+        LeadEvent::withoutGlobalScope('tenant')->create([
+            'tenant_id'   => $tenantId,
+            'lead_id'     => $lead->id,
+            'event_type'  => 'created',
+            'description' => 'Lead criado (demo)',
+            'created_at'  => $createdAt,
+        ]);
+
+        return array_merge($lead->toArray(), ['_utmCount' => $utmCount]);
+    }
+
+    private function removeAccents(string $str): string
+    {
+        return strtr($str, [
+            'á'=>'a','à'=>'a','ã'=>'a','â'=>'a','é'=>'e','ê'=>'e','í'=>'i','ó'=>'o','ô'=>'o','õ'=>'o','ú'=>'u','ü'=>'u','ç'=>'c',
+            'Á'=>'A','À'=>'A','Ã'=>'A','Â'=>'A','É'=>'E','Ê'=>'E','Í'=>'I','Ó'=>'O','Ô'=>'O','Õ'=>'O','Ú'=>'U','Ü'=>'U','Ç'=>'C',
+        ]);
     }
 }

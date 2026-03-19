@@ -107,7 +107,8 @@
     }
     .tool-param-group select,
     .tool-param-group input[type=text],
-    .tool-param-group input[type=password] {
+    .tool-param-group input[type=password],
+    .tool-param-group input[type=date] {
         width: 100%;
         padding: 8px 12px;
         border: 1.5px solid #e5e7eb;
@@ -117,6 +118,18 @@
         background: #fff;
         outline: none;
         transition: border-color .15s;
+        font-family: inherit;
+    }
+    .tool-param-group input[type=date] {
+        cursor: pointer;
+    }
+    .tool-param-group input[type=date]::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        opacity: 0.6;
+        transition: opacity .15s;
+    }
+    .tool-param-group input[type=date]::-webkit-calendar-picker-indicator:hover {
+        opacity: 1;
     }
     .tool-param-group select:focus,
     .tool-param-group input:focus { border-color: #3B82F6; }
@@ -356,6 +369,20 @@
         <span class="tool-badge" style="background:#f0fdf4;color:#16a34a;">Financeiro</span>
     </div>
 
+    {{-- 16. Gerar Dados Demo --}}
+    <div class="tool-card" onclick="openTool('generate-demo-data')">
+        <div class="tool-card-header">
+            <div class="tool-icon" style="background:#faf5ff;">
+                <i class="bi bi-database-fill-gear" style="color:#8B5CF6;"></i>
+            </div>
+            <div class="tool-info">
+                <h6>Gerar Dados Demo</h6>
+                <p>Cria leads fictícios com nomes, valores, UTMs, vendas e perdas para popular dashboards e relatórios.</p>
+            </div>
+        </div>
+        <span class="tool-badge" style="background:#faf5ff;color:#8B5CF6;">Demo</span>
+    </div>
+
 </div>
 
 {{-- ── MODAL ──────────────────────────────────────────────────────────────── --}}
@@ -528,6 +555,23 @@ var USERS   = <?php echo json_encode($users->toArray()); ?>;
             iconBg: '#f0fdf4',
             params: [],
         },
+        'generate-demo-data': {
+            label: 'Gerar Dados Demo',
+            iconHtml: '<i class="bi bi-database-fill-gear" style="color:#8B5CF6;"></i>',
+            iconBg: '#faf5ff',
+            params: [
+                { name: 'tenant_id',  label: 'Tenant',              type: 'select-tenant', required: true },
+                { name: 'quantity',   label: 'Quantidade de leads',  type: 'text', value: '100', hint: 'Ex: 50, 100, 200 (máx 500)' },
+                { name: 'date_from',  label: 'Data início',          type: 'date', value: new Date(Date.now() - 90*86400000).toISOString().slice(0,10) },
+                { name: 'date_to',    label: 'Data fim',             type: 'date', value: new Date().toISOString().slice(0,10) },
+                { name: 'value_min',  label: 'Valor mínimo (R$)',    type: 'text', value: '500', hint: 'Ex: 500' },
+                { name: 'value_max',  label: 'Valor máximo (R$)',    type: 'text', value: '50000', hint: 'Ex: 50000' },
+                { name: 'pct_won',    label: '% leads ganhos',       type: 'text', value: '20', hint: 'Ex: 20 (cria vendas)' },
+                { name: 'pct_lost',   label: '% leads perdidos',     type: 'text', value: '10', hint: 'Ex: 10 (cria perdas)' },
+                { name: 'with_utms',  label: 'Incluir UTMs/campanhas (60% dos leads)', type: 'checkbox' },
+                { name: 'with_tags',  label: 'Criar tags demo',      type: 'checkbox' },
+            ],
+        },
     };
 
     let _currentTool = null;
@@ -603,8 +647,11 @@ var USERS   = <?php echo json_encode($users->toArray()); ?>;
             } else if (p.type === 'password') {
                 input = '<input type="password" id="param-' + p.name + '" name="' + p.name + '" autocomplete="new-password">';
 
+            } else if (p.type === 'date') {
+                input = '<input type="date" id="param-' + p.name + '" name="' + p.name + '"' + (p.value ? ' value="' + p.value + '"' : '') + '>';
+
             } else {
-                input = '<input type="text" id="param-' + p.name + '" name="' + p.name + '">';
+                input = '<input type="text" id="param-' + p.name + '" name="' + p.name + '"' + (p.value ? ' value="' + p.value + '"' : '') + '>';
             }
 
             const hint = p.hint ? '<div class="param-hint">' + esc(p.hint) + '</div>' : '';
