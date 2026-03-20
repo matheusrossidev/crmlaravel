@@ -790,17 +790,10 @@
             @if($waBtn)
             <div style="padding-top:16px;border-top:1px solid #f0f2f7;">
                 <label style="font-size:13px;font-weight:700;color:#1a1d23;display:block;margin-bottom:6px;"><i class="bi bi-code-slash"></i> Código de Incorporação</label>
-                <p style="font-size:11.5px;color:#6b7280;margin-bottom:8px;">Cole no seu site. Para inline: <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:10.5px;">&lt;div class="syncro-wa-inline"&gt;&lt;/div&gt;</code></p>
+                <p style="font-size:11.5px;color:#6b7280;margin-bottom:8px;">Cole antes do <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:10.5px;">&lt;/body&gt;</code> do seu site. Para botão inline: <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:10.5px;">&lt;div class="syncro-wa-inline"&gt;&lt;/div&gt;</code></p>
                 <div style="position:relative;">
                     <textarea id="waBtnEmbed" readonly onclick="this.select()" style="width:100%;height:50px;font-family:monospace;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 70px 10px 10px;resize:none;color:#334155;">&lt;script src="{{ rtrim(config('app.url'), '/') }}/api/widget/{{ $waBtn->website_token }}/wa-button.js"&gt;&lt;/script&gt;</textarea>
                     <button onclick="navigator.clipboard.writeText(document.getElementById('waBtnEmbed').value.replace(/&lt;/g,'<').replace(/&gt;/g,'>'));toastr.success('Copiado!')" style="position:absolute;top:8px;right:8px;background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="bi bi-clipboard"></i> Copiar</button>
-                </div>
-                <div style="margin-top:12px;">
-                    <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;"><i class="bi bi-link-45deg"></i> Link direto (anúncios)</label>
-                    <div style="display:flex;gap:6px;">
-                        <input type="text" readonly value="https://wa.me/{{ $waBtn->phone_number }}?text={{ rawurlencode($waBtn->default_message) }}" class="form-control" style="font-size:11.5px;font-family:monospace;background:#f8fafc;" onclick="this.select()">
-                        <button onclick="navigator.clipboard.writeText(this.previousElementSibling.value);toastr.success('Link copiado!')" style="background:#0085f3;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer;"><i class="bi bi-clipboard"></i></button>
-                    </div>
                 </div>
                 @php
                     $clicksToday = $waBtn->clicks()->whereDate('clicked_at', today())->count();
