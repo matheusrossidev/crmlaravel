@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Models\AiAgent;
 use App\Models\ChatbotFlow;
 use App\Models\Tenant;
+use App\Models\WhatsappButton;
+use App\Models\WhatsappButtonClick;
 use App\Models\WebsiteConversation;
 use App\Models\WebsiteMessage;
 use App\Services\AiAgentWebChatService;
@@ -379,5 +381,81 @@ class WebsiteWidgetController extends Controller
         $tenantName  = $tenant->name ?? 'Chat';
 
         return view('chatbot.hosted', compact('scriptUrl', 'widgetColor', 'botName', 'tenantName'));
+    }
+
+    /**
+     * GET /api/widget/{token}/wa-button.js
+     * Serves the WhatsApp button embed script with config baked in.
+     */
+    public function waButtonScript(string $token): Response
+    {
+        $btn = WhatsappButton::withoutGlobalScope('tenant')
+            ->where('website_token', $token)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $btn) {
+            return response('/* button not found */', 404)
+                ->header('Content-Type', 'application/javascript');
+        }
+
+        $config = json_encode([
+            'token'    => $btn->website_token,
+            'phone'    => $btn->phone_number,
+            'message'  => $btn->default_message,
+            'label'    => $btn->button_label,
+            'floating' => $btn->show_floating,
+            'apiBase'  => rtrim((string) config('app.url'), '/'),
+        ], JSON_UNESCAPED_UNICODE);
+
+        $js = file_get_contents(public_path('wa-button-core.js'));
+        $js = "/* Syncro WhatsApp Button */\n(function(){var CFG={$config};\n{$js}\n})();";
+
+        return response($js, 200)
+            ->header('Content-Type', 'application/javascript; charset=utf-8')
+            ->header('Cache-Control', 'public, max-age=300')
+            ->header('Access-Control-Allow-Origin', '*');
+    }
+
+    /**
+     * POST /api/widget/{token}/wa-click
+     * Tracks a WhatsApp button click with UTMs + device info.
+     */
+    public function trackWaClick(string $token, Request $request): JsonResponse
+    {
+        $btn = WhatsappButton::withoutGlobalScope('tenant')
+            ->where('website_token', $token)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $btn) {
+            return response()->json(['error' => 'not found'], 404);
+        }
+
+        $ua = $request->userAgent() ?? '';
+        $device = str_contains(strtolower($ua), 'mobile') ? 'mobile' : 'desktop';
+
+        WhatsappButtonClick::create([
+            'tenant_id'    => $btn->tenant_id,
+            'button_id'    => $btn->id,
+            'visitor_id'   => $this->truncate($request->input('visitor_id'), 36),
+            'utm_source'   => $this->truncate($request->input('utm_source'), 100),
+            'utm_medium'   => $this->truncate($request->input('utm_medium'), 100),
+            'utm_campaign' => $this->truncate($request->input('utm_campaign'), 191),
+            'utm_content'  => $this->truncate($request->input('utm_content'), 191),
+            'utm_term'     => $this->truncate($request->input('utm_term'), 191),
+            'fbclid'       => $this->truncate($request->input('fbclid'), 191),
+            'gclid'        => $this->truncate($request->input('gclid'), 191),
+            'page_url'     => $this->truncate($request->input('page_url'), 2000),
+            'referrer_url' => $this->truncate($request->input('referrer_url'), 500),
+            'device_type'  => $device,
+            'ip_hash'      => hash('sha256', $request->ip() ?? ''),
+            'clicked_at'   => now(),
+        ]);
+
+        $msg = rawurlencode($btn->default_message);
+        $url = "https://wa.me/{$btn->phone_number}?text={$msg}";
+
+        return response()->json(['redirect' => $url]);
     }
 }

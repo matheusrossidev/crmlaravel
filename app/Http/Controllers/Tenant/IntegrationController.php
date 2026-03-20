@@ -9,6 +9,7 @@ use App\Jobs\ImportWhatsappHistory;
 use App\Jobs\SyncCampaignsJob;
 use App\Models\InstagramInstance;
 use App\Models\OAuthConnection;
+use App\Models\WhatsappButton;
 use App\Models\WhatsappInstance;
 use App\Services\InstagramService;
 use App\Services\PlanLimitChecker;
@@ -49,10 +50,11 @@ class IntegrationController extends Controller
 
         $maxWhatsappInstances    = $tenant->max_whatsapp_instances ?: 1;
         $whatsappInstancesRemain = PlanLimitChecker::remaining('whatsapp_instances');
+        $waButtons = WhatsappButton::orderBy('id')->get();
 
         return view('tenant.settings.integrations', compact(
             'facebook', 'google', 'whatsapp', 'whatsappInstances', 'instagram',
-            'enabledIntegrations', 'maxWhatsappInstances', 'whatsappInstancesRemain'
+            'enabledIntegrations', 'maxWhatsappInstances', 'whatsappInstancesRemain', 'waButtons'
         ));
     }
 
@@ -528,5 +530,53 @@ class IntegrationController extends Controller
         ]);
 
         return $response->successful() ? $response->json() : ['token' => $shortLived];
+    }
+
+    // ── WhatsApp Button (Botão de Página) ─────────────────────────────────
+
+    public function storeWaButton(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'phone_number'    => 'required|string|max:30',
+            'default_message' => 'nullable|string|max:500',
+            'button_label'    => 'nullable|string|max:100',
+            'show_floating'   => 'nullable|boolean',
+        ]);
+
+        $btn = WhatsappButton::create([
+            'tenant_id'       => auth()->user()->tenant_id,
+            'phone_number'    => preg_replace('/\D/', '', $data['phone_number']),
+            'default_message' => $data['default_message'] ?? 'Olá! Vi seu site e gostaria de saber mais.',
+            'button_label'    => $data['button_label'] ?? 'Fale no WhatsApp',
+            'show_floating'   => $data['show_floating'] ?? true,
+        ]);
+
+        return response()->json(['success' => true, 'button' => $btn]);
+    }
+
+    public function updateWaButton(Request $request, WhatsappButton $waButton): JsonResponse
+    {
+        $data = $request->validate([
+            'phone_number'    => 'sometimes|string|max:30',
+            'default_message' => 'nullable|string|max:500',
+            'button_label'    => 'nullable|string|max:100',
+            'show_floating'   => 'nullable|boolean',
+            'is_active'       => 'nullable|boolean',
+        ]);
+
+        if (isset($data['phone_number'])) {
+            $data['phone_number'] = preg_replace('/\D/', '', $data['phone_number']);
+        }
+
+        $waButton->update($data);
+
+        return response()->json(['success' => true, 'button' => $waButton->fresh()]);
+    }
+
+    public function destroyWaButton(WhatsappButton $waButton): JsonResponse
+    {
+        $waButton->delete();
+
+        return response()->json(['success' => true]);
     }
 }

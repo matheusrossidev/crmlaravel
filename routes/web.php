@@ -224,6 +224,10 @@ Route::middleware(['auth', 'tenant'])->group(function () {
             Route::get('instagram/redirect', [IntegrationController::class, 'redirectInstagram'])->name('instagram.redirect');
             Route::get('instagram/callback', [IntegrationController::class, 'callbackInstagram'])->name('instagram.callback');
             Route::delete('instagram',        [IntegrationController::class, 'disconnectInstagram'])->name('instagram.disconnect');
+            // WhatsApp Button (botão de página)
+            Route::post('wa-button',                [IntegrationController::class, 'storeWaButton'])->name('wa-button.store');
+            Route::put('wa-button/{waButton}',      [IntegrationController::class, 'updateWaButton'])->name('wa-button.update');
+            Route::delete('wa-button/{waButton}',   [IntegrationController::class, 'destroyWaButton'])->name('wa-button.destroy');
             // Wildcards (OAuth)
             Route::delete('{platform}',     [IntegrationController::class, 'disconnect'])->name('disconnect');
             Route::post('{platform}/sync',  [IntegrationController::class, 'syncNow'])->name('sync');

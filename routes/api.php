@@ -15,6 +15,8 @@ Route::prefix('widget')->middleware('throttle:widget')->group(function () {
     Route::get('{token}.js', [WebsiteWidgetController::class, 'script']);
     Route::match(['get', 'post'], '{token}/init', [WebsiteWidgetController::class, 'init']);
     Route::post('{token}/message', [WebsiteWidgetController::class, 'message']);
+    Route::get('{token}/wa-button.js', [WebsiteWidgetController::class, 'waButtonScript']);
+    Route::post('{token}/wa-click', [WebsiteWidgetController::class, 'trackWaClick']);
 });
 
 // ── Webhook Asaas (público, sem autenticação) ─────────────────────────────

@@ -712,9 +712,127 @@
         </div>
         @endif
 
+    {{-- ─── Botão WhatsApp (rastreamento de cliques) ──────────────────── --}}
+    @php $waBtn = $waButtons->first(); @endphp
+    <div class="integration-card">
+        <div class="integration-header">
+            <div class="integration-logo" style="background:#dcfce7;color:#25D366;">
+                <i class="bi bi-chat-dots-fill" style="font-size:20px;"></i>
+            </div>
+            <div class="integration-title">
+                <h3>Botão WhatsApp</h3>
+                <p>Botão para site com rastreamento de cliques</p>
+            </div>
+            @if($waBtn && $waBtn->is_active)
+                <span class="conn-badge conn-active">Ativo</span>
+            @else
+                <span class="conn-badge conn-none">Inativo</span>
+            @endif
+        </div>
+        <div class="integration-body">
+            <ul class="integration-features">
+                <li>Botão flutuante e/ou inline com animação</li>
+                <li>Rastreia UTMs, fbclid e gclid</li>
+                <li>Analytics de cliques por origem</li>
+                <li>Classe para Google Tag Manager</li>
+            </ul>
+
+            @if($waBtn)
+                @php
+                    $clicks7d = $waBtn->clicks()->where('clicked_at', '>=', now()->subDays(7))->count();
+                @endphp
+                <div class="conn-detail">
+                    <strong>{{ $waBtn->phone_number }}</strong><br>
+                    <span>{{ $clicks7d }} cliques nos últimos 7 dias</span>
+                </div>
+            @else
+                <div class="conn-detail" style="color:#9ca3af;">Nenhum botão configurado.</div>
+            @endif
+
+            <div class="integration-actions">
+                <button class="btn-connect" style="background:#25D366;" onclick="openWaBtnDrawer()">
+                    <i class="bi bi-{{ $waBtn ? 'gear' : 'plus-lg' }}"></i> {{ $waBtn ? 'Configurar' : 'Criar botão' }}
+                </button>
+                @if($waBtn)
+                <button class="btn-disconnect" onclick="deleteWaButton()">
+                    <i class="bi bi-trash"></i> Remover
+                </button>
+                @endif
+            </div>
+        </div>
     </div>
 
-</div>
+    {{-- ─── Drawer Botão WhatsApp ──────────────────────────────────────── --}}
+    <div id="waBtnOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;" onclick="closeWaBtnDrawer()"></div>
+    <div id="waBtnDrawer" style="position:fixed;top:0;right:-500px;width:480px;height:100%;background:#fff;z-index:301;box-shadow:-4px 0 20px rgba(0,0,0,0.1);transition:right .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;">
+        <div style="padding:20px 24px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;">
+            <h4 style="margin:0;font-size:16px;font-weight:700;color:#1a1d23;">Configurar Botão WhatsApp</h4>
+            <button onclick="closeWaBtnDrawer()" style="background:none;border:none;font-size:20px;color:#9ca3af;cursor:pointer;padding:4px;"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:20px 24px;">
+            <div style="margin-bottom:14px;">
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Número WhatsApp *</label>
+                <input type="text" id="waBtnPhone" class="form-control" placeholder="5561999999999" value="{{ $waBtn->phone_number ?? '' }}" style="font-size:13px;">
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Label do botão</label>
+                <input type="text" id="waBtnLabel" class="form-control" placeholder="Fale no WhatsApp" value="{{ $waBtn->button_label ?? 'Fale no WhatsApp' }}" style="font-size:13px;">
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Mensagem padrão</label>
+                <textarea id="waBtnMessage" class="form-control" rows="3" placeholder="Olá! Vi seu site e gostaria de saber mais." style="font-size:13px;resize:vertical;">{{ $waBtn->default_message ?? 'Olá! Vi seu site e gostaria de saber mais.' }}</textarea>
+            </div>
+            <div style="margin-bottom:20px;display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" id="waBtnFloating" {{ ($waBtn->show_floating ?? true) ? 'checked' : '' }} style="width:16px;height:16px;">
+                <label for="waBtnFloating" style="font-size:12.5px;color:#374151;cursor:pointer;">Botão flutuante (canto inferior direito)</label>
+            </div>
+
+            @if($waBtn)
+            <div style="padding-top:16px;border-top:1px solid #f0f2f7;">
+                <label style="font-size:13px;font-weight:700;color:#1a1d23;display:block;margin-bottom:6px;"><i class="bi bi-code-slash"></i> Código de Incorporação</label>
+                <p style="font-size:11.5px;color:#6b7280;margin-bottom:8px;">Cole no seu site. Para inline: <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:10.5px;">&lt;div class="syncro-wa-inline"&gt;&lt;/div&gt;</code></p>
+                <div style="position:relative;">
+                    <textarea id="waBtnEmbed" readonly onclick="this.select()" style="width:100%;height:50px;font-family:monospace;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 70px 10px 10px;resize:none;color:#334155;">&lt;script src="{{ rtrim(config('app.url'), '/') }}/api/widget/{{ $waBtn->website_token }}/wa-button.js"&gt;&lt;/script&gt;</textarea>
+                    <button onclick="navigator.clipboard.writeText(document.getElementById('waBtnEmbed').value.replace(/&lt;/g,'<').replace(/&gt;/g,'>'));toastr.success('Copiado!')" style="position:absolute;top:8px;right:8px;background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="bi bi-clipboard"></i> Copiar</button>
+                </div>
+                <div style="margin-top:12px;">
+                    <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;"><i class="bi bi-link-45deg"></i> Link direto (anúncios)</label>
+                    <div style="display:flex;gap:6px;">
+                        <input type="text" readonly value="https://wa.me/{{ $waBtn->phone_number }}?text={{ rawurlencode($waBtn->default_message) }}" class="form-control" style="font-size:11.5px;font-family:monospace;background:#f8fafc;" onclick="this.select()">
+                        <button onclick="navigator.clipboard.writeText(this.previousElementSibling.value);toastr.success('Link copiado!')" style="background:#0085f3;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer;"><i class="bi bi-clipboard"></i></button>
+                    </div>
+                </div>
+                @php
+                    $clicksToday = $waBtn->clicks()->whereDate('clicked_at', today())->count();
+                    $clicks7d_ = $waBtn->clicks()->where('clicked_at', '>=', now()->subDays(7))->count();
+                    $clicks30d = $waBtn->clicks()->where('clicked_at', '>=', now()->subDays(30))->count();
+                @endphp
+                <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+                    <div style="text-align:center;padding:10px 8px;background:#f0fdf4;border-radius:8px;">
+                        <div style="font-size:18px;font-weight:700;color:#16a34a;">{{ $clicksToday }}</div>
+                        <div style="font-size:10.5px;color:#6b7280;">Hoje</div>
+                    </div>
+                    <div style="text-align:center;padding:10px 8px;background:#eff6ff;border-radius:8px;">
+                        <div style="font-size:18px;font-weight:700;color:#0085f3;">{{ $clicks7d_ }}</div>
+                        <div style="font-size:10.5px;color:#6b7280;">7 dias</div>
+                    </div>
+                    <div style="text-align:center;padding:10px 8px;background:#f5f3ff;border-radius:8px;">
+                        <div style="font-size:18px;font-weight:700;color:#8B5CF6;">{{ $clicks30d }}</div>
+                        <div style="font-size:10.5px;color:#6b7280;">30 dias</div>
+                    </div>
+                </div>
+            </div>
+            @endif
+        </div>
+        <div style="padding:16px 24px;border-top:1px solid #f0f2f7;display:flex;gap:8px;justify-content:flex-end;">
+            <button onclick="closeWaBtnDrawer()" style="padding:8px 20px;border:1px solid #e2e8f0;background:#fff;border-radius:100px;font-size:13px;cursor:pointer;color:#374151;">Cancelar</button>
+            <button onclick="saveWaButton()" style="padding:8px 20px;background:#25D366;color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;"><i class="bi bi-check-lg"></i> Salvar</button>
+        </div>
+    </div>
+
+    </div>{{-- fecha integrations-grid --}}
+
+</div>{{-- fecha page-container --}}
 
 {{-- ─── Modal QR WhatsApp ──────────────────────────────────────────── --}}
 <div id="waQrModal" class="wa-modal-overlay">
@@ -1264,7 +1382,54 @@ async function disconnectInstagram(btn) {
         },
     });
 }
+
+// ── WhatsApp Button CRUD ──────────────────────────────────────────────
+var _waBtnId = {{ $waBtn->id ?? 'null' }};
+
+function openWaBtnDrawer() {
+    document.getElementById('waBtnOverlay').style.display = 'block';
+    setTimeout(function(){ document.getElementById('waBtnDrawer').style.right = '0'; }, 10);
+}
+function closeWaBtnDrawer() {
+    document.getElementById('waBtnDrawer').style.right = '-500px';
+    setTimeout(function(){ document.getElementById('waBtnOverlay').style.display = 'none'; }, 300);
+}
+
+function saveWaButton() {
+    var phone = document.getElementById('waBtnPhone').value.trim();
+    if (!phone) { toastr.error('Informe o número do WhatsApp.'); return; }
+
+    var data = {
+        phone_number: phone,
+        default_message: document.getElementById('waBtnMessage').value || 'Olá! Vi seu site e gostaria de saber mais.',
+        button_label: document.getElementById('waBtnLabel').value || 'Fale no WhatsApp',
+        show_floating: document.getElementById('waBtnFloating').checked,
+    };
+
+    if (_waBtnId) {
+        API.put("{{ route('settings.integrations.wa-button.store') }}/" + _waBtnId, data).done(function() {
+            toastr.success('Botão atualizado!');
+            setTimeout(function(){ location.reload(); }, 800);
+        });
+    } else {
+        API.post("{{ route('settings.integrations.wa-button.store') }}", data).done(function(r) {
+            toastr.success('Botão criado!');
+            _waBtnId = r.button?.id;
+            setTimeout(function(){ location.reload(); }, 800);
+        });
+    }
+}
+
+function deleteWaButton() {
+    if (!_waBtnId) return;
+    if (!confirm('Remover o botão WhatsApp? O embed code deixará de funcionar.')) return;
+    API.delete("{{ route('settings.integrations.wa-button.store') }}/" + _waBtnId).done(function() {
+        toastr.success('Botão removido.');
+        setTimeout(function(){ location.reload(); }, 800);
+    });
+}
 </script>
+
 <style>
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .spin { animation: spin .8s linear infinite; display: inline-block; }
