@@ -1052,6 +1052,42 @@
     </div>
     @endif
 
+    {{-- ════════════════════════════════════════════════════════════ --}}
+    {{-- PRODUTOS MAIS VENDIDOS                                      --}}
+    {{-- ════════════════════════════════════════════════════════════ --}}
+    @if(isset($topProducts) && $topProducts->isNotEmpty())
+    <div class="report-section">
+        <div class="report-section-header">
+            <i class="bi bi-box-seam"></i>
+            Produtos Mais Vendidos
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Produto</th>
+                        <th class="num">Preço Unit.</th>
+                        <th class="num">Vendas</th>
+                        <th class="num">Receita Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($topProducts as $i => $prod)
+                    <tr>
+                        <td style="color:#9ca3af;font-weight:600;">{{ $i + 1 }}</td>
+                        <td style="font-weight:600;color:#1a1d23;">{{ $prod->name }}</td>
+                        <td class="num">R$ {{ number_format((float) $prod->price, 2, ',', '.') }}</td>
+                        <td class="num" style="font-weight:700;color:#0085f3;">{{ $prod->won_count }}</td>
+                        <td class="num" style="font-weight:700;color:#10B981;">R$ {{ number_format((float) $prod->total_value, 2, ',', '.') }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
+
 </div>
 @endsection
 

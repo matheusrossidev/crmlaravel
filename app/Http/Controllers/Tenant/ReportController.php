@@ -11,6 +11,7 @@ use App\Models\LeadEvent;
 use App\Models\LostSale;
 use App\Models\LostSaleReason;
 use App\Models\Pipeline;
+use App\Models\Product;
 use App\Models\Sale;
 use App\Models\User;
 use App\Models\WhatsappConversation;
@@ -276,7 +277,7 @@ class ReportController extends Controller
         // ══════════════════════════════════════════════════════════════════════
 
         // FIX N+1: 2 GROUP BY queries instead of 3 per user
-        $tenantId = auth()->user()->tenant_id;
+        $tenantId = activeTenantId();
         $allUsers = User::where('tenant_id', $tenantId)->orderBy('name')->get();
 
         $vendorLeadCounts = Lead::whereBetween('created_at', [$dateFrom, $dateTo])
@@ -320,7 +321,7 @@ class ReportController extends Controller
         $waIA       = WhatsappConversation::whereBetween('started_at', [$dateFrom, $dateTo])->where('is_group', false)->whereNotNull('ai_agent_id')->count();
 
         // Tempo médio de 1ª resposta humana — FIX: single query instead of 600 N+1
-        $tenantId = auth()->user()->tenant_id;
+        $tenantId = activeTenantId();
         $avgFirstResponse = null;
         try {
             $convIds = WhatsappConversation::withoutGlobalScope('tenant')
@@ -421,6 +422,20 @@ class ReportController extends Controller
             return ['user' => $user, 'msgs' => $msgs, 'events' => $events, 'total' => $msgs + $events];
         })->filter(fn ($r) => $r['total'] > 0)->sortByDesc('total')->values();
 
+        // ── Produtos mais vendidos ────────────────────────────────────────
+        $topProducts = Product::withoutGlobalScope('tenant')
+            ->select('products.id', 'products.name', 'products.price')
+            ->selectRaw('COUNT(DISTINCT lead_products.lead_id) as won_count')
+            ->selectRaw('SUM(lead_products.total) as total_value')
+            ->join('lead_products', 'products.id', '=', 'lead_products.product_id')
+            ->join('sales', 'lead_products.lead_id', '=', 'sales.lead_id')
+            ->where('products.tenant_id', $tenantId)
+            ->whereBetween('sales.closed_at', [$dateFrom, $dateTo])
+            ->groupBy('products.id', 'products.name', 'products.price')
+            ->orderByDesc('won_count')
+            ->limit(10)
+            ->get();
+
         return compact(
             // filtros aplicados
             'dateFrom', 'dateTo', 'filterCampaign', 'filterPipeline', 'filterUser',
@@ -446,6 +461,8 @@ class ReportController extends Controller
             'funnelEmAberto',
             // atividade
             'teamActivity',
+            // produtos
+            'topProducts',
         );
     }
 }

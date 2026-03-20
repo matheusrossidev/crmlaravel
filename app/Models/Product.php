@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
@@ -20,6 +21,7 @@ class Product extends Model
         'price',
         'cost_price',
         'category',
+        'category_id',
         'unit',
         'is_active',
         'sort_order',
@@ -30,6 +32,11 @@ class Product extends Model
         'cost_price' => 'decimal:2',
         'is_active'  => 'boolean',
     ];
+
+    public function categoryRelation(): BelongsTo
+    {
+        return $this->belongsTo(ProductCategory::class, 'category_id');
+    }
 
     public function media(): HasMany
     {

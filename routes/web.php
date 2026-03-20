@@ -407,6 +407,10 @@ Route::middleware(['auth', 'tenant'])->group(function () {
             Route::delete('produtos/{product}',              [ProductController::class, 'destroy'])->name('products.destroy');
             Route::post('produtos/{product}/media',          [ProductController::class, 'uploadMedia'])->name('products.media.upload');
             Route::delete('produtos/{product}/media/{media}', [ProductController::class, 'deleteMedia'])->name('products.media.delete');
+            // Categorias de produtos
+            Route::post('produtos/categorias',                      [ProductController::class, 'storeCategory'])->name('products.categories.store');
+            Route::put('produtos/categorias/{category}',            [ProductController::class, 'updateCategory'])->name('products.categories.update');
+            Route::delete('produtos/categorias/{category}',         [ProductController::class, 'destroyCategory'])->name('products.categories.destroy');
 
             // Departamentos
             Route::post('departamentos',                    [DepartmentController::class, 'store'])->name('departments.store')->middleware('plan.limit:departments');

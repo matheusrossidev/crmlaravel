@@ -92,7 +92,14 @@
                     </td>
                     <td style="font-family:monospace;font-size:12px;color:#6b7280;">{{ $p->sku ?? '—' }}</td>
                     <td>
-                        @if($p->category)
+                        @if($p->categoryRelation)
+                            <span class="cat-badge">
+                                @if($p->categoryRelation->parent)
+                                    {{ $p->categoryRelation->parent->name }} →
+                                @endif
+                                {{ $p->categoryRelation->name }}
+                            </span>
+                        @elseif($p->category)
                             <span class="cat-badge">{{ $p->category }}</span>
                         @else
                             <span style="color:#d1d5db;">—</span>
@@ -176,7 +183,18 @@
             </div>
             <div>
                 <label class="form-label">Categoria</label>
-                <input type="text" id="productCategory" class="form-input" placeholder="Ex: Cortinas">
+                <select id="productCategoryId" class="form-input" onchange="onParentCatChange()">
+                    <option value="">— Selecione —</option>
+                    @foreach($categories as $cat)
+                        <option value="{{ $cat->id }}" data-has-children="{{ $cat->children->count() > 0 ? '1' : '0' }}">{{ $cat->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div id="subCatWrap" style="display:none;">
+                <label class="form-label">Subcategoria</label>
+                <select id="productSubCategoryId" class="form-input">
+                    <option value="">— Selecione —</option>
+                </select>
             </div>
             <div>
                 <label class="form-label">Status</label>
@@ -229,7 +247,8 @@ function openDrawer(id) {
     document.getElementById('productCostPrice').value = p?.cost_price || '';
     document.getElementById('productSku').value = p?.sku || '';
     document.getElementById('productUnit').value = p?.unit || '';
-    document.getElementById('productCategory').value = p?.category || '';
+    document.getElementById('productCategoryId').value = p?.category_id || '';
+    onParentCatChange(p?.category_id);
     document.getElementById('productActive').value = p ? (p.is_active ? '1' : '0') : '1';
 
     // Gallery section: show only when editing
@@ -259,7 +278,7 @@ function saveProduct() {
         cost_price: parseFloat(document.getElementById('productCostPrice').value) || null,
         sku: document.getElementById('productSku').value || null,
         unit: document.getElementById('productUnit').value || null,
-        category: document.getElementById('productCategory').value || null,
+        category_id: document.getElementById('productSubCategoryId')?.value || document.getElementById('productCategoryId').value || null,
         is_active: document.getElementById('productActive').value === '1',
     };
     if (!data.name) { toastr.error('Nome e obrigatorio.'); return; }
@@ -333,5 +352,26 @@ function deleteMedia(productId, mediaId) {
         toastr.success('Midia removida.');
     });
 }
+
+// ── Category helpers ──────────────────────────────────────────────
+const ALL_CATEGORIES = @json($categories);
+
+function onParentCatChange(preselect) {
+    const sel = document.getElementById('productCategoryId');
+    const subWrap = document.getElementById('subCatWrap');
+    const subSel = document.getElementById('productSubCategoryId');
+    const parentId = parseInt(sel.value);
+    const cat = ALL_CATEGORIES.find(c => c.id === parentId);
+
+    if (cat && cat.children && cat.children.length > 0) {
+        subWrap.style.display = '';
+        subSel.innerHTML = '<option value="">— Selecione —</option>' +
+            cat.children.map(s => `<option value="${s.id}" ${preselect == s.id ? 'selected' : ''}>${s.name}</option>`).join('');
+    } else {
+        subWrap.style.display = 'none';
+        subSel.innerHTML = '<option value="">— Selecione —</option>';
+    }
+}
+
 </script>
 @endpush

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\ProductCategory;
 use App\Models\ProductMedia;
 use App\Services\PlanLimitChecker;
 use Illuminate\Http\JsonResponse;
@@ -17,12 +18,19 @@ class ProductController extends Controller
 {
     public function index(): View
     {
-        $products = Product::with('media')
+        $products = Product::with('media', 'categoryRelation.parent')
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
 
-        return view('tenant.settings.products', compact('products'));
+        $categories = ProductCategory::withoutGlobalScopes()
+            ->with(['children' => fn ($q) => $q->orderBy('sort_order')->orderBy('name')])
+            ->whereNull('parent_id')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        return view('tenant.settings.products', compact('products', 'categories'));
     }
 
     public function store(Request $request): JsonResponse
@@ -37,8 +45,9 @@ class ProductController extends Controller
             'sku'        => 'nullable|string|max:50',
             'price'      => 'required|numeric|min:0',
             'cost_price' => 'nullable|numeric|min:0',
-            'category'   => 'nullable|string|max:100',
-            'unit'       => 'nullable|string|max:20',
+            'category'    => 'nullable|string|max:100',
+            'category_id' => 'nullable|integer|exists:product_categories,id',
+            'unit'        => 'nullable|string|max:20',
         ]);
 
         $data['sort_order'] = (int) Product::max('sort_order') + 1;
@@ -62,9 +71,10 @@ class ProductController extends Controller
             'sku'        => 'nullable|string|max:50',
             'price'      => 'sometimes|required|numeric|min:0',
             'cost_price' => 'nullable|numeric|min:0',
-            'category'   => 'nullable|string|max:100',
-            'unit'       => 'nullable|string|max:20',
-            'is_active'  => 'sometimes|boolean',
+            'category'    => 'nullable|string|max:100',
+            'category_id' => 'nullable|integer|exists:product_categories,id',
+            'unit'        => 'nullable|string|max:20',
+            'is_active'   => 'sometimes|boolean',
             'sort_order' => 'sometimes|integer|min:0',
         ]);
 
@@ -130,6 +140,44 @@ class ProductController extends Controller
 
         Storage::disk('public')->delete($media->storage_path);
         $media->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    // ── Categories CRUD ─────────────────────────────────────────────────
+
+    public function storeCategory(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'name'      => 'required|string|max:100',
+            'parent_id' => 'nullable|integer|exists:product_categories,id',
+        ]);
+
+        $cat = ProductCategory::create($data);
+
+        return response()->json(['success' => true, 'category' => $cat], 201);
+    }
+
+    public function updateCategory(Request $request, ProductCategory $category): JsonResponse
+    {
+        $data = $request->validate([
+            'name'      => 'sometimes|required|string|max:100',
+            'parent_id' => 'nullable|integer|exists:product_categories,id',
+        ]);
+
+        $category->update($data);
+
+        return response()->json(['success' => true, 'category' => $category->fresh()]);
+    }
+
+    public function destroyCategory(ProductCategory $category): JsonResponse
+    {
+        // Move children to parent (or root)
+        ProductCategory::where('parent_id', $category->id)->update(['parent_id' => $category->parent_id]);
+        // Unlink products
+        Product::where('category_id', $category->id)->update(['category_id' => null]);
+
+        $category->delete();
 
         return response()->json(['success' => true]);
     }
