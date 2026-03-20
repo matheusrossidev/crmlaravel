@@ -30,7 +30,7 @@ class AiAgentController extends Controller
     public function index(): View
     {
         $agents = AiAgent::withCount('conversations')->orderByDesc('created_at')->get();
-        $tenant = auth()->user()->tenant;
+        $tenant = activeTenant();
         $plan   = PlanDefinition::where('name', $tenant->plan)->first();
 
         $tokensUsedMonth = (int) AiUsageLog::where('tenant_id', $tenant->id)
@@ -292,7 +292,7 @@ class AiAgentController extends Controller
 
         $record = AiAgentKnowledgeFile::create([
             'ai_agent_id'   => $agent->id,
-            'tenant_id'     => auth()->user()->tenant_id,
+            'tenant_id'     => activeTenantId(),
             'original_name' => $origName,
             'storage_path'  => $path,
             'mime_type'     => $mime,
@@ -417,7 +417,7 @@ class AiAgentController extends Controller
 
     private function tenantUsers(): \Illuminate\Database\Eloquent\Collection
     {
-        return User::where('tenant_id', auth()->user()->tenant_id)
+        return User::where('tenant_id', activeTenantId())
             ->orderBy('name')
             ->get(['id', 'name']);
     }

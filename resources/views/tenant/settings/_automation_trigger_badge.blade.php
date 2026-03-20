@@ -7,6 +7,7 @@ $classes = [
     'lead_won'             => 'won',
     'lead_lost'            => 'lost',
     'date_field'           => 'date',
+    'recurring'            => 'recurring',
 ];
 $icons = [
     'message_received'     => 'bi-chat-dots',
@@ -16,6 +17,7 @@ $icons = [
     'lead_won'             => 'bi-trophy',
     'lead_lost'            => 'bi-x-circle',
     'date_field'           => 'bi-calendar-event',
+    'recurring'            => 'bi-arrow-repeat',
 ];
 $labels = [
     'message_received'     => 'Mensagem recebida',
@@ -25,6 +27,7 @@ $labels = [
     'lead_won'             => 'Lead ganho',
     'lead_lost'            => 'Lead perdido',
     'date_field'           => 'Data / Aniversário',
+    'recurring'            => 'Recorrente',
 ];
 $cls   = $classes[$auto->trigger_type] ?? 'lead';
 $icon  = $icons[$auto->trigger_type]   ?? 'bi-lightning-charge';

@@ -131,7 +131,7 @@ class DashboardController extends Controller
     private function buildDashboardData(): array
     {
         $allowedPipelineIds = auth()->user()->allowedPipelineIds();
-        $tenantId           = auth()->user()->tenant_id;
+        $tenantId           = activeTenantId();
 
         // ── Compact number formatting helper ─────────────────────────────────
         $cfFmt = static function (float $v, string $pre = '', string $suf = ''): string {

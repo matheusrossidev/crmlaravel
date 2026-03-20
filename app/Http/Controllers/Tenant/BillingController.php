@@ -24,7 +24,7 @@ class BillingController extends Controller
 {
     public function index(): View
     {
-        $tenant = auth()->user()->tenant;
+        $tenant = activeTenant();
 
         // Página exclusiva para agências parceiras
         if ($tenant->isPartner()) {
@@ -91,7 +91,7 @@ class BillingController extends Controller
 
     public function showCheckout(): View|RedirectResponse
     {
-        $tenant = auth()->user()->tenant;
+        $tenant = activeTenant();
 
         if ($tenant->hasActiveSubscription()) {
             return redirect()->route('dashboard');
@@ -130,7 +130,7 @@ class BillingController extends Controller
             'address_number'=> 'nullable|string|max:20',
         ]);
 
-        $tenant = auth()->user()->tenant;
+        $tenant = activeTenant();
         $user   = auth()->user();
 
         $planName = $data['plan_name'] ?? $tenant->plan;
@@ -249,7 +249,7 @@ class BillingController extends Controller
 
     public function cancel(Request $request): JsonResponse
     {
-        $tenant = auth()->user()->tenant;
+        $tenant = activeTenant();
         $user   = auth()->user();
 
         if (!$tenant->asaas_subscription_id) {

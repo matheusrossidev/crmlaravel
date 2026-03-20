@@ -73,6 +73,16 @@ class AutomationEngine
         }
     }
 
+    /**
+     * Execute actions for a specific automation (used by recurring triggers).
+     */
+    public function runForAutomation(Automation $automation, array $context): void
+    {
+        foreach ($automation->actions as $action) {
+            $this->executeAction($action, $context, $automation);
+        }
+    }
+
     // ────────────────────────────────────────────────────────────────────────────
 
     private function matchesConditions(Automation $automation, array $ctx): bool

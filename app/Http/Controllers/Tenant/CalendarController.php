@@ -17,7 +17,7 @@ class CalendarController extends Controller
 {
     private function getConnection(): ?OAuthConnection
     {
-        return OAuthConnection::where('tenant_id', auth()->user()->tenant_id)
+        return OAuthConnection::where('tenant_id', activeTenantId())
             ->where('platform', 'google')
             ->where('status', 'active')
             ->first();
@@ -31,7 +31,7 @@ class CalendarController extends Controller
 
     private function getTenant(): Tenant
     {
-        return Tenant::findOrFail(auth()->user()->tenant_id);
+        return Tenant::findOrFail(activeTenantId());
     }
 
     private function getCalendarPrefs(Tenant $tenant): array

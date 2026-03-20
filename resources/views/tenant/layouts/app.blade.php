@@ -854,7 +854,35 @@
         }());
     </script>
 </head>
-<body>
+<body class="{{ session('impersonating_tenant_id') ? 'impersonating' : '' }}">
+
+{{-- ===== Banner Impersonação (full-width, acima de tudo) ===== --}}
+@if(session('impersonating_tenant_id'))
+@php $impTarget = \App\Models\Tenant::withoutGlobalScope('tenant')->find(session('impersonating_tenant_id')); @endphp
+@if($impTarget)
+<div id="impersonationBar" style="position:fixed;top:0;left:0;right:0;z-index:10000;background:#FEF3C7;border-bottom:2px solid #F59E0B;padding:8px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:13px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+        <i class="bi bi-eye-fill" style="color:#D97706;font-size:15px;"></i>
+        <span style="color:#92400E;">
+            Você está acessando a conta de
+            <strong style="color:#78350F;">{{ $impTarget->name }}</strong>
+            como agência parceira.
+        </span>
+    </div>
+    <form method="POST" action="{{ route('agency.access.exit') }}" style="margin:0;">
+        @csrf
+        <button type="submit" style="background:#D97706;color:#fff;border:none;border-radius:7px;padding:5px 14px;font-size:12.5px;font-weight:600;cursor:pointer;">
+            <i class="bi bi-box-arrow-right"></i> Sair e voltar para minha conta
+        </button>
+    </form>
+</div>
+<style>
+    body.impersonating .sidebar { top: 42px !important; height: calc(100vh - 42px) !important; }
+    body.impersonating .topbar { top: 42px !important; }
+    body.impersonating .main-content { padding-top: calc(64px + 42px) !important; }
+</style>
+@endif
+@endif
 
 {{-- ===== SIDEBAR ===== --}}
 <aside class="sidebar" id="sidebar">
@@ -976,8 +1004,8 @@
         </a>
 
         @php
-            $crmActive = request()->routeIs('crm*', 'leads*', 'calendar.*');
-            $autoActive = request()->routeIs('chatbot.flows.*', 'ai.agents.*', 'ai.intent-signals.*', 'settings.ig-automations.*');
+            $crmActive = request()->routeIs('crm*', 'leads*', 'calendar.*', 'settings.pipelines*', 'settings.products*');
+            $autoActive = request()->routeIs('chatbot.flows.*', 'ai.agents.*', 'ai.intent-signals.*', 'settings.automations*', 'settings.ig-automations.*');
             $reportActive = request()->routeIs('reports*', 'campaigns*');
         @endphp
 
@@ -1001,6 +1029,14 @@
                     <i class="bi bi-calendar3 nav-icon" style="font-size:12px;"></i>
                     <span class="nav-label">Agenda</span>
                 </a>
+                <a href="{{ route('settings.pipelines') }}" class="nav-subitem {{ request()->routeIs('settings.pipelines*') ? 'active' : '' }}" title="Pipelines">
+                    <i class="bi bi-funnel nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Pipelines</span>
+                </a>
+                <a href="{{ route('settings.products') }}" class="nav-subitem {{ request()->routeIs('settings.products*') ? 'active' : '' }}" title="Produtos">
+                    <i class="bi bi-box-seam nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Produtos</span>
+                </a>
             </div>
         </div>
 
@@ -1019,6 +1055,10 @@
                 <a href="{{ route('ai.agents.index') }}" class="nav-subitem {{ request()->routeIs('ai.agents.*', 'ai.intent-signals.*') ? 'active' : '' }}" title="Agentes de IA">
                     <i class="bi bi-robot nav-icon" style="font-size:12px;"></i>
                     <span class="nav-label">Agentes de IA</span>
+                </a>
+                <a href="{{ route('settings.automations') }}" class="nav-subitem {{ request()->routeIs('settings.automations*') ? 'active' : '' }}" title="Automações">
+                    <i class="bi bi-lightning-charge nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Automações</span>
                 </a>
                 @if(\App\Models\InstagramInstance::where('status', 'connected')->exists())
                 <a href="{{ route('settings.ig-automations.index') }}" class="nav-subitem {{ request()->routeIs('settings.ig-automations.*') ? 'active' : '' }}" title="Automações Instagram">
@@ -1049,7 +1089,7 @@
         </div>
 
         {{-- Configurações (submenu) --}}
-        @php $settingsActive = request()->routeIs('settings.*') || request()->routeIs('billing.*'); @endphp
+        @php $settingsActive = (request()->routeIs('settings.*') && !request()->routeIs('settings.automations*', 'settings.pipelines*', 'settings.products*')) || request()->routeIs('billing.*'); @endphp
         <div class="nav-submenu-wrap">
             <div class="nav-submenu-toggle {{ $settingsActive ? 'active' : '' }}" onclick="toggleSubmenu(this)" style="cursor:pointer;">
                 <i class="bi bi-gear nav-icon"></i>
@@ -1065,10 +1105,6 @@
                     <i class="bi bi-bell nav-icon" style="font-size:12px;"></i>
                     <span class="nav-label">Notificações</span>
                 </a>
-                <a href="{{ route('settings.pipelines') }}" class="nav-subitem {{ request()->routeIs('settings.pipelines*') ? 'active' : '' }}">
-                    <i class="bi bi-funnel nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Pipelines</span>
-                </a>
                 <a href="{{ route('settings.lost-reasons') }}" class="nav-subitem {{ request()->routeIs('settings.lost-reasons*') ? 'active' : '' }}">
                     <i class="bi bi-x-circle nav-icon" style="font-size:12px;"></i>
                     <span class="nav-label">Motivos de Perda</span>
@@ -1081,10 +1117,6 @@
                     <i class="bi bi-sliders nav-icon" style="font-size:12px;"></i>
                     <span class="nav-label">Campos Extras</span>
                 </a>
-                <a href="{{ route('settings.products') }}" class="nav-subitem {{ request()->routeIs('settings.products*') ? 'active' : '' }}">
-                    <i class="bi bi-box-seam nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Produtos</span>
-                </a>
                 <a href="{{ route('settings.integrations.index') }}" class="nav-subitem {{ request()->routeIs('settings.integrations*') ? 'active' : '' }}">
                     <i class="bi bi-plug nav-icon" style="font-size:12px;"></i>
                     <span class="nav-label">Integrações</span>
@@ -1096,10 +1128,6 @@
                 <a href="{{ route('settings.departments') }}" class="nav-subitem {{ request()->routeIs('settings.departments*') ? 'active' : '' }}">
                     <i class="bi bi-building nav-icon" style="font-size:12px;"></i>
                     <span class="nav-label">Departamentos</span>
-                </a>
-                <a href="{{ route('settings.automations') }}" class="nav-subitem {{ request()->routeIs('settings.automations*') ? 'active' : '' }}">
-                    <i class="bi bi-lightning nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Automações</span>
                 </a>
                 <a href="{{ route('settings.billing') }}" class="nav-subitem {{ request()->routeIs('settings.billing*', 'billing.*') ? 'active' : '' }}">
                     <i class="bi bi-credit-card nav-icon" style="font-size:12px;"></i>
@@ -1267,28 +1295,6 @@
             <div class="trial-mobile-bar-fill" style="width:{{ $__trialPct }}%"></div>
         </div>
     </div>
-    @endif
-    @if(session('impersonating_tenant_id'))
-    @php $impTarget = \App\Models\Tenant::withoutGlobalScope('tenant')->find(session('impersonating_tenant_id')); @endphp
-    @if($impTarget)
-    <div style="background:#FEF3C7;border-bottom:2px solid #F59E0B;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:13.5px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-            <i class="bi bi-eye-fill" style="color:#D97706;font-size:16px;"></i>
-            <span style="color:#92400E;">
-                Você está acessando a conta de
-                <strong style="color:#78350F;">{{ $impTarget->name }}</strong>
-                como agência parceira.
-            </span>
-        </div>
-        <form method="POST" action="{{ route('agency.access.exit') }}" style="margin:0;">
-            @csrf
-            <button type="submit"
-                    style="background:#D97706;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;">
-                <i class="bi bi-box-arrow-right me-1"></i> Sair e voltar para minha conta
-            </button>
-        </form>
-    </div>
-    @endif
     @endif
 
     {{-- Upsell Banner --}}

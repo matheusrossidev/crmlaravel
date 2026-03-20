@@ -110,7 +110,7 @@ class WhatsappMessageController extends Controller
         }
 
         $message = WhatsappMessage::create([
-            'tenant_id'       => auth()->user()->tenant_id,
+            'tenant_id'       => activeTenantId(),
             'conversation_id' => $conversation->id,
             'waha_message_id' => $wahaMessageId,
             'direction'       => 'outbound',
@@ -161,7 +161,7 @@ class WhatsappMessageController extends Controller
         $waha->sendReaction($wahaMessageId, $emoji);
 
         WhatsappMessage::create([
-            'tenant_id'       => auth()->user()->tenant_id,
+            'tenant_id'       => activeTenantId(),
             'conversation_id' => $conversation->id,
             'direction'       => 'outbound',
             'type'            => 'reaction',

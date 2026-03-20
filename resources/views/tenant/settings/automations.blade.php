@@ -1,8 +1,8 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Configurações';
-    $pageIcon = 'gear';
+    $title    = 'Automações';
+    $pageIcon = 'lightning-charge';
 
     $actionLabels = [
         'add_tag_lead'          => 'Tag no lead',
@@ -60,6 +60,7 @@
 .trigger-badge.won   { background: #dcfce7; color: #16a34a; }
 .trigger-badge.lost  { background: #fee2e2; color: #dc2626; }
 .trigger-badge.date  { background: #e0f2fe; color: #0369a1; }
+.trigger-badge.recurring { background: #fef3c7; color: #92400e; }
 
 .action-chip {
     display: inline-flex; align-items: center; gap: 4px;
@@ -86,8 +87,6 @@
 
 @section('content')
 <div class="page-container">
-
-    @include('tenant.settings._tabs')
 
     <div class="section-header">
         <div>

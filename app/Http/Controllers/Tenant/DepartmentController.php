@@ -32,7 +32,7 @@ class DepartmentController extends Controller
             ->orderBy('name')
             ->get();
 
-        $users = User::where('tenant_id', auth()->user()->tenant_id)
+        $users = User::where('tenant_id', activeTenantId())
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'role']);
 
@@ -71,7 +71,7 @@ class DepartmentController extends Controller
         ]);
 
         $department = Department::create([
-            'tenant_id'                => auth()->user()->tenant_id,
+            'tenant_id'                => activeTenantId(),
             'name'                     => $request->input('name'),
             'description'              => $request->input('description'),
             'icon'                     => $request->input('icon', 'bi-building'),

@@ -102,7 +102,7 @@ class InstagramAutomationController extends Controller
         $legacyDm = $data['dm_message'] ?? $this->extractFirstText($data['dm_messages'] ?? null);
 
         $automation = InstagramAutomation::create([
-            'tenant_id'           => auth()->user()->tenant_id,
+            'tenant_id'           => activeTenantId(),
             'instance_id'         => $instance->id,
             'name'                => $data['name'] ?? null,
             'media_id'            => $data['media_id'] ?? null,

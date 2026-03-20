@@ -155,7 +155,7 @@ class KanbanController extends Controller
 
         $availableTags = $configuredTags->concat($extraTags);
 
-        $users = User::where('tenant_id', auth()->user()->tenant_id)
+        $users = User::where('tenant_id', activeTenantId())
             ->orderBy('name')
             ->get(['id', 'name']);
 
@@ -266,7 +266,7 @@ class KanbanController extends Controller
             // Automações de etapa
             try {
                 $engine  = new AutomationEngine();
-                $baseCtx = ['tenant_id' => auth()->user()->tenant_id, 'lead' => $lead->fresh(), 'stage_new' => $newStage, 'stage_old_id' => $oldStageId];
+                $baseCtx = ['tenant_id' => activeTenantId(), 'lead' => $lead->fresh(), 'stage_new' => $newStage, 'stage_old_id' => $oldStageId];
                 $engine->run('lead_stage_changed', $baseCtx);
                 if ($newStage?->is_won) {
                     $engine->run('lead_won', $baseCtx);
@@ -323,7 +323,7 @@ class KanbanController extends Controller
         $token = encrypt([
             'path'        => $tempDir . DIRECTORY_SEPARATOR . $filename,
             'pipeline_id' => $pipelineId,
-            'tenant_id'   => auth()->user()->tenant_id,
+            'tenant_id'   => activeTenantId(),
             'expires_at'  => now()->addMinutes(30)->timestamp,
         ]);
 
@@ -383,7 +383,7 @@ class KanbanController extends Controller
         }
 
         if (
-            ($payload['tenant_id'] ?? null) !== auth()->user()->tenant_id ||
+            ($payload['tenant_id'] ?? null) !== activeTenantId() ||
             ($payload['pipeline_id'] ?? null) !== (int) $request->pipeline_id ||
             ($payload['expires_at'] ?? 0) < now()->timestamp ||
             !file_exists($payload['path'] ?? '')

@@ -79,7 +79,7 @@ class LeadController extends Controller
         }
 
         $leads   = $query->paginate(15)->withQueryString();
-        $stages  = PipelineStage::whereHas('pipeline', fn ($q) => $q->where('tenant_id', auth()->user()->tenant_id))
+        $stages  = PipelineStage::whereHas('pipeline', fn ($q) => $q->where('tenant_id', activeTenantId()))
             ->orderBy('position')
             ->get();
         $pipelines = Pipeline::when($allowedPipelineIds, fn ($q) => $q->whereIn('id', $allowedPipelineIds))
@@ -92,7 +92,7 @@ class LeadController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        $users = User::where('tenant_id', auth()->user()->tenant_id)
+        $users = User::where('tenant_id', activeTenantId())
             ->orderBy('name')
             ->get(['id', 'name']);
 
@@ -163,7 +163,7 @@ class LeadController extends Controller
         // Automação: lead criado
         try {
             (new AutomationEngine())->run('lead_created', [
-                'tenant_id' => auth()->user()->tenant_id,
+                'tenant_id' => activeTenantId(),
                 'lead'      => $lead,
             ]);
         } catch (\Throwable) {}
@@ -249,7 +249,7 @@ class LeadController extends Controller
 
         $igConversation = InstagramConversation::withoutGlobalScope('tenant')
             ->where('lead_id', $lead->id)
-            ->where('tenant_id', auth()->user()->tenant_id)
+            ->where('tenant_id', activeTenantId())
             ->with(['messages' => fn ($q) => $q->orderBy('sent_at')->limit(100)])
             ->first();
 
@@ -260,7 +260,7 @@ class LeadController extends Controller
             ->get(['id', 'name', 'is_default']);
 
         $cfDefs            = CustomFieldDefinition::where('is_active', true)->orderBy('sort_order')->get();
-        $users             = User::where('tenant_id', auth()->user()->tenant_id)
+        $users             = User::where('tenant_id', activeTenantId())
             ->orderBy('name')
             ->get(['id', 'name']);
         $scheduledMessages = ScheduledMessage::where('lead_id', $lead->id)
@@ -522,7 +522,7 @@ class LeadController extends Controller
 
         $record = LeadAttachment::create([
             'lead_id'       => $lead->id,
-            'tenant_id'     => auth()->user()->tenant_id,
+            'tenant_id'     => activeTenantId(),
             'uploaded_by'   => auth()->id(),
             'original_name' => $file->getClientOriginalName(),
             'storage_path'  => $path,

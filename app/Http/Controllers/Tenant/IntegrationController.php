@@ -38,7 +38,7 @@ class IntegrationController extends Controller
         $whatsapp          = $whatsappInstances->first(); // retrocompat
         $instagram         = InstagramInstance::first();
 
-        $tenant = auth()->user()->tenant;
+        $tenant = activeTenant();
         $s = $tenant->settings_json ?? [];
         $enabledIntegrations = [
             'whatsapp'        => $s['integration_whatsapp']        ?? true,
@@ -79,7 +79,7 @@ class IntegrationController extends Controller
         // Troca short-lived token por long-lived (60 dias)
         $longLived = $this->exchangeFacebookToken($user->token);
 
-        $tenant = auth()->user()->tenant;
+        $tenant = activeTenant();
 
         OAuthConnection::updateOrCreate(
             ['tenant_id' => $tenant->id, 'platform' => 'facebook'],
@@ -127,7 +127,7 @@ class IntegrationController extends Controller
                 ->with('error', 'Autenticação com o Google falhou. Tente novamente.');
         }
 
-        $tenant = auth()->user()->tenant;
+        $tenant = activeTenant();
 
         OAuthConnection::updateOrCreate(
             ['tenant_id' => $tenant->id, 'platform' => 'google'],
@@ -170,7 +170,7 @@ class IntegrationController extends Controller
             return response()->json(['success' => false, 'message' => 'Nenhuma conexão ativa encontrada.'], 404);
         }
 
-        SyncCampaignsJob::dispatch(auth()->user()->tenant, $platform);
+        SyncCampaignsJob::dispatch(activeTenant(), $platform);
 
         return response()->json(['success' => true, 'message' => 'Sincronização iniciada.']);
     }
@@ -179,7 +179,7 @@ class IntegrationController extends Controller
 
     public function connectWhatsapp(Request $request): JsonResponse
     {
-        $tenant = auth()->user()->tenant;
+        $tenant = activeTenant();
         $label  = $request->input('label', '');
 
         // Se já existe alguma instância, verificar limite do plano
@@ -449,7 +449,7 @@ class IntegrationController extends Controller
                 'ig_business_id'    => $businessAccountId,
             ]);
 
-            $tenant = auth()->user()->tenant;
+            $tenant = activeTenant();
 
             InstagramInstance::withoutGlobalScope('tenant')->updateOrCreate(
                 ['tenant_id' => $tenant->id],
@@ -503,7 +503,7 @@ class IntegrationController extends Controller
 
     public function disconnectInstagram(): JsonResponse
     {
-        $tenant = auth()->user()->tenant;
+        $tenant = activeTenant();
 
         InstagramInstance::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenant->id)
@@ -544,7 +544,7 @@ class IntegrationController extends Controller
         ]);
 
         $btn = WhatsappButton::create([
-            'tenant_id'       => auth()->user()->tenant_id,
+            'tenant_id'       => activeTenantId(),
             'phone_number'    => preg_replace('/\D/', '', $data['phone_number']),
             'default_message' => $data['default_message'] ?? 'Olá! Vi seu site e gostaria de saber mais.',
             'button_label'    => $data['button_label'] ?? 'Fale no WhatsApp',

@@ -53,8 +53,6 @@
 @section('content')
 <div class="page-container">
 
-    @include('tenant.settings._tabs')
-
     <div class="cf-card">
         <div class="cf-card-header">
             <h3><i class="bi bi-box-seam" style="color:#3B82F6;"></i> Produtos e Serviços</h3>

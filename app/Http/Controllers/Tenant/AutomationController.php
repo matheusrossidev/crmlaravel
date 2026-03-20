@@ -22,7 +22,7 @@ class AutomationController extends Controller
 {
     private function loadFormData(): array
     {
-        $tenantId = auth()->user()->tenant_id;
+        $tenantId = activeTenantId();
 
         $pipelines = Pipeline::with(['stages' => fn ($q) => $q->orderBy('position')])
             ->orderBy('sort_order')

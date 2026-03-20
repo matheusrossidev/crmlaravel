@@ -2,6 +2,41 @@
 
 declare(strict_types=1);
 
+if (! function_exists('activeTenant')) {
+    /**
+     * Retorna o tenant ativo, considerando impersonação de agência.
+     * Usa: app('active_tenant_id') > session('impersonating_tenant_id') > auth user tenant.
+     */
+    function activeTenant(): ?\App\Models\Tenant
+    {
+        if (app()->has('active_tenant_id')) {
+            return \App\Models\Tenant::find(app('active_tenant_id'));
+        }
+        $impId = session('impersonating_tenant_id');
+        if ($impId) {
+            return \App\Models\Tenant::find($impId);
+        }
+        return auth()->user()?->tenant;
+    }
+}
+
+if (! function_exists('activeTenantId')) {
+    /**
+     * Retorna o ID do tenant ativo (mais eficiente que activeTenant() quando só precisa do ID).
+     */
+    function activeTenantId(): ?int
+    {
+        if (app()->has('active_tenant_id')) {
+            return (int) app('active_tenant_id');
+        }
+        $impId = session('impersonating_tenant_id');
+        if ($impId) {
+            return (int) $impId;
+        }
+        return auth()->user()?->tenant_id;
+    }
+}
+
 if (! function_exists('formatBrPhone')) {
     /**
      * Formata um número de telefone brasileiro para exibição.

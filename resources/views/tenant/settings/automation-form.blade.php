@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Configurações';
+    $title    = 'Automações';
     $pageIcon = 'gear';
     $isEdit   = isset($automation);
 
@@ -350,6 +350,9 @@
                 <div class="af-block-item trigger" onclick="setTrigger('date_field')">
                     <span class="af-block-icon"><i class="bi bi-calendar-event"></i></span>Data / Aniversário
                 </div>
+                <div class="af-block-item trigger" onclick="setTrigger('recurring')">
+                    <span class="af-block-icon"><i class="bi bi-arrow-repeat"></i></span>Recorrente
+                </div>
             </div>
 
             <div class="af-sidebar-divider"></div>
@@ -494,6 +497,7 @@ const TRIGGER_META = {
     lead_won:            { icon:'bi-trophy',             label:'Lead ganho' },
     lead_lost:           { icon:'bi-x-circle',           label:'Lead perdido' },
     date_field:          { icon:'bi-calendar-event',     label:'Data / Aniversário' },
+    recurring:           { icon:'bi-arrow-repeat',       label:'Recorrente (Semanal/Mensal)' },
 };
 
 function setTrigger(type, prefillConfig) {
@@ -586,10 +590,86 @@ function buildTriggerConfig(type, prefill) {
                 </label>
             </div>`;
     }
+    if (type === 'recurring') {
+        const rt  = prefill.recurrence_type || 'monthly';
+        const rds = (prefill.days || []).join(', ');
+        const rtm = prefill.time || '09:00';
+        const ft  = prefill.filter_type || 'tag';
+        const fv  = prefill.filter_value || '';
+        const dl  = prefill.daily_limit ?? 100;
+        const ds  = prefill.delay_seconds ?? 8;
+
+        const pOpts = PIPELINES.map(p => p.stages.map(s => `<option value="${s.id}" ${fv==s.id?'selected':''}>${h(p.name)} → ${h(s.name)}</option>`).join('')).join('');
+
+        html += `<label>Tipo de recorrência</label>
+            <div style="display:flex;gap:8px;margin-bottom:12px;">
+                <label style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:1px solid ${rt==='weekly'?'#0085f3':'#e2e8f0'};border-radius:8px;cursor:pointer;background:${rt==='weekly'?'#eff6ff':'#fff'};font-size:13px;">
+                    <input type="radio" name="recType" value="weekly" ${rt==='weekly'?'checked':''} onchange="toggleRecDays()" style="display:none;"> Semanal
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:1px solid ${rt==='monthly'?'#0085f3':'#e2e8f0'};border-radius:8px;cursor:pointer;background:${rt==='monthly'?'#eff6ff':'#fff'};font-size:13px;">
+                    <input type="radio" name="recType" value="monthly" ${rt==='monthly'?'checked':''} onchange="toggleRecDays()" style="display:none;"> Mensal
+                </label>
+            </div>
+            <div id="recWeekly" style="display:${rt==='weekly'?'flex':'none'};gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+                ${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((d,i) => {
+                    const chk = (prefill.days||[]).includes(i);
+                    return `<label style="display:flex;align-items:center;gap:4px;padding:4px 10px;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:12.5px;">
+                        <input type="checkbox" class="recDayCheck" value="${i}" ${chk?'checked':''}> ${d}
+                    </label>`;
+                }).join('')}
+            </div>
+            <div id="recMonthly" style="display:${rt==='monthly'?'block':'none'};margin-bottom:12px;">
+                <label>Dias do mês <small style="font-weight:400;color:#9ca3af;">(separe por vírgula: 10, 20)</small></label>
+                <input type="text" class="form-control" id="tcRecDays" value="${h(rds)}" placeholder="10, 20">
+            </div>
+            <label>Horário de envio</label>
+            <input type="time" class="form-control" id="tcRecTime" value="${h(rtm)}" style="margin-bottom:12px;">
+            <label>Filtrar leads por</label>
+            <select class="form-select" id="tcRecFilter" onchange="toggleRecFilter()" style="margin-bottom:8px;">
+                <option value="all" ${ft==='all'?'selected':''}>Todos os leads</option>
+                <option value="tag" ${ft==='tag'?'selected':''}>Tag específica</option>
+                <option value="stage" ${ft==='stage'?'selected':''}>Etapa do funil</option>
+            </select>
+            <div id="recFilterTag" style="display:${ft==='tag'?'block':'none'};margin-bottom:12px;">
+                <input type="text" class="form-control" id="tcRecTagValue" value="${h(fv)}" placeholder="Nome da tag (ex: Pais)">
+            </div>
+            <div id="recFilterStage" style="display:${ft==='stage'?'block':'none'};margin-bottom:12px;">
+                <select class="form-select" id="tcRecStageValue">${pOpts}</select>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+                <div>
+                    <label>Limite diário</label>
+                    <input type="number" class="form-control" id="tcRecLimit" min="1" max="500" value="${dl}">
+                </div>
+                <div>
+                    <label>Delay entre envios (s)</label>
+                    <input type="number" class="form-control" id="tcRecDelay" min="1" max="60" value="${ds}">
+                </div>
+            </div>
+            <p style="margin-top:10px;font-size:11.5px;color:#9ca3af;">
+                <i class="bi bi-shield-check"></i> Só envia para leads com conversa WhatsApp existente. Delay entre envios para evitar bloqueio.
+            </p>`;
+    }
     if (!html) {
         html = `<p style="font-size:12px;color:#9ca3af;margin:0;">Nenhuma configuração necessária para este gatilho.</p>`;
     }
     return html;
+}
+
+function toggleRecDays() {
+    const t = document.querySelector('input[name="recType"]:checked')?.value;
+    document.querySelectorAll('label:has(input[name="recType"])').forEach(l => {
+        const v = l.querySelector('input').value;
+        l.style.borderColor = v === t ? '#0085f3' : '#e2e8f0';
+        l.style.background = v === t ? '#eff6ff' : '#fff';
+    });
+    document.getElementById('recWeekly').style.display = t === 'weekly' ? 'flex' : 'none';
+    document.getElementById('recMonthly').style.display = t === 'monthly' ? 'block' : 'none';
+}
+function toggleRecFilter() {
+    const f = document.getElementById('tcRecFilter')?.value;
+    document.getElementById('recFilterTag').style.display = f === 'tag' ? 'block' : 'none';
+    document.getElementById('recFilterStage').style.display = f === 'stage' ? 'block' : 'none';
 }
 
 function onTcPipelineChange() {
@@ -962,6 +1042,22 @@ function saveAutomation() {
         tc.date_field    = dfEl.value;
         tc.days_before   = parseInt(document.getElementById('tcDaysBefore')?.value ?? '0', 10) || 0;
         tc.repeat_yearly = document.getElementById('tcRepeatYearly')?.checked ?? true;
+    }
+    // Recurring trigger config
+    if (triggerType === 'recurring') {
+        tc.recurrence_type = document.querySelector('input[name="recType"]:checked')?.value || 'monthly';
+        if (tc.recurrence_type === 'weekly') {
+            tc.days = [...document.querySelectorAll('.recDayCheck:checked')].map(c => parseInt(c.value));
+        } else {
+            tc.days = (document.getElementById('tcRecDays')?.value || '').split(',').map(d => parseInt(d.trim())).filter(d => !isNaN(d) && d >= 1 && d <= 31);
+        }
+        tc.time = document.getElementById('tcRecTime')?.value || '09:00';
+        tc.filter_type = document.getElementById('tcRecFilter')?.value || 'all';
+        if (tc.filter_type === 'tag') tc.filter_value = document.getElementById('tcRecTagValue')?.value || '';
+        if (tc.filter_type === 'stage') tc.filter_value = document.getElementById('tcRecStageValue')?.value || '';
+        tc.daily_limit = parseInt(document.getElementById('tcRecLimit')?.value || '100');
+        tc.delay_seconds = parseInt(document.getElementById('tcRecDelay')?.value || '8');
+        if (!tc.days.length) { toastr.warning('Selecione pelo menos um dia para a recorrência.'); return; }
     }
 
     const conditions = [];
