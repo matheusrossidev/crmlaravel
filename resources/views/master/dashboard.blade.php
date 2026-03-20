@@ -62,6 +62,25 @@
     </div>
 </div>
 
+{{-- Gráfico: Crescimento de Usuários --}}
+<div class="m-card" style="margin-bottom:20px;">
+    <div class="m-card-header">
+        <div class="m-card-title">
+            <i class="bi bi-graph-up"></i>
+            Crescimento de Usuários
+        </div>
+        <div style="display:flex;gap:4px;">
+            <button class="m-btn m-btn-ghost m-btn-sm growth-period" data-period="week" style="font-size:11.5px;padding:4px 10px;border-radius:6px;">Semana</button>
+            <button class="m-btn m-btn-ghost m-btn-sm growth-period active" data-period="month" style="font-size:11.5px;padding:4px 10px;border-radius:6px;background:#0085f3;color:#fff;">Mês</button>
+            <button class="m-btn m-btn-ghost m-btn-sm growth-period" data-period="3months" style="font-size:11.5px;padding:4px 10px;border-radius:6px;">3 Meses</button>
+            <button class="m-btn m-btn-ghost m-btn-sm growth-period" data-period="6months" style="font-size:11.5px;padding:4px 10px;border-radius:6px;">6 Meses</button>
+        </div>
+    </div>
+    <div style="padding:16px 20px;background:#fff;border-radius:0 0 12px 12px;">
+        <canvas id="growthChart" height="80"></canvas>
+    </div>
+</div>
+
 {{-- Últimos Pagamentos --}}
 <div class="m-card" style="margin-bottom:20px;">
     <div class="m-card-header">
@@ -191,3 +210,142 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+    const allData = @json($monthlyGrowth);
+    let chart = null;
+
+    function sliceData(period) {
+        switch(period) {
+            case 'week':    return allData.slice(-1);
+            case 'month':   return allData.slice(-4);
+            case '3months': return allData.slice(-13);
+            case '6months': return allData;
+            default:        return allData.slice(-4);
+        }
+    }
+
+    function renderChart(period) {
+        const data = sliceData(period);
+        if (chart) chart.destroy();
+
+        const ctx = document.getElementById('growthChart').getContext('2d');
+
+        const trialGrad = ctx.createLinearGradient(0, 0, 0, 280);
+        trialGrad.addColorStop(0, 'rgba(245,158,11,0.3)');
+        trialGrad.addColorStop(1, 'rgba(245,158,11,0.02)');
+
+        const payingGrad = ctx.createLinearGradient(0, 0, 0, 280);
+        payingGrad.addColorStop(0, 'rgba(0,133,243,0.3)');
+        payingGrad.addColorStop(1, 'rgba(0,133,243,0.02)');
+
+        const partnerGrad = ctx.createLinearGradient(0, 0, 0, 280);
+        partnerGrad.addColorStop(0, 'rgba(139,92,246,0.25)');
+        partnerGrad.addColorStop(1, 'rgba(139,92,246,0.02)');
+
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => d.label),
+                datasets: [
+                    {
+                        label: 'Trial',
+                        data: data.map(d => d.trial),
+                        borderColor: '#F59E0B',
+                        backgroundColor: trialGrad,
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#F59E0B',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 6,
+                    },
+                    {
+                        label: 'Pagantes',
+                        data: data.map(d => d.paying),
+                        borderColor: '#0085f3',
+                        backgroundColor: payingGrad,
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#0085f3',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 6,
+                    },
+                    {
+                        label: 'Parceiros',
+                        data: data.map(d => d.partner),
+                        borderColor: '#8B5CF6',
+                        backgroundColor: partnerGrad,
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#8B5CF6',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 6,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { usePointStyle: true, pointStyle: 'circle', padding: 20, font: { size: 12, family: "'DM Sans', sans-serif" } }
+                    },
+                    tooltip: {
+                        backgroundColor: '#1a1d23',
+                        titleFont: { size: 12, family: "'DM Sans', sans-serif" },
+                        bodyFont: { size: 12, family: "'DM Sans', sans-serif" },
+                        padding: 10,
+                        cornerRadius: 8,
+                        displayColors: true,
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11, family: "'DM Sans', sans-serif" }, color: '#9ca3af', maxRotation: 0 },
+                        border: { display: false }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1, font: { size: 11, family: "'DM Sans', sans-serif" }, color: '#9ca3af' },
+                        grid: { color: '#f3f4f6', drawBorder: false },
+                        border: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    // Period toggle buttons
+    document.querySelectorAll('.growth-period').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.growth-period').forEach(b => {
+                b.style.background = '';
+                b.style.color = '';
+                b.classList.remove('active');
+            });
+            this.style.background = '#0085f3';
+            this.style.color = '#fff';
+            this.classList.add('active');
+            renderChart(this.dataset.period);
+        });
+    });
+
+    renderChart('month');
+})();
+</script>
+@endpush

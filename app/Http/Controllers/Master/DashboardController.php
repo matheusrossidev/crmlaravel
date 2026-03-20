@@ -60,8 +60,23 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
+        // --- Crescimento: dados por semana (últimas 26 semanas) ---
+        $growthWeeks = [];
+        for ($i = 25; $i >= 0; $i--) {
+            $weekStart = now()->subWeeks($i)->startOfWeek();
+            $weekEnd   = (clone $weekStart)->endOfWeek();
+            $growthWeeks[] = [
+                'label'   => $weekStart->format('d/m'),
+                'trial'   => Tenant::where('status', 'trial')->whereBetween('created_at', [$weekStart, $weekEnd])->count(),
+                'paying'  => Tenant::where('subscription_status', 'active')->whereBetween('created_at', [$weekStart, $weekEnd])->count(),
+                'partner' => Tenant::where('status', 'partner')->whereBetween('created_at', [$weekStart, $weekEnd])->count(),
+            ];
+        }
+        // Agrupar dados — JS filtra no frontend
+        $monthlyGrowth = $growthWeeks;
+
         $recentTenants = Tenant::orderByDesc('created_at')->limit(10)->get();
 
-        return view('master.dashboard', compact('stats', 'revenue', 'recentPayments', 'recentTenants'));
+        return view('master.dashboard', compact('stats', 'revenue', 'recentPayments', 'recentTenants', 'monthlyGrowth'));
     }
 }
