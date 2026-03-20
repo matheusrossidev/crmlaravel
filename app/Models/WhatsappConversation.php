@@ -24,6 +24,8 @@ class WhatsappConversation extends Model
         'chatbot_flow_id', 'chatbot_node_id', 'chatbot_variables',
         'unread_count', 'started_at', 'last_message_at', 'closed_at',
         'followup_count', 'last_followup_at',
+        'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
+        'fbclid', 'gclid',
     ];
 
     protected $casts = [

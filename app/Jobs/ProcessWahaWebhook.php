@@ -13,6 +13,8 @@ use App\Models\ChatbotFlow;
 use App\Models\Lead;
 use App\Models\Pipeline;
 use App\Models\WhatsappConversation;
+use App\Models\WhatsappButton;
+use App\Models\WhatsappButtonClick;
 use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
 use App\Models\Tenant;
@@ -517,6 +519,40 @@ class ProcessWahaWebhook implements ShouldQueue
                 'has_picture'     => $pictureUrl !== null,
             ]);
 
+            // Match UTMs de clique no botão WhatsApp (janela de 5 minutos)
+            if (! $isGroup) {
+                try {
+                    $recentClick = WhatsappButtonClick::withoutGlobalScope('tenant')
+                        ->where('tenant_id', $instance->tenant_id)
+                        ->where('clicked_at', '>=', now()->subMinutes(5))
+                        ->whereHas('button', fn ($q) => $q->where('tenant_id', $instance->tenant_id))
+                        ->orderByDesc('clicked_at')
+                        ->first();
+
+                    if ($recentClick) {
+                        $utmFields = array_filter([
+                            'utm_source'   => $recentClick->utm_source,
+                            'utm_medium'   => $recentClick->utm_medium,
+                            'utm_campaign' => $recentClick->utm_campaign,
+                            'utm_content'  => $recentClick->utm_content,
+                            'utm_term'     => $recentClick->utm_term,
+                            'fbclid'       => $recentClick->fbclid,
+                            'gclid'        => $recentClick->gclid,
+                        ]);
+                        if (! empty($utmFields)) {
+                            $conversation->update($utmFields);
+                            Log::channel('whatsapp')->info('UTMs do botão WA vinculados à conversa', [
+                                'conversation_id' => $conversation->id,
+                                'click_id'        => $recentClick->id,
+                                'utm_source'      => $recentClick->utm_source,
+                            ]);
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    Log::channel('whatsapp')->warning('Erro ao vincular UTMs do botão', ['error' => $e->getMessage()]);
+                }
+            }
+
             // Auto-assign: atribuir agente de IA automaticamente (apenas conversas individuais)
             if (! $isGroup) {
                 $autoAgent = AiAgent::withoutGlobalScope('tenant')
@@ -659,7 +695,7 @@ class ProcessWahaWebhook implements ShouldQueue
                 ->where('phone', $phone)
                 ->exists();
 
-            $lead = $this->findOrCreateLead($instance->tenant_id, $phone, $contactName);
+            $lead = $this->findOrCreateLead($instance->tenant_id, $phone, $contactName, $conversation);
             if ($lead) {
                 WhatsappConversation::withoutGlobalScope('tenant')
                     ->where('id', $conversation->id)
@@ -982,7 +1018,7 @@ class ProcessWahaWebhook implements ShouldQueue
      * Encontra um Lead pelo telefone ou cria um novo vinculado ao pipeline padrão.
      * Retorna null se não houver pipeline configurado para o tenant.
      */
-    private function findOrCreateLead(int $tenantId, string $phone, ?string $contactName): ?Lead
+    private function findOrCreateLead(int $tenantId, string $phone, ?string $contactName, ?WhatsappConversation $conversation = null): ?Lead
     {
         // Tenta encontrar lead existente com o mesmo telefone
         $lead = Lead::withoutGlobalScope('tenant')
@@ -1039,14 +1075,25 @@ class ProcessWahaWebhook implements ShouldQueue
             return null; // Pipeline sem estágios — não cria lead
         }
 
-        return Lead::withoutGlobalScope('tenant')->create([
+        $leadData = [
             'tenant_id'   => $tenantId,
             'name'        => $contactName ?? $phone,
             'phone'       => $phone,
             'source'      => 'whatsapp',
             'pipeline_id' => $pipeline->id,
             'stage_id'    => $stage->id,
-        ]);
+        ];
+
+        // Copiar UTMs da conversa para o lead (vieram do botão WA)
+        if ($conversation) {
+            foreach (['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'gclid'] as $f) {
+                if (! empty($conversation->{$f})) {
+                    $leadData[$f] = $conversation->{$f};
+                }
+            }
+        }
+
+        return Lead::withoutGlobalScope('tenant')->create($leadData);
     }
 
     private function normalizePhone(string $from, array $msg = [], bool $isFromMe = false): string
