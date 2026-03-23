@@ -33,10 +33,11 @@ class CheckTrialExpiry extends Command
             $daysLeft = (int) now()->startOfDay()->diffInDays($tenant->trial_ends_at->startOfDay(), false);
 
             if ($daysLeft < 0) {
-                // Trial expirado → inativar
-                $tenant->update(['status' => 'inactive']);
+                // Trial expirado — NÃO alterar status para 'inactive'.
+                // Manter como 'trial' com trial_ends_at no passado permite que
+                // o TenantMiddleware redirecione para billing.checkout (via isTrialExpired()).
                 $expired++;
-                $this->info("  → Tenant #{$tenant->id} ({$tenant->name}) expirado e inativado.");
+                $this->info("  → Tenant #{$tenant->id} ({$tenant->name}) trial expirado — aguardando assinatura.");
                 continue;
             }
 

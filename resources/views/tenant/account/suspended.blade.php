@@ -55,6 +55,22 @@
             transition: background .15s;
         }
         .btn-logout:hover { background: #DC2626; }
+        .btn-checkout {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 24px;
+            background: #0085f3;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background .15s;
+        }
+        .btn-checkout:hover { background: #0070d1; color: #fff; }
     </style>
 </head>
 <body>
@@ -65,15 +81,21 @@
         <h1>Conta Suspensa</h1>
         <p>
             Sua conta foi suspensa ou desativada.<br>
-            Entre em contato com o suporte para mais informações.
+            Escolha um plano para continuar usando a plataforma.
         </p>
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-            <button type="submit" class="btn-logout">
-                <i class="bi bi-box-arrow-right"></i>
-                Sair da conta
-            </button>
-        </form>
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
+            <a href="{{ route('billing.checkout') }}" class="btn-checkout">
+                <i class="bi bi-credit-card"></i>
+                Escolher um plano
+            </a>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="btn-logout">
+                    <i class="bi bi-box-arrow-right"></i>
+                    Sair da conta
+                </button>
+            </form>
+        </div>
     </div>
 </body>
 </html>
