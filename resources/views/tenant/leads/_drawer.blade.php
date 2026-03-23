@@ -983,8 +983,8 @@ function uploadAttachment(file) {
     .then(({ ok, data }) => {
         const temp = document.getElementById(tempId);
         if (temp) temp.remove();
-        if (ok && data.id) {
-            renderAttachItem(data);
+        if (ok && data.attachment) {
+            renderAttachItem(data.attachment);
             toastr.success('Arquivo anexado!');
         } else {
             const msg = data.message || Object.values(data.errors || {}).flat().join(', ') || 'Erro ao enviar.';
