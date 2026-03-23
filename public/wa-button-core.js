@@ -8,19 +8,23 @@ if(!vid){vid='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){
 var P=new URLSearchParams(window.location.search);
 var utm={utm_source:P.get('utm_source'),utm_medium:P.get('utm_medium'),utm_campaign:P.get('utm_campaign'),utm_content:P.get('utm_content'),utm_term:P.get('utm_term'),fbclid:P.get('fbclid'),gclid:P.get('gclid'),page_url:window.location.href,referrer_url:document.referrer,visitor_id:vid};
 
-function genCode(){var c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',r='';for(var i=0;i<6;i++)r+=c.charAt(Math.floor(Math.random()*c.length));return r}
-
 function trackAndOpen(){
-    var code=genCode();
-    var msgWithCode=CFG.message+'\n\n#'+code;
-    var waUrl='https://wa.me/'+CFG.phone+'?text='+encodeURIComponent(msgWithCode);
-    // Abre WhatsApp IMEDIATAMENTE (dentro do gesto do usuário — não bloqueia no iOS)
-    window.location.href=waUrl;
-    // Tracking em background (fire-and-forget)
-    utm.tracking_code=code;
-    try{navigator.sendBeacon(CFG.apiBase+'/api/widget/'+CFG.token+'/wa-click',new Blob([JSON.stringify(utm)],{type:'application/json'}))}catch(e){
-        fetch(CFG.apiBase+'/api/widget/'+CFG.token+'/wa-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(utm),keepalive:true}).catch(function(){})
-    }
+    // Monta URL de redirect server-side com UTMs como query params
+    var params=new URLSearchParams();
+    if(utm.utm_source)params.set('utm_source',utm.utm_source);
+    if(utm.utm_medium)params.set('utm_medium',utm.utm_medium);
+    if(utm.utm_campaign)params.set('utm_campaign',utm.utm_campaign);
+    if(utm.utm_content)params.set('utm_content',utm.utm_content);
+    if(utm.utm_term)params.set('utm_term',utm.utm_term);
+    if(utm.fbclid)params.set('fbclid',utm.fbclid);
+    if(utm.gclid)params.set('gclid',utm.gclid);
+    if(utm.page_url)params.set('page_url',utm.page_url);
+    if(utm.referrer_url)params.set('referrer_url',utm.referrer_url);
+    if(utm.visitor_id)params.set('visitor_id',utm.visitor_id);
+    var qs=params.toString();
+    var redirectUrl=CFG.apiBase+'/wa/'+CFG.token+(qs?'?'+qs:'');
+    // Redirect via servidor — tracking 100% server-side, sem depender de sendBeacon
+    window.location.href=redirectUrl;
 }
 
 /* ── CSS ─────────────────────────────────────────────── */
