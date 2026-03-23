@@ -29,11 +29,14 @@ class WhatsappButtonClick extends Model
         'referrer_url',
         'device_type',
         'ip_hash',
+        'tracking_code',
+        'matched',
         'clicked_at',
     ];
 
     protected $casts = [
         'clicked_at' => 'datetime',
+        'matched'    => 'boolean',
     ];
 
     public function button(): BelongsTo

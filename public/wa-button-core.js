@@ -8,11 +8,16 @@ if(!vid){vid='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){
 var P=new URLSearchParams(window.location.search);
 var utm={utm_source:P.get('utm_source'),utm_medium:P.get('utm_medium'),utm_campaign:P.get('utm_campaign'),utm_content:P.get('utm_content'),utm_term:P.get('utm_term'),fbclid:P.get('fbclid'),gclid:P.get('gclid'),page_url:window.location.href,referrer_url:document.referrer,visitor_id:vid};
 
+function genCode(){var c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',r='';for(var i=0;i<6;i++)r+=c.charAt(Math.floor(Math.random()*c.length));return r}
+
 function trackAndOpen(){
-    var waUrl='https://wa.me/'+CFG.phone+'?text='+encodeURIComponent(CFG.message);
+    var code=genCode();
+    var msgWithCode=CFG.message+'\n\n#'+code;
+    var waUrl='https://wa.me/'+CFG.phone+'?text='+encodeURIComponent(msgWithCode);
     // Abre WhatsApp IMEDIATAMENTE (dentro do gesto do usuário — não bloqueia no iOS)
     window.location.href=waUrl;
     // Tracking em background (fire-and-forget)
+    utm.tracking_code=code;
     try{navigator.sendBeacon(CFG.apiBase+'/api/widget/'+CFG.token+'/wa-click',new Blob([JSON.stringify(utm)],{type:'application/json'}))}catch(e){
         fetch(CFG.apiBase+'/api/widget/'+CFG.token+'/wa-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(utm),keepalive:true}).catch(function(){})
     }

@@ -519,38 +519,9 @@ class ProcessWahaWebhook implements ShouldQueue
                 'has_picture'     => $pictureUrl !== null,
             ]);
 
-            // Match UTMs de clique no botão WhatsApp (janela de 5 minutos)
+            // Match UTMs de clique no botão WhatsApp (tracking code + fallback por tempo)
             if (! $isGroup) {
-                try {
-                    $recentClick = WhatsappButtonClick::withoutGlobalScope('tenant')
-                        ->where('tenant_id', $instance->tenant_id)
-                        ->where('clicked_at', '>=', now()->subMinutes(5))
-                        ->whereHas('button', fn ($q) => $q->where('tenant_id', $instance->tenant_id))
-                        ->orderByDesc('clicked_at')
-                        ->first();
-
-                    if ($recentClick) {
-                        $utmFields = array_filter([
-                            'utm_source'   => $recentClick->utm_source,
-                            'utm_medium'   => $recentClick->utm_medium,
-                            'utm_campaign' => $recentClick->utm_campaign,
-                            'utm_content'  => $recentClick->utm_content,
-                            'utm_term'     => $recentClick->utm_term,
-                            'fbclid'       => $recentClick->fbclid,
-                            'gclid'        => $recentClick->gclid,
-                        ]);
-                        if (! empty($utmFields)) {
-                            $conversation->update($utmFields);
-                            Log::channel('whatsapp')->info('UTMs do botão WA vinculados à conversa', [
-                                'conversation_id' => $conversation->id,
-                                'click_id'        => $recentClick->id,
-                                'utm_source'      => $recentClick->utm_source,
-                            ]);
-                        }
-                    }
-                } catch (\Throwable $e) {
-                    Log::channel('whatsapp')->warning('Erro ao vincular UTMs do botão', ['error' => $e->getMessage()]);
-                }
+                $this->matchUtmsToConversation($conversation, $instance, $msg);
             }
 
             // Auto-assign: atribuir agente de IA automaticamente (apenas conversas individuais)
@@ -593,6 +564,11 @@ class ProcessWahaWebhook implements ShouldQueue
                 'conversation_id' => $conversation->id,
                 'phone'           => $phone,
             ]);
+
+            // Vincular UTMs via tracking code em conversas já existentes (se não tem UTMs)
+            if (! $isGroup && ! $isFromMe && ! $conversation->utm_source) {
+                $this->matchUtmsToConversation($conversation, $instance, $msg);
+            }
 
             // Atualizar foto de perfil: URLs do WhatsApp expiram.
             // Re-fetch a cada 6h (throttle via Cache) ou quando ausente.
@@ -722,6 +698,11 @@ class ProcessWahaWebhook implements ShouldQueue
         [$type, $mediaUrl, $mediaMime, $mediaFilename] = $this->extractMedia($msg);
 
         $body = $msg['body'] ?? $msg['caption'] ?? null;
+
+        // Strip tracking code (#XXXXXX) do body para não exibir no chat
+        if ($body && preg_match('/\s*#[A-HJ-NP-Z2-9]{6}\s*$/', $body)) {
+            $body = rtrim(preg_replace('/\s*#[A-HJ-NP-Z2-9]{6}\s*$/', '', $body)) ?: $body;
+        }
 
         // Detectar mensagem de localização (WAHA envia como text sem hasMedia)
         if ($type === 'text') {
@@ -1244,6 +1225,82 @@ class ProcessWahaWebhook implements ShouldQueue
             return Storage::disk('public')->url($path);
         } catch (\Throwable) {
             return null;
+        }
+    }
+
+    /**
+     * Match UTMs de clique no botão WhatsApp à conversa.
+     * Fase 1: match direto por tracking_code (preciso).
+     * Fase 2: fallback por janela de 15 minutos (quando usuário apaga o código).
+     */
+    private function matchUtmsToConversation(
+        WhatsappConversation $conversation,
+        WhatsappInstance $instance,
+        array $msg,
+    ): void {
+        try {
+            $rawBody = $msg['body'] ?? $msg['caption'] ?? '';
+            $trackingCode = null;
+            if ($rawBody && preg_match('/#([A-HJ-NP-Z2-9]{6})\s*$/', $rawBody, $m)) {
+                $trackingCode = $m[1];
+            }
+
+            $recentClick = null;
+
+            // Fase 1: match preciso por tracking code
+            if ($trackingCode) {
+                $recentClick = WhatsappButtonClick::withoutGlobalScope('tenant')
+                    ->where('tracking_code', $trackingCode)
+                    ->where('tenant_id', $instance->tenant_id)
+                    ->where('matched', false)
+                    ->first();
+            }
+
+            // Fase 2: fallback por janela de tempo (15 min)
+            if (! $recentClick) {
+                $recentClick = WhatsappButtonClick::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $instance->tenant_id)
+                    ->where('clicked_at', '>=', now()->subMinutes(15))
+                    ->where('matched', false)
+                    ->whereHas('button', fn ($q) => $q->where('tenant_id', $instance->tenant_id))
+                    ->orderByDesc('clicked_at')
+                    ->first();
+            }
+
+            if ($recentClick) {
+                $utmFields = array_filter([
+                    'utm_source'   => $recentClick->utm_source,
+                    'utm_medium'   => $recentClick->utm_medium,
+                    'utm_campaign' => $recentClick->utm_campaign,
+                    'utm_content'  => $recentClick->utm_content,
+                    'utm_term'     => $recentClick->utm_term,
+                    'fbclid'       => $recentClick->fbclid,
+                    'gclid'        => $recentClick->gclid,
+                ]);
+                if (! empty($utmFields)) {
+                    WhatsappConversation::withoutGlobalScope('tenant')
+                        ->where('id', $conversation->id)
+                        ->update($utmFields);
+                    foreach ($utmFields as $k => $v) {
+                        $conversation->$k = $v;
+                    }
+                }
+
+                // Marcar click como matched
+                WhatsappButtonClick::withoutGlobalScope('tenant')
+                    ->where('id', $recentClick->id)
+                    ->update(['matched' => true]);
+
+                Log::channel('whatsapp')->info('UTMs do botão WA vinculados à conversa', [
+                    'conversation_id' => $conversation->id,
+                    'click_id'        => $recentClick->id,
+                    'tracking_code'   => $trackingCode,
+                    'match_type'      => $trackingCode ? 'code' : 'time_window',
+                    'utm_source'      => $recentClick->utm_source,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->warning('Erro ao vincular UTMs do botão', ['error' => $e->getMessage()]);
         }
     }
 }

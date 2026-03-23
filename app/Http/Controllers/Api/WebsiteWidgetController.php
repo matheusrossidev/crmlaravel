@@ -435,22 +435,31 @@ class WebsiteWidgetController extends Controller
         $ua = $request->userAgent() ?? '';
         $device = str_contains(strtolower($ua), 'mobile') ? 'mobile' : 'desktop';
 
+        $trackingCode = $request->input('tracking_code');
+        if ($trackingCode) {
+            $trackingCode = strtoupper(substr(preg_replace('/[^A-Z0-9]/i', '', $trackingCode), 0, 6));
+            if (strlen($trackingCode) !== 6) {
+                $trackingCode = null;
+            }
+        }
+
         WhatsappButtonClick::create([
-            'tenant_id'    => $btn->tenant_id,
-            'button_id'    => $btn->id,
-            'visitor_id'   => $this->truncate($request->input('visitor_id'), 36),
-            'utm_source'   => $this->truncate($request->input('utm_source'), 100),
-            'utm_medium'   => $this->truncate($request->input('utm_medium'), 100),
-            'utm_campaign' => $this->truncate($request->input('utm_campaign'), 191),
-            'utm_content'  => $this->truncate($request->input('utm_content'), 191),
-            'utm_term'     => $this->truncate($request->input('utm_term'), 191),
-            'fbclid'       => $this->truncate($request->input('fbclid'), 191),
-            'gclid'        => $this->truncate($request->input('gclid'), 191),
-            'page_url'     => $this->truncate($request->input('page_url'), 2000),
-            'referrer_url' => $this->truncate($request->input('referrer_url'), 500),
-            'device_type'  => $device,
-            'ip_hash'      => hash('sha256', $request->ip() ?? ''),
-            'clicked_at'   => now(),
+            'tenant_id'     => $btn->tenant_id,
+            'button_id'     => $btn->id,
+            'visitor_id'    => $this->truncate($request->input('visitor_id'), 36),
+            'utm_source'    => $this->truncate($request->input('utm_source'), 100),
+            'utm_medium'    => $this->truncate($request->input('utm_medium'), 100),
+            'utm_campaign'  => $this->truncate($request->input('utm_campaign'), 191),
+            'utm_content'   => $this->truncate($request->input('utm_content'), 191),
+            'utm_term'      => $this->truncate($request->input('utm_term'), 191),
+            'fbclid'        => $this->truncate($request->input('fbclid'), 191),
+            'gclid'         => $this->truncate($request->input('gclid'), 191),
+            'page_url'      => $this->truncate($request->input('page_url'), 2000),
+            'referrer_url'  => $this->truncate($request->input('referrer_url'), 500),
+            'device_type'   => $device,
+            'ip_hash'       => hash('sha256', $request->ip() ?? ''),
+            'tracking_code' => $trackingCode,
+            'clicked_at'    => now(),
         ]);
 
         $msg = rawurlencode($btn->default_message);
