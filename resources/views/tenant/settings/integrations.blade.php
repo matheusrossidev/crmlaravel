@@ -795,6 +795,19 @@
                     <textarea id="waBtnEmbed" readonly onclick="this.select()" style="width:100%;height:50px;font-family:monospace;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 70px 10px 10px;resize:none;color:#334155;">&lt;script src="{{ rtrim(config('app.url'), '/') }}/api/widget/{{ $waBtn->website_token }}/wa-button.js"&gt;&lt;/script&gt;</textarea>
                     <button onclick="navigator.clipboard.writeText(document.getElementById('waBtnEmbed').value.replace(/&lt;/g,'<').replace(/&gt;/g,'>'));toastr.success('Copiado!')" style="position:absolute;top:8px;right:8px;background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="bi bi-clipboard"></i> Copiar</button>
                 </div>
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f2f7;">
+                <label style="font-size:13px;font-weight:700;color:#1a1d23;display:block;margin-bottom:6px;"><i class="bi bi-link-45deg"></i> Link de Rastreamento</label>
+                <p style="font-size:11.5px;color:#6b7280;margin-bottom:8px;">Use este link nos anúncios do Google Ads / Facebook Ads. Os UTMs da URL são capturados automaticamente no servidor.</p>
+                <div style="position:relative;">
+                    <input type="text" id="waBtnTrackLink" readonly onclick="this.select()" value="{{ rtrim(config('app.url'), '/') }}/wa/{{ $waBtn->website_token }}" style="width:100%;font-family:monospace;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 70px 10px 10px;color:#334155;">
+                    <button onclick="navigator.clipboard.writeText(document.getElementById('waBtnTrackLink').value);toastr.success('Link copiado!')" style="position:absolute;top:6px;right:8px;background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="bi bi-clipboard"></i> Copiar</button>
+                </div>
+                <div style="margin-top:8px;padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;">
+                    <div style="font-size:11px;font-weight:600;color:#92400e;margin-bottom:4px;">Exemplo para Google Ads:</div>
+                    <code style="font-size:10px;color:#78350f;word-break:break-all;">{{ rtrim(config('app.url'), '/') }}/wa/{{ $waBtn->website_token }}?utm_source=google&utm_medium=cpc&utm_campaign=@{{campaignid}}&utm_term=@{{keyword}}&gclid=@{{gclid}}</code>
+                </div>
+            </div>
+
                 @php
                     $clicksToday = $waBtn->clicks()->whereDate('clicked_at', today())->count();
                     $clicks7d_ = $waBtn->clicks()->where('clicked_at', '>=', now()->subDays(7))->count();

@@ -90,6 +90,11 @@ Route::view('/politica-de-privacidade', 'public.privacy')->name('privacy');
 Route::view('/termos-de-uso', 'public.terms')->name('terms');
 Route::get('/chat/{tenantSlug}/{botSlug}', [\App\Http\Controllers\Api\WebsiteWidgetController::class, 'hostedPage'])->name('chatbot.hosted');
 
+// Redirect de WhatsApp com tracking server-side (público)
+Route::get('/wa/{token}', [\App\Http\Controllers\Api\WebsiteWidgetController::class, 'waRedirect'])
+    ->middleware('throttle:120,1')
+    ->name('wa.redirect');
+
 /*
 |--------------------------------------------------------------------------
 | Rotas do Painel do Tenant

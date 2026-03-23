@@ -467,4 +467,55 @@ class WebsiteWidgetController extends Controller
 
         return response()->json(['redirect' => $url]);
     }
+
+    /**
+     * GET /wa/{token}?utm_source=...&utm_term=...
+     * Redirect server-side com tracking de UTMs (modelo Tintim).
+     * O link do anúncio aponta para cá; o servidor captura tudo e redireciona para wa.me.
+     */
+    public function waRedirect(string $token, Request $request): \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response
+    {
+        $btn = WhatsappButton::withoutGlobalScope('tenant')
+            ->where('website_token', $token)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $btn) {
+            abort(404, 'Link inválido.');
+        }
+
+        // Gerar tracking code server-side (6 chars, sem 0/O/1/I/L)
+        $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        $trackingCode = '';
+        for ($i = 0; $i < 6; $i++) {
+            $trackingCode .= $chars[random_int(0, strlen($chars) - 1)];
+        }
+
+        $ua = $request->userAgent() ?? '';
+        $device = str_contains(strtolower($ua), 'mobile') ? 'mobile' : 'desktop';
+
+        WhatsappButtonClick::create([
+            'tenant_id'     => $btn->tenant_id,
+            'button_id'     => $btn->id,
+            'visitor_id'    => null,
+            'utm_source'    => $this->truncate($request->query('utm_source'), 100),
+            'utm_medium'    => $this->truncate($request->query('utm_medium'), 100),
+            'utm_campaign'  => $this->truncate($request->query('utm_campaign'), 191),
+            'utm_content'   => $this->truncate($request->query('utm_content'), 191),
+            'utm_term'      => $this->truncate($request->query('utm_term'), 191),
+            'fbclid'        => $this->truncate($request->query('fbclid'), 191),
+            'gclid'         => $this->truncate($request->query('gclid'), 191),
+            'page_url'      => $this->truncate($request->header('Referer'), 2000),
+            'referrer_url'  => $this->truncate($request->header('Referer'), 500),
+            'device_type'   => $device,
+            'ip_hash'       => hash('sha256', $request->ip() ?? ''),
+            'tracking_code' => $trackingCode,
+            'clicked_at'    => now(),
+        ]);
+
+        $message = $btn->default_message . "\n\n#" . $trackingCode;
+        $waUrl = 'https://wa.me/' . $btn->phone_number . '?text=' . rawurlencode($message);
+
+        return redirect()->away($waUrl);
+    }
 }
