@@ -149,8 +149,6 @@
 @section('content')
 <div class="page-container">
 
-    @include('tenant.settings._tabs')
-
     <div class="cf-card">
         <div class="cf-card-header">
             <h3><i class="bi bi-layout-text-window-sidebar" style="color:#3B82F6;"></i> Campos Personalizados</h3>
@@ -214,12 +212,6 @@
         @endif
     </div>
 
-    {{-- Info card --}}
-    <div style="max-width:900px;margin-top:20px;padding:16px 20px;background:#eff6ff;border:1px solid #dbeafe;border-radius:12px;font-size:13px;color:#1e40af;">
-        <i class="bi bi-info-circle me-2"></i>
-        Os campos personalizados aparecem no formulário de leads e são acessíveis via API com a chave <code>custom_fields</code>.
-        Use o <strong>nome interno</strong> na API para enviar e receber valores.
-    </div>
 
 </div>
 

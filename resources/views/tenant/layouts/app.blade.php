@@ -1004,7 +1004,7 @@
         </a>
 
         @php
-            $crmActive = request()->routeIs('crm*', 'leads*', 'calendar.*', 'settings.pipelines*', 'settings.products*');
+            $crmActive = request()->routeIs('crm*', 'leads*', 'calendar.*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*');
             $autoActive = request()->routeIs('chatbot.flows.*', 'ai.agents.*', 'ai.intent-signals.*', 'settings.automations*', 'settings.ig-automations.*');
             $reportActive = request()->routeIs('reports*', 'campaigns*');
         @endphp
@@ -1036,6 +1036,10 @@
                 <a href="{{ route('settings.products') }}" class="nav-subitem {{ request()->routeIs('settings.products*') ? 'active' : '' }}" title="Produtos">
                     <i class="bi bi-box-seam nav-icon" style="font-size:12px;"></i>
                     <span class="nav-label">Produtos</span>
+                </a>
+                <a href="{{ route('settings.custom-fields') }}" class="nav-subitem {{ request()->routeIs('settings.custom-fields*') ? 'active' : '' }}" title="Campos Extras">
+                    <i class="bi bi-sliders nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Campos Extras</span>
                 </a>
             </div>
         </div>
@@ -1089,7 +1093,7 @@
         </div>
 
         {{-- Configurações (submenu) --}}
-        @php $settingsActive = (request()->routeIs('settings.*') && !request()->routeIs('settings.automations*', 'settings.pipelines*', 'settings.products*')) || request()->routeIs('billing.*'); @endphp
+        @php $settingsActive = (request()->routeIs('settings.*') && !request()->routeIs('settings.automations*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.ig-automations.*')) || request()->routeIs('billing.*'); @endphp
         <div class="nav-submenu-wrap">
             <div class="nav-submenu-toggle {{ $settingsActive ? 'active' : '' }}" onclick="toggleSubmenu(this)" style="cursor:pointer;">
                 <i class="bi bi-gear nav-icon"></i>
@@ -1112,10 +1116,6 @@
                 <a href="{{ route('settings.users') }}" class="nav-subitem {{ request()->routeIs('settings.users*') ? 'active' : '' }}">
                     <i class="bi bi-person-badge nav-icon" style="font-size:12px;"></i>
                     <span class="nav-label">Usuários</span>
-                </a>
-                <a href="{{ route('settings.custom-fields') }}" class="nav-subitem {{ request()->routeIs('settings.custom-fields*') ? 'active' : '' }}">
-                    <i class="bi bi-sliders nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Campos Extras</span>
                 </a>
                 <a href="{{ route('settings.integrations.index') }}" class="nav-subitem {{ request()->routeIs('settings.integrations*') ? 'active' : '' }}">
                     <i class="bi bi-plug nav-icon" style="font-size:12px;"></i>

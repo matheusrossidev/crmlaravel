@@ -10,14 +10,9 @@
 
     if ($isAdmin) {
         $settingsTabs[] = ['route' => 'settings.users',          'match' => ['settings.users*'],             'label' => 'Usuários'];
-        $settingsTabs[] = ['route' => 'settings.custom-fields',  'match' => ['settings.custom-fields*'],     'label' => 'Campos Extras'];
     }
 
     $settingsTabs[] = ['route' => 'settings.integrations.index', 'match' => ['settings.integrations*'],      'label' => 'Integrações'];
-
-    if ($igConnected) {
-        $settingsTabs[] = ['route' => 'settings.ig-automations.index', 'match' => ['settings.ig-automations*'], 'label' => 'Autom. Instagram'];
-    }
 
     $settingsTabs[] = ['route' => 'settings.tags',               'match' => ['settings.tags*'],               'label' => 'Tags'];
     $settingsTabs[] = ['route' => 'settings.departments',        'match' => ['settings.departments*'],        'label' => 'Departamentos'];
