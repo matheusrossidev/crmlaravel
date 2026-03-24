@@ -1,8 +1,8 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Configurações';
-    $pageIcon = 'gear';
+    $title    = 'Tags';
+    $pageIcon = 'tags';
 @endphp
 
 @push('styles')
@@ -159,8 +159,6 @@
 
 @section('content')
 <div class="page-container">
-
-    @include('tenant.settings._tabs')
 
     <div class="section-header">
         <div>

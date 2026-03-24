@@ -5,7 +5,6 @@
     $settingsTabs = [
         ['route' => 'settings.profile',             'match' => ['settings.profile*'],                        'label' => 'Perfil'],
         ['route' => 'settings.notifications',        'match' => ['settings.notifications*'],                 'label' => 'Notificações'],
-        ['route' => 'settings.lost-reasons',         'match' => ['settings.lost-reasons*'],                  'label' => 'Motivos de Perda'],
     ];
 
     if ($isAdmin) {
@@ -14,7 +13,6 @@
 
     $settingsTabs[] = ['route' => 'settings.integrations.index', 'match' => ['settings.integrations*'],      'label' => 'Integrações'];
 
-    $settingsTabs[] = ['route' => 'settings.tags',               'match' => ['settings.tags*'],               'label' => 'Tags'];
     $settingsTabs[] = ['route' => 'settings.departments',        'match' => ['settings.departments*'],        'label' => 'Departamentos'];
     $settingsTabs[] = ['route' => 'settings.billing',            'match' => ['settings.billing*', 'billing.*'], 'label' => 'Cobrança'];
     $settingsTabs[] = ['route' => 'settings.api-keys',           'match' => ['settings.api-keys*'],           'label' => 'API / Webhooks'];

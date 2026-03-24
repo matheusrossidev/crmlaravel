@@ -66,8 +66,8 @@ class UserController extends Controller
 
         $role = $request->input('role');
 
-        // Admin não pode criar role admin
-        if (!$authUser->isSuperAdmin() && $role === 'admin') {
+        // Somente admin ou super_admin pode criar role admin
+        if (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && $role === 'admin') {
             return response()->json([
                 'success' => false,
                 'errors'  => ['role' => ['Você não tem permissão para atribuir este papel.']],
@@ -154,7 +154,7 @@ class UserController extends Controller
 
         $role = $request->input('role');
 
-        if (!$authUser->isSuperAdmin() && $role === 'admin') {
+        if (!$authUser->isAdmin() && !$authUser->isSuperAdmin() && $role === 'admin') {
             return response()->json([
                 'success' => false,
                 'errors'  => ['role' => ['Você não tem permissão para atribuir este papel.']],

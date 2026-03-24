@@ -1004,7 +1004,7 @@
         </a>
 
         @php
-            $crmActive = request()->routeIs('crm*', 'leads*', 'calendar.*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*');
+            $crmActive = request()->routeIs('crm*', 'leads*', 'calendar.*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.lost-reasons*', 'settings.tags*');
             $autoActive = request()->routeIs('chatbot.flows.*', 'ai.agents.*', 'ai.intent-signals.*', 'settings.automations*', 'settings.ig-automations.*');
             $reportActive = request()->routeIs('reports*', 'campaigns*');
         @endphp
@@ -1040,6 +1040,14 @@
                 <a href="{{ route('settings.custom-fields') }}" class="nav-subitem {{ request()->routeIs('settings.custom-fields*') ? 'active' : '' }}" title="Campos Extras">
                     <i class="bi bi-sliders nav-icon" style="font-size:12px;"></i>
                     <span class="nav-label">Campos Extras</span>
+                </a>
+                <a href="{{ route('settings.lost-reasons') }}" class="nav-subitem {{ request()->routeIs('settings.lost-reasons*') ? 'active' : '' }}" title="Motivos de Perda">
+                    <i class="bi bi-x-circle nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Motivos de Perda</span>
+                </a>
+                <a href="{{ route('settings.tags') }}" class="nav-subitem {{ request()->routeIs('settings.tags*') ? 'active' : '' }}" title="Tags">
+                    <i class="bi bi-tags nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Tags</span>
                 </a>
             </div>
         </div>
@@ -1093,7 +1101,7 @@
         </div>
 
         {{-- Configurações (submenu) --}}
-        @php $settingsActive = (request()->routeIs('settings.*') && !request()->routeIs('settings.automations*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.ig-automations.*')) || request()->routeIs('billing.*'); @endphp
+        @php $settingsActive = (request()->routeIs('settings.*') && !request()->routeIs('settings.automations*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.lost-reasons*', 'settings.tags*', 'settings.ig-automations.*')) || request()->routeIs('billing.*'); @endphp
         <div class="nav-submenu-wrap">
             <div class="nav-submenu-toggle {{ $settingsActive ? 'active' : '' }}" onclick="toggleSubmenu(this)" style="cursor:pointer;">
                 <i class="bi bi-gear nav-icon"></i>
@@ -1109,10 +1117,6 @@
                     <i class="bi bi-bell nav-icon" style="font-size:12px;"></i>
                     <span class="nav-label">Notificações</span>
                 </a>
-                <a href="{{ route('settings.lost-reasons') }}" class="nav-subitem {{ request()->routeIs('settings.lost-reasons*') ? 'active' : '' }}">
-                    <i class="bi bi-x-circle nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Motivos de Perda</span>
-                </a>
                 <a href="{{ route('settings.users') }}" class="nav-subitem {{ request()->routeIs('settings.users*') ? 'active' : '' }}">
                     <i class="bi bi-person-badge nav-icon" style="font-size:12px;"></i>
                     <span class="nav-label">Usuários</span>
@@ -1120,10 +1124,6 @@
                 <a href="{{ route('settings.integrations.index') }}" class="nav-subitem {{ request()->routeIs('settings.integrations*') ? 'active' : '' }}">
                     <i class="bi bi-plug nav-icon" style="font-size:12px;"></i>
                     <span class="nav-label">Integrações</span>
-                </a>
-                <a href="{{ route('settings.tags') }}" class="nav-subitem {{ request()->routeIs('settings.tags*') ? 'active' : '' }}">
-                    <i class="bi bi-tags nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Tags</span>
                 </a>
                 <a href="{{ route('settings.departments') }}" class="nav-subitem {{ request()->routeIs('settings.departments*') ? 'active' : '' }}">
                     <i class="bi bi-building nav-icon" style="font-size:12px;"></i>

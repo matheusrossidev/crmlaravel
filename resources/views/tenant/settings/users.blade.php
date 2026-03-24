@@ -334,8 +334,8 @@
             <select class="form-control" id="drawerRole">
                 <option value="viewer">Viewer — somente leitura</option>
                 <option value="manager">Manager — gerencia leads</option>
-                @if(auth()->user()->isSuperAdmin())
-                <option value="admin">Admin — gerencia usuários</option>
+                @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
+                <option value="admin">Admin — acesso completo</option>
                 @endif
             </select>
             <div class="form-error d-none" id="errDRole"></div>
