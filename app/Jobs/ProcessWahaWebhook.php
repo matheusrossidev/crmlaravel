@@ -565,8 +565,8 @@ class ProcessWahaWebhook implements ShouldQueue
                 'phone'           => $phone,
             ]);
 
-            // Vincular UTMs via tracking code em conversas já existentes (se não tem UTMs)
-            if (! $isGroup && ! $isFromMe && ! $conversation->utm_source) {
+            // Vincular UTMs via tracking code em conversas já existentes
+            if (! $isGroup && ! $isFromMe) {
                 $this->matchUtmsToConversation($conversation, $instance, $msg);
             }
 

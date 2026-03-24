@@ -1,5 +1,5 @@
 import os
-from typing import Any
+from typing import Any, Optional
 
 from agno.agent import Agent
 from agno.db.postgres import PostgresDb
@@ -11,13 +11,13 @@ PGVECTOR_URL = os.getenv("PGVECTOR_URL", "postgresql://agno:agno@pgvector:5432/a
 class AgnoAction(BaseModel):
     """An action the AI wants to execute on the CRM (PHP will process it)."""
     type: str
-    payload: dict[str, Any] = {}
+    payload: Optional[dict[str, Any]] = None
 
 
 class AgnoReply(BaseModel):
     """Structured output enforced at API level — each item is one WhatsApp message."""
     reply_blocks: list[str]
-    actions: list[AgnoAction] = []
+    actions: Optional[list[AgnoAction]] = None
 
 
 # In-memory cache: agent_key -> Agent instance
