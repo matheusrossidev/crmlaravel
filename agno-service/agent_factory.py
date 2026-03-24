@@ -322,6 +322,17 @@ REGRAS para actions:
 - Se o campo já tem o mesmo valor, NÃO emita a ação.
 - Use "actions": [] quando nenhuma ação é necessária.""")
 
+    # ── Calendar restriction ──────────────────────────────────────────
+    enable_calendar = config.get("enable_calendar_tool", False)
+    if not enable_calendar:
+        sections.append("""
+═══════════════════════════════════════
+RESTRIÇÃO DE AGENDA
+═══════════════════════════════════════
+Você NÃO tem acesso a agenda ou calendário.
+NÃO ofereça agendamento, NÃO fale sobre marcar horários ou demonstrações.
+Se o cliente pedir para agendar, oriente que entre em contato diretamente com a equipe ou transfira para um humano usando assign_human.""")
+
     # ── Memories ─────────────────────────────────────────────────────
     if memories:
         sections.append(_build_memories_section(memories))
