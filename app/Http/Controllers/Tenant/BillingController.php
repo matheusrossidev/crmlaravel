@@ -130,6 +130,26 @@ class BillingController extends Controller
             'address_number'=> 'nullable|string|max:20',
         ]);
 
+        // Validar nome (só letras, mínimo 2 palavras)
+        $holderName = trim($data['holder_name']);
+        if (! preg_match('/^[\pL\s]+$/u', $holderName) || count(explode(' ', $holderName)) < 2) {
+            return response()->json(['success' => false, 'message' => 'Informe nome e sobrenome válidos (apenas letras).'], 422);
+        }
+
+        // Validar CPF/CNPJ
+        $cpfCnpjRaw = preg_replace('/\D/', '', $data['cpf_cnpj']);
+        if (strlen($cpfCnpjRaw) === 11) {
+            if (! $this->validaCPF($cpfCnpjRaw)) {
+                return response()->json(['success' => false, 'message' => 'CPF inválido.'], 422);
+            }
+        } elseif (strlen($cpfCnpjRaw) === 14) {
+            if (! $this->validaCNPJ($cpfCnpjRaw)) {
+                return response()->json(['success' => false, 'message' => 'CNPJ inválido.'], 422);
+            }
+        } else {
+            return response()->json(['success' => false, 'message' => 'CPF ou CNPJ inválido.'], 422);
+        }
+
         $tenant = activeTenant();
         $user   = auth()->user();
 
@@ -290,5 +310,49 @@ class BillingController extends Controller
                 'message' => 'Erro ao cancelar assinatura. Tente novamente.',
             ], 500);
         }
+    }
+
+    private function validaCPF(string $cpf): bool
+    {
+        if (preg_match('/^(\d)\1{10}$/', $cpf)) {
+            return false;
+        }
+        for ($t = 9; $t < 11; $t++) {
+            $d = 0;
+            for ($c = 0; $c < $t; $c++) {
+                $d += (int) $cpf[$c] * (($t + 1) - $c);
+            }
+            $d = ((10 * $d) % 11) % 10;
+            if ((int) $cpf[$t] !== $d) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private function validaCNPJ(string $cnpj): bool
+    {
+        if (preg_match('/^(\d)\1{13}$/', $cnpj)) {
+            return false;
+        }
+        $pesos1 = [5,4,3,2,9,8,7,6,5,4,3,2];
+        $pesos2 = [6,5,4,3,2,9,8,7,6,5,4,3,2];
+        $soma = 0;
+        for ($i = 0; $i < 12; $i++) {
+            $soma += (int) $cnpj[$i] * $pesos1[$i];
+        }
+        $resto = $soma % 11;
+        if ((int) $cnpj[12] !== ($resto < 2 ? 0 : 11 - $resto)) {
+            return false;
+        }
+        $soma = 0;
+        for ($i = 0; $i < 13; $i++) {
+            $soma += (int) $cnpj[$i] * $pesos2[$i];
+        }
+        $resto = $soma % 11;
+        if ((int) $cnpj[13] !== ($resto < 2 ? 0 : 11 - $resto)) {
+            return false;
+        }
+        return true;
     }
 }
