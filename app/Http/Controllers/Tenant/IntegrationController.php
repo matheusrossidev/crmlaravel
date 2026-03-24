@@ -111,7 +111,7 @@ class IntegrationController extends Controller
                 'openid',
                 'email',
                 'profile',
-                'https://www.googleapis.com/auth/calendar',
+                'https://www.googleapis.com/auth/calendar.events',
             ])
             ->with(['access_type' => 'offline', 'prompt' => 'consent'])
             ->redirect();
@@ -138,7 +138,7 @@ class IntegrationController extends Controller
                 'token_expires_at'   => $user->expiresIn
                     ? now()->addSeconds((int) $user->expiresIn)
                     : now()->addHour(),
-                'scopes_json'        => ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/calendar'],
+                'scopes_json'        => ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/calendar.events'],
                 'status'             => 'active',
             ]
         );

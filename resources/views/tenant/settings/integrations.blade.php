@@ -489,9 +489,9 @@
         {{-- ─── Google Calendar ──────────────────────────────────────────── --}}
         @if($enabledIntegrations['google_calendar'])
         @php
-            $calendarScope = 'https://www.googleapis.com/auth/calendar';
             $hasCalendar   = $google && $google->status === 'active'
-                             && in_array($calendarScope, (array) ($google->scopes_json ?? []), true);
+                             && (in_array('https://www.googleapis.com/auth/calendar.events', (array) ($google->scopes_json ?? []), true)
+                              || in_array('https://www.googleapis.com/auth/calendar', (array) ($google->scopes_json ?? []), true));
             $needsReconnect = $google && $google->status === 'active' && !$hasCalendar;
         @endphp
         <div class="integration-card">

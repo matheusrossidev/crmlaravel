@@ -226,7 +226,7 @@ class ProcessAiResponse implements ShouldQueue
                 ->first();
             if ($calendarConn) {
                 $scopes = (array) ($calendarConn->scopes_json ?? []);
-                if (in_array('https://www.googleapis.com/auth/calendar', $scopes, true)) {
+                if (in_array('https://www.googleapis.com/auth/calendar.events', $scopes, true) || in_array('https://www.googleapis.com/auth/calendar', $scopes, true)) {
                     try {
                         $calendarService = new GoogleCalendarService($calendarConn, $agent->calendar_id ?? 'primary');
                         $calendarEvents  = $calendarService->listEvents(

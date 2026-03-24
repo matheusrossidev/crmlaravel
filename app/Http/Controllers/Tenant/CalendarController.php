@@ -26,7 +26,7 @@ class CalendarController extends Controller
     private function hasCalendarScope(OAuthConnection $conn): bool
     {
         $scopes = $conn->scopes_json ?? [];
-        return in_array('https://www.googleapis.com/auth/calendar', $scopes, true);
+        return in_array('https://www.googleapis.com/auth/calendar.events', $scopes, true) || in_array('https://www.googleapis.com/auth/calendar', $scopes, true);
     }
 
     private function getTenant(): Tenant
