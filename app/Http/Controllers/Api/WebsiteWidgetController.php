@@ -494,19 +494,46 @@ class WebsiteWidgetController extends Controller
         $ua = $request->userAgent() ?? '';
         $device = str_contains(strtolower($ua), 'mobile') ? 'mobile' : 'desktop';
 
+        // Ler UTMs da query string (cenário: script embed ou link direto com params)
+        $utmSource   = $request->query('utm_source');
+        $utmMedium   = $request->query('utm_medium');
+        $utmCampaign = $request->query('utm_campaign');
+        $utmContent  = $request->query('utm_content');
+        $utmTerm     = $request->query('utm_term');
+        $fbclid      = $request->query('fbclid');
+        $gclid       = $request->query('gclid');
+        $pageUrl     = $request->query('page_url');
+
+        // Fallback: se UTMs não vieram na query, extrair do Referer
+        // Cenário: cliente usa link direto <a href="/wa/{token}"> no site com UTMs na URL
+        $referer = $request->header('Referer');
+        if (! $utmSource && $referer) {
+            $refQuery = parse_url($referer, PHP_URL_QUERY);
+            if ($refQuery) {
+                parse_str($refQuery, $rp);
+                $utmSource   = $utmSource   ?: ($rp['utm_source']   ?? null);
+                $utmMedium   = $utmMedium   ?: ($rp['utm_medium']   ?? null);
+                $utmCampaign = $utmCampaign ?: ($rp['utm_campaign'] ?? null);
+                $utmContent  = $utmContent  ?: ($rp['utm_content']  ?? null);
+                $utmTerm     = $utmTerm     ?: ($rp['utm_term']     ?? null);
+                $fbclid      = $fbclid      ?: ($rp['fbclid']       ?? null);
+                $gclid       = $gclid       ?: ($rp['gclid']        ?? null);
+            }
+        }
+
         WhatsappButtonClick::create([
             'tenant_id'     => $btn->tenant_id,
             'button_id'     => $btn->id,
             'visitor_id'    => $this->truncate($request->query('visitor_id'), 36),
-            'utm_source'    => $this->truncate($request->query('utm_source'), 100),
-            'utm_medium'    => $this->truncate($request->query('utm_medium'), 100),
-            'utm_campaign'  => $this->truncate($request->query('utm_campaign'), 191),
-            'utm_content'   => $this->truncate($request->query('utm_content'), 191),
-            'utm_term'      => $this->truncate($request->query('utm_term'), 191),
-            'fbclid'        => $this->truncate($request->query('fbclid'), 191),
-            'gclid'         => $this->truncate($request->query('gclid'), 191),
-            'page_url'      => $this->truncate($request->query('page_url') ?? $request->header('Referer'), 2000),
-            'referrer_url'  => $this->truncate($request->query('referrer_url') ?? $request->header('Referer'), 500),
+            'utm_source'    => $this->truncate($utmSource, 100),
+            'utm_medium'    => $this->truncate($utmMedium, 100),
+            'utm_campaign'  => $this->truncate($utmCampaign, 191),
+            'utm_content'   => $this->truncate($utmContent, 191),
+            'utm_term'      => $this->truncate($utmTerm, 191),
+            'fbclid'        => $this->truncate($fbclid, 191),
+            'gclid'         => $this->truncate($gclid, 191),
+            'page_url'      => $this->truncate($pageUrl ?? $referer, 2000),
+            'referrer_url'  => $this->truncate($referer, 500),
             'device_type'   => $device,
             'ip_hash'       => hash('sha256', $request->ip() ?? ''),
             'tracking_code' => $trackingCode,
