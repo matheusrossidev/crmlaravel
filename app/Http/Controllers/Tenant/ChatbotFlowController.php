@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\ChatbotFlow;
+use App\Models\ChatbotFlowEdge;
+use App\Models\ChatbotFlowNode;
 use App\Models\CustomFieldDefinition;
 use App\Services\PlanLimitChecker;
 use App\Models\Pipeline;
@@ -200,6 +202,9 @@ class ChatbotFlowController extends Controller
 
         $flow->update($updateData);
 
+        // ── Sincronizar steps JSON → tabelas chatbot_flow_nodes / edges ──
+        $this->syncNodesToDatabase($flow, $steps);
+
         Log::info('Chatbot: fluxo salvo', ['flow_id' => $flow->id]);
 
         return response()->json(['success' => true]);
@@ -334,6 +339,147 @@ class ChatbotFlowController extends Controller
             // Some flows nest steps inside branch items
             if (isset($step['steps']) && is_array($step['steps'])) {
                 $this->walkSteps($step['steps'], $keys);
+            }
+        }
+    }
+
+    // ── Sync steps JSON → DB tables ────────────────────────────────────────
+
+    /**
+     * Converte o array flat de steps em registros nas tabelas chatbot_flow_nodes e chatbot_flow_edges.
+     * O ProcessChatbotStep lê dessas tabelas para executar o fluxo.
+     */
+    private function syncNodesToDatabase(ChatbotFlow $flow, array $steps): void
+    {
+        ChatbotFlowNode::withoutGlobalScope('tenant')->where('flow_id', $flow->id)->delete();
+        ChatbotFlowEdge::withoutGlobalScope('tenant')->where('flow_id', $flow->id)->delete();
+
+        $idMap = []; // JS temp id → DB real id
+        $yPos  = 0;
+
+        // Fase 1: criar todos os nós (incluindo sub-steps de branches)
+        $this->createNodesRecursive($flow, $steps, $idMap, $yPos);
+
+        // Fase 2: criar edges sequenciais (nó N → nó N+1) e edges de branches
+        $this->createEdgesRecursive($flow, $steps, $idMap);
+    }
+
+    private function createNodesRecursive(ChatbotFlow $flow, array $steps, array &$idMap, int &$yPos): void
+    {
+        foreach ($steps as $jsNode) {
+            $jsId = $jsNode['id'] ?? null;
+            if (! $jsId) {
+                continue;
+            }
+
+            $config = $jsNode['config'] ?? [];
+            if (is_array($jsNode['branches'] ?? null)) {
+                $config['branches'] = $jsNode['branches'];
+            }
+            if (isset($jsNode['default_branch'])) {
+                $config['default_branch'] = $jsNode['default_branch'];
+            }
+
+            $node = ChatbotFlowNode::create([
+                'flow_id'   => $flow->id,
+                'tenant_id' => $flow->tenant_id,
+                'type'      => $jsNode['type'] ?? 'message',
+                'config'    => $config,
+                'canvas_x'  => 0,
+                'canvas_y'  => (float) $yPos,
+                'is_start'  => $yPos === 0,
+            ]);
+
+            $idMap[$jsId] = $node->id;
+            $yPos += 100;
+
+            // Recurse into branch sub-steps
+            foreach (($jsNode['branches'] ?? []) as $branch) {
+                if (! empty($branch['steps'])) {
+                    $this->createNodesRecursive($flow, $branch['steps'], $idMap, $yPos);
+                }
+            }
+            if (! empty($jsNode['default_branch']['steps'])) {
+                $this->createNodesRecursive($flow, $jsNode['default_branch']['steps'], $idMap, $yPos);
+            }
+        }
+    }
+
+    private function createEdgesRecursive(ChatbotFlow $flow, array $steps, array &$idMap): void
+    {
+        for ($i = 0; $i < count($steps); $i++) {
+            $jsId     = $steps[$i]['id'] ?? null;
+            $sourceId = $idMap[$jsId] ?? null;
+            if (! $sourceId) {
+                continue;
+            }
+
+            // Edge default: nó atual → próximo nó na sequência
+            $nextJsId = $steps[$i + 1]['id'] ?? null;
+            $targetId = $nextJsId ? ($idMap[$nextJsId] ?? null) : null;
+
+            if ($targetId && ($steps[$i]['type'] ?? '') !== 'input') {
+                // Para input nodes, não criar edge default (branches decidem o próximo)
+                ChatbotFlowEdge::create([
+                    'flow_id'        => $flow->id,
+                    'tenant_id'      => $flow->tenant_id,
+                    'source_node_id' => $sourceId,
+                    'source_handle'  => 'default',
+                    'target_node_id' => $targetId,
+                ]);
+            }
+
+            // Edges de branches: cada branch com steps → primeiro nó do sub-step
+            foreach (($steps[$i]['branches'] ?? []) as $bi => $branch) {
+                $branchHandle = 'branch_' . $bi;
+                if (! empty($branch['steps'])) {
+                    $firstBranchJsId = $branch['steps'][0]['id'] ?? null;
+                    $firstBranchDbId = $firstBranchJsId ? ($idMap[$firstBranchJsId] ?? null) : null;
+                    if ($firstBranchDbId) {
+                        ChatbotFlowEdge::create([
+                            'flow_id'        => $flow->id,
+                            'tenant_id'      => $flow->tenant_id,
+                            'source_node_id' => $sourceId,
+                            'source_handle'  => $branchHandle,
+                            'target_node_id' => $firstBranchDbId,
+                        ]);
+                    }
+                    $this->createEdgesRecursive($flow, $branch['steps'], $idMap);
+                } elseif ($targetId) {
+                    // Branch vazio → avança para o próximo nó na sequência principal
+                    ChatbotFlowEdge::create([
+                        'flow_id'        => $flow->id,
+                        'tenant_id'      => $flow->tenant_id,
+                        'source_node_id' => $sourceId,
+                        'source_handle'  => $branchHandle,
+                        'target_node_id' => $targetId,
+                    ]);
+                }
+            }
+
+            // Default branch
+            if (! empty($steps[$i]['default_branch']['steps'])) {
+                $firstDefJsId = $steps[$i]['default_branch']['steps'][0]['id'] ?? null;
+                $firstDefDbId = $firstDefJsId ? ($idMap[$firstDefJsId] ?? null) : null;
+                if ($firstDefDbId) {
+                    ChatbotFlowEdge::create([
+                        'flow_id'        => $flow->id,
+                        'tenant_id'      => $flow->tenant_id,
+                        'source_node_id' => $sourceId,
+                        'source_handle'  => 'default',
+                        'target_node_id' => $firstDefDbId,
+                    ]);
+                }
+                $this->createEdgesRecursive($flow, $steps[$i]['default_branch']['steps'], $idMap);
+            } elseif (($steps[$i]['type'] ?? '') === 'input' && $targetId) {
+                // Input sem default_branch steps → default vai para próximo nó
+                ChatbotFlowEdge::create([
+                    'flow_id'        => $flow->id,
+                    'tenant_id'      => $flow->tenant_id,
+                    'source_node_id' => $sourceId,
+                    'source_handle'  => 'default',
+                    'target_node_id' => $targetId,
+                ]);
             }
         }
     }
