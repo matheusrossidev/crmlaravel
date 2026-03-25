@@ -186,16 +186,28 @@ class DashboardController extends Controller
         $cfTicket   = $cfFmt((float) $ticketMedio, 'R$ ');
         $cfPerdidos = $cfFmt((float) $leadsPerdidos);
 
-        // ── Lost by reason (cached 6h) ───────────────────────────────────────
+        // ── Lost by reason (cached 6h) — current + previous month ────────────
         $lostByReason = TenantCache::remember('dashboard:lostReasons', 21600, function () use ($tenantId) {
-            return DB::table('lost_sales')
-                ->select(DB::raw('lost_sale_reasons.name as reason_name'), DB::raw('count(*) as total'))
+            $curStart  = now()->startOfMonth()->toDateString();
+            $prevStart = now()->subMonth()->startOfMonth()->toDateString();
+            $prevEnd   = now()->subMonth()->endOfMonth()->toDateString();
+
+            $rows = DB::table('lost_sales')
+                ->select(
+                    DB::raw('lost_sale_reasons.name as reason_name'),
+                    DB::raw("SUM(CASE WHEN lost_sales.lost_at >= '{$curStart}' THEN 1 ELSE 0 END) as cur"),
+                    DB::raw("SUM(CASE WHEN lost_sales.lost_at >= '{$prevStart}' AND lost_sales.lost_at <= '{$prevEnd}' THEN 1 ELSE 0 END) as prev"),
+                )
                 ->leftJoin('lost_sale_reasons', 'lost_sales.reason_id', '=', 'lost_sale_reasons.id')
                 ->where('lost_sales.tenant_id', $tenantId)
                 ->groupBy('lost_sales.reason_id', 'lost_sale_reasons.name')
-                ->orderByDesc('total')->limit(8)->get()
-                ->map(fn ($r) => ['name' => $r->reason_name ?? 'Sem motivo', 'total' => (int) $r->total])
-                ->toArray();
+                ->orderByDesc('cur')->limit(8)->get();
+
+            return $rows->map(fn ($r) => [
+                'name' => $r->reason_name ?? 'Sem motivo',
+                'total' => (int) $r->cur,
+                'prev'  => (int) $r->prev,
+            ])->toArray();
         });
 
         // ── 6 months chart (cached 1h) — FIX N+1: single GROUP BY ────────────
@@ -269,18 +281,21 @@ class DashboardController extends Controller
 
         $stagesWithCount = [];
         if ($pipeline) {
-            $stageCounts = TenantCache::remember('dashboard:stages', 300, function () use ($pipeline) {
+            $stageData = TenantCache::remember('dashboard:stages', 300, function () use ($pipeline) {
                 return Lead::where('exclude_from_pipeline', false)
                     ->whereIn('stage_id', $pipeline->stages->pluck('id'))
-                    ->selectRaw('stage_id, COUNT(*) as total')
+                    ->selectRaw('stage_id, COUNT(*) as total, COALESCE(SUM(value), 0) as total_value')
                     ->groupBy('stage_id')
-                    ->pluck('total', 'stage_id');
+                    ->get()
+                    ->keyBy('stage_id');
             });
 
             foreach ($pipeline->stages as $stage) {
+                $row = $stageData[$stage->id] ?? null;
                 $stagesWithCount[] = [
                     'name'  => $stage->name,
-                    'count' => $stageCounts[$stage->id] ?? 0,
+                    'count' => $row ? (int) $row->total : 0,
+                    'value' => $row ? (float) $row->total_value : 0,
                     'color' => $stage->color,
                 ];
             }

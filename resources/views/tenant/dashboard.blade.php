@@ -489,17 +489,99 @@
     @endforeach
     </div>
 
+    {{-- ── Funil de Vendas ──────────────────────────────────────────────── --}}
+    <div class="content-card" style="margin-bottom:16px;">
+        <div class="content-card-header">
+            <h3><i class="bi bi-funnel"></i> {{ $pipeline?->name ?? 'Funil de Vendas' }}</h3>
+            <a href="{{ route('crm.kanban') }}" class="card-link">Kanban <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="content-card-body" style="padding:0;">
+            @if(count($stagesWithCount) > 0)
+            <div style="display:grid;grid-template-columns:repeat({{ count($stagesWithCount) }}, 1fr);width:100%;">
+                @foreach($stagesWithCount as $idx => $stage)
+                <div style="padding:16px 18px;{{ $idx > 0 ? 'border-left:1px solid #f0f2f7;' : '' }}">
+                    <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px;">
+                        <span style="width:8px;height:8px;border-radius:2px;background:{{ $stage['color'] ?? '#3B82F6' }};"></span>
+                        <span style="font-size:11px;font-weight:600;color:#6b7280;">{{ $stage['name'] }}</span>
+                    </div>
+                    <div style="font-size:18px;font-weight:800;color:#1a1d23;margin-bottom:10px;">R$ {{ number_format($stage['value'], 0, ',', '.') }}</div>
+                    <div style="display:flex;justify-content:space-between;font-size:11px;color:#6b7280;margin-bottom:4px;">
+                        <span>Quantidade</span>
+                        <span style="font-weight:700;color:#374151;">{{ $stage['count'] }} negócios</span>
+                    </div>
+                    <div style="height:24px;background:{{ $stage['color'] ?? '#3B82F6' }}15;border-radius:99px;display:flex;align-items:center;justify-content:center;margin-top:6px;">
+                        <span style="font-size:10px;font-weight:700;color:{{ $stage['color'] ?? '#3B82F6' }};">{{ collect($stagesWithCount)->sum('count') > 0 ? round($stage['count'] * 100 / collect($stagesWithCount)->sum('count')) : 0 }}%</span>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+            <div style="height:250px;overflow:hidden;border-radius:0 0 14px 14px;background:#f8fafc;position:relative;">
+                <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat({{ count($stagesWithCount) }}, 1fr);pointer-events:none;z-index:1;">
+                    @foreach($stagesWithCount as $idx => $stage)
+                    <div style="{{ $idx > 0 ? 'border-left:1px solid rgba(0,0,0,.08);' : '' }}"></div>
+                    @endforeach
+                </div>
+                <canvas id="funnelCanvas" style="width:100%;height:250px;display:block;position:relative;z-index:0;"></canvas>
+            </div>
+            <script>
+            requestAnimationFrame(function(){
+                var cv = document.getElementById('funnelCanvas');
+                if(!cv) return;
+                cv.width = cv.offsetWidth * 2;
+                cv.height = 500;
+                var ctx = cv.getContext('2d');
+                var W = cv.width, H = cv.height;
+                var data = {!! json_encode(collect($stagesWithCount)->pluck('count')->values()) !!};
+                var n = data.length;
+                if(n < 2) return;
+                var maxV = Math.max.apply(null, data) || 1;
+                var colW = W / n;
+                var pts = data.map(function(v, i){
+                    var h = Math.max(v / maxV, 0.15) * H * 0.8;
+                    return { x: colW * i + colW / 2, top: (H - h) / 2, bot: (H + h) / 2 };
+                });
+                ctx.fillStyle = '#60a5fa';
+                ctx.globalAlpha = 0.5;
+                ctx.beginPath();
+                ctx.moveTo(0, pts[0].top);
+                for(var i = 0; i < pts.length - 1; i++){
+                    var cpx = (pts[i].x + pts[i+1].x) / 2;
+                    ctx.quadraticCurveTo(pts[i].x, pts[i].top, cpx, (pts[i].top + pts[i+1].top) / 2);
+                }
+                ctx.quadraticCurveTo(pts[n-1].x, pts[n-1].top, W, pts[n-1].top);
+                ctx.lineTo(W, pts[n-1].bot);
+                for(var i = pts.length - 1; i > 0; i--){
+                    var cpx = (pts[i].x + pts[i-1].x) / 2;
+                    ctx.quadraticCurveTo(pts[i].x, pts[i].bot, cpx, (pts[i].bot + pts[i-1].bot) / 2);
+                }
+                ctx.quadraticCurveTo(pts[0].x, pts[0].bot, 0, pts[0].bot);
+                ctx.closePath();
+                ctx.fill();
+            });
+            </script>
+            @else
+            <div class="empty-state" style="padding:24px;">
+                <i class="bi bi-kanban"></i>
+                <p>Nenhum pipeline configurado. <a href="{{ route('settings.pipelines') }}" style="color:#3B82F6;">Criar pipeline</a></p>
+            </div>
+            @endif
+        </div>
+    </div>
+
     {{-- ── Row 2: Gráfico Leads + Ações Rápidas ──────────────────────── --}}
     <div class="mid-grid">
 
-        {{-- Novos Leads --}}
+        {{-- Leads por Canal (stacked bars) --}}
         <div class="content-card">
             <div class="content-card-header" style="flex-wrap:wrap;gap:10px;">
-                <h3><i class="bi bi-people"></i> Leads <span id="leadsChartTotal" style="font-size:13px;font-weight:600;color:#6b7280;margin-left:6px;">({{ $leadsThisMonth }})</span></h3>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <h3><i class="bi bi-people"></i> Leads</h3>
+                    <span id="leadsBadge" style="background:#eff6ff;color:#0085f3;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;">{{ $leadsThisMonth }} este mês</span>
+                </div>
                 <div style="display:flex;align-items:center;gap:12px;">
                     <div id="leadsChartFilter" style="display:flex;gap:4px;">
                         <button type="button" class="leads-period-btn" data-period="week" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;cursor:pointer;">Semana</button>
-                        <button type="button" class="leads-period-btn active" data-period="month" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #0085f3;background:#eff6ff;color:#0085f3;cursor:pointer;">Mês</button>
+                        <button type="button" class="leads-period-btn active" data-period="month" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #0085f3;background:#0085f3;color:#fff;cursor:pointer;">Mês</button>
                         <button type="button" class="leads-period-btn" data-period="3months" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;cursor:pointer;">3 Meses</button>
                         <button type="button" class="leads-period-btn" data-period="6months" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;cursor:pointer;">6 Meses</button>
                     </div>
@@ -507,7 +589,40 @@
                 </div>
             </div>
             <div class="content-card-body">
-                <div class="chart-wrap">
+                {{-- Metric cards --}}
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+                    <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;">
+                        <div style="font-size:12px;color:#6b7280;">Total de leads</div>
+                        <div id="metricTotal" style="font-size:20px;font-weight:500;color:#1a1d23;">{{ $leadsThisMonth }}</div>
+                        <div style="font-size:11px;color:#9ca3af;">Mês atual</div>
+                    </div>
+                    <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;">
+                        <div style="font-size:12px;color:#6b7280;">Canal principal</div>
+                        <div id="metricTopChannel" style="font-size:20px;font-weight:500;color:#1a1d23;">
+                            @if(count($leadsBySource) > 0)
+                                {{ ucfirst(collect($leadsBySource)->keys()->first(fn($k) => $leadsBySource[$k] === max($leadsBySource)) ?? 'N/A') }}
+                            @else
+                                N/A
+                            @endif
+                        </div>
+                        <div id="metricTopChannelSub" style="font-size:11px;color:#9ca3af;">
+                            @if(count($leadsBySource) > 0)
+                                {{ max($leadsBySource) }} leads · {{ $leadsThisMonth > 0 ? round(max($leadsBySource) * 100 / $leadsThisMonth) : 0 }}%
+                            @endif
+                        </div>
+                    </div>
+                    <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;">
+                        <div style="font-size:12px;color:#6b7280;">Dias com leads</div>
+                        <div id="metricDaysWithLeads" style="font-size:20px;font-weight:500;color:#1a1d23;">
+                            {{ collect($leadsPerDay)->filter(fn($v) => $v > 0)->count() }}
+                        </div>
+                        <div style="font-size:11px;color:#9ca3af;">de {{ count($dayLabels) }} dias</div>
+                    </div>
+                </div>
+                {{-- Legenda interativa --}}
+                <div id="leadsLegend" style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px;font-size:12px;color:#6b7280;"></div>
+                {{-- Gráfico --}}
+                <div style="height:240px;">
                     <canvas id="chartLeads"></canvas>
                 </div>
             </div>
@@ -542,132 +657,107 @@
 
     </div>
 
-    {{-- ── Row 3: Funil + Origem + Vendas ─────────────────────────────── --}}
-    <div class="bottom-grid">
+    {{-- ── Row 3: Origem + Perda + Vendas (3 colunas) ────────────────── --}}
+    <div class="bottom-grid" style="grid-template-columns:repeat(3, 1fr);">
 
-        {{-- Funil de Conversão --}}
-        <div class="content-card">
-            <div class="content-card-header">
-                <h3><i class="bi bi-funnel"></i>
-                    {{ $pipeline?->name ?? 'Funil de Vendas' }}
-                </h3>
-                <a href="{{ route('crm.kanban') }}" class="card-link">
-                    Kanban <i class="bi bi-arrow-right"></i>
-                </a>
+        {{-- Card 1: Leads por Origem (SVG donut + lista) --}}
+        <div class="content-card" style="padding:14px;">
+            <div style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;margin-bottom:14px;color:#374151;">
+                <i class="bi bi-pie-chart" style="color:#0085f3;"></i> Leads por Origem
             </div>
-            <div class="content-card-body">
-                @if(count($stagesWithCount) > 0)
-                    @php($totalInPipeline = collect($stagesWithCount)->sum('count') ?: 1)
-                    <div class="stage-list">
-                        @foreach($stagesWithCount as $stage)
-                        <div class="stage-row">
-                            <div class="stage-meta">
-                                <span class="stage-name">
-                                    <span class="stage-dot" style="background:{{ $stage['color'] ?? '#3B82F6' }};"></span>
-                                    {{ $stage['name'] }}
-                                </span>
-                                <div class="stage-right">
-                                    <span class="stage-pct">{{ round($stage['count'] * 100 / $totalInPipeline) }}%</span>
-                                    <span class="stage-count">{{ $stage['count'] }}</span>
-                                </div>
-                            </div>
-                            <div class="stage-bar-track">
-                                <div class="stage-bar-fill"
-                                     style="width:{{ intval($stage['count'] * 100 / $maxStageCount) }}%; background:{{ $stage['color'] ?? '#3B82F6' }};"></div>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="empty-state">
-                        <i class="bi bi-kanban"></i>
-                        <p>Nenhum pipeline configurado.<br>
-                           <a href="{{ route('settings.pipelines') }}" style="color:#3B82F6;">Criar pipeline</a>
-                        </p>
-                    </div>
-                @endif
+            @if(count($leadsBySource) > 0)
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div id="donutSvgWrap" style="flex:4;display:flex;justify-content:center;"></div>
+                <div style="display:flex;flex-direction:column;gap:5px;flex:1;min-width:0;" id="donutList"></div>
             </div>
+            <script>
+            document.addEventListener('DOMContentLoaded', function(){
+                var SC = {whatsapp:'#25D366',instagram:'#E1306C',facebook:'#1877F2',site:'#3B82F6',google:'#FBBC04',linkedin:'#0A66C2',indicacao:'#8B5CF6',manual:'#94A3B8',telefone:'#F97316',email:'#06B6D4'};
+                var FB = ['#10B981','#F59E0B','#EF4444','#06B6D4','#F97316','#EC4899'];
+                function gc(k,i){return SC[k.toLowerCase()]||FB[i%FB.length];}
+                var data = @json($leadsBySource);
+                var entries = Object.entries(data).sort(function(a,b){return b[1]-a[1];});
+                var total = entries.reduce(function(s,e){return s+e[1];},0) || 1;
+                var r = 32, cx = 45, cy = 45, circ = 2 * Math.PI * r;
+                var offset = 0;
+                var paths = '';
+                entries.forEach(function(e, i){
+                    var dash = (e[1] / total) * circ;
+                    paths += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+gc(e[0],i)+'" stroke-width="16" stroke-dasharray="'+dash+' '+(circ-dash)+'" stroke-dashoffset="'+(-offset)+'" style="transform:rotate(-90deg);transform-origin:center;"/>';
+                    offset += dash;
+                });
+                document.getElementById('donutSvgWrap').innerHTML = '<svg width="160" height="160" viewBox="0 0 90 90">'+paths+'<text x="45" y="43" text-anchor="middle" font-size="16" font-weight="700" fill="#1a1d23">'+total+'</text><text x="45" y="54" text-anchor="middle" font-size="8" fill="#9ca3af">leads</text></svg>';
+                var list = '';
+                entries.forEach(function(e, i){
+                    var pct = Math.round(e[1] / total * 100);
+                    list += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="display:flex;align-items:center;gap:6px;min-width:0;"><span style="width:8px;height:8px;min-width:8px;border-radius:2px;background:'+gc(e[0],i)+';"></span><span style="font-size:11px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+e[0].charAt(0).toUpperCase()+e[0].slice(1)+'</span></div><span style="font-size:11px;font-weight:600;color:#1a1d23;white-space:nowrap;">'+pct+'%</span></div>';
+                });
+                document.getElementById('donutList').innerHTML = list;
+            });
+            </script>
+            @else
+            <div class="empty-state"><i class="bi bi-pie-chart"></i><p>Nenhuma origem registrada.</p></div>
+            @endif
         </div>
 
-        {{-- Leads por Origem --}}
-        <div class="content-card">
-            <div class="content-card-header">
-                <h3><i class="bi bi-pie-chart"></i> Leads por Origem</h3>
+        {{-- Card 2: Motivos de Perda (Heatmap) --}}
+        <div class="content-card" style="padding:14px;">
+            <div style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;margin-bottom:14px;color:#374151;">
+                <i class="bi bi-slash-circle" style="color:#EF4444;"></i> Motivos de Perda
             </div>
-            <div class="content-card-body">
-                @if(count($leadsBySource) > 0)
-                    <div class="donut-wrap">
-                        <canvas id="chartOrigin"></canvas>
-                    </div>
-                @else
-                    <div class="empty-state">
-                        <i class="bi bi-pie-chart"></i>
-                        <p>Nenhuma origem registrada ainda.</p>
-                    </div>
-                @endif
+            @if(count($lostByReason) > 0)
+            <div style="display:grid;grid-template-columns:1fr 52px 52px;gap:4px 6px;align-items:center;">
+                <div style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.3px;">Motivo</div>
+                <div style="font-size:10px;color:#9ca3af;font-weight:600;text-align:center;">Atual</div>
+                <div style="font-size:10px;color:#9ca3af;font-weight:600;text-align:center;">Anterior</div>
+                @foreach($lostByReason as $reason)
+                <div style="font-size:12px;color:#374151;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ $reason['name'] }}</div>
+                <div style="background:{{ $reason['total'] >= 5 ? '#A32D2D' : ($reason['total'] >= 4 ? '#E24B4A' : ($reason['total'] >= 3 ? '#F09595' : ($reason['total'] >= 2 ? '#F7C1C1' : '#FCEBEB'))) }};border-radius:5px;height:26px;display:flex;align-items:center;justify-content:center;">
+                    <span style="font-size:12px;font-weight:600;color:{{ $reason['total'] >= 4 ? '#fff' : '#A32D2D' }};">{{ $reason['total'] }}</span>
+                </div>
+                <div style="background:{{ ($reason['prev'] ?? 0) >= 5 ? '#A32D2D' : (($reason['prev'] ?? 0) >= 4 ? '#E24B4A' : (($reason['prev'] ?? 0) >= 3 ? '#F09595' : (($reason['prev'] ?? 0) >= 2 ? '#F7C1C1' : '#FCEBEB'))) }};border-radius:5px;height:26px;display:flex;align-items:center;justify-content:center;">
+                    <span style="font-size:12px;font-weight:600;color:{{ ($reason['prev'] ?? 0) >= 4 ? '#fff' : '#A32D2D' }};">{{ $reason['prev'] ?? 0 }}</span>
+                </div>
+                @endforeach
             </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:12px;">
+                <span style="font-size:10px;color:#9ca3af;">menos</span>
+                <div style="width:14px;height:10px;border-radius:2px;background:#FCEBEB;"></div>
+                <div style="width:14px;height:10px;border-radius:2px;background:#F7C1C1;"></div>
+                <div style="width:14px;height:10px;border-radius:2px;background:#F09595;"></div>
+                <div style="width:14px;height:10px;border-radius:2px;background:#E24B4A;"></div>
+                <div style="width:14px;height:10px;border-radius:2px;background:#A32D2D;"></div>
+                <span style="font-size:10px;color:#9ca3af;">mais</span>
+            </div>
+            @else
+            <div class="empty-state"><i class="bi bi-slash-circle"></i><p>Nenhum lead perdido.</p></div>
+            @endif
         </div>
 
-        {{-- Motivos de Perda --}}
-        <div class="content-card">
-            <div class="content-card-header">
-                <h3><i class="bi bi-slash-circle" style="color:#EF4444;"></i> Motivos de Perda</h3>
-                <a href="{{ route('settings.pipelines') }}" class="card-link">
-                    Gerenciar <i class="bi bi-arrow-right"></i>
-                </a>
+        {{-- Card 3: Vendas (Barras + Média Móvel) --}}
+        <div class="content-card" style="padding:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <span style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;color:#374151;">
+                    <i class="bi bi-currency-dollar" style="color:#10b981;"></i> Vendas
+                </span>
+                <span style="font-size:10px;color:#9ca3af;">
+                    <span>12m:</span> <strong style="color:#1a1d23;">R$ {{ number_format(array_sum($salesPerMonth), 0, ',', '.') }}</strong>
+                    &nbsp;
+                    <span style="color:#0085f3;font-weight:500;">Mês: R$ {{ number_format($totalSales, 0, ',', '.') }}</span>
+                </span>
             </div>
-            <div class="content-card-body">
-                @if(count($lostByReason) > 0)
-                    @php($maxLost = collect($lostByReason)->max('total') ?: 1)
-                    <div class="reason-list">
-                        @foreach($lostByReason as $reason)
-                        <div class="reason-row">
-                            <div class="reason-meta">
-                                <span class="reason-name">{{ $reason['name'] }}</span>
-                                <div class="reason-right">
-                                    <span class="reason-count">{{ $reason['total'] }}</span>
-                                </div>
-                            </div>
-                            <div class="stage-bar-track">
-                                <div class="stage-bar-fill"
-                                     style="width:{{ intval($reason['total'] * 100 / $maxLost) }}%; background:#EF4444;"></div>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="empty-state">
-                        <i class="bi bi-slash-circle"></i>
-                        <p>Nenhum lead perdido registrado ainda.</p>
-                    </div>
-                @endif
-            </div>
-        </div>
-
-        {{-- Evolução de Vendas --}}
-        <div class="content-card">
-            <div class="content-card-header">
-                <h3><i class="bi bi-currency-dollar"></i> Vendas</h3>
-                <div style="display:flex;align-items:center;gap:20px;">
-                    <div style="display:flex;gap:20px;">
-                        <div>
-                            <div style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">12 meses</div>
-                            <div style="font-size:16px;font-weight:700;color:#1a1d23;">R$ {{ number_format(array_sum($salesPerMonth), 0, ',', '.') }}</div>
-                        </div>
-                        <div style="width:1px;background:#f0f2f7;"></div>
-                        <div>
-                            <div style="font-size:10px;color:#10b981;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">
-                                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;margin-right:4px;vertical-align:middle;"></span>Esse Mês
-                            </div>
-                            <div style="font-size:16px;font-weight:700;color:#1a1d23;">R$ {{ number_format($totalSales, 0, ',', '.') }}</div>
-                        </div>
-                    </div>
+            <div style="display:flex;gap:12px;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:4px;">
+                    <span style="width:10px;height:10px;border-radius:2px;background:#93c5fd;"></span>
+                    <span style="font-size:10px;color:#6b7280;">Vendas mensais</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;">
+                    <span style="width:16px;border-top:1.5px dashed #f59e0b;"></span>
+                    <span style="font-size:10px;color:#6b7280;">Média móvel (3m)</span>
                 </div>
             </div>
-            <div class="content-card-body">
-                <div class="sales-chart-wrap">
-                    <canvas id="chartSales"></canvas>
-                </div>
+            <div style="position:relative;width:100%;height:150px;">
+                <canvas id="chartSales"></canvas>
             </div>
         </div>
 
@@ -696,6 +786,7 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script>
 (function () {
     const monthLabels            = @json($monthLabels);
@@ -764,94 +855,134 @@
         }
     };
 
-    // ── Leads stacked bar chart com filtro de período ──────────────────
+    // ── Leads stacked bar chart (spec completa) ─────────────────────────
     (function () {
         const LEADS_CHART_URL = "{{ url('/dashboard/leads-chart') }}";
         const canvas = document.getElementById('chartLeads');
-        const ctx    = canvas.getContext('2d');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
         let leadsChart = null;
+        const hidden = new Set();
+
+        function getColor(src, idx) { return sourceColor(src, idx || 0); }
+        function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+        function buildLegend(datasetsObj) {
+            const el = document.getElementById('leadsLegend');
+            if (!el) return;
+            el.innerHTML = '';
+            Object.keys(datasetsObj).forEach((src, i) => {
+                const item = document.createElement('span');
+                item.style.cssText = 'display:inline-flex;align-items:center;gap:5px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:opacity .15s;user-select:none;';
+                item.style.opacity = hidden.has(i) ? '0.35' : '1';
+                item.innerHTML = '<span style="width:10px;height:10px;border-radius:2px;background:' + getColor(src, i) + ';display:inline-block;"></span>' + capitalize(src);
+                item.onclick = function() {
+                    if (hidden.has(i)) hidden.delete(i); else hidden.add(i);
+                    item.style.opacity = hidden.has(i) ? '0.35' : '1';
+                    if (leadsChart) {
+                        leadsChart.data.datasets.forEach((ds, di) => {
+                            ds.hidden = hidden.has(di);
+                        });
+                        leadsChart.update();
+                    }
+                };
+                el.appendChild(item);
+            });
+        }
+
+        function calcDayTotal(ctx) {
+            let total = 0;
+            const chart = ctx.chart;
+            chart.data.datasets.forEach((ds, i) => {
+                if (!hidden.has(i)) total += (ds.data[ctx.dataIndex] || 0);
+            });
+            return total;
+        }
 
         function buildChart(labels, datasetsObj) {
-            const datasets = Object.entries(datasetsObj).map(([src, data], idx) => ({
-                label: src.charAt(0).toUpperCase() + src.slice(1),
-                data,
-                backgroundColor: sourceColor(src, idx),
-                borderRadius: 20,
+            // Filter days with data
+            const allSources = Object.keys(datasetsObj);
+            const dayTotals = labels.map((_, di) => allSources.reduce((s, src) => s + (datasetsObj[src][di] || 0), 0));
+            const filteredIdx = [];
+            dayTotals.forEach((t, i) => { if (t > 0) filteredIdx.push(i); });
+            const filtLabels = filteredIdx.map(i => labels[i]);
+
+            const datasets = allSources.map((src, i) => ({
+                label: capitalize(src),
+                data: filteredIdx.map(di => datasetsObj[src][di] || 0),
+                backgroundColor: getColor(src, i),
+                borderRadius: { topLeft: 3, topRight: 3 },
+                borderSkipped: false,
                 barPercentage: 0.75,
                 categoryPercentage: 0.8,
+                hidden: hidden.has(i),
             }));
 
             if (leadsChart) leadsChart.destroy();
 
             leadsChart = new Chart(ctx, {
                 type: 'bar',
-                data: { labels, datasets },
+                data: { labels: filtLabels, datasets },
+                plugins: [ChartDataLabels],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: { top: 20 } },
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: {
-                            display: true,
-                            position: 'bottom',
-                            labels: { boxWidth: 12, font: { size: 11 }, padding: 8, usePointStyle: true, pointStyle: 'rectRounded' }
-                        },
+                        legend: { display: false },
                         tooltip: {
-                            backgroundColor: '#1a1d23',
-                            titleColor: '#9ca3af',
-                            bodyColor: '#fff',
-                            padding: 10,
+                            backgroundColor: '#1a1d23', titleColor: '#9ca3af', bodyColor: '#fff', padding: 10,
                             callbacks: {
                                 title: items => items[0].label,
-                                afterBody: items => {
-                                    const total = items.reduce((s, i) => s + i.parsed.y, 0);
-                                    return `\nTotal: ${total} lead(s)`;
+                                footer: items => {
+                                    const total = items.reduce((s, i) => s + i.raw, 0);
+                                    return 'Total: ' + total + ' lead' + (total !== 1 ? 's' : '');
                                 }
                             }
+                        },
+                        datalabels: {
+                            display: function(ctx) {
+                                const lastVisible = ctx.chart.data.datasets.reduce((last, _, i) => !hidden.has(i) ? i : last, -1);
+                                if (ctx.datasetIndex !== lastVisible) return false;
+                                return calcDayTotal(ctx) > 0;
+                            },
+                            anchor: 'end', align: 'end',
+                            formatter: function(_, ctx) { return calcDayTotal(ctx); },
+                            color: '#888', font: { size: 11, weight: '500' }
                         }
                     },
                     scales: {
-                        x: {
-                            stacked: true,
-                            grid: { display: false },
-                            border: { display: false },
-                            ticks: { font: { size: 10 }, color: '#9ca3af', maxRotation: 45 },
-                        },
+                        x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { font: { size: 10 }, color: '#9ca3af', autoSkip: false } },
                         y: {
-                            stacked: true,
-                            beginAtZero: true,
-                            grid: { color: '#f0f2f7', drawBorder: false },
-                            border: { display: false },
+                            stacked: true, beginAtZero: true,
+                            grid: { color: 'rgba(128,128,128,0.1)' }, border: { display: false },
                             ticks: { precision: 0, font: { size: 11 }, color: '#9ca3af' },
+                            suggestedMax: Math.max(...dayTotals.filter((_, i) => filteredIdx.includes(i))) + 1
                         }
                     }
                 }
             });
+
+            buildLegend(datasetsObj);
         }
 
-        // Initial render with server-side data
+        // Initial render
         buildChart(dayLabels, leadsPerDayBySource);
 
-        // Period filter buttons
+        // Period filter
         document.querySelectorAll('.leads-period-btn').forEach(btn => {
             btn.addEventListener('click', function () {
                 document.querySelectorAll('.leads-period-btn').forEach(b => {
-                    b.style.border = '1px solid #e5e7eb';
-                    b.style.background = '#fff';
-                    b.style.color = '#6b7280';
-                    b.classList.remove('active');
+                    b.style.border = '1px solid #e5e7eb'; b.style.background = '#fff'; b.style.color = '#6b7280'; b.classList.remove('active');
                 });
-                this.style.border = '1px solid #0085f3';
-                this.style.background = '#eff6ff';
-                this.style.color = '#0085f3';
-                this.classList.add('active');
+                this.style.border = '1px solid #0085f3'; this.style.background = '#0085f3'; this.style.color = '#fff'; this.classList.add('active');
+                hidden.clear();
 
                 const period = this.dataset.period;
-
-                // "month" uses the initial server data
                 if (period === 'month') {
                     buildChart(dayLabels, leadsPerDayBySource);
-                    document.getElementById('leadsChartTotal').textContent = `({{ $leadsThisMonth }})`;
+                    document.getElementById('leadsBadge').textContent = '{{ $leadsThisMonth }} este mês';
                     return;
                 }
 
@@ -861,101 +992,65 @@
                 .then(r => r.json())
                 .then(data => {
                     buildChart(data.labels, data.datasets);
-                    document.getElementById('leadsChartTotal').textContent = `(${data.total})`;
+                    document.getElementById('leadsBadge').textContent = data.total + ' leads';
+                    document.getElementById('metricTotal').textContent = data.total;
                 })
                 .catch(() => toastr.error('Erro ao carregar dados do gráfico'));
             });
         });
     }());
 
-    // ── Leads por Origem ───────────────────────────────────────────────
-    if (document.getElementById('chartOrigin')) {
-        new Chart(document.getElementById('chartOrigin'), {
-            type: 'doughnut',
-            data: {
-                labels: origLabels,
-                datasets: [{
-                    data: origData,
-                    backgroundColor: origLabels.map((src, i) => sourceColor(src, i)),
-                    borderWidth: 2,
-                    borderColor: '#fff',
-                    hoverOffset: 6,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '65%',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { boxWidth: 10, padding: 10, font: { size: 11 } }
-                    }
-                }
-            }
-        });
-    }
+    // ── Leads por Origem agora é SVG puro (não Chart.js) ────────────────
 
-    // ── Evolução de Vendas — área suave (12 meses) ────────────────────
+    // ── Vendas — barras + média móvel (3m) ─────────────────────────────
     (function () {
         const canvas = document.getElementById('chartSales');
-        const ctx    = canvas.getContext('2d');
-        const grad   = ctx.createLinearGradient(0, 0, 0, 180);
-        grad.addColorStop(0, 'rgba(16,185,129,0.28)');
-        grad.addColorStop(1, 'rgba(16,185,129,0)');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        // Média móvel janela 3
+        function movingAvg(data, w) {
+            return data.map(function(_, i) {
+                var slice = data.slice(Math.max(0, i - w + 1), i + 1);
+                return Math.round(slice.reduce(function(a, b) { return a + b; }, 0) / slice.length);
+            });
+        }
+        var ma = movingAvg(salesPerMonth, 3);
 
         new Chart(ctx, {
-            type: 'line',
-            plugins: [crosshairGreen],
+            type: 'bar',
             data: {
                 labels: monthLabels,
-                datasets: [{
-                    label: 'Vendas',
-                    data: salesPerMonth,
-                    fill: true,
-                    backgroundColor: grad,
-                    borderColor: '#10B981',
-                    borderWidth: 2.5,
-                    tension: 0.45,
-                    pointRadius: 0,
-                    pointHoverRadius: 6,
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: '#10B981',
-                    pointHoverBorderWidth: 2.5,
-                }]
+                datasets: [
+                    {
+                        type: 'bar', label: 'Vendas', data: salesPerMonth,
+                        backgroundColor: '#93c5fd', borderRadius: 3, borderSkipped: false, order: 2,
+                    },
+                    {
+                        type: 'line', label: 'Média móvel (3m)', data: ma,
+                        borderColor: '#f59e0b', borderWidth: 2, borderDash: [4, 3],
+                        pointRadius: 3, pointBackgroundColor: '#f59e0b', pointBorderColor: '#fff', pointBorderWidth: 1.5,
+                        fill: false, tension: 0.4, order: 1,
+                    }
+                ]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
+                responsive: true, maintainAspectRatio: false, layout: { padding: { top: 4 } },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        backgroundColor: '#1a1d23',
-                        titleColor: '#9ca3af',
-                        bodyColor: '#fff',
-                        padding: 10,
+                        backgroundColor: '#fff', borderColor: 'rgba(0,0,0,0.1)', borderWidth: 1,
+                        titleColor: '#374151', bodyColor: '#1a1d23', padding: 9,
                         callbacks: {
-                            title: items => items[0].label,
-                            label: ctx  => ` R$ ${ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`,
+                            label: function(ctx) { return ctx.dataset.label + ': R$ ' + ctx.raw.toLocaleString('pt-BR'); }
                         }
                     }
                 },
                 scales: {
-                    x: {
-                        grid: { display: false },
-                        border: { display: false },
-                        ticks: { font: { size: 11 }, color: '#9ca3af' },
-                    },
+                    x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10 }, color: '#9ca3af', autoSkip: false, maxRotation: 0 } },
                     y: {
-                        beginAtZero: true,
-                        grid: { color: '#f0f2f7', drawBorder: false },
-                        border: { display: false },
-                        ticks: {
-                            font: { size: 11 },
-                            color: '#9ca3af',
-                            callback: v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0 }),
-                        }
+                        beginAtZero: true, grid: { color: 'rgba(128,128,128,0.08)' }, border: { display: false },
+                        ticks: { font: { size: 10 }, color: '#9ca3af', callback: function(v) { return 'R$ ' + v.toLocaleString('pt-BR'); } }
                     }
                 }
             }
