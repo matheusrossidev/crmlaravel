@@ -80,8 +80,8 @@
 
     /* Coluna */
     .kanban-col {
-        flex: 1 0 calc(33.333% - 14px);
-        min-width: 260px;
+        flex: 0 0 27%;
+        min-width: 240px;
         display: flex;
         flex-direction: column;
         gap: 0;
@@ -169,12 +169,17 @@
     }
 
     .card-name {
-        font-size: 13.5px;
+        font-size: 14px;
         font-weight: 600;
         color: #1a1d23;
-        margin-bottom: 7px;
+        margin-bottom: 0;
         cursor: pointer;
         line-height: 1.35;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+        min-width: 0;
     }
 
     .card-name:hover { color: #3B82F6; }
@@ -220,7 +225,7 @@
         font-size: 13px;
         font-weight: 700;
         color: #10B981;
-        margin-bottom: 8px;
+        margin-bottom: 4px;
     }
 
     .card-value {
@@ -229,39 +234,55 @@
         color: #10B981;
     }
 
-    /* Linha superior do card: ref + agente */
-    .card-top-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 5px;
+    .card-top-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .card-avatar {
+        width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+        background: #e0ecff; color: #0085f3; font-size: 13px; font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden; float: right; margin: 0 0 4px 8px;
     }
-    .card-ref {
-        font-size: 10.5px;
-        color: #9ca3af;
-        font-weight: 500;
+    .card-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Linha nome + valor */
+    .card-name-row {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 8px; margin-bottom: 2px;
     }
-    .card-agent-badge {
-        display: flex;
-        align-items: center;
-        gap: 3px;
-        font-size: 10.5px;
-        font-weight: 600;
-        color: #6b7280;
-        background: #f0f2f7;
-        border-radius: 99px;
-        padding: 2px 7px;
-        max-width: 110px;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
+    .card-value-inline {
+        font-size: 12px; font-weight: 700; color: #10B981; white-space: nowrap;
     }
-    .card-agent-badge i { font-size: 10px; color: #9ca3af; }
+
+    /* Footer: avatar atendente + ações + data */
+    .card-actions {
+        display: flex; align-items: center; gap: 2px;
+    }
+    .card-action-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 26px; height: 26px; border-radius: 6px; border: none;
+        background: transparent; color: #9ca3af; cursor: pointer;
+        font-size: 13px; transition: all .15s; text-decoration: none;
+    }
+    .card-action-btn:hover { background: #eff6ff; color: #0085f3; }
+    .card-action-btn.wa-btn:hover { background: #dcfce7; color: #25D366; }
+    .card-action-btn.has-unread { color: #10B981; }
+    .card-action-btn .bubble-count {
+        position: absolute; top: -2px; right: -2px;
+        background: #10B981; color: #fff; font-size: 8px; font-weight: 700;
+        min-width: 14px; height: 14px; border-radius: 99px; display: flex;
+        align-items: center; justify-content: center; padding: 0 3px;
+    }
+    .card-assignee {
+        width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+        background: #f0f2f7; color: #6b7280; font-size: 9px; font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+        margin-right: 4px;
+    }
 
     /* Data no footer */
     .card-date {
         display: flex;
         align-items: center;
+        margin-left: auto;
         gap: 3px;
         font-size: 11px;
         color: #9ca3af;
@@ -677,28 +698,31 @@
 
             @if(count($stage['leads']))
             @foreach($stage['leads'] as $lead)
+            @php
+                $picUrl = $lead->whatsappConversation?->contact_picture_url;
+                $initials = collect(explode(' ', $lead->name))->map(fn($w) => mb_strtoupper(mb_substr($w,0,1)))->take(2)->join('');
+                $assignee = $lead->assignedTo?->name;
+                $assigneeInit = $assignee ? collect(explode(' ', $assignee))->map(fn($w) => mb_strtoupper(mb_substr($w,0,1)))->take(2)->join('') : '';
+                $convId = $lead->whatsappConversation?->id;
+                $unread = $lead->whatsappConversation?->unread_count ?? 0;
+            @endphp
             <div class="lead-card"
                  data-lead-id="{{ $lead->id }}"
                  data-stage-id="{{ $stage['id'] }}"
                  data-lead-value="{{ $lead->value ?? '' }}">
 
-                {{-- Linha 1: ref + agente --}}
-                <div class="card-top-row">
-                    <span class="card-ref">#{{ $lead->id }}</span>
-                    @if($lead->assignedTo?->name ?? $lead->whatsappConversation?->aiAgent?->name)
-                    <span class="card-agent-badge">
-                        <i class="bi bi-person-fill"></i>
-                        {{ Str::limit($lead->assignedTo?->name ?? $lead->whatsappConversation?->aiAgent?->name ?? '', 14) }}
-                    </span>
+                {{-- Avatar float right --}}
+                <div class="card-avatar">
+                    @if($picUrl)
+                    <img src="{{ $picUrl }}" alt="" onerror="this.style.display='none';this.parentElement.textContent='{{ $initials }}';">
+                    @else
+                    {{ $initials }}
                     @endif
                 </div>
 
-                {{-- Nome (clicável) --}}
-                <div class="card-name btn-open-lead" data-lead-id="{{ $lead->id }}">{{ $lead->name }}</div>
-
-                {{-- Tags --}}
+                {{-- Tags (se houver) --}}
                 @if(!empty($lead->tags) && count($lead->tags))
-                <div class="card-tags">
+                <div class="card-tags" style="margin-bottom:2px;">
                     @foreach($lead->tags as $tag)
                     <span class="card-tag-badge"
                         @if(isset($tagColorMap[$tag]))
@@ -709,9 +733,17 @@
                 </div>
                 @endif
 
+                {{-- Nome --}}
+                <div class="card-name btn-open-lead" data-lead-id="{{ $lead->id }}">{{ $lead->name }}</div>
+
+                {{-- Valor (abaixo do avatar por causa do float) --}}
+                @if($lead->value)
+                <div class="card-value-row" style="text-align:right;clear:right;">R$ {{ number_format((float)$lead->value, 0, ',', '.') }}</div>
+                @endif
+
                 {{-- Custom fields (show_on_card=true) --}}
                 @if($cfOnCard->count() && !empty($stage['lead_cf'][$lead->id]))
-                <div class="card-meta" style="margin-top:6px;">
+                <div class="card-meta" style="margin-top:4px;">
                     @foreach($cfOnCard as $cfDef)
                     @if(($stage['lead_cf'][$lead->id][$cfDef->name]['value'] ?? null) !== null
                         && ($stage['lead_cf'][$lead->id][$cfDef->name]['value'] ?? '') !== ''
@@ -726,26 +758,31 @@
                 </div>
                 @endif
 
-                {{-- Valor (linha própria) --}}
-                @if($lead->value)
-                <div class="card-value-row">R$ {{ number_format((float)$lead->value, 0, ',', '.') }}</div>
-                @endif
-
-                {{-- Footer: data + bubble --}}
+                {{-- Footer: avatar atendente + ações + data --}}
                 <div class="card-footer">
+                    <div style="display:flex;align-items:center;gap:2px;">
+                        @if($assignee)
+                        <div class="card-assignee" title="{{ $assignee }}">{{ $assigneeInit }}</div>
+                        @endif
+                        <div class="card-actions">
+                            @if($lead->phone)
+                            <a href="tel:{{ $lead->phone }}" class="card-action-btn" onclick="event.stopPropagation();" title="Ligar"><i class="bi bi-telephone-fill"></i></a>
+                            @endif
+                            @if($convId)
+                            <a href="{{ route('chats.index') }}?open={{ $convId }}" class="card-action-btn wa-btn {{ $unread > 0 ? 'has-unread' : '' }}" onclick="event.stopPropagation();" title="Abrir conversa" style="position:relative;">
+                                <i class="bi bi-whatsapp"></i>
+                                @if($unread > 0)<span class="bubble-count">{{ $unread }}</span>@endif
+                            </a>
+                            @endif
+                            @if($lead->email)
+                            <a href="mailto:{{ $lead->email }}" class="card-action-btn" onclick="event.stopPropagation();" title="Enviar email"><i class="bi bi-envelope-fill"></i></a>
+                            @endif
+                        </div>
+                    </div>
                     <span class="card-date">
                         <i class="bi bi-clock"></i>
-                        {{ $lead->created_at?->format('d/m/y') }}
+                        {{ $lead->created_at?->diffForHumans(null, true, true) }}
                     </span>
-                    <button class="card-bubble {{ ($lead->whatsappConversation?->unread_count ?? 0) > 0 ? 'has-unread' : '' }} {{ $lead->whatsappConversation?->id ? 'has-conversation' : '' }}"
-                            data-conv-url="{{ $lead->whatsappConversation?->id ? route('chats.index').'?open='.$lead->whatsappConversation->id : '' }}"
-                            onclick="event.stopPropagation(); var u=this.dataset.convUrl; if(u) window.location.href=u;"
-                            title="{{ $lead->whatsappConversation?->id ? 'Abrir conversa WhatsApp' : 'Sem conversa vinculada' }}">
-                        <i class="bi bi-chat-dots-fill"></i>
-                        @if(($lead->whatsappConversation?->unread_count ?? 0) > 0)
-                        <span class="bubble-count">{{ $lead->whatsappConversation->unread_count }}</span>
-                        @endif
-                    </button>
                 </div>
 
             </div>
@@ -1208,26 +1245,29 @@ function renderSourceBadge(source, cls = 'source-badge') {
     return `<span class="${cls}"><i class="bi ${m.icon}" style="color:${m.color};margin-right:3px;"></i>${escapeHtml(m.label)}</span>`;
 }
 
+function getInitials(name) {
+    if (!name) return '?';
+    return name.split(' ').map(w => w.charAt(0).toUpperCase()).slice(0,2).join('');
+}
 function buildCard(lead) {
-    const agentName  = lead.assigned_to_name || lead.ai_agent_name || null;
-    const agentBadge = agentName
-        ? `<span class="card-agent-badge"><i class="bi bi-person-fill"></i>${escapeHtml(agentName.substring(0,14))}</span>`
-        : '';
-    const unread  = lead.unread_count || 0;
-    const convUrl = lead.conversation_id ? `/chats?open=${lead.conversation_id}` : '';
-    const bubble  = `<button class="card-bubble${unread > 0 ? ' has-unread' : ''}${convUrl ? ' has-conversation' : ''}" data-conv-url="${convUrl}" onclick="event.stopPropagation(); var u=this.dataset.convUrl; if(u) window.location.href=u;" title="${convUrl ? 'Abrir conversa WhatsApp' : 'Sem conversa vinculada'}"><i class="bi bi-chat-dots-fill"></i>${unread > 0 ? `<span class="bubble-count">${unread}</span>` : ''}</button>`;
-    const date = lead.created_at ? `<span class="card-date"><i class="bi bi-clock"></i>${escapeHtml(lead.created_at)}</span>` : '';
-    const valueRow = lead.value_fmt ? `<div class="card-value-row">${escapeHtml(lead.value_fmt)}</div>` : '';
+    const pic = lead.contact_picture_url;
+    const initials = getInitials(lead.name);
+    const avatarInner = pic
+        ? `<img src="${pic}" alt="" onerror="this.style.display='none';this.parentElement.textContent='${initials}';">`
+        : initials;
 
-    const tags = (lead.tags && lead.tags.length)
-        ? `<div class="card-tags">${lead.tags.map(t => {
+    const hasTags = lead.tags && lead.tags.length;
+    const tagsHtml = hasTags
+        ? lead.tags.map(t => {
             const c = TAG_COLORS[t];
             const s = c ? ` style="background:${c}20;color:${c};border:1px solid ${c}40;"` : '';
             return `<span class="card-tag-badge"${s}>${escapeHtml(t)}</span>`;
-          }).join('')}</div>`
+          }).join('')
         : '';
 
-    // Custom fields on card — normaliza formato flat (polling) ou nested (drawer)
+    const valueInline = lead.value_fmt ? `<span class="card-value-inline">${escapeHtml(lead.value_fmt)}</span>` : '';
+
+    // Custom fields on card
     const cfSource = lead.cf_flat || {};
     if (lead.custom_fields && !Object.keys(cfSource).length) {
         Object.entries(lead.custom_fields).forEach(([k, v]) => {
@@ -1240,21 +1280,37 @@ function buildCard(lead) {
         const d = Array.isArray(v) ? v.join(', ') : String(v);
         return `<div class="card-meta-row"><i class="bi bi-tag" style="font-size:11px;"></i><span style="font-weight:600;color:#374151;">${escapeHtml(f.label)}:</span> <span>${escapeHtml(d)}</span></div>`;
     }).join('');
-    const cfBlock = cfRows ? `<div class="card-meta" style="margin-top:6px;">${cfRows}</div>` : '';
+    const cfBlock = cfRows ? `<div class="card-meta" style="margin-top:4px;">${cfRows}</div>` : '';
+
+    // Footer: assignee + actions + date
+    const assignee = lead.assigned_to_name;
+    const assigneeHtml = assignee ? `<div class="card-assignee" title="${escapeHtml(assignee)}">${getInitials(assignee)}</div>` : '';
+
+    let actions = '';
+    if (lead.phone) actions += `<a href="tel:${lead.phone}" class="card-action-btn" onclick="event.stopPropagation();" title="Ligar"><i class="bi bi-telephone-fill"></i></a>`;
+    if (lead.conversation_id) {
+        const unread = lead.unread_count || 0;
+        actions += `<a href="/chats?open=${lead.conversation_id}" class="card-action-btn wa-btn${unread > 0 ? ' has-unread' : ''}" onclick="event.stopPropagation();" title="Abrir conversa" style="position:relative;"><i class="bi bi-whatsapp"></i>${unread > 0 ? `<span class="bubble-count">${unread}</span>` : ''}</a>`;
+    }
+    if (lead.email) actions += `<a href="mailto:${lead.email}" class="card-action-btn" onclick="event.stopPropagation();" title="Enviar email"><i class="bi bi-envelope-fill"></i></a>`;
+
+    const date = lead.created_at ? `<span class="card-date"><i class="bi bi-clock"></i>${escapeHtml(lead.created_at)}</span>` : '';
+
+    const tagsBlock = hasTags ? `<div class="card-tags" style="margin-bottom:2px;">${tagsHtml}</div>` : '';
 
     return `
     <div class="lead-card" data-lead-id="${lead.id}" data-stage-id="${lead.stage_id}" data-lead-value="${lead.value || ''}">
-        <div class="card-top-row">
-            <span class="card-ref">#${lead.id}</span>
-            ${agentBadge}
-        </div>
+        <div class="card-avatar">${avatarInner}</div>
+        ${tagsBlock}
         <div class="card-name btn-open-lead" data-lead-id="${lead.id}">${escapeHtml(lead.name)}</div>
-        ${tags}
+        ${lead.value_fmt ? `<div class="card-value-row" style="text-align:right;clear:right;">${escapeHtml(lead.value_fmt)}</div>` : ''}
         ${cfBlock}
-        ${valueRow}
         <div class="card-footer">
+            <div style="display:flex;align-items:center;gap:2px;">
+                ${assigneeHtml}
+                <div class="card-actions">${actions}</div>
+            </div>
             ${date}
-            ${bubble}
         </div>
     </div>`;
 }

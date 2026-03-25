@@ -486,11 +486,12 @@ class KanbanController extends Controller
             'campaign_id'      => $lead->campaign_id,
             'campaign'         => $lead->campaign ? ['id' => $lead->campaign->id, 'name' => $lead->campaign->name] : null,
             'cf_flat'          => $cfFlat,
-            'assigned_to_name' => $lead->assignedTo?->name,
-            'ai_agent_name'    => $lead->whatsappConversation?->aiAgent?->name,
-            'conversation_id'  => $lead->whatsappConversation?->id,
-            'unread_count'     => $lead->whatsappConversation?->unread_count ?? 0,
-            'created_at'       => $lead->created_at?->format('d/m/y'),
+            'assigned_to_name'     => $lead->assignedTo?->name,
+            'ai_agent_name'        => $lead->whatsappConversation?->aiAgent?->name,
+            'conversation_id'      => $lead->whatsappConversation?->id,
+            'unread_count'         => $lead->whatsappConversation?->unread_count ?? 0,
+            'contact_picture_url'  => $lead->whatsappConversation?->contact_picture_url,
+            'created_at'           => $lead->created_at?->diffForHumans(null, true, true),
         ];
     }
 }
