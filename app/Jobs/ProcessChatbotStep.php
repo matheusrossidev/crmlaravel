@@ -584,11 +584,25 @@ class ProcessChatbotStep
 
             $chatId = $this->resolveChatId($conv);
             $waha   = new WahaService($instance->session_name);
-            $waha->sendList($chatId, $description, $rows);
+
+            Log::channel('whatsapp')->info('Chatbot: enviando lista interativa', [
+                'conversation_id' => $conv->id,
+                'chatId'          => $chatId,
+                'rows_count'      => count($rows),
+            ]);
+
+            $result = $waha->sendList($chatId, $description, $rows);
+
+            Log::channel('whatsapp')->info('Chatbot: lista enviada', [
+                'conversation_id' => $conv->id,
+                'result'          => $result,
+            ]);
+
             sleep(self::DEFAULT_MESSAGE_DELAY);
         } catch (\Throwable $e) {
             Log::channel('whatsapp')->error('Chatbot: erro ao enviar lista interativa', [
                 'conversation_id' => $conv->id,
+                'chatId'          => $this->resolveChatId($conv),
                 'error'           => $e->getMessage(),
             ]);
             // Fallback: enviar como texto puro se lista falhar
