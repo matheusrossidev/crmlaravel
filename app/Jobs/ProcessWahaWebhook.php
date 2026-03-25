@@ -1296,6 +1296,15 @@ class ProcessWahaWebhook implements ShouldQueue
                     }
                 }
 
+                // Propagar UTMs para o lead vinculado (se existir e não tiver UTMs)
+                if (! empty($utmFields) && $conversation->phone) {
+                    Lead::withoutGlobalScope('tenant')
+                        ->where('tenant_id', $instance->tenant_id)
+                        ->where('phone', $conversation->phone)
+                        ->whereNull('utm_source')
+                        ->update($utmFields);
+                }
+
                 // Marcar click como matched
                 WhatsappButtonClick::withoutGlobalScope('tenant')
                     ->where('id', $recentClick->id)
