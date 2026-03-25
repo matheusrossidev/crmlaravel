@@ -14,7 +14,7 @@ class TenantCache
      */
     public static function key(string $section, string $suffix = ''): string
     {
-        $tenantId = auth()->user()->tenant_id ?? 0;
+        $tenantId = activeTenantId() ?? 0;
 
         return "t:{$tenantId}:{$section}" . ($suffix !== '' ? ":{$suffix}" : '');
     }
