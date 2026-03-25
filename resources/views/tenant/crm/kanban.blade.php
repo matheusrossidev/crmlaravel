@@ -208,6 +208,7 @@
         margin-top: 8px;
         padding-top: 8px;
         border-top: 1px solid #f0f2f7;
+        clear: both;
     }
 
     .source-badge {
