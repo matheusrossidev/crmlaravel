@@ -65,6 +65,28 @@ function renderButtons(){
         inlines[i].appendChild(a);
     }
 
+    /* ── Hijack direct /wa/ links on the page ─────────────── */
+    var waLinks=document.querySelectorAll('a[href*="/wa/'+CFG.token+'"]');
+    for(var j=0;j<waLinks.length;j++){
+        (function(link){
+            if(link.classList.contains('syncro-wa-button'))return;
+            var origHref=link.getAttribute('href');
+            var p=new URLSearchParams();
+            if(utm.utm_source)p.set('utm_source',utm.utm_source);
+            if(utm.utm_medium)p.set('utm_medium',utm.utm_medium);
+            if(utm.utm_campaign)p.set('utm_campaign',utm.utm_campaign);
+            if(utm.utm_content)p.set('utm_content',utm.utm_content);
+            if(utm.utm_term)p.set('utm_term',utm.utm_term);
+            if(utm.fbclid)p.set('fbclid',utm.fbclid);
+            if(utm.gclid)p.set('gclid',utm.gclid);
+            if(utm.page_url)p.set('page_url',utm.page_url);
+            if(utm.referrer_url)p.set('referrer_url',utm.referrer_url);
+            if(utm.visitor_id)p.set('visitor_id',utm.visitor_id);
+            var qs=p.toString();
+            if(qs)link.href=origHref+(origHref.indexOf('?')>-1?'&':'?')+qs;
+        })(waLinks[j]);
+    }
+
     /* ── Render floating button ─────────────────────────── */
     if(CFG.floating && !document.querySelector('.syncro-wa-float-wrap')){
         var wrap=document.createElement('div');
