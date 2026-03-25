@@ -1304,7 +1304,7 @@
 
             // Header
             html += '<div class="cb-branch-header">';
-            html += '<input class="cb-branch-label-input" value="' + esc(b.label || 'Opção ' + (bi + 1)) + '" onchange="cbUpdateBranch(' + pathStr + ', ' + index + ', ' + bi + ', \'label\', this.value)">';
+            html += '<input class="cb-branch-label-input" maxlength="24" placeholder="Máx. 24 caracteres" value="' + esc(b.label || 'Opção ' + (bi + 1)) + '" onchange="cbUpdateBranch(' + pathStr + ', ' + index + ', ' + bi + ', \'label\', this.value)">';
             html += '<button class="cb-branch-remove" onclick="cbRemoveBranch(' + pathStr + ', ' + index + ', ' + bi + ')" title="Remover opção"><i class="bi bi-x-lg"></i></button>';
             html += '</div>';
 
