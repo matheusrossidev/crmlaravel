@@ -88,6 +88,57 @@
 .cb-node.cards  .cb-node-icon { background: #f0fdf4; color: #16a34a; }
 .cb-sidebar-divider { height: 1px; background: #f0f2f7; margin: 8px 16px; }
 
+/* ── Edit Panel (drawer lateral) ─────────────────────────────────── */
+.cb-edit-panel {
+    position: fixed; right: 0; top: 64px; bottom: 0; width: 380px;
+    background: #fff; border-left: 1px solid #e8eaf0;
+    box-shadow: -4px 0 20px rgba(0,0,0,.08); z-index: 20;
+    overflow-y: auto; transform: translateX(100%); transition: transform .2s ease;
+}
+.cb-edit-panel.open { transform: translateX(0); }
+.cb-edit-panel-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 16px 20px; border-bottom: 1px solid #f0f2f7;
+    position: sticky; top: 0; background: #fff; z-index: 1;
+}
+.cb-edit-panel-body { padding: 16px 20px; }
+.cb-edit-panel-body label { font-size: 12px; font-weight: 600; color: #6b7280; display: block; margin-bottom: 5px; }
+.cb-edit-panel-body label + label { margin-top: 10px; }
+.cb-edit-panel-body .form-control, .cb-edit-panel-body .form-select {
+    border: 1.5px solid #e8eaf0; border-radius: 8px; padding: 7px 11px;
+    font-size: 13px; color: #374151; background: #fff; outline: none;
+    width: 100%; font-family: inherit; transition: border-color .15s;
+}
+.cb-edit-panel-body .form-control:focus, .cb-edit-panel-body .form-select:focus { border-color: #3b82f6; }
+.cb-edit-panel-body .cb-editable {
+    border: 1.5px solid #e8eaf0; border-radius: 8px; padding: 8px 12px;
+    font-size: 13px; color: #374151; outline: none; min-height: 60px;
+    transition: border-color .15s; line-height: 1.5;
+}
+.cb-edit-panel-body .cb-editable:focus { border-color: #3b82f6; }
+.cb-edit-panel-body .row-pair { display: flex; gap: 8px; }
+.cb-edit-panel-body .row-pair > * { flex: 1; min-width: 0; }
+.cb-edit-panel-close {
+    margin-left: auto; width: 28px; height: 28px; border-radius: 6px;
+    border: 1px solid #e8eaf0; background: transparent; color: #6b7280;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 14px;
+}
+.cb-edit-panel-close:hover { background: #f3f4f6; color: #111; }
+.cb-node.selected { border-color: #3b82f6 !important; box-shadow: 0 0 0 3px rgba(59,130,246,.15), 0 4px 16px rgba(0,0,0,.1) !important; }
+.cb-node { cursor: pointer; }
+.cb-node-preview { padding: 10px 18px; font-size: 13px; color: #6b7280; line-height: 1.5; }
+.cb-node-preview .branch-pills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.cb-node-preview .branch-pill { background: #eff6ff; color: #2563eb; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 500; }
+.cb-node-preview .preview-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #9ca3af; margin-top: 4px; }
+.cb-node.message  { background: radial-gradient(circle at left center, rgba(59,130,246,.06), transparent 60%), #fff; }
+.cb-node.input    { background: radial-gradient(circle at left center, rgba(139,92,246,.06), transparent 60%), #fff; }
+.cb-node.condition { background: radial-gradient(circle at left center, rgba(245,158,11,.06), transparent 60%), #fff; }
+.cb-node.action   { background: radial-gradient(circle at left center, rgba(16,185,129,.06), transparent 60%), #fff; }
+.cb-node.delay    { background: radial-gradient(circle at left center, rgba(236,72,153,.06), transparent 60%), #fff; }
+.cb-node.end      { background: radial-gradient(circle at left center, rgba(107,114,128,.06), transparent 60%), #fff; }
+.cb-node.cards    { background: radial-gradient(circle at left center, rgba(22,163,74,.06), transparent 60%), #fff; }
+
 /* ── Canvas ───────────────────────────────────────────────────────── */
 .cb-canvas {
     flex: 1; overflow: auto;
@@ -122,10 +173,7 @@
     width: 420px;
 }
 .cb-node:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
-.cb-node-bar {
-    position: absolute; left: 0; top: 0; bottom: 0;
-    width: 4px; border-radius: 12px 0 0 12px;
-}
+.cb-node-bar { display: none; }
 .cb-node.start    .cb-node-bar { background: #6366f1; }
 .cb-node.message  .cb-node-bar { background: #3b82f6; }
 .cb-node.input    .cb-node-bar { background: #8b5cf6; }
@@ -204,8 +252,7 @@
     z-index: 0;
 }
 .cb-path { fill: none; stroke: #d1d5db; stroke-width: 2; }
-.cb-path-animated { stroke-dasharray: 6 4; animation: cb-dash .8s linear infinite; }
-@keyframes cb-dash { to { stroke-dashoffset: -10; } }
+.cb-path-animated { /* sólido — sem animação */ }
 .cb-path-dot { fill: #d1d5db; }
 
 /* Legacy connector — hidden, replaced by SVG */
@@ -578,10 +625,23 @@
         </div>
 
         {{-- Canvas --}}
-        <div class="cb-canvas">
+        <div class="cb-canvas" onclick="if(event.target===this)closeEditPanel()">
             <div class="cb-flow" id="cbFlow">
                 <!-- Rendered by JS -->
             </div>
+        </div>
+
+        {{-- Edit Panel (drawer lateral) --}}
+        <div class="cb-edit-panel" id="cbEditPanel">
+            <div class="cb-edit-panel-header">
+                <div class="cb-node-icon" id="panelIcon"></div>
+                <div>
+                    <div class="cb-node-type" id="panelType"></div>
+                    <div style="font-size:14px;font-weight:600;color:#1a1d23;" id="panelName"></div>
+                </div>
+                <button class="cb-edit-panel-close" onclick="closeEditPanel()"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="cb-edit-panel-body" id="panelBody"></div>
         </div>
     </div>
 </div>
@@ -686,11 +746,10 @@
         let current = flowSteps;
         for (let i = 0; i < path.length; i++) {
             const key = path[i];
-            if (typeof key === 'number') {
-                current = current[key];
-            } else {
-                current = current[key];
+            if (current[key] === undefined || current[key] === null) {
+                current[key] = [];
             }
+            current = current[key];
         }
         return current;
     }
@@ -829,35 +888,30 @@
         });
     }
 
+    var _selectedPath = null;
+    var _selectedIndex = null;
+
     function renderStep(step, path, index, totalSteps) {
         const info = NODE_TYPES[step.type] || { icon: 'bi-circle', label: step.type, color: '' };
         const pathStr = JSON.stringify(path).replace(/"/g, '&quot;');
+        const isSelected = _selectedPath && JSON.stringify(_selectedPath) === JSON.stringify(path) && _selectedIndex === index;
         let html = '';
 
-        html += `<div class="cb-node ${step.type}" data-step-id="${step.id}">`;
+        html += `<div class="cb-node ${step.type}${isSelected ? ' selected' : ''}" data-step-id="${step.id}" onclick="openEditPanel(${pathStr}, ${index})">`;
         html += `<div class="cb-node-bar"></div>`;
 
-        // Head
+        // Head (compact — no move buttons, just icon+label+delete)
         html += `<div class="cb-node-head">`;
         html += `<div class="cb-node-icon"><i class="bi ${info.icon}"></i></div>`;
         html += `<div class="cb-node-label">`;
         html += `<div class="cb-node-type">${esc(info.label)}</div>`;
         html += `<div class="cb-node-name">${esc(getStepSummary(step))}</div>`;
         html += `</div>`;
-
-        // Move buttons
-        if (index > 0) {
-            html += `<button class="cb-node-move" onclick="event.stopPropagation();cbMoveStep(${pathStr}, ${index}, -1)" title="Mover para cima"><i class="bi bi-chevron-up"></i></button>`;
-        }
-        if (index < totalSteps - 1) {
-            html += `<button class="cb-node-move" onclick="event.stopPropagation();cbMoveStep(${pathStr}, ${index}, 1)" title="Mover para baixo"><i class="bi bi-chevron-down"></i></button>`;
-        }
-
         html += `<button class="cb-node-remove" onclick="event.stopPropagation();cbRemoveStep(${pathStr}, ${index})" title="Remover"><i class="bi bi-x-lg"></i></button>`;
         html += `</div>`;
 
-        // Body
-        html += renderStepBody(step, path, index);
+        // Preview (compact — full form is in the drawer)
+        html += getStepPreview(step);
 
         html += `</div>`;
         return html;
@@ -899,7 +953,117 @@
         }
     }
 
-    // ── Step Body (inline form) ──────────────────────────────────────
+    // ── Step Preview (compact card) ──────────────────────────────────
+    function getStepPreview(step) {
+        const c = step.config || {};
+        let html = '<div class="cb-node-preview">';
+        switch (step.type) {
+            case 'message':
+                if (c.image_url) html += '<div class="preview-badge"><i class="bi bi-image"></i> Imagem</div>';
+                if (c.text) html += '<div>' + esc(truncate(c.text, 80)) + '</div>';
+                break;
+            case 'input':
+                if (c.text) html += '<div>' + esc(truncate(c.text, 80)) + '</div>';
+                if (c.save_to) html += '<div class="preview-badge"><i class="bi bi-floppy"></i> ' + esc(c.save_to) + '</div>';
+                var branches = step.branches || c.branches || [];
+                if (branches.length) {
+                    html += '<div class="branch-pills">';
+                    branches.forEach(function(b) { html += '<span class="branch-pill">' + esc(b.label || 'Opção') + '</span>'; });
+                    html += '</div>';
+                }
+                break;
+            case 'condition':
+                if (c.variable) html += '<div class="preview-badge"><i class="bi bi-code-slash"></i> ' + esc(c.variable) + '</div>';
+                break;
+            case 'action':
+                html += '<div>' + esc(getActionLabel(c)) + '</div>';
+                break;
+            case 'delay':
+                html += '<div><i class="bi bi-hourglass-split" style="color:#ec4899;margin-right:4px;"></i>' + (c.seconds || 3) + ' segundos</div>';
+                break;
+            case 'end':
+                if (c.text) html += '<div>' + esc(truncate(c.text, 80)) + '</div>';
+                else html += '<div style="color:#9ca3af;">Finalizar conversa</div>';
+                break;
+            case 'cards':
+                html += '<div class="preview-badge"><i class="bi bi-card-heading"></i> ' + ((c.items || []).length) + ' card(s)</div>';
+                break;
+        }
+        html += '</div>';
+        return html;
+    }
+
+    // ── Edit Panel Functions ──────────────────────────────────────────
+    function getStepByPath(path, index) {
+        var list = flowSteps;
+        for (var i = 0; i < path.length; i++) { list = list[path[i]]; if (!list) return null; }
+        return list[index] || null;
+    }
+
+    window.openEditPanel = function(path, index) {
+        _selectedPath = path;
+        _selectedIndex = index;
+        var step = getStepByPath(path, index);
+        if (!step) return;
+        var info = NODE_TYPES[step.type] || { icon: 'bi-circle', label: step.type };
+        var panel = document.getElementById('cbEditPanel');
+        var panelBody = document.getElementById('panelBody');
+
+        document.getElementById('panelIcon').innerHTML = '<i class="bi ' + info.icon + '"></i>';
+        document.getElementById('panelType').textContent = info.label.toUpperCase();
+        document.getElementById('panelName').textContent = getStepSummary(step);
+
+        var pathStr = JSON.stringify(path).replace(/"/g, '&quot;');
+
+        // Move/delete buttons
+        var moveHtml = '<div style="display:flex;gap:6px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #f0f2f7;">';
+        moveHtml += '<button class="btn-cancel-sm" onclick="cbMoveStep(' + pathStr + ',' + index + ',-1);openEditPanel(' + pathStr + ',' + Math.max(0, index - 1) + ')"><i class="bi bi-chevron-up"></i> Cima</button>';
+        moveHtml += '<button class="btn-cancel-sm" onclick="cbMoveStep(' + pathStr + ',' + index + ',1);openEditPanel(' + pathStr + ',' + (index + 1) + ')"><i class="bi bi-chevron-down"></i> Baixo</button>';
+        moveHtml += '<button class="btn-cancel-sm" style="margin-left:auto;color:#ef4444;" onclick="cbRemoveStep(' + pathStr + ',' + index + ');closeEditPanel()"><i class="bi bi-trash3"></i></button>';
+        moveHtml += '</div>';
+
+        // Full form
+        var formHtml = renderStepBody(step, path, index);
+
+        // Buttons section for input/condition
+        var btnHtml = '';
+        if ((step.type === 'input' || step.type === 'condition') && step.branches) {
+            btnHtml += '<div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f2f7;">';
+            btnHtml += '<label style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px;">Botões</label>';
+            step.branches.forEach(function(b, bi) {
+                btnHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
+                btnHtml += '<div style="flex:1;background:#0085f3;color:#fff;padding:8px 14px;border-radius:8px;display:flex;align-items:center;justify-content:center;">';
+                btnHtml += '<input maxlength="24" value="' + esc(b.label || '') + '" onchange="cbUpdateBranch(' + pathStr + ',' + index + ',' + bi + ',\'label\',this.value)" style="background:transparent;border:none;color:#fff;text-align:center;width:100%;font-size:13px;font-weight:600;outline:none;font-family:inherit;" placeholder="Texto do botão">';
+                btnHtml += '</div>';
+                btnHtml += '<button onclick="cbRemoveBranch(' + pathStr + ',' + index + ',' + bi + ');openEditPanel(' + pathStr + ',' + index + ')" style="border:none;background:none;color:#d1d5db;cursor:pointer;font-size:14px;padding:4px;" title="Remover"><i class="bi bi-trash3"></i></button>';
+                btnHtml += '</div>';
+            });
+            btnHtml += '<button onclick="cbAddBranch(' + pathStr + ',' + index + ');openEditPanel(' + pathStr + ',' + index + ')" style="width:100%;padding:8px;border:1.5px dashed #d1d5db;border-radius:8px;background:transparent;color:#6b7280;font-size:12px;font-weight:600;cursor:pointer;margin-top:4px;" onmouseover="this.style.borderColor=\'#0085f3\';this.style.color=\'#0085f3\'" onmouseout="this.style.borderColor=\'#d1d5db\';this.style.color=\'#6b7280\'"><i class="bi bi-plus-lg" style="margin-right:4px;"></i> Adicionar botão</button>';
+            btnHtml += '</div>';
+        }
+
+        panelBody.innerHTML = moveHtml + formHtml + btnHtml;
+        panel.classList.add('open');
+
+        document.querySelectorAll('.cb-node.selected').forEach(function(n) { n.classList.remove('selected'); });
+        var nodeEl = document.querySelector('.cb-node[data-step-id="' + step.id + '"]');
+        if (nodeEl) nodeEl.classList.add('selected');
+
+        requestAnimationFrame(function() { bindEditables(); });
+    };
+
+    window.closeEditPanel = function() {
+        document.getElementById('cbEditPanel').classList.remove('open');
+        document.querySelectorAll('.cb-node.selected').forEach(function(n) { n.classList.remove('selected'); });
+        _selectedPath = null;
+        _selectedIndex = null;
+        _origRenderFlow();
+        postRenderBranches();
+        bindEditables();
+        requestAnimationFrame(drawConnections);
+    };
+
+    // ── Step Body (inline form — now used by drawer) ──────────────────
     function renderStepBody(step, path, index) {
         const pathStr = JSON.stringify(path).replace(/"/g, '&quot;');
         const c = step.config || {};
@@ -1311,8 +1475,7 @@
             // Config
             html += '<div class="cb-branch-config">';
             if (step.type === 'input') {
-                html += '<label>Keywords (vírgula)</label>';
-                html += '<input class="form-control" value="' + esc((b.keywords || []).join(', ')) + '" onchange="cbUpdateBranchKeywords(' + pathStr + ', ' + index + ', ' + bi + ', this.value)">';
+                // Keywords auto-sync com label — campo oculto
             } else if (step.type === 'condition') {
                 var varLabel = (step.config && step.config.variable) || 'variável';
                 var opLabel = {equals:'igual a',not_equals:'diferente de',contains:'contém',starts_with:'começa com',ends_with:'termina com',gt:'maior que',lt:'menor que'}[b.operator] || '...';
@@ -1484,8 +1647,15 @@
         }
 
         function bezierPath(x1, y1, x2, y2) {
-            var dy = Math.abs(y2 - y1) * 0.5;
-            return 'M' + x1 + ',' + y1 + ' C' + x1 + ',' + (y1 + dy) + ' ' + x2 + ',' + (y2 - dy) + ' ' + x2 + ',' + y2;
+            if (Math.abs(x1 - x2) < 2) return 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
+            var midY = y1 + (y2 - y1) * 0.5;
+            var r = Math.min(8, Math.abs(y2 - y1) * 0.25, Math.abs(x2 - x1) * 0.5);
+            var dir = x2 > x1 ? 1 : -1;
+            return 'M' + x1 + ',' + y1 + ' L' + x1 + ',' + (midY - r)
+                + ' Q' + x1 + ',' + midY + ' ' + (x1 + r * dir) + ',' + midY
+                + ' L' + (x2 - r * dir) + ',' + midY
+                + ' Q' + x2 + ',' + midY + ' ' + x2 + ',' + (midY + r)
+                + ' L' + x2 + ',' + y2;
         }
 
         function addPath(x1, y1, x2, y2, animated) {
@@ -1572,6 +1742,10 @@
         postRenderBranches();
         bindEditables();
         requestAnimationFrame(drawConnections);
+        // Reabrir drawer se estava aberto (ex: após mudar tipo de ação)
+        if (_selectedPath !== null && _selectedIndex !== null) {
+            requestAnimationFrame(function() { openEditPanel(_selectedPath, _selectedIndex); });
+        }
     };
 
     // Bind input listeners on contenteditable elements to sync data
@@ -1669,6 +1843,7 @@
     window.cbUpdateBranch = function(path, stepIndex, branchIndex, field, value) {
         const step = resolveParentSteps(path)[stepIndex];
         step.branches[branchIndex][field] = value;
+        if (field === 'label') step.branches[branchIndex].keywords = [value];
     };
 
     window.cbUpdateBranchKeywords = function(path, stepIndex, branchIndex, value) {
