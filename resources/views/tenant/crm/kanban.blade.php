@@ -374,6 +374,31 @@
         color: #6366f1;
         letter-spacing: .02em;
     }
+    .card-task-bar {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 6px;
+        margin-top: 6px;
+        clear: both;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px;
+    }
+    .card-task-bar .ctb-left {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .card-task-bar .ctb-right {
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
 
     /* Filter bar */
     .kanban-filter-bar {
@@ -785,6 +810,24 @@
                         {{ $lead->created_at?->diffForHumans(null, true, true) }}
                     </span>
                 </div>
+
+                @php
+                    $nearestTask = $lead->tasks()->where('status', 'pending')->orderBy('due_date')->orderBy('due_time')->first();
+                @endphp
+                @if($nearestTask)
+                @php
+                    $tkDays = (int) today()->diffInDays($nearestTask->due_date, false);
+                    $tkColor = $tkDays <= 1 ? '#ef4444' : ($tkDays <= 3 ? '#f59e0b' : '#10b981');
+                    $tkIcons = ['call'=>'telephone','email'=>'envelope','task'=>'check2-square','visit'=>'geo-alt','whatsapp'=>'whatsapp','meeting'=>'camera-video'];
+                    $tkIco = $tkIcons[$nearestTask->type] ?? 'check2-square';
+                    $tkRel = $tkDays < 0 ? abs($tkDays).'d atrás' : ($tkDays === 0 ? 'Hoje' : ($tkDays === 1 ? 'Amanhã' : $tkDays.'d'));
+                    $tkSubj = \Illuminate\Support\Str::limit($nearestTask->subject, 22);
+                @endphp
+                <div class="card-task-bar" style="background:{{ $tkColor }}20;color:{{ $tkColor }};border:1px solid {{ $tkColor }}40;">
+                    <span class="ctb-left"><i class="bi bi-{{ $tkIco }}"></i> {{ $tkSubj }}</span>
+                    <span class="ctb-right">{{ $tkRel }}</span>
+                </div>
+                @endif
 
             </div>
             @endforeach
@@ -1299,6 +1342,19 @@ function buildCard(lead) {
 
     const tagsBlock = hasTags ? `<div class="card-tags" style="margin-bottom:2px;">${tagsHtml}</div>` : '';
 
+    // Task bar
+    let taskBar = '';
+    if (lead.nearest_task) {
+        const d = lead.nearest_task.due_date;
+        const diff = Math.ceil((new Date(d) - new Date(new Date().toDateString())) / 86400000);
+        const cor = diff <= 1 ? '#ef4444' : diff <= 3 ? '#f59e0b' : '#10b981';
+        const taskIcons = {call:'telephone',email:'envelope',task:'check2-square',visit:'geo-alt',whatsapp:'whatsapp',meeting:'camera-video'};
+        const ico = taskIcons[lead.nearest_task.type] || 'check2-square';
+        const rel = diff < 0 ? Math.abs(diff) + 'd atrás' : diff === 0 ? 'Hoje' : diff === 1 ? 'Amanhã' : diff + 'd';
+        const subj = lead.nearest_task.subject.length > 22 ? lead.nearest_task.subject.substring(0, 22) + '…' : lead.nearest_task.subject;
+        taskBar = `<div class="card-task-bar" style="background:${cor}20;color:${cor};border:1px solid ${cor}40;"><span class="ctb-left"><i class="bi bi-${ico}"></i> ${escapeHtml(subj)}</span><span class="ctb-right">${rel}</span></div>`;
+    }
+
     return `
     <div class="lead-card" data-lead-id="${lead.id}" data-stage-id="${lead.stage_id}" data-lead-value="${lead.value || ''}">
         <div class="card-avatar">${avatarInner}</div>
@@ -1313,6 +1369,7 @@ function buildCard(lead) {
             </div>
             ${date}
         </div>
+        ${taskBar}
     </div>`;
 }
 

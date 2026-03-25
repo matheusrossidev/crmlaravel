@@ -214,10 +214,10 @@
     }
     .quick-action:hover .qa-icon { background: #dbeafe; }
 
-    /* ── Row 3: 2×2 grid ─────────────────────────────────────────────── */
+    /* ── Row 3: 3-col grid ────────────────────────────────────────────── */
     .bottom-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 16px;
     }
 
@@ -372,6 +372,24 @@
     @media (max-width: 768px) {
         .topbar-date { display: none; }
     }
+    @media (max-width: 1000px) {
+        .bottom-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+        .funnel-scroll-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .funnel-scroll-inner {
+            min-width: calc(140px * var(--stage-count, 6));
+        }
+    }
+    @media (max-width: 640px) {
+        .donut-flex { flex-direction: column; align-items: center; }
+        .donut-flex #donutSvgWrap { flex: unset; }
+        .donut-flex #donutList { width: 100%; }
+        .leads-metric-grid { grid-template-columns: 1fr !important; }
+    }
     @media (max-width: 480px) {
         .stats-grid {
             display: flex;
@@ -497,31 +515,35 @@
         </div>
         <div class="content-card-body" style="padding:0;">
             @if(count($stagesWithCount) > 0)
-            <div style="display:grid;grid-template-columns:repeat({{ count($stagesWithCount) }}, 1fr);width:100%;">
-                @foreach($stagesWithCount as $idx => $stage)
-                <div style="padding:16px 18px;{{ $idx > 0 ? 'border-left:1px solid #f0f2f7;' : '' }}">
-                    <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px;">
-                        <span style="width:8px;height:8px;border-radius:2px;background:{{ $stage['color'] ?? '#3B82F6' }};"></span>
-                        <span style="font-size:11px;font-weight:600;color:#6b7280;">{{ $stage['name'] }}</span>
+            <div class="funnel-scroll-container" style="--stage-count:{{ count($stagesWithCount) }};">
+                <div class="funnel-scroll-inner">
+                    <div style="display:grid;grid-template-columns:repeat({{ count($stagesWithCount) }}, 1fr);width:100%;">
+                        @foreach($stagesWithCount as $idx => $stage)
+                        <div style="padding:16px 18px;{{ $idx > 0 ? 'border-left:1px solid #f0f2f7;' : '' }}">
+                            <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px;">
+                                <span style="width:8px;height:8px;border-radius:2px;background:{{ $stage['color'] ?? '#3B82F6' }};"></span>
+                                <span style="font-size:11px;font-weight:600;color:#6b7280;white-space:nowrap;">{{ $stage['name'] }}</span>
+                            </div>
+                            <div style="font-size:18px;font-weight:800;color:#1a1d23;margin-bottom:10px;">R$ {{ number_format($stage['value'], 0, ',', '.') }}</div>
+                            <div style="font-size:11px;color:#6b7280;margin-bottom:4px;">
+                                <span>Quantidade</span><br>
+                                <span style="font-weight:700;color:#374151;">{{ $stage['count'] }} negócios</span>
+                            </div>
+                            <div style="height:24px;background:{{ $stage['color'] ?? '#3B82F6' }}15;border-radius:99px;display:flex;align-items:center;justify-content:center;margin-top:6px;">
+                                <span style="font-size:10px;font-weight:700;color:{{ $stage['color'] ?? '#3B82F6' }};">{{ collect($stagesWithCount)->sum('count') > 0 ? round($stage['count'] * 100 / collect($stagesWithCount)->sum('count')) : 0 }}%</span>
+                            </div>
+                        </div>
+                        @endforeach
                     </div>
-                    <div style="font-size:18px;font-weight:800;color:#1a1d23;margin-bottom:10px;">R$ {{ number_format($stage['value'], 0, ',', '.') }}</div>
-                    <div style="display:flex;justify-content:space-between;font-size:11px;color:#6b7280;margin-bottom:4px;">
-                        <span>Quantidade</span>
-                        <span style="font-weight:700;color:#374151;">{{ $stage['count'] }} negócios</span>
-                    </div>
-                    <div style="height:24px;background:{{ $stage['color'] ?? '#3B82F6' }}15;border-radius:99px;display:flex;align-items:center;justify-content:center;margin-top:6px;">
-                        <span style="font-size:10px;font-weight:700;color:{{ $stage['color'] ?? '#3B82F6' }};">{{ collect($stagesWithCount)->sum('count') > 0 ? round($stage['count'] * 100 / collect($stagesWithCount)->sum('count')) : 0 }}%</span>
+                    <div style="height:250px;overflow:hidden;border-radius:0 0 14px 14px;background:#f8fafc;position:relative;">
+                        <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat({{ count($stagesWithCount) }}, 1fr);pointer-events:none;z-index:1;">
+                            @foreach($stagesWithCount as $idx => $stage)
+                            <div style="{{ $idx > 0 ? 'border-left:1px solid rgba(0,0,0,.08);' : '' }}"></div>
+                            @endforeach
+                        </div>
+                        <canvas id="funnelCanvas" style="width:100%;height:250px;display:block;position:relative;z-index:0;"></canvas>
                     </div>
                 </div>
-                @endforeach
-            </div>
-            <div style="height:250px;overflow:hidden;border-radius:0 0 14px 14px;background:#f8fafc;position:relative;">
-                <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat({{ count($stagesWithCount) }}, 1fr);pointer-events:none;z-index:1;">
-                    @foreach($stagesWithCount as $idx => $stage)
-                    <div style="{{ $idx > 0 ? 'border-left:1px solid rgba(0,0,0,.08);' : '' }}"></div>
-                    @endforeach
-                </div>
-                <canvas id="funnelCanvas" style="width:100%;height:250px;display:block;position:relative;z-index:0;"></canvas>
             </div>
             <script>
             requestAnimationFrame(function(){
@@ -590,7 +612,7 @@
             </div>
             <div class="content-card-body">
                 {{-- Metric cards --}}
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+                <div class="leads-metric-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
                     <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;">
                         <div style="font-size:12px;color:#6b7280;">Total de leads</div>
                         <div id="metricTotal" style="font-size:20px;font-weight:500;color:#1a1d23;">{{ $leadsThisMonth }}</div>
@@ -658,7 +680,7 @@
     </div>
 
     {{-- ── Row 3: Origem + Perda + Vendas (3 colunas) ────────────────── --}}
-    <div class="bottom-grid" style="grid-template-columns:repeat(3, 1fr);">
+    <div class="bottom-grid">
 
         {{-- Card 1: Leads por Origem (SVG donut + lista) --}}
         <div class="content-card" style="padding:14px;">
@@ -666,7 +688,7 @@
                 <i class="bi bi-pie-chart" style="color:#0085f3;"></i> Leads por Origem
             </div>
             @if(count($leadsBySource) > 0)
-            <div style="display:flex;align-items:center;gap:14px;">
+            <div class="donut-flex" style="display:flex;align-items:center;gap:14px;">
                 <div id="donutSvgWrap" style="flex:4;display:flex;justify-content:center;"></div>
                 <div style="display:flex;flex-direction:column;gap:5px;flex:1;min-width:0;" id="donutList"></div>
             </div>

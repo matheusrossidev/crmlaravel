@@ -16,6 +16,7 @@
         'assign_chatbot_flow'   => 'Chatbot',
         'close_conversation'    => 'Fechar conversa',
         'send_whatsapp_message' => 'Enviar msg WA',
+        'create_task'           => 'Criar tarefa',
     ];
 @endphp
 

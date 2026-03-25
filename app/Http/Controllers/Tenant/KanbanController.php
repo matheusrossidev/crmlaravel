@@ -20,6 +20,7 @@ use App\Models\PipelineStage;
 use App\Models\User;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappMessage;
+use App\Models\Task;
 use App\Models\WhatsappTag;
 use App\Services\AutomationEngine;
 use Carbon\Carbon;
@@ -472,6 +473,21 @@ class KanbanController extends Controller
             $cfFlat[$name] = $data['value'] ?? null;
         }
 
+        $nearestTask = null;
+        $task = $lead->tasks()
+            ->where('status', 'pending')
+            ->orderBy('due_date')
+            ->orderBy('due_time')
+            ->first(['subject', 'type', 'due_date']);
+
+        if ($task) {
+            $nearestTask = [
+                'subject'  => $task->subject,
+                'type'     => $task->type,
+                'due_date' => $task->due_date->toDateString(),
+            ];
+        }
+
         return [
             'id'               => $lead->id,
             'name'             => $lead->name,
@@ -492,6 +508,7 @@ class KanbanController extends Controller
             'unread_count'         => $lead->whatsappConversation?->unread_count ?? 0,
             'contact_picture_url'  => $lead->whatsappConversation?->contact_picture_url,
             'created_at'           => $lead->created_at?->diffForHumans(null, true, true),
+            'nearest_task'         => $nearestTask,
         ];
     }
 }

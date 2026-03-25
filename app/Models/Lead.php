@@ -97,6 +97,11 @@ class Lead extends Model
         return $this->hasMany(LeadProduct::class);
     }
 
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class)->orderBy('due_date');
+    }
+
     public function getCustomFieldsAttribute(): array
     {
         return $this->customFieldValues

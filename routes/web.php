@@ -40,6 +40,7 @@ use App\Http\Controllers\Tenant\AgencyAccessController;
 use App\Http\Controllers\Tenant\BillingController;
 use App\Http\Controllers\Tenant\TokenIncrementController;
 use App\Http\Controllers\Tenant\CalendarController;
+use App\Http\Controllers\Tenant\TaskController;
 use App\Http\Controllers\Tenant\OnboardingController;
 use App\Http\Controllers\Tenant\MasterNotificationReadController;
 use App\Http\Controllers\Tenant\ScheduledMessageController;
@@ -128,6 +129,19 @@ Route::middleware(['auth', 'tenant'])->group(function () {
             Route::delete('/eventos/{id}', [CalendarController::class, 'destroy'])->name('destroy');
             Route::post('/preferencias',   [CalendarController::class, 'savePreferences'])->name('preferences');
         });
+    });
+
+    // ── Tarefas ─────────────────────────────────────────────────────────
+    Route::get('/tarefas',               [TaskController::class, 'index'])->name('tasks.index');
+    Route::get('/tarefas/data',          [TaskController::class, 'data'])->name('tasks.data');
+    Route::get('/tarefas/buscar-leads',  [TaskController::class, 'searchLeads'])->name('tasks.search-leads');
+    Route::get('/contatos/{lead}/tarefas', [TaskController::class, 'forLead'])->name('leads.tasks.index');
+
+    Route::middleware('role:admin,manager')->group(function () {
+        Route::post('/tarefas',              [TaskController::class, 'store'])->name('tasks.store');
+        Route::put('/tarefas/{task}',        [TaskController::class, 'update'])->name('tasks.update');
+        Route::patch('/tarefas/{task}/toggle', [TaskController::class, 'toggleStatus'])->name('tasks.toggle');
+        Route::delete('/tarefas/{task}',     [TaskController::class, 'destroy'])->name('tasks.destroy');
     });
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');

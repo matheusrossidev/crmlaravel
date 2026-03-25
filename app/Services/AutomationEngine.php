@@ -14,6 +14,7 @@ use App\Models\Lead;
 use App\Models\LeadNote;
 use App\Models\PipelineStage;
 use App\Models\ScheduledMessage;
+use App\Models\Task;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappInstance;
 use Illuminate\Support\Facades\Log;
@@ -205,6 +206,7 @@ class AutomationEngine
             'assign_campaign'               => $this->actionAssignCampaign($config, $ctx),
             'set_utm_params'                => $this->actionSetUtmParams($config, $ctx),
             'transfer_to_department'        => $this->actionTransferToDepartment($config, $ctx),
+            'create_task'                   => $this->actionCreateTask($config, $ctx),
             default               => null,
         };
     }
@@ -584,6 +586,35 @@ class AutomationEngine
             return Lead::withoutGlobalScope('tenant')->find($conv->lead_id);
         }
         return null;
+    }
+
+    private function actionCreateTask(array $config, array $ctx): void
+    {
+        $lead = $this->resolveLead($ctx);
+        if (! $lead || empty($config['subject'])) {
+            return;
+        }
+
+        $subject     = $this->interpolate($config['subject'], $ctx);
+        $description = ! empty($config['description']) ? $this->interpolate($config['description'], $ctx) : null;
+        $dueDate     = now()->addDays((int) ($config['due_date_offset'] ?? 1))->format('Y-m-d');
+        $assignedTo  = ! empty($config['assigned_to']) ? (int) $config['assigned_to'] : $lead->assigned_to;
+
+        $conv = $ctx['conversation'] ?? null;
+
+        Task::create([
+            'tenant_id'                 => $lead->tenant_id,
+            'subject'                   => $subject,
+            'description'               => $description,
+            'type'                      => $config['task_type'] ?? 'task',
+            'priority'                  => $config['priority'] ?? 'medium',
+            'due_date'                  => $dueDate,
+            'due_time'                  => $config['due_time'] ?? null,
+            'lead_id'                   => $lead->id,
+            'whatsapp_conversation_id'  => $conv instanceof WhatsappConversation ? $conv->id : null,
+            'instagram_conversation_id' => $conv instanceof InstagramConversation ? $conv->id : null,
+            'assigned_to'               => $assignedTo,
+        ]);
     }
 
     /**

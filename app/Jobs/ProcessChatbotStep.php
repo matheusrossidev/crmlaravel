@@ -10,6 +10,7 @@ use App\Models\CustomFieldDefinition;
 use App\Models\CustomFieldValue;
 use App\Models\InstagramConversation;
 use App\Models\Lead;
+use App\Models\Task;
 use App\Models\Tenant;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappMessage;
@@ -414,6 +415,41 @@ class ProcessChatbotStep
                         }
                     }
                 }
+                break;
+
+            case 'create_task':
+                $subject = ChatbotVariableService::interpolate((string) ($config['subject'] ?? ''), $vars);
+                if (empty($subject)) break;
+
+                $dueDate = now()->addDays((int) ($config['due_date_offset'] ?? 0))->format('Y-m-d');
+
+                $assignedTo = null;
+                if (($config['assigned_to_mode'] ?? 'automatic') === 'user') {
+                    $assignedTo = ((int) ($config['assigned_to_user_id'] ?? 0)) ?: null;
+                } else {
+                    $assignedTo = $conv->lead?->assigned_to;
+                }
+
+                $taskData = [
+                    'tenant_id'  => $conv->tenant_id,
+                    'subject'    => $subject,
+                    'description' => ChatbotVariableService::interpolate((string) ($config['description'] ?? ''), $vars),
+                    'type'       => $config['task_type'] ?? 'task',
+                    'priority'   => $config['priority'] ?? 'medium',
+                    'due_date'   => $dueDate,
+                    'due_time'   => $config['due_time'] ?? null,
+                    'lead_id'    => $conv->lead_id,
+                    'assigned_to' => $assignedTo,
+                ];
+
+                if ($conv instanceof WhatsappConversation) {
+                    $taskData['whatsapp_conversation_id'] = $conv->id;
+                } elseif ($conv instanceof InstagramConversation) {
+                    $taskData['instagram_conversation_id'] = $conv->id;
+                }
+
+                Task::create($taskData);
+                Log::channel($this->logChannel())->info('Chatbot: tarefa criada', ['conv' => $conv->id, 'subject' => $subject]);
                 break;
         }
 

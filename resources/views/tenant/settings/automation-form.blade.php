@@ -422,6 +422,9 @@
                 <div class="af-block-item action" onclick="addActionBlock('set_utm_params')">
                     <span class="af-block-icon"><i class="bi bi-link-45deg"></i></span>Definir parâmetros UTM
                 </div>
+                <div class="af-block-item action" onclick="addActionBlock('create_task')">
+                    <span class="af-block-icon"><i class="bi bi-check2-square"></i></span>Criar tarefa
+                </div>
             </div>
         </div>
 
@@ -783,6 +786,7 @@ const ACTION_META = {
     schedule_whatsapp_message: { icon:'bi-clock',       label:'Agendar msg WhatsApp' },
     assign_campaign:           { icon:'bi-megaphone',   label:'Atribuir campanha' },
     set_utm_params:            { icon:'bi-link-45deg',  label:'Definir parâmetros UTM' },
+    create_task:               { icon:'bi-check2-square', label:'Criar tarefa' },
 };
 
 function addActionBlock(type, prefill) {
@@ -920,6 +924,43 @@ function buildActionBody(type, idx, prefill) {
                     </select>
                 </div>
             </div>`;
+    }
+    if (type === 'create_task') {
+        const ttypes = [['call','Ligar'],['email','Email'],['task','Tarefa'],['visit','Visita'],['whatsapp','WhatsApp'],['meeting','Reunião']];
+        const prios  = [['low','Baixa'],['medium','Média'],['high','Alta']];
+        return `<label>Assunto <small style="font-weight:400;color:#9ca3af;">(${MSG_VARS_HINT})</small></label>
+            <input type="text" class="form-control" id="aval-${idx}" placeholder="Ligar para {{contact_name}}" value="${h(prefill.subject||'')}">
+            <label style="margin-top:6px;">Descrição</label>
+            <textarea class="form-control" id="ataskdesc-${idx}" rows="2" placeholder="Detalhes da tarefa...">${h(prefill.description||'')}</textarea>
+            <div style="display:flex;gap:8px;margin-top:6px;">
+                <div style="flex:1;">
+                    <label>Tipo</label>
+                    <select class="form-control" id="atasktype-${idx}">
+                        ${ttypes.map(t => `<option value="${t[0]}" ${(prefill.task_type||'task')===t[0]?'selected':''}>${t[1]}</option>`).join('')}
+                    </select>
+                </div>
+                <div style="flex:1;">
+                    <label>Prioridade</label>
+                    <select class="form-control" id="ataskprio-${idx}">
+                        ${prios.map(p => `<option value="${p[0]}" ${(prefill.priority||'medium')===p[0]?'selected':''}>${p[1]}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:6px;">
+                <div style="flex:1;">
+                    <label>Prazo (dias)</label>
+                    <input type="number" class="form-control" id="ataskdays-${idx}" min="0" max="365" value="${prefill.due_date_offset??1}">
+                </div>
+                <div style="flex:1;">
+                    <label>Horário</label>
+                    <input type="time" class="form-control" id="atasktime-${idx}" value="${h(prefill.due_time||'09:00')}">
+                </div>
+            </div>
+            <label style="margin-top:6px;">Atribuir a</label>
+            <select class="form-control" id="ataskuser-${idx}">
+                <option value="">Automático (responsável do lead)</option>
+                ${USERS.map(u => `<option value="${u.id}" ${prefill.assigned_to==u.id?'selected':''}>${h(u.name)}</option>`).join('')}
+            </select>`;
     }
     return '';
 }
@@ -1128,6 +1169,15 @@ function saveAutomation() {
                 if (val) config[name] = val;
             });
             if (!Object.keys(config).length) { toastr.warning('Preencha ao menos um campo UTM.'); err = true; return; }
+        } else if (type === 'create_task') {
+            config.subject = (document.getElementById(`aval-${idx}`)?.value || '').trim();
+            if (!config.subject) { toastr.warning('Informe o assunto da tarefa.'); err = true; return; }
+            config.description     = (document.getElementById(`ataskdesc-${idx}`)?.value || '').trim();
+            config.task_type       = document.getElementById(`atasktype-${idx}`)?.value || 'task';
+            config.priority        = document.getElementById(`ataskprio-${idx}`)?.value || 'medium';
+            config.due_date_offset = parseInt(document.getElementById(`ataskdays-${idx}`)?.value || '1');
+            config.due_time        = document.getElementById(`atasktime-${idx}`)?.value || '09:00';
+            config.assigned_to     = document.getElementById(`ataskuser-${idx}`)?.value || '';
         }
         actions.push({ type, config });
     });

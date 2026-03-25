@@ -21,6 +21,7 @@ use App\Models\Pipeline;
 use App\Models\PipelineStage;
 use App\Models\User;
 use App\Models\ScheduledMessage;
+use App\Models\Task;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappMessage;
 use App\Models\WhatsappQuickMessage;
@@ -269,9 +270,12 @@ class LeadController extends Controller
             ->get();
         $quickMessages     = WhatsappQuickMessage::orderBy('sort_order')->get(['id', 'title', 'body']);
 
+        $tasks = $lead->tasks()->with('assignedTo:id,name')->get();
+        $pendingTasksCount = $tasks->where('status', 'pending')->count();
+
         return view('tenant.leads.show', compact(
             'lead', 'waConversation', 'igConversation', 'pipelines', 'cfDefs', 'users',
-            'scheduledMessages', 'quickMessages'
+            'scheduledMessages', 'quickMessages', 'tasks', 'pendingTasksCount'
         ));
     }
 

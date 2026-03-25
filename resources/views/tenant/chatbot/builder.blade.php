@@ -948,6 +948,7 @@
             case 'send_webhook':       return 'Webhook: ' + (c.url || '');
             case 'set_custom_field':   return 'Campo: ' + (c.field_label || c.field_name || '');
             case 'send_whatsapp':      return 'WhatsApp: ' + truncate(c.message || '', 30);
+            case 'create_task':        return 'Tarefa: ' + truncate(c.subject || '', 30);
             case 'redirect':           return 'Redirect: ' + truncate(c.url || '', 30);
             default:                   return c.type || 'Ação';
         }
@@ -1307,6 +1308,7 @@
             ['send_webhook', 'Enviar webhook'],
             ['set_custom_field', 'Preencher campo personalizado'],
             ['send_whatsapp', 'Enviar WhatsApp'],
+            ['create_task', 'Criar tarefa'],
             ['redirect', 'Redirecionar (URL)'],
         ];
         actionTypes.forEach(function(at) {
@@ -1421,6 +1423,43 @@
                 html += '<div class="cb-editable" contenteditable="true" id="wa-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="message" data-placeholder="Olá @{{nome}}, obrigado pelo contato!">' + textToHtml(c.message || '') + '</div>';
                 html += renderVarHint('wa-' + step.id);
                 html += '<p style="font-size:11px;color:#9ca3af;margin-top:6px;"><i class="bi bi-info-circle"></i> Enviada pela instância WhatsApp conectada.</p>';
+                break;
+            case 'create_task':
+                html += '<label style="margin-top:8px;">Assunto da tarefa</label>';
+                html += '<input class="form-control" value="' + esc(c.subject || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'subject\', this.value)" placeholder="Ligar para @{{nome}}">';
+                html += '<label style="margin-top:8px;">Descrição</label>';
+                html += '<textarea class="form-control" rows="2" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'description\', this.value)" placeholder="Detalhes da tarefa...">' + esc(c.description || '') + '</textarea>';
+                html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+                html += '<div><label style="margin-top:8px;">Tipo</label>';
+                html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'task_type\', this.value)">';
+                var _ttypes = [['call','Ligar'],['email','Email'],['task','Tarefa'],['visit','Visita'],['whatsapp','WhatsApp'],['meeting','Reunião']];
+                _ttypes.forEach(function(tt){ html += '<option value="'+tt[0]+'" '+((c.task_type||'task')===tt[0]?'selected':'')+'>'+tt[1]+'</option>'; });
+                html += '</select></div>';
+                html += '<div><label style="margin-top:8px;">Prioridade</label>';
+                html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'priority\', this.value)">';
+                [['low','Baixa'],['medium','Média'],['high','Alta']].forEach(function(p){ html += '<option value="'+p[0]+'" '+((c.priority||'medium')===p[0]?'selected':'')+'>'+p[1]+'</option>'; });
+                html += '</select></div></div>';
+                html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+                html += '<div><label style="margin-top:8px;">Prazo (dias)</label>';
+                html += '<input type="number" class="form-control" min="0" max="365" value="' + (c.due_date_offset || 0) + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'due_date_offset\', parseInt(this.value))"></div>';
+                html += '<div><label style="margin-top:8px;">Horário</label>';
+                html += '<input type="time" class="form-control" value="' + esc(c.due_time || '09:00') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'due_time\', this.value)"></div>';
+                html += '</div>';
+                html += '<label style="margin-top:8px;">Atribuir a</label>';
+                html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'assigned_to_mode\', this.value); renderFlow();">';
+                html += '<option value="automatic" ' + ((c.assigned_to_mode || 'automatic') === 'automatic' ? 'selected' : '') + '>Automático (responsável do lead)</option>';
+                html += '<option value="user" ' + (c.assigned_to_mode === 'user' ? 'selected' : '') + '>Usuário específico</option>';
+                html += '</select>';
+                if (c.assigned_to_mode === 'user') {
+                    html += '<label style="margin-top:8px;">Usuário</label>';
+                    html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'assigned_to_user_id\', parseInt(this.value))">';
+                    html += '<option value="">Selecione...</option>';
+                    (window.chatbotBuilderData.users || []).forEach(function(u) {
+                        html += '<option value="' + u.id + '" ' + (c.assigned_to_user_id == u.id ? 'selected' : '') + '>' + esc(u.name) + '</option>';
+                    });
+                    html += '</select>';
+                }
+                html += '<p style="font-size:11px;color:#9ca3af;margin-top:6px;"><i class="bi bi-info-circle"></i> Cria uma tarefa vinculada ao lead da conversa.</p>';
                 break;
             case 'redirect':
                 html += '<label style="margin-top:8px;">URL de destino</label>';

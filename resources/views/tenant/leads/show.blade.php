@@ -778,6 +778,12 @@ $pageIcon = 'person-badge';
                 <span style="background:#fff7ed;color:#f59e0b;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">{{ $scheduledMessages->where('status', 'pending')->count() }}</span>
                 @endif
             </button>
+            <button class="lp-tab-btn" data-tab="tasks">
+                <i class="bi bi-check2-square"></i> Tarefas
+                @if(isset($pendingTasksCount) && $pendingTasksCount > 0)
+                <span style="background:#fef2f2;color:#ef4444;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">{{ $pendingTasksCount }}</span>
+                @endif
+            </button>
         </div>
 
         {{-- ── Tab: Notas ── --}}
@@ -1101,6 +1107,61 @@ $pageIcon = 'person-badge';
                 <div id="scheduledEmpty" style="text-align:center;padding:40px 20px;color:#9ca3af;">
                     <i class="bi bi-clock" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
                     Nenhuma mensagem agendada.
+                </div>
+                @endforelse
+            </div>
+        </div>
+
+        {{-- ── Tab: Tarefas ── --}}
+        <div class="lp-tab-panel" id="tab-tasks">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <span style="font-size:13px;color:#6b7280;">
+                    @if(isset($tasks))
+                        @if($tasks->count() === 0) Nenhuma tarefa
+                        @elseif($tasks->count() === 1) 1 tarefa
+                        @else {{ $tasks->count() }} tarefas
+                        @endif
+                    @else Nenhuma tarefa
+                    @endif
+                </span>
+                <button onclick="openLeadTaskDrawer()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#eff6ff;color:#3b82f6;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">
+                    <i class="bi bi-plus-lg"></i> Nova Tarefa
+                </button>
+            </div>
+            <div id="leadTaskList" style="display:flex;flex-direction:column;gap:8px;">
+                @php
+                    $taskTypeIcons = ['call'=>'bi-telephone','email'=>'bi-envelope','task'=>'bi-check2-square','visit'=>'bi-geo-alt','whatsapp'=>'bi-whatsapp','meeting'=>'bi-camera-video'];
+                    $taskTypeLabels = ['call'=>'Ligar','email'=>'Email','task'=>'Tarefa','visit'=>'Visita','whatsapp'=>'WhatsApp','meeting'=>'Reunião'];
+                @endphp
+                @forelse(($tasks ?? collect()) as $tk)
+                @php
+                    $tkDays = $tk->due_date ? (int) today()->diffInDays($tk->due_date, false) : 999;
+                    $tkColor = $tk->status === 'completed' ? '#10b981' : ($tkDays <= 1 ? '#ef4444' : ($tkDays <= 3 ? '#f59e0b' : '#10b981'));
+                    $tkIcon = $taskTypeIcons[$tk->type] ?? 'bi-check2-square';
+                    $tkDone = $tk->status === 'completed';
+                @endphp
+                <div class="lp-task-card" id="lead-task-{{ $tk->id }}" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #e8eaf0;border-radius:10px;{{ $tkDone ? 'opacity:.5;' : '' }}">
+                    <div onclick="toggleLeadTask({{ $tk->id }})" style="width:18px;height:18px;border-radius:50%;border:2px solid {{ $tkDone ? '#10b981' : '#d1d5db' }};{{ $tkDone ? 'background:#10b981;' : '' }}cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        @if($tkDone)<span style="color:#fff;font-size:10px;font-weight:700;">&#10003;</span>@endif
+                    </div>
+                    <div style="width:28px;height:28px;border-radius:7px;background:{{ $tkColor }}15;color:{{ $tkColor }};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">
+                        <i class="bi {{ $tkIcon }}"></i>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:13px;font-weight:600;color:#1a1d23;{{ $tkDone ? 'text-decoration:line-through;' : '' }}">{{ $tk->subject }}</div>
+                        <div style="font-size:11px;color:#9ca3af;margin-top:1px;">
+                            {{ $taskTypeLabels[$tk->type] ?? $tk->type }}
+                            @if($tk->assignedTo) &middot; {{ $tk->assignedTo->name }} @endif
+                        </div>
+                    </div>
+                    <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:{{ $tkColor }}20;color:{{ $tkColor }};white-space:nowrap;">
+                        {{ $tk->due_time ? substr($tk->due_time, 0, 5) . ' ' : '' }}{{ $tk->due_date?->format('d/m/Y') }}
+                    </span>
+                </div>
+                @empty
+                <div style="text-align:center;padding:40px 20px;color:#9ca3af;">
+                    <i class="bi bi-check2-square" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
+                    Nenhuma tarefa vinculada.
                 </div>
                 @endforelse
             </div>
@@ -1710,6 +1771,20 @@ function buildAttachHtml(a) {
             <button class="lp-attach-btn lp-attach-del" onclick="deleteAttachment(${a.id})" title="Excluir"><i class="bi bi-trash3"></i></button>
         </div>
     </div>`;
+}
+
+// ── Tarefas do Lead ──────────────────────────────────────────────────
+function toggleLeadTask(id) {
+    $.ajax({ url: '/crm/public/tarefas/' + id + '/toggle', method: 'PATCH', headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'), 'Accept': 'application/json' } })
+        .done(function() { location.reload(); });
+}
+
+function openLeadTaskModal() {
+    window.location.href = @json(route('tasks.index')) + '?open_modal=1&lead_id={{ $lead->id }}&lead_name=' + encodeURIComponent(@json($lead->name));
+}
+
+function openLeadTaskDrawer() {
+    window.location.href = @json(route('tasks.index')) + '?open_modal=1&lead_id={{ $lead->id }}&lead_name=' + encodeURIComponent(@json($lead->name));
 }
 </script>
 @endpush

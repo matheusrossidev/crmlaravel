@@ -1004,7 +1004,7 @@
         </a>
 
         @php
-            $crmActive = request()->routeIs('crm*', 'leads*', 'calendar.*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.lost-reasons*', 'settings.tags*');
+            $crmActive = request()->routeIs('crm*', 'leads*', 'calendar.*', 'tasks*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.lost-reasons*', 'settings.tags*');
             $autoActive = request()->routeIs('chatbot.flows.*', 'ai.agents.*', 'ai.intent-signals.*', 'settings.automations*', 'settings.ig-automations.*');
             $reportActive = request()->routeIs('reports*', 'campaigns*');
         @endphp
@@ -1028,6 +1028,10 @@
                 <a href="{{ route('calendar.index') }}" class="nav-subitem {{ request()->routeIs('calendar.*') ? 'active' : '' }}" title="Agenda">
                     <i class="bi bi-calendar3 nav-icon" style="font-size:12px;"></i>
                     <span class="nav-label">Agenda</span>
+                </a>
+                <a href="{{ route('tasks.index') }}" class="nav-subitem {{ request()->routeIs('tasks*') ? 'active' : '' }}" title="Tarefas">
+                    <i class="bi bi-check2-square nav-icon" style="font-size:12px;"></i>
+                    <span class="nav-label">Tarefas</span>
                 </a>
                 <a href="{{ route('settings.pipelines') }}" class="nav-subitem {{ request()->routeIs('settings.pipelines*') ? 'active' : '' }}" title="Pipelines">
                     <i class="bi bi-funnel nav-icon" style="font-size:12px;"></i>
