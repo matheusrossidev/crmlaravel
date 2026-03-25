@@ -17,15 +17,16 @@
 <style>
     .flows-grid {
         display: grid;
-        grid-template-columns: 1fr;
-        gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 16px;
     }
 
+    .flow-dropdown.show { display: block !important; }
     .flow-card {
         background: #fff;
         border-radius: 14px;
         border: 1px solid #e8eaf0;
-        overflow: hidden;
+        overflow: visible;
         transition: box-shadow .15s;
     }
     .flow-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.07); }
@@ -289,6 +290,13 @@
 @push('scripts')
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+
+// ── Fechar dropdowns ao clicar fora ──────────────────────────────────────────
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.flow-dropdown') && !e.target.closest('[onclick*="classList.toggle"]')) {
+        document.querySelectorAll('.flow-dropdown.show').forEach(function(d) { d.classList.remove('show'); });
+    }
+});
 
 // ── Estado do test chat ───────────────────────────────────────────────────────
 let tcmUrl   = '';
@@ -590,100 +598,90 @@ function closeWidgetTest() {
     @else
         <div class="flows-grid">
             @foreach($flows as $flow)
-            <div class="flow-card">
-                <div class="flow-card-body">
+            @php
+                $nodesCount = $flow->steps_node_count;
+                $leadsCount = $flow->conversations_count + $flow->website_conversations_count;
+                $channelIcon = $flow->channel === 'website' ? 'globe2' : ($flow->channel === 'instagram' ? 'instagram' : 'whatsapp');
+                $channelLabel = $flow->channel === 'website' ? 'Web' : ($flow->channel === 'instagram' ? 'IG' : 'WA');
+            @endphp
+            <div class="flow-card" style="padding:18px 22px;display:flex;flex-direction:column;gap:14px;">
+                {{-- Header: name + toggle + menu --}}
+                <div style="display:flex;align-items:flex-start;gap:10px;">
+                    <a href="{{ route('chatbot.flows.edit', $flow) }}" style="flex:1;min-width:0;text-decoration:none;color:inherit;">
+                        <div class="flow-name" style="font-size:15px;margin-bottom:2px;">{{ $flow->name }}</div>
+                        <div style="font-size:11.5px;color:#9ca3af;">Última edição: {{ $flow->updated_at?->diffForHumans() }}</div>
+                    </a>
 
-                    {{-- Top: icon + name --}}
-                    <div class="flow-card-top">
-                        <div class="flow-icon"><i class="bi bi-diagram-3"></i></div>
-                        <div style="flex:1;min-width:0;">
-                            <div class="flow-name">{{ $flow->name }}</div>
-                            @if($flow->trigger_keywords)
-                                <div class="flow-subtitle">{{ implode(', ', array_slice($flow->trigger_keywords, 0, 3)) }}{{ count($flow->trigger_keywords) > 3 ? '…' : '' }}</div>
+                    {{-- Toggle --}}
+                    <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;cursor:pointer;" title="{{ $flow->is_active ? 'Desativar' : 'Ativar' }}">
+                        <input type="checkbox" {{ $flow->is_active ? 'checked' : '' }}
+                               onchange="toggleFlowActive({{ $flow->id }}, {{ $flow->is_active ? 'true' : 'false' }}, this)"
+                               style="opacity:0;width:0;height:0;">
+                        <span style="position:absolute;inset:0;border-radius:99px;transition:all .2s;{{ $flow->is_active ? 'background:#10b981;' : 'background:#d1d5db;' }}"></span>
+                        <span style="position:absolute;top:2px;{{ $flow->is_active ? 'left:20px;' : 'left:2px;' }}width:18px;height:18px;border-radius:50%;background:#fff;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);"></span>
+                    </label>
+
+                    {{-- Menu 3 pontinhos --}}
+                    <div style="position:relative;">
+                        <button onclick="this.nextElementSibling.classList.toggle('show')" style="width:32px;height:32px;border-radius:8px;border:1px solid #e8eaf0;background:#fff;color:#6b7280;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <div class="flow-dropdown" style="display:none;position:absolute;right:0;top:36px;background:#fff;border:1px solid #e8eaf0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:180px;z-index:10;padding:6px 0;">
+                            <a href="{{ route('chatbot.flows.edit', $flow) }}" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#374151;text-decoration:none;transition:background .1s;font-weight:500;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
+                                <i class="bi bi-pencil" style="font-size:12px;color:#6b7280;"></i> Editar
+                            </a>
+                            <a href="{{ route('chatbot.flows.results', $flow) }}" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#374151;text-decoration:none;transition:background .1s;font-weight:500;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
+                                <i class="bi bi-bar-chart-line" style="font-size:12px;color:#6b7280;"></i> Resultados
+                            </a>
+                            @if($flow->website_token)
+                            <button onclick="openWidgetTest('{{ $flow->website_token }}');this.closest('.flow-dropdown').classList.remove('show')" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#374151;background:none;border:none;width:100%;text-align:left;cursor:pointer;font-weight:500;font-family:inherit;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
+                                <i class="bi bi-play-circle" style="font-size:12px;color:#6b7280;"></i> Testar
+                            </button>
+                            @if($flow->slug)
+                            <button onclick="copyFlowLink('{{ config('app.url') }}/chat/{{ auth()->user()->tenant->slug }}/{{ $flow->slug }}');this.closest('.flow-dropdown').classList.remove('show')" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#374151;background:none;border:none;width:100%;text-align:left;cursor:pointer;font-weight:500;font-family:inherit;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
+                                <i class="bi bi-link-45deg" style="font-size:12px;color:#6b7280;"></i> Link
+                            </button>
                             @endif
+                            <button onclick="openEmbedModal('{{ config('app.url') }}/api/widget/{{ $flow->website_token }}.js', '{{ $flow->widget_type ?? 'bubble' }}', '{{ $flow->slug ? config('app.url') . '/chat/' . auth()->user()->tenant->slug . '/' . $flow->slug : '' }}');this.closest('.flow-dropdown').classList.remove('show')" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#374151;background:none;border:none;width:100%;text-align:left;cursor:pointer;font-weight:500;font-family:inherit;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
+                                <i class="bi bi-code-slash" style="font-size:12px;color:#6b7280;"></i> Embed
+                            </button>
+                            @endif
+                            <div style="height:1px;background:#f0f2f7;margin:4px 0;"></div>
+                            <form method="POST" action="{{ route('chatbot.flows.destroy', $flow) }}">
+                                @csrf @method('DELETE')
+                                <button type="button" onclick="openFlowDeleteModal(this.closest('form'), '{{ addslashes($flow->name) }}')" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#ef4444;background:none;border:none;width:100%;text-align:left;cursor:pointer;font-weight:500;font-family:inherit;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background=''">
+                                    <i class="bi bi-trash3" style="font-size:12px;"></i> Excluir
+                                </button>
+                            </form>
                         </div>
                     </div>
+                </div>
 
-                    {{-- Badges --}}
-                    <div class="flow-badges">
-                        <span class="badge {{ $flow->is_active ? 'badge-active' : 'badge-inactive' }}">
-                            <i class="bi bi-circle-fill" style="font-size:7px;"></i>
-                            {{ $flow->is_active ? 'Ativo' : 'Inativo' }}
-                        </span>
-                        @if($flow->website_token)
-                        <span class="badge" style="background:#eff6ff;color:#2563eb;">
-                            <i class="bi bi-globe2"></i> Website
-                        </span>
-                        @endif
-                        @if($flow->trigger_keywords)
-                        <span class="badge" style="background:#eff6ff;color:#2563eb;">
-                            <i class="bi bi-lightning-fill"></i> Auto-trigger
-                        </span>
-                        @endif
-                    </div>
-
-                    {{-- Meta row --}}
-                    @php
-                        $nodesCount = $flow->steps_node_count;
-                        $leadsCount = $flow->conversations_count + $flow->website_conversations_count;
-                    @endphp
-                    <div class="flow-meta-row">
-                        <span><i class="bi bi-diagram-3"></i> {{ $nodesCount }} {{ $nodesCount === 1 ? 'nó' : 'nós' }}</span>
-                        <span><i class="bi bi-person-lines-fill"></i> {{ $leadsCount }} {{ $leadsCount === 1 ? 'lead atendido' : 'leads atendidos' }}</span>
-                    </div>
-
-                    {{-- Description --}}
-                    @if($flow->description)
-                    <div class="flow-desc">{{ $flow->description }}</div>
+                {{-- Badges --}}
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                    <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;{{ $flow->is_active ? 'background:#d1fae5;color:#065f46;' : 'background:#f3f4f6;color:#6b7280;' }}">
+                        <i class="bi bi-circle-fill" style="font-size:6px;"></i> {{ $flow->is_active ? 'Ativo' : 'Inativo' }}
+                    </span>
+                    <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:#eff6ff;color:#2563eb;">
+                        <i class="bi bi-{{ $channelIcon }}"></i> {{ $flow->channel === 'website' ? 'Website' : ($flow->channel === 'instagram' ? 'Instagram' : 'WhatsApp') }}
+                    </span>
+                    @if($flow->is_catch_all)
+                    <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;">
+                        <i class="bi bi-star-fill" style="font-size:8px;"></i> Catch-all
+                    </span>
                     @endif
+                </div>
 
-                    {{-- Actions --}}
-                    <div class="flow-actions">
-                        <a href="{{ route('chatbot.flows.edit', $flow) }}"
-                           class="btn btn-sm"
-                           style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;text-decoration:none;background:#E0EEFF;color:#007DFF;border:none;">
-                            <i class="bi bi-pencil"></i> Editar
-                        </a>
-                        <a href="{{ route('chatbot.flows.results', $flow) }}"
-                           class="btn btn-sm"
-                           style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;text-decoration:none;background:#E0EEFF;color:#007DFF;border:none;">
-                            <i class="bi bi-bar-chart-line"></i> Resultados
-                        </a>
-                        @if($flow->website_token)
-                        <button type="button" class="btn btn-sm"
-                                onclick="openWidgetTest('{{ $flow->website_token }}')"
-                                style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;background:#E0EEFF;color:#007DFF;border:none;">
-                            <i class="bi bi-play-circle"></i> Testar
-                        </button>
-                        @if($flow->slug)
-                        <button type="button" class="btn btn-sm"
-                                onclick="copyFlowLink('{{ config('app.url') }}/chat/{{ auth()->user()->tenant->slug }}/{{ $flow->slug }}')"
-                                style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;background:#E0EEFF;color:#007DFF;border:none;">
-                            <i class="bi bi-link-45deg"></i> Link
-                        </button>
-                        @endif
-                        <button type="button" class="btn btn-sm"
-                                onclick="openEmbedModal('{{ config('app.url') }}/api/widget/{{ $flow->website_token }}.js', '{{ $flow->widget_type ?? 'bubble' }}', '{{ $flow->slug ? config('app.url') . '/chat/' . auth()->user()->tenant->slug . '/' . $flow->slug : '' }}')"
-                                style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;background:#E0EEFF;color:#007DFF;border:none;">
-                            <i class="bi bi-code-slash"></i> Embed
-                        </button>
-                        @endif
-                        <button type="button" class="btn btn-sm"
-                                onclick="toggleFlowActive({{ $flow->id }}, {{ $flow->is_active ? 'true' : 'false' }}, this)"
-                                style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;background:#E0EEFF;color:#007DFF;border:none;">
-                            <i class="bi bi-{{ $flow->is_active ? 'pause' : 'play' }}"></i>
-                            {{ $flow->is_active ? 'Pausar' : 'Ativar' }}
-                        </button>
-                        <form method="POST" action="{{ route('chatbot.flows.destroy', $flow) }}" style="margin-left:auto;">
-                            @csrf @method('DELETE')
-                            <button type="button" class="btn btn-sm btn-delete-flow"
-                                    onclick="openFlowDeleteModal(this.closest('form'), '{{ addslashes($flow->name) }}')"
-                                    style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:7px 18px;border-radius:45px;background:#f3f4f6;color:#9ca3af;border:none;">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </form>
-                    </div>
+                {{-- Métricas --}}
+                <div style="display:flex;gap:16px;font-size:12px;color:#6b7280;">
+                    <span><i class="bi bi-diagram-3" style="margin-right:3px;"></i> {{ $nodesCount }} {{ $nodesCount === 1 ? 'nó' : 'nós' }}</span>
+                    <span><i class="bi bi-people" style="margin-right:3px;"></i> {{ $leadsCount }} atendidos</span>
+                </div>
 
+                {{-- Footer: criador + data --}}
+                <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #f0f2f7;font-size:11px;color:#9ca3af;">
+                    <span>Criado: {{ $flow->created_at?->diffForHumans() }}</span>
+                    <span>{{ $flow->created_at?->format('d/m/Y') }}</span>
                 </div>
             </div>
             @endforeach
