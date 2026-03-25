@@ -22,9 +22,10 @@
 <style>
     .agents-grid {
         display: grid;
-        grid-template-columns: 1fr;
-        gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 16px;
     }
+    .agent-dropdown.show { display: block !important; }
 
     .agent-card {
         background: #fff;
@@ -374,73 +375,74 @@
             $chLabel  = $agent->channel === 'whatsapp' ? 'WhatsApp' : 'Web Chat';
             $chIcon   = $agent->channel === 'whatsapp' ? 'whatsapp' : 'chat-dots';
         @endphp
-        <div class="agent-card">
-            <div class="agent-card-body">
-                <div class="agent-card-top">
-                    <div class="agent-icon">
-                        <i class="bi bi-robot"></i>
-                    </div>
-                    <div style="flex:1;min-width:0;">
-                        <div class="agent-name">{{ $agent->name }}</div>
+        <div class="agent-card" style="padding:18px 22px;display:flex;flex-direction:column;gap:14px;overflow:visible;">
+                {{-- Header: name + toggle + menu --}}
+                <div style="display:flex;align-items:flex-start;gap:10px;">
+                    <a href="{{ route('ai.agents.edit', $agent) }}" style="flex:1;min-width:0;text-decoration:none;color:inherit;">
+                        <div class="agent-name" style="font-size:15px;margin-bottom:2px;">{{ $agent->name }}</div>
                         @if($agent->company_name)
-                        <div class="agent-meta">{{ $agent->company_name }}</div>
+                        <div style="font-size:11.5px;color:#9ca3af;">{{ $agent->company_name }}</div>
                         @endif
+                    </a>
+
+                    {{-- Toggle --}}
+                    <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;cursor:pointer;" title="{{ $agent->is_active ? 'Desativar' : 'Ativar' }}">
+                        <input type="checkbox" {{ $agent->is_active ? 'checked' : '' }}
+                               onchange="toggleActive({{ $agent->id }}, {{ $agent->is_active ? 'true' : 'false' }}, this)"
+                               style="opacity:0;width:0;height:0;">
+                        <span style="position:absolute;inset:0;border-radius:99px;transition:all .2s;{{ $agent->is_active ? 'background:#10b981;' : 'background:#d1d5db;' }}"></span>
+                        <span style="position:absolute;top:2px;{{ $agent->is_active ? 'left:20px;' : 'left:2px;' }}width:18px;height:18px;border-radius:50%;background:#fff;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);"></span>
+                    </label>
+
+                    {{-- Menu 3 pontinhos --}}
+                    <div style="position:relative;">
+                        <button onclick="this.nextElementSibling.classList.toggle('show')" style="width:32px;height:32px;border-radius:8px;border:1px solid #e8eaf0;background:#fff;color:#6b7280;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <div class="agent-dropdown" style="display:none;position:absolute;right:0;top:36px;background:#fff;border:1px solid #e8eaf0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:180px;z-index:10;padding:6px 0;">
+                            <a href="{{ route('ai.agents.edit', $agent) }}" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#374151;text-decoration:none;font-weight:500;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
+                                <i class="bi bi-pencil" style="font-size:12px;color:#6b7280;"></i> Editar
+                            </a>
+                            <button onclick="openTestChat({{ $agent->id }}, '{{ addslashes($agent->name) }}');this.closest('.agent-dropdown').classList.remove('show')" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#374151;background:none;border:none;width:100%;text-align:left;cursor:pointer;font-weight:500;font-family:inherit;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
+                                <i class="bi bi-chat-dots" style="font-size:12px;color:#6b7280;"></i> Testar
+                            </button>
+                            <div style="height:1px;background:#f0f2f7;margin:4px 0;"></div>
+                            <button onclick="deleteAgent({{ $agent->id }}, this);this.closest('.agent-dropdown').classList.remove('show')" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#ef4444;background:none;border:none;width:100%;text-align:left;cursor:pointer;font-weight:500;font-family:inherit;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background=''">
+                                <i class="bi bi-trash3" style="font-size:12px;"></i> Excluir
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="agent-badges">
+                {{-- Badges --}}
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">
                     @if(auth()->user()->tenant->ai_tokens_exhausted)
-                    <span class="badge" style="background:#fff7ed;color:#ea580c;cursor:pointer;" onclick="openQuotaModal()" title="Clique para ver consumo e comprar tokens">
-                        <i class="bi bi-exclamation-triangle-fill" style="font-size:7px;"></i>
-                        Suspenso — sem tokens
+                    <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:#fff7ed;color:#ea580c;cursor:pointer;" onclick="openQuotaModal()">
+                        <i class="bi bi-exclamation-triangle-fill" style="font-size:7px;"></i> Sem tokens
                     </span>
                     @else
-                    <span class="badge {{ $agent->is_active ? 'badge-active' : 'badge-inactive' }}">
-                        <i class="bi bi-circle-fill" style="font-size:7px;"></i>
-                        {{ $agent->is_active ? 'Ativo' : 'Inativo' }}
+                    <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;{{ $agent->is_active ? 'background:#d1fae5;color:#065f46;' : 'background:#f3f4f6;color:#6b7280;' }}">
+                        <i class="bi bi-circle-fill" style="font-size:6px;"></i> {{ $agent->is_active ? 'Ativo' : 'Inativo' }}
                     </span>
                     @endif
-                    @if($agent->auto_assign)
-                    <span class="badge" style="background:#eff6ff;color:#2563eb;">
-                        <i class="bi bi-lightning-fill"></i> Auto-assign
+                    <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:#eff6ff;color:#2563eb;">
+                        <i class="bi bi-{{ $chIcon }}"></i> {{ $chLabel }}
                     </span>
-                    @endif
+                    <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:#f3f4f6;color:#6b7280;">
+                        <i class="bi bi-bullseye"></i> {{ $objLabel }}
+                    </span>
                 </div>
 
-                <div class="agent-meta-row">
-                    <span><i class="bi bi-{{ $chIcon }}"></i> {{ $chLabel }}</span>
-                    <span><i class="bi bi-tag"></i> {{ $objLabel }}</span>
-                    <span><i class="bi bi-person-lines-fill"></i> {{ $agent->conversations_count }} {{ $agent->conversations_count === 1 ? 'conversa' : 'conversas' }}</span>
+                {{-- Métricas --}}
+                <div style="display:flex;gap:16px;font-size:12px;color:#6b7280;">
+                    <span><i class="bi bi-chat-dots" style="margin-right:3px;"></i> {{ $agent->conversations_count }} {{ $agent->conversations_count === 1 ? 'conversa' : 'conversas' }}</span>
                 </div>
 
-                @if($agent->persona_description)
-                <div class="agent-desc">{{ $agent->persona_description }}</div>
-                @endif
-
-                <div class="agent-actions">
-                    <a href="{{ route('ai.agents.edit', $agent) }}"
-                       class="btn btn-sm"
-                       style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;text-decoration:none;background:#E0EEFF;color:#007DFF;border:none;">
-                        <i class="bi bi-pencil"></i> Editar
-                    </a>
-                    <button class="btn btn-sm"
-                            onclick="openTestChat({{ $agent->id }}, '{{ addslashes($agent->name) }}')"
-                            style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;background:#E0EEFF;color:#007DFF;border:none;">
-                        <i class="bi bi-chat-dots"></i> Testar
-                    </button>
-                    <button class="btn btn-sm"
-                            onclick="toggleActive({{ $agent->id }}, {{ $agent->is_active ? 'true' : 'false' }}, this)"
-                            style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:7px 18px;border-radius:45px;background:#E0EEFF;color:#007DFF;border:none;">
-                        <i class="bi bi-{{ $agent->is_active ? 'pause' : 'play' }}"></i>
-                        {{ $agent->is_active ? 'Pausar' : 'Ativar' }}
-                    </button>
-                    <button class="btn btn-sm btn-delete-agent"
-                            onclick="deleteAgent({{ $agent->id }}, this)"
-                            style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:7px 18px;border-radius:45px;background:#f3f4f6;color:#9ca3af;border:none;">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                {{-- Footer --}}
+                <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #f0f2f7;font-size:11px;color:#9ca3af;">
+                    <span>Criado: {{ $agent->created_at?->diffForHumans() }}</span>
+                    <span>{{ $agent->created_at?->format('d/m/Y') }}</span>
                 </div>
-            </div>
         </div>
         @endforeach
     </div>
@@ -623,6 +625,13 @@
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 const AGENTS_BASE = '{{ url("/ia/agentes") }}';
+
+// Fechar dropdowns ao clicar fora
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.agent-dropdown') && !e.target.closest('[onclick*="classList.toggle"]')) {
+        document.querySelectorAll('.agent-dropdown.show').forEach(function(d) { d.classList.remove('show'); });
+    }
+});
 let tcmAgentId = null;
 let tcmHistory = [];
 let tcmBusy    = false;
