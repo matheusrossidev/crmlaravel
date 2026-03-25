@@ -307,7 +307,7 @@ class WahaService
             'session' => $this->session,
             'chatId'  => $chatId,
             'message' => [
-                'title'       => $title ?? '',
+                'title'       => $title ?? 'Menu',
                 'description' => $description,
                 'footer'      => $footer ?? '',
                 'button'      => $buttonText,
