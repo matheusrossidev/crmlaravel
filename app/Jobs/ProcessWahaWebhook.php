@@ -733,6 +733,15 @@ class ProcessWahaWebhook implements ShouldQueue
                 ->first(fn ($f) => collect($f->trigger_keywords)
                     ->contains(fn ($kw) => str_contains($msgBodyLower, strtolower($kw))));
 
+            // Fallback: se nenhuma keyword bateu, usar catch-all do tenant
+            if (! $activeFlow) {
+                $activeFlow = ChatbotFlow::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $instance->tenant_id)
+                    ->where('is_active', true)
+                    ->where('is_catch_all', true)
+                    ->first();
+            }
+
             if ($activeFlow) {
                 WhatsappConversation::withoutGlobalScope('tenant')
                     ->where('id', $conversation->id)
@@ -741,6 +750,7 @@ class ProcessWahaWebhook implements ShouldQueue
                 Log::channel('whatsapp')->info('Chatbot: flow auto-atribuído', [
                     'conversation_id' => $conversation->id,
                     'flow_id'         => $activeFlow->id,
+                    'match_type'      => $activeFlow->is_catch_all ? 'catch_all' : 'keyword',
                 ]);
             }
         }

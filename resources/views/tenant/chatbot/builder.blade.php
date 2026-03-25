@@ -554,6 +554,17 @@
                 <div class="cb-block-item" onclick="showVarsModal()" style="color:#374151">
                     <span class="cb-block-icon" style="background:#f3f4f6;color:#6b7280"><i class="bi bi-braces"></i></span>Variáveis
                 </div>
+                <div style="padding:10px 12px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;color:#374151;font-weight:600;">
+                        <input type="checkbox" id="catchAllToggle" {{ $flow->is_catch_all ? 'checked' : '' }}
+                            onchange="toggleCatchAll(this.checked)"
+                            style="width:16px;height:16px;accent-color:#0085f3;">
+                        Fluxo padrão (catch-all)
+                    </label>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:4px;line-height:1.4;">
+                        Ativa quando nenhuma keyword corresponder. Apenas 1 por tenant.
+                    </div>
+                </div>
             </div>
 
             <div class="cb-sidebar-divider"></div>
@@ -1797,6 +1808,27 @@
     };
 
     // ── Save flow ────────────────────────────────────────────────────
+    window.toggleCatchAll = function(checked) {
+        fetch('{{ route('chatbot.flows.update', $flow) }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': CSRF,
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'text/html',
+            },
+            body: new URLSearchParams({
+                _method: 'PUT',
+                name: document.getElementById('cbName').value.trim() || '{{ $flow->name }}',
+                channel: '{{ $flow->channel }}',
+                is_catch_all: checked ? '1' : '0',
+            }),
+        }).then(function() {
+            toastr.success(checked ? 'Fluxo definido como catch-all' : 'Catch-all desativado');
+        }).catch(function() {
+            toastr.error('Erro ao atualizar');
+        });
+    };
+
     window.saveFlow = function(silent) {
         var name = document.getElementById('cbName').value.trim();
         if (!name) {

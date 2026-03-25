@@ -70,6 +70,13 @@ class ChatbotFlowController extends Controller
 
         $flow = ChatbotFlow::create($data);
 
+        // Se marcou catch-all, desativar em outros flows do tenant
+        if ($flow->is_catch_all) {
+            ChatbotFlow::where('id', '!=', $flow->id)
+                ->where('is_catch_all', true)
+                ->update(['is_catch_all' => false]);
+        }
+
         if ($request->expectsJson()) {
             return response()->json([
                 'success'      => true,
@@ -133,6 +140,14 @@ class ChatbotFlowController extends Controller
             }
         }
         $flow->update($data);
+
+        // Se marcou catch-all, desativar em outros flows do tenant
+        if ($flow->is_catch_all) {
+            ChatbotFlow::where('id', '!=', $flow->id)
+                ->where('is_catch_all', true)
+                ->update(['is_catch_all' => false]);
+        }
+
         return redirect()->route('chatbot.flows.edit', $flow)->with('success', 'Fluxo atualizado.');
     }
 
@@ -332,6 +347,7 @@ class ChatbotFlowController extends Controller
             'channel'          => 'required|in:whatsapp,instagram,website',
             'description'      => 'nullable|string|max:1000',
             'is_active'        => 'boolean',
+            'is_catch_all'     => 'boolean',
             'trigger_keywords' => 'nullable|string',
             'variables'        => 'nullable|string',
             'bot_name'         => 'nullable|string|max:100',

@@ -13,13 +13,14 @@ class ChatbotFlow extends Model
     use BelongsToTenant;
 
     protected $fillable = [
-        'tenant_id', 'name', 'slug', 'channel', 'website_token', 'description', 'is_active',
+        'tenant_id', 'name', 'slug', 'channel', 'website_token', 'description', 'is_active', 'is_catch_all',
         'trigger_keywords', 'variables', 'steps',
         'bot_name', 'bot_avatar', 'welcome_message', 'widget_type', 'widget_color',
     ];
 
     protected $casts = [
         'is_active'        => 'boolean',
+        'is_catch_all'     => 'boolean',
         'trigger_keywords' => 'array',
         'variables'        => 'array',
         'steps'            => 'array',
