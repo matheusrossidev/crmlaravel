@@ -248,8 +248,8 @@ class ProcessChatbotStep
         // Verificar branches (keywords especiais)
         $branches = $config['branches'] ?? [];
         $lowerBody = strtolower($body);
-        foreach ($branches as $branch) {
-            $handle   = $branch['handle'] ?? '';
+        foreach ($branches as $i => $branch) {
+            $handle   = $branch['handle'] ?? 'branch_' . $i;
             $keywords = array_map('strtolower', (array) ($branch['keywords'] ?? []));
             if (in_array($lowerBody, $keywords, true)) {
                 $nextId = $this->resolveEdge($flowId, $node->id, $handle);
@@ -259,8 +259,8 @@ class ProcessChatbotStep
 
         // Fallback: match por label do branch (lista interativa WhatsApp
         // envia o título da row como body — pode não estar nas keywords)
-        foreach ($branches as $branch) {
-            $handle = $branch['handle'] ?? '';
+        foreach ($branches as $i => $branch) {
+            $handle = $branch['handle'] ?? 'branch_' . $i;
             $label  = $branch['label'] ?? '';
             if ($label !== '' && $lowerBody === strtolower($label)) {
                 $nextId = $this->resolveEdge($flowId, $node->id, $handle);
