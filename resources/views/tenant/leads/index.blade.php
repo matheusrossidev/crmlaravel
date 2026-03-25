@@ -305,7 +305,14 @@
                 @forelse($leads as $lead)
                 <tr class="lead-row" data-lead-id="{{ $lead->id }}">
                     <td class="lead-name-cell">
-                        <div style="display:flex;align-items:center;gap:6px;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;background:#e0ecff;color:#0085f3;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                                @if($lead->whatsappConversation?->contact_picture_url)
+                                <img src="{{ $lead->whatsappConversation->contact_picture_url }}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.parentElement.textContent='{{ strtoupper(substr($lead->name,0,1)) }}';">
+                                @else
+                                {{ strtoupper(substr($lead->name, 0, 1)) }}{{ strtoupper(substr(explode(' ', $lead->name)[1] ?? '', 0, 1)) }}
+                                @endif
+                            </div>
                             <span>{{ $lead->name }}</span>
                             <a href="{{ route('leads.profile', $lead) }}"
                                title="Ver perfil completo"
@@ -469,7 +476,7 @@ window.onLeadSaved = function(lead, isNew) {
         tbody.querySelector('.empty-table')?.closest('tr')?.remove();
         tbody.insertAdjacentHTML('afterbegin', `
             <tr class="lead-row" data-lead-id="${lead.id}">
-                <td class="lead-name-cell">${escapeHtml(lead.name)}</td>
+                <td class="lead-name-cell"><div style="display:flex;align-items:center;gap:8px;"><div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;background:#e0ecff;color:#0085f3;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;">${lead.contact_picture_url ? `<img src="${lead.contact_picture_url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.parentElement.textContent='${escapeHtml(lead.name).split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}';">` : escapeHtml(lead.name).split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</div><span>${escapeHtml(lead.name)}</span></div></td>
                 <td>${phoneCell(lead.phone)}</td>
                 <td>${escapeHtml(lead.email || '—')}</td>
                 <td>${stageHtml}</td>

@@ -484,6 +484,7 @@ class LeadController extends Controller
             'utm_campaign'  => $lead->utm_campaign,
             'utm_content'   => $lead->utm_content,
             'utm_term'      => $lead->utm_term,
+            'contact_picture_url' => $lead->whatsappConversation?->contact_picture_url,
         ];
 
         if ($withNotes) {
