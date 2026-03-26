@@ -512,11 +512,30 @@
             font-size: 14px;
         }
     }
+    @media (max-width: 900px) {
+        .charts-row { grid-template-columns: 1fr !important; }
+    }
     @media (max-width: 480px) {
         .report-filter-inner { grid-template-columns: 1fr !important; }
-        .kpi-grid { grid-template-columns: 1fr 1fr; }
+        .kpi-grid { grid-template-columns: 1fr !important; }
         .kpi-value { font-size: 20px; }
         .report-section-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+        /* Funil stages: scroll horizontal */
+        .funnel-scroll-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .funnel-scroll-wrap > .funnel-scroll-inner {
+            min-width: 700px;
+        }
+
+        /* Campanhas + Pipeline: stack */
+        .report-double-grid,
+        .report-triple-grid { grid-template-columns: 1fr !important; }
+
+        /* Tabelas: scroll */
+        .report-table { min-width: 500px; }
     }
 </style>
 @endpush
@@ -673,6 +692,7 @@
                     $stagesArr = $funnelPipe['stages']->values();
                     $funnelMax = max($stagesArr->max('count'), 1);
                 @endphp
+                <div class="funnel-scroll-wrap"><div class="funnel-scroll-inner">
                 <div style="display:grid;grid-template-columns:repeat({{ $stagesArr->count() }}, 1fr);width:100%;">
                     @foreach($stagesArr as $i => $stageRow)
                     @php
@@ -720,6 +740,7 @@
                     </div>
                     <canvas id="reportFunnelCanvas" style="width:100%;height:180px;display:block;position:relative;z-index:0;"></canvas>
                 </div>
+                </div></div>{{-- /funnel-scroll-wrap --}}
             @else
                 <div class="report-section-body">
                     <p style="color:#9ca3af;font-size:13px;text-align:center;padding:24px 0;">Nenhum pipeline com dados.</p>
@@ -731,7 +752,7 @@
     {{-- ════════════════════════════════════════════════════════════ --}}
     {{-- CAMPANHAS + PIPELINE (lado a lado)                         --}}
     {{-- ════════════════════════════════════════════════════════════ --}}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px;">
+    <div class="report-double-grid">
 
         {{-- Campanhas --}}
         <div class="report-section" style="margin-bottom:0;">
