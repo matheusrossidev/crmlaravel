@@ -121,7 +121,16 @@ class InstagramService
      */
     public function getMe(): array
     {
-        return $this->get('/me', ['fields' => 'id,username,profile_picture_url,name']);
+        // Instagram Login API (v18+) usa user_id; fallback para id
+        $result = $this->get('/me', ['fields' => 'user_id,username,name']);
+
+        // Se falhou, tentar com campos antigos (Facebook Login flow)
+        if (isset($result['error']) && $result['error'] === true) {
+            Log::channel('instagram')->info('getMe() fallback: tentando campos antigos…');
+            $result = $this->get('/me', ['fields' => 'id,username,profile_picture_url,name']);
+        }
+
+        return $result;
     }
 
     /**
