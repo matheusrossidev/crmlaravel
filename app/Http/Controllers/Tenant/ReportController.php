@@ -14,6 +14,8 @@ use App\Models\Pipeline;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\User;
+use App\Models\WhatsappButton;
+use App\Models\WhatsappButtonClick;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappMessage;
 use App\Support\TenantCache;
@@ -436,6 +438,49 @@ class ReportController extends Controller
             ->limit(10)
             ->get();
 
+        // ── Cliques botão WhatsApp ─────────────────────────────────────────
+        $waButton = WhatsappButton::first();
+        $waClicksTotal = 0;
+        $waClicksMatched = 0;
+        $waClicksMobile = 0;
+        $waClicksByDay = [];
+        $waClicksBySource = [];
+        $waClicksByPage = [];
+
+        if ($waButton) {
+            $clicksQuery = WhatsappButtonClick::where('button_id', $waButton->id)
+                ->whereBetween('clicked_at', [$dateFrom, $dateTo]);
+
+            $waClicksTotal   = (clone $clicksQuery)->count();
+            $waClicksMatched = (clone $clicksQuery)->where('matched', true)->count();
+            $waClicksMobile  = (clone $clicksQuery)->where('device_type', 'mobile')->count();
+
+            $waClicksByDay = (clone $clicksQuery)
+                ->selectRaw('DATE(clicked_at) as day, COUNT(*) as total')
+                ->groupBy('day')
+                ->orderBy('day')
+                ->pluck('total', 'day')
+                ->toArray();
+
+            $waClicksBySource = (clone $clicksQuery)
+                ->selectRaw("COALESCE(NULLIF(utm_source, ''), 'direto') as src, COUNT(*) as total")
+                ->groupBy('src')
+                ->orderByDesc('total')
+                ->limit(6)
+                ->pluck('total', 'src')
+                ->toArray();
+
+            $waClicksByPage = (clone $clicksQuery)
+                ->whereNotNull('page_url')
+                ->where('page_url', '!=', '')
+                ->selectRaw('page_url, COUNT(*) as total')
+                ->groupBy('page_url')
+                ->orderByDesc('total')
+                ->limit(5)
+                ->pluck('total', 'page_url')
+                ->toArray();
+        }
+
         return compact(
             // filtros aplicados
             'dateFrom', 'dateTo', 'filterCampaign', 'filterPipeline', 'filterUser',
@@ -463,6 +508,9 @@ class ReportController extends Controller
             'teamActivity',
             // produtos
             'topProducts',
+            // cliques botão WA
+            'waClicksTotal', 'waClicksMatched', 'waClicksMobile',
+            'waClicksByDay', 'waClicksBySource', 'waClicksByPage',
         );
     }
 }

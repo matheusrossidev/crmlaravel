@@ -1185,6 +1185,105 @@
     </div>{{-- /report-triple-grid --}}
 
     {{-- ════════════════════════════════════════════════════════════ --}}
+    {{-- BOTÃO WHATSAPP — CLIQUES                                    --}}
+    {{-- ════════════════════════════════════════════════════════════ --}}
+    <div class="report-section">
+        <div class="report-section-header">
+            <i class="bi bi-phone" style="color:#25D366;"></i>
+            Botão WhatsApp — Cliques
+            <span style="margin-left:auto;font-size:12px;font-weight:500;color:#9ca3af;">
+                {{ $waClicksTotal }} clique(s) no período
+            </span>
+        </div>
+        @if($waClicksTotal > 0)
+        <div class="report-section-body">
+            {{-- Mini KPIs --}}
+            @php
+                $waMatchRate = $waClicksTotal > 0 ? round($waClicksMatched / $waClicksTotal * 100, 1) : 0;
+                $waMobilePct = $waClicksTotal > 0 ? round($waClicksMobile / $waClicksTotal * 100, 1) : 0;
+            @endphp
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;">
+                <div style="background:#f8fafc;border-radius:8px;padding:12px 14px;">
+                    <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">Total cliques</div>
+                    <div style="font-size:22px;font-weight:700;color:#1a1d23;">{{ number_format($waClicksTotal, 0, ',', '.') }}</div>
+                </div>
+                <div style="background:#f8fafc;border-radius:8px;padding:12px 14px;">
+                    <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">Matched</div>
+                    <div style="font-size:22px;font-weight:700;color:#10B981;">{{ $waClicksMatched }}</div>
+                    <div style="font-size:11px;color:#10B981;font-weight:600;">{{ $waMatchRate }}% do total</div>
+                </div>
+                <div style="background:#f8fafc;border-radius:8px;padding:12px 14px;">
+                    <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">Taxa de match</div>
+                    @php
+                        $matchColor = $waMatchRate >= 50 ? '#10B981' : ($waMatchRate >= 20 ? '#F59E0B' : '#EF4444');
+                        $matchBg = $waMatchRate >= 50 ? '#f0fdf4' : ($waMatchRate >= 20 ? '#fff7ed' : '#fef2f2');
+                    @endphp
+                    <div style="font-size:22px;font-weight:700;color:{{ $matchColor }};">{{ $waMatchRate }}%</div>
+                </div>
+                <div style="background:#f8fafc;border-radius:8px;padding:12px 14px;">
+                    <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">Mobile</div>
+                    <div style="font-size:22px;font-weight:700;color:#3B82F6;">{{ $waMobilePct }}%</div>
+                    <div style="font-size:11px;color:#9ca3af;">{{ $waClicksMobile }} de {{ $waClicksTotal }}</div>
+                </div>
+            </div>
+
+            {{-- Chart cliques por dia --}}
+            @if(count($waClicksByDay) > 1)
+            <div style="margin-bottom:18px;">
+                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:8px;">Cliques por dia</div>
+                <div style="position:relative;height:120px;">
+                    <canvas id="chartWaClicks"></canvas>
+                </div>
+            </div>
+            @endif
+
+            {{-- Por Origem + Por Página lado a lado --}}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                <div>
+                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;">Por Origem</div>
+                    @php $maxSrc = count($waClicksBySource) ? max($waClicksBySource) : 1; @endphp
+                    @forelse($waClicksBySource as $src => $total)
+                    @php
+                        $ratio = $total / $maxSrc;
+                        $hBg = $ratio >= 0.8 ? '#065f46' : ($ratio >= 0.6 ? '#10B981' : ($ratio >= 0.4 ? '#6ee7b7' : ($ratio >= 0.2 ? '#a7f3d0' : '#d1fae5')));
+                        $hFg = $ratio >= 0.6 ? '#fff' : '#065f46';
+                    @endphp
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+                        <span style="font-size:12px;color:#374151;font-weight:500;flex:1;">{{ ucfirst($src) }}</span>
+                        <span style="min-width:36px;height:24px;border-radius:5px;background:{{ $hBg }};color:{{ $hFg }};font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;">{{ $total }}</span>
+                    </div>
+                    @empty
+                    <p style="color:#9ca3af;font-size:12px;">—</p>
+                    @endforelse
+                </div>
+                <div>
+                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;">Por Página</div>
+                    @php $maxPg = count($waClicksByPage) ? max($waClicksByPage) : 1; @endphp
+                    @forelse($waClicksByPage as $page => $total)
+                    @php
+                        $pageShort = strlen($page) > 40 ? '...' . substr($page, -37) : $page;
+                        $parsed = parse_url($page);
+                        $pagePath = ($parsed['path'] ?? '/') . (isset($parsed['query']) ? '?' . substr($parsed['query'], 0, 20) : '');
+                    @endphp
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+                        <span style="font-size:12px;color:#374151;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ $page }}">{{ $pagePath }}</span>
+                        <span style="font-size:12px;font-weight:700;color:#3B82F6;flex-shrink:0;">{{ $total }}</span>
+                    </div>
+                    @empty
+                    <p style="color:#9ca3af;font-size:12px;">—</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+        @else
+        <div style="text-align:center;padding:32px 20px;color:#9ca3af;">
+            <i class="bi bi-phone" style="font-size:28px;opacity:.3;display:block;margin-bottom:6px;"></i>
+            <span style="font-size:13px;">Nenhum clique no botão WhatsApp no período.</span>
+        </div>
+        @endif
+    </div>
+
+    {{-- ════════════════════════════════════════════════════════════ --}}
     {{-- ORIGEM × CONVERSÃO + PRODUTOS (2 colunas)                   --}}
     {{-- ════════════════════════════════════════════════════════════ --}}
     <div class="report-double-grid">
@@ -1659,6 +1758,41 @@ const crosshairPlugin = {
                 },
             },
             layout: { padding: { right: 70 } },
+        },
+    });
+}());
+
+// ── Gráfico: Cliques botão WA por dia ────────────────────────────────────
+(function () {
+    const canvas = document.getElementById('chartWaClicks');
+    if (!canvas || !window.Chart) return;
+    const data = @json($waClicksByDay);
+    const labels = Object.keys(data);
+    const values = Object.values(data);
+    if (labels.length < 2) return;
+
+    new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: labels.map(function(d) { var p = d.split('-'); return p[2] + '/' + p[1]; }),
+            datasets: [{
+                data: values,
+                backgroundColor: '#25D366',
+                borderRadius: 3,
+                borderSkipped: false,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: {
+                backgroundColor: '#1a1d23', titleColor: '#9ca3af', bodyColor: '#fff', padding: 8,
+                callbacks: { label: function(ctx) { return ' ' + ctx.parsed.y + ' clique(s)'; } }
+            }},
+            scales: {
+                x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10 }, color: '#9ca3af', maxRotation: 0, maxTicksLimit: 15 } },
+                y: { beginAtZero: true, grid: { color: '#f0f2f7' }, border: { display: false }, ticks: { font: { size: 10 }, color: '#9ca3af', precision: 0 } },
+            },
         },
     });
 }());

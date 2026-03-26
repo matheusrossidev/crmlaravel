@@ -929,7 +929,7 @@ function buildActionBody(type, idx, prefill) {
         const ttypes = [['call','Ligar'],['email','Email'],['task','Tarefa'],['visit','Visita'],['whatsapp','WhatsApp'],['meeting','Reunião']];
         const prios  = [['low','Baixa'],['medium','Média'],['high','Alta']];
         return `<label>Assunto <small style="font-weight:400;color:#9ca3af;">(${MSG_VARS_HINT})</small></label>
-            <input type="text" class="form-control" id="aval-${idx}" placeholder="Ligar para {{contact_name}}" value="${h(prefill.subject||'')}">
+            <input type="text" class="form-control" id="aval-${idx}" placeholder="Ligar para @{{contact_name}}" value="${h(prefill.subject||'')}">
             <label style="margin-top:6px;">Descrição</label>
             <textarea class="form-control" id="ataskdesc-${idx}" rows="2" placeholder="Detalhes da tarefa...">${h(prefill.description||'')}</textarea>
             <div style="display:flex;gap:8px;margin-top:6px;">
