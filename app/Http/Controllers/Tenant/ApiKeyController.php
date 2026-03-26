@@ -27,8 +27,9 @@ class ApiKeyController extends Controller
         $campaigns    = Campaign::where('status', 'active')
                             ->orderBy('name')
                             ->get(['id', 'name', 'type', 'utm_campaign']);
+        $tags         = \App\Models\WhatsappTag::orderBy('sort_order')->get(['name', 'color']);
 
-        return view('tenant.settings.api-keys', compact('apiKeys', 'customFields', 'pipelines', 'campaigns'));
+        return view('tenant.settings.api-keys', compact('apiKeys', 'customFields', 'pipelines', 'campaigns', 'tags'));
     }
 
     public function store(Request $request): JsonResponse

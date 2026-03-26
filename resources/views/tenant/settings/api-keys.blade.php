@@ -443,6 +443,24 @@
                                        value="Observação do lead" oninput="updateCreateCurl()" disabled>
                             </div>
 
+                            {{-- tags --}}
+                            <div class="bfield">
+                                <input type="checkbox" id="bld-tags-on"
+                                       onchange="document.getElementById('bld-tags-wrap').style.display = this.checked ? 'flex' : 'none'; updateCreateCurl()">
+                                <span class="bfield-label">tags</span>
+                                <div id="bld-tags-wrap" style="display:none;flex-wrap:wrap;gap:5px;flex:1;">
+                                    @foreach($tags as $tag)
+                                    <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;padding:2px 8px;border-radius:99px;border:1px solid {{ $tag->color ?? '#e8eaf0' }};font-size:11px;font-weight:600;color:{{ $tag->color ?? '#6b7280' }};background:{{ $tag->color ?? '#e8eaf0' }}15;">
+                                        <input type="checkbox" class="bld-tag-cb" value="{{ $tag->name }}" onchange="updateCreateCurl()" style="width:12px;height:12px;accent-color:{{ $tag->color ?? '#0085f3' }};">
+                                        {{ $tag->name }}
+                                    </label>
+                                    @endforeach
+                                    @if($tags->isEmpty())
+                                    <span style="font-size:11px;color:#9ca3af;">Nenhuma tag configurada</span>
+                                    @endif
+                                </div>
+                            </div>
+
                             {{-- Pipeline & Stage --}}
                             @if($pipelines->count())
                             <div class="bsec-title">Pipeline & Etapa <span style="color:#EF4444;font-size:9px;">obrigatório</span></div>
@@ -1052,6 +1070,13 @@ function buildCreateCurl() {
         }
     });
     if (Object.keys(cf).length) body.custom_fields = cf;
+
+    // tags
+    if (document.getElementById('bld-tags-on')?.checked) {
+        const selected = [];
+        document.querySelectorAll('.bld-tag-cb:checked').forEach(cb => selected.push(cb.value));
+        if (selected.length) body.tags = selected;
+    }
 
     // campaign_id (optional toggle)
     if (document.getElementById('bld-campaign-on')?.checked) {
