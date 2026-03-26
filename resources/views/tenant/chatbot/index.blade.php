@@ -5,13 +5,7 @@
     $pageIcon = 'diagram-3';
 @endphp
 
-@section('topbar_actions')
-<div class="topbar-actions">
-    <a href="{{ route('chatbot.flows.onboarding') }}" class="btn-primary-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;">
-        <i class="bi bi-plus-lg"></i> Novo Fluxo
-    </a>
-</div>
-@endsection
+{{-- topbar_actions removido — botão movido para page header --}}
 
 @push('styles')
 <style>
@@ -583,6 +577,14 @@ function closeWidgetTest() {
 
 @section('content')
 <div class="page-container">
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <i class="bi bi-diagram-3" style="color:#3B82F6;font-size:16px;"></i>
+        <span style="font-size:15px;font-weight:700;color:#1a1d23;">Chatbot Builder</span>
+        <a href="{{ route('chatbot.flows.onboarding') }}" class="btn-primary-sm" style="margin-left:auto;text-decoration:none;display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 14px;">
+            <i class="bi bi-plus-lg"></i> Novo Fluxo
+        </a>
+    </div>
 
     @if($flows->isEmpty())
         <div class="empty-state">

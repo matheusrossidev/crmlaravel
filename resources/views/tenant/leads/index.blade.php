@@ -3,43 +3,7 @@
 @php($title = 'Contatos')
 @php($pageIcon = 'people')
 
-@section('topbar_actions')
-<div class="topbar-actions" style="gap:8px;">
-    <form method="GET" action="{{ route('leads.index') }}" id="filterForm" style="display:flex;align-items:center;gap:8px;">
-        <div style="position:relative;">
-            <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:13px;"></i>
-            <input type="text"
-                   name="search"
-                   value="{{ request('search') }}"
-                   placeholder="Buscar nome, e-mail, telefone..."
-                   style="padding:7px 12px 7px 30px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:13px;font-family:inherit;outline:none;width:220px;background:#fafafa;"
-                   id="searchInput">
-        </div>
-        <select name="assigned_to" class="filter-select leads-hide-mobile" onchange="this.form.submit()" title="Filtrar por responsável">
-            <option value="">Todos os responsáveis</option>
-            <option value="ai" {{ request('assigned_to') === 'ai' ? 'selected' : '' }}>🤖 Agente IA</option>
-            @foreach($users as $u)
-            <option value="{{ $u->id }}" {{ request('assigned_to') == $u->id ? 'selected' : '' }}>
-                {{ $u->name }}
-            </option>
-            @endforeach
-        </select>
-    </form>
-
-    <a href="{{ route('leads.export') }}"
-       class="btn-secondary-sm leads-hide-mobile" style="display:flex;align-items:center;gap:5px;text-decoration:none;">
-        <i class="bi bi-download"></i> Exportar
-    </a>
-
-    <button class="btn-secondary-sm leads-hide-mobile" id="btnImportLead" style="display:flex;align-items:center;gap:5px;" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
-        <i class="bi bi-upload"></i> Importar
-    </button>
-
-    <button class="btn-primary-sm leads-hide-mobile" id="btnNovoLead" {{ auth()->user()->isViewer() ? 'disabled style=opacity:.5;pointer-events:none;' : '' }}>
-        <i class="bi bi-plus-lg"></i> Novo Lead
-    </button>
-</div>
-@endsection
+{{-- topbar_actions removido — botões movidos para page header --}}
 
 @push('styles')
 <style>
@@ -286,6 +250,40 @@
 
 @section('content')
 <div class="page-container">
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <i class="bi bi-people" style="color:#3B82F6;font-size:16px;"></i>
+            <span style="font-size:15px;font-weight:700;color:#1a1d23;">Contatos</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;">
+            <form method="GET" action="{{ route('leads.index') }}" id="filterForm" style="display:flex;align-items:center;gap:6px;">
+                <div style="position:relative;">
+                    <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:13px;"></i>
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           placeholder="Buscar..." style="padding:6px 12px 6px 30px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:12px;font-family:inherit;outline:none;width:180px;background:#fafafa;"
+                           id="searchInput">
+                </div>
+                <select name="assigned_to" class="filter-select leads-hide-mobile" onchange="this.form.submit()" title="Filtrar por responsável"
+                        style="padding:6px 10px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:12px;background:#fafafa;color:#374151;cursor:pointer;">
+                    <option value="">Responsável</option>
+                    <option value="ai" {{ request('assigned_to') === 'ai' ? 'selected' : '' }}>Agente IA</option>
+                    @foreach($users as $u)
+                    <option value="{{ $u->id }}" {{ request('assigned_to') == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
+                    @endforeach
+                </select>
+            </form>
+            <a href="{{ route('leads.export') }}" class="btn-secondary-sm leads-hide-mobile" style="display:flex;align-items:center;gap:5px;text-decoration:none;font-size:12px;padding:6px 12px;">
+                <i class="bi bi-download"></i> Exportar
+            </a>
+            <button class="btn-secondary-sm leads-hide-mobile" id="btnImportLead" style="display:flex;align-items:center;gap:5px;font-size:12px;padding:6px 12px;" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
+                <i class="bi bi-upload"></i> Importar
+            </button>
+            <button class="btn-primary-sm leads-hide-mobile" id="btnNovoLead" style="font-size:12px;padding:6px 14px;" {{ auth()->user()->isViewer() ? 'disabled style=opacity:.5;pointer-events:none;' : '' }}>
+                <i class="bi bi-plus-lg"></i> Novo Lead
+            </button>
+        </div>
+    </div>
 
     <div class="leads-table-wrap">
         <table class="leads-table">

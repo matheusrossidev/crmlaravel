@@ -73,116 +73,69 @@
             color: #1a1d23;
         }
 
-        /* ===== SIDEBAR ===== */
-        .sidebar {
+        /* ===== NAVBAR ===== */
+        .navbar {
             position: fixed;
-            top: 0; left: 0;
-            width: 260px;
-            height: 100vh;
+            top: 0; left: 0; right: 0;
+            height: 56px;
             background: #fff;
-            border-right: 1px solid #e8eaf0;
-            display: flex;
-            flex-direction: column;
+            border-bottom: 1px solid #e8eaf0;
             z-index: 100;
-            overflow: hidden;
-            transition: width .22s ease;
-        }
-
-        .sidebar-nav-scroll {
-            flex: 1;
-            min-height: 0;
-            overflow-y: auto;
-            overflow-x: hidden;
-            scrollbar-width: none;
-        }
-        .sidebar-nav-scroll::-webkit-scrollbar { display: none; }
-
-        .sidebar-logo {
-            padding: 14px 16px;
-            border-bottom: 1px solid #f0f2f7;
             display: flex;
             align-items: center;
-            gap: 10px;
-            min-height: 64px;
-            flex-shrink: 0;
         }
-
-        /* Logo: full e icon-only */
-        .logo-full {
-            max-height: 36px;
-            max-width: 160px;
-            object-fit: contain;
-            flex: 1;
-            min-width: 0;
-            transition: opacity .15s;
+        .navbar-inner {
+            width: 100%;
+            max-width: 100%;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            height: 100%;
         }
+        .navbar-logo { display: flex; align-items: center; flex-shrink: 0; margin-right: 16px; text-decoration: none; }
+        .navbar-logo-img { height: 28px; }
 
-        .logo-icon-only {
-            display: none;
-            width: 32px;
-            height: 32px;
-            object-fit: contain;
-            flex-shrink: 0;
-        }
-
-        /* Botão colapsar */
-        .sidebar-collapse-btn {
-            width: 28px;
-            height: 28px;
-            border-radius: 7px;
+        /* Workspace indicator (partner agencies) */
+        .navbar-workspace {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 10px;
+            border-radius: 8px;
+            background: #f8fafc;
             border: 1px solid #e8eaf0;
-            background: #fff;
-            color: #97A3B7;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             cursor: pointer;
-            transition: all .15s;
-            font-size: 14px;
+            margin-right: 8px;
             flex-shrink: 0;
-            margin-left: auto;
+            position: relative;
+            transition: background .15s;
         }
-        .sidebar-collapse-btn:hover { background: #f4f6fb; color: #007DFF; border-color: #CDDEF6; }
-
-        .sidebar-logo .logo-icon {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #007DFF, #6366F1);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 700;
-            flex-shrink: 0;
+        .navbar-workspace:hover { background: #f0f4ff; }
+        .navbar-ws-avatar {
+            width: 24px; height: 24px; border-radius: 6px; background: #2a84ef;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0;
+            overflow: hidden;
         }
-
-        .sidebar-logo .logo-text {
-            font-size: 15px;
-            font-weight: 700;
-            color: #1a1d23;
-            line-height: 1.2;
+        .navbar-ws-name {
+            font-size: 12px; font-weight: 600; color: #1a1d23;
+            max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
+        .navbar-ws-chev { font-size: 10px; color: #97A3B7; transition: transform .2s; }
 
-        .sidebar-logo .logo-sub {
-            font-size: 11px;
-            color: #97A3B7;
-            font-weight: 400;
-        }
-
-        /* Workspace selector */
-        .workspace-selector-wrap { position: relative; }
+        /* Workspace dropdown */
         .workspace-dropdown {
             display: none;
             position: absolute;
-            left: 14px; right: 14px; top: calc(100% + 4px);
+            left: 0; top: calc(100% + 6px);
             background: #fff;
             border: 1px solid #e8eaf0;
             border-radius: 12px;
             box-shadow: 0 8px 24px rgba(0,0,0,.12);
             z-index: 200;
             overflow: hidden;
+            min-width: 240px;
         }
         .workspace-dropdown.open { display: block; }
         .workspace-dd-item {
@@ -198,189 +151,101 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0;
         }
-        .workspace-selector {
-            margin: 12px 14px;
-            padding: 10px 12px;
-            background: #f8fafc;
+
+        .navbar-menu {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            flex: 1;
+        }
+        .nm-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #677489;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-family: inherit;
+            transition: all .15s;
+            white-space: nowrap;
+        }
+        .nm-item:hover { background: #f4f6fb; color: #007DFF; text-decoration: none; }
+        .nm-item.active { background: #eff6ff; color: #007DFF; font-weight: 600; }
+        .nm-item i { font-size: 15px; }
+        .nm-chev { font-size: 10px; margin-left: 2px; transition: transform .2s; }
+
+        .nm-dropdown { position: relative; }
+        .nm-dropdown-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            background: #fff;
             border: 1px solid #e8eaf0;
             border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0,0,0,.1);
+            padding: 6px;
+            min-width: 200px;
+            z-index: 200;
+        }
+        .nm-dropdown.open .nm-dropdown-menu { display: block; }
+        .nm-dropdown.open .nm-chev { transform: rotate(180deg); }
+
+        .nm-dd-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            transition: background .15s, padding .22s;
-            flex-shrink: 0;
-        }
-
-        .workspace-selector:hover { background: #f0f4ff; }
-
-        .workspace-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            background: #2a84ef;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-size: 12px;
-            font-weight: 700;
-            flex-shrink: 0;
-        }
-
-        .workspace-name {
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 7px;
             font-size: 13px;
-            font-weight: 600;
-            color: #1a1d23;
-            flex: 1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* Nav grupos */
-        .nav-group {
-            padding: 8px 14px 4px;
-            flex-shrink: 0;
-        }
-
-        .nav-group-label {
-            font-size: 10px;
-            font-weight: 700;
-            color: #97A3B7;
-            letter-spacing: .08em;
-            text-transform: uppercase;
-            padding: 0 6px;
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 9px 10px;
-            border-radius: 9px;
-            color: #677489;
-            font-size: 13.5px;
-            font-weight: 500;
+            color: #374151;
             text-decoration: none;
-            transition: all .15s;
-            margin-bottom: 2px;
-            white-space: nowrap;
-            overflow: hidden;
+            transition: all .1s;
+        }
+        .nm-dd-item:hover { background: #eff6ff; color: #007DFF; text-decoration: none; }
+        .nm-dd-item.active { background: #eff6ff; color: #007DFF; font-weight: 600; }
+        .nm-dd-item i { font-size: 14px; color: #9ca3af; width: 18px; text-align: center; }
+        .nm-dd-item:hover i, .nm-dd-item.active i { color: #007DFF; }
+
+        .nm-dd-sep {
+            height: 1px;
+            background: #f0f2f7;
+            margin: 4px 6px;
         }
 
-        .nav-item:hover {
-            background: #f4f6fb;
-            color: #007DFF;
-        }
-
-        .nav-item.active {
-            background: #eff6ff;
-            color: #007DFF;
-            font-weight: 600;
-        }
-
-        .nav-item.active .nav-icon { color: #007DFF; }
-
-        .nav-icon {
-            font-size: 16px;
-            width: 20px;
-            text-align: center;
-            flex-shrink: 0;
-        }
-
-        /* Rótulos que somem no collapse */
-        .nav-label {
-            transition: opacity .15s;
-        }
-
-        /* Sidebar bottom: user info */
-        .sidebar-footer {
-            margin-top: auto;
-            padding: 14px;
-            border-top: 1px solid #f0f2f7;
-            flex-shrink: 0;
-        }
-
-        .user-card {
+        .navbar-right {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 10px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background .15s;
+            gap: 6px;
+            margin-left: auto;
+            flex-shrink: 1;
+            min-width: 0;
+        }
+        .navbar-right .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .user-card:hover { background: #f4f6fb; }
-
-        .user-avatar {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #10B981, #007DFF);
-            display: flex;
+        /* Hamburger for mobile */
+        .navbar-hamburger {
+            display: none;
+            width: 36px; height: 36px;
+            border: 1px solid #e8eaf0;
+            border-radius: 9px;
+            background: #fff;
             align-items: center;
             justify-content: center;
-            color: #fff;
-            font-size: 12px;
-            font-weight: 700;
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-
-        .user-info .user-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: #1a1d23;
-        }
-
-        .user-info .user-role {
-            font-size: 11px;
-            color: #97A3B7;
-        }
-
-        /* ===== TOPBAR ===== */
-        .topbar {
-            position: fixed;
-            top: 0;
-            left: 260px;
-            right: 0;
-            height: 64px;
-            background: #fff;
-            border-bottom: 1px solid #e8eaf0;
-            display: flex;
-            align-items: center;
-            padding: 0 24px;
-            gap: 16px;
-            z-index: 99;
-            transition: left .22s ease;
-        }
-
-        .topbar-title {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 16px;
-            font-weight: 600;
-            color: #1a1d23;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .topbar-title .page-icon {
-            color: #007DFF;
+            color: #677489;
             font-size: 18px;
-        }
-
-        .topbar-spacer { flex: 1; }
-
-        .topbar-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            cursor: pointer;
+            flex-shrink: 0;
         }
 
         .topbar-btn {
@@ -566,10 +431,9 @@
 
         /* ===== MAIN CONTENT ===== */
         .main-content {
-            margin-left: 260px;
-            padding-top: 64px;
+            margin-left: 0;
+            padding-top: 56px;
             min-height: 100vh;
-            transition: margin-left .22s ease;
         }
 
         .page-container {
@@ -667,192 +531,108 @@
             padding: 20px 22px;
         }
 
-        /* ===== SUBMENU ===== */
-        .nav-submenu-wrap { position: relative; }
-
-        .nav-submenu-toggle {
+        /* ===== USER AVATAR (navbar) ===== */
+        .user-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10B981, #007DFF);
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 9px 10px;
-            border-radius: 9px;
-            color: #677489;
-            font-size: 13.5px;
-            font-weight: 500;
-            text-decoration: none;
-            transition: all .15s;
-            margin-bottom: 2px;
-            white-space: nowrap;
+            justify-content: center;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
             overflow: hidden;
         }
 
-        .nav-submenu-toggle:hover {
-            background: #f4f6fb;
-            color: #007DFF;
-        }
-        .nav-submenu-toggle.active {
-            color: #007DFF;
-            font-weight: 600;
-        }
-
-        .nav-submenu {
-            padding-left: 14px;
-            margin-bottom: 2px;
-        }
-
-        .nav-subitem {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 7px 10px;
-            border-radius: 9px;
-            color: #677489;
-            font-size: 13px;
-            font-weight: 500;
-            text-decoration: none;
-            transition: all .15s;
-            margin-bottom: 1px;
-            white-space: nowrap;
-            overflow: hidden;
-        }
-
-        .nav-subitem:hover {
-            background: #f4f6fb;
-            color: #007DFF;
-        }
-
-        .nav-subitem.active {
-            background: #eff6ff;
-            color: #007DFF;
-            font-weight: 600;
-        }
-
-        /* ===== SIDEBAR COLAPSADO ===== */
-        .sidebar--collapsed {
-            width: 72px;
-        }
-
-        /* Logo: troca full → favicon */
-        .sidebar--collapsed .logo-full { display: none; }
-        .sidebar--collapsed .logo-icon-only { display: block; }
-        .sidebar--collapsed .sidebar-logo {
-            justify-content: center;
-            flex-direction: column;
-            gap: 6px;
-            padding: 12px 8px;
-        }
-        .sidebar--collapsed .sidebar-collapse-btn { margin-left: 0; }
-
-        /* Workspace: só o avatar */
-        .sidebar--collapsed .workspace-selector {
-            justify-content: center;
-            padding: 10px 8px;
-            margin: 12px 10px;
-        }
-        .sidebar--collapsed .workspace-name,
-        .sidebar--collapsed .workspace-chevron { display: none; }
-
-        /* Nav: centraliza ícone, esconde label e grupo */
-        .sidebar--collapsed .nav-group { padding: 8px 10px 4px; }
-        .sidebar--collapsed .nav-group-label { display: none; }
-        .sidebar--collapsed .nav-label { display: none; }
-        .sidebar--collapsed .nav-item {
-            justify-content: center;
-            padding: 9px;
-            gap: 0;
-        }
-        .sidebar--collapsed .nav-submenu-toggle {
-            justify-content: center;
-            padding: 9px;
-            gap: 0;
-        }
-        .sidebar--collapsed .nav-chevron { display: none; }
-        .sidebar--collapsed .nav-submenu-wrap { overflow: visible; }
-
-        /* Submenu: oculto no modo colapsado; reabre como flyout no hover via JS */
-        .sidebar--collapsed .nav-submenu { display: none !important; }
-        .sidebar--collapsed .nav-submenu.flyout-open {
-            display: block !important;
-            position: fixed;
-            width: 200px;
-            background: #fff;
-            border: 1px solid #e8eaf0;
-            border-radius: 10px;
-            padding: 6px;
-            box-shadow: 0 6px 20px rgba(0,0,0,.1);
-            z-index: 1100;
-        }
-        .sidebar--collapsed .nav-submenu.flyout-open .nav-subitem {
-            white-space: nowrap;
-            justify-content: flex-start;
-            gap: 8px;
-            padding: 8px 12px;
-        }
-        .sidebar--collapsed .nav-submenu.flyout-open .nav-label {
-            display: inline !important;
-        }
-
-        /* Footer: só avatar */
-        .sidebar--collapsed .user-info,
-        .sidebar--collapsed .user-dots { display: none; }
-        .sidebar--collapsed .user-card {
-            justify-content: center;
-            padding: 8px;
-        }
-        .sidebar--collapsed .sidebar-footer .dropdown-menu {
-            position: fixed !important;
-            left: 72px !important;
-            bottom: 12px !important;
-            top: auto !important;
-            transform: none !important;
-            min-width: 180px;
-            z-index: 300;
-        }
+        /* ===== IMPERSONATION ===== */
+        body.impersonating .navbar { top: 42px !important; }
+        body.impersonating .main-content { padding-top: calc(56px + 42px) !important; }
 
         /* ===== RESPONSIVO ===== */
         @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); transition: transform .25s; width: 260px !important; }
-            .sidebar.open { transform: translateX(0); }
-            .sidebar--collapsed { transform: translateX(-100%); width: 260px !important; }
-            .sidebar--collapsed.open { transform: translateX(0); }
-            /* Forçar sidebar expandido no mobile mesmo se collapsed no desktop */
-            .sidebar--collapsed .nav-label { display: block !important; }
-            .sidebar--collapsed .nav-group-label { display: block !important; }
-            .sidebar--collapsed .nav-item { justify-content: flex-start !important; padding: 9px 14px !important; gap: 11px !important; }
-            .sidebar--collapsed .nav-submenu-toggle { justify-content: flex-start !important; padding: 9px 14px !important; gap: 11px !important; }
-            .sidebar--collapsed .nav-chevron { display: block !important; }
-            .sidebar--collapsed .logo-full { display: block !important; }
-            .sidebar--collapsed .logo-icon-only { display: none !important; }
-            .sidebar--collapsed .sidebar-logo { padding: 18px 18px 12px !important; }
-            .sidebar--collapsed .user-info { display: block !important; }
-            .sidebar--collapsed .user-dots { display: block !important; }
-            .sidebar--collapsed .user-card { justify-content: flex-start !important; padding: 12px 14px !important; }
-            .sidebar--collapsed .nav-submenu { position: static !important; width: auto !important; border: none !important; box-shadow: none !important; background: transparent !important; padding: 0 !important; }
-            .topbar { left: 0 !important; padding: 0 12px; gap: 8px; }
-            .main-content { margin-left: 0 !important; }
-            .sidebar-collapse-btn { display: none; }
+            .navbar-hamburger { display: flex; }
+            .navbar-menu {
+                display: none;
+                position: fixed;
+                top: 56px; left: 0; right: 0; bottom: 0;
+                background: #fff;
+                flex-direction: column;
+                padding: 24px 0 40px;
+                overflow-y: auto;
+                z-index: 150;
+                border-top: 1px solid #e8eaf0;
+                align-items: stretch;
+            }
+            .navbar-menu.open { display: flex; }
+
+            /* Menu items — full width, large touch targets */
+            .navbar-menu .nm-item {
+                width: 100%;
+                justify-content: flex-start;
+                padding: 16px 24px;
+                border-radius: 0;
+                font-size: 15px;
+                font-weight: 500;
+                color: #1a1d23;
+                border-bottom: 1px solid #f0f2f7;
+            }
+            .navbar-menu .nm-item i:first-child { display: none; }
+            .navbar-menu .nm-item:hover { background: #f8fafc; }
+            .navbar-menu .nm-item.active {
+                background: #fff;
+                color: #0085f3;
+                font-weight: 600;
+            }
+            .navbar-menu .nm-chev {
+                margin-left: auto;
+                font-size: 14px;
+                color: #9ca3af;
+                transition: transform .2s;
+            }
+
+            /* Dropdown containers */
+            .navbar-menu .nm-dropdown { width: 100%; }
+            .navbar-menu .nm-dropdown > .nm-item { width: 100%; }
+            .nm-dropdown-menu {
+                position: static;
+                box-shadow: none;
+                border: none;
+                border-radius: 0;
+                padding: 0;
+                min-width: unset;
+                background: #f8fafc;
+                border-bottom: 1px solid #f0f2f7;
+            }
+            .nm-dropdown.open .nm-dropdown-menu { display: block; }
+
+            /* Dropdown sub-items */
+            .nm-dd-item {
+                padding: 14px 24px 14px 40px;
+                font-size: 14px;
+                color: #374151;
+                border-radius: 0;
+            }
+            .nm-dd-item:hover { background: #eff6ff; }
+            .nm-dd-item.active { color: #0085f3; font-weight: 600; }
+            .nm-dd-item i { display: none; }
+            .navbar-logo-img { height: 24px; }
+            .navbar-ws-name { max-width: 80px; }
+            body.impersonating .navbar { top: 42px !important; }
+            body.impersonating .main-content { padding-top: calc(56px + 42px) !important; }
+            body.impersonating .navbar-menu { top: calc(56px + 42px); }
             .page-container { padding: 16px 14px; }
-            .topbar-title { font-size: 14px; }
-            .topbar-title .page-icon { font-size: 15px; }
-            .topbar-actions { flex-shrink: 1; min-width: 0; }
             .section-title { font-size: 17px; }
             .section-subtitle { font-size: 12.5px; }
         }
         @media (max-width: 480px) {
             .page-container { padding: 12px 10px; }
-            .topbar-title { font-size: 13px; }
-            .topbar-title .page-icon { font-size: 14px; }
             .section-title { font-size: 16px; }
             .section-subtitle { font-size: 12px; }
         }
     </style>
-    <script>
-        // Aplica estado da sidebar ANTES do render para evitar flash
-        (function(){
-            var s = localStorage.getItem('sidebar_collapsed');
-            window.__sidebarCollapsed = s === null ? true : s === '1';
-        }());
-    </script>
 </head>
 <body class="{{ session('impersonating_tenant_id') ? 'impersonating' : '' }}">
 
@@ -876,421 +656,308 @@
         </button>
     </form>
 </div>
-<style>
-    body.impersonating .sidebar { top: 42px !important; height: calc(100vh - 42px) !important; }
-    body.impersonating .topbar { top: 42px !important; }
-    body.impersonating .main-content { padding-top: calc(64px + 42px) !important; }
-</style>
 @endif
 @endif
 
-{{-- ===== SIDEBAR ===== --}}
-<aside class="sidebar" id="sidebar">
-<script>if(window.__sidebarCollapsed) document.getElementById('sidebar').classList.add('sidebar--collapsed');</script>
+{{-- ===== NAVBAR ===== --}}
+@php
+    $authTenant      = auth()->user()->tenant;
+    $isPartnerUser   = $authTenant?->isPartner();
+    $impersonatingId = session('impersonating_tenant_id');
+    $activeTenant    = $impersonatingId
+        ? \App\Models\Tenant::withoutGlobalScope('tenant')->find($impersonatingId)
+        : $authTenant;
+    $partnerClients  = $isPartnerUser
+        ? \App\Models\Tenant::withoutGlobalScope('tenant')
+            ->where('referred_by_agency_id', $authTenant->id)
+            ->orderBy('name')
+            ->get(['id', 'name', 'logo'])
+        : collect();
 
-    {{-- Logo --}}
-    <div class="sidebar-logo">
-        <img class="logo-full"
-             src="{{ asset('images/logo.png') }}"
-             alt="Logo">
-        <img class="logo-icon-only"
-             src="{{ asset('images/favicon.png') }}"
-             alt="Logo">
-        <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Recolher menu">
-            <i class="bi bi-layout-sidebar" id="collapseIcon"></i>
-        </button>
-    </div>
+    $crmActive = request()->routeIs('crm*', 'leads*', 'calendar.*', 'tasks*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.lost-reasons*', 'settings.tags*');
+    $autoActive = request()->routeIs('chatbot.flows.*', 'ai.agents.*', 'ai.intent-signals.*', 'settings.automations*', 'settings.ig-automations.*');
+    $reportActive = request()->routeIs('reports*', 'campaigns*');
+    $settingsActive = (request()->routeIs('settings.*') && !request()->routeIs('settings.automations*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.lost-reasons*', 'settings.tags*', 'settings.ig-automations.*')) || request()->routeIs('billing.*');
+    $igConnected = \App\Models\InstagramInstance::where('status', 'connected')->exists();
+@endphp
 
-    {{-- Workspace --}}
-    @php
-        $authTenant      = auth()->user()->tenant;
-        $isPartnerUser   = $authTenant?->isPartner();
-        $impersonatingId = session('impersonating_tenant_id');
-        $activeTenant    = $impersonatingId
-            ? \App\Models\Tenant::withoutGlobalScope('tenant')->find($impersonatingId)
-            : $authTenant;
-        $partnerClients  = $isPartnerUser
-            ? \App\Models\Tenant::withoutGlobalScope('tenant')
-                ->where('referred_by_agency_id', $authTenant->id)
-                ->orderBy('name')
-                ->get(['id', 'name', 'logo'])
-            : collect();
-    @endphp
+<header class="navbar" id="navbar">
+    <div class="navbar-inner">
+        {{-- Left: Logo --}}
+        <a href="{{ route('inicio') }}" class="navbar-logo">
+            <img src="{{ asset('images/logo.png') }}" alt="Syncro" class="navbar-logo-img">
+        </a>
 
-    <div class="workspace-selector-wrap">
-        <div class="workspace-selector {{ $isPartnerUser ? 'ws-partner' : '' }}"
-             title="{{ $activeTenant?->name ?? 'Minha Empresa' }}"
-             @if($isPartnerUser) onclick="toggleWorkspaceDropdown(event)" style="cursor:pointer;" @endif>
-            <div class="workspace-avatar">
+        {{-- Workspace selector (partner agencies) --}}
+        @if($isPartnerUser)
+        <div class="navbar-workspace" onclick="toggleWorkspaceDropdown(event)" title="{{ $activeTenant?->name ?? 'Minha Empresa' }}">
+            <div class="navbar-ws-avatar">
                 @if($activeTenant?->logo)
-                    <img src="{{ $activeTenant->logo }}"
-                         style="width:100%;height:100%;object-fit:cover;border-radius:8px;" alt="">
+                    <img src="{{ $activeTenant->logo }}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;" alt="">
                 @else
                     {{ strtoupper(substr($activeTenant?->name ?? 'P', 0, 1)) }}
                 @endif
             </div>
-            <span class="workspace-name nav-label">{{ $activeTenant?->name ?? 'Minha Empresa' }}</span>
-            @if($isPartnerUser)
-                <i class="bi bi-chevron-expand nav-label" id="wsChevron"
-                   style="font-size:12px;color:#97A3B7;margin-left:auto;"></i>
-            @endif
-        </div>
+            <span class="navbar-ws-name">{{ $activeTenant?->name ?? 'Minha Empresa' }}</span>
+            <i class="bi bi-chevron-expand navbar-ws-chev"></i>
 
-        @if($isPartnerUser)
-        <div class="workspace-dropdown" id="workspaceDropdown">
-            {{-- Própria conta --}}
-            <div class="workspace-dd-item {{ !$impersonatingId ? 'active' : '' }}"
-                 onclick="switchWorkspace(null)">
-                <div class="workspace-dd-avatar" style="background:#7C3AED;">
-                    {{ strtoupper(substr($authTenant->name ?? 'P', 0, 1)) }}
-                </div>
-                <div style="min-width:0;">
-                    <div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                        {{ $authTenant->name }}
+            <div class="workspace-dropdown" id="workspaceDropdown">
+                {{-- Própria conta --}}
+                <div class="workspace-dd-item {{ !$impersonatingId ? 'active' : '' }}"
+                     onclick="switchWorkspace(null)">
+                    <div class="workspace-dd-avatar" style="background:#7C3AED;">
+                        {{ strtoupper(substr($authTenant->name ?? 'P', 0, 1)) }}
                     </div>
-                    <div style="font-size:11px;color:#97A3B7;">Minha conta</div>
+                    <div style="min-width:0;">
+                        <div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            {{ $authTenant->name }}
+                        </div>
+                        <div style="font-size:11px;color:#97A3B7;">Minha conta</div>
+                    </div>
+                    @if(!$impersonatingId)<i class="bi bi-check2" style="margin-left:auto;color:#7C3AED;"></i>@endif
                 </div>
-                @if(!$impersonatingId)<i class="bi bi-check2" style="margin-left:auto;color:#7C3AED;"></i>@endif
-            </div>
 
-            @if($partnerClients->isNotEmpty())
-            <hr class="workspace-dd-divider">
-            <div style="padding:6px 14px 4px;font-size:10.5px;font-weight:700;color:#97A3B7;text-transform:uppercase;letter-spacing:.06em;">
-                Clientes
-            </div>
-            @foreach($partnerClients as $client)
-            <div class="workspace-dd-item {{ (int)$impersonatingId === (int)$client->id ? 'active' : '' }}"
-                 onclick="switchWorkspace({{ $client->id }})">
-                <div class="workspace-dd-avatar" style="background:#007DFF;">
-                    {{ strtoupper(substr($client->name, 0, 1)) }}
+                @if($partnerClients->isNotEmpty())
+                <hr class="workspace-dd-divider">
+                <div style="padding:6px 14px 4px;font-size:10.5px;font-weight:700;color:#97A3B7;text-transform:uppercase;letter-spacing:.06em;">
+                    Clientes
                 </div>
-                <div style="min-width:0;">
-                    <div style="font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                        {{ $client->name }}
+                @foreach($partnerClients as $client)
+                <div class="workspace-dd-item {{ (int)$impersonatingId === (int)$client->id ? 'active' : '' }}"
+                     onclick="switchWorkspace({{ $client->id }})">
+                    <div class="workspace-dd-avatar" style="background:#007DFF;">
+                        {{ strtoupper(substr($client->name, 0, 1)) }}
                     </div>
+                    <div style="min-width:0;">
+                        <div style="font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            {{ $client->name }}
+                        </div>
+                    </div>
+                    @if((int)$impersonatingId === (int)$client->id)
+                        <i class="bi bi-check2" style="margin-left:auto;color:#007DFF;"></i>
+                    @endif
                 </div>
-                @if((int)$impersonatingId === (int)$client->id)
-                    <i class="bi bi-check2" style="margin-left:auto;color:#007DFF;"></i>
+                @endforeach
+                @else
+                <hr class="workspace-dd-divider">
+                <div style="padding:12px 14px;font-size:12.5px;color:#97A3B7;text-align:center;">
+                    Nenhum cliente vinculado ainda.
+                </div>
                 @endif
             </div>
-            @endforeach
-            @else
-            <hr class="workspace-dd-divider">
-            <div style="padding:12px 14px;font-size:12.5px;color:#97A3B7;text-align:center;">
-                Nenhum cliente vinculado ainda.
-            </div>
-            @endif
         </div>
         @endif
-    </div>
 
-    <div class="sidebar-nav-scroll">
-    <nav class="nav-group">
+        {{-- Hamburger (mobile) --}}
+        <button class="navbar-hamburger" id="navbarHamburger">
+            <i class="bi bi-list"></i>
+        </button>
 
-        {{-- Início (sem submenu) --}}
-        <a href="{{ route('inicio') }}"
-           class="nav-item {{ request()->routeIs('inicio', 'dashboard') ? 'active' : '' }}"
-           title="Início">
-            <i class="bi bi-house nav-icon"></i>
-            <span class="nav-label">Início</span>
-        </a>
+        {{-- Center: Menu items --}}
+        <nav class="navbar-menu" id="navbarMenu">
+            <a href="{{ route('inicio') }}" class="nm-item {{ request()->routeIs('inicio', 'dashboard') ? 'active' : '' }}">
+                <i class="bi bi-house"></i> Início
+            </a>
+            <a href="{{ route('chats.index') }}" class="nm-item {{ request()->routeIs('chats.*') ? 'active' : '' }}">
+                <i class="bi bi-chat-dots"></i> Chats
+            </a>
 
-        {{-- Chats (sem submenu — acesso rápido) --}}
-        <a href="{{ route('chats.index') }}"
-           class="nav-item {{ request()->routeIs('chats.*') ? 'active' : '' }}"
-           title="Chats">
-            <i class="bi bi-chat-dots nav-icon"></i>
-            <span class="nav-label">Chats</span>
-        </a>
-
-        @php
-            $crmActive = request()->routeIs('crm*', 'leads*', 'calendar.*', 'tasks*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.lost-reasons*', 'settings.tags*');
-            $autoActive = request()->routeIs('chatbot.flows.*', 'ai.agents.*', 'ai.intent-signals.*', 'settings.automations*', 'settings.ig-automations.*');
-            $reportActive = request()->routeIs('reports*', 'campaigns*');
-        @endphp
-
-        {{-- CRM (submenu) --}}
-        <div class="nav-submenu-wrap">
-            <div class="nav-submenu-toggle {{ $crmActive ? 'active' : '' }}" onclick="toggleSubmenu(this)" style="cursor:pointer;">
-                <i class="bi bi-kanban nav-icon"></i>
-                <span class="nav-label" style="flex:1;">CRM</span>
-                <i class="bi bi-chevron-down nav-chevron" style="font-size:11px;color:#97A3B7;transition:transform .2s;{{ $crmActive ? 'transform:rotate(180deg);' : '' }}"></i>
+            {{-- CRM dropdown --}}
+            <div class="nm-dropdown">
+                <button class="nm-item {{ $crmActive ? 'active' : '' }}" onclick="toggleNavDropdown(this)">
+                    <i class="bi bi-kanban"></i> CRM <i class="bi bi-chevron-down nm-chev"></i>
+                </button>
+                <div class="nm-dropdown-menu">
+                    <a href="{{ route('crm.kanban') }}" class="nm-dd-item {{ request()->routeIs('crm*') ? 'active' : '' }}">
+                        <i class="bi bi-kanban"></i> Negócios
+                    </a>
+                    <a href="{{ route('leads.index') }}" class="nm-dd-item {{ request()->routeIs('leads*') ? 'active' : '' }}">
+                        <i class="bi bi-people"></i> Contatos
+                    </a>
+                    <a href="{{ route('calendar.index') }}" class="nm-dd-item {{ request()->routeIs('calendar.*') ? 'active' : '' }}">
+                        <i class="bi bi-calendar3"></i> Agenda
+                    </a>
+                    <a href="{{ route('tasks.index') }}" class="nm-dd-item {{ request()->routeIs('tasks*') ? 'active' : '' }}">
+                        <i class="bi bi-check2-square"></i> Tarefas
+                    </a>
+                    <div class="nm-dd-sep"></div>
+                    <a href="{{ route('settings.pipelines') }}" class="nm-dd-item {{ request()->routeIs('settings.pipelines*') ? 'active' : '' }}">
+                        <i class="bi bi-funnel"></i> Pipelines
+                    </a>
+                    <a href="{{ route('settings.products') }}" class="nm-dd-item {{ request()->routeIs('settings.products*') ? 'active' : '' }}">
+                        <i class="bi bi-box-seam"></i> Produtos
+                    </a>
+                    <a href="{{ route('settings.custom-fields') }}" class="nm-dd-item {{ request()->routeIs('settings.custom-fields*') ? 'active' : '' }}">
+                        <i class="bi bi-input-cursor-text"></i> Campos Extras
+                    </a>
+                    <a href="{{ route('settings.lost-reasons') }}" class="nm-dd-item {{ request()->routeIs('settings.lost-reasons*') ? 'active' : '' }}">
+                        <i class="bi bi-x-circle"></i> Motivos de Perda
+                    </a>
+                    <a href="{{ route('settings.tags') }}" class="nm-dd-item {{ request()->routeIs('settings.tags*') ? 'active' : '' }}">
+                        <i class="bi bi-tags"></i> Tags
+                    </a>
+                </div>
             </div>
-            <div class="nav-submenu" style="{{ $crmActive ? '' : 'display:none;' }}">
-                <a href="{{ route('crm.kanban') }}" class="nav-subitem {{ request()->routeIs('crm*') ? 'active' : '' }}" title="Negócios">
-                    <i class="bi bi-kanban nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Negócios</span>
-                </a>
-                <a href="{{ route('leads.index') }}" class="nav-subitem {{ request()->routeIs('leads*') ? 'active' : '' }}" title="Contatos">
-                    <i class="bi bi-people nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Contatos</span>
-                </a>
-                <a href="{{ route('calendar.index') }}" class="nav-subitem {{ request()->routeIs('calendar.*') ? 'active' : '' }}" title="Agenda">
-                    <i class="bi bi-calendar3 nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Agenda</span>
-                </a>
-                <a href="{{ route('tasks.index') }}" class="nav-subitem {{ request()->routeIs('tasks*') ? 'active' : '' }}" title="Tarefas">
-                    <i class="bi bi-check2-square nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Tarefas</span>
-                </a>
-                <a href="{{ route('settings.pipelines') }}" class="nav-subitem {{ request()->routeIs('settings.pipelines*') ? 'active' : '' }}" title="Pipelines">
-                    <i class="bi bi-funnel nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Pipelines</span>
-                </a>
-                <a href="{{ route('settings.products') }}" class="nav-subitem {{ request()->routeIs('settings.products*') ? 'active' : '' }}" title="Produtos">
-                    <i class="bi bi-box-seam nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Produtos</span>
-                </a>
-                <a href="{{ route('settings.custom-fields') }}" class="nav-subitem {{ request()->routeIs('settings.custom-fields*') ? 'active' : '' }}" title="Campos Extras">
-                    <i class="bi bi-sliders nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Campos Extras</span>
-                </a>
-                <a href="{{ route('settings.lost-reasons') }}" class="nav-subitem {{ request()->routeIs('settings.lost-reasons*') ? 'active' : '' }}" title="Motivos de Perda">
-                    <i class="bi bi-x-circle nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Motivos de Perda</span>
-                </a>
-                <a href="{{ route('settings.tags') }}" class="nav-subitem {{ request()->routeIs('settings.tags*') ? 'active' : '' }}" title="Tags">
-                    <i class="bi bi-tags nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Tags</span>
-                </a>
-            </div>
-        </div>
 
-        {{-- Automação (submenu) --}}
-        <div class="nav-submenu-wrap">
-            <div class="nav-submenu-toggle {{ $autoActive ? 'active' : '' }}" onclick="toggleSubmenu(this)" style="cursor:pointer;">
-                <i class="bi bi-lightning nav-icon"></i>
-                <span class="nav-label" style="flex:1;">Automação</span>
-                <i class="bi bi-chevron-down nav-chevron" style="font-size:11px;color:#97A3B7;transition:transform .2s;{{ $autoActive ? 'transform:rotate(180deg);' : '' }}"></i>
+            {{-- Automação dropdown --}}
+            <div class="nm-dropdown">
+                <button class="nm-item {{ $autoActive ? 'active' : '' }}" onclick="toggleNavDropdown(this)">
+                    <i class="bi bi-lightning"></i> Automação <i class="bi bi-chevron-down nm-chev"></i>
+                </button>
+                <div class="nm-dropdown-menu">
+                    <a href="{{ route('chatbot.flows.index') }}" class="nm-dd-item {{ request()->routeIs('chatbot.flows.*') ? 'active' : '' }}">
+                        <i class="bi bi-diagram-3"></i> Chatbot
+                    </a>
+                    <a href="{{ route('ai.agents.index') }}" class="nm-dd-item {{ request()->routeIs('ai.agents.*', 'ai.intent-signals.*') ? 'active' : '' }}">
+                        <i class="bi bi-robot"></i> Agentes de IA
+                    </a>
+                    <a href="{{ route('settings.automations') }}" class="nm-dd-item {{ request()->routeIs('settings.automations*') ? 'active' : '' }}">
+                        <i class="bi bi-lightning"></i> Automações
+                    </a>
+                    @if($igConnected)
+                    <a href="{{ route('settings.ig-automations.index') }}" class="nm-dd-item {{ request()->routeIs('settings.ig-automations.*') ? 'active' : '' }}">
+                        <i class="bi bi-instagram"></i> Autom. Instagram
+                    </a>
+                    @endif
+                </div>
             </div>
-            <div class="nav-submenu" style="{{ $autoActive ? '' : 'display:none;' }}">
-                <a href="{{ route('chatbot.flows.index') }}" class="nav-subitem {{ request()->routeIs('chatbot.flows.*') ? 'active' : '' }}" title="Chatbot">
-                    <i class="bi bi-diagram-3 nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Chatbot</span>
-                </a>
-                <a href="{{ route('ai.agents.index') }}" class="nav-subitem {{ request()->routeIs('ai.agents.*', 'ai.intent-signals.*') ? 'active' : '' }}" title="Agentes de IA">
-                    <i class="bi bi-robot nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Agentes de IA</span>
-                </a>
-                <a href="{{ route('settings.automations') }}" class="nav-subitem {{ request()->routeIs('settings.automations*') ? 'active' : '' }}" title="Automações">
-                    <i class="bi bi-lightning-charge nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Automações</span>
-                </a>
-                @if(\App\Models\InstagramInstance::where('status', 'connected')->exists())
-                <a href="{{ route('settings.ig-automations.index') }}" class="nav-subitem {{ request()->routeIs('settings.ig-automations.*') ? 'active' : '' }}" title="Automações Instagram">
-                    <i class="bi bi-instagram nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Autom. Instagram</span>
-                </a>
-                @endif
-            </div>
-        </div>
 
-        {{-- Relatórios (submenu) --}}
-        <div class="nav-submenu-wrap">
-            <div class="nav-submenu-toggle {{ $reportActive ? 'active' : '' }}" onclick="toggleSubmenu(this)" style="cursor:pointer;">
-                <i class="bi bi-bar-chart-line nav-icon"></i>
-                <span class="nav-label" style="flex:1;">Relatórios</span>
-                <i class="bi bi-chevron-down nav-chevron" style="font-size:11px;color:#97A3B7;transition:transform .2s;{{ $reportActive ? 'transform:rotate(180deg);' : '' }}"></i>
+            {{-- Relatórios dropdown --}}
+            <div class="nm-dropdown">
+                <button class="nm-item {{ $reportActive ? 'active' : '' }}" onclick="toggleNavDropdown(this)">
+                    <i class="bi bi-bar-chart-line"></i> Relatórios <i class="bi bi-chevron-down nm-chev"></i>
+                </button>
+                <div class="nm-dropdown-menu">
+                    <a href="{{ route('reports.index') }}" class="nm-dd-item {{ request()->routeIs('reports*') ? 'active' : '' }}">
+                        <i class="bi bi-bar-chart-line"></i> Indicadores
+                    </a>
+                    <a href="{{ route('campaigns.index') }}" class="nm-dd-item {{ request()->routeIs('campaigns*') ? 'active' : '' }}">
+                        <i class="bi bi-megaphone"></i> Campanhas
+                    </a>
+                </div>
             </div>
-            <div class="nav-submenu" style="{{ $reportActive ? '' : 'display:none;' }}">
-                <a href="{{ route('reports.index') }}" class="nav-subitem {{ request()->routeIs('reports*') ? 'active' : '' }}" title="Relatórios">
-                    <i class="bi bi-graph-up nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Indicadores</span>
-                </a>
-                <a href="{{ route('campaigns.index') }}" class="nav-subitem {{ request()->routeIs('campaigns*') ? 'active' : '' }}" title="Campanhas">
-                    <i class="bi bi-megaphone nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Campanhas</span>
-                </a>
-            </div>
-        </div>
 
-        {{-- Configurações (submenu) --}}
-        @php $settingsActive = (request()->routeIs('settings.*') && !request()->routeIs('settings.automations*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.lost-reasons*', 'settings.tags*', 'settings.ig-automations.*')) || request()->routeIs('billing.*'); @endphp
-        <div class="nav-submenu-wrap">
-            <div class="nav-submenu-toggle {{ $settingsActive ? 'active' : '' }}" onclick="toggleSubmenu(this)" style="cursor:pointer;">
-                <i class="bi bi-gear nav-icon"></i>
-                <span class="nav-label" style="flex:1;">Configurações</span>
-                <i class="bi bi-chevron-down nav-chevron" style="font-size:11px;color:#97A3B7;transition:transform .2s;{{ $settingsActive ? 'transform:rotate(180deg);' : '' }}"></i>
+            {{-- Configurações dropdown --}}
+            <div class="nm-dropdown">
+                <button class="nm-item {{ $settingsActive ? 'active' : '' }}" onclick="toggleNavDropdown(this)">
+                    <i class="bi bi-gear"></i> Configurações <i class="bi bi-chevron-down nm-chev"></i>
+                </button>
+                <div class="nm-dropdown-menu">
+                    <a href="{{ route('settings.profile') }}" class="nm-dd-item {{ request()->routeIs('settings.profile*') ? 'active' : '' }}">
+                        <i class="bi bi-person"></i> Perfil
+                    </a>
+                    <a href="{{ route('settings.notifications') }}" class="nm-dd-item {{ request()->routeIs('settings.notifications*') ? 'active' : '' }}">
+                        <i class="bi bi-bell"></i> Notificações
+                    </a>
+                    <a href="{{ route('settings.users') }}" class="nm-dd-item {{ request()->routeIs('settings.users*') ? 'active' : '' }}">
+                        <i class="bi bi-people-fill"></i> Usuários
+                    </a>
+                    <a href="{{ route('settings.integrations.index') }}" class="nm-dd-item {{ request()->routeIs('settings.integrations*') ? 'active' : '' }}">
+                        <i class="bi bi-plug"></i> Integrações
+                    </a>
+                    <a href="{{ route('settings.departments') }}" class="nm-dd-item {{ request()->routeIs('settings.departments*') ? 'active' : '' }}">
+                        <i class="bi bi-building"></i> Departamentos
+                    </a>
+                    <a href="{{ route('settings.billing') }}" class="nm-dd-item {{ request()->routeIs('settings.billing*', 'billing.*') ? 'active' : '' }}">
+                        <i class="bi bi-credit-card"></i> Cobrança
+                    </a>
+                    <a href="{{ route('settings.api-keys') }}" class="nm-dd-item {{ request()->routeIs('settings.api-keys*') ? 'active' : '' }}">
+                        <i class="bi bi-code-slash"></i> API / Webhooks
+                    </a>
+                </div>
             </div>
-            <div class="nav-submenu" style="{{ $settingsActive ? '' : 'display:none;' }}">
-                <a href="{{ route('settings.profile') }}" class="nav-subitem {{ request()->routeIs('settings.profile*') ? 'active' : '' }}">
-                    <i class="bi bi-person nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Perfil</span>
-                </a>
-                <a href="{{ route('settings.notifications') }}" class="nav-subitem {{ request()->routeIs('settings.notifications*') ? 'active' : '' }}">
-                    <i class="bi bi-bell nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Notificações</span>
-                </a>
-                <a href="{{ route('settings.users') }}" class="nav-subitem {{ request()->routeIs('settings.users*') ? 'active' : '' }}">
-                    <i class="bi bi-person-badge nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Usuários</span>
-                </a>
-                <a href="{{ route('settings.integrations.index') }}" class="nav-subitem {{ request()->routeIs('settings.integrations*') ? 'active' : '' }}">
-                    <i class="bi bi-plug nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Integrações</span>
-                </a>
-                <a href="{{ route('settings.departments') }}" class="nav-subitem {{ request()->routeIs('settings.departments*') ? 'active' : '' }}">
-                    <i class="bi bi-building nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Departamentos</span>
-                </a>
-                <a href="{{ route('settings.billing') }}" class="nav-subitem {{ request()->routeIs('settings.billing*', 'billing.*') ? 'active' : '' }}">
-                    <i class="bi bi-credit-card nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">Cobrança</span>
-                </a>
-                <a href="{{ route('settings.api-keys') }}" class="nav-subitem {{ request()->routeIs('settings.api-keys*') ? 'active' : '' }}">
-                    <i class="bi bi-code-slash nav-icon" style="font-size:12px;"></i>
-                    <span class="nav-label">API / Webhooks</span>
-                </a>
+
+            {{-- Master (super_admin only) --}}
+            @if(auth()->user()->isSuperAdmin())
+            <a href="{{ route('master.tenants') }}" class="nm-item {{ request()->routeIs('master.tenants*') ? 'active' : '' }}">
+                <i class="bi bi-shield-lock"></i> Master
+            </a>
+            @endif
+        </nav>
+
+        {{-- Right: page actions + trial + notifications + avatar --}}
+        <div class="navbar-right">
+            @hasSection('topbar_actions')
+                @yield('topbar_actions')
+            @endif
+
+            {{-- Trial badge --}}
+            @php
+                $__tenant = auth()->user()->tenant;
+                $__showTrial = $__tenant
+                    && $__tenant->status === 'trial'
+                    && $__tenant->trial_ends_at
+                    && !$__tenant->trial_ends_at->isPast();
+                $__trialDays = $__showTrial ? (int) now()->diffInDays($__tenant->trial_ends_at, false) : 0;
+                $__trialTotal = $__showTrial && $__tenant->created_at ? (int) $__tenant->created_at->diffInDays($__tenant->trial_ends_at) : 14;
+                $__trialPct = $__trialTotal > 0 ? max(0, min(100, ($__trialDays / $__trialTotal) * 100)) : 0;
+            @endphp
+            @if($__showTrial)
+            <div class="trial-widget" title="Seu período de teste termina em {{ $__trialDays }} dias">
+                <div class="trial-widget-text">
+                    <i class="bi bi-clock-history"></i>
+                    <span>Trial: <strong>{{ $__trialDays }} {{ $__trialDays === 1 ? 'dia' : 'dias' }}</strong></span>
+                </div>
+                <div class="trial-widget-bar">
+                    <div class="trial-widget-bar-fill" style="width:{{ $__trialPct }}%"></div>
+                </div>
             </div>
-        </div>
-    </nav>
+            @endif
 
-    @if(auth()->user()->isSuperAdmin())
-    <nav class="nav-group">
-        <div class="nav-group-label">Master</div>
-        <a href="{{ route('master.tenants') }}"
-           class="nav-item {{ request()->routeIs('master.tenants*') ? 'active' : '' }}"
-           title="Painel Master">
-            <i class="bi bi-shield-check nav-icon"></i>
-            <span class="nav-label">Painel Master</span>
-        </a>
-    </nav>
-    @endif
-    </div>{{-- /.sidebar-nav-scroll --}}
+            {{-- Notification bell --}}
+            <div class="dropdown">
+                <button class="topbar-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                        id="notif-bell-btn" title="Notificações">
+                    <i class="bi bi-bell"></i>
+                    <span class="badge-num d-none" id="notif-badge-num"></span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end shadow" id="notif-panel"
+                     style="width:340px;max-height:420px;overflow-y:auto;border-radius:12px;padding:0;">
+                    <div style="padding:12px 16px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1;">
+                        <span style="font-weight:700;font-size:13px;">Notificações</span>
+                        <button onclick="markAllIntentRead()" type="button" class="btn btn-link btn-sm p-0"
+                                style="font-size:11px;text-decoration:none;color:#677489;">Marcar todas lidas</button>
+                    </div>
+                    <div id="notif-list">
+                        <div style="padding:24px;text-align:center;color:#97A3B7;font-size:12px;">Nenhuma notificação</div>
+                    </div>
+                </div>
+            </div>
 
-    {{-- Footer: User --}}
-    <div class="sidebar-footer">
-        <div class="dropdown">
-            <div class="user-card" data-bs-toggle="dropdown" aria-expanded="false"
-                 title="{{ auth()->user()->name }}">
-                <div class="user-avatar">
+            {{-- User avatar dropdown --}}
+            <div class="dropdown">
+                <div class="user-avatar" style="width:36px;height:36px;border-radius:9px;cursor:pointer;overflow:hidden;"
+                     data-bs-toggle="dropdown">
                     @if(auth()->user()->avatar)
                         <img src="{{ auth()->user()->avatar }}" alt="{{ auth()->user()->name }}"
-                             style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                             style="width:100%;height:100%;object-fit:cover;">
                     @else
                         {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                     @endif
                 </div>
-                <div class="user-info nav-label">
-                    <div class="user-name">{{ auth()->user()->name }}</div>
-                    <div class="user-role">{{ ucfirst(auth()->user()->role) }}</div>
-                </div>
-                <i class="bi bi-three-dots-vertical user-dots nav-label"
-                   style="color:#97A3B7;margin-left:auto;flex-shrink:0;"></i>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width:180px;border-radius:10px;">
+                    <li class="px-3 py-2">
+                        <div style="font-size:13px;font-weight:600;">{{ auth()->user()->name }}</div>
+                        <div style="font-size:11px;color:#97A3B7;">{{ auth()->user()->email }}</div>
+                    </li>
+                    <li><hr class="dropdown-divider my-1"></li>
+                    <li><a class="dropdown-item" href="{{ route('settings.profile') }}"><i class="bi bi-person me-2"></i>Perfil</a></li>
+                    <li>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="dropdown-item text-danger">
+                                <i class="bi bi-box-arrow-right me-2"></i>Sair
+                            </button>
+                        </form>
+                    </li>
+                </ul>
             </div>
-            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width:180px;border-radius:10px;">
-                <li><a class="dropdown-item" href="{{ route('settings.profile') }}"><i class="bi bi-person me-2"></i>Meu Perfil</a></li>
-                <li><hr class="dropdown-divider my-1"></li>
-                <li>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="dropdown-item text-danger">
-                            <i class="bi bi-box-arrow-right me-2"></i>Sair
-                        </button>
-                    </form>
-                </li>
-            </ul>
-        </div>
-    </div>
-
-</aside>
-<div id="sidebarOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99;"></div>
-
-{{-- ===== TOPBAR ===== --}}
-<header class="topbar" id="topbar" style="transition:none;">
-<script>if(window.__sidebarCollapsed && window.innerWidth > 768) document.getElementById('topbar').style.left='72px';</script>
-    <button class="topbar-btn d-md-none" id="sidebarToggle" style="border:none;">
-        <i class="bi bi-list"></i>
-    </button>
-
-    <div class="topbar-title">
-        <i class="bi bi-{{ $pageIcon ?? 'house' }} page-icon"></i>
-        {{ $title ?? 'Início' }}
-    </div>
-
-    <div class="topbar-spacer"></div>
-
-    {{-- Slot para ações da página (botões, filtros, etc) --}}
-    @hasSection('topbar_actions')
-        @yield('topbar_actions')
-    @endif
-
-    {{-- Trial badge --}}
-    @php
-        $__tenant = auth()->user()->tenant;
-        $__showTrial = $__tenant
-            && $__tenant->status === 'trial'
-            && $__tenant->trial_ends_at
-            && !$__tenant->trial_ends_at->isPast();
-        $__trialDays = $__showTrial ? (int) now()->diffInDays($__tenant->trial_ends_at, false) : 0;
-        $__trialTotal = $__showTrial && $__tenant->created_at ? (int) $__tenant->created_at->diffInDays($__tenant->trial_ends_at) : 14;
-        $__trialPct = $__trialTotal > 0 ? max(0, min(100, ($__trialDays / $__trialTotal) * 100)) : 0;
-    @endphp
-    @if($__showTrial)
-    <div class="trial-widget" title="Seu período de teste termina em {{ $__trialDays }} dias">
-        <div class="trial-widget-text">
-            <i class="bi bi-clock-history"></i>
-            <span>Trial: <strong>{{ $__trialDays }} {{ $__trialDays === 1 ? 'dia' : 'dias' }}</strong></span>
-        </div>
-        <div class="trial-widget-bar">
-            <div class="trial-widget-bar-fill" style="width:{{ $__trialPct }}%"></div>
-        </div>
-    </div>
-    @endif
-
-    {{-- Bell de notificações + avatar — sempre visíveis --}}
-    <div class="topbar-actions">
-        <div class="dropdown">
-            <button class="topbar-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside"
-                    id="notif-bell-btn" title="Notificações">
-                <i class="bi bi-bell"></i>
-                <span class="badge-num d-none" id="notif-badge-num"></span>
-            </button>
-            <div class="dropdown-menu dropdown-menu-end shadow" id="notif-panel"
-                 style="width:340px;max-height:420px;overflow-y:auto;border-radius:12px;padding:0;">
-                <div style="padding:12px 16px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1;">
-                    <span style="font-weight:700;font-size:13px;">Notificações</span>
-                    <button onclick="markAllIntentRead()" type="button" class="btn btn-link btn-sm p-0"
-                            style="font-size:11px;text-decoration:none;color:#677489;">Marcar todas lidas</button>
-                </div>
-                <div id="notif-list">
-                    <div style="padding:24px;text-align:center;color:#97A3B7;font-size:12px;">Nenhuma notificação</div>
-                </div>
-            </div>
-        </div>
-        <div class="dropdown">
-            <div class="user-avatar" style="width:36px;height:36px;border-radius:9px;cursor:pointer;overflow:hidden;"
-                 data-bs-toggle="dropdown">
-                @if(auth()->user()->avatar)
-                    <img src="{{ auth()->user()->avatar }}" alt="{{ auth()->user()->name }}"
-                         style="width:100%;height:100%;object-fit:cover;">
-                @else
-                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                @endif
-            </div>
-            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width:180px;border-radius:10px;">
-                <li class="px-3 py-2">
-                    <div style="font-size:13px;font-weight:600;">{{ auth()->user()->name }}</div>
-                    <div style="font-size:11px;color:#97A3B7;">{{ auth()->user()->email }}</div>
-                </li>
-                <li><hr class="dropdown-divider my-1"></li>
-                <li><a class="dropdown-item" href="{{ route('settings.profile') }}"><i class="bi bi-person me-2"></i>Perfil</a></li>
-                <li>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="dropdown-item text-danger">
-                            <i class="bi bi-box-arrow-right me-2"></i>Sair
-                        </button>
-                    </form>
-                </li>
-            </ul>
         </div>
     </div>
 </header>
 
 {{-- ===== CONTEÚDO PRINCIPAL ===== --}}
-<main class="main-content" id="mainContent" style="transition:none;">
-<script>if(window.__sidebarCollapsed && window.innerWidth > 768) document.getElementById('mainContent').style.marginLeft='72px';</script>
+<main class="main-content" id="mainContent">
     @if($__showTrial ?? false)
     <div class="trial-mobile-banner">
         <i class="bi bi-clock-history"></i>
@@ -1400,115 +1067,30 @@ window.confirmAction = function ({ title = 'Confirmar ação', message = '', con
     modal.onclick = (e) => { if (e.target === modal) close(); };
 };
 
-// ── Sidebar collapse ──────────────────────────────────────────────────────
-(function () {
-    const STORAGE_KEY = 'sidebar_collapsed';
-    const sidebar     = document.getElementById('sidebar');
-    const topbar      = document.getElementById('topbar');
-    const main        = document.getElementById('mainContent');
-    const icon        = document.getElementById('collapseIcon');
-
-    function applyState(collapsed, animate) {
-        if (!animate) {
-            sidebar.style.transition  = 'none';
-            topbar.style.transition   = 'none';
-            main.style.transition     = 'none';
-        }
-
-        if (collapsed) {
-            sidebar.classList.add('sidebar--collapsed');
-            topbar.style.left        = '72px';
-            main.style.marginLeft    = '72px';
-            if (icon) { icon.className = 'bi bi-layout-sidebar-reverse'; }
-        } else {
-            sidebar.classList.remove('sidebar--collapsed');
-            topbar.style.left        = '260px';
-            main.style.marginLeft    = '260px';
-            if (icon) { icon.className = 'bi bi-layout-sidebar'; }
-        }
-
-        // Reativa transições após o frame inicial
-        if (!animate) {
-            requestAnimationFrame(() => {
-                sidebar.style.transition  = '';
-                topbar.style.transition   = '';
-                main.style.transition     = '';
-            });
-        }
-    }
-
-    // Estado já aplicado por inline scripts — só atualiza ícone e restaura transições
-    const saved = window.__sidebarCollapsed;
-    if (icon) { icon.className = saved ? 'bi bi-layout-sidebar-reverse' : 'bi bi-layout-sidebar'; }
-    requestAnimationFrame(() => {
-        sidebar.style.transition = '';
-        topbar.style.transition  = '';
-        main.style.transition    = '';
-    });
-
-    // Botão toggle
-    document.getElementById('sidebarCollapseBtn')?.addEventListener('click', function () {
-        const willCollapse = !sidebar.classList.contains('sidebar--collapsed');
-        applyState(willCollapse, true);
-        localStorage.setItem(STORAGE_KEY, willCollapse ? '1' : '0');
-    });
-}());
-
-// ── Sidebar submenu toggle ────────────────────────────────────────────────
-function toggleSubmenu(toggleEl) {
-    const isCollapsed = document.getElementById('sidebar').classList.contains('sidebar--collapsed');
-    if (isCollapsed) return; // No toggle in collapsed mode — flyout handles it
-
-    const wrap = toggleEl.closest('.nav-submenu-wrap');
-    const sub  = wrap.querySelector('.nav-submenu');
-    const chev = toggleEl.querySelector('.nav-chevron');
-    const isOpen = sub.style.display !== 'none';
-    sub.style.display = isOpen ? 'none' : '';
-    if (chev) chev.style.transform = isOpen ? '' : 'rotate(180deg)';
+// ── Navbar dropdown toggle ───────────────────────────────────────────────
+function toggleNavDropdown(btn) {
+    const wrap = btn.closest('.nm-dropdown');
+    const wasOpen = wrap.classList.contains('open');
+    // Close all dropdowns
+    document.querySelectorAll('.nm-dropdown.open').forEach(d => d.classList.remove('open'));
+    if (!wasOpen) wrap.classList.add('open');
 }
-
-// ── Collapsed sidebar: flyout on hover ───────────────────────────────────
-(function() {
-    let _flyoutTimeout;
-    document.querySelectorAll('.nav-submenu-wrap').forEach(wrap => {
-        const toggle = wrap.querySelector('.nav-submenu-toggle');
-        const sub = wrap.querySelector('.nav-submenu');
-        if (!toggle || !sub) return;
-
-        wrap.addEventListener('mouseenter', () => {
-            const sidebar = document.getElementById('sidebar');
-            if (!sidebar.classList.contains('sidebar--collapsed')) return;
-            clearTimeout(_flyoutTimeout);
-            // Close other flyouts
-            document.querySelectorAll('.nav-submenu.flyout-open').forEach(s => s.classList.remove('flyout-open'));
-            // Position
-            const rect = toggle.getBoundingClientRect();
-            sub.style.left = (rect.right + 4) + 'px';
-            sub.style.top = rect.top + 'px';
-            sub.classList.add('flyout-open');
-        });
-
-        wrap.addEventListener('mouseleave', () => {
-            _flyoutTimeout = setTimeout(() => sub.classList.remove('flyout-open'), 150);
-        });
-
-        sub.addEventListener('mouseenter', () => clearTimeout(_flyoutTimeout));
-        sub.addEventListener('mouseleave', () => {
-            _flyoutTimeout = setTimeout(() => sub.classList.remove('flyout-open'), 150);
-        });
-    });
-}());
-
-// ── Sidebar mobile toggle ─────────────────────────────────────────────────
-document.getElementById('sidebarToggle')?.addEventListener('click', () => {
-    const sb = document.getElementById('sidebar');
-    const ov = document.getElementById('sidebarOverlay');
-    sb.classList.toggle('open');
-    ov.style.display = sb.classList.contains('open') ? 'block' : 'none';
+// Close dropdowns on click outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.nm-dropdown')) {
+        document.querySelectorAll('.nm-dropdown.open').forEach(d => d.classList.remove('open'));
+    }
 });
-document.getElementById('sidebarOverlay')?.addEventListener('click', () => {
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('sidebarOverlay').style.display = 'none';
+// Mobile hamburger — toggle menu + icon ☰ ↔ ✕
+document.getElementById('navbarHamburger')?.addEventListener('click', function() {
+    var menu = document.getElementById('navbarMenu');
+    menu.classList.toggle('open');
+    var icon = this.querySelector('i');
+    if (menu.classList.contains('open')) {
+        icon.className = 'bi bi-x-lg';
+    } else {
+        icon.className = 'bi bi-list';
+    }
 });
 
 // ── Flash messages ────────────────────────────────────────────────────────
@@ -1598,7 +1180,7 @@ function switchWorkspace(tenantId) {
 }
 document.addEventListener('click', function (e) {
     const dd = document.getElementById('workspaceDropdown');
-    if (dd && !dd.closest('.workspace-selector-wrap')?.contains(e.target)) {
+    if (dd && !dd.closest('.navbar-workspace')?.contains(e.target)) {
         dd.classList.remove('open');
     }
 });
@@ -1614,7 +1196,7 @@ document.addEventListener('click', function (e) {
     const ANALYST_URL   = '{{ route("analyst.pending-count") }}';
     const MASTER_URL    = '{{ route("master-notifications.index") }}';
     const CSRF          = '{{ csrf_token() }}';
-    const ICONS         = { buy: '🛒', schedule: '📅', close: '🤝', interest: '⭐' };
+    const ICONS         = { buy: '\uD83D\uDED2', schedule: '\uD83D\uDCC5', close: '\uD83E\uDD1D', interest: '\u2B50' };
     const CONV_BASE     = '{{ rtrim(url("/"), "/") }}';
     let _masterNotifs   = [];
 
@@ -1657,7 +1239,7 @@ document.addEventListener('click', function (e) {
         ].join('') : '';
 
         const intentHtml = (signals && signals.length) ? signals.map(s => {
-            const icon    = ICONS[s.intent_type] || '⭐';
+            const icon    = ICONS[s.intent_type] || '\u2B50';
             const unread  = !s.read_at ? 'unread' : '';
             const convBtn = s.conversation_id
                 ? `<a href="${CONV_BASE}/whatsapp?conv=${s.conversation_id}"
@@ -1679,11 +1261,11 @@ document.addEventListener('click', function (e) {
                     </div>`;
         }).join('') : '';
 
-        const TYPE_ICONS_BELL = { stage_change: '📊', add_tag: '🏷️', add_note: '📝', fill_field: '📋', update_lead: '✏️' };
+        const TYPE_ICONS_BELL = { stage_change: '\uD83D\uDCCA', add_tag: '\uD83C\uDFF7\uFE0F', add_note: '\uD83D\uDCDD', fill_field: '\uD83D\uDCCB', update_lead: '\u270F\uFE0F' };
         const analystHtml = (analystItems && analystItems.length) ? [
-            `<div style="padding:6px 16px 4px;font-size:10px;font-weight:700;color:#10b981;letter-spacing:.5px;background:#f0fdf4;border-bottom:1px solid #bbf7d0;">🤖 SUGESTÕES DA IA</div>`,
+            `<div style="padding:6px 16px 4px;font-size:10px;font-weight:700;color:#10b981;letter-spacing:.5px;background:#f0fdf4;border-bottom:1px solid #bbf7d0;">\uD83E\uDD16 SUGESTÕES DA IA</div>`,
             ...analystItems.map(s => {
-                const icon = TYPE_ICONS_BELL[s.type] || '🤖';
+                const icon = TYPE_ICONS_BELL[s.type] || '\uD83E\uDD16';
                 const convLink = s.conversation_id
                     ? `<a href="${CONV_BASE}/chats?open=${s.conversation_id}" style="font-size:11px;color:#10b981;text-decoration:none;flex-shrink:0;" onclick="event.stopPropagation()">Ver</a>`
                     : '';
@@ -1750,7 +1332,7 @@ document.addEventListener('click', function (e) {
             const channel = window.Echo.private('tenant.{{ auth()->user()->tenant_id }}');
 
             channel.listen('.ai.intent', function (data) {
-                const icon = ICONS[data.intent_type] || '⭐';
+                const icon = ICONS[data.intent_type] || '\u2B50';
                 if (window.toastr) {
                     toastr.info(
                         `${icon} <b>${data.contact_name}</b>: ${data.context}`,

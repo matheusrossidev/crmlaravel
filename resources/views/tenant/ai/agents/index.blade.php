@@ -5,18 +5,7 @@
     $pageIcon = 'robot';
 @endphp
 
-@section('topbar_actions')
-<div class="topbar-actions">
-    @if(auth()->user()->tenant->ai_tokens_exhausted)
-    <button onclick="openQuotaModal()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#fff7ed;color:#ea580c;border:1.5px solid #fed7aa;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;">
-        <i class="bi bi-exclamation-triangle-fill"></i> Tokens esgotados — Ver consumo
-    </button>
-    @endif
-    <a href="{{ route('ai.agents.create') }}" class="btn-primary-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;">
-        <i class="bi bi-plus-lg"></i> Novo Agente
-    </a>
-</div>
-@endsection
+{{-- topbar_actions removido — botões movidos para page header --}}
 
 @push('styles')
 <style>
@@ -355,6 +344,21 @@
 
 @section('content')
 <div class="page-container">
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <i class="bi bi-robot" style="color:#3B82F6;font-size:16px;"></i>
+        <span style="font-size:15px;font-weight:700;color:#1a1d23;">Agentes de IA</span>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+            @if(auth()->user()->tenant->ai_tokens_exhausted)
+            <button onclick="openQuotaModal()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#fff7ed;color:#ea580c;border:1.5px solid #fed7aa;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;">
+                <i class="bi bi-exclamation-triangle-fill"></i> Tokens esgotados
+            </button>
+            @endif
+            <a href="{{ route('ai.agents.create') }}" class="btn-primary-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 14px;">
+                <i class="bi bi-plus-lg"></i> Novo Agente
+            </a>
+        </div>
+    </div>
 
     @if($agents->isEmpty())
     <div class="empty-state">

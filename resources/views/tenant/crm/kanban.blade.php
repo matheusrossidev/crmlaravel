@@ -6,41 +6,7 @@
     $tagColorMap = [];
 @endphp
 
-@section('topbar_actions')
-<div class="topbar-actions">
-    @if($pipelines->count())
-    {{-- Pipeline selector --}}
-    <select id="pipelineSelect"
-            style="padding:7px 14px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:13px;font-family:inherit;outline:none;background:#fafafa;color:#374151;cursor:pointer;font-weight:500;">
-        @foreach($pipelines as $p)
-        <option value="{{ $p->id }}" {{ $pipeline?->id === $p->id ? 'selected' : '' }}>{{ $p->name }}</option>
-        @endforeach
-    </select>
-
-    <button class="topbar-btn hide-mobile" title="Filtros" id="btnToggleFilters">
-        <i class="bi bi-funnel{{ request()->hasAny(['source','date_from','date_to','campaign_id','tag']) ? '-fill' : '' }}"></i>
-    </button>
-
-    <button class="topbar-btn hide-mobile" title="Exportar leads" onclick="exportarLeads()">
-        <i class="bi bi-download"></i>
-    </button>
-
-    <button class="topbar-btn hide-mobile" title="Importar leads" onclick="openImportModal()" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
-        <i class="bi bi-upload"></i>
-    </button>
-
-    <button class="btn-primary-sm hide-mobile" id="btnNovoLead" {{ auth()->user()->isViewer() ? 'disabled style=opacity:.5;pointer-events:none;' : '' }}>
-        <i class="bi bi-plus-lg"></i>
-        Novo Lead
-    </button>
-    @else
-    <button class="btn-primary-sm" onclick="openPipelineDrawer()">
-        <i class="bi bi-plus-lg"></i>
-        Criar funil
-    </button>
-    @endif
-</div>
-@endsection
+{{-- topbar_actions removido — botões movidos para kanban-header --}}
 
 @push('styles')
 <style>
@@ -612,15 +578,43 @@
 @if($pipelines->isNotEmpty())
 
 <div class="kanban-header">
-    @if($pipeline)
-    <span class="kanban-pipeline-name">
-        <i class="bi bi-diagram-3" style="color:#3B82F6;margin-right:4px;"></i>
-        {{ $pipeline->name }}
-    </span>
-    @endif
-    <span style="font-size:12px;color:#9ca3af;">
-        {{ $stages->sum('count') }} leads no funil
-    </span>
+    <div style="display:flex;align-items:center;gap:12px;">
+        @if($pipeline)
+        <span class="kanban-pipeline-name">
+            <i class="bi bi-diagram-3" style="color:#3B82F6;margin-right:4px;"></i>
+            {{ $pipeline->name }}
+        </span>
+        @endif
+        <span style="font-size:12px;color:#9ca3af;">
+            {{ $stages->sum('count') }} leads no funil
+        </span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+        @if($pipelines->count())
+        <select id="pipelineSelect"
+                style="padding:6px 12px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:12px;font-family:inherit;outline:none;background:#fafafa;color:#374151;cursor:pointer;font-weight:500;">
+            @foreach($pipelines as $p)
+            <option value="{{ $p->id }}" {{ $pipeline?->id === $p->id ? 'selected' : '' }}>{{ $p->name }}</option>
+            @endforeach
+        </select>
+        <button class="topbar-btn hide-mobile" title="Filtros" id="btnToggleFilters" style="width:32px;height:32px;">
+            <i class="bi bi-funnel{{ request()->hasAny(['source','date_from','date_to','campaign_id','tag']) ? '-fill' : '' }}"></i>
+        </button>
+        <button class="topbar-btn hide-mobile" title="Exportar leads" onclick="exportarLeads()" style="width:32px;height:32px;">
+            <i class="bi bi-download"></i>
+        </button>
+        <button class="topbar-btn hide-mobile" title="Importar leads" onclick="openImportModal()" style="width:32px;height:32px;" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
+            <i class="bi bi-upload"></i>
+        </button>
+        <button class="btn-primary-sm hide-mobile" id="btnNovoLead" style="padding:6px 14px;font-size:12px;" {{ auth()->user()->isViewer() ? 'disabled style=opacity:.5;pointer-events:none;' : '' }}>
+            <i class="bi bi-plus-lg"></i> Novo Lead
+        </button>
+        @else
+        <button class="btn-primary-sm" onclick="openPipelineDrawer()" style="padding:6px 14px;font-size:12px;">
+            <i class="bi bi-plus-lg"></i> Criar funil
+        </button>
+        @endif
+    </div>
 </div>
 
 {{-- Filter bar --}}

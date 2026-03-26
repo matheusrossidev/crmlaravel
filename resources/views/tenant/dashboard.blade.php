@@ -5,9 +5,6 @@
 
 @section('topbar_actions')
 <div class="topbar-actions">
-    <span class="topbar-date" style="font-size:13px;color:#677489;">
-        {{ now()->translatedFormat('l, d \d\e F') }}
-    </span>
     <button class="topbar-btn" onclick="openCustomize()" title="Personalizar dashboard">
         <i class="bi bi-sliders"></i>
     </button>

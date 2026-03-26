@@ -298,8 +298,6 @@
 @section('content')
 <div class="af-page">
 
-    @include('tenant.settings._tabs')
-
     {{-- Header --}}
     <div class="af-header">
         <a href="{{ route('settings.automations') }}" class="af-back" title="Voltar">

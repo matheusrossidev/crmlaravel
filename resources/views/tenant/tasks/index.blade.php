@@ -5,13 +5,7 @@
     $pageIcon = 'check2-square';
 @endphp
 
-@section('topbar_actions')
-<div class="topbar-actions">
-    <button class="btn-primary-sm" onclick="openTaskDrawer()" style="display:flex;align-items:center;gap:6px;">
-        <i class="bi bi-plus-lg"></i> Nova Tarefa
-    </button>
-</div>
-@endsection
+{{-- topbar_actions removido — botão movido para page header --}}
 
 @push('styles')
 <style>
@@ -170,6 +164,15 @@
 
 @section('content')
 <div class="page-container">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <i class="bi bi-check2-square" style="color:#3B82F6;font-size:16px;"></i>
+        <span style="font-size:15px;font-weight:700;color:#1a1d23;">Tarefas</span>
+        <div style="margin-left:auto;">
+            <button class="btn-primary-sm" onclick="openTaskDrawer()" style="display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 14px;">
+                <i class="bi bi-plus-lg"></i> Nova Tarefa
+            </button>
+        </div>
+    </div>
     <div class="task-filters">
         <button class="task-tab active" data-status="">Todas</button>
         <button class="task-tab" data-status="pending">Pendentes</button>
