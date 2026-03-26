@@ -116,7 +116,10 @@
         border-radius: 14px;
         border: 1px solid #e8eaf0;
         padding: 18px 20px;
+        display: flex;
+        flex-direction: column;
     }
+    .kpi-spark { position: relative; height: 48px; margin-top: auto; }
 
     .kpi-label {
         font-size: 12px;
@@ -139,8 +142,9 @@
     }
 
     .kpi-delta {
-        font-size: 12px;
-        font-weight: 600;
+        font-size: 11px;
+        font-weight: 500;
+        opacity: .85;
     }
 
     .kpi-delta.up   { color: #10B981; }
@@ -380,9 +384,25 @@
     .conv-low  { color: #6b7280; }
 
     /* ── Leads perdidos: grid 3 colunas ────────────────────────── */
-    .lost-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
-    @media (max-width: 900px) { .lost-grid-3 { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 600px) { .lost-grid-3 { grid-template-columns: 1fr; } }
+    .lost-grid-3 { display: flex; flex-direction: column; gap: 20px; }
+
+    .report-triple-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+    .report-triple-grid > .report-section { margin-bottom: 0; }
+    @media (max-width: 1000px) { .report-triple-grid { grid-template-columns: 1fr; } }
+
+    .report-double-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+    .report-double-grid > .report-section { margin-bottom: 0; }
+    @media (max-width: 1000px) { .report-double-grid { grid-template-columns: 1fr; } }
 
     /* ── Layout Funil + Campanhas 50/50 ─────────────────────────── */
     .funnel-campaigns-grid {
@@ -434,9 +454,26 @@
     .funnel-rconnector {
         display: flex;
         justify-content: center;
+        align-items: center;
+        gap: 6px;
         color: #d1d5db;
         font-size: 13px;
         line-height: 1;
+        padding: 2px 0;
+    }
+    .funnel-rconnector .conv-rate {
+        font-size: 10px;
+        font-weight: 600;
+        color: #9ca3af;
+        background: #f8fafc;
+        padding: 1px 8px;
+        border-radius: 99px;
+        border: 1px solid #e8eaf0;
+    }
+    .funnel-rconnector .conv-rate.bottleneck {
+        color: #EF4444;
+        background: #fef2f2;
+        border-color: #fecaca;
     }
 
     /* ── Mobile ── */
@@ -558,6 +595,7 @@
             @else
             <div class="kpi-delta neu">Sem dados anteriores</div>
             @endif
+            <div class="kpi-spark"><canvas id="sparkLeads"></canvas></div>
         </div>
 
         {{-- Receita --}}
@@ -571,6 +609,7 @@
             @else
             <div class="kpi-delta neu">Sem dados anteriores</div>
             @endif
+            <div class="kpi-spark"><canvas id="sparkRevenue"></canvas></div>
         </div>
 
         {{-- Ticket Médio --}}
@@ -578,13 +617,15 @@
             <div class="kpi-label"><i class="bi bi-tag" style="color:#8B5CF6;"></i> Ticket Médio</div>
             <div class="kpi-value" style="color:#8B5CF6;">R$ {{ number_format($avgTicket, 0, ',', '.') }}</div>
             <div class="kpi-delta neu">{{ $salesCount }} venda(s) no período</div>
+            <div class="kpi-spark"><canvas id="sparkTicket"></canvas></div>
         </div>
 
         {{-- Taxa de Conversão --}}
         <div class="kpi-card">
             <div class="kpi-label"><i class="bi bi-arrow-up-right-circle" style="color:#F59E0B;"></i> Taxa de Conversão</div>
-            <div class="kpi-value" style="color:#F59E0B;">{{ $convRate }}%</div>
+            <div class="kpi-value" style="color:#F59E0B;">{{ number_format((float)$convRate, 1, ',', '.') }}%</div>
             <div class="kpi-delta neu">Leads → Vendas</div>
+            <div class="kpi-spark"><canvas id="sparkConv"></canvas></div>
         </div>
     </div>
 
@@ -595,14 +636,22 @@
 
         <div class="chart-box">
             <div class="chart-title">Leads por dia</div>
-            <div style="position:relative;height:180px;">
+            <div style="display:flex;gap:12px;margin-bottom:12px;font-size:12px;color:#6b7280;">
+                <span style="display:flex;align-items:center;gap:4px;">
+                    <span style="width:10px;height:10px;border-radius:2px;background:#3B82F6;"></span> Leads por dia
+                </span>
+                <span style="display:flex;align-items:center;gap:4px;">
+                    <span style="display:inline-block;width:16px;border-top:1.5px dashed #F59E0B;"></span> Média 7 dias
+                </span>
+            </div>
+            <div style="position:relative;height:200px;">
                 <canvas id="chartLeadsByDay"></canvas>
             </div>
         </div>
 
         <div class="chart-box">
             <div class="chart-title">Leads por origem</div>
-            <div style="position:relative;height:180px;">
+            <div style="position:relative;height:200px;">
                 <canvas id="chartLeadsBySource"></canvas>
             </div>
         </div>
@@ -610,60 +659,79 @@
     </div>
 
     {{-- ════════════════════════════════════════════════════════════ --}}
-    {{-- FUNIL REAL + CAMPANHAS (50/50)                             --}}
+    {{-- FUNIL DE CONVERSÃO (100% width + canvas stream)            --}}
     {{-- ════════════════════════════════════════════════════════════ --}}
-    <div class="funnel-campaigns-grid">
-
-        {{-- Funil Real de Pipeline --}}
-        <div class="report-section" style="margin-bottom:0;">
-            <div class="report-section-header">
-                <i class="bi bi-funnel"></i>
-                Funil de Conversão
-            </div>
-            <div class="report-section-body">
-                @php $funnelPipe = $pipelineRows->first(fn($r) => $r['stages']->isNotEmpty()); @endphp
-                @if($funnelPipe)
-                    @php $funnelBase = max($funnelPipe['total'], 1); @endphp
-                    <div class="real-funnel">
-                        @foreach($funnelPipe['stages'] as $i => $stageRow)
-                        @php
-                            $stage   = $stageRow['stage'];
-                            $count   = $stageRow['count'];
-                            $avgDays = $stageRow['avg_days'] ?? null;
-                            $pct     = round($count / $funnelBase * 100, 1);
-                            $barW    = $stageRow['bar_width'];
-                            $color   = $stage->color ?? '#3B82F6';
-                        @endphp
-                        @if($i > 0)
-                        <div class="funnel-rconnector"><i class="bi bi-chevron-down"></i></div>
-                        @endif
-                        <div class="funnel-rrow">
-                            <div class="funnel-rrow-meta">
-                                <span class="funnel-rrow-name">
-                                    {{ $stage->name }}
-                                    @if($stage->is_won)  <span class="badge-won" style="font-size:9px;vertical-align:middle;">GANHO</span>   @endif
-                                    @if($stage->is_lost) <span class="badge-lost" style="font-size:9px;vertical-align:middle;">PERDIDO</span> @endif
-                                </span>
-                                @if($avgDays !== null)
-                                <span class="funnel-rrow-time">
-                                    <i class="bi bi-clock" style="font-size:10px;"></i> {{ $avgDays }}d méd.
-                                </span>
-                                @endif
-                            </div>
-                            <div class="funnel-rbar-outer">
-                                <div class="funnel-rbar-inner" style="width:{{ $barW }}%;background:{{ $color }};">
-                                    <span class="funnel-rbar-label">{{ number_format($count, 0, ',', '.') }}</span>
-                                    <span class="funnel-rbar-pct">{{ $pct }}%</span>
-                                </div>
-                            </div>
+    <div class="report-section">
+        <div class="report-section-header">
+            <i class="bi bi-funnel"></i>
+            Funil de Conversão
+        </div>
+        <div style="padding:0;">
+            @php $funnelPipe = $pipelineRows->first(fn($r) => $r['stages']->isNotEmpty()); @endphp
+            @if($funnelPipe)
+                @php
+                    $stagesArr = $funnelPipe['stages']->values();
+                    $funnelMax = max($stagesArr->max('count'), 1);
+                @endphp
+                <div style="display:grid;grid-template-columns:repeat({{ $stagesArr->count() }}, 1fr);width:100%;">
+                    @foreach($stagesArr as $i => $stageRow)
+                    @php
+                        $stage   = $stageRow['stage'];
+                        $count   = $stageRow['count'];
+                        $avgDays = $stageRow['avg_days'] ?? null;
+                        $color   = $stage->color ?? '#3B82F6';
+                        $prevCount = $i > 0 ? $stagesArr[$i - 1]['count'] : null;
+                        $convRate  = $prevCount && $prevCount > 0 ? round($count / $prevCount * 100) : null;
+                        $totalStages = $stagesArr->sum('count') ?: 1;
+                        $stagePct = round($count / $totalStages * 100);
+                    @endphp
+                    <div style="padding:14px 12px;{{ $i > 0 ? 'border-left:1px solid #f0f2f7;' : '' }}">
+                        <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;">
+                            <span style="width:8px;height:8px;border-radius:2px;background:{{ $color }};"></span>
+                            <span style="font-size:11px;font-weight:600;color:#6b7280;white-space:nowrap;">{{ $stage->name }}</span>
+                            @if($stage->is_won)  <span class="badge-won" style="font-size:8px;">GANHO</span> @endif
+                            @if($stage->is_lost) <span class="badge-lost" style="font-size:8px;">PERDIDO</span> @endif
                         </div>
+                        <div style="font-size:20px;font-weight:800;color:{{ $count === 0 ? '#d1d5db' : '#1a1d23' }};margin-bottom:6px;">{{ $count }}</div>
+                        <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:6px;">
+                            @if($convRate !== null)
+                            <span style="font-size:10px;font-weight:600;color:{{ $convRate === 0 ? '#EF4444' : ($convRate < 50 ? '#EF4444' : ($convRate < 80 ? '#F59E0B' : '#10B981')) }};{{ $convRate === 0 ? 'background:#fef2f2;padding:1px 6px;border-radius:4px;' : '' }}">
+                                <i class="bi bi-arrow-right" style="font-size:9px;"></i> {{ $convRate }}% da anterior
+                            </span>
+                            @endif
+                            @if($avgDays !== null)
+                            <span style="font-size:10px;color:#9ca3af;">
+                                <i class="bi bi-clock" style="font-size:9px;"></i> {{ $avgDays }}d média
+                            </span>
+                            @endif
+                        </div>
+                        <div style="height:24px;background:{{ $color }}15;border-radius:99px;display:flex;align-items:center;justify-content:center;">
+                            <span style="font-size:10px;font-weight:700;color:{{ $color }};">{{ $stagePct }}%</span>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                {{-- Canvas stream --}}
+                <div style="height:180px;overflow:hidden;border-radius:0 0 14px 14px;background:#f8fafc;position:relative;">
+                    <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat({{ $stagesArr->count() }}, 1fr);pointer-events:none;z-index:1;">
+                        @foreach($stagesArr as $idx => $s)
+                        <div style="{{ $idx > 0 ? 'border-left:1px solid rgba(0,0,0,.06);' : '' }}"></div>
                         @endforeach
                     </div>
-                @else
+                    <canvas id="reportFunnelCanvas" style="width:100%;height:180px;display:block;position:relative;z-index:0;"></canvas>
+                </div>
+            @else
+                <div class="report-section-body">
                     <p style="color:#9ca3af;font-size:13px;text-align:center;padding:24px 0;">Nenhum pipeline com dados.</p>
-                @endif
-            </div>
+                </div>
+            @endif
         </div>
+    </div>
+
+    {{-- ════════════════════════════════════════════════════════════ --}}
+    {{-- CAMPANHAS + PIPELINE (lado a lado)                         --}}
+    {{-- ════════════════════════════════════════════════════════════ --}}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px;">
 
         {{-- Campanhas --}}
         <div class="report-section" style="margin-bottom:0;">
@@ -677,28 +745,37 @@
                         <tr>
                             <th>Campanha</th>
                             <th class="num">Leads</th>
-                            <th class="num">Conversoes</th>
+                            <th class="num">Conv.</th>
                             <th class="num">Conv.%</th>
                             <th class="num">Receita</th>
                         </tr>
                     </thead>
                     <tbody>
+                        @php $maxCampLeads = $campaignRows->max('leads_count') ?: 1; @endphp
                         @forelse($campaignRows as $row)
-                        <tr>
+                        @php
+                            $convColor = $row['conv'] == 0 ? '#9ca3af' : ($row['conv'] <= 30 ? '#EF4444' : ($row['conv'] <= 70 ? '#F59E0B' : '#10B981'));
+                            $convBg    = $row['conv'] == 0 ? '#f3f4f6' : ($row['conv'] <= 30 ? '#fef2f2' : ($row['conv'] <= 70 ? '#fff7ed' : '#f0fdf4'));
+                            $isBest    = $row['leads_count'] === $maxCampLeads && $row['leads_count'] > 0;
+                        @endphp
+                        <tr style="{{ $isBest ? 'background:#f8fafc;' : '' }}">
                             <td style="font-size:12px;">
-                                <span style="font-weight:600;color:#1a1d23;">{{ $row['name'] }}</span><br>
-                                <span style="font-size:11px;color:#9ca3af;">{{ $row['source'] }}</span>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <div style="width:28px;height:28px;border-radius:7px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                        <i class="bi bi-megaphone" style="font-size:12px;color:#3B82F6;"></i>
+                                    </div>
+                                    <div>
+                                        <span style="font-weight:600;color:#1a1d23;">{{ $row['name'] }}</span><br>
+                                        <span style="font-size:10px;color:#9ca3af;">{{ $row['source'] }}</span>
+                                    </div>
+                                </div>
                             </td>
                             <td class="num" style="font-weight:700;color:#3B82F6;">{{ $row['leads_count'] }}</td>
                             <td class="num" style="font-weight:600;">{{ $row['sales_count'] }}</td>
                             <td class="num">
-                                @if($row['conv'] > 0)
-                                    <span style="color:#10B981;font-weight:600;">{{ $row['conv'] }}%</span>
-                                @else
-                                    <span style="color:#9ca3af;">0%</span>
-                                @endif
+                                <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:{{ $convBg }};color:{{ $convColor }};">{{ $row['conv'] }}%</span>
                             </td>
-                            <td class="num" style="color:#10B981;font-weight:700;">{{ $row['revenue'] > 0 ? 'R$ '.number_format($row['revenue'], 0, ',', '.') : '—' }}</td>
+                            <td class="num" style="font-weight:700;color:#1a1d23;">{{ $row['revenue'] > 0 ? 'R$ '.number_format($row['revenue'], 0, ',', '.') : '—' }}</td>
                         </tr>
                         @empty
                         <tr class="empty-row">
@@ -713,77 +790,97 @@
             </div>
         </div>
 
-    </div>{{-- /funnel-campaigns-grid --}}
+        {{-- Pipeline / Etapas --}}
+        <div class="report-section" style="margin-bottom:0;">
+            @php $firstPipe = $pipelineRows->first(); @endphp
+            @if($firstPipe)
+            <div class="report-section-header">
+                <i class="bi bi-filter-left"></i>
+                Funil: {{ $firstPipe['pipeline']->name }}
+                <span style="margin-left:auto;font-size:12px;font-weight:500;color:#9ca3af;">
+                    {{ $firstPipe['total'] }} lead(s)
+                </span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Etapa</th>
+                            <th class="num">Leads</th>
+                            <th class="num">%</th>
+                            <th>Visualização</th>
+                            <th class="num">Tempo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php $maxStageCount = $firstPipe['stages']->max('count') ?: 1; @endphp
+                        @forelse($firstPipe['stages'] as $stageRow)
+                        @php
+                            $stage     = $stageRow['stage'];
+                            $count     = $stageRow['count'];
+                            $avgDays   = $stageRow['avg_days'] ?? null;
+                            $pipeTotal = $firstPipe['total'] ?: 1;
+                            $pct       = round($count / $pipeTotal * 100, 1);
+                            $color     = $stage->color ?? '#3B82F6';
+                            $isMax     = $count === $maxStageCount && $count > 0;
+                            // Format time — always in days for consistency
+                            $timeStr = '—';
+                            if ($avgDays !== null) {
+                                if ($avgDays < 1) {
+                                    $timeStr = '< 1d';
+                                } else {
+                                    $timeStr = round($avgDays) . 'd';
+                                }
+                            }
+                        @endphp
+                        <tr style="{{ $isMax ? 'background:#f0f4ff;' : '' }}">
+                            <td>
+                                <div style="display:flex;align-items:center;gap:6px;">
+                                    <span style="width:8px;height:8px;border-radius:2px;background:{{ $color }};flex-shrink:0;"></span>
+                                    <span style="font-size:12px;font-weight:{{ $isMax ? '700' : '500' }};">{{ $stage->name }}</span>
+                                    @if($stage->is_won)  <span class="badge-won" style="font-size:8px;">GANHO</span>  @endif
+                                    @if($stage->is_lost) <span class="badge-lost" style="font-size:8px;">PERDIDO</span> @endif
+                                    @if($isMax) <span style="font-size:9px;color:#3B82F6;font-weight:700;">★</span> @endif
+                                </div>
+                            </td>
+                            <td class="num" style="font-weight:700;color:#1a1d23;">{{ $count }}</td>
+                            <td class="num">
+                                <div>
+                                    <span style="font-size:11px;font-weight:600;color:#374151;">{{ $pct }}%</span>
+                                    <div style="margin-top:3px;height:6px;border-radius:3px;background:#f0f2f7;width:60px;">
+                                        <div style="height:6px;border-radius:3px;width:{{ max($pct, 3) }}%;background:{{ $color }};min-width:3px;"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="padding-right:12px;">
+                                <div style="height:6px;border-radius:3px;background:{{ $color }}15;width:100%;">
+                                    <div style="height:6px;border-radius:3px;width:{{ $pct }}%;background:{{ $color }};transition:width .5s;"></div>
+                                </div>
+                            </td>
+                            <td class="num" style="font-size:11px;color:#9ca3af;white-space:nowrap;">
+                                {{ $timeStr }}
+                            </td>
+                        </tr>
+                        @empty
+                        <tr class="empty-row"><td colspan="5">Nenhuma etapa configurada</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            @else
+            <div class="report-section-header"><i class="bi bi-filter-left"></i> Pipeline / Funil</div>
+            <div class="report-section-body" style="text-align:center;color:#9ca3af;padding:40px;">
+                Nenhum pipeline configurado.
+            </div>
+            @endif
+        </div>
 
-    {{-- ════════════════════════════════════════════════════════════ --}}
-    {{-- PIPELINE / FUNIL                                            --}}
-    {{-- ════════════════════════════════════════════════════════════ --}}
-    @foreach($pipelineRows as $pipeRow)
-    <div class="report-section">
-        <div class="report-section-header">
-            <i class="bi bi-filter-left"></i>
-            Funil: {{ $pipeRow['pipeline']->name }}
-            <span style="margin-left:auto;font-size:12px;font-weight:500;color:#9ca3af;">
-                {{ $pipeRow['total'] }} lead(s) no período
-            </span>
-        </div>
-        <div style="overflow-x:auto;">
-            <table class="report-table">
-                <thead>
-                    <tr>
-                        <th>Etapa</th>
-                        <th class="num">Leads</th>
-                        <th>% do Total</th>
-                        <th>Visualização</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($pipeRow['stages'] as $stageRow)
-                    @php
-                        $stage   = $stageRow['stage'];
-                        $count   = $stageRow['count'];
-                        $pipeTotal = $pipeRow['total'];
-                        $pct     = $pipeTotal > 0 ? round($count / $pipeTotal * 100, 1) : 0;
-                    @endphp
-                    <tr>
-                        <td>
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <span style="width:10px;height:10px;border-radius:50%;background:{{ $stage->color ?? '#3B82F6' }};flex-shrink:0;display:inline-block;"></span>
-                                {{ $stage->name }}
-                                @if($stage->is_won)  <span class="badge-won">GANHO</span>  @endif
-                                @if($stage->is_lost) <span class="badge-lost">PERDIDO</span> @endif
-                            </div>
-                        </td>
-                        <td class="num" style="font-weight:700;color:#1a1d23;">{{ $count }}</td>
-                        <td class="num" style="color:#6b7280;">{{ $pct }}%</td>
-                        <td style="padding-right:24px;">
-                            <div class="funnel-bar-wrap">
-                                <div class="funnel-bar-fill"
-                                     style="width:{{ $pct }}%;background:{{ $stage->color ?? '#3B82F6' }};"></div>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr class="empty-row"><td colspan="4">Nenhuma etapa configurada</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
     </div>
-    @endforeach
-
-    @if($pipelineRows->isEmpty())
-    <div class="report-section">
-        <div class="report-section-header"><i class="bi bi-filter-left"></i> Pipeline / Funil</div>
-        <div class="report-section-body" style="text-align:center;color:#9ca3af;padding:40px;">
-            Nenhum pipeline configurado.
-        </div>
-    </div>
-    @endif
 
     {{-- ════════════════════════════════════════════════════════════ --}}
-    {{-- LEADS PERDIDOS                                              --}}
+    {{-- PERDIDOS + VENDEDOR + WHATSAPP (3 colunas)                  --}}
     {{-- ════════════════════════════════════════════════════════════ --}}
+    <div class="report-triple-grid">
     <div class="report-section">
         <div class="report-section-header">
             <i class="bi bi-x-circle" style="color:#EF4444;"></i>
@@ -794,62 +891,90 @@
             </span>
         </div>
 
+        @if($totalLost === 0)
+        <div style="text-align:center;padding:40px 20px;color:#10B981;">
+            <i class="bi bi-shield-check" style="font-size:32px;display:block;margin-bottom:8px;opacity:.5;"></i>
+            <span style="font-size:13px;font-weight:600;">Nenhuma perda no período — excelente!</span>
+        </div>
+        @else
         <div class="report-section-body lost-grid-3">
 
-            {{-- Por Motivo --}}
+            {{-- Por Motivo (Heatmap) --}}
             <div>
                 <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">Por Motivo</div>
+                @php $maxReason = collect($lostByReason)->max('total') ?: 1; @endphp
                 @forelse($lostByReason as $row)
-                <div style="margin-bottom:12px;">
-                    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
-                        <span style="color:#374151;font-weight:500;">{{ $row['reason'] }}</span>
-                        <span style="color:#EF4444;font-weight:700;">{{ $row['total'] }}
-                            <span style="color:#9ca3af;font-weight:400;">({{ $row['pct'] }}%)</span>
-                        </span>
-                    </div>
-                    <div class="reason-bar-bg">
-                        <div class="reason-bar-fill" style="width:{{ $row['pct'] }}%;"></div>
-                    </div>
+                @php
+                    $ratio = $row['total'] / $maxReason;
+                    $heatBg = $ratio >= 0.8 ? '#A32D2D' : ($ratio >= 0.6 ? '#E24B4A' : ($ratio >= 0.4 ? '#F09595' : ($ratio >= 0.2 ? '#F7C1C1' : '#FCEBEB')));
+                    $heatFg = $ratio >= 0.6 ? '#fff' : '#A32D2D';
+                @endphp
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                    <span style="font-size:12px;color:#374151;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $row['reason'] }}</span>
+                    <span style="min-width:42px;height:26px;border-radius:5px;background:{{ $heatBg }};color:{{ $heatFg }};font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">{{ $row['total'] }}</span>
+                    <span style="font-size:10px;color:#9ca3af;min-width:32px;text-align:right;">{{ $row['pct'] }}%</span>
                 </div>
                 @empty
-                <p style="color:#9ca3af;font-size:13px;">Nenhuma perda no período.</p>
+                <p style="color:#9ca3af;font-size:13px;">—</p>
                 @endforelse
+                @if(count($lostByReason) > 0)
+                <div style="display:flex;align-items:center;gap:5px;margin-top:12px;">
+                    <span style="font-size:10px;color:#9ca3af;">menos</span>
+                    <div style="width:12px;height:8px;border-radius:2px;background:#FCEBEB;"></div>
+                    <div style="width:12px;height:8px;border-radius:2px;background:#F7C1C1;"></div>
+                    <div style="width:12px;height:8px;border-radius:2px;background:#F09595;"></div>
+                    <div style="width:12px;height:8px;border-radius:2px;background:#E24B4A;"></div>
+                    <div style="width:12px;height:8px;border-radius:2px;background:#A32D2D;"></div>
+                    <span style="font-size:10px;color:#9ca3af;">mais</span>
+                </div>
+                @endif
             </div>
 
-            {{-- Por Campanha --}}
+            {{-- Por Campanha (heatmap) --}}
             <div>
                 <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">Por Campanha</div>
+                @php $maxCampLost = collect($lostByCampaign)->max('total') ?: 1; @endphp
                 @forelse($lostByCampaign as $row)
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f7f8fa;">
-                    <span style="font-size:13px;color:#374151;">{{ $row['campaign'] }}</span>
-                    <span style="font-size:13px;font-weight:700;color:#EF4444;">{{ $row['total'] }}</span>
+                @php
+                    $cRatio = $row['total'] / $maxCampLost;
+                    $cHeatBg = $cRatio >= 0.8 ? '#A32D2D' : ($cRatio >= 0.6 ? '#E24B4A' : ($cRatio >= 0.4 ? '#F09595' : ($cRatio >= 0.2 ? '#F7C1C1' : '#FCEBEB')));
+                    $cHeatFg = $cRatio >= 0.6 ? '#fff' : '#A32D2D';
+                @endphp
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                    <span style="font-size:12px;color:#374151;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $row['campaign'] }}</span>
+                    <span style="min-width:36px;height:26px;border-radius:5px;background:{{ $cHeatBg }};color:{{ $cHeatFg }};font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">{{ $row['total'] }}</span>
                 </div>
                 @empty
-                <p style="color:#9ca3af;font-size:13px;">Nenhuma perda no período.</p>
+                <p style="color:#9ca3af;font-size:13px;">—</p>
                 @endforelse
             </div>
 
-            {{-- Por Vendedor --}}
+            {{-- Por Vendedor (avatar + barra azul neutra) --}}
             <div>
                 <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">Por Vendedor</div>
+                @php $maxVendLost = collect($lostByVendedor)->max('total') ?: 1; @endphp
                 @forelse($lostByVendedor as $row)
-                <div style="margin-bottom:12px;">
-                    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
-                        <span style="color:#374151;font-weight:500;">{{ $row['user'] }}</span>
-                        <span style="color:#EF4444;font-weight:700;">{{ $row['total'] }}
-                            <span style="color:#9ca3af;font-weight:400;">({{ $row['pct'] }}%)</span>
-                        </span>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                    <div style="width:32px;height:32px;border-radius:50%;background:#eff6ff;color:#3B82F6;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">
+                        {{ strtoupper(substr($row['user'], 0, 2)) }}
                     </div>
-                    <div class="reason-bar-bg">
-                        <div class="reason-bar-fill" style="width:{{ $row['pct'] }}%;"></div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
+                            <span style="color:#374151;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $row['user'] }}</span>
+                            <span style="font-weight:700;color:#374151;flex-shrink:0;">{{ $row['total'] }} <span style="color:#9ca3af;font-weight:400;font-size:10px;">({{ $row['pct'] }}%)</span></span>
+                        </div>
+                        <div style="height:5px;border-radius:3px;background:#eff6ff;">
+                            <div style="height:5px;border-radius:3px;background:#3B82F6;width:{{ round($row['total'] / $maxVendLost * 100) }}%;"></div>
+                        </div>
                     </div>
                 </div>
                 @empty
-                <p style="color:#9ca3af;font-size:13px;">Nenhuma perda no período.</p>
+                <p style="color:#9ca3af;font-size:13px;">—</p>
                 @endforelse
             </div>
 
         </div>
+        @endif
     </div>
 
 
@@ -866,26 +991,48 @@
                 <thead>
                     <tr>
                         <th>Vendedor</th>
-                        <th class="num">Leads atribuídos</th>
-                        <th class="num">Vendas fechadas</th>
+                        <th class="num">Leads</th>
+                        <th class="num">Vendas</th>
                         <th class="num">Conversão</th>
                         <th class="num">Receita</th>
                     </tr>
                 </thead>
                 <tbody>
+                    @php $topConv = collect($vendedores)->max('conv'); @endphp
                     @forelse($vendedores as $row)
-                    <tr>
-                        <td style="font-weight:600;color:#1a1d23;">{{ $row['user']->name }}</td>
-                        <td class="num">{{ $row['leads'] }}</td>
-                        <td class="num">{{ $row['vendas'] }}</td>
-                        <td class="num">
-                            @php $conv = $row['conv']; @endphp
-                            <span class="{{ $conv >= 30 ? 'conv-high' : ($conv >= 10 ? 'conv-mid' : 'conv-low') }}">
-                                {{ $conv }}%
-                            </span>
+                    @php
+                        $conv = $row['conv'];
+                        $isTop = $conv === $topConv && $conv > 0;
+                        $initials = collect(explode(' ', $row['user']->name))->map(fn($w) => mb_strtoupper(mb_substr($w,0,1)))->take(2)->join('');
+                        $convColor = $conv >= 30 ? '#10B981' : ($conv >= 10 ? '#F59E0B' : '#9ca3af');
+                        $convBg    = $conv >= 30 ? '#f0fdf4' : ($conv >= 10 ? '#fff7ed' : '#f3f4f6');
+                    @endphp
+                    <tr style="{{ $isTop ? 'background:#f0fdf4;' : '' }}">
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div style="width:32px;height:32px;border-radius:50%;background:#eff6ff;color:#3B82F6;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">
+                                    {{ $initials }}
+                                </div>
+                                <div>
+                                    <span style="font-weight:600;color:#1a1d23;font-size:13px;">{{ $row['user']->name }}</span>
+                                    @if($isTop)
+                                    <span style="font-size:10px;font-weight:700;color:#F59E0B;margin-left:4px;">★ Top</span>
+                                    @endif
+                                </div>
+                            </div>
                         </td>
-                        <td class="num" style="color:#10B981;font-weight:700;">
-                            {{ $row['receita'] > 0 ? 'R$ ' . number_format($row['receita'], 0, ',', '.') : '—' }}
+                        <td class="num" style="font-weight:700;color:#3B82F6;">{{ $row['leads'] }}</td>
+                        <td class="num" style="font-weight:600;">{{ $row['vendas'] }}</td>
+                        <td class="num">
+                            <div>
+                                <span style="font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;background:{{ $convBg }};color:{{ $convColor }};">{{ $conv }}%</span>
+                                <div style="margin-top:4px;height:4px;border-radius:2px;background:#f0f2f7;width:70px;">
+                                    <div style="height:4px;border-radius:2px;width:{{ min($conv, 100) }}%;background:{{ $convColor }};"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="num" style="font-weight:700;color:#1a1d23;">
+                            {{ $row['receita'] > 0 ? 'R$ ' . number_format($row['receita'], 2, ',', '.') : '—' }}
                         </td>
                     </tr>
                     @empty
@@ -910,7 +1057,7 @@
             WhatsApp — Atendimento
             @if($avgFirstResponse !== null)
             <span style="margin-left:auto;font-size:12px;font-weight:500;color:#9ca3af;">
-                Tempo médio de 1ª resposta:
+                1ª resposta:
                 <strong style="color:#3B82F6;">
                     @if($avgFirstResponse < 60)
                         {{ $avgFirstResponse }} min
@@ -918,58 +1065,109 @@
                         {{ floor($avgFirstResponse / 60) }}h {{ $avgFirstResponse % 60 }}min
                     @endif
                 </strong>
-                (atendimento humano)
             </span>
             @endif
         </div>
         <div class="report-section-body">
-            <div class="wa-kpi-mini-grid">
-                <div class="wa-kpi-mini">
-                    <div class="wk-label">Conversas iniciadas</div>
-                    <div class="wk-value">{{ number_format($waTotal, 0, ',', '.') }}</div>
-                    <div class="wk-sub">no período</div>
+            @php
+                $waRest = max($waTotal - $waFechadas - $waComLead, 0);
+                $pctLead = $waTotal > 0 ? round($waComLead / $waTotal * 100, 1) : 0;
+                $pctFech = $waTotal > 0 ? round($waFechadas / $waTotal * 100, 1) : 0;
+                $pctRest = max(100 - $pctLead - $pctFech, 0);
+            @endphp
+            <div style="display:flex;align-items:center;gap:24px;margin-bottom:20px;">
+                {{-- Mini donut SVG --}}
+                <div style="flex-shrink:0;">
+                    @php
+                        $pctIA   = $waTotal > 0 ? round($waIA / $waTotal * 100, 1) : 0;
+                        $r = 34; $cx = 48; $cy = 48; $circ = 2 * M_PI * $r;
+                        $dLead = ($pctLead / 100) * $circ;
+                        $dFech = ($pctFech / 100) * $circ;
+                        $dIA   = ($pctIA / 100) * $circ;
+                        $dRest = max($circ - $dLead - $dFech - $dIA, 0);
+                        $off1 = 0; $off2 = $dLead; $off3 = $dLead + $dFech; $off4 = $dLead + $dFech + $dIA;
+                    @endphp
+                    <svg width="96" height="96" viewBox="0 0 96 96">
+                        <circle cx="{{ $cx }}" cy="{{ $cy }}" r="{{ $r }}" fill="none" stroke="#10B981" stroke-width="12"
+                            stroke-dasharray="{{ $dLead }} {{ $circ - $dLead }}" stroke-dashoffset="{{ -$off1 }}"
+                            style="transform:rotate(-90deg);transform-origin:center;"/>
+                        <circle cx="{{ $cx }}" cy="{{ $cy }}" r="{{ $r }}" fill="none" stroke="#3B82F6" stroke-width="12"
+                            stroke-dasharray="{{ $dFech }} {{ $circ - $dFech }}" stroke-dashoffset="{{ -$off2 }}"
+                            style="transform:rotate(-90deg);transform-origin:center;"/>
+                        <circle cx="{{ $cx }}" cy="{{ $cy }}" r="{{ $r }}" fill="none" stroke="#F59E0B" stroke-width="12"
+                            stroke-dasharray="{{ $dIA }} {{ $circ - $dIA }}" stroke-dashoffset="{{ -$off3 }}"
+                            style="transform:rotate(-90deg);transform-origin:center;"/>
+                        <circle cx="{{ $cx }}" cy="{{ $cy }}" r="{{ $r }}" fill="none" stroke="#e8eaf0" stroke-width="12"
+                            stroke-dasharray="{{ $dRest }} {{ $circ - $dRest }}" stroke-dashoffset="{{ -$off4 }}"
+                            style="transform:rotate(-90deg);transform-origin:center;"/>
+                        <text x="{{ $cx }}" y="{{ $cy }}" text-anchor="middle" font-size="16" font-weight="700" fill="#1a1d23">{{ $waTotal }}</text>
+                        <text x="{{ $cx }}" y="{{ $cy + 12 }}" text-anchor="middle" font-size="8" fill="#9ca3af">conversas</text>
+                    </svg>
                 </div>
-                <div class="wa-kpi-mini">
-                    <div class="wk-label">Fechadas</div>
-                    <div class="wk-value">{{ number_format($waFechadas, 0, ',', '.') }}</div>
-                    <div class="wk-sub">{{ $waTotal > 0 ? round($waFechadas / $waTotal * 100, 1) : 0 }}% do total</div>
-                </div>
-                <div class="wa-kpi-mini">
-                    <div class="wk-label">Viraram lead</div>
-                    <div class="wk-value">{{ number_format($waComLead, 0, ',', '.') }}</div>
-                    <div class="wk-sub">{{ $waTotal > 0 ? round($waComLead / $waTotal * 100, 1) : 0 }}% do total</div>
-                </div>
-                <div class="wa-kpi-mini">
-                    <div class="wk-label">Atendidas por IA</div>
-                    <div class="wk-value">{{ number_format($waIA, 0, ',', '.') }}</div>
-                    <div class="wk-sub">{{ $waTotal > 0 ? round($waIA / $waTotal * 100, 1) : 0 }}% do total</div>
+                {{-- KPI list --}}
+                <div style="display:flex;flex-direction:column;gap:8px;flex:1;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="width:8px;height:8px;border-radius:2px;background:#10B981;"></span>
+                        <span style="font-size:12px;color:#6b7280;flex:1;">Viraram lead</span>
+                        <span style="font-size:13px;font-weight:700;color:#1a1d23;">{{ $waComLead }}</span>
+                        <span style="font-size:11px;color:#10B981;font-weight:600;min-width:40px;text-align:right;">{{ $pctLead }}%</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="width:8px;height:8px;border-radius:2px;background:#3B82F6;"></span>
+                        <span style="font-size:12px;color:#6b7280;flex:1;">Fechadas</span>
+                        <span style="font-size:13px;font-weight:700;color:#1a1d23;">{{ $waFechadas }}</span>
+                        <span style="font-size:11px;color:#3B82F6;font-weight:600;min-width:40px;text-align:right;">{{ $pctFech }}%</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="width:8px;height:8px;border-radius:2px;background:#e8eaf0;"></span>
+                        <span style="font-size:12px;color:#6b7280;flex:1;">Apenas conversa</span>
+                        <span style="font-size:13px;font-weight:700;color:#1a1d23;">{{ $waRest }}</span>
+                        <span style="font-size:11px;color:#9ca3af;font-weight:600;min-width:40px;text-align:right;">{{ number_format($pctRest, 1, ',', '.') }}%</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="width:8px;height:8px;border-radius:2px;background:#F59E0B;"></span>
+                        <span style="font-size:12px;color:#6b7280;flex:1;">Atendidas por IA</span>
+                        <span style="font-size:13px;font-weight:700;color:#1a1d23;">{{ $waIA }}</span>
+                        <span style="font-size:11px;color:#F59E0B;font-weight:600;min-width:40px;text-align:right;">{{ $waTotal > 0 ? round($waIA / $waTotal * 100, 1) : 0 }}%</span>
+                    </div>
                 </div>
             </div>
 
             @if($waMsgByUser->isNotEmpty())
-            <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px;">Mensagens enviadas por atendente</div>
+            <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px;">Mensagens por atendente</div>
             @php $maxMsgs = $waMsgByUser->max('total') ?: 1; @endphp
             @foreach($waMsgByUser as $row)
-            <div style="margin-bottom:10px;">
-                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
-                    <span style="color:#374151;font-weight:500;">{{ $row->user?->name ?? 'Usuário #' . $row->user_id }}</span>
-                    <span style="color:#3B82F6;font-weight:700;">{{ number_format($row->total, 0, ',', '.') }} msgs</span>
+            @php
+                $userName = $row->user?->name ?? 'Usuário #' . $row->user_id;
+                $userInit = collect(explode(' ', $userName))->map(fn($w) => mb_strtoupper(mb_substr($w,0,1)))->take(2)->join('');
+            @endphp
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <div style="width:28px;height:28px;border-radius:50%;background:#f0fdf4;color:#25D366;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;">
+                    {{ $userInit }}
                 </div>
-                <div class="activity-bar-bg">
-                    <div class="activity-bar-fill" style="width:{{ round($row->total / $maxMsgs * 100) }}%;"></div>
+                <span style="font-size:12px;color:#374151;font-weight:500;width:100px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $userName }}</span>
+                <div style="flex:1;height:6px;border-radius:3px;background:#f0f2f7;">
+                    <div style="height:6px;border-radius:3px;background:#25D366;width:{{ round($row->total / $maxMsgs * 100) }}%;transition:width .5s;"></div>
                 </div>
+                <span style="font-size:12px;font-weight:700;color:#1a1d23;min-width:55px;text-align:right;">{{ number_format($row->total, 0, ',', '.') }} msgs</span>
             </div>
             @endforeach
             @else
-            <p style="color:#9ca3af;font-size:13px;margin:0;">Nenhuma mensagem enviada por atendentes no período.</p>
+            <div style="text-align:center;padding:24px 0;color:#9ca3af;">
+                <i class="bi bi-chat-dots" style="font-size:24px;opacity:.3;display:block;margin-bottom:6px;"></i>
+                <span style="font-size:13px;">Nenhuma mensagem enviada por atendentes no período.</span>
+            </div>
             @endif
         </div>
     </div>
 
+    </div>{{-- /report-triple-grid --}}
+
     {{-- ════════════════════════════════════════════════════════════ --}}
-    {{-- ORIGEM × CONVERSÃO                                          --}}
+    {{-- ORIGEM × CONVERSÃO + PRODUTOS (2 colunas)                   --}}
     {{-- ════════════════════════════════════════════════════════════ --}}
-    <div class="report-section">
+    <div class="report-double-grid">
+    <div class="report-section" style="margin-bottom:0;">
         <div class="report-section-header">
             <i class="bi bi-diagram-3"></i>
             Origem × Conversão
@@ -986,19 +1184,34 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($sourceConversion as $row)
+                    @php
+                        $srcDisplayNames = ['indicacao' => 'Indicação', 'manual' => 'Manual', 'whatsapp' => 'WhatsApp', 'instagram' => 'Instagram', 'facebook' => 'Facebook', 'google' => 'Google', 'linkedin' => 'LinkedIn', 'site' => 'Site', 'telefone' => 'Telefone', 'email' => 'Email'];
+                        $srcColors = ['whatsapp' => '#25D366', 'instagram' => '#E1306C', 'facebook' => '#1877F2', 'site' => '#3B82F6', 'google' => '#FBBC04', 'linkedin' => '#0A66C2', 'indicacao' => '#8B5CF6', 'manual' => '#94A3B8', 'telefone' => '#F97316', 'email' => '#06B6D4'];
+                        $srcFallback = ['#10B981','#F59E0B','#EF4444','#06B6D4','#F97316','#EC4899'];
+                    @endphp
+                    @forelse($sourceConversion as $si => $row)
+                    @php
+                        $conv = $row['conv'];
+                        $convColor = $conv == 0 ? '#9ca3af' : ($conv <= 30 ? '#EF4444' : ($conv <= 70 ? '#F59E0B' : '#10B981'));
+                        $convBg    = $conv == 0 ? '#f3f4f6' : ($conv <= 30 ? '#fef2f2' : ($conv <= 70 ? '#fff7ed' : '#f0fdf4'));
+                        $srcKey = strtolower(trim($row['source'] ?? ''));
+                        $srcColor = $srcColors[$srcKey] ?? ($srcFallback[$si % count($srcFallback)]);
+                        $srcName = $srcDisplayNames[$srcKey] ?? ucfirst($row['source'] ?? 'Desconhecido');
+                    @endphp
                     <tr>
-                        <td style="font-weight:600;color:#1a1d23;">{{ $row['source'] }}</td>
-                        <td class="num">{{ $row['leads'] }}</td>
-                        <td class="num">{{ $row['vendas'] }}</td>
-                        <td class="num">
-                            @php $conv = $row['conv']; @endphp
-                            <span class="{{ $conv >= 30 ? 'conv-high' : ($conv >= 10 ? 'conv-mid' : 'conv-low') }}">
-                                {{ $conv }}%
-                            </span>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span style="width:8px;height:8px;border-radius:2px;background:{{ $srcColor }};flex-shrink:0;"></span>
+                                <span style="font-weight:600;color:#1a1d23;">{{ $srcName }}</span>
+                            </div>
                         </td>
-                        <td class="num" style="color:#10B981;font-weight:700;">
-                            {{ $row['receita'] > 0 ? 'R$ ' . number_format($row['receita'], 0, ',', '.') : '—' }}
+                        <td class="num" style="font-weight:700;color:#3B82F6;">{{ $row['leads'] }}</td>
+                        <td class="num" style="font-weight:600;">{{ $row['vendas'] }}</td>
+                        <td class="num">
+                            <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:{{ $convBg }};color:{{ $convColor }};">{{ number_format((float)$conv, 1, ',', '.') }}%</span>
+                        </td>
+                        <td class="num" style="font-weight:700;color:#1a1d23;">
+                            {{ $row['receita'] > 0 ? 'R$ ' . number_format($row['receita'], 2, ',', '.') : '—' }}
                         </td>
                     </tr>
                     @empty
@@ -1012,36 +1225,65 @@
     </div>
 
     {{-- ════════════════════════════════════════════════════════════ --}}
-    {{-- ATIVIDADE DA EQUIPE                                         --}}
+    {{-- PRODUTOS MAIS VENDIDOS (lado a lado com Origem acima)       --}}
     {{-- ════════════════════════════════════════════════════════════ --}}
-    @if($teamActivity->isNotEmpty())
-    <div class="report-section">
+    @if(isset($topProducts) && $topProducts->isNotEmpty())
+    @php
+        $topProdMax = $topProducts->max('total_value') ?: 1;
+        $topProdRevenue = $topProducts->sum('total_value');
+    @endphp
+    <div class="report-section" style="margin-bottom:0;">
         <div class="report-section-header">
-            <i class="bi bi-activity"></i>
-            Atividade da Equipe
+            <i class="bi bi-box-seam"></i>
+            Produtos Mais Vendidos
+            <span style="margin-left:auto;font-size:12px;font-weight:500;color:#9ca3af;">
+                Receita total: <strong style="color:#10B981;">R$ {{ number_format((float)$topProdRevenue, 2, ',', '.') }}</strong>
+            </span>
         </div>
         <div style="overflow-x:auto;">
-            @php $maxActivity = $teamActivity->max('total') ?: 1; @endphp
             <table class="report-table">
                 <thead>
                     <tr>
-                        <th>Usuário</th>
-                        <th class="num">Msgs WhatsApp</th>
-                        <th class="num">Eventos CRM</th>
-                        <th class="num">Total</th>
-                        <th style="min-width:120px;">Atividade</th>
+                        <th>#</th>
+                        <th>Produto</th>
+                        <th class="num">Preço Unit.</th>
+                        <th class="num">Vendas</th>
+                        <th class="num">Receita</th>
+                        <th style="min-width:100px;">Participação</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($teamActivity as $row)
-                    <tr>
-                        <td style="font-weight:600;color:#1a1d23;">{{ $row['user']->name }}</td>
-                        <td class="num">{{ number_format($row['msgs'], 0, ',', '.') }}</td>
-                        <td class="num">{{ number_format($row['events'], 0, ',', '.') }}</td>
-                        <td class="num" style="font-weight:700;color:#3B82F6;">{{ number_format($row['total'], 0, ',', '.') }}</td>
-                        <td style="padding-right:24px;">
-                            <div class="activity-bar-bg">
-                                <div class="activity-bar-fill" style="width:{{ round($row['total'] / $maxActivity * 100) }}%;"></div>
+                    @foreach($topProducts as $i => $prod)
+                    @php
+                        $isChamp = $i === 0;
+                        $prodPct = $topProdRevenue > 0 ? round($prod->total_value / $topProdRevenue * 100, 1) : 0;
+                        $barW = $topProdMax > 0 ? round($prod->total_value / $topProdMax * 100) : 0;
+                    @endphp
+                    <tr style="{{ $isChamp ? 'background:#fff7ed;' : '' }}">
+                        <td>
+                            @if($isChamp)
+                            <span style="font-size:11px;font-weight:700;color:#F59E0B;">★</span>
+                            @else
+                            <span style="color:#9ca3af;font-weight:600;">{{ $i + 1 }}</span>
+                            @endif
+                        </td>
+                        <td>
+                            <div>
+                                <span style="font-weight:600;color:#1a1d23;">{{ $prod->name }}</span>
+                                @if($isChamp)
+                                <span style="font-size:10px;font-weight:700;color:#F59E0B;margin-left:4px;">Campeão</span>
+                                @endif
+                            </div>
+                        </td>
+                        <td class="num" style="color:#374151;">R$ {{ number_format((float) $prod->price, 2, ',', '.') }}</td>
+                        <td class="num" style="font-weight:700;color:#3B82F6;">{{ $prod->won_count }}</td>
+                        <td class="num" style="font-weight:700;color:#10B981;">R$ {{ number_format((float) $prod->total_value, 2, ',', '.') }}</td>
+                        <td>
+                            <div>
+                                <div style="height:6px;border-radius:3px;background:#f0f2f7;">
+                                    <div style="height:6px;border-radius:3px;background:{{ $isChamp ? '#F59E0B' : '#3B82F6' }};width:{{ $barW }}%;transition:width .5s;"></div>
+                                </div>
+                                <span style="font-size:10px;font-weight:600;color:{{ $isChamp ? '#F59E0B' : '#6b7280' }};margin-top:2px;display:inline-block;">{{ $prodPct }}%</span>
                             </div>
                         </td>
                     </tr>
@@ -1052,34 +1294,77 @@
     </div>
     @endif
 
+    </div>{{-- /report-double-grid --}}
+
     {{-- ════════════════════════════════════════════════════════════ --}}
-    {{-- PRODUTOS MAIS VENDIDOS                                      --}}
+    {{-- ATIVIDADE DA EQUIPE                                         --}}
     {{-- ════════════════════════════════════════════════════════════ --}}
-    @if(isset($topProducts) && $topProducts->isNotEmpty())
+    @if($teamActivity->isNotEmpty())
     <div class="report-section">
         <div class="report-section-header">
-            <i class="bi bi-box-seam"></i>
-            Produtos Mais Vendidos
+            <i class="bi bi-activity"></i>
+            Atividade da Equipe
         </div>
         <div style="overflow-x:auto;">
+            @php
+                $maxActivity = $teamActivity->max('total') ?: 1;
+                $topActivity = $teamActivity->max('total');
+            @endphp
             <table class="report-table">
                 <thead>
                     <tr>
-                        <th>#</th>
-                        <th>Produto</th>
-                        <th class="num">Preço Unit.</th>
-                        <th class="num">Vendas</th>
-                        <th class="num">Receita Total</th>
+                        <th>Usuário</th>
+                        <th class="num">Msgs WA</th>
+                        <th class="num">Eventos CRM</th>
+                        <th class="num">Total</th>
+                        <th style="min-width:140px;">Atividade</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($topProducts as $i => $prod)
-                    <tr>
-                        <td style="color:#9ca3af;font-weight:600;">{{ $i + 1 }}</td>
-                        <td style="font-weight:600;color:#1a1d23;">{{ $prod->name }}</td>
-                        <td class="num">R$ {{ number_format((float) $prod->price, 2, ',', '.') }}</td>
-                        <td class="num" style="font-weight:700;color:#0085f3;">{{ $prod->won_count }}</td>
-                        <td class="num" style="font-weight:700;color:#10B981;">R$ {{ number_format((float) $prod->total_value, 2, ',', '.') }}</td>
+                    @foreach($teamActivity as $row)
+                    @php
+                        $isTopAct = $row['total'] === $topActivity && $row['total'] > 0;
+                        $initials = collect(explode(' ', $row['user']->name))->map(fn($w) => mb_strtoupper(mb_substr($w,0,1)))->take(2)->join('');
+                        $barPct = round($row['total'] / $maxActivity * 100);
+                        $msgPct = $row['total'] > 0 ? round($row['msgs'] / $row['total'] * 100) : 0;
+                    @endphp
+                    <tr style="{{ $isTopAct ? 'background:#f0f4ff;' : '' }}">
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div style="width:32px;height:32px;border-radius:50%;background:#eff6ff;color:#3B82F6;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">
+                                    {{ $initials }}
+                                </div>
+                                <div>
+                                    <span style="font-weight:600;color:#1a1d23;font-size:13px;">{{ $row['user']->name }}</span>
+                                    @if($isTopAct)
+                                    <span style="font-size:10px;font-weight:700;color:#3B82F6;margin-left:4px;">★ Mais ativo</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </td>
+                        <td class="num">
+                            <div style="display:flex;align-items:center;gap:4px;justify-content:flex-end;">
+                                <i class="bi bi-whatsapp" style="font-size:11px;color:#25D366;"></i>
+                                <span style="font-weight:600;">{{ number_format($row['msgs'], 0, ',', '.') }}</span>
+                            </div>
+                        </td>
+                        <td class="num">
+                            <div style="display:flex;align-items:center;gap:4px;justify-content:flex-end;">
+                                <i class="bi bi-calendar-event" style="font-size:11px;color:#8B5CF6;"></i>
+                                <span style="font-weight:600;">{{ number_format($row['events'], 0, ',', '.') }}</span>
+                            </div>
+                        </td>
+                        <td class="num" style="font-weight:700;color:#3B82F6;">{{ number_format($row['total'], 0, ',', '.') }}</td>
+                        <td style="padding-right:16px;">
+                            <div style="height:8px;border-radius:4px;background:#f0f2f7;overflow:hidden;display:flex;">
+                                <div style="height:8px;background:#25D366;width:{{ round($msgPct * $barPct / 100) }}%;transition:width .5s;" title="WhatsApp: {{ $row['msgs'] }}"></div>
+                                <div style="height:8px;background:#8B5CF6;width:{{ round((100 - $msgPct) * $barPct / 100) }}%;transition:width .5s;" title="CRM: {{ $row['events'] }}"></div>
+                            </div>
+                            <div style="display:flex;gap:8px;margin-top:5px;">
+                                <span style="font-size:10px;color:#25D366;font-weight:600;">WA {{ $msgPct }}%</span>
+                                <span style="font-size:10px;color:#8B5CF6;font-weight:600;">CRM {{ 100 - $msgPct }}%</span>
+                            </div>
+                        </td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -1093,7 +1378,11 @@
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script>
+// Desabilitar datalabels globalmente — só ativar nos charts que precisam
+if (window.ChartDataLabels) Chart.defaults.plugins.datalabels = { display: false };
+
 // ── Paleta de cores por origem ─────────────────────────────────────────────
 const SOURCE_COLORS = {
     'whatsapp':  '#25D366',
@@ -1123,6 +1412,80 @@ const chartLeads = @json($chartLeads);
 const sourceLabels = @json($srcLabels);
 const sourceData   = @json($srcData);
 
+// ── Sparklines nos KPI cards ──────────────────────────────────────────────
+(function() {
+    function spark(id, data, color) {
+        const el = document.getElementById(id);
+        if (!el || !window.Chart) return;
+        new Chart(el, {
+            type: 'line',
+            data: {
+                labels: data.map((_,i) => i),
+                datasets: [{
+                    data: data,
+                    borderColor: color,
+                    borderWidth: 1.5,
+                    backgroundColor: color + '18',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                scales: { x: { display: false }, y: { display: false } },
+                layout: { padding: { top: 6 } },
+            }
+        });
+    }
+    spark('sparkLeads',   chartLeads, '#3B82F6');
+    spark('sparkRevenue', chartLeads.map(function(v){return v * {{ $avgTicket > 0 ? $avgTicket : 1 }};}), '#10B981');
+    spark('sparkTicket',  chartLeads, '#8B5CF6');
+    spark('sparkConv',    chartLeads, '#F59E0B');
+})();
+
+// ── Canvas: Funnel stream (igual dashboard) ──────────────────────────────
+(function(){
+    var cv = document.getElementById('reportFunnelCanvas');
+    if (!cv) return;
+    cv.width = cv.offsetWidth * 2;
+    cv.height = 360;
+    var ctx = cv.getContext('2d');
+    var W = cv.width, H = cv.height;
+    @php
+        $funnelPipeJs = $pipelineRows->first(fn($r) => $r['stages']->isNotEmpty());
+        $funnelCountsJs = $funnelPipeJs ? $funnelPipeJs['stages']->pluck('count')->values() : collect([]);
+    @endphp
+    var data = {!! json_encode($funnelCountsJs) !!};
+    var n = data.length;
+    if (n < 2) return;
+    var maxV = Math.max.apply(null, data) || 1;
+    var colW = W / n;
+    var pts = data.map(function(v, i){
+        var h = Math.max(v / maxV, 0.15) * H * 0.8;
+        return { x: colW * i + colW / 2, top: (H - h) / 2, bot: (H + h) / 2 };
+    });
+    ctx.fillStyle = '#60a5fa';
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(0, pts[0].top);
+    for (var i = 0; i < pts.length - 1; i++) {
+        var cpx = (pts[i].x + pts[i+1].x) / 2;
+        ctx.quadraticCurveTo(pts[i].x, pts[i].top, cpx, (pts[i].top + pts[i+1].top) / 2);
+    }
+    ctx.quadraticCurveTo(pts[n-1].x, pts[n-1].top, W, pts[n-1].top);
+    ctx.lineTo(W, pts[n-1].bot);
+    for (var i = pts.length - 1; i > 0; i--) {
+        var cpx = (pts[i].x + pts[i-1].x) / 2;
+        ctx.quadraticCurveTo(pts[i].x, pts[i].bot, cpx, (pts[i].bot + pts[i-1].bot) / 2);
+    }
+    ctx.quadraticCurveTo(pts[0].x, pts[0].bot, 0, pts[0].bot);
+    ctx.closePath();
+    ctx.fill();
+})();
+
 // ── Plugin: crosshair vertical ────────────────────────────────────────────
 const crosshairPlugin = {
     id: 'crosshair',
@@ -1142,33 +1505,50 @@ const crosshairPlugin = {
     }
 };
 
-// ── Gráfico: Leads por dia — área suave ───────────────────────────────────
+// ── Gráfico: Leads por dia — barras + média móvel 7 dias ─────────────────
 (function () {
     const canvas = document.getElementById('chartLeadsByDay');
     if (!canvas || !window.Chart) return;
-    const ctx  = canvas.getContext('2d');
-    const grad = ctx.createLinearGradient(0, 0, 0, 180);
-    grad.addColorStop(0, 'rgba(59,130,246,0.28)');
-    grad.addColorStop(1, 'rgba(59,130,246,0.00)');
-    new Chart(ctx, {
-        type: 'line',
+
+    function movingAverage(data, w) {
+        return data.map(function(_, i) {
+            var slice = data.slice(Math.max(0, i - w + 1), i + 1);
+            return Math.round(slice.reduce(function(a, b) { return a + b; }, 0) / slice.length * 10) / 10;
+        });
+    }
+
+    var ma = movingAverage(chartLeads, 7);
+
+    new Chart(canvas, {
+        type: 'bar',
         plugins: [crosshairPlugin],
         data: {
             labels: chartDates,
-            datasets: [{
-                label: 'Leads',
-                data: chartLeads,
-                borderColor: '#3B82F6',
-                backgroundColor: grad,
-                borderWidth: 2.5,
-                tension: 0.45,
-                fill: true,
-                pointRadius: 0,
-                pointHoverRadius: 6,
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: '#3B82F6',
-                pointHoverBorderWidth: 2.5,
-            }],
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Leads',
+                    data: chartLeads,
+                    backgroundColor: '#3B82F6',
+                    borderRadius: 3,
+                    borderSkipped: false,
+                    order: 2,
+                },
+                {
+                    type: 'line',
+                    label: 'Média 7d',
+                    data: ma,
+                    borderColor: '#F59E0B',
+                    borderWidth: 2,
+                    borderDash: [4, 3],
+                    pointRadius: 0,
+                    pointHoverRadius: 3,
+                    pointHoverBackgroundColor: '#F59E0B',
+                    fill: false,
+                    tension: 0.3,
+                    order: 1,
+                }
+            ],
         },
         options: {
             responsive: true,
@@ -1182,8 +1562,10 @@ const crosshairPlugin = {
                     bodyColor: '#fff',
                     padding: 10,
                     callbacks: {
-                        title: items => items[0].label,
-                        label: ctx  => ` ${ctx.parsed.y} lead(s)`,
+                        label: function(ctx) {
+                            if (ctx.datasetIndex === 0) return ' ' + ctx.parsed.y + ' lead(s)';
+                            return ' Média: ' + ctx.parsed.y.toFixed(1);
+                        }
                     }
                 }
             },
@@ -1191,11 +1573,11 @@ const crosshairPlugin = {
                 x: {
                     grid: { display: false },
                     border: { display: false },
-                    ticks: { font: { size: 11 }, color: '#9ca3af', maxTicksLimit: 12 },
+                    ticks: { font: { size: 10 }, color: '#9ca3af', maxTicksLimit: 15, maxRotation: 0 },
                 },
                 y: {
                     beginAtZero: true,
-                    grid: { color: '#f0f2f7', drawBorder: false },
+                    grid: { color: '#f0f2f7' },
                     border: { display: false },
                     ticks: { font: { size: 11 }, color: '#9ca3af', precision: 0 },
                 },
@@ -1204,19 +1586,28 @@ const crosshairPlugin = {
     });
 }());
 
-// ── Gráfico: Leads por origem (barra horizontal) ──────────────────────────
+// ── Gráfico: Leads por origem (barras rankeadas + datalabels) ────────────
 (function () {
     const canvas = document.getElementById('chartLeadsBySource');
     if (!canvas || !window.Chart) return;
+
+    // Ordenar por volume (maior → menor)
+    var paired = sourceLabels.map(function(l, i) { return { label: l, value: sourceData[i] }; });
+    paired.sort(function(a, b) { return b.value - a.value; });
+    var sortedLabels = paired.map(function(p) { return p.label; });
+    var sortedData   = paired.map(function(p) { return p.value; });
+    var sortedColors = sortedLabels.map(function(src, i) { return sourceColor(src, i); });
+    var total = sortedData.reduce(function(a, b) { return a + b; }, 0) || 1;
+
     new Chart(canvas, {
         type: 'bar',
+        plugins: [window.ChartDataLabels || {}],
         data: {
-            labels: sourceLabels,
+            labels: sortedLabels,
             datasets: [{
-                label: 'Leads',
-                data: sourceData,
-                backgroundColor: sourceLabels.map((src, i) => sourceColor(src, i)),
-                borderRadius: 8,
+                data: sortedData,
+                backgroundColor: sortedColors,
+                borderRadius: 4,
                 borderSkipped: false,
             }],
         },
@@ -1226,29 +1617,27 @@ const crosshairPlugin = {
             maintainAspectRatio: false,
             plugins: {
                 legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#1a1d23',
-                    titleColor: '#9ca3af',
-                    bodyColor: '#fff',
-                    padding: 10,
-                    callbacks: {
-                        label: ctx => ` ${ctx.parsed.x} lead(s)`,
-                    }
+                tooltip: { enabled: false },
+                datalabels: {
+                    display: true,
+                    anchor: 'end',
+                    align: 'end',
+                    formatter: function(v) {
+                        return v + '  (' + Math.round(v / total * 100) + '%)';
+                    },
+                    font: { size: 11, weight: 600 },
+                    color: '#374151',
                 }
             },
             scales: {
-                x: {
-                    beginAtZero: true,
-                    grid: { color: '#f0f2f7', drawBorder: false },
-                    border: { display: false },
-                    ticks: { font: { size: 11 }, color: '#9ca3af', precision: 0 },
-                },
+                x: { display: false, grid: { display: false } },
                 y: {
                     grid: { display: false },
                     border: { display: false },
-                    ticks: { font: { size: 11 }, color: '#374151' },
+                    ticks: { font: { size: 12, weight: 500 }, color: '#374151' },
                 },
             },
+            layout: { padding: { right: 70 } },
         },
     });
 }());
