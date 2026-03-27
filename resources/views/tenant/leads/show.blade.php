@@ -1301,8 +1301,15 @@ $pageIcon = 'person-badge';
 
             <div class="lp-info-row">
                 <div class="lp-info-icon"><i class="bi bi-person-check"></i></div>
-                <div class="lp-info-val">
-                    {{ $lead->assignedTo?->name ?? __('leads.not_assigned') }}
+                <div class="lp-info-val" style="display:flex;align-items:center;gap:8px;">
+                    @if($lead->assignedTo)
+                    @if($lead->assignedTo->avatar)
+                    <img src="{{ asset($lead->assignedTo->avatar) }}" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+                    @endif
+                    {{ $lead->assignedTo->name }}
+                    @else
+                    <span class="lp-info-empty">{{ __('leads.not_assigned') }}</span>
+                    @endif
                 </div>
             </div>
         </div>

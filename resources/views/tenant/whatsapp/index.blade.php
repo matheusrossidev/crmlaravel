@@ -334,6 +334,28 @@ $pageIcon = 'chat-dots';
         flex-shrink: 0;
     }
 
+    .wa-conv-assignee {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        color: #6b7280;
+        font-size: 8px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-left: auto;
+        overflow: hidden;
+    }
+    .wa-conv-assignee img {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
     .wa-conv-tags {
         display: flex;
         flex-wrap: wrap;
@@ -1168,6 +1190,16 @@ $pageIcon = 'chat-dots';
                         </span>
                         @if($conv->unread_count > 0)
                         <span class="wa-unread-dot">{{ $conv->unread_count }}</span>
+                        @endif
+                        @php $convAssignee = $conv->assigned_user_id ? $users->firstWhere('id', $conv->assigned_user_id) : null; @endphp
+                        @if($convAssignee)
+                        <span class="wa-conv-assignee" title="{{ $convAssignee->name }}">
+                            @if($convAssignee->avatar)
+                            <img src="{{ asset($convAssignee->avatar) }}" alt="">
+                            @else
+                            {{ collect(explode(' ', $convAssignee->name))->map(fn($w) => mb_strtoupper(mb_substr($w,0,1)))->take(2)->join('') }}
+                            @endif
+                        </span>
                         @endif
                     </div>
                     @if(!empty($conv->tags) || ($instanceCount > 1 && $ch === 'whatsapp' && $conv->instance) || $conv->department)

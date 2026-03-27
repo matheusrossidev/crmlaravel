@@ -503,6 +503,7 @@ class KanbanController extends Controller
             'campaign'         => $lead->campaign ? ['id' => $lead->campaign->id, 'name' => $lead->campaign->name] : null,
             'cf_flat'          => $cfFlat,
             'assigned_to_name'     => $lead->assignedTo?->name,
+            'assigned_to_avatar'   => $lead->assignedTo?->avatar ? asset($lead->assignedTo->avatar) : null,
             'ai_agent_name'        => $lead->whatsappConversation?->aiAgent?->name,
             'conversation_id'      => $lead->whatsappConversation?->id,
             'unread_count'         => $lead->whatsappConversation?->unread_count ?? 0,

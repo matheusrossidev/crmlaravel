@@ -65,7 +65,7 @@ class WhatsappController extends Controller
             $conversations = $waQuery->orderByDesc('last_message_at')->get();
 
             $users = TenantCache::remember('config:users', 7200, fn () =>
-                User::where('tenant_id', $authUser->tenant_id)->orderBy('name')->get(['id', 'name'])
+                User::where('tenant_id', $authUser->tenant_id)->orderBy('name')->get(['id', 'name', 'avatar'])
             );
 
             $pipelines = TenantCache::remember('config:pipelines', 3600, fn () =>

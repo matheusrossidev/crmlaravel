@@ -721,6 +721,7 @@
                 $initials = collect(explode(' ', $lead->name))->map(fn($w) => mb_strtoupper(mb_substr($w,0,1)))->take(2)->join('');
                 $assignee = $lead->assignedTo?->name;
                 $assigneeInit = $assignee ? collect(explode(' ', $assignee))->map(fn($w) => mb_strtoupper(mb_substr($w,0,1)))->take(2)->join('') : '';
+                $assigneeAvatar = $lead->assignedTo?->avatar;
                 $convId = $lead->whatsappConversation?->id;
                 $unread = $lead->whatsappConversation?->unread_count ?? 0;
             @endphp
@@ -780,7 +781,13 @@
                 <div class="card-footer">
                     <div style="display:flex;align-items:center;gap:2px;">
                         @if($assignee)
-                        <div class="card-assignee" title="{{ $assignee }}">{{ $assigneeInit }}</div>
+                        <div class="card-assignee" title="{{ $assignee }}">
+                            @if($assigneeAvatar)
+                            <img src="{{ asset($assigneeAvatar) }}" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover;">
+                            @else
+                            {{ $assigneeInit }}
+                            @endif
+                        </div>
                         @endif
                         <div class="card-actions">
                             @if($lead->phone)
@@ -1348,7 +1355,10 @@ function buildCard(lead) {
 
     // Footer: assignee + actions + date
     const assignee = lead.assigned_to_name;
-    const assigneeHtml = assignee ? `<div class="card-assignee" title="${escapeHtml(assignee)}">${getInitials(assignee)}</div>` : '';
+    const assigneeAvatar = lead.assigned_to_avatar;
+    const assigneeHtml = assignee
+        ? `<div class="card-assignee" title="${escapeHtml(assignee)}">${assigneeAvatar ? `<img src="${escapeHtml(assigneeAvatar)}" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover;">` : getInitials(assignee)}</div>`
+        : '';
 
     let actions = '';
     if (lead.phone) actions += `<a href="tel:${lead.phone}" class="card-action-btn" onclick="event.stopPropagation();" title="${escapeHtml(LANG.call)}"><i class="bi bi-telephone-fill"></i></a>`;
