@@ -14,6 +14,7 @@ use App\Models\Tenant;
 use App\Models\TenantTokenIncrement;
 use App\Models\TokenIncrementPlan;
 use App\Services\AsaasService;
+use App\Services\StripeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -267,24 +268,133 @@ class BillingController extends Controller
         }
     }
 
+    // ── Stripe Checkout (international) ─────────────────────────────────────
+
+    public function stripeSubscribe(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'plan_name' => 'required|string|max:50',
+        ]);
+
+        $tenant = activeTenant();
+        $user   = auth()->user();
+
+        $plan = PlanDefinition::where('name', $data['plan_name'])
+            ->where('is_active', true)
+            ->first();
+
+        if (! $plan || ! $plan->stripe_price_id) {
+            return response()->json(['success' => false, 'message' => 'Plan not available for Stripe.'], 422);
+        }
+
+        try {
+            $stripe = new StripeService();
+
+            // Get or create Stripe customer
+            $customer = $stripe->getOrCreateCustomer(
+                $user->email,
+                $tenant->name,
+                $tenant->stripe_customer_id,
+            );
+
+            $tenant->update(['stripe_customer_id' => $customer->id]);
+
+            // Create Checkout Session
+            $session = $stripe->createSubscriptionCheckout(
+                $customer->id,
+                $plan->stripe_price_id,
+                route('billing.stripe.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                route('billing.stripe.cancel'),
+                [
+                    'tenant_id' => (string) $tenant->id,
+                    'plan_name' => $plan->name,
+                ],
+            );
+
+            return response()->json([
+                'success'      => true,
+                'checkout_url' => $session->url,
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('BillingController::stripeSubscribe error', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error creating checkout session. Please try again.',
+            ], 500);
+        }
+    }
+
+    public function stripeSuccess(Request $request): RedirectResponse
+    {
+        $sessionId = $request->query('session_id');
+        if (! $sessionId) {
+            return redirect()->route('billing')->with('error', 'Invalid session.');
+        }
+
+        // The webhook handles the actual activation.
+        // This is just a redirect back to the billing page with a success message.
+        return redirect()->route('billing')->with('success', __('billing.stripe_success') ?? 'Subscription activated! Welcome aboard.');
+    }
+
+    public function stripeCancel(): RedirectResponse
+    {
+        return redirect()->route('billing')->with('info', __('billing.stripe_cancelled') ?? 'Checkout cancelled.');
+    }
+
+    public function stripePortal(): RedirectResponse
+    {
+        $tenant = activeTenant();
+
+        if (! $tenant->stripe_customer_id) {
+            return redirect()->route('billing')->with('error', 'No Stripe account found.');
+        }
+
+        try {
+            $stripe  = new StripeService();
+            $session = $stripe->createPortalSession(
+                $tenant->stripe_customer_id,
+                route('billing'),
+            );
+
+            return redirect($session->url);
+        } catch (\Throwable $e) {
+            \Log::error('BillingController::stripePortal error', ['error' => $e->getMessage()]);
+            return redirect()->route('billing')->with('error', 'Error opening customer portal.');
+        }
+    }
+
+    // ── Cancel (dual gateway) ────────────────────────────────────────────────
+
     public function cancel(Request $request): JsonResponse
     {
         $tenant = activeTenant();
         $user   = auth()->user();
 
-        if (!$tenant->asaas_subscription_id) {
+        $isStripe = $tenant->billing_provider === 'stripe' && $tenant->stripe_subscription_id;
+        $isAsaas  = $tenant->asaas_subscription_id;
+
+        if (! $isStripe && ! $isAsaas) {
             return response()->json(['success' => false, 'message' => 'Nenhuma assinatura ativa.'], 422);
         }
 
         try {
-            $asaas = app(AsaasService::class);
-            $asaas->cancelSubscription($tenant->asaas_subscription_id);
-
-            $tenant->update([
-                'subscription_status'   => 'cancelled',
-                'asaas_subscription_id' => null,
-                'status'                => 'inactive',
-            ]);
+            if ($isStripe) {
+                $stripe = new StripeService();
+                $stripe->cancelSubscription($tenant->stripe_subscription_id);
+                $tenant->update([
+                    'subscription_status'    => 'cancelled',
+                    'stripe_subscription_id' => null,
+                    'status'                 => 'inactive',
+                ]);
+            } else {
+                $asaas = app(AsaasService::class);
+                $asaas->cancelSubscription($tenant->asaas_subscription_id);
+                $tenant->update([
+                    'subscription_status'   => 'cancelled',
+                    'asaas_subscription_id' => null,
+                    'status'                => 'inactive',
+                ]);
+            }
 
             try {
                 $plan = PlanDefinition::where('name', $tenant->plan)->first();

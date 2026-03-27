@@ -112,6 +112,11 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::post('cobranca/assinar',  [BillingController::class, 'subscribe'])->name('billing.subscribe');
         Route::post('cobranca/cancelar', [BillingController::class, 'cancel'])->name('billing.cancel');
+        // Stripe Checkout
+        Route::post('cobranca/stripe/assinar', [BillingController::class, 'stripeSubscribe'])->name('billing.stripe.subscribe');
+        Route::get('cobranca/stripe/success',  [BillingController::class, 'stripeSuccess'])->name('billing.stripe.success');
+        Route::get('cobranca/stripe/cancel',   [BillingController::class, 'stripeCancel'])->name('billing.stripe.cancel');
+        Route::get('cobranca/stripe/portal',   [BillingController::class, 'stripePortal'])->name('billing.stripe.portal');
     });
 
     // Upsell banner (dismiss/click)
