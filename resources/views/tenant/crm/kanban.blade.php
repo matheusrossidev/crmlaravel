@@ -754,7 +754,7 @@
                 @endif
 
                 {{-- Nome --}}
-                <div class="card-name btn-open-lead" data-lead-id="{{ $lead->id }}">{{ $lead->name }}</div>
+                <div class="card-name btn-open-lead" data-lead-id="{{ $lead->id }}">{{ $lead->name }}{{ $lead->company ? ' — ' . $lead->company : '' }}</div>
 
                 {{-- Valor (abaixo do avatar por causa do float) --}}
                 @if($lead->value)
@@ -1355,7 +1355,7 @@ function buildCard(lead) {
     <div class="lead-card" data-lead-id="${lead.id}" data-stage-id="${lead.stage_id}" data-lead-value="${lead.value || ''}">
         <div class="card-avatar">${avatarInner}</div>
         ${tagsBlock}
-        <div class="card-name btn-open-lead" data-lead-id="${lead.id}">${escapeHtml(lead.name)}</div>
+        <div class="card-name btn-open-lead" data-lead-id="${lead.id}">${escapeHtml(lead.name)}${lead.company ? ' — ' + escapeHtml(lead.company) : ''}</div>
         ${lead.value_fmt ? `<div class="card-value-row" style="text-align:right;clear:right;">${escapeHtml(lead.value_fmt)}</div>` : ''}
         ${cfBlock}
         <div class="card-footer">

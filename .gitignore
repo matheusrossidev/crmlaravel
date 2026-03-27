@@ -25,3 +25,4 @@ portainer-stack.yml
 /.nova
 /.vscode
 /.zed
+/futureplans
