@@ -13,12 +13,15 @@ class TokenIncrementPlan extends Model
         'display_name',
         'tokens_amount',
         'price',
+        'price_usd',
+        'stripe_price_id',
         'is_active',
     ];
 
     protected $casts = [
         'tokens_amount' => 'integer',
         'price'         => 'decimal:2',
+        'price_usd'     => 'decimal:2',
         'is_active'     => 'boolean',
     ];
 

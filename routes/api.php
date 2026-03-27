@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\PipelineController;
 use App\Http\Controllers\Api\WebsiteWidgetController;
 use App\Http\Controllers\AsaasWebhookController;
 use App\Http\Controllers\InstagramWebhookController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\WhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,11 @@ Route::prefix('widget')->middleware('throttle:widget')->group(function () {
 Route::post('/webhook/asaas', [AsaasWebhookController::class, 'handle'])
     ->middleware('throttle:webhooks')
     ->name('asaas.webhook');
+
+// ── Webhook Stripe (público, sem autenticação) ───────────────────────────
+Route::post('/webhook/stripe', [StripeWebhookController::class, 'handle'])
+    ->middleware('throttle:webhooks')
+    ->name('stripe.webhook');
 
 // ── Webhook WAHA (público, sem autenticação) ──────────────────────────────
 Route::post('/webhook/waha', [WhatsappWebhookController::class, 'handle'])

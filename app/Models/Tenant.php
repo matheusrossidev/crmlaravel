@@ -18,6 +18,8 @@ class Tenant extends Model
         'asaas_customer_id', 'asaas_subscription_id', 'subscription_status', 'subscription_ends_at',
         'onboarding_completed_at', 'ai_tokens_exhausted', 'referred_by_agency_id',
         'partner_billing_starts_at', 'locale',
+        'billing_provider', 'billing_country', 'billing_currency',
+        'stripe_customer_id', 'stripe_subscription_id',
     ];
 
     protected $casts = [

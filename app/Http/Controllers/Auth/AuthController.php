@@ -146,6 +146,9 @@ class AuthController extends Controller
             'trial_ends_at'         => now()->addDays($trialDays),
             'referred_by_agency_id' => $agencyCode?->tenant_id,
             'locale'                => $request->input('locale', 'pt_BR'),
+            'billing_provider'      => $request->input('locale', 'pt_BR') === 'pt_BR' ? 'asaas' : 'stripe',
+            'billing_country'       => $request->input('locale', 'pt_BR') === 'pt_BR' ? 'BR' : 'US',
+            'billing_currency'      => $request->input('locale', 'pt_BR') === 'pt_BR' ? 'BRL' : 'USD',
         ]);
 
         // Cria o usuário admin — email não verificado ainda
