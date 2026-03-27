@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirme seu email — Syncro</title>
+    <title>{{ __('auth.pending_title') }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -155,10 +155,9 @@
 
         <div class="auth-form-wrap">
 
-            <h2 class="auth-form-title">Verifique seu email</h2>
+            <h2 class="auth-form-title">{{ __('auth.pending_heading') }}</h2>
             <p class="auth-form-sub">
-                Enviamos um link de confirmação para o endereço abaixo.
-                Clique no link para ativar sua conta e acessar a plataforma.
+                {{ __('auth.pending_sub') }}
             </p>
 
             @if(session('email'))
@@ -171,9 +170,8 @@
             <div class="info-box">
                 <i class="bi bi-info-circle-fill"></i>
                 <div>
-                    <strong>Não recebeu o email?</strong><br>
-                    Verifique sua caixa de spam. O link expira em 48 horas.
-                    Se necessário, entre em contato com
+                    <strong>{{ __('auth.pending_not_received') }}</strong><br>
+                    {{ __('auth.pending_check_spam') }}
                     <a href="mailto:suporte@syncro.chat" style="color:#0085f3;">suporte@syncro.chat</a>.
                 </div>
             </div>
@@ -181,7 +179,7 @@
             <div class="auth-footer-link">
                 <a href="{{ route('login') }}">
                     <i class="bi bi-arrow-left"></i>
-                    Voltar para o login
+                    {{ __('auth.back_to_login') }}
                 </a>
             </div>
 

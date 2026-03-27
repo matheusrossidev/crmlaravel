@@ -59,7 +59,7 @@ use Illuminate\Support\Facades\Route;
 | Rotas de Autenticação
 |--------------------------------------------------------------------------
 */
-Route::middleware('guest')->group(function () {
+Route::middleware(['guest', 'locale'])->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
@@ -74,7 +74,7 @@ Route::middleware('guest')->group(function () {
 
 // Verificação de email e cadastro pendente (sem middleware guest para evitar loop)
 Route::get('/verify-email/{token}', [AuthController::class, 'verifyEmail'])->name('verify.email');
-Route::get('/cadastro-pendente', fn() => view('auth.pending'))->name('register.pending');
+Route::get('/cadastro-pendente', fn() => view('auth.pending'))->middleware('locale')->name('register.pending');
 
 Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth')

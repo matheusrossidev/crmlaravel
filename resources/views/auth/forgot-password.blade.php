@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recuperar Senha — Syncro</title>
+    <title>{{ __('auth.forgot_title') }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -213,8 +213,8 @@
 
         <div class="auth-form-wrap">
 
-            <h2 class="auth-form-title">Recuperar senha</h2>
-            <p class="auth-form-sub">Informe seu e-mail cadastrado e enviaremos um link para criar uma nova senha.</p>
+            <h2 class="auth-form-title">{{ __('auth.forgot_heading') }}</h2>
+            <p class="auth-form-sub">{{ __('auth.forgot_sub') }}</p>
 
             @if(session('status'))
             <div class="auth-success">
@@ -234,7 +234,7 @@
                 @csrf
 
                 <div class="form-group">
-                    <label for="email">E-mail cadastrado</label>
+                    <label for="email">{{ __('auth.registered_email_label') }}</label>
                     <div class="input-wrap">
                         <i class="bi bi-envelope"></i>
                         <input type="email"
@@ -242,7 +242,7 @@
                                name="email"
                                value="{{ old('email') }}"
                                class="form-control {{ $errors->has('email') ? 'is-invalid' : '' }}"
-                               placeholder="seuemail@empresa.com"
+                               placeholder="{{ __('auth.email_placeholder') }}"
                                autocomplete="email"
                                autofocus
                                oninput="this.classList.remove('is-invalid');const fb=this.closest('.form-group').querySelector('.invalid-feedback');if(fb)fb.style.display='none';">
@@ -254,14 +254,14 @@
 
                 <button type="submit" class="btn-submit">
                     <i class="bi bi-send"></i>
-                    Enviar link de recuperação
+                    {{ __('auth.send_reset_link') }}
                 </button>
             </form>
 
             <div class="auth-footer-link">
                 <a href="{{ route('login') }}">
                     <i class="bi bi-arrow-left"></i>
-                    Voltar para o login
+                    {{ __('auth.back_to_login') }}
                 </a>
             </div>
 

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Bem-vindo — Syncro</title>
+    <title>{{ __('onboarding.page_title') }}</title>
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -549,8 +549,8 @@
     <div class="onb-left">
 
         <!-- Botão pular -->
-        <button class="onb-skip" onclick="openSkipModal()" title="Pular configuração">
-            Pular <i class="bi bi-skip-forward"></i>
+        <button class="onb-skip" onclick="openSkipModal()" title="{{ __('onboarding.skip_button_title') }}">
+            {{ __('onboarding.skip_button') }} <i class="bi bi-skip-forward"></i>
         </button>
 
         <div class="onb-brand">
@@ -574,38 +574,38 @@
             <!-- STEP 1: Nome da empresa + logo -->
             <!-- ─────────────────────────────────────────────── -->
             <div class="onb-step active fade-in" id="step1">
-                <div class="onb-step-label">Passo 1 de 4</div>
-                <h1 class="onb-title">Vamos configurar sua empresa</h1>
-                <p class="onb-subtitle">Comece pelo básico: nome e logo da sua empresa.</p>
+                <div class="onb-step-label">{{ __('onboarding.step_1_of_4') }}</div>
+                <h1 class="onb-title">{{ __('onboarding.step1_title') }}</h1>
+                <p class="onb-subtitle">{{ __('onboarding.step1_subtitle') }}</p>
 
                 <div style="margin-bottom: 20px;">
-                    <label class="form-label">Nome da empresa *</label>
+                    <label class="form-label">{{ __('onboarding.company_name_label') }}</label>
                     <input
                         type="text"
                         class="form-control"
                         id="companyName"
-                        placeholder="Ex: Imobiliária Silva & Filhos"
+                        placeholder="{{ __('onboarding.company_name_placeholder') }}"
                         value="{{ $tenant->name ?? '' }}"
                         maxlength="150"
                     >
                 </div>
 
                 <div>
-                    <label class="form-label">Logo da empresa <span style="font-weight:400;color:#9CA3AF">(opcional)</span></label>
+                    <label class="form-label">{{ __('onboarding.logo_label') }} <span style="font-weight:400;color:#9CA3AF">{{ __('onboarding.logo_optional') }}</span></label>
                     <div class="upload-zone" id="logoZone">
                         <input type="file" id="logoInput" accept="image/*" onchange="handleLogoUpload(this)">
                         <img id="logoPreview" class="upload-preview" alt="Preview">
                         <div id="logoPlaceholder">
                             <div class="upload-icon"><i class="bi bi-image"></i></div>
-                            <p class="upload-text"><span>Clique para enviar</span> ou arraste aqui</p>
-                            <p style="font-size:12px;color:#D1D5DB;margin-top:4px">PNG, JPG até 10 MB</p>
+                            <p class="upload-text"><span>{{ __('onboarding.upload_click') }}</span> {{ __('onboarding.upload_drag') }}</p>
+                            <p style="font-size:12px;color:#D1D5DB;margin-top:4px">{{ __('onboarding.upload_hint') }}</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="onb-nav">
                     <button class="btn-next" onclick="goNext()">
-                        Continuar <i class="bi bi-arrow-right"></i>
+                        {{ __('onboarding.continue') }} <i class="bi bi-arrow-right"></i>
                     </button>
                 </div>
             </div>
@@ -614,16 +614,16 @@
             <!-- STEP 2: Nicho de mercado -->
             <!-- ─────────────────────────────────────────────── -->
             <div class="onb-step" id="step2">
-                <div class="onb-step-label">Passo 2 de 4</div>
-                <h1 class="onb-title">Qual é o seu nicho de mercado?</h1>
-                <p class="onb-subtitle">Vamos pré-configurar seu funil e etapas automaticamente.</p>
+                <div class="onb-step-label">{{ __('onboarding.step_2_of_4') }}</div>
+                <h1 class="onb-title">{{ __('onboarding.step2_title') }}</h1>
+                <p class="onb-subtitle">{{ __('onboarding.step2_subtitle') }}</p>
 
                 <div class="niche-grid">
                     <div class="niche-card" data-niche="imobiliario" onclick="selectNiche('imobiliario')">
                         <div class="niche-card-icon"><i class="bi bi-building"></i></div>
                         <div class="niche-card-body">
-                            <div class="niche-card-name">Imobiliário</div>
-                            <div class="niche-card-desc">Corretores, imobiliárias e incorporadoras</div>
+                            <div class="niche-card-name">{{ __('onboarding.niche_imobiliario') }}</div>
+                            <div class="niche-card-desc">{{ __('onboarding.niche_imobiliario_desc') }}</div>
                         </div>
                         <div class="niche-check"><i class="bi bi-check"></i></div>
                     </div>
@@ -631,8 +631,8 @@
                     <div class="niche-card" data-niche="estetica" onclick="selectNiche('estetica')">
                         <div class="niche-card-icon"><i class="bi bi-stars"></i></div>
                         <div class="niche-card-body">
-                            <div class="niche-card-name">Estética e Beleza</div>
-                            <div class="niche-card-desc">Clínicas, salões e profissionais</div>
+                            <div class="niche-card-name">{{ __('onboarding.niche_estetica') }}</div>
+                            <div class="niche-card-desc">{{ __('onboarding.niche_estetica_desc') }}</div>
                         </div>
                         <div class="niche-check"><i class="bi bi-check"></i></div>
                     </div>
@@ -640,8 +640,8 @@
                     <div class="niche-card" data-niche="educacao" onclick="selectNiche('educacao')">
                         <div class="niche-card-icon"><i class="bi bi-book"></i></div>
                         <div class="niche-card-body">
-                            <div class="niche-card-name">Educação / Cursos</div>
-                            <div class="niche-card-desc">Escolas, cursos online e presenciais</div>
+                            <div class="niche-card-name">{{ __('onboarding.niche_educacao') }}</div>
+                            <div class="niche-card-desc">{{ __('onboarding.niche_educacao_desc') }}</div>
                         </div>
                         <div class="niche-check"><i class="bi bi-check"></i></div>
                     </div>
@@ -649,8 +649,8 @@
                     <div class="niche-card" data-niche="saude" onclick="selectNiche('saude')">
                         <div class="niche-card-icon"><i class="bi bi-heart-pulse"></i></div>
                         <div class="niche-card-body">
-                            <div class="niche-card-name">Saúde / Clínicas</div>
-                            <div class="niche-card-desc">Consultórios, clínicas e laboratórios</div>
+                            <div class="niche-card-name">{{ __('onboarding.niche_saude') }}</div>
+                            <div class="niche-card-desc">{{ __('onboarding.niche_saude_desc') }}</div>
                         </div>
                         <div class="niche-check"><i class="bi bi-check"></i></div>
                     </div>
@@ -658,8 +658,8 @@
                     <div class="niche-card" data-niche="varejo" onclick="selectNiche('varejo')">
                         <div class="niche-card-icon"><i class="bi bi-bag"></i></div>
                         <div class="niche-card-body">
-                            <div class="niche-card-name">Varejo / E-commerce</div>
-                            <div class="niche-card-desc">Lojas físicas e online</div>
+                            <div class="niche-card-name">{{ __('onboarding.niche_varejo') }}</div>
+                            <div class="niche-card-desc">{{ __('onboarding.niche_varejo_desc') }}</div>
                         </div>
                         <div class="niche-check"><i class="bi bi-check"></i></div>
                     </div>
@@ -667,8 +667,8 @@
                     <div class="niche-card" data-niche="b2b" onclick="selectNiche('b2b')">
                         <div class="niche-card-icon"><i class="bi bi-briefcase"></i></div>
                         <div class="niche-card-body">
-                            <div class="niche-card-name">Serviços B2B</div>
-                            <div class="niche-card-desc">Agências, consultorias e serviços</div>
+                            <div class="niche-card-name">{{ __('onboarding.niche_b2b') }}</div>
+                            <div class="niche-card-desc">{{ __('onboarding.niche_b2b_desc') }}</div>
                         </div>
                         <div class="niche-check"><i class="bi bi-check"></i></div>
                     </div>
@@ -676,8 +676,8 @@
                     <div class="niche-card" data-niche="tecnologia" onclick="selectNiche('tecnologia')">
                         <div class="niche-card-icon"><i class="bi bi-cpu"></i></div>
                         <div class="niche-card-body">
-                            <div class="niche-card-name">Tecnologia / SaaS</div>
-                            <div class="niche-card-desc">Startups, SaaS e software</div>
+                            <div class="niche-card-name">{{ __('onboarding.niche_tecnologia') }}</div>
+                            <div class="niche-card-desc">{{ __('onboarding.niche_tecnologia_desc') }}</div>
                         </div>
                         <div class="niche-check"><i class="bi bi-check"></i></div>
                     </div>
@@ -685,17 +685,17 @@
                     <div class="niche-card" data-niche="outro" onclick="selectNiche('outro')">
                         <div class="niche-card-icon"><i class="bi bi-three-dots"></i></div>
                         <div class="niche-card-body">
-                            <div class="niche-card-name">Outro</div>
-                            <div class="niche-card-desc">Qualquer outro segmento de mercado</div>
+                            <div class="niche-card-name">{{ __('onboarding.niche_outro') }}</div>
+                            <div class="niche-card-desc">{{ __('onboarding.niche_outro_desc') }}</div>
                         </div>
                         <div class="niche-check"><i class="bi bi-check"></i></div>
                     </div>
                 </div>
 
                 <div class="onb-nav">
-                    <button class="btn-back" onclick="goBack()"><i class="bi bi-arrow-left"></i> Voltar</button>
+                    <button class="btn-back" onclick="goBack()"><i class="bi bi-arrow-left"></i> {{ __('onboarding.back') }}</button>
                     <button class="btn-next" onclick="goNext()">
-                        Continuar <i class="bi bi-arrow-right"></i>
+                        {{ __('onboarding.continue') }} <i class="bi bi-arrow-right"></i>
                     </button>
                 </div>
             </div>
@@ -704,9 +704,9 @@
             <!-- STEP 3: Foto de perfil -->
             <!-- ─────────────────────────────────────────────── -->
             <div class="onb-step" id="step3">
-                <div class="onb-step-label">Passo 3 de 4</div>
-                <h1 class="onb-title">Sua foto de perfil</h1>
-                <p class="onb-subtitle">Adicione uma foto para personalizar sua conta.</p>
+                <div class="onb-step-label">{{ __('onboarding.step_3_of_4') }}</div>
+                <h1 class="onb-title">{{ __('onboarding.step3_title') }}</h1>
+                <p class="onb-subtitle">{{ __('onboarding.step3_subtitle') }}</p>
 
                 <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
                     <div class="upload-zone" id="avatarZone" style="width:160px;height:160px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;">
@@ -714,16 +714,19 @@
                         <img id="avatarPreview" class="upload-preview avatar-preview" alt="Preview" style="width:100%;height:100%;border-radius:50%;display:none;">
                         <div id="avatarPlaceholder" style="text-align:center;padding:16px;">
                             <div style="font-size:40px;color:#9CA3AF;margin-bottom:4px;"><i class="bi bi-person-circle"></i></div>
-                            <p style="font-size:12px;color:#9CA3AF;">Clique para<br>adicionar foto</p>
+                            @php
+                                $avatarParts = explode('|', __('onboarding.avatar_click'));
+                            @endphp
+                            <p style="font-size:12px;color:#9CA3AF;">{{ $avatarParts[0] }}<br>{{ $avatarParts[1] ?? '' }}</p>
                         </div>
                     </div>
-                    <p style="font-size:13px;color:#6B7280;text-align:center;">PNG, JPG até 10 MB — opcional</p>
+                    <p style="font-size:13px;color:#6B7280;text-align:center;">{{ __('onboarding.avatar_hint') }}</p>
                 </div>
 
                 <div class="onb-nav">
-                    <button class="btn-back" onclick="goBack()"><i class="bi bi-arrow-left"></i> Voltar</button>
+                    <button class="btn-back" onclick="goBack()"><i class="bi bi-arrow-left"></i> {{ __('onboarding.back') }}</button>
                     <button class="btn-next" onclick="goNext()">
-                        Continuar <i class="bi bi-arrow-right"></i>
+                        {{ __('onboarding.continue') }} <i class="bi bi-arrow-right"></i>
                     </button>
                 </div>
             </div>
@@ -732,31 +735,31 @@
             <!-- STEP 4: Preview e finalizar -->
             <!-- ─────────────────────────────────────────────── -->
             <div class="onb-step" id="step4">
-                <div class="onb-step-label">Passo 4 de 4</div>
-                <h1 class="onb-title">Tudo pronto!</h1>
-                <p class="onb-subtitle">Veja o que criamos para você com base no seu nicho:</p>
+                <div class="onb-step-label">{{ __('onboarding.step_4_of_4') }}</div>
+                <h1 class="onb-title">{{ __('onboarding.step4_title') }}</h1>
+                <p class="onb-subtitle">{{ __('onboarding.step4_subtitle') }}</p>
 
                 <div class="preview-block">
-                    <div class="preview-block-title"><i class="bi bi-funnel" style="margin-right:6px;color:#3B82F6;"></i>Funil criado</div>
+                    <div class="preview-block-title"><i class="bi bi-funnel" style="margin-right:6px;color:#3B82F6;"></i>{{ __('onboarding.preview_pipeline') }}</div>
                     <div id="previewPipelineName" style="font-size:14px;font-weight:600;color:#111827;margin-bottom:10px;"></div>
                     <div class="preview-stages" id="previewStages"></div>
                 </div>
 
                 <div class="preview-block">
-                    <div class="preview-block-title"><i class="bi bi-tags" style="margin-right:6px;color:#3B82F6;"></i>Tags de conversa</div>
+                    <div class="preview-block-title"><i class="bi bi-tags" style="margin-right:6px;color:#3B82F6;"></i>{{ __('onboarding.preview_tags') }}</div>
                     <div class="preview-tags" id="previewTags"></div>
                 </div>
 
                 <div class="preview-block">
-                    <div class="preview-block-title"><i class="bi bi-x-circle" style="margin-right:6px;color:#3B82F6;"></i>Motivos de perda</div>
+                    <div class="preview-block-title"><i class="bi bi-x-circle" style="margin-right:6px;color:#3B82F6;"></i>{{ __('onboarding.preview_loss_reasons') }}</div>
                     <div id="previewLossReasons" style="display:flex;flex-direction:column;gap:4px;"></div>
                 </div>
 
                 <div class="onb-nav">
-                    <button class="btn-back" onclick="goBack()"><i class="bi bi-arrow-left"></i> Voltar</button>
+                    <button class="btn-back" onclick="goBack()"><i class="bi bi-arrow-left"></i> {{ __('onboarding.back') }}</button>
                     <button class="btn-next" id="btnFinish" onclick="submitOnboarding()">
                         <span class="spinner" id="submitSpinner"></span>
-                        <span id="btnFinishText">Finalizar e começar <i class="bi bi-rocket-takeoff"></i></span>
+                        <span id="btnFinishText">{{ __('onboarding.finish_button') }} <i class="bi bi-rocket-takeoff"></i></span>
                     </button>
                 </div>
             </div>
@@ -774,17 +777,17 @@
 <!-- Modal de confirmação para pular onboarding -->
 <div class="skip-modal-backdrop" id="skipModal" onclick="closeSkipModal(event)">
     <div class="skip-modal">
-        <div class="skip-modal-title">Pular configuração?</div>
+        <div class="skip-modal-title">{{ __('onboarding.skip_modal_title') }}</div>
         <div class="skip-modal-body">
-            Você pode montar seu funil e configurar tags manualmente depois em <strong>Configurações</strong>.<br><br>
-            Esta tela não vai aparecer novamente.
+            {!! __('onboarding.skip_modal_body') !!}<br><br>
+            {{ __('onboarding.skip_modal_note') }}
         </div>
         <div class="skip-modal-actions">
-            <button class="btn-skip-cancel" onclick="closeSkipModal()">Voltar</button>
+            <button class="btn-skip-cancel" onclick="closeSkipModal()">{{ __('onboarding.skip_modal_cancel') }}</button>
             <form method="POST" action="{{ route('onboarding.skip') }}" style="flex:1;">
                 @csrf
                 <button type="submit" class="btn-skip-confirm" style="width:100%;">
-                    Sim, pular
+                    {{ __('onboarding.skip_modal_confirm') }}
                 </button>
             </form>
         </div>
@@ -792,109 +795,111 @@
 </div>
 
 <script>
+const OBLANG = @json(__('onboarding'));
+
 const NICHE_DATA = {
     imobiliario: {
-        pipeline_name: 'Funil Imobiliário',
+        pipeline_name: OBLANG.nd_imobiliario_pipeline,
         stages: [
-            { name: 'Novo Lead',        color: '#6B7280' },
-            { name: 'Visita Agendada',  color: '#3B82F6' },
-            { name: 'Proposta Enviada', color: '#F59E0B' },
-            { name: 'Negociação',       color: '#8B5CF6' },
-            { name: 'Fechado',          color: '#10B981' },
-            { name: 'Perdido',          color: '#EF4444' },
+            { name: OBLANG.nd_imobiliario_stage_1, color: '#6B7280' },
+            { name: OBLANG.nd_imobiliario_stage_2, color: '#3B82F6' },
+            { name: OBLANG.nd_imobiliario_stage_3, color: '#F59E0B' },
+            { name: OBLANG.nd_imobiliario_stage_4, color: '#8B5CF6' },
+            { name: OBLANG.nd_imobiliario_stage_5, color: '#10B981' },
+            { name: OBLANG.nd_imobiliario_stage_6, color: '#EF4444' },
         ],
-        tags: ['Comprador', 'Locatário', 'Investidor', 'Urgente', 'Alto Padrão'],
-        loss_reasons: ['Preço alto', 'Não encontrou o imóvel ideal', 'Financiamento negado', 'Comprou com outro corretor', 'Sem interesse'],
+        tags: [OBLANG.nd_imobiliario_tag_1, OBLANG.nd_imobiliario_tag_2, OBLANG.nd_imobiliario_tag_3, OBLANG.nd_imobiliario_tag_4, OBLANG.nd_imobiliario_tag_5],
+        loss_reasons: [OBLANG.nd_imobiliario_loss_1, OBLANG.nd_imobiliario_loss_2, OBLANG.nd_imobiliario_loss_3, OBLANG.nd_imobiliario_loss_4, OBLANG.nd_imobiliario_loss_5],
     },
     estetica: {
-        pipeline_name: 'Agendamentos',
+        pipeline_name: OBLANG.nd_estetica_pipeline,
         stages: [
-            { name: 'Lead Novo',          color: '#6B7280' },
-            { name: 'Consulta Agendada',  color: '#3B82F6' },
-            { name: 'Consulta Realizada', color: '#F59E0B' },
-            { name: 'Proposta Enviada',   color: '#8B5CF6' },
-            { name: 'Fechado',            color: '#10B981' },
-            { name: 'Perdido',            color: '#EF4444' },
+            { name: OBLANG.nd_estetica_stage_1, color: '#6B7280' },
+            { name: OBLANG.nd_estetica_stage_2, color: '#3B82F6' },
+            { name: OBLANG.nd_estetica_stage_3, color: '#F59E0B' },
+            { name: OBLANG.nd_estetica_stage_4, color: '#8B5CF6' },
+            { name: OBLANG.nd_estetica_stage_5, color: '#10B981' },
+            { name: OBLANG.nd_estetica_stage_6, color: '#EF4444' },
         ],
-        tags: ['Facial', 'Corporal', 'Capilar', 'Retorno', 'Novo Cliente'],
-        loss_reasons: ['Preço alto', 'Sem tempo', 'Optou por outra clínica', 'Não respondeu', 'Mudou de ideia'],
+        tags: [OBLANG.nd_estetica_tag_1, OBLANG.nd_estetica_tag_2, OBLANG.nd_estetica_tag_3, OBLANG.nd_estetica_tag_4, OBLANG.nd_estetica_tag_5],
+        loss_reasons: [OBLANG.nd_estetica_loss_1, OBLANG.nd_estetica_loss_2, OBLANG.nd_estetica_loss_3, OBLANG.nd_estetica_loss_4, OBLANG.nd_estetica_loss_5],
     },
     educacao: {
-        pipeline_name: 'Matrículas',
+        pipeline_name: OBLANG.nd_educacao_pipeline,
         stages: [
-            { name: 'Interessado',        color: '#6B7280' },
-            { name: 'Apresentação Feita', color: '#3B82F6' },
-            { name: 'Proposta Enviada',   color: '#F59E0B' },
-            { name: 'Matriculado',        color: '#10B981' },
-            { name: 'Desistiu',           color: '#EF4444' },
+            { name: OBLANG.nd_educacao_stage_1, color: '#6B7280' },
+            { name: OBLANG.nd_educacao_stage_2, color: '#3B82F6' },
+            { name: OBLANG.nd_educacao_stage_3, color: '#F59E0B' },
+            { name: OBLANG.nd_educacao_stage_4, color: '#10B981' },
+            { name: OBLANG.nd_educacao_stage_5, color: '#EF4444' },
         ],
-        tags: ['Curso Online', 'Presencial', 'Bolsa', 'Graduação', 'Pós-Graduação'],
-        loss_reasons: ['Preço alto', 'Sem tempo', 'Optou por outro curso', 'Não respondeu', 'Não passou no processo'],
+        tags: [OBLANG.nd_educacao_tag_1, OBLANG.nd_educacao_tag_2, OBLANG.nd_educacao_tag_3, OBLANG.nd_educacao_tag_4, OBLANG.nd_educacao_tag_5],
+        loss_reasons: [OBLANG.nd_educacao_loss_1, OBLANG.nd_educacao_loss_2, OBLANG.nd_educacao_loss_3, OBLANG.nd_educacao_loss_4, OBLANG.nd_educacao_loss_5],
     },
     saude: {
-        pipeline_name: 'Pacientes',
+        pipeline_name: OBLANG.nd_saude_pipeline,
         stages: [
-            { name: 'Primeiro Contato',       color: '#6B7280' },
-            { name: 'Consulta Agendada',      color: '#3B82F6' },
-            { name: 'Avaliação Realizada',    color: '#F59E0B' },
-            { name: 'Proposta de Tratamento', color: '#8B5CF6' },
-            { name: 'Em Tratamento',          color: '#10B981' },
-            { name: 'Perdido',                color: '#EF4444' },
+            { name: OBLANG.nd_saude_stage_1, color: '#6B7280' },
+            { name: OBLANG.nd_saude_stage_2, color: '#3B82F6' },
+            { name: OBLANG.nd_saude_stage_3, color: '#F59E0B' },
+            { name: OBLANG.nd_saude_stage_4, color: '#8B5CF6' },
+            { name: OBLANG.nd_saude_stage_5, color: '#10B981' },
+            { name: OBLANG.nd_saude_stage_6, color: '#EF4444' },
         ],
-        tags: ['Plano de Saúde', 'Particular', 'Urgente', 'Retorno', 'Novo Paciente'],
-        loss_reasons: ['Plano não aceito', 'Preço alto', 'Optou por outra clínica', 'Não respondeu', 'Falta de transporte'],
+        tags: [OBLANG.nd_saude_tag_1, OBLANG.nd_saude_tag_2, OBLANG.nd_saude_tag_3, OBLANG.nd_saude_tag_4, OBLANG.nd_saude_tag_5],
+        loss_reasons: [OBLANG.nd_saude_loss_1, OBLANG.nd_saude_loss_2, OBLANG.nd_saude_loss_3, OBLANG.nd_saude_loss_4, OBLANG.nd_saude_loss_5],
     },
     varejo: {
-        pipeline_name: 'Vendas',
+        pipeline_name: OBLANG.nd_varejo_pipeline,
         stages: [
-            { name: 'Carrinho Abandonado',  color: '#6B7280' },
-            { name: 'Interesse Confirmado', color: '#3B82F6' },
-            { name: 'Pedido Realizado',     color: '#F59E0B' },
-            { name: 'Em Processamento',     color: '#8B5CF6' },
-            { name: 'Entregue',             color: '#10B981' },
-            { name: 'Devolvido',            color: '#EF4444' },
+            { name: OBLANG.nd_varejo_stage_1, color: '#6B7280' },
+            { name: OBLANG.nd_varejo_stage_2, color: '#3B82F6' },
+            { name: OBLANG.nd_varejo_stage_3, color: '#F59E0B' },
+            { name: OBLANG.nd_varejo_stage_4, color: '#8B5CF6' },
+            { name: OBLANG.nd_varejo_stage_5, color: '#10B981' },
+            { name: OBLANG.nd_varejo_stage_6, color: '#EF4444' },
         ],
-        tags: ['Cliente Novo', 'Recorrente', 'VIP', 'Atacado', 'Promoção'],
-        loss_reasons: ['Preço alto', 'Frete caro', 'Produto indisponível', 'Optou por concorrente', 'Desistiu no checkout'],
+        tags: [OBLANG.nd_varejo_tag_1, OBLANG.nd_varejo_tag_2, OBLANG.nd_varejo_tag_3, OBLANG.nd_varejo_tag_4, OBLANG.nd_varejo_tag_5],
+        loss_reasons: [OBLANG.nd_varejo_loss_1, OBLANG.nd_varejo_loss_2, OBLANG.nd_varejo_loss_3, OBLANG.nd_varejo_loss_4, OBLANG.nd_varejo_loss_5],
     },
     b2b: {
-        pipeline_name: 'Oportunidades B2B',
+        pipeline_name: OBLANG.nd_b2b_pipeline,
         stages: [
-            { name: 'Prospecção',   color: '#6B7280' },
-            { name: 'Qualificação', color: '#3B82F6' },
-            { name: 'Proposta',     color: '#F59E0B' },
-            { name: 'Negociação',   color: '#8B5CF6' },
-            { name: 'Fechado',      color: '#10B981' },
-            { name: 'Perdido',      color: '#EF4444' },
+            { name: OBLANG.nd_b2b_stage_1, color: '#6B7280' },
+            { name: OBLANG.nd_b2b_stage_2, color: '#3B82F6' },
+            { name: OBLANG.nd_b2b_stage_3, color: '#F59E0B' },
+            { name: OBLANG.nd_b2b_stage_4, color: '#8B5CF6' },
+            { name: OBLANG.nd_b2b_stage_5, color: '#10B981' },
+            { name: OBLANG.nd_b2b_stage_6, color: '#EF4444' },
         ],
-        tags: ['Pequena Empresa', 'Média Empresa', 'Grande Empresa', 'Urgente', 'Parceria'],
-        loss_reasons: ['Preço alto', 'Sem orçamento', 'Optou por concorrente', 'Projeto cancelado', 'Timing errado'],
+        tags: [OBLANG.nd_b2b_tag_1, OBLANG.nd_b2b_tag_2, OBLANG.nd_b2b_tag_3, OBLANG.nd_b2b_tag_4, OBLANG.nd_b2b_tag_5],
+        loss_reasons: [OBLANG.nd_b2b_loss_1, OBLANG.nd_b2b_loss_2, OBLANG.nd_b2b_loss_3, OBLANG.nd_b2b_loss_4, OBLANG.nd_b2b_loss_5],
     },
     tecnologia: {
-        pipeline_name: 'Demo e Vendas SaaS',
+        pipeline_name: OBLANG.nd_tecnologia_pipeline,
         stages: [
-            { name: 'Lead Novo',      color: '#6B7280' },
-            { name: 'Demo Agendada',  color: '#3B82F6' },
-            { name: 'Demo Realizada', color: '#F59E0B' },
-            { name: 'Trial Ativo',    color: '#8B5CF6' },
-            { name: 'Fechado',        color: '#10B981' },
-            { name: 'Churned',        color: '#EF4444' },
+            { name: OBLANG.nd_tecnologia_stage_1, color: '#6B7280' },
+            { name: OBLANG.nd_tecnologia_stage_2, color: '#3B82F6' },
+            { name: OBLANG.nd_tecnologia_stage_3, color: '#F59E0B' },
+            { name: OBLANG.nd_tecnologia_stage_4, color: '#8B5CF6' },
+            { name: OBLANG.nd_tecnologia_stage_5, color: '#10B981' },
+            { name: OBLANG.nd_tecnologia_stage_6, color: '#EF4444' },
         ],
-        tags: ['Startup', 'Corporativo', 'Trial', 'Demo Solicitada', 'Enterprise'],
-        loss_reasons: ['Sem budget', 'Optou por concorrente', 'Feature não disponível', 'Projeto pausado', 'Saiu do trial sem converter'],
+        tags: [OBLANG.nd_tecnologia_tag_1, OBLANG.nd_tecnologia_tag_2, OBLANG.nd_tecnologia_tag_3, OBLANG.nd_tecnologia_tag_4, OBLANG.nd_tecnologia_tag_5],
+        loss_reasons: [OBLANG.nd_tecnologia_loss_1, OBLANG.nd_tecnologia_loss_2, OBLANG.nd_tecnologia_loss_3, OBLANG.nd_tecnologia_loss_4, OBLANG.nd_tecnologia_loss_5],
     },
     outro: {
-        pipeline_name: 'Funil de Vendas',
+        pipeline_name: OBLANG.nd_outro_pipeline,
         stages: [
-            { name: 'Novo Lead',        color: '#6B7280' },
-            { name: 'Em Contato',       color: '#3B82F6' },
-            { name: 'Proposta Enviada', color: '#F59E0B' },
-            { name: 'Negociação',       color: '#8B5CF6' },
-            { name: 'Fechado',          color: '#10B981' },
-            { name: 'Perdido',          color: '#EF4444' },
+            { name: OBLANG.nd_outro_stage_1, color: '#6B7280' },
+            { name: OBLANG.nd_outro_stage_2, color: '#3B82F6' },
+            { name: OBLANG.nd_outro_stage_3, color: '#F59E0B' },
+            { name: OBLANG.nd_outro_stage_4, color: '#8B5CF6' },
+            { name: OBLANG.nd_outro_stage_5, color: '#10B981' },
+            { name: OBLANG.nd_outro_stage_6, color: '#EF4444' },
         ],
-        tags: ['Quente', 'Morno', 'Frio', 'Prioritário', 'Retorno'],
-        loss_reasons: ['Preço alto', 'Sem interesse', 'Sem retorno', 'Optou por concorrente', 'Timing errado'],
+        tags: [OBLANG.nd_outro_tag_1, OBLANG.nd_outro_tag_2, OBLANG.nd_outro_tag_3, OBLANG.nd_outro_tag_4, OBLANG.nd_outro_tag_5],
+        loss_reasons: [OBLANG.nd_outro_loss_1, OBLANG.nd_outro_loss_2, OBLANG.nd_outro_loss_3, OBLANG.nd_outro_loss_4, OBLANG.nd_outro_loss_5],
     },
 };
 
@@ -910,7 +915,7 @@ function goNext() {
     if (currentStep === 1) {
         const name = document.getElementById('companyName').value.trim();
         if (!name) {
-            showError('Por favor, informe o nome da empresa.');
+            showError(OBLANG.error_company_name);
             document.getElementById('companyName').focus();
             return;
         }
@@ -918,7 +923,7 @@ function goNext() {
 
     if (currentStep === 2) {
         if (!selectedNiche) {
-            showError('Por favor, selecione um nicho de mercado.');
+            showError(OBLANG.error_select_niche);
             return;
         }
         buildPreview(selectedNiche);
@@ -1052,7 +1057,7 @@ async function submitOnboarding() {
         } catch (_) {
             // Servidor retornou HTML (erro 500, redirect, etc.)
             console.error('[Onboarding] Resposta não-JSON (HTTP ' + resp.status + '):', rawText.substring(0, 800));
-            showError('Erro do servidor (HTTP ' + resp.status + '). Verifique o console para detalhes.');
+            showError(OBLANG.error_server.replace(':status', resp.status));
             resetBtn();
             return;
         }
@@ -1062,13 +1067,13 @@ async function submitOnboarding() {
         } else {
             const msgs = json.errors
                 ? Object.values(json.errors).flat().join(' ')
-                : (json.message || 'Ocorreu um erro. Tente novamente.');
+                : (json.message || OBLANG.error_generic);
             showError(msgs);
             resetBtn();
         }
     } catch (e) {
         console.error('[Onboarding] Fetch error:', e);
-        showError('Erro de conexão. Verifique sua internet e tente novamente.');
+        showError(OBLANG.error_connection);
         resetBtn();
     }
 }

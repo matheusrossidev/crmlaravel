@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Senha — Syncro</title>
+    <title>{{ __('auth.reset_title') }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -203,8 +203,8 @@
 
         <div class="auth-form-wrap">
 
-            <h2 class="auth-form-title">Criar nova senha</h2>
-            <p class="auth-form-sub">Escolha uma nova senha segura para sua conta.</p>
+            <h2 class="auth-form-title">{{ __('auth.reset_heading') }}</h2>
+            <p class="auth-form-sub">{{ __('auth.reset_sub') }}</p>
 
             @if($errors->any())
             <div class="auth-error">
@@ -219,43 +219,43 @@
                 <input type="hidden" name="email" value="{{ $email }}">
 
                 <div class="form-group">
-                    <label for="password">Nova senha</label>
+                    <label for="password">{{ __('auth.new_password_label') }}</label>
                     <div class="input-wrap">
                         <i class="bi bi-lock"></i>
                         <input type="password"
                                id="password"
                                name="password"
                                class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}"
-                               placeholder="Mínimo 8 caracteres"
+                               placeholder="{{ __('auth.new_password_placeholder') }}"
                                autocomplete="new-password"
                                autofocus>
                     </div>
-                    <div class="requirements">Mínimo de 8 caracteres</div>
+                    <div class="requirements">{{ __('auth.min_8_chars') }}</div>
                 </div>
 
                 <div class="form-group">
-                    <label for="password_confirmation">Confirmar nova senha</label>
+                    <label for="password_confirmation">{{ __('auth.confirm_new_password_label') }}</label>
                     <div class="input-wrap">
                         <i class="bi bi-lock-fill"></i>
                         <input type="password"
                                id="password_confirmation"
                                name="password_confirmation"
                                class="form-control"
-                               placeholder="Repita a senha"
+                               placeholder="{{ __('auth.confirm_password_placeholder') }}"
                                autocomplete="new-password">
                     </div>
                 </div>
 
                 <button type="submit" class="btn-submit">
                     <i class="bi bi-check-circle"></i>
-                    Salvar nova senha
+                    {{ __('auth.save_new_password') }}
                 </button>
             </form>
 
             <div class="auth-footer-link">
                 <a href="{{ route('login') }}">
                     <i class="bi bi-arrow-left"></i>
-                    Voltar para o login
+                    {{ __('auth.back_to_login') }}
                 </a>
             </div>
 

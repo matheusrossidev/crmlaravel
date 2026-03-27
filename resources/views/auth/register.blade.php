@@ -1,23 +1,23 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Criar Conta — Syncro CRM</title>
-    <meta name="description" content="CRM completo com atendimento automático via WhatsApp, agente de IA, funil de vendas e agenda integrada. Gerencie leads e converta mais com menos esforço.">
+    <title>{{ __('auth.register_title') }}</title>
+    <meta name="description" content="{{ __('auth.login_meta_description') }}">
 
     {{-- Open Graph / Social Sharing --}}
     <meta property="og:type"         content="website">
     <meta property="og:site_name"    content="Syncro CRM">
-    <meta property="og:title"        content="Syncro CRM — Gestão de Clientes e Atendimento via WhatsApp">
-    <meta property="og:description"  content="CRM completo com atendimento automático via WhatsApp, agente de IA, funil de vendas e agenda integrada. Gerencie leads e converta mais com menos esforço.">
+    <meta property="og:title"        content="{{ __('auth.login_title') }}">
+    <meta property="og:description"  content="{{ __('auth.login_meta_description') }}">
     <meta property="og:image"        content="{{ asset('images/shared-image.jpg') }}">
     <meta property="og:image:width"  content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:url"          content="{{ url('/') }}">
     <meta name="twitter:card"        content="summary_large_image">
-    <meta name="twitter:title"       content="Syncro CRM — Gestão de Clientes e Atendimento via WhatsApp">
-    <meta name="twitter:description" content="CRM completo com atendimento automático via WhatsApp, agente de IA, funil de vendas e agenda integrada. Gerencie leads e converta mais com menos esforço.">
+    <meta name="twitter:title"       content="{{ __('auth.login_title') }}">
+    <meta name="twitter:description" content="{{ __('auth.login_meta_description') }}">
     <meta name="twitter:image"       content="{{ asset('images/shared-image.jpg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -66,6 +66,21 @@
             width: 100%;
             max-width: 360px;
         }
+
+        /* Language selector */
+        .lang-selector { position: relative; margin-bottom: 24px; }
+        .lang-selected { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border: 1.5px solid #e2e8f0; border-radius: 100px; cursor: pointer; background: #fff; transition: border-color .15s; }
+        .lang-selected:hover { border-color: #cbd5e1; }
+        .lang-flag { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+        .lang-name { font-size: 14px; font-weight: 500; color: #374151; }
+        .lang-chevron { margin-left: auto; color: #9ca3af; font-size: 14px; transition: transform .2s; }
+        .lang-selector.open .lang-chevron { transform: rotate(180deg); }
+        .lang-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 20px; margin-top: 4px; z-index: 10; display: none; box-shadow: 0 4px 16px rgba(0,0,0,.08); overflow: hidden; }
+        .lang-dropdown.open { display: block; }
+        .lang-option { display: flex; align-items: center; gap: 10px; padding: 12px 20px; cursor: pointer; }
+        .lang-option:hover { background: #f8fafc; }
+        .lang-option:first-child { border-radius: 0; }
+        .lang-option:last-child { border-radius: 0; }
 
         /* Indicador de progresso */
         .step-progress {
@@ -284,6 +299,32 @@
 
         <div class="auth-form-wrap">
 
+            {{-- Language selector --}}
+            @php
+                $currentLocale = app()->getLocale();
+                $languages = [
+                    'pt_BR' => ['name' => __('auth.lang_pt_BR'), 'flag' => 'pt-br.png'],
+                    'en'    => ['name' => __('auth.lang_en'), 'flag' => 'en.png'],
+                ];
+                $currentLang = $languages[$currentLocale] ?? $languages['pt_BR'];
+            @endphp
+            <div class="lang-selector" id="lang-selector">
+                <div class="lang-selected" onclick="toggleLangDropdown()">
+                    <img class="lang-flag" src="{{ asset('images/languages/' . $currentLang['flag']) }}" alt="">
+                    <span class="lang-name">{{ $currentLang['name'] }}</span>
+                    <i class="bi bi-chevron-down lang-chevron"></i>
+                </div>
+                <div class="lang-dropdown" id="lang-dropdown">
+                    @foreach($languages as $code => $lang)
+                        <div class="lang-option" onclick="switchLang('{{ $code }}')">
+                            <img class="lang-flag" src="{{ asset('images/languages/' . $lang['flag']) }}" alt="">
+                            <span class="lang-name">{{ $lang['name'] }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            <input type="hidden" name="locale" id="h-locale" form="regForm" value="{{ $currentLocale }}">
+
             {{-- Indicador de progresso --}}
             <div class="step-progress">
                 <div class="step-dot active" id="dot-1"></div>
@@ -292,8 +333,8 @@
                 <div class="step-dot" id="dot-4"></div>
             </div>
 
-            <h2 class="auth-form-title" id="step-title">Bem-vindo</h2>
-            <p class="auth-form-sub" id="step-sub">Como se chama sua empresa?</p>
+            <h2 class="auth-form-title" id="step-title">{{ __('auth.step1_title') }}</h2>
+            <p class="auth-form-sub" id="step-sub">{{ __('auth.step1_sub') }}</p>
 
             @if($errors->any())
             <div class="auth-error">
@@ -313,13 +354,13 @@
                 {{-- Etapa 1 — Empresa --}}
                 <div id="step-1">
                     <div class="form-group">
-                        <label for="d-tenant">Nome da empresa / workspace</label>
+                        <label for="d-tenant">{{ __('auth.company_label') }}</label>
                         <div class="input-wrap">
                             <i class="bi bi-building"></i>
                             <input type="text"
                                    id="d-tenant"
                                    class="form-control {{ $errors->has('tenant_name') ? 'is-invalid' : '' }}"
-                                   placeholder="Ex: Agência XYZ"
+                                   placeholder="{{ __('auth.company_placeholder') }}"
                                    autocomplete="organization"
                                    autofocus
                                    onkeydown="if(event.key==='Enter'){event.preventDefault();goStep(2);}">
@@ -329,25 +370,25 @@
                         @enderror
                     </div>
                     <button type="button" class="btn-submit" onclick="goStep(2)">
-                        Continuar <i class="bi bi-arrow-right"></i>
+                        {{ __('auth.continue') }} <i class="bi bi-arrow-right"></i>
                     </button>
                 </div>
 
                 {{-- Etapa 2 — Nome --}}
                 <div id="step-2" style="display:none;">
-                    <div class="value-chip" onclick="goStep(1)" title="Alterar empresa">
+                    <div class="value-chip" onclick="goStep(1)" title="{{ __('auth.change_company') }}">
                         <i class="bi bi-building chip-icon"></i>
                         <span class="chip-val" id="chip-tenant"></span>
                         <i class="bi bi-pencil chip-edit"></i>
                     </div>
                     <div class="form-group">
-                        <label for="d-name">Seu nome</label>
+                        <label for="d-name">{{ __('auth.your_name_label') }}</label>
                         <div class="input-wrap">
                             <i class="bi bi-person"></i>
                             <input type="text"
                                    id="d-name"
                                    class="form-control {{ $errors->has('name') ? 'is-invalid' : '' }}"
-                                   placeholder="João Silva"
+                                   placeholder="{{ __('auth.your_name_placeholder') }}"
                                    autocomplete="name"
                                    onkeydown="if(event.key==='Enter'){event.preventDefault();goStep(3);}">
                         </div>
@@ -356,30 +397,30 @@
                         @enderror
                     </div>
                     <button type="button" class="btn-submit" onclick="goStep(3)">
-                        Continuar <i class="bi bi-arrow-right"></i>
+                        {{ __('auth.continue') }} <i class="bi bi-arrow-right"></i>
                     </button>
                 </div>
 
                 {{-- Etapa 3 — E-mail --}}
                 <div id="step-3" style="display:none;">
-                    <div class="value-chip" onclick="goStep(1)" title="Alterar empresa">
+                    <div class="value-chip" onclick="goStep(1)" title="{{ __('auth.change_company') }}">
                         <i class="bi bi-building chip-icon"></i>
                         <span class="chip-val" id="chip-tenant-3"></span>
                         <i class="bi bi-pencil chip-edit"></i>
                     </div>
-                    <div class="value-chip" onclick="goStep(2)" title="Alterar nome">
+                    <div class="value-chip" onclick="goStep(2)" title="{{ __('auth.change_name') }}">
                         <i class="bi bi-person chip-icon"></i>
                         <span class="chip-val" id="chip-name-3"></span>
                         <i class="bi bi-pencil chip-edit"></i>
                     </div>
                     <div class="form-group">
-                        <label for="d-email">E-mail</label>
+                        <label for="d-email">{{ __('auth.email_label') }}</label>
                         <div class="input-wrap">
                             <i class="bi bi-envelope"></i>
                             <input type="email"
                                    id="d-email"
                                    class="form-control {{ $errors->has('email') ? 'is-invalid' : '' }}"
-                                   placeholder="joao@empresa.com"
+                                   placeholder="{{ __('auth.email_register_placeholder') }}"
                                    autocomplete="email"
                                    onkeydown="if(event.key==='Enter'){event.preventDefault();goStep(4);}">
                         </div>
@@ -388,26 +429,26 @@
                         @enderror
                     </div>
                     <button type="button" class="btn-submit" onclick="goStep(4)">
-                        Continuar <i class="bi bi-arrow-right"></i>
+                        {{ __('auth.continue') }} <i class="bi bi-arrow-right"></i>
                     </button>
                 </div>
 
                 {{-- Etapa 4 — Senha --}}
                 <div id="step-4" style="display:none;">
-                    <div class="value-chip" onclick="goStep(1)" title="Alterar empresa">
+                    <div class="value-chip" onclick="goStep(1)" title="{{ __('auth.change_company') }}">
                         <i class="bi bi-building chip-icon"></i>
                         <span class="chip-val" id="chip-tenant-4"></span>
                         <i class="bi bi-pencil chip-edit"></i>
                     </div>
                     <div class="form-group">
-                        <label for="password">Senha</label>
+                        <label for="password">{{ __('auth.password_label') }}</label>
                         <div class="input-wrap">
                             <i class="bi bi-lock"></i>
                             <input type="password"
                                    id="password"
                                    name="password"
                                    class="form-control {{ $errors->has('password') ? 'is-invalid' : '' }}"
-                                   placeholder="Mín. 8 chars, maiúscula e número"
+                                   placeholder="{{ __('auth.password_register_placeholder') }}"
                                    autocomplete="new-password"
                                    oninput="this.classList.remove('is-invalid');const fb=this.closest('.form-group').querySelector('.invalid-feedback');if(fb)fb.style.display='none';">
                             <i class="bi bi-eye toggle-pwd" onclick="togglePassword(this, 'password')"></i>
@@ -417,14 +458,14 @@
                         @enderror
                     </div>
                     <div class="form-group">
-                        <label for="password_confirmation">Confirmar senha</label>
+                        <label for="password_confirmation">{{ __('auth.confirm_password_label') }}</label>
                         <div class="input-wrap">
                             <i class="bi bi-lock-fill"></i>
                             <input type="password"
                                    id="password_confirmation"
                                    name="password_confirmation"
                                    class="form-control {{ $errors->has('password_confirmation') ? 'is-invalid' : '' }}"
-                                   placeholder="Repita a senha"
+                                   placeholder="{{ __('auth.confirm_password_placeholder') }}"
                                    autocomplete="new-password"
                                    oninput="this.classList.remove('is-invalid');const fb=this.closest('.form-group').querySelector('.invalid-feedback');if(fb)fb.style.display='none';">
                             <i class="bi bi-eye toggle-pwd" onclick="togglePassword(this, 'password_confirmation')"></i>
@@ -438,19 +479,19 @@
                         <button type="button" onclick="toggleAgencyCode()" id="agency-toggle-btn"
                                 style="background:none;border:none;padding:0;font-size:12.5px;color:#6b7280;cursor:pointer;display:flex;align-items:center;gap:5px;">
                             <i class="bi bi-building" id="agency-toggle-icon"></i>
-                            <span id="agency-toggle-text">Tem um código de agência parceira?</span>
+                            <span id="agency-toggle-text">{{ __('auth.agency_code_question') }}</span>
                         </button>
                         <div id="agency-code-field" style="display:none;margin-top:10px;">
                             <div class="input-wrap">
                                 <i class="bi bi-building"></i>
                                 <input type="text" id="agency_code" name="agency_code"
-                                       class="form-control" placeholder="Ex: AGC-EXEMPLO"
+                                       class="form-control" placeholder="{{ __('auth.agency_code_placeholder') }}"
                                        style="font-family:monospace;font-weight:600;letter-spacing:.04em;"
                                        value="{{ old('agency_code', request('agency')) }}"
                                        maxlength="20"
                                        oninput="this.value=this.value.toUpperCase()">
                             </div>
-                            <div style="font-size:11.5px;color:#9ca3af;margin-top:4px;">Código fornecido pela sua agência parceira.</div>
+                            <div style="font-size:11.5px;color:#9ca3af;margin-top:4px;">{{ __('auth.agency_code_hint') }}</div>
                         </div>
                     </div>
 
@@ -460,9 +501,9 @@
                                    {{ old('accept_terms') ? 'checked' : '' }}
                                    required
                                    style="margin-top:3px;accent-color:#007DFF;min-width:16px;">
-                            <span>Li e aceito os
-                                <a href="{{ route('terms') }}" target="_blank" style="color:#007DFF;">Termos de Uso</a> e a
-                                <a href="{{ route('privacy') }}" target="_blank" style="color:#007DFF;">Política de Privacidade</a>.
+                            <span>{{ __('auth.accept_terms_text') }}
+                                <a href="{{ route('terms') }}" target="_blank" style="color:#007DFF;">{{ __('auth.terms_of_use') }}</a> {{ __('auth.accept_terms_and') }}
+                                <a href="{{ route('privacy') }}" target="_blank" style="color:#007DFF;">{{ __('auth.privacy_policy') }}</a>.
                             </span>
                         </label>
                         @error('accept_terms')
@@ -472,14 +513,14 @@
 
                     <button type="submit" class="btn-submit">
                         <i class="bi bi-rocket-takeoff"></i>
-                        Criar minha conta
+                        {{ __('auth.create_account_button') }}
                     </button>
                 </div>
 
             </form>
 
             <div class="auth-footer-link">
-                Já tem uma conta? <a href="{{ route('login') }}">Entrar agora</a>
+                {{ __('auth.already_have_account') }} <a href="{{ route('login') }}">{{ __('auth.login_now') }}</a>
             </div>
 
         </div>
@@ -491,11 +532,36 @@
 </div>
 
 <script>
+    // ── Language selector ──
+    function toggleLangDropdown() {
+        var sel = document.getElementById('lang-selector');
+        var dd  = document.getElementById('lang-dropdown');
+        sel.classList.toggle('open');
+        dd.classList.toggle('open');
+    }
+
+    function switchLang(code) {
+        document.getElementById('h-locale').value = code;
+        var url = new URL(window.location.href);
+        url.searchParams.set('lang', code);
+        window.location.href = url.toString();
+    }
+
+    // Close dropdown on outside click
+    document.addEventListener('click', function(e) {
+        var sel = document.getElementById('lang-selector');
+        if (!sel.contains(e.target)) {
+            sel.classList.remove('open');
+            document.getElementById('lang-dropdown').classList.remove('open');
+        }
+    });
+
+    // ── Step wizard ──
     const STEPS = {
-        1: { title: 'Bem-vindo',          sub: 'Como se chama sua empresa?' },
-        2: { title: 'Quase lá',            sub: 'Como podemos te chamar?' },
-        3: { title: 'Ótimo!',              sub: 'Qual é o seu e-mail?' },
-        4: { title: 'Último passo',        sub: 'Crie uma senha de acesso' },
+        1: { title: {!! json_encode(__('auth.step1_title')) !!}, sub: {!! json_encode(__('auth.step1_sub')) !!} },
+        2: { title: {!! json_encode(__('auth.step2_title')) !!}, sub: {!! json_encode(__('auth.step2_sub')) !!} },
+        3: { title: {!! json_encode(__('auth.step3_title')) !!}, sub: {!! json_encode(__('auth.step3_sub')) !!} },
+        4: { title: {!! json_encode(__('auth.step4_title')) !!}, sub: {!! json_encode(__('auth.step4_sub')) !!} },
     };
 
     let currentStep = 1;
@@ -606,6 +672,9 @@
         }
     }
 
+    var agencyQuestionText = {!! json_encode(__('auth.agency_code_question')) !!};
+    var agencyRemoveText   = {!! json_encode(__('auth.agency_code_remove')) !!};
+
     function toggleAgencyCode() {
         const field  = document.getElementById('agency-code-field');
         const icon   = document.getElementById('agency-toggle-icon');
@@ -613,7 +682,7 @@
         const isOpen = field.style.display !== 'none';
         field.style.display = isOpen ? 'none' : 'block';
         icon.className = isOpen ? 'bi bi-building' : 'bi bi-x-circle';
-        text.textContent = isOpen ? 'Tem um código de agência parceira?' : 'Remover código de agência';
+        text.textContent = isOpen ? agencyQuestionText : agencyRemoveText;
         if (!isOpen) document.getElementById('agency_code').focus();
     }
 
@@ -623,7 +692,7 @@
         if (input && input.value.trim()) {
             document.getElementById('agency-code-field').style.display = 'block';
             document.getElementById('agency-toggle-icon').className = 'bi bi-x-circle';
-            document.getElementById('agency-toggle-text').textContent = 'Remover código de agência';
+            document.getElementById('agency-toggle-text').textContent = agencyRemoveText;
         }
     })();
 </script>

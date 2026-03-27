@@ -1,23 +1,23 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syncro CRM — Gestão de Clientes e Atendimento via WhatsApp</title>
-    <meta name="description" content="CRM completo com atendimento automático via WhatsApp, agente de IA, funil de vendas e agenda integrada. Gerencie leads e converta mais com menos esforço.">
+    <title>{{ __('auth.login_title') }}</title>
+    <meta name="description" content="{{ __('auth.login_meta_description') }}">
 
     {{-- Open Graph / Social Sharing --}}
     <meta property="og:type"         content="website">
     <meta property="og:site_name"    content="Syncro CRM">
-    <meta property="og:title"        content="Syncro CRM — Gestão de Clientes e Atendimento via WhatsApp">
-    <meta property="og:description"  content="CRM completo com atendimento automático via WhatsApp, agente de IA, funil de vendas e agenda integrada. Gerencie leads e converta mais com menos esforço.">
+    <meta property="og:title"        content="{{ __('auth.login_title') }}">
+    <meta property="og:description"  content="{{ __('auth.login_meta_description') }}">
     <meta property="og:image"        content="{{ asset('images/shared-image.jpg') }}">
     <meta property="og:image:width"  content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:url"          content="{{ url('/') }}">
     <meta name="twitter:card"        content="summary_large_image">
-    <meta name="twitter:title"       content="Syncro CRM — Gestão de Clientes e Atendimento via WhatsApp">
-    <meta name="twitter:description" content="CRM completo com atendimento automático via WhatsApp, agente de IA, funil de vendas e agenda integrada. Gerencie leads e converta mais com menos esforço.">
+    <meta name="twitter:title"       content="{{ __('auth.login_title') }}">
+    <meta name="twitter:description" content="{{ __('auth.login_meta_description') }}">
     <meta name="twitter:image"       content="{{ asset('images/shared-image.jpg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -216,6 +216,41 @@
 
         .auth-footer-link a:hover { text-decoration: underline; }
 
+        /* Language toggle */
+        .lang-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .lang-toggle-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 100px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 12.5px;
+            font-weight: 500;
+            color: #6b7280;
+            text-decoration: none;
+            transition: border-color .15s, background .15s;
+        }
+
+        .lang-toggle-btn:hover { border-color: #007DFF; background: #f8fafc; }
+        .lang-toggle-btn.active { border-color: #007DFF; background: #eff6ff; color: #007DFF; }
+
+        .lang-toggle-btn img {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
         /* ── Painel direito — Imagem ── */
         .auth-right {
             flex: 1;
@@ -249,8 +284,8 @@
 
         <div class="auth-form-wrap">
 
-            <h2 class="auth-form-title">Bem-vindo</h2>
-            <p class="auth-form-sub">Informe seu e-mail para entrar</p>
+            <h2 class="auth-form-title">{{ __('auth.welcome') }}</h2>
+            <p class="auth-form-sub">{{ __('auth.enter_email_to_login') }}</p>
 
             @if($errors->any())
             <div class="auth-error">
@@ -268,41 +303,41 @@
                 {{-- Etapa 1: E-mail --}}
                 <div id="step-email">
                     <div class="form-group">
-                        <label for="email-display">E-mail</label>
+                        <label for="email-display">{{ __('auth.email_label') }}</label>
                         <div class="input-wrap">
                             <i class="bi bi-envelope"></i>
                             <input type="email"
                                    id="email-display"
                                    class="form-control"
-                                   placeholder="seuemail@empresa.com"
+                                   placeholder="{{ __('auth.email_placeholder') }}"
                                    autocomplete="email"
                                    autofocus
                                    onkeydown="if(event.key==='Enter'){event.preventDefault();nextStep();}">
                         </div>
                     </div>
                     <button type="button" class="btn-submit" onclick="nextStep()">
-                        Avançar
+                        {{ __('auth.advance') }}
                         <i class="bi bi-arrow-right"></i>
                     </button>
                 </div>
 
                 {{-- Etapa 2: Senha --}}
                 <div id="step-password" style="display:none;">
-                    <div class="email-chip" onclick="backStep()" title="Alterar e-mail">
+                    <div class="email-chip" onclick="backStep()" title="{{ __('auth.change_email') }}">
                         <i class="bi bi-envelope chip-icon"></i>
                         <span class="chip-email" id="chip-email-text"></span>
                         <i class="bi bi-pencil chip-edit"></i>
                     </div>
 
                     <div class="form-group">
-                        <label for="password">Senha</label>
+                        <label for="password">{{ __('auth.password_label') }}</label>
                         <div class="input-wrap">
                             <i class="bi bi-lock"></i>
                             <input type="password"
                                    id="password"
                                    name="password"
                                    class="form-control"
-                                   placeholder="••••••••"
+                                   placeholder="{{ __('auth.password_placeholder') }}"
                                    autocomplete="current-password">
                             <i class="bi bi-eye toggle-pwd" onclick="togglePassword(this, 'password')"></i>
                         </div>
@@ -310,25 +345,42 @@
 
                     <button type="submit" class="btn-submit">
                         <i class="bi bi-box-arrow-in-right"></i>
-                        Entrar
+                        {{ __('auth.login_button') }}
                     </button>
                 </div>
 
             </form>
 
             <div class="auth-footer-link">
-                É novo por aqui?<br>
-                <a href="{{ route('register') }}">Crie uma conta e teste gratuitamente</a>
+                {{ __('auth.new_here') }}<br>
+                <a href="{{ route('register') }}">{{ __('auth.create_account_free') }}</a>
             </div>
 
             <div class="auth-footer-link" style="margin-top: 12px;">
-                <a href="{{ route('password.request') }}">Esqueceu sua senha?</a>
+                <a href="{{ route('password.request') }}">{{ __('auth.forgot_password_link') }}</a>
             </div>
 
             <div class="auth-footer-link" style="margin-top: 24px; font-size: 12px; color: #9ca3af;">
-                <a href="{{ route('privacy') }}" target="_blank" style="color: #9ca3af;">Política de Privacidade</a>
-                &nbsp;·&nbsp;
-                <a href="{{ route('terms') }}" target="_blank" style="color: #9ca3af;">Termos de Uso</a>
+                <a href="{{ route('privacy') }}" target="_blank" style="color: #9ca3af;">{{ __('auth.privacy_policy') }}</a>
+                &nbsp;&middot;&nbsp;
+                <a href="{{ route('terms') }}" target="_blank" style="color: #9ca3af;">{{ __('auth.terms_of_use') }}</a>
+            </div>
+
+            {{-- Language toggle --}}
+            @php
+                $currentLocale = app()->getLocale();
+            @endphp
+            <div class="lang-toggle">
+                <a href="{{ request()->fullUrlWithQuery(['lang' => 'pt_BR']) }}"
+                   class="lang-toggle-btn {{ $currentLocale === 'pt_BR' ? 'active' : '' }}">
+                    <img src="{{ asset('images/languages/pt-br.png') }}" alt="PT-BR">
+                    PT
+                </a>
+                <a href="{{ request()->fullUrlWithQuery(['lang' => 'en']) }}"
+                   class="lang-toggle-btn {{ $currentLocale === 'en' ? 'active' : '' }}">
+                    <img src="{{ asset('images/languages/en.png') }}" alt="EN">
+                    EN
+                </a>
             </div>
 
         </div>

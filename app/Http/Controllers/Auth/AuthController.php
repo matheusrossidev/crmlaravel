@@ -37,9 +37,9 @@ class AuthController extends Controller
             'email'    => 'required|email',
             'password' => 'required|string',
         ], [
-            'email.required'    => 'Informe seu e-mail.',
-            'email.email'       => 'Informe um e-mail válido.',
-            'password.required' => 'Informe sua senha.',
+            'email.required'    => __('auth.validation.email_required'),
+            'email.email'       => __('auth.validation.email_email'),
+            'password.required' => __('auth.validation.password_required'),
         ]);
 
         // Rate limiting — 5 tentativas por minuto por email+IP
@@ -49,7 +49,7 @@ class AuthController extends Controller
             $seconds = RateLimiter::availableIn($throttleKey);
 
             return back()->withErrors([
-                'email' => "Muitas tentativas. Tente novamente em {$seconds} segundos.",
+                'email' => __('auth.validation.too_many_attempts', ['seconds' => $seconds]),
             ])->onlyInput('email');
         }
 
@@ -57,7 +57,7 @@ class AuthController extends Controller
             RateLimiter::hit($throttleKey, 60);
 
             return back()->withErrors([
-                'email' => 'E-mail ou senha incorretos.',
+                'email' => __('auth.validation.invalid_credentials'),
             ])->onlyInput('email');
         }
 
@@ -67,7 +67,7 @@ class AuthController extends Controller
         if (!$user->isSuperAdmin() && $user->email_verified_at === null) {
             Auth::logout();
             return back()->withErrors([
-                'email' => 'Confirme seu email antes de continuar. Verifique sua caixa de entrada.',
+                'email' => __('auth.validation.email_not_verified'),
             ])->onlyInput('email');
         }
 
@@ -76,7 +76,7 @@ class AuthController extends Controller
             if (!in_array($user->tenant->status, ['active', 'trial', 'partner'])) {
                 Auth::logout();
                 return back()->withErrors([
-                    'email' => 'Sua conta está suspensa. Entre em contato com o suporte.',
+                    'email' => __('auth.validation.account_suspended'),
                 ])->onlyInput('email');
             }
         }
@@ -108,18 +108,19 @@ class AuthController extends Controller
             'password'     => ['required', 'string', Password::min(8)->mixedCase()->numbers(), 'confirmed'],
             'agency_code'  => 'nullable|string|max:20',
             'accept_terms' => 'accepted',
+            'locale'       => 'nullable|string|in:pt_BR,en',
         ], [
-            'tenant_name.required' => 'Informe o nome da empresa.',
-            'tenant_name.max'      => 'O nome da empresa pode ter no máximo 255 caracteres.',
-            'name.required'        => 'Informe seu nome.',
-            'name.max'             => 'O nome pode ter no máximo 255 caracteres.',
-            'email.required'       => 'Informe seu e-mail.',
-            'email.email'          => 'Informe um e-mail válido.',
-            'email.unique'         => 'Este e-mail já está cadastrado. Tente fazer login.',
-            'password.required'    => 'Crie uma senha.',
-            'password.min'         => 'A senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula e número.',
-            'password.confirmed'   => 'As senhas não conferem.',
-            'accept_terms.accepted' => 'Você deve aceitar os Termos de Uso e Política de Privacidade.',
+            'tenant_name.required' => __('auth.validation.tenant_name_required'),
+            'tenant_name.max'      => __('auth.validation.tenant_name_max'),
+            'name.required'        => __('auth.validation.name_required'),
+            'name.max'             => __('auth.validation.name_max'),
+            'email.required'       => __('auth.validation.email_required'),
+            'email.email'          => __('auth.validation.email_email'),
+            'email.unique'         => __('auth.validation.email_unique'),
+            'password.required'    => __('auth.validation.password_create'),
+            'password.min'         => __('auth.validation.password_min'),
+            'password.confirmed'   => __('auth.validation.password_confirmed'),
+            'accept_terms.accepted' => __('auth.validation.accept_terms'),
         ]);
 
         $token = Str::random(64);
@@ -144,6 +145,7 @@ class AuthController extends Controller
             'status'                => 'trial',
             'trial_ends_at'         => now()->addDays($trialDays),
             'referred_by_agency_id' => $agencyCode?->tenant_id,
+            'locale'                => $request->input('locale', 'pt_BR'),
         ]);
 
         // Cria o usuário admin — email não verificado ainda
@@ -205,7 +207,7 @@ class AuthController extends Controller
 
         if (!$user) {
             return redirect()->route('login')->withErrors([
-                'email' => 'Link de verificação inválido ou já utilizado.',
+                'email' => __('auth.validation.verification_invalid'),
             ]);
         }
 
@@ -213,7 +215,7 @@ class AuthController extends Controller
         if ($user->verification_token_expires_at && $user->verification_token_expires_at->isPast()) {
             $user->update(['verification_token' => null, 'verification_token_expires_at' => null]);
             return redirect()->route('login')->withErrors([
-                'email' => 'Link de verificação expirado. Solicite um novo cadastro.',
+                'email' => __('auth.validation.verification_expired'),
             ]);
         }
 
@@ -244,8 +246,8 @@ class AuthController extends Controller
     public function sendResetLink(Request $request): RedirectResponse
     {
         $request->validate(['email' => 'required|email'], [
-            'email.required' => 'Informe seu e-mail.',
-            'email.email'    => 'Informe um e-mail válido.',
+            'email.required' => __('auth.validation.email_required'),
+            'email.email'    => __('auth.validation.email_email'),
         ]);
 
         $user = User::where('email', $request->input('email'))->first();
@@ -269,7 +271,7 @@ class AuthController extends Controller
         }
 
         // Sempre retorna a mesma mensagem (não revela se o email existe)
-        return back()->with('status', 'Se este e-mail estiver cadastrado, você receberá o link em breve. Verifique também o spam.');
+        return back()->with('status', __('auth.validation.reset_link_sent'));
     }
 
     public function showResetPassword(Request $request, string $token): View|RedirectResponse
@@ -282,13 +284,13 @@ class AuthController extends Controller
 
         if (!$record || now()->diffInMinutes($record->created_at) > 15) {
             return redirect()->route('password.request')->withErrors([
-                'email' => 'Este link de redefinição expirou. Solicite um novo.',
+                'email' => __('auth.validation.reset_link_expired'),
             ]);
         }
 
         if (!hash_equals($record->token, hash('sha256', $token))) {
             return redirect()->route('password.request')->withErrors([
-                'email' => 'Link inválido. Solicite um novo.',
+                'email' => __('auth.validation.reset_link_invalid'),
             ]);
         }
 
@@ -302,11 +304,11 @@ class AuthController extends Controller
             'email'                 => 'required|email',
             'password'              => ['required', 'string', Password::min(8)->mixedCase()->numbers(), 'confirmed'],
         ], [
-            'email.required'       => 'Informe seu e-mail.',
-            'email.email'          => 'Informe um e-mail válido.',
-            'password.required'    => 'Crie uma senha.',
-            'password.min'         => 'A senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula e número.',
-            'password.confirmed'   => 'As senhas não conferem.',
+            'email.required'       => __('auth.validation.email_required'),
+            'email.email'          => __('auth.validation.email_email'),
+            'password.required'    => __('auth.validation.password_create'),
+            'password.min'         => __('auth.validation.password_min'),
+            'password.confirmed'   => __('auth.validation.password_confirmed'),
         ]);
 
         $record = DB::table('password_reset_tokens')
@@ -314,22 +316,22 @@ class AuthController extends Controller
             ->first();
 
         if (!$record) {
-            return back()->withErrors(['password' => 'Link inválido ou expirado.']);
+            return back()->withErrors(['password' => __('auth.validation.reset_invalid_or_expired')]);
         }
 
         if (now()->diffInMinutes($record->created_at) > 15) {
             DB::table('password_reset_tokens')->where('email', $data['email'])->delete();
-            return back()->withErrors(['password' => 'Este link expirou. Solicite um novo.']);
+            return back()->withErrors(['password' => __('auth.validation.reset_expired')]);
         }
 
         if (!hash_equals($record->token, hash('sha256', $data['token']))) {
-            return back()->withErrors(['password' => 'Link inválido.']);
+            return back()->withErrors(['password' => __('auth.validation.reset_invalid')]);
         }
 
         $user = User::where('email', $data['email'])->first();
 
         if (!$user) {
-            return back()->withErrors(['password' => 'Usuário não encontrado.']);
+            return back()->withErrors(['password' => __('auth.validation.user_not_found')]);
         }
 
         $user->update(['password' => $data['password']]);
@@ -337,7 +339,7 @@ class AuthController extends Controller
         DB::table('password_reset_tokens')->where('email', $data['email'])->delete();
 
         return redirect()->route('login')
-            ->with('status', 'Senha redefinida com sucesso! Faça login com sua nova senha.');
+            ->with('status', __('auth.validation.password_reset_success'));
     }
 
     public function logout(Request $request): RedirectResponse
