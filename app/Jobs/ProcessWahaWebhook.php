@@ -1031,6 +1031,12 @@ class ProcessWahaWebhook implements ShouldQueue
         }
 
         if ($lead) {
+            // Se o lead não tem nome (ou é o telefone) e agora temos um contactName, atualizar
+            if (! empty($contactName) && trim($contactName) !== ''
+                && ($lead->name === $phone || empty($lead->name) || $lead->name === 'Desconhecido')
+            ) {
+                $lead->update(['name' => trim($contactName)]);
+            }
             return $lead;
         }
 
@@ -1066,9 +1072,12 @@ class ProcessWahaWebhook implements ShouldQueue
             return null; // Pipeline sem estágios — não cria lead
         }
 
+        // Use contactName if available, otherwise fallback to phone number
+        $leadName = (! empty($contactName) && trim($contactName) !== '') ? trim($contactName) : $phone;
+
         $leadData = [
             'tenant_id'   => $tenantId,
-            'name'        => $contactName ?? $phone,
+            'name'        => $leadName,
             'phone'       => $phone,
             'source'      => 'whatsapp',
             'pipeline_id' => $pipeline->id,
