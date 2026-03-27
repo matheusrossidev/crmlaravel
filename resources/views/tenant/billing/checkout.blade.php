@@ -240,7 +240,7 @@
                         <div class="plan-card-header">
                             <div class="plan-card-name">{{ $p->display_name }}</div>
                             <div class="plan-card-price">
-                                R$ {{ number_format($p->price_monthly, 2, ',', '.') }}<span>/mês</span>
+                                {{ __('common.currency') }} {{ number_format($p->price_monthly, 2, __('common.decimal_sep'), __('common.thousands_sep')) }}<span>{{ __('common.per_month') }}</span>
                             </div>
                         </div>
                         @if(count($pFeatures) > 0)
@@ -315,7 +315,7 @@
             <div class="wizard-step" data-step="card">
                 <div class="cc-art" id="ccArt">
                     <div class="cc-art-top">
-                        <div class="cc-price" id="ccPrice">R$ {{ number_format($plan?->price_monthly ?? ($plans->first()?->price_monthly ?? 0), 2, ',', '.') }}</div>
+                        <div class="cc-price" id="ccPrice">{{ __('common.currency') }} {{ number_format($plan?->price_monthly ?? ($plans->first()?->price_monthly ?? 0), 2, __('common.decimal_sep'), __('common.thousands_sep')) }}</div>
                         <img src="{{ asset('images/logo-white.png') }}" alt="" style="height:18px;opacity:.85;">
                     </div>
                     <div style="display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1;">
@@ -427,7 +427,7 @@ function updateUI() {
     const lbl = document.getElementById('btnLabel');
     const ico = document.getElementById('btnIcon');
     if (isLast) {
-        lbl.textContent = 'Assinar — R$ ' + selectedPrice + '/mês';
+        lbl.textContent = 'Assinar — ' + CURRENCY + ' ' + selectedPrice + '{{ __('common.per_month') }}';
         ico.className = 'bi bi-shield-lock-fill';
     } else {
         lbl.textContent = 'Continuar';
@@ -461,7 +461,7 @@ function selectPlan(card) {
     card.classList.add('selected');
     document.getElementById('selectedPlan').value = card.dataset.planName;
     selectedPrice = card.dataset.planPrice;
-    document.getElementById('ccPrice').textContent = 'R$ ' + selectedPrice;
+    document.getElementById('ccPrice').textContent = CURRENCY + ' ' + selectedPrice;
 }
 
 // ── Validation ──

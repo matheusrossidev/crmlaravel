@@ -377,7 +377,7 @@
                     <div class="current-plan-name">{{ $plan?->display_name ?? __('settings.billing_current_plan') }}</div>
                     <div class="current-plan-price">
                         @if($plan && $plan->price_monthly > 0)
-                            <span class="amount">R$ {{ number_format($plan->price_monthly, 2, ',', '.') }}</span>
+                            <span class="amount">{{ __('common.currency') }} {{ number_format($plan->price_monthly, 2, __('common.decimal_sep'), __('common.thousands_sep')) }}</span>
                             <span class="period">{{ __('settings.billing_per_month') }}</span>
                         @else
                             <span class="amount" style="font-size:22px;">{{ __('settings.billing_free') }}</span>
@@ -485,7 +485,7 @@
                     <div class="other-plan-left">
                         <div class="other-plan-name">{{ $p->display_name }}</div>
                         <div class="other-plan-price">
-                            R$ {{ number_format($p->price_monthly, 2, ',', '.') }}
+                            {{ __('common.currency') }} {{ number_format($p->price_monthly, 2, __('common.decimal_sep'), __('common.thousands_sep')) }}
                             <span>{{ __('settings.billing_per_month') }}</span>
                         </div>
                         @php $pFeatures = $p->features_json['features_list'] ?? []; @endphp
@@ -570,7 +570,7 @@
                 <tr>
                     <td>{{ \Carbon\Carbon::parse($charge['dateCreated'] ?? now())->format('d/m/Y') }}</td>
                     <td>{{ $charge['description'] ?? '-' }}</td>
-                    <td style="font-weight:600;">R$ {{ number_format((float)($charge['value'] ?? 0), 2, ',', '.') }}</td>
+                    <td style="font-weight:600;">{{ __('common.currency') }} {{ number_format((float)($charge['value'] ?? 0), 2, __('common.decimal_sep'), __('common.thousands_sep')) }}</td>
                     <td>
                         <span class="charge-type-badge">
                             <i class="bi {{ $typeIcon }}"></i> {{ $typeLabel }}

@@ -468,7 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 html += '<div><table class="dim-table"><thead><tr><th>' + CLANG.value + '</th><th class="num">' + CLANG.leads + '</th><th class="num">' + CLANG.col_conversions + '</th><th class="num">' + CLANG.col_revenue + '</th><th class="num">' + CLANG.col_conv_pct + '</th></tr></thead><tbody>';
                 items.forEach(i => {
                     const crClass = i.conv_rate >= 10 ? 'badge-high' : (i.conv_rate >= 3 ? 'badge-mid' : 'badge-low');
-                    html += `<tr><td><span class="utm-badge">${escapeHtml(i.value)}</span></td><td class="num" style="font-weight:700;">${i.leads}</td><td class="num">${i.conversions}</td><td class="num">R$ ${formatMoney(i.revenue)}</td><td class="num"><span class="badge-conv ${crClass}">${i.conv_rate}%</span></td></tr>`;
+                    html += `<tr><td><span class="utm-badge">${escapeHtml(i.value)}</span></td><td class="num" style="font-weight:700;">${i.leads}</td><td class="num">${i.conversions}</td><td class="num">${formatMoney(i.revenue)}</td><td class="num"><span class="badge-conv ${crClass}">${i.conv_rate}%</span></td></tr>`;
                 });
                 html += '</tbody></table></div>';
                 html += '<div><canvas id="dimBarChart" height="250"></canvas></div>';
@@ -544,7 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="comparison-metric"><div class="comparison-metric-label">${CLANG.leads}</div><div class="comparison-metric-value">${d.leads}</div>
                 <div class="comparison-bar-wrap"><div class="comparison-bar" style="width:${(d.leads/maxL*100).toFixed(0)}%;background:${color};height:8px;border-radius:4px;"></div></div></div>
             <div class="comparison-metric"><div class="comparison-metric-label">${CLANG.conv_rate_label}</div><div class="comparison-metric-value">${d.conv_rate}%</div></div>
-            <div class="comparison-metric"><div class="comparison-metric-label">${CLANG.revenue}</div><div class="comparison-metric-value">R$ ${formatMoney(d.revenue)}</div>
+            <div class="comparison-metric"><div class="comparison-metric-label">${CLANG.revenue}</div><div class="comparison-metric-value">${formatMoney(d.revenue)}</div>
                 <div class="comparison-bar-wrap"><div class="comparison-bar" style="width:${(d.revenue/maxR*100).toFixed(0)}%;background:${color};height:8px;border-radius:4px;"></div></div></div>
             <div class="comparison-metric"><div class="comparison-metric-label">${CLANG.avg_conv_days}</div><div class="comparison-metric-value">${avgConvDays}</div></div>
         </div>`;
@@ -623,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // ── Helpers ──
-    function formatMoney(v) { return Number(v).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+    function formatMoney(v) { return CURRENCY + ' ' + Number(v).toFixed(2).replace('.', NUM_FMT.dec).replace(/\B(?=(\d{3})+(?!\d))/g, NUM_FMT.thou); }
 });
 
 // ── Filter ──
@@ -754,7 +754,7 @@ function exportCSV() {
         </div>
         <div class="kpi-card">
             <div class="kpi-label"><i class="bi bi-currency-dollar"></i> {{ __('campaigns.revenue') }}</div>
-            <div class="kpi-value">R$ {{ number_format($totalRevenue, 0, ',', '.') }}</div>
+            <div class="kpi-value">{{ __('common.currency') }} {{ number_format($totalRevenue, 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</div>
             @if($deltaRev !== null)
                 <span class="kpi-delta {{ $deltaRev >= 0 ? 'up' : 'down' }}">
                     <i class="bi bi-arrow-{{ $deltaRev >= 0 ? 'up' : 'down' }}-short"></i>
@@ -918,7 +918,7 @@ function exportCSV() {
                                 </div>
                             </td>
                             <td class="num">{{ $row['conversions'] }}</td>
-                            <td class="num">R$ {{ number_format($row['revenue'], 2, ',', '.') }}</td>
+                            <td class="num">{{ __('common.currency') }} {{ number_format($row['revenue'], 2, __('common.decimal_sep'), __('common.thousands_sep')) }}</td>
                             <td class="num"><span class="badge-conv {{ $crClass }}">{{ $cr }}%</span></td>
                             <td class="col-actions">
                                 <button type="button"

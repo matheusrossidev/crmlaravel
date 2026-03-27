@@ -354,12 +354,12 @@
         </div>
         <div class="kpi-card">
             <div class="kpi-label"><i class="bi bi-currency-dollar"></i> Receita</div>
-            <div class="kpi-value">R$ {{ number_format($totalRevenue, 0, ',', '.') }}</div>
+            <div class="kpi-value">{{ __('common.currency') }} {{ number_format($totalRevenue, 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</div>
             <div class="kpi-delta neu">total gerado</div>
         </div>
         <div class="kpi-card">
             <div class="kpi-label"><i class="bi bi-graph-up-arrow"></i> Investimento</div>
-            <div class="kpi-value">R$ {{ number_format($totalSpend, 0, ',', '.') }}</div>
+            <div class="kpi-value">{{ __('common.currency') }} {{ number_format($totalSpend, 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</div>
             <div class="kpi-delta neu">ad spend total</div>
         </div>
         <div class="kpi-card">
@@ -438,8 +438,8 @@
                         <td class="num">{{ number_format($row['leads']) }}</td>
                         <td class="num">{{ number_format($row['conversions']) }}</td>
                         <td class="num"><span class="badge-conv {{ $convClass }}">{{ $row['conv_rate'] }}%</span></td>
-                        <td class="num">{{ $row['spend'] > 0 ? 'R$ ' . number_format($row['spend'], 2, ',', '.') : '—' }}</td>
-                        <td class="num">{{ $row['revenue'] > 0 ? 'R$ ' . number_format($row['revenue'], 2, ',', '.') : '—' }}</td>
+                        <td class="num">{{ $row['spend'] > 0 ? __('common.currency') . ' ' . number_format($row['spend'], 2, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}</td>
+                        <td class="num">{{ $row['revenue'] > 0 ? __('common.currency') . ' ' . number_format($row['revenue'], 2, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}</td>
                         <td class="num">
                             @if($row['roi'] !== null)
                                 <span class="{{ $roiClass }}">{{ $row['roi'] >= 0 ? '+' : '' }}{{ $row['roi'] }}%</span>
@@ -447,7 +447,7 @@
                                 <span class="roi-neutral">—</span>
                             @endif
                         </td>
-                        <td class="num">{{ $row['cpl'] !== null ? 'R$ ' . number_format($row['cpl'], 2, ',', '.') : '—' }}</td>
+                        <td class="num">{{ $row['cpl'] !== null ? __('common.currency') . ' ' . number_format($row['cpl'], 2, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}</td>
                     </tr>
                     @empty
                     <tr class="empty-row"><td colspan="9">Nenhum dado para o período selecionado.</td></tr>
@@ -488,7 +488,7 @@
                         <td>{{ $row['utm_campaign'] }}</td>
                         <td class="num">{{ number_format($row['leads']) }}</td>
                         <td class="num">{{ number_format($row['conversions']) }}</td>
-                        <td class="num">{{ $row['revenue'] > 0 ? 'R$ ' . number_format($row['revenue'], 2, ',', '.') : '—' }}</td>
+                        <td class="num">{{ $row['revenue'] > 0 ? __('common.currency') . ' ' . number_format($row['revenue'], 2, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}</td>
                         <td class="num"><span class="badge-conv {{ $uConvClass }}">{{ $uConvRate }}%</span></td>
                     </tr>
                     @empty

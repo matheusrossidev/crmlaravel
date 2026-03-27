@@ -112,14 +112,14 @@
             </td>
             <td>
                 <div class="kpi-label">Receita</div>
-                <div class="kpi-value-green">R$ {{ number_format($totalRevenue, 0, ',', '.') }}</div>
+                <div class="kpi-value-green">{{ __('common.currency') }} {{ number_format($totalRevenue, 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</div>
                 <div class="kpi-delta {{ $deltaRevenue === null ? 'kpi-delta-neutral' : ($deltaRevenue >= 0 ? 'kpi-delta-up' : 'kpi-delta-down') }}">
                     @if($deltaRevenue !== null) {{ $deltaRevenue >= 0 ? '+' : '-' }}{{ number_format(abs($deltaRevenue), 1, ',', '.') }}% vs anterior @else Sem dados anteriores @endif
                 </div>
             </td>
             <td>
                 <div class="kpi-label">Ticket Médio</div>
-                <div class="kpi-value-green">R$ {{ number_format($avgTicket, 0, ',', '.') }}</div>
+                <div class="kpi-value-green">{{ __('common.currency') }} {{ number_format($avgTicket, 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</div>
                 <div class="kpi-sub">{{ $salesCount }} venda(s) no período</div>
             </td>
             <td>
@@ -156,7 +156,7 @@
                     <td class="right">{{ $s['leads'] }}</td>
                     <td class="right">{{ $s['vendas'] }}</td>
                     <td class="right"><span class="badge {{ $s['conv'] >= 25 ? 'badge-high' : ($s['conv'] >= 10 ? 'badge-mid' : 'badge-low') }}">{{ number_format($s['conv'], 1, ',', '.') }}%</span></td>
-                    <td class="right green">{{ $s['receita'] > 0 ? 'R$ ' . number_format($s['receita'], 0, ',', '.') : '—' }}</td>
+                    <td class="right green">{{ $s['receita'] > 0 ? __('common.currency') . ' ' . number_format($s['receita'], 0, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -177,7 +177,7 @@
                     <td class="right blue">{{ $c['leads_count'] }}</td>
                     <td class="right">{{ $c['sales_count'] }}</td>
                     <td class="right"><span class="badge {{ $c['conv'] >= 25 ? 'badge-high' : ($c['conv'] >= 10 ? 'badge-mid' : 'badge-low') }}">{{ number_format($c['conv'], 1, ',', '.') }}%</span></td>
-                    <td class="right green">{{ $c['revenue'] > 0 ? 'R$ ' . number_format($c['revenue'], 0, ',', '.') : '—' }}</td>
+                    <td class="right green">{{ $c['revenue'] > 0 ? __('common.currency') . ' ' . number_format($c['revenue'], 0, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -212,7 +212,7 @@
     {{-- Perdidos --}}
     @if($totalLost > 0)
     <div class="section">
-        <div class="section-title">Motivos de Perda — {{ $totalLost }} leads (R$ {{ number_format($lostPotentialValue, 0, ',', '.') }} potencial)</div>
+        <div class="section-title">Motivos de Perda — {{ $totalLost }} leads ({{ __('common.currency') }} {{ number_format($lostPotentialValue, 0, __('common.decimal_sep'), __('common.thousands_sep')) }} potencial)</div>
         @foreach($lostByReason as $r)
         <div style="margin-bottom:5px;">
             <span class="reason-label">{{ $r['reason'] }}</span>
@@ -236,7 +236,7 @@
                     <td class="right">{{ $v['leads'] }}</td>
                     <td class="right">{{ $v['vendas'] }}</td>
                     <td class="right"><span class="badge {{ $v['conv'] >= 25 ? 'badge-high' : ($v['conv'] >= 10 ? 'badge-mid' : 'badge-low') }}">{{ number_format($v['conv'], 1, ',', '.') }}%</span></td>
-                    <td class="right green">{{ $v['receita'] > 0 ? 'R$ ' . number_format($v['receita'], 0, ',', '.') : '—' }}</td>
+                    <td class="right green">{{ $v['receita'] > 0 ? __('common.currency') . ' ' . number_format($v['receita'], 0, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}</td>
                 </tr>
                 @endforeach
             </tbody>

@@ -39,6 +39,11 @@ class OAuthConnection extends Model
 
     public function isExpired(): bool
     {
-        return $this->token_expires_at && $this->token_expires_at->isPast();
+        // Se não tem token_expires_at, considerar expirado para forçar refresh
+        if (! $this->token_expires_at) {
+            return true;
+        }
+
+        return $this->token_expires_at->isPast();
     }
 }

@@ -123,7 +123,7 @@
             </td>
             <td>
                 <div class="kpi-label"><span style="color:#10B981;">$</span> RECEITA</div>
-                <div class="kpi-value-green">R$ {{ number_format($totalRevenue, 0, ',', '.') }}</div>
+                <div class="kpi-value-green">{{ __('common.currency') }} {{ number_format($totalRevenue, 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</div>
                 <div class="kpi-delta {{ $deltaRev === null ? 'kpi-delta-neutral' : ($deltaRev >= 0 ? 'kpi-delta-up' : 'kpi-delta-down') }}">
                     @if($deltaRev !== null)
                         {{ $deltaRev >= 0 ? "\xE2\x86\x91" : "\xE2\x86\x93" }} {{ number_format(abs($deltaRev), 1, ',', '.') }}% vs anterior
@@ -231,7 +231,7 @@
                     <td>{{ $u['utm_campaign'] }}</td>
                     <td class="right bold">{{ $u['leads'] }}</td>
                     <td class="right">{{ $u['conversions'] }}</td>
-                    <td class="right green">{{ $u['revenue'] > 0 ? 'R$ ' . number_format($u['revenue'], 0, ',', '.') : '—' }}</td>
+                    <td class="right green">{{ $u['revenue'] > 0 ? __('common.currency') . ' ' . number_format($u['revenue'], 0, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}</td>
                     <td class="right"><span class="badge {{ $u['conv_rate'] >= 10 ? 'badge-high' : ($u['conv_rate'] >= 3 ? 'badge-mid' : 'badge-low') }}">{{ number_format($u['conv_rate'], 1, ',', '.') }}%</span></td>
                 </tr>
                 @endforeach
@@ -260,7 +260,7 @@
                     <td class="bold">{{ $d['value'] }}</td>
                     <td class="right">{{ $d['leads'] }}</td>
                     <td class="right">{{ $d['conversions'] }}</td>
-                    <td class="right green">{{ $d['revenue'] > 0 ? 'R$ ' . number_format($d['revenue'], 0, ',', '.') : '—' }}</td>
+                    <td class="right green">{{ $d['revenue'] > 0 ? __('common.currency') . ' ' . number_format($d['revenue'], 0, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}</td>
                     <td class="right"><span class="badge {{ $d['conv_rate'] >= 10 ? 'badge-high' : ($d['conv_rate'] >= 3 ? 'badge-mid' : 'badge-low') }}">{{ number_format($d['conv_rate'], 1, ',', '.') }}%</span></td>
                 </tr>
                 @endforeach

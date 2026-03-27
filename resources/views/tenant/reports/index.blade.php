@@ -620,7 +620,7 @@
         {{-- Receita --}}
         <div class="kpi-card">
             <div class="kpi-label"><i class="bi bi-cash-stack" style="color:#10B981;"></i> {{ __('reports.revenue') }}</div>
-            <div class="kpi-value" style="color:#10B981;">R$ {{ number_format($totalRevenue, 0, ',', '.') }}</div>
+            <div class="kpi-value" style="color:#10B981;">{{ __('common.currency') }} {{ number_format($totalRevenue, 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</div>
             @if($deltaRevenue !== null)
             <div class="kpi-delta {{ $deltaRevenue >= 0 ? 'up' : 'down' }}">
                 <i class="bi bi-arrow-{{ $deltaRevenue >= 0 ? 'up' : 'down' }}"></i> {{ abs($deltaRevenue) }}% {{ __('reports.vs_previous') }}
@@ -634,7 +634,7 @@
         {{-- Ticket Médio --}}
         <div class="kpi-card">
             <div class="kpi-label"><i class="bi bi-tag" style="color:#8B5CF6;"></i> {{ __('reports.avg_ticket') }}</div>
-            <div class="kpi-value" style="color:#8B5CF6;">R$ {{ number_format($avgTicket, 0, ',', '.') }}</div>
+            <div class="kpi-value" style="color:#8B5CF6;">{{ __('common.currency') }} {{ number_format($avgTicket, 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</div>
             <div class="kpi-delta neu">{{ __('reports.sales_in_period', ['count' => $salesCount]) }}</div>
             <div class="kpi-spark"><canvas id="sparkTicket"></canvas></div>
         </div>
@@ -796,7 +796,7 @@
                             <td class="num">
                                 <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:{{ $convBg }};color:{{ $convColor }};">{{ $row['conv'] }}%</span>
                             </td>
-                            <td class="num" style="font-weight:700;color:#1a1d23;">{{ $row['revenue'] > 0 ? 'R$ '.number_format($row['revenue'], 0, ',', '.') : '—' }}</td>
+                            <td class="num" style="font-weight:700;color:#1a1d23;">{{ $row['revenue'] > 0 ? __('common.currency') . ' ' . number_format($row['revenue'], 0, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}</td>
                         </tr>
                         @empty
                         <tr class="empty-row">
@@ -908,7 +908,7 @@
             {{ __('reports.lost_leads') }}
             <span style="margin-left:auto;font-size:12px;font-weight:500;color:#9ca3af;">
                 {{ __('reports.losses_count', ['count' => $totalLost]) }} · {{ __('reports.potential_value') }}
-                <strong style="color:#EF4444;">R$ {{ number_format($lostPotentialValue, 0, ',', '.') }}</strong>
+                <strong style="color:#EF4444;">{{ __('common.currency') }} {{ number_format($lostPotentialValue, 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</strong>
             </span>
         </div>
 
@@ -1053,7 +1053,7 @@
                             </div>
                         </td>
                         <td class="num" style="font-weight:700;color:#1a1d23;">
-                            {{ $row['receita'] > 0 ? 'R$ ' . number_format($row['receita'], 2, ',', '.') : '—' }}
+                            {{ $row['receita'] > 0 ? __('common.currency') . ' ' . number_format($row['receita'], 2, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}
                         </td>
                     </tr>
                     @empty
@@ -1331,7 +1331,7 @@
                             <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:{{ $convBg }};color:{{ $convColor }};">{{ number_format((float)$conv, 1, ',', '.') }}%</span>
                         </td>
                         <td class="num" style="font-weight:700;color:#1a1d23;">
-                            {{ $row['receita'] > 0 ? 'R$ ' . number_format($row['receita'], 2, ',', '.') : '—' }}
+                            {{ $row['receita'] > 0 ? __('common.currency') . ' ' . number_format($row['receita'], 2, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}
                         </td>
                     </tr>
                     @empty
@@ -1357,7 +1357,7 @@
             <i class="bi bi-box-seam"></i>
             {{ __('reports.product_performance') }}
             <span style="margin-left:auto;font-size:12px;font-weight:500;color:#9ca3af;">
-                {{ __('reports.total_revenue') }} <strong style="color:#10B981;">R$ {{ number_format((float)$topProdRevenue, 2, ',', '.') }}</strong>
+                {{ __('reports.total_revenue') }} <strong style="color:#10B981;">{{ __('common.currency') }} {{ number_format((float)$topProdRevenue, 2, __('common.decimal_sep'), __('common.thousands_sep')) }}</strong>
             </span>
         </div>
         <div style="overflow-x:auto;">
@@ -1395,9 +1395,9 @@
                                 @endif
                             </div>
                         </td>
-                        <td class="num" style="color:#374151;">R$ {{ number_format((float) $prod->price, 2, ',', '.') }}</td>
+                        <td class="num" style="color:#374151;">{{ __('common.currency') }} {{ number_format((float) $prod->price, 2, __('common.decimal_sep'), __('common.thousands_sep')) }}</td>
                         <td class="num" style="font-weight:700;color:#3B82F6;">{{ $prod->won_count }}</td>
-                        <td class="num" style="font-weight:700;color:#10B981;">R$ {{ number_format((float) $prod->total_value, 2, ',', '.') }}</td>
+                        <td class="num" style="font-weight:700;color:#10B981;">{{ __('common.currency') }} {{ number_format((float) $prod->total_value, 2, __('common.decimal_sep'), __('common.thousands_sep')) }}</td>
                         <td>
                             <div>
                                 <div style="height:6px;border-radius:3px;background:#f0f2f7;">

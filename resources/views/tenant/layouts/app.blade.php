@@ -47,6 +47,8 @@
             wssPort:  {{ (int) config('reverb.apps.apps.0.options.port', 443) }},
             forceTLS: {{ config('reverb.apps.apps.0.options.scheme', 'https') === 'https' ? 'true' : 'false' }},
         };
+        window.CURRENCY = @json(__('common.currency'));
+        window.NUM_FMT  = { dec: @json(__('common.decimal_sep')), thou: @json(__('common.thousands_sep')) };
         window.vapidPublicKey = '{{ config('webpush.vapid.public_key') }}';
         window.pushSubscriptionUrl = '{{ route('push.store') }}';
         window.notificationPrefs = {!! json_encode(auth()->user()->notification_preferences ?? new \stdClass) !!};

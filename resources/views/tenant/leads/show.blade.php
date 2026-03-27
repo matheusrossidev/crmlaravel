@@ -1227,7 +1227,7 @@ $pageIcon = 'person-badge';
                 <div class="lp-info-icon"><i class="bi bi-currency-dollar"></i></div>
                 <div class="lp-info-val" style="font-weight:700;color:#10b981;">
                     @if($lead->value)
-                    R$ {{ number_format((float)$lead->value, 2, ',', '.') }}
+                    {{ __('common.currency') }} {{ number_format((float)$lead->value, 2, __('common.decimal_sep'), __('common.thousands_sep')) }}
                     @else
                     <span class="lp-info-empty">—</span>
                     @endif
@@ -1286,7 +1286,7 @@ $pageIcon = 'person-badge';
                         @if($field['type'] === 'checkbox')
                             {{ $field['value'] ? 'Sim' : 'Não' }}
                         @elseif($field['type'] === 'currency')
-                            R$ {{ number_format((float)$field['value'], 2, ',', '.') }}
+                            {{ __('common.currency') }} {{ number_format((float)$field['value'], 2, __('common.decimal_sep'), __('common.thousands_sep')) }}
                         @elseif($field['type'] === 'multiselect' && is_array($field['value']))
                             {{ implode(', ', $field['value']) }}
                         @elseif($field['type'] === 'url')

@@ -353,7 +353,7 @@
                         @endif
                     </td>
                     <td class="value-cell">
-                        {{ $lead->value ? 'R$ ' . number_format((float)$lead->value, 2, ',', '.') : '—' }}
+                        {{ $lead->value ? __('common.currency') . ' ' . number_format((float)$lead->value, 2, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}
                     </td>
                     <td><span class="source-pill">{{ $lead->source ?? 'manual' }}</span></td>
                     <td>{{ $lead->campaign?->name ?? '—' }}</td>

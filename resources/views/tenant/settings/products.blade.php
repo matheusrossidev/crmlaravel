@@ -105,7 +105,7 @@
                             <span style="color:#d1d5db;">—</span>
                         @endif
                     </td>
-                    <td style="font-weight:600;color:#1a1d23;">R$ {{ number_format((float)$p->price, 2, ',', '.') }}</td>
+                    <td style="font-weight:600;color:#1a1d23;">{{ __('common.currency') }} {{ number_format((float)$p->price, 2, __('common.decimal_sep'), __('common.thousands_sep')) }}</td>
                     <td style="color:#6b7280;">{{ $p->unit ?? '—' }}</td>
                     <td>
                         <span style="font-size:12px;color:#6b7280;">

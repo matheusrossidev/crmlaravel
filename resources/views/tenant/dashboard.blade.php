@@ -449,7 +449,7 @@
             </div>
             <div class="stat-bottom">
                 <div class="stat-value-row">
-                    <span class="stat-value" data-val="{{ $totalSales }}" data-prefix="R$ " data-suffix="">{{ $cfSales }}</span>
+                    <span class="stat-value" data-val="{{ $totalSales }}" data-prefix="{{ __('common.currency') }} " data-suffix="">{{ $cfSales }}</span>
                     @if($salesTrend !== null)
                     <span class="trend-badge {{ $salesTrend >= 0 ? 'up' : 'down' }}"><i class="bi bi-arrow-{{ $salesTrend >= 0 ? 'up' : 'down' }}-right"></i> {{ abs($salesTrend) }}%</span>
                     @endif
@@ -480,7 +480,7 @@
             </div>
             <div class="stat-bottom">
                 <div class="stat-value-row">
-                    <span class="stat-value" data-val="{{ $ticketMedio }}" data-prefix="R$ " data-suffix="">{{ $cfTicket }}</span>
+                    <span class="stat-value" data-val="{{ $ticketMedio }}" data-prefix="{{ __('common.currency') }} " data-suffix="">{{ $cfTicket }}</span>
                 </div>
                 <span class="stat-sub">{{ __('dashboard.deals_this_month', ['count' => $leadsGanhos]) }}</span>
             </div>
@@ -521,7 +521,7 @@
                                 <span style="width:8px;height:8px;border-radius:2px;background:{{ $stage['color'] ?? '#3B82F6' }};"></span>
                                 <span style="font-size:11px;font-weight:600;color:#6b7280;white-space:nowrap;">{{ $stage['name'] }}</span>
                             </div>
-                            <div style="font-size:18px;font-weight:800;color:#1a1d23;margin-bottom:10px;">R$ {{ number_format($stage['value'], 0, ',', '.') }}</div>
+                            <div style="font-size:18px;font-weight:800;color:#1a1d23;margin-bottom:10px;">{{ __('common.currency') }} {{ number_format($stage['value'], 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</div>
                             <div style="font-size:11px;color:#6b7280;margin-bottom:4px;">
                                 <span>{{ __('dashboard.quantity') }}</span><br>
                                 <span style="font-weight:700;color:#374151;">{{ $stage['count'] }} {{ __('dashboard.deals') }}</span>
@@ -762,9 +762,9 @@
                     <i class="bi bi-currency-dollar" style="color:#10b981;"></i> {{ __('dashboard.sales') }}
                 </span>
                 <span style="font-size:10px;color:#9ca3af;">
-                    <span>12m:</span> <strong style="color:#1a1d23;">R$ {{ number_format(array_sum($salesPerMonth), 0, ',', '.') }}</strong>
+                    <span>12m:</span> <strong style="color:#1a1d23;">{{ __('common.currency') }} {{ number_format(array_sum($salesPerMonth), 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</strong>
                     &nbsp;
-                    <span style="color:#0085f3;font-weight:500;">Mês: R$ {{ number_format($totalSales, 0, ',', '.') }}</span>
+                    <span style="color:#0085f3;font-weight:500;">{{ __('dashboard.month') }}: {{ __('common.currency') }} {{ number_format($totalSales, 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</span>
                 </span>
             </div>
             <div style="display:flex;gap:12px;margin-bottom:10px;">
@@ -809,6 +809,12 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script>
+function fmtMoney(v, decimals = 2) {
+    return window.CURRENCY + ' ' + Number(v).toFixed(decimals).replace('.', window.NUM_FMT.dec).replace(/\B(?=(\d{3})+(?!\d))/g, window.NUM_FMT.thou);
+}
+function fmtNum(v, decimals = 0) {
+    return Number(v).toFixed(decimals).replace('.', window.NUM_FMT.dec).replace(/\B(?=(\d{3})+(?!\d))/g, window.NUM_FMT.thou);
+}
 (function () {
     const monthLabels            = @json($monthLabels);
     const leadsPerMonth          = @json($leadsPerMonth);
@@ -1078,7 +1084,7 @@
                         backgroundColor: '#fff', borderColor: 'rgba(0,0,0,0.1)', borderWidth: 1,
                         titleColor: '#374151', bodyColor: '#1a1d23', padding: 9,
                         callbacks: {
-                            label: function(ctx) { return ctx.dataset.label + ': R$ ' + ctx.raw.toLocaleString('pt-BR'); }
+                            label: function(ctx) { return ctx.dataset.label + ': ' + fmtMoney(ctx.raw, 0); }
                         }
                     }
                 },
@@ -1086,7 +1092,7 @@
                     x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10 }, color: '#9ca3af', autoSkip: false, maxRotation: 0 } },
                     y: {
                         beginAtZero: true, grid: { color: 'rgba(128,128,128,0.08)' }, border: { display: false },
-                        ticks: { font: { size: 10 }, color: '#9ca3af', callback: function(v) { return 'R$ ' + v.toLocaleString('pt-BR'); } }
+                        ticks: { font: { size: 10 }, color: '#9ca3af', callback: function(v) { return fmtMoney(v, 0); } }
                     }
                 }
             }
@@ -1099,11 +1105,11 @@ function statCompact(val, prefix, suffix, decimals) {
     const dec = parseInt(decimals || 0);
     let display;
     if (val >= 1_000_000) {
-        display = (val / 1_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'M';
+        display = fmtNum(val / 1_000_000, 1) + 'M';
     } else if (val >= 1_000) {
-        display = (val / 1_000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'K';
+        display = fmtNum(val / 1_000, 1) + 'K';
     } else {
-        display = val.toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+        display = fmtNum(val, dec);
     }
     return (prefix || '') + display + (suffix || '');
 }

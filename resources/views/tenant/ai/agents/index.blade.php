@@ -562,7 +562,7 @@
                     <div class="quota-pack-tokens">+{{ number_format($pack->tokens_amount, 0, ',', '.') }} tokens</div>
                     <div class="quota-pack-name">{{ $pack->display_name }}</div>
                 </div>
-                <div class="quota-pack-price">R$ {{ number_format($pack->price, 2, ',', '.') }}</div>
+                <div class="quota-pack-price">{{ __('common.currency') }} {{ number_format($pack->price, 2, __('common.decimal_sep'), __('common.thousands_sep')) }}</div>
             </div>
             @endforeach
         </div>

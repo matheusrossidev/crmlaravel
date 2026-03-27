@@ -592,6 +592,9 @@ $_configuredTagsJson = isset($_configuredTags)
 @endphp
 
 <script>
+function fmtMoney(v, decimals = 2) {
+    return window.CURRENCY + ' ' + Number(v).toFixed(decimals).replace('.', window.NUM_FMT.dec).replace(/\B(?=(\d{3})+(?!\d))/g, window.NUM_FMT.thou);
+}
 const DLANG = @json(__('leads'));
 // ── Dados de pipelines e campos personalizados injetados pelo servidor ────
 const PIPELINES_DATA   = {!! json_encode($_pipelinesJson) !!};
@@ -1272,16 +1275,16 @@ function renderProductsList(products) {
         return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fafbfc;border-radius:8px;border:1px solid #f0f2f7;">
             <div style="flex:1;min-width:0;">
                 <div style="font-size:13px;font-weight:600;color:#1a1d23;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(name)}</div>
-                <div style="font-size:11.5px;color:#6b7280;">${parseFloat(p.quantity)} × R$ ${parseFloat(p.unit_price).toFixed(2).replace('.',',')}${p.discount_percent > 0 ? ' (-' + p.discount_percent + '%)' : ''}</div>
+                <div style="font-size:11.5px;color:#6b7280;">${parseFloat(p.quantity)} × ${fmtMoney(parseFloat(p.unit_price))}${p.discount_percent > 0 ? ' (-' + p.discount_percent + '%)' : ''}</div>
             </div>
-            <div style="font-size:13px;font-weight:700;color:#059669;white-space:nowrap;">R$ ${total.toFixed(2).replace('.',',')}</div>
+            <div style="font-size:13px;font-weight:700;color:#059669;white-space:nowrap;">${fmtMoney(total)}</div>
             <button type="button" onclick="removeDrawerProduct(${p.id})" style="background:none;border:none;color:#d1d5db;cursor:pointer;font-size:14px;padding:2px;" title="Remover">
                 <i class="bi bi-x-lg"></i>
             </button>
         </div>`;
     }).join('');
 
-    totalEl.textContent = 'Total: R$ ' + grandTotal.toFixed(2).replace('.', ',');
+    totalEl.textContent = 'Total: ' + fmtMoney(grandTotal);
     totalEl.style.display = '';
 }
 
@@ -1297,7 +1300,7 @@ function populateProductSelect() {
     sel.innerHTML = '<option value="">Selecione...</option>' +
         ALL_PRODUCTS.filter(p => !linkedIds.includes(p.id)).map(p =>
             `<option value="${p.id}" data-price="${p.price}">` +
-            `${escapeHtml(p.name)} — R$ ${parseFloat(p.price).toFixed(2).replace('.',',')}`+
+            `${escapeHtml(p.name)} — ${fmtMoney(parseFloat(p.price))}`+
             `${p.unit ? '/' + p.unit : ''}</option>`
         ).join('');
 }

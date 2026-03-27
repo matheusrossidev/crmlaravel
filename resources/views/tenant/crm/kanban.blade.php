@@ -703,7 +703,7 @@
             </div>
             <div class="col-header-right">
                 @if($stage['total_value'] > 0)
-                <span class="col-value">R$ {{ number_format($stage['total_value'], 0, ',', '.') }}</span>
+                <span class="col-value">{{ __('common.currency') }} {{ number_format($stage['total_value'], 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</span>
                 @endif
                 <span class="col-count" data-count="{{ $stage['id'] }}">{{ $stage['count'] }}</span>
             </div>
@@ -758,7 +758,7 @@
 
                 {{-- Valor (abaixo do avatar por causa do float) --}}
                 @if($lead->value)
-                <div class="card-value-row" style="text-align:right;clear:right;">R$ {{ number_format((float)$lead->value, 0, ',', '.') }}</div>
+                <div class="card-value-row" style="text-align:right;clear:right;">{{ __('common.currency') }} {{ number_format((float)$lead->value, 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</div>
                 @endif
 
                 {{-- Custom fields (show_on_card=true) --}}
