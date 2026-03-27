@@ -139,4 +139,118 @@ return [
     'import_skipped'    => ':skipped skipped.',
     'import_error'      => 'Error importing.',
     'select_file_alert' => 'Select a file.',
+
+    // Show page — topbar & hero
+    'back'                  => 'Back',
+    'edit'                  => 'Edit',
+    'edit_lead'             => 'Edit Lead',
+    'created_ago'           => 'Created :time',
+
+    // Show page — tabs
+    'scheduled_messages_tab' => 'Scheduled Msgs',
+    'tasks_tab'             => 'Tasks',
+
+    // Show page — notes tab
+    'unknown_author'        => 'Unknown',
+
+    // Show page — history tab
+    'no_events'             => 'No events recorded.',
+    'by_performer'          => 'by :name',
+    'by_ai_agent'           => 'by AI Agent',
+    'by_system'             => 'by System',
+
+    // Show page — WhatsApp / Instagram tab
+    'view_full_chat'        => 'View full conversation in chat',
+    'today'                 => 'Today',
+    'yesterday'             => 'Yesterday',
+    'internal_note'         => 'Internal note — visible only to the team',
+    'image_alt'             => 'Image',
+    'message_fallback'      => 'message',
+    'no_ig_conversation'    => 'No Instagram conversation linked to this lead.',
+    'username_label'        => 'Username',
+
+    // Show page — attachments tab
+    'no_attachments'        => 'No attachments',
+    'one_attachment'        => '1 attachment',
+    'n_attachments'         => ':count attachments',
+    'send_file'             => 'Upload File',
+    'no_attachments_added'  => 'No attachments added.',
+    'open_title'            => 'Open',
+    'delete_title'          => 'Delete',
+
+    // Show page — scheduled tab
+    'no_scheduled_messages' => 'No scheduled messages',
+    'one_scheduled_message' => '1 scheduled message',
+    'n_scheduled_messages'  => ':count scheduled messages',
+    'schedule_message'      => 'Schedule Message',
+    'status_pending'        => 'Pending',
+    'status_sent'           => 'Sent',
+    'status_failed'         => 'Failed',
+    'status_cancelled'      => 'Cancelled',
+    'no_content'            => 'No content',
+    'cancel_schedule'       => 'Cancel schedule',
+    'no_scheduled_empty'    => 'No scheduled messages.',
+
+    // Show page — tasks tab
+    'no_tasks'              => 'No tasks',
+    'one_task'              => '1 task',
+    'n_tasks'               => ':count tasks',
+    'new_task'              => 'New Task',
+    'task_type_call'        => 'Call',
+    'task_type_email'       => 'Email',
+    'task_type_task'        => 'Task',
+    'task_type_visit'       => 'Visit',
+    'task_type_whatsapp'    => 'WhatsApp',
+    'task_type_meeting'     => 'Meeting',
+    'no_tasks_linked'       => 'No tasks linked.',
+
+    // Show page — info card (right sidebar)
+    'contact_section'       => 'Contact',
+    'not_assigned'          => 'Not assigned',
+    'dates_section'         => 'Dates',
+    'utm_section'           => 'UTM & Tracking',
+    'created_on_date'       => 'Created on :date',
+    'updated_ago'           => 'Updated :time',
+    'yes'                   => 'Yes',
+    'no'                    => 'No',
+    'system'                => 'System',
+
+    // Show page — schedule modal
+    'quick_message_template' => 'Quick message template (optional)',
+    'select_template'       => '— Select template —',
+    'message_type'          => 'Message type',
+    'type_text'             => 'Text',
+    'type_image'            => 'Image',
+    'type_document'         => 'Document',
+    'message_label'         => 'Message',
+    'message_placeholder'   => 'Type the message...',
+    'file_label'            => 'File',
+    'caption_label'         => 'Caption (optional)',
+    'caption_placeholder'   => 'Caption for the file...',
+    'send_datetime'         => 'Send date and time',
+    'schedule_send'         => 'Schedule Send',
+
+    // Show page — JS messages
+    'scheduling'            => 'Scheduling...',
+    'inform_datetime'       => 'Enter the send date and time.',
+    'type_the_message'      => 'Type the message.',
+    'select_a_file'         => 'Select a file.',
+    'error_scheduling'      => 'Error scheduling.',
+    'scheduled_success'     => 'Message scheduled successfully!',
+    'error_prefix'          => 'Error: ',
+    'confirm_cancel_schedule' => 'Cancel this schedule?',
+    'error_cancel'          => 'Error cancelling.',
+    'saving'                => 'Saving...',
+    'error_saving_note'     => 'Error saving note: ',
+    'just_now'              => 'just now',
+    'me'                    => 'Me',
+    'error_deleting'        => 'Error deleting',
+    'uploading_file'        => 'Uploading :name...',
+    'attach_sent'           => 'Attachment sent!',
+    'error_sending_attach'  => 'Error sending attachment.',
+    'error_conn_attach'     => 'Connection error while uploading attachment.',
+    'confirm_delete_attachment' => 'Delete this attachment?',
+    'attach_deleted'        => 'Attachment deleted.',
+    'you'                   => 'You',
+    'error_conn'            => 'Connection error.',
 ];

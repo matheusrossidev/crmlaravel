@@ -139,4 +139,118 @@ return [
     'import_skipped'    => ':skipped ignorado(s).',
     'import_error'      => 'Erro ao importar.',
     'select_file_alert' => 'Selecione um arquivo.',
+
+    // Show page — topbar & hero
+    'back'                  => 'Voltar',
+    'edit'                  => 'Editar',
+    'edit_lead'             => 'Editar Lead',
+    'created_ago'           => 'Criado :time',
+
+    // Show page — tabs
+    'scheduled_messages_tab' => 'Msg. Agendadas',
+    'tasks_tab'             => 'Tarefas',
+
+    // Show page — notes tab
+    'unknown_author'        => 'Desconhecido',
+
+    // Show page — history tab
+    'no_events'             => 'Nenhum evento registrado.',
+    'by_performer'          => 'por :name',
+    'by_ai_agent'           => 'por Agente de IA',
+    'by_system'             => 'por Sistema',
+
+    // Show page — WhatsApp / Instagram tab
+    'view_full_chat'        => 'Ver conversa completa no chat',
+    'today'                 => 'Hoje',
+    'yesterday'             => 'Ontem',
+    'internal_note'         => 'Nota interna — visível só para o time',
+    'image_alt'             => 'Imagem',
+    'message_fallback'      => 'mensagem',
+    'no_ig_conversation'    => 'Nenhuma conversa Instagram vinculada a este lead.',
+    'username_label'        => 'Username',
+
+    // Show page — attachments tab
+    'no_attachments'        => 'Nenhum anexo',
+    'one_attachment'        => '1 anexo',
+    'n_attachments'         => ':count anexos',
+    'send_file'             => 'Enviar Arquivo',
+    'no_attachments_added'  => 'Nenhum anexo adicionado.',
+    'open_title'            => 'Abrir',
+    'delete_title'          => 'Excluir',
+
+    // Show page — scheduled tab
+    'no_scheduled_messages' => 'Nenhuma mensagem agendada',
+    'one_scheduled_message' => '1 mensagem agendada',
+    'n_scheduled_messages'  => ':count mensagens agendadas',
+    'schedule_message'      => 'Agendar Mensagem',
+    'status_pending'        => 'Pendente',
+    'status_sent'           => 'Enviada',
+    'status_failed'         => 'Falhou',
+    'status_cancelled'      => 'Cancelada',
+    'no_content'            => 'Sem conteúdo',
+    'cancel_schedule'       => 'Cancelar agendamento',
+    'no_scheduled_empty'    => 'Nenhuma mensagem agendada.',
+
+    // Show page — tasks tab
+    'no_tasks'              => 'Nenhuma tarefa',
+    'one_task'              => '1 tarefa',
+    'n_tasks'               => ':count tarefas',
+    'new_task'              => 'Nova Tarefa',
+    'task_type_call'        => 'Ligar',
+    'task_type_email'       => 'Email',
+    'task_type_task'        => 'Tarefa',
+    'task_type_visit'       => 'Visita',
+    'task_type_whatsapp'    => 'WhatsApp',
+    'task_type_meeting'     => 'Reunião',
+    'no_tasks_linked'       => 'Nenhuma tarefa vinculada.',
+
+    // Show page — info card (right sidebar)
+    'contact_section'       => 'Contato',
+    'not_assigned'          => 'Não atribuído',
+    'dates_section'         => 'Datas',
+    'utm_section'           => 'UTM & Rastreamento',
+    'created_on_date'       => 'Criado em :date',
+    'updated_ago'           => 'Atualizado :time',
+    'yes'                   => 'Sim',
+    'no'                    => 'Não',
+    'system'                => 'Sistema',
+
+    // Show page — schedule modal
+    'quick_message_template' => 'Modelo de mensagem rápida (opcional)',
+    'select_template'       => '— Selecionar modelo —',
+    'message_type'          => 'Tipo de mensagem',
+    'type_text'             => 'Texto',
+    'type_image'            => 'Imagem',
+    'type_document'         => 'Documento',
+    'message_label'         => 'Mensagem',
+    'message_placeholder'   => 'Digite a mensagem...',
+    'file_label'            => 'Arquivo',
+    'caption_label'         => 'Legenda (opcional)',
+    'caption_placeholder'   => 'Legenda para o arquivo...',
+    'send_datetime'         => 'Data e hora do envio',
+    'schedule_send'         => 'Agendar Envio',
+
+    // Show page — JS messages
+    'scheduling'            => 'Agendando...',
+    'inform_datetime'       => 'Informe a data e hora do envio.',
+    'type_the_message'      => 'Digite a mensagem.',
+    'select_a_file'         => 'Selecione um arquivo.',
+    'error_scheduling'      => 'Erro ao agendar.',
+    'scheduled_success'     => 'Mensagem agendada com sucesso!',
+    'error_prefix'          => 'Erro: ',
+    'confirm_cancel_schedule' => 'Cancelar este agendamento?',
+    'error_cancel'          => 'Erro ao cancelar.',
+    'saving'                => 'Salvando...',
+    'error_saving_note'     => 'Erro ao salvar nota: ',
+    'just_now'              => 'agora mesmo',
+    'me'                    => 'Eu',
+    'error_deleting'        => 'Erro ao excluir',
+    'uploading_file'        => 'Enviando :name...',
+    'attach_sent'           => 'Anexo enviado!',
+    'error_sending_attach'  => 'Erro ao enviar anexo.',
+    'error_conn_attach'     => 'Erro de conexão ao enviar anexo.',
+    'confirm_delete_attachment' => 'Excluir este anexo?',
+    'attach_deleted'        => 'Anexo excluído.',
+    'you'                   => 'Você',
+    'error_conn'            => 'Erro de conexão.',
 ];

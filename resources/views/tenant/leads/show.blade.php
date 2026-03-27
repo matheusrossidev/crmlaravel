@@ -6,12 +6,12 @@ $pageIcon = 'person-badge';
 
 @section('topbar_actions')
 <div class="topbar-actions" style="gap:6px;">
-    <a href="{{ route('leads.index') }}" class="btn-secondary-sm" style="padding:8px 10px;text-decoration:none;" title="Voltar">
+    <a href="{{ route('leads.index') }}" class="btn-secondary-sm" style="padding:8px 10px;text-decoration:none;" title="{{ __('leads.back') }}">
         <i class="bi bi-arrow-left"></i>
     </a>
-    <button class="btn-primary-sm" id="btnEditLead" onclick="openLeadDrawer({{ $lead->id }})" style="padding:8px 14px;" title="Editar Lead">
+    <button class="btn-primary-sm" id="btnEditLead" onclick="openLeadDrawer({{ $lead->id }})" style="padding:8px 14px;" title="{{ __('leads.edit_lead') }}">
         <i class="bi bi-pencil"></i>
-        <span class="d-none d-md-inline" style="margin-left:4px;">Editar</span>
+        <span class="d-none d-md-inline" style="margin-left:4px;">{{ __('leads.edit') }}</span>
     </button>
 </div>
 @endsection
@@ -692,7 +692,7 @@ $pageIcon = 'person-badge';
             <span><i class="bi bi-diagram-3" style="margin-right:3px;"></i>{{ $lead->pipeline->name }}</span>
             @endif
             <span style="color:#d1d5db;">|</span>
-            <span>Criado {{ $lead->created_at->diffForHumans() }}</span>
+            <span>{{ __('leads.created_ago', ['time' => $lead->created_at->diffForHumans()]) }}</span>
         </div>
     </div>
 </div>
@@ -741,13 +741,13 @@ $pageIcon = 'person-badge';
     <div class="lp-card">
         <div class="lp-tabs-nav">
             <button class="lp-tab-btn active" data-tab="notes">
-                <i class="bi bi-journal-text"></i> Notas
+                <i class="bi bi-journal-text"></i> {{ __('leads.notes') }}
                 @if($lead->leadNotes->count() > 0)
                 <span style="background:#eff6ff;color:#3b82f6;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">{{ $lead->leadNotes->count() }}</span>
                 @endif
             </button>
             <button class="lp-tab-btn" data-tab="history">
-                <i class="bi bi-clock-history"></i> Histórico
+                <i class="bi bi-clock-history"></i> {{ __('leads.history') }}
                 @if($lead->events->count() > 0)
                 <span style="background:#f0fdf4;color:#10b981;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">{{ $lead->events->count() }}</span>
                 @endif
@@ -767,19 +767,19 @@ $pageIcon = 'person-badge';
             </button>
             @endif
             <button class="lp-tab-btn" data-tab="attachments">
-                <i class="bi bi-paperclip"></i> Anexos
+                <i class="bi bi-paperclip"></i> {{ __('leads.attachments') }}
                 @if($lead->attachments->count() > 0)
                 <span style="background:#eff6ff;color:#0085f3;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">{{ $lead->attachments->count() }}</span>
                 @endif
             </button>
             <button class="lp-tab-btn" data-tab="scheduled">
-                <i class="bi bi-clock"></i> Msg. Agendadas
+                <i class="bi bi-clock"></i> {{ __('leads.scheduled_messages_tab') }}
                 @if($scheduledMessages->where('status', 'pending')->count() > 0)
                 <span style="background:#fff7ed;color:#f59e0b;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">{{ $scheduledMessages->where('status', 'pending')->count() }}</span>
                 @endif
             </button>
             <button class="lp-tab-btn" data-tab="tasks">
-                <i class="bi bi-check2-square"></i> Tarefas
+                <i class="bi bi-check2-square"></i> {{ __('leads.tasks_tab') }}
                 @if(isset($pendingTasksCount) && $pendingTasksCount > 0)
                 <span style="background:#fef2f2;color:#ef4444;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">{{ $pendingTasksCount }}</span>
                 @endif
@@ -794,11 +794,11 @@ $pageIcon = 'person-badge';
                     <div class="lp-note-header">
                         <div class="lp-note-avatar">{{ strtoupper(substr($note->author?->name ?? '?', 0, 1)) }}</div>
                         <div class="lp-note-meta">
-                            <div class="lp-note-author">{{ $note->author?->name ?? 'Desconhecido' }}</div>
+                            <div class="lp-note-author">{{ $note->author?->name ?? __('leads.unknown_author') }}</div>
                             <div class="lp-note-date">{{ $note->created_at->diffForHumans() }}</div>
                         </div>
                         @if($note->created_by === auth()->id())
-                        <button class="lp-note-del" onclick="deletePageNote({{ $note->id }})" title="Excluir nota">
+                        <button class="lp-note-del" onclick="deletePageNote({{ $note->id }})" title="{{ __('leads.delete_note_title') }}">
                             <i class="bi bi-trash3"></i>
                         </button>
                         @endif
@@ -808,16 +808,16 @@ $pageIcon = 'person-badge';
                 @empty
                 <div id="notesEmpty" style="text-align:center;padding:30px 20px;color:#9ca3af;">
                     <i class="bi bi-journal-x" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
-                    Nenhuma nota ainda.
+                    {{ __('leads.no_notes') }}
                 </div>
                 @endforelse
             </div>
 
             {{-- Form nova nota --}}
             <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f2f7;">
-                <textarea id="newNoteBody" class="lp-note-textarea" placeholder="Escreva uma nota..."></textarea>
+                <textarea id="newNoteBody" class="lp-note-textarea" placeholder="{{ __('leads.note_placeholder') }}"></textarea>
                 <button class="lp-btn-add-note" id="btnAddNote" onclick="addPageNote()">
-                    <i class="bi bi-plus-lg"></i> Adicionar Nota
+                    <i class="bi bi-plus-lg"></i> {{ __('leads.add_note') }}
                 </button>
             </div>
         </div>
@@ -827,7 +827,7 @@ $pageIcon = 'person-badge';
             @if($lead->events->count() === 0)
             <div style="text-align:center;padding:40px 20px;color:#9ca3af;">
                 <i class="bi bi-clock" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
-                Nenhum evento registrado.
+                {{ __('leads.no_events') }}
             </div>
             @else
             <ul class="lp-timeline">
@@ -852,11 +852,11 @@ $pageIcon = 'person-badge';
                         <div class="lp-tl-desc">{{ $event->description }}</div>
                         <div class="lp-tl-meta">
                             @if($event->performedBy)
-                                por {{ $event->performedBy->name }}
+                                {{ __('leads.by_performer', ['name' => $event->performedBy->name]) }}
                             @elseif(($event->data_json['source'] ?? '') === 'ai_agent')
-                                por Agente de IA
+                                {{ __('leads.by_ai_agent') }}
                             @else
-                                por Sistema
+                                {{ __('leads.by_system') }}
                             @endif
                             · {{ $event->created_at?->format('d/m/Y H:i') }}
                         </div>
@@ -872,7 +872,7 @@ $pageIcon = 'person-badge';
         <div class="lp-tab-panel" id="tab-whatsapp">
             <a href="{{ route('chats.index') }}" target="_blank" class="lp-chat-link">
                 <i class="bi bi-whatsapp" style="color:#25d366;"></i>
-                Ver conversa completa no chat
+                {{ __('leads.view_full_chat') }}
                 <i class="bi bi-box-arrow-up-right" style="font-size:11px;"></i>
             </a>
 
@@ -888,8 +888,8 @@ $pageIcon = 'person-badge';
                 @if($msgDay && $msgDay !== $lastWaDate)
                 @php $lastWaDate = $msgDay; @endphp
                 <div class="lp-date-sep">
-                    @if($msgDay === now()->format('d/m/Y')) Hoje
-                    @elseif($msgDay === now()->subDay()->format('d/m/Y')) Ontem
+                    @if($msgDay === now()->format('d/m/Y')) {{ __('leads.today') }}
+                    @elseif($msgDay === now()->subDay()->format('d/m/Y')) {{ __('leads.yesterday') }}
                     @else {{ $msgDay }}
                     @endif
                 </div>
@@ -902,7 +902,7 @@ $pageIcon = 'person-badge';
                 @if($isNote)
                     <div class="lp-note-internal">
                         <div class="lp-note-internal-header">
-                            <i class="bi bi-lock-fill"></i> Nota interna — visível só para o time
+                            <i class="bi bi-lock-fill"></i> {{ __('leads.internal_note') }}
                         </div>
                         <div class="lp-note-internal-body">{{ $msg->body }}</div>
                         <div class="lp-note-internal-time">{{ $msg->sent_at?->format('H:i') }}</div>
@@ -911,7 +911,7 @@ $pageIcon = 'person-badge';
                 <div class="lp-bubble-wrap {{ $isOut ? 'out' : 'in' }}">
                     <div class="lp-bubble {{ $isOut ? 'out' : 'in' }}">
                         @if($msg->type === 'image' && $msg->media_url)
-                            <img src="{{ $msg->media_url }}" alt="Imagem" onclick="window.open(this.src,'_blank')">
+                            <img src="{{ $msg->media_url }}" alt="{{ __('leads.image_alt') }}" onclick="window.open(this.src,'_blank')">
                         @elseif($msg->type === 'video' && $msg->media_url)
                             <video src="{{ $msg->media_url }}" controls preload="metadata" style="max-width:100%;border-radius:8px;"></video>
                         @elseif($msg->type === 'audio' && $msg->media_url)
@@ -919,7 +919,7 @@ $pageIcon = 'person-badge';
                         @elseif($msg->body)
                             {{ $msg->body }}
                         @else
-                            <em style="opacity:.5;">{{ ucfirst($msg->type ?? 'mensagem') }}</em>
+                            <em style="opacity:.5;">{{ ucfirst($msg->type ?? __('leads.message_fallback')) }}</em>
                         @endif
                     </div>
                     <div class="lp-bubble-time">{{ $msg->sent_at?->format('H:i') }}</div>
@@ -936,15 +936,15 @@ $pageIcon = 'person-badge';
             @if(!$igConversation)
             <div class="lp-empty-conv">
                 <i class="bi bi-instagram"></i>
-                <p>Nenhuma conversa Instagram vinculada a este lead.</p>
+                <p>{{ __('leads.no_ig_conversation') }}</p>
                 @if($lead->instagram_username)
-                <p style="font-size:12px;margin-top:4px;">Username: <strong>{{ $lead->instagram_username }}</strong></p>
+                <p style="font-size:12px;margin-top:4px;">{{ __('leads.username_label') }}: <strong>{{ $lead->instagram_username }}</strong></p>
                 @endif
             </div>
             @else
             <a href="{{ route('chats.index') }}" target="_blank" class="lp-chat-link">
                 <i class="bi bi-instagram" style="color:#e1306c;"></i>
-                Ver conversa completa no chat
+                {{ __('leads.view_full_chat') }}
                 <i class="bi bi-box-arrow-up-right" style="font-size:11px;"></i>
             </a>
 
@@ -960,8 +960,8 @@ $pageIcon = 'person-badge';
                 @if($msgDay && $msgDay !== $lastIgDate)
                 @php $lastIgDate = $msgDay; @endphp
                 <div class="lp-date-sep">
-                    @if($msgDay === now()->format('d/m/Y')) Hoje
-                    @elseif($msgDay === now()->subDay()->format('d/m/Y')) Ontem
+                    @if($msgDay === now()->format('d/m/Y')) {{ __('leads.today') }}
+                    @elseif($msgDay === now()->subDay()->format('d/m/Y')) {{ __('leads.yesterday') }}
                     @else {{ $msgDay }}
                     @endif
                 </div>
@@ -971,7 +971,7 @@ $pageIcon = 'person-badge';
                 <div class="lp-bubble-wrap {{ $isOut ? 'out' : 'in' }}">
                     <div class="lp-bubble {{ $isOut ? 'ig-out' : 'in' }}">
                         @if($msg->type === 'image' && $msg->media_url)
-                            <img src="{{ $msg->media_url }}" alt="Imagem" onclick="window.open(this.src,'_blank')">
+                            <img src="{{ $msg->media_url }}" alt="{{ __('leads.image_alt') }}" onclick="window.open(this.src,'_blank')">
                         @elseif($msg->type === 'video' && $msg->media_url)
                             <video src="{{ $msg->media_url }}" controls preload="metadata" style="max-width:100%;border-radius:8px;"></video>
                         @elseif($msg->type === 'audio' && $msg->media_url)
@@ -979,7 +979,7 @@ $pageIcon = 'person-badge';
                         @elseif($msg->body)
                             {{ $msg->body }}
                         @else
-                            <em style="opacity:.5;">{{ ucfirst($msg->type ?? 'mensagem') }}</em>
+                            <em style="opacity:.5;">{{ ucfirst($msg->type ?? __('leads.message_fallback')) }}</em>
                         @endif
                     </div>
                     <div class="lp-bubble-time">{{ $msg->sent_at?->format('H:i') }}</div>
@@ -994,13 +994,13 @@ $pageIcon = 'person-badge';
         <div class="lp-tab-panel" id="tab-attachments">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                 <span style="font-size:13px;color:#6b7280;">
-                    @if($lead->attachments->count() === 0) Nenhum anexo
-                    @elseif($lead->attachments->count() === 1) 1 anexo
-                    @else {{ $lead->attachments->count() }} anexos
+                    @if($lead->attachments->count() === 0) {{ __('leads.no_attachments') }}
+                    @elseif($lead->attachments->count() === 1) {{ __('leads.one_attachment') }}
+                    @else {{ __('leads.n_attachments', ['count' => $lead->attachments->count()]) }}
                     @endif
                 </span>
                 <label for="attachFileInput" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#eff6ff;color:#0085f3;border:none;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;">
-                    <i class="bi bi-plus-lg"></i> Enviar Arquivo
+                    <i class="bi bi-plus-lg"></i> {{ __('leads.send_file') }}
                 </label>
                 <input type="file" id="attachFileInput" style="display:none;" onchange="uploadAttachment(this.files[0])">
             </div>
@@ -1024,15 +1024,15 @@ $pageIcon = 'person-badge';
                     <div class="lp-attach-info">
                         <div class="lp-attach-name">{{ $att->original_name }}</div>
                         <div class="lp-attach-meta">
-                            {{ $att->uploader?->name ?? 'Sistema' }} · {{ $att->created_at->format('d/m/Y H:i') }}
+                            {{ $att->uploader?->name ?? __('leads.system') }} · {{ $att->created_at->format('d/m/Y H:i') }}
                             · {{ number_format($att->file_size / 1024, 0) }} KB
                         </div>
                     </div>
                     <div class="lp-attach-actions">
-                        <a href="{{ Storage::disk('public')->url($att->storage_path) }}" target="_blank" class="lp-attach-btn" title="Abrir">
+                        <a href="{{ Storage::disk('public')->url($att->storage_path) }}" target="_blank" class="lp-attach-btn" title="{{ __('leads.open_title') }}">
                             <i class="bi bi-download"></i>
                         </a>
-                        <button class="lp-attach-btn lp-attach-del" onclick="deleteAttachment({{ $att->id }})" title="Excluir">
+                        <button class="lp-attach-btn lp-attach-del" onclick="deleteAttachment({{ $att->id }})" title="{{ __('leads.delete_title') }}">
                             <i class="bi bi-trash3"></i>
                         </button>
                     </div>
@@ -1040,7 +1040,7 @@ $pageIcon = 'person-badge';
                 @empty
                 <div id="attachEmpty" style="text-align:center;padding:40px 20px;color:#9ca3af;">
                     <i class="bi bi-paperclip" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
-                    Nenhum anexo adicionado.
+                    {{ __('leads.no_attachments_added') }}
                 </div>
                 @endforelse
             </div>
@@ -1051,20 +1051,20 @@ $pageIcon = 'person-badge';
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                 <span style="font-size:13px;color:#6b7280;">
                     @if($scheduledMessages->count() === 0)
-                        Nenhuma mensagem agendada
+                        {{ __('leads.no_scheduled_messages') }}
                     @elseif($scheduledMessages->count() === 1)
-                        1 mensagem agendada
+                        {{ __('leads.one_scheduled_message') }}
                     @else
-                        {{ $scheduledMessages->count() }} mensagens agendadas
+                        {{ __('leads.n_scheduled_messages', ['count' => $scheduledMessages->count()]) }}
                     @endif
                 </span>
                 <button onclick="openScheduleModal()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#eff6ff;color:#3b82f6;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">
-                    <i class="bi bi-plus-lg"></i> Agendar Mensagem
+                    <i class="bi bi-plus-lg"></i> {{ __('leads.schedule_message') }}
                 </button>
             </div>
             <div id="scheduledList">
                 @php
-                    $smStatusLabels = ['pending'=>'Pendente','sent'=>'Enviada','failed'=>'Falhou','cancelled'=>'Cancelada'];
+                    $smStatusLabels = ['pending'=>__('leads.status_pending'),'sent'=>__('leads.status_sent'),'failed'=>__('leads.status_failed'),'cancelled'=>__('leads.status_cancelled')];
                     $smStatusStyles = [
                         'pending'   => 'background:#fff7ed;color:#f59e0b;',
                         'sent'      => 'background:#f0fdf4;color:#10b981;',
@@ -1082,7 +1082,7 @@ $pageIcon = 'person-badge';
                         <div class="lp-sm-preview">
                             @if($sm->body) {{ \Illuminate\Support\Str::limit($sm->body, 80) }}
                             @elseif($sm->media_filename) {{ $sm->media_filename }}
-                            @else <em style="opacity:.5;">Sem conteúdo</em>
+                            @else <em style="opacity:.5;">{{ __('leads.no_content') }}</em>
                             @endif
                         </div>
                         <div class="lp-sm-meta">
@@ -1098,7 +1098,7 @@ $pageIcon = 'person-badge';
                         </div>
                     </div>
                     @if($sm->status === 'pending')
-                    <button class="lp-sm-cancel" onclick="cancelScheduled({{ $sm->id }})" title="Cancelar agendamento">
+                    <button class="lp-sm-cancel" onclick="cancelScheduled({{ $sm->id }})" title="{{ __('leads.cancel_schedule') }}">
                         <i class="bi bi-x-lg"></i>
                     </button>
                     @endif
@@ -1106,7 +1106,7 @@ $pageIcon = 'person-badge';
                 @empty
                 <div id="scheduledEmpty" style="text-align:center;padding:40px 20px;color:#9ca3af;">
                     <i class="bi bi-clock" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
-                    Nenhuma mensagem agendada.
+                    {{ __('leads.no_scheduled_empty') }}
                 </div>
                 @endforelse
             </div>
@@ -1117,21 +1117,21 @@ $pageIcon = 'person-badge';
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                 <span style="font-size:13px;color:#6b7280;">
                     @if(isset($tasks))
-                        @if($tasks->count() === 0) Nenhuma tarefa
-                        @elseif($tasks->count() === 1) 1 tarefa
-                        @else {{ $tasks->count() }} tarefas
+                        @if($tasks->count() === 0) {{ __('leads.no_tasks') }}
+                        @elseif($tasks->count() === 1) {{ __('leads.one_task') }}
+                        @else {{ __('leads.n_tasks', ['count' => $tasks->count()]) }}
                         @endif
-                    @else Nenhuma tarefa
+                    @else {{ __('leads.no_tasks') }}
                     @endif
                 </span>
                 <button onclick="openLeadTaskDrawer()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#eff6ff;color:#3b82f6;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">
-                    <i class="bi bi-plus-lg"></i> Nova Tarefa
+                    <i class="bi bi-plus-lg"></i> {{ __('leads.new_task') }}
                 </button>
             </div>
             <div id="leadTaskList" style="display:flex;flex-direction:column;gap:8px;">
                 @php
                     $taskTypeIcons = ['call'=>'bi-telephone','email'=>'bi-envelope','task'=>'bi-check2-square','visit'=>'bi-geo-alt','whatsapp'=>'bi-whatsapp','meeting'=>'bi-camera-video'];
-                    $taskTypeLabels = ['call'=>'Ligar','email'=>'Email','task'=>'Tarefa','visit'=>'Visita','whatsapp'=>'WhatsApp','meeting'=>'Reunião'];
+                    $taskTypeLabels = ['call'=>__('leads.task_type_call'),'email'=>__('leads.task_type_email'),'task'=>__('leads.task_type_task'),'visit'=>__('leads.task_type_visit'),'whatsapp'=>__('leads.task_type_whatsapp'),'meeting'=>__('leads.task_type_meeting')];
                 @endphp
                 @forelse(($tasks ?? collect()) as $tk)
                 @php
@@ -1161,7 +1161,7 @@ $pageIcon = 'person-badge';
                 @empty
                 <div style="text-align:center;padding:40px 20px;color:#9ca3af;">
                     <i class="bi bi-check2-square" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
-                    Nenhuma tarefa vinculada.
+                    {{ __('leads.no_tasks_linked') }}
                 </div>
                 @endforelse
             </div>
@@ -1174,7 +1174,7 @@ $pageIcon = 'person-badge';
 
         {{-- Contato --}}
         <div class="lp-info-section">
-            <div class="lp-info-section-title">Contato</div>
+            <div class="lp-info-section-title">{{ __('leads.contact_section') }}</div>
 
             <div class="lp-info-row">
                 <div class="lp-info-icon"><i class="bi bi-telephone"></i></div>
@@ -1221,7 +1221,7 @@ $pageIcon = 'person-badge';
 
         {{-- Negócio --}}
         <div class="lp-info-section">
-            <div class="lp-info-section-title">Negócio</div>
+            <div class="lp-info-section-title">{{ __('leads.deal') }}</div>
 
             <div class="lp-info-row">
                 <div class="lp-info-icon"><i class="bi bi-currency-dollar"></i></div>
@@ -1255,7 +1255,7 @@ $pageIcon = 'person-badge';
             <div class="lp-info-row">
                 <div class="lp-info-icon"><i class="bi bi-person-check"></i></div>
                 <div class="lp-info-val">
-                    {{ $lead->assignedTo?->name ?? 'Não atribuído' }}
+                    {{ $lead->assignedTo?->name ?? __('leads.not_assigned') }}
                 </div>
             </div>
         </div>
@@ -1263,7 +1263,7 @@ $pageIcon = 'person-badge';
         {{-- Tags --}}
         @if(!empty($lead->tags))
         <div class="lp-info-section">
-            <div class="lp-info-section-title">Tags</div>
+            <div class="lp-info-section-title">{{ __('leads.tags') }}</div>
             <div>
                 @foreach($lead->tags as $tag)
                 <span class="lp-tag-chip">{{ $tag }}</span>
@@ -1276,7 +1276,7 @@ $pageIcon = 'person-badge';
         @php $customFields = $lead->custom_fields; @endphp
         @if(!empty($customFields))
         <div class="lp-info-section">
-            <div class="lp-info-section-title">Campos Personalizados</div>
+            <div class="lp-info-section-title">{{ __('leads.custom_fields') }}</div>
             @foreach($customFields as $field)
             <div class="lp-info-row" style="align-items:flex-start;">
                 <div class="lp-info-icon"><i class="bi bi-input-cursor-text"></i></div>
@@ -1284,7 +1284,7 @@ $pageIcon = 'person-badge';
                     <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:2px;">{{ $field['label'] }}</div>
                     @if($field['value'] !== null && $field['value'] !== '')
                         @if($field['type'] === 'checkbox')
-                            {{ $field['value'] ? 'Sim' : 'Não' }}
+                            {{ $field['value'] ? __('leads.yes') : __('leads.no') }}
                         @elseif($field['type'] === 'currency')
                             {{ __('common.currency') }} {{ number_format((float)$field['value'], 2, __('common.decimal_sep'), __('common.thousands_sep')) }}
                         @elseif($field['type'] === 'multiselect' && is_array($field['value']))
@@ -1305,20 +1305,97 @@ $pageIcon = 'person-badge';
 
         {{-- Datas --}}
         <div class="lp-info-section">
-            <div class="lp-info-section-title">Datas</div>
+            <div class="lp-info-section-title">{{ __('leads.dates_section') }}</div>
             <div class="lp-info-row">
                 <div class="lp-info-icon"><i class="bi bi-calendar-plus"></i></div>
                 <div class="lp-info-val" style="font-size:12.5px;">
-                    Criado em {{ $lead->created_at->format('d/m/Y H:i') }}
+                    {{ __('leads.created_on_date', ['date' => $lead->created_at->format('d/m/Y H:i')]) }}
                 </div>
             </div>
             <div class="lp-info-row">
                 <div class="lp-info-icon"><i class="bi bi-calendar-check"></i></div>
                 <div class="lp-info-val" style="font-size:12.5px;">
-                    Atualizado {{ $lead->updated_at->diffForHumans() }}
+                    {{ __('leads.updated_ago', ['time' => $lead->updated_at->diffForHumans()]) }}
                 </div>
             </div>
         </div>
+
+        {{-- UTM & Tracking --}}
+        @if($lead->utm_source || $lead->utm_medium || $lead->utm_campaign || $lead->utm_term || $lead->utm_content || $lead->fbclid || $lead->gclid)
+        <div class="lp-info-section">
+            <div class="lp-info-section-title">{{ __('leads.utm_section') }}</div>
+
+            @if($lead->utm_source)
+            <div class="lp-info-row">
+                <div class="lp-info-icon"><i class="bi bi-link-45deg"></i></div>
+                <div class="lp-info-val">
+                    <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:1px;">utm_source</div>
+                    <span class="source-pill">{{ $lead->utm_source }}</span>
+                </div>
+            </div>
+            @endif
+
+            @if($lead->utm_medium)
+            <div class="lp-info-row">
+                <div class="lp-info-icon"><i class="bi bi-broadcast"></i></div>
+                <div class="lp-info-val">
+                    <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:1px;">utm_medium</div>
+                    {{ $lead->utm_medium }}
+                </div>
+            </div>
+            @endif
+
+            @if($lead->utm_campaign)
+            <div class="lp-info-row">
+                <div class="lp-info-icon"><i class="bi bi-megaphone"></i></div>
+                <div class="lp-info-val">
+                    <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:1px;">utm_campaign</div>
+                    {{ $lead->utm_campaign }}
+                </div>
+            </div>
+            @endif
+
+            @if($lead->utm_term)
+            <div class="lp-info-row">
+                <div class="lp-info-icon"><i class="bi bi-search"></i></div>
+                <div class="lp-info-val">
+                    <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:1px;">utm_term</div>
+                    {{ $lead->utm_term }}
+                </div>
+            </div>
+            @endif
+
+            @if($lead->utm_content)
+            <div class="lp-info-row">
+                <div class="lp-info-icon"><i class="bi bi-file-text"></i></div>
+                <div class="lp-info-val">
+                    <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:1px;">utm_content</div>
+                    {{ $lead->utm_content }}
+                </div>
+            </div>
+            @endif
+
+            @if($lead->fbclid)
+            <div class="lp-info-row">
+                <div class="lp-info-icon"><i class="bi bi-facebook"></i></div>
+                <div class="lp-info-val">
+                    <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:1px;">fbclid</div>
+                    <span style="font-size:11px;word-break:break-all;color:#6b7280;">{{ Str::limit($lead->fbclid, 40) }}</span>
+                </div>
+            </div>
+            @endif
+
+            @if($lead->gclid)
+            <div class="lp-info-row">
+                <div class="lp-info-icon"><i class="bi bi-google"></i></div>
+                <div class="lp-info-val">
+                    <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:1px;">gclid</div>
+                    <span style="font-size:11px;word-break:break-all;color:#6b7280;">{{ Str::limit($lead->gclid, 40) }}</span>
+                </div>
+            </div>
+            @endif
+        </div>
+        @endif
 
     </div>{{-- end info card --}}
 
@@ -1333,15 +1410,15 @@ $pageIcon = 'person-badge';
 <div id="schedModal" class="sched-overlay" style="display:none;" onclick="if(event.target===this)closeScheduleModal()">
     <div class="sched-modal">
         <div class="sched-modal-header">
-            <span class="sched-modal-title"><i class="bi bi-clock" style="margin-right:6px;"></i>Agendar Mensagem</span>
+            <span class="sched-modal-title"><i class="bi bi-clock" style="margin-right:6px;"></i>{{ __('leads.schedule_message') }}</span>
             <button class="sched-modal-close" onclick="closeScheduleModal()"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="sched-modal-body">
             @if($quickMessages->isNotEmpty())
             <div class="sched-form-group">
-                <label class="sched-form-label">Modelo de mensagem rápida (opcional)</label>
+                <label class="sched-form-label">{{ __('leads.quick_message_template') }}</label>
                 <select id="schedQuickMsg" class="sched-form-select" onchange="applyQuickMessage(this.value)">
-                    <option value="">— Selecionar modelo —</option>
+                    <option value="">{{ __('leads.select_template') }}</option>
                     @foreach($quickMessages as $qm)
                     <option value="{{ $qm->id }}" data-body="{{ e($qm->body) }}">{{ $qm->title }}</option>
                     @endforeach
@@ -1349,43 +1426,43 @@ $pageIcon = 'person-badge';
             </div>
             @endif
             <div class="sched-form-group">
-                <label class="sched-form-label">Tipo de mensagem</label>
+                <label class="sched-form-label">{{ __('leads.message_type') }}</label>
                 <div class="sched-type-radios">
                     <label class="sched-type-radio">
                         <input type="radio" name="schedType" value="text" checked onchange="onSchedTypeChange()">
-                        <i class="bi bi-chat-text"></i> Texto
+                        <i class="bi bi-chat-text"></i> {{ __('leads.type_text') }}
                     </label>
                     <label class="sched-type-radio">
                         <input type="radio" name="schedType" value="image" onchange="onSchedTypeChange()">
-                        <i class="bi bi-image"></i> Imagem
+                        <i class="bi bi-image"></i> {{ __('leads.type_image') }}
                     </label>
                     <label class="sched-type-radio">
                         <input type="radio" name="schedType" value="document" onchange="onSchedTypeChange()">
-                        <i class="bi bi-file-earmark"></i> Documento
+                        <i class="bi bi-file-earmark"></i> {{ __('leads.type_document') }}
                     </label>
                 </div>
             </div>
             <div class="sched-form-group" id="schedBodyGroup">
-                <label class="sched-form-label">Mensagem</label>
-                <textarea id="schedBody" class="sched-form-textarea" placeholder="Digite a mensagem..."></textarea>
+                <label class="sched-form-label">{{ __('leads.message_label') }}</label>
+                <textarea id="schedBody" class="sched-form-textarea" placeholder="{{ __('leads.message_placeholder') }}"></textarea>
             </div>
             <div class="sched-form-group" id="schedFileGroup" style="display:none;">
-                <label class="sched-form-label">Arquivo</label>
+                <label class="sched-form-label">{{ __('leads.file_label') }}</label>
                 <input type="file" id="schedFile" class="sched-form-input" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt">
             </div>
             <div class="sched-form-group" id="schedCaptionGroup" style="display:none;">
-                <label class="sched-form-label">Legenda (opcional)</label>
-                <input type="text" id="schedCaption" class="sched-form-input" placeholder="Legenda para o arquivo...">
+                <label class="sched-form-label">{{ __('leads.caption_label') }}</label>
+                <input type="text" id="schedCaption" class="sched-form-input" placeholder="{{ __('leads.caption_placeholder') }}">
             </div>
             <div class="sched-form-group">
-                <label class="sched-form-label">Data e hora do envio</label>
+                <label class="sched-form-label">{{ __('leads.send_datetime') }}</label>
                 <input type="datetime-local" id="schedSendAt" class="sched-form-input">
             </div>
         </div>
         <div class="sched-modal-footer">
-            <button class="sched-btn-cancel" onclick="closeScheduleModal()">Cancelar</button>
+            <button class="sched-btn-cancel" onclick="closeScheduleModal()">{{ __('leads.cancel') }}</button>
             <button class="sched-btn-submit" id="schedSubmitBtn" onclick="submitSchedule()">
-                <i class="bi bi-clock"></i> Agendar Envio
+                <i class="bi bi-clock"></i> {{ __('leads.schedule_send') }}
             </button>
         </div>
     </div>
@@ -1395,6 +1472,7 @@ $pageIcon = 'person-badge';
 
 @push('scripts')
 <script>
+const LLANG = @json(__('leads'));
 // Constantes que o drawer precisa (PIPELINES_DATA, CF_DEFS, LEAD_TAGS, LEAD_NOTE_STORE, LEAD_NOTE_DEL são definidas pelo drawer)
 const LEAD_SHOW  = '{{ route('leads.show',    ['lead' => '__ID__']) }}';
 const LEAD_STORE = '{{ route('leads.store') }}';
@@ -1465,9 +1543,9 @@ async function submitSchedule() {
     const fileEl  = document.getElementById('schedFile');
     const caption = document.getElementById('schedCaption').value.trim();
 
-    if (!sendAt) { alert('Informe a data e hora do envio.'); return; }
-    if (type === 'text' && !body) { alert('Digite a mensagem.'); return; }
-    if (type !== 'text' && (!fileEl || !fileEl.files.length)) { alert('Selecione um arquivo.'); return; }
+    if (!sendAt) { alert(LLANG.inform_datetime); return; }
+    if (type === 'text' && !body) { alert(LLANG.type_the_message); return; }
+    if (type !== 'text' && (!fileEl || !fileEl.files.length)) { alert(LLANG.select_a_file); return; }
 
     const fd = new FormData();
     fd.append('type', type);
@@ -1481,7 +1559,7 @@ async function submitSchedule() {
 
     const btn = document.getElementById('schedSubmitBtn');
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Agendando...';
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> ' + LLANG.scheduling;
 
     try {
         const res  = await fetch(SCHED_STORE, {
@@ -1490,20 +1568,20 @@ async function submitSchedule() {
             body: fd,
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || data.message || 'Erro ao agendar.');
+        if (!res.ok) throw new Error(data.error || data.message || LLANG.error_scheduling);
         closeScheduleModal();
         await reloadScheduledList();
-        if (typeof toastr !== 'undefined') toastr.success('Mensagem agendada com sucesso!');
+        if (typeof toastr !== 'undefined') toastr.success(LLANG.scheduled_success);
     } catch (e) {
-        alert('Erro: ' + e.message);
+        alert(LLANG.error_prefix + e.message);
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-clock"></i> Agendar Envio';
+        btn.innerHTML = '<i class="bi bi-clock"></i> ' + LLANG.schedule_send;
     }
 }
 
 async function cancelScheduled(id) {
-    if (!confirm('Cancelar este agendamento?')) return;
+    if (!confirm(LLANG.confirm_cancel_schedule)) return;
     const url = SCHED_DESTROY.replace('__ID__', id);
     try {
         const res  = await fetch(url, {
@@ -1511,17 +1589,17 @@ async function cancelScheduled(id) {
             headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erro ao cancelar.');
+        if (!res.ok) throw new Error(data.error || LLANG.error_cancel);
         document.getElementById('sm-' + id)?.remove();
         if (!document.querySelector('#scheduledList .lp-sm-card')) {
             document.getElementById('scheduledList').innerHTML =
                 `<div id="scheduledEmpty" style="text-align:center;padding:40px 20px;color:#9ca3af;">
                     <i class="bi bi-clock" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
-                    Nenhuma mensagem agendada.
+                    ${LLANG.no_scheduled_empty}
                 </div>`;
         }
     } catch (e) {
-        alert('Erro: ' + e.message);
+        alert(LLANG.error_prefix + e.message);
     }
 }
 
@@ -1530,7 +1608,7 @@ async function reloadScheduledList() {
     const data = await res.json();
     const items = data.data || [];
     const list  = document.getElementById('scheduledList');
-    const statusLabels = { pending: 'Pendente', sent: 'Enviada', failed: 'Falhou', cancelled: 'Cancelada' };
+    const statusLabels = { pending: LLANG.status_pending, sent: LLANG.status_sent, failed: LLANG.status_failed, cancelled: LLANG.status_cancelled };
     const statusStyles = {
         pending:   'background:#fff7ed;color:#f59e0b;',
         sent:      'background:#f0fdf4;color:#10b981;',
@@ -1542,20 +1620,20 @@ async function reloadScheduledList() {
     if (!items.length) {
         list.innerHTML = `<div id="scheduledEmpty" style="text-align:center;padding:40px 20px;color:#9ca3af;">
             <i class="bi bi-clock" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
-            Nenhuma mensagem agendada.</div>`;
+            ${LLANG.no_scheduled_empty}</div>`;
     } else {
         list.innerHTML = items.map(s => `
             <div class="lp-sm-card" id="sm-${s.id}">
                 <div class="lp-sm-icon"><i class="bi ${typeIcons[s.type] || 'bi-chat'}"></i></div>
                 <div class="lp-sm-body">
-                    <div class="lp-sm-preview">${escapeHtml(s.body || s.media_filename || 'Sem conteúdo')}</div>
+                    <div class="lp-sm-preview">${escapeHtml(s.body || s.media_filename || LLANG.no_content)}</div>
                     <div class="lp-sm-meta">
                         <span class="lp-sm-badge" style="${statusStyles[s.status] || ''}">${statusLabels[s.status] || s.status}</span>
                         <span>${escapeHtml(s.send_at_human || '')}</span>
                         ${s.error ? `<span style="color:#ef4444;" title="${escapeHtml(s.error)}"><i class="bi bi-exclamation-circle"></i> ${escapeHtml(s.error.substring(0, 50))}</span>` : ''}
                     </div>
                 </div>
-                ${s.status === 'pending' ? `<button class="lp-sm-cancel" onclick="cancelScheduled(${s.id})" title="Cancelar"><i class="bi bi-x-lg"></i></button>` : ''}
+                ${s.status === 'pending' ? `<button class="lp-sm-cancel" onclick="cancelScheduled(${s.id})" title="${LLANG.cancel}"><i class="bi bi-x-lg"></i></button>` : ''}
             </div>`).join('');
     }
 
@@ -1594,7 +1672,7 @@ async function addPageNote() {
 
     const btn = document.getElementById('btnAddNote');
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando...';
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> ' + LLANG.saving;
 
     try {
         const res = await fetch(LEAD_NOTE_STORE.replace('__ID__', {{ $lead->id }}), {
@@ -1607,7 +1685,7 @@ async function addPageNote() {
             body: JSON.stringify({ body }),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Erro');
+        if (!res.ok) throw new Error(data.message || LLANG.error_add_note);
 
         const note = data.note;
         // Remove empty state if present
@@ -1622,10 +1700,10 @@ async function addPageNote() {
             <div class="lp-note-header">
                 <div class="lp-note-avatar">${escapeHtml((note.author || '?').charAt(0).toUpperCase())}</div>
                 <div class="lp-note-meta">
-                    <div class="lp-note-author">${escapeHtml(note.author || 'Eu')}</div>
-                    <div class="lp-note-date">agora mesmo</div>
+                    <div class="lp-note-author">${escapeHtml(note.author || LLANG.me)}</div>
+                    <div class="lp-note-date">${LLANG.just_now}</div>
                 </div>
-                <button class="lp-note-del" onclick="deletePageNote(${note.id})" title="Excluir nota">
+                <button class="lp-note-del" onclick="deletePageNote(${note.id})" title="${LLANG.delete_note_title}">
                     <i class="bi bi-trash3"></i>
                 </button>
             </div>
@@ -1647,15 +1725,15 @@ async function addPageNote() {
             tabBtn.appendChild(span);
         }
     } catch(e) {
-        alert('Erro ao salvar nota: ' + e.message);
+        alert(LLANG.error_saving_note + e.message);
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-plus-lg"></i> Adicionar Nota';
+        btn.innerHTML = '<i class="bi bi-plus-lg"></i> ' + LLANG.add_note;
     }
 }
 
 async function deletePageNote(noteId) {
-    if (!confirm('Excluir esta nota?')) return;
+    if (!confirm(LLANG.confirm_delete_note)) return;
     const url = LEAD_NOTE_DEL
         .replace('__LEAD__', {{ $lead->id }})
         .replace('__NOTE__', noteId);
@@ -1664,18 +1742,18 @@ async function deletePageNote(noteId) {
             method: 'DELETE',
             headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
         });
-        if (!res.ok) throw new Error('Erro ao excluir');
+        if (!res.ok) throw new Error(LLANG.error_deleting);
         document.getElementById('note-' + noteId)?.remove();
 
         if (document.querySelectorAll('.lp-note-card').length === 0) {
             const container = document.getElementById('notesContainer');
             container.innerHTML = `<div id="notesEmpty" style="text-align:center;padding:30px 20px;color:#9ca3af;">
                 <i class="bi bi-journal-x" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
-                Nenhuma nota ainda.
+                ${LLANG.no_notes}
             </div>`;
         }
     } catch(e) {
-        alert('Erro: ' + e.message);
+        alert(LLANG.error_prefix + e.message);
     }
 }
 
@@ -1690,7 +1768,7 @@ async function uploadAttachment(file) {
     const tempId = 'att-temp-' + Date.now();
     list.insertAdjacentHTML('afterbegin', `
         <div class="lp-attach-uploading" id="${tempId}">
-            <i class="bi bi-arrow-repeat spin"></i> Enviando ${file.name}...
+            <i class="bi bi-arrow-repeat spin"></i> ${LLANG.uploading_file.replace(':name', file.name)}
         </div>
     `);
 
@@ -1709,20 +1787,20 @@ async function uploadAttachment(file) {
         if (data.success) {
             const a = data.attachment;
             list.insertAdjacentHTML('afterbegin', buildAttachHtml(a));
-            toastr.success('Anexo enviado!');
+            toastr.success(LLANG.attach_sent);
         } else {
-            toastr.error(data.message || 'Erro ao enviar anexo.');
+            toastr.error(data.message || LLANG.error_sending_attach);
         }
     } catch (e) {
         document.getElementById(tempId)?.remove();
-        toastr.error('Erro de conexão ao enviar anexo.');
+        toastr.error(LLANG.error_conn_attach);
     }
 
     document.getElementById('attachFileInput').value = '';
 }
 
 async function deleteAttachment(id) {
-    if (!confirm('Excluir este anexo?')) return;
+    if (!confirm(LLANG.confirm_delete_attachment)) return;
     try {
         const base = '{{ route("leads.attachments.destroy", [$lead->id, "__ID__"]) }}'.replace('__ID__', id);
         const res = await fetch(base, {
@@ -1735,19 +1813,19 @@ async function deleteAttachment(id) {
         const data = await res.json();
         if (data.success) {
             document.getElementById('attach-' + id)?.remove();
-            toastr.success('Anexo excluído.');
+            toastr.success(LLANG.attach_deleted);
             if (!document.querySelector('#attachmentsList .lp-attach-item')) {
                 document.getElementById('attachmentsList').innerHTML = `
                     <div id="attachEmpty" style="text-align:center;padding:40px 20px;color:#9ca3af;">
                         <i class="bi bi-paperclip" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
-                        Nenhum anexo adicionado.
+                        ${LLANG.no_attachments_added}
                     </div>`;
             }
         } else {
-            toastr.error(data.message || 'Erro ao excluir.');
+            toastr.error(data.message || LLANG.error_deleting);
         }
     } catch (e) {
-        toastr.error('Erro de conexão.');
+        toastr.error(LLANG.error_conn);
     }
 }
 
@@ -1764,11 +1842,11 @@ function buildAttachHtml(a) {
         <div class="lp-attach-icon">${icon}</div>
         <div class="lp-attach-info">
             <div class="lp-attach-name">${a.original_name}</div>
-            <div class="lp-attach-meta">${a.uploaded_by || 'Você'} · ${a.created_at} · ${sizeKb} KB</div>
+            <div class="lp-attach-meta">${a.uploaded_by || LLANG.you} · ${a.created_at} · ${sizeKb} KB</div>
         </div>
         <div class="lp-attach-actions">
-            <a href="${a.url}" target="_blank" class="lp-attach-btn" title="Abrir"><i class="bi bi-download"></i></a>
-            <button class="lp-attach-btn lp-attach-del" onclick="deleteAttachment(${a.id})" title="Excluir"><i class="bi bi-trash3"></i></button>
+            <a href="${a.url}" target="_blank" class="lp-attach-btn" title="${LLANG.open_title}"><i class="bi bi-download"></i></a>
+            <button class="lp-attach-btn lp-attach-del" onclick="deleteAttachment(${a.id})" title="${LLANG.delete_title}"><i class="bi bi-trash3"></i></button>
         </div>
     </div>`;
 }
