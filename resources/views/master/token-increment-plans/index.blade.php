@@ -23,7 +23,9 @@
                 <tr>
                     <th>Nome</th>
                     <th>Tokens</th>
-                    <th>Preço</th>
+                    <th>Preço (BRL)</th>
+                    <th>Preço (USD)</th>
+                    <th>Stripe</th>
                     <th>Status</th>
                     <th></th>
                 </tr>
@@ -38,6 +40,20 @@
                         </span>
                     </td>
                     <td style="font-weight:600;">R$ {{ number_format($plan->price, 2, ',', '.') }}</td>
+                    <td>
+                        @if($plan->price_usd)
+                            <span style="font-weight:600;">$ {{ number_format((float)$plan->price_usd, 2, '.', ',') }}</span>
+                        @else
+                            <span style="color:#9ca3af;font-size:12px;">—</span>
+                        @endif
+                    </td>
+                    <td>
+                        @if($plan->stripe_price_id)
+                            <code style="font-size:11px;background:#f3f4f6;padding:2px 6px;border-radius:4px;">{{ Str::limit($plan->stripe_price_id, 18) }}</code>
+                        @else
+                            <span style="color:#9ca3af;font-size:12px;">—</span>
+                        @endif
+                    </td>
                     <td>
                         @if($plan->is_active)
                             <span class="m-badge m-badge-active">Ativo</span>
@@ -59,7 +75,7 @@
                 @endforeach
                 @if($plans->isEmpty())
                 <tr>
-                    <td colspan="5" style="text-align:center;color:#9ca3af;padding:40px;">
+                    <td colspan="7" style="text-align:center;color:#9ca3af;padding:40px;">
                         Nenhum pacote criado ainda.
                     </td>
                 </tr>
@@ -95,6 +111,21 @@
                 <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Preço (R$)</label>
                 <input type="number" id="planPrice" min="0" step="0.01" class="form-control" placeholder="49.90"
                     style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;">
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div>
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Preço (USD)</label>
+                <input type="number" id="planPriceUsd" min="0" step="0.01" class="form-control" placeholder="9.90"
+                    style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;">
+                <div style="font-size:11px;color:#9ca3af;margin-top:3px;">Preço em dólar para cobrança via Stripe</div>
+            </div>
+            <div>
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Stripe Price ID</label>
+                <input type="text" id="planStripePriceId" class="form-control" placeholder="price_1Abc..."
+                    style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;">
+                <div style="font-size:11px;color:#9ca3af;margin-top:3px;">ID do preço no Stripe Dashboard</div>
             </div>
         </div>
 
@@ -138,6 +169,8 @@ function openNewPlan() {
     document.getElementById('planName').value = '';
     document.getElementById('planTokens').value = '500000';
     document.getElementById('planPrice').value = '49.90';
+    document.getElementById('planPriceUsd').value = '';
+    document.getElementById('planStripePriceId').value = '';
     document.getElementById('planIsActive').checked = true;
     showModal();
 }
@@ -149,6 +182,8 @@ function editPlan(id, plan) {
     document.getElementById('planName').value = plan.display_name;
     document.getElementById('planTokens').value = plan.tokens_amount;
     document.getElementById('planPrice').value = plan.price;
+    document.getElementById('planPriceUsd').value = plan.price_usd || '';
+    document.getElementById('planStripePriceId').value = plan.stripe_price_id || '';
     document.getElementById('planIsActive').checked = !!plan.is_active;
     showModal();
 }
@@ -157,11 +192,16 @@ async function savePlan() {
     const btn = document.getElementById('btnSavePlan');
     btn.disabled = true;
 
+    const priceUsdRaw = document.getElementById('planPriceUsd').value;
+    const stripePriceId = document.getElementById('planStripePriceId').value.trim();
+
     const payload = {
-        display_name:  document.getElementById('planName').value,
-        tokens_amount: parseInt(document.getElementById('planTokens').value) || 0,
-        price:         parseFloat(document.getElementById('planPrice').value) || 0,
-        is_active:     document.getElementById('planIsActive').checked ? 1 : 0,
+        display_name:    document.getElementById('planName').value,
+        tokens_amount:   parseInt(document.getElementById('planTokens').value) || 0,
+        price:           parseFloat(document.getElementById('planPrice').value) || 0,
+        price_usd:       priceUsdRaw !== '' ? parseFloat(priceUsdRaw) : null,
+        stripe_price_id: stripePriceId || null,
+        is_active:       document.getElementById('planIsActive').checked ? 1 : 0,
     };
 
     const url    = editingId ? ROUTE_UPDATE(editingId) : ROUTE_STORE;

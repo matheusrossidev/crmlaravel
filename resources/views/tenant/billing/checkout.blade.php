@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="{{ app()->getLocale() === 'pt_BR' ? 'pt-BR' : 'en' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Assinar — Syncro</title>
+    <title>{{ $tenant->billing_provider === 'stripe' ? 'Subscribe' : 'Assinar' }} — Syncro</title>
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -204,15 +204,21 @@
 
         <div class="auth-form-wrap">
 
-            {{-- Progress dots --}}
+            @php
+                $isStripeCheckout = ($tenant->billing_provider ?? 'asaas') === 'stripe';
+            @endphp
+
+            @if(!$isStripeCheckout)
+            {{-- Progress dots (Asaas multi-step only) --}}
             <div class="step-progress">
                 <div class="step-dot-p active" id="dot-1"></div>
                 <div class="step-dot-p" id="dot-2"></div>
                 <div class="step-dot-p" id="dot-3"></div>
             </div>
+            @endif
 
-            <h2 class="auth-form-title" id="stepTitle">Escolha seu plano</h2>
-            <p class="auth-form-sub" id="stepSub">Acesso completo à plataforma. Cancele quando quiser.</p>
+            <h2 class="auth-form-title" id="stepTitle">{{ $isStripeCheckout ? 'Choose your plan' : 'Escolha seu plano' }}</h2>
+            <p class="auth-form-sub" id="stepSub">{{ $isStripeCheckout ? 'Full platform access. Cancel anytime.' : 'Acesso completo à plataforma. Cancele quando quiser.' }}</p>
 
             {{-- Alerts --}}
             <div class="auth-success" id="alertSuccess">
@@ -230,17 +236,25 @@
                     @foreach($plans as $p)
                     @php
                         $isSelected = ($plan?->name === $p->name) || ($loop->first && !$plan);
-                        $pFeatures  = $p->features_json['features_list'] ?? [];
+                        $isStripe   = ($tenant->billing_provider ?? 'asaas') === 'stripe';
+                        $planPrice  = $isStripe ? ($p->price_usd ?? $p->price_monthly) : $p->price_monthly;
+                        $currency   = $isStripe ? '$' : __('common.currency');
+                        $decSep     = $isStripe ? '.' : __('common.decimal_sep');
+                        $thousSep   = $isStripe ? ',' : __('common.thousands_sep');
+                        $perMonth   = $isStripe ? '/mo' : __('common.per_month');
+                        $pFeatures  = $isStripe
+                            ? (($p->features_en_json['features_list'] ?? null) ?: ($p->features_json['features_list'] ?? []))
+                            : ($p->features_json['features_list'] ?? []);
                     @endphp
                     <div class="plan-card {{ $isSelected ? 'selected' : '' }}"
                          data-plan-name="{{ $p->name }}"
-                         data-plan-price="{{ number_format($p->price_monthly, 2, ',', '.') }}"
+                         data-plan-price="{{ number_format($planPrice, 2, $decSep, $thousSep) }}"
                          onclick="selectPlan(this)">
                         <div class="plan-card-check"><i class="bi bi-check-lg"></i></div>
                         <div class="plan-card-header">
                             <div class="plan-card-name">{{ $p->display_name }}</div>
                             <div class="plan-card-price">
-                                {{ __('common.currency') }} {{ number_format($p->price_monthly, 2, __('common.decimal_sep'), __('common.thousands_sep')) }}<span>{{ __('common.per_month') }}</span>
+                                {{ $currency }} {{ number_format($planPrice, 2, $decSep, $thousSep) }}<span>{{ $perMonth }}</span>
                             </div>
                         </div>
                         @if(count($pFeatures) > 0)
@@ -254,6 +268,24 @@
                     @endforeach
                 </div>
             </div>
+
+            @if(($tenant->billing_provider ?? 'asaas') === 'stripe')
+            {{-- ══ STRIPE: Single-step — select plan + redirect to Stripe Checkout ══ --}}
+            <button class="btn-submit" id="btnMain" onclick="handleStripeSubscribe()">
+                <span id="btnLabel">Subscribe</span>
+                <i class="bi bi-arrow-right" id="btnIcon"></i>
+            </button>
+
+            <div class="secure-badge">
+                <i class="bi bi-shield-check"></i>
+                Secure checkout powered by Stripe
+            </div>
+
+            <div class="auth-footer-link">
+                <a href="{{ route('dashboard') }}">← Back to dashboard</a>
+            </div>
+            @else
+            {{-- ══ ASAAS: Multi-step wizard (holder data + credit card) ══ --}}
 
             {{-- ══ STEP 2: Dados do titular ══ --}}
             <div class="wizard-step" data-step="holder">
@@ -381,6 +413,7 @@
             <div class="auth-footer-link">
                 <a href="{{ route('dashboard') }}">← Voltar ao painel</a>
             </div>
+            @endif
         </div>
     </div>
 
@@ -392,15 +425,30 @@
 <input type="hidden" id="selectedPlan" value="{{ $plan?->name ?? ($plans->first()?->name ?? '') }}">
 
 <script>
-const STEPS = ['plan', 'holder', 'card'];
-const TITLES = ['Escolha seu plano', 'Dados do titular', 'Pagamento'];
-const SUBS = [
-    'Acesso completo à plataforma. Cancele quando quiser.',
-    'Informações para emissão da nota fiscal.',
-    'Seus dados estão protegidos com criptografia.'
-];
+const IS_STRIPE = {{ ($tenant->billing_provider ?? 'asaas') === 'stripe' ? 'true' : 'false' }};
+@php
+    $isStripeJs = ($tenant->billing_provider ?? 'asaas') === 'stripe';
+    $firstPlanPrice = $isStripeJs
+        ? ($plan?->price_usd ?? $plans->first()?->price_usd ?? 0)
+        : ($plan?->price_monthly ?? $plans->first()?->price_monthly ?? 0);
+    $jsCurrency = $isStripeJs ? '$' : __('common.currency');
+    $jsDecSep   = $isStripeJs ? '.' : ',';
+    $jsThSep    = $isStripeJs ? ',' : '.';
+@endphp
+const CURRENCY = '{{ $jsCurrency }}';
+const STEPS = IS_STRIPE ? ['plan'] : ['plan', 'holder', 'card'];
+const TITLES = IS_STRIPE
+    ? ['Choose your plan']
+    : ['Escolha seu plano', 'Dados do titular', 'Pagamento'];
+const SUBS = IS_STRIPE
+    ? ['Full platform access. Cancel anytime.']
+    : [
+        'Acesso completo à plataforma. Cancele quando quiser.',
+        'Informações para emissão da nota fiscal.',
+        'Seus dados estão protegidos com criptografia.'
+    ];
 let currentIdx = 0;
-let selectedPrice = '{{ number_format($plan?->price_monthly ?? ($plans->first()?->price_monthly ?? 0), 2, ",", ".") }}';
+let selectedPrice = '{{ number_format($firstPlanPrice, 2, $jsDecSep, $jsThSep) }}';
 
 function updateUI() {
     const step = STEPS[currentIdx];
@@ -422,16 +470,19 @@ function updateUI() {
         else if (i === currentIdx) dot.classList.add('active');
     }
 
-    // Button
-    const isLast = currentIdx === STEPS.length - 1;
-    const lbl = document.getElementById('btnLabel');
-    const ico = document.getElementById('btnIcon');
-    if (isLast) {
-        lbl.textContent = 'Assinar — ' + CURRENCY + ' ' + selectedPrice + '{{ __('common.per_month') }}';
-        ico.className = 'bi bi-shield-lock-fill';
-    } else {
-        lbl.textContent = 'Continuar';
-        ico.className = 'bi bi-arrow-right';
+    // Button (only for Asaas multi-step)
+    if (!IS_STRIPE) {
+        const isLast = currentIdx === STEPS.length - 1;
+        const lbl = document.getElementById('btnLabel');
+        const ico = document.getElementById('btnIcon');
+        if (isLast) {
+            const perMonth = IS_STRIPE ? '/mo' : '{{ __('common.per_month') }}';
+            lbl.textContent = 'Assinar — ' + CURRENCY + ' ' + selectedPrice + perMonth;
+            ico.className = 'bi bi-shield-lock-fill';
+        } else {
+            lbl.textContent = 'Continuar';
+            ico.className = 'bi bi-arrow-right';
+        }
     }
 
     // Auto focus
@@ -563,32 +614,34 @@ function validateCard() {
 function showError(msg) { document.getElementById('alertErrorMsg').textContent = msg; document.getElementById('alertError').style.display = 'flex'; }
 function hideAlerts() { document.getElementById('alertSuccess').style.display = 'none'; document.getElementById('alertError').style.display = 'none'; }
 
-// ── Input masks ──
-document.getElementById('cardNumber').addEventListener('input', function() {
-    let v = this.value.replace(/\D/g, '').substring(0, 16);
-    this.value = v.replace(/(.{4})/g, '$1 ').trim();
-    updateCardArt();
-});
-document.getElementById('cardExpiry').addEventListener('input', function() {
-    let v = this.value.replace(/\D/g, '').substring(0, 6);
-    if (v.length > 2) v = v.substring(0, 2) + '/' + v.substring(2);
-    this.value = v;
-    updateCardArt();
-});
-document.getElementById('cardCvv').addEventListener('input', function() {
-    this.value = this.value.replace(/\D/g, '').substring(0, 4);
-    updateCardArt();
-});
-document.getElementById('cpfCnpj').addEventListener('input', function() {
-    let v = this.value.replace(/\D/g, '');
-    if (v.length <= 11) {
-        v = v.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-    } else {
-        v = v.substring(0,14).replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d{1,2})$/, '$1-$2');
-    }
-    this.value = v;
-});
-document.getElementById('holderName').addEventListener('input', updateCardArt);
+// ── Input masks & Card Art (Asaas only) ──
+if (!IS_STRIPE) {
+    document.getElementById('cardNumber').addEventListener('input', function() {
+        let v = this.value.replace(/\D/g, '').substring(0, 16);
+        this.value = v.replace(/(.{4})/g, '$1 ').trim();
+        updateCardArt();
+    });
+    document.getElementById('cardExpiry').addEventListener('input', function() {
+        let v = this.value.replace(/\D/g, '').substring(0, 6);
+        if (v.length > 2) v = v.substring(0, 2) + '/' + v.substring(2);
+        this.value = v;
+        updateCardArt();
+    });
+    document.getElementById('cardCvv').addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '').substring(0, 4);
+        updateCardArt();
+    });
+    document.getElementById('cpfCnpj').addEventListener('input', function() {
+        let v = this.value.replace(/\D/g, '');
+        if (v.length <= 11) {
+            v = v.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+        } else {
+            v = v.substring(0,14).replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+        }
+        this.value = v;
+    });
+    document.getElementById('holderName').addEventListener('input', updateCardArt);
+}
 
 // ── Card Art ──
 function detectBrand(num) {
@@ -601,6 +654,7 @@ function detectBrand(num) {
 }
 
 function updateCardArt() {
+    if (IS_STRIPE) return;
     const raw = document.getElementById('cardNumber').value.replace(/\s/g, '');
     const brand = detectBrand(raw);
 
@@ -674,9 +728,39 @@ async function doSubscribe() {
 
 // ── Keyboard ──
 document.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); handleMain(); }
+    if (e.key === 'Enter') { e.preventDefault(); IS_STRIPE ? handleStripeSubscribe() : handleMain(); }
     if (e.key === 'Backspace' && !['INPUT','TEXTAREA'].includes(e.target.tagName) && currentIdx > 0) goBack();
 });
+
+// ── Stripe Subscribe ──
+async function handleStripeSubscribe() {
+    const planName = document.getElementById('selectedPlan').value;
+    if (!planName) { showError('Please select a plan to continue.'); return; }
+
+    const btn = document.getElementById('btnMain');
+    const lbl = document.getElementById('btnLabel');
+    btn.disabled = true;
+    lbl.innerHTML = '<span style="width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;"></span>Redirecting...';
+    hideAlerts();
+
+    try {
+        const res = await fetch('{{ route('billing.stripe.subscribe') }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+            body: JSON.stringify({ plan_name: planName }),
+        });
+        const data = await res.json();
+        if (data.checkout_url) {
+            window.location.href = data.checkout_url;
+        } else {
+            showError(data.message ?? 'Error creating checkout session.');
+            btn.disabled = false; lbl.textContent = 'Subscribe';
+        }
+    } catch (e) {
+        showError('Connection error. Please try again.');
+        btn.disabled = false; lbl.textContent = 'Subscribe';
+    }
+}
 
 updateUI();
 </script>

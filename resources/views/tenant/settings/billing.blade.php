@@ -375,10 +375,18 @@
                 <div class="current-plan-header">
                     <div class="current-plan-label">{{ __('settings.billing_current_plan') }}</div>
                     <div class="current-plan-name">{{ $plan?->display_name ?? __('settings.billing_current_plan') }}</div>
+                    @php
+                        $isStripe    = ($tenant->billing_provider ?? 'asaas') === 'stripe';
+                        $bCurrency   = $isStripe ? '$' : __('common.currency');
+                        $bDecSep     = $isStripe ? '.' : __('common.decimal_sep');
+                        $bThSep      = $isStripe ? ',' : __('common.thousands_sep');
+                        $bPerMonth   = $isStripe ? '/mo' : __('settings.billing_per_month');
+                        $bPlanPrice  = $isStripe ? ($plan?->price_usd ?? $plan?->price_monthly ?? 0) : ($plan?->price_monthly ?? 0);
+                    @endphp
                     <div class="current-plan-price">
-                        @if($plan && $plan->price_monthly > 0)
-                            <span class="amount">{{ __('common.currency') }} {{ number_format($plan->price_monthly, 2, __('common.decimal_sep'), __('common.thousands_sep')) }}</span>
-                            <span class="period">{{ __('settings.billing_per_month') }}</span>
+                        @if($plan && $bPlanPrice > 0)
+                            <span class="amount">{{ $bCurrency }} {{ number_format($bPlanPrice, 2, $bDecSep, $bThSep) }}</span>
+                            <span class="period">{{ $bPerMonth }}</span>
                         @else
                             <span class="amount" style="font-size:22px;">{{ __('settings.billing_free') }}</span>
                             <span class="period">{{ __('settings.billing_trial') }}</span>
@@ -407,7 +415,11 @@
                     </div>
 
                     {{-- Features list --}}
-                    @php $featuresList = $plan?->features_json['features_list'] ?? []; @endphp
+                    @php
+                        $featuresList = $isStripe
+                            ? (($plan?->features_en_json['features_list'] ?? null) ?: ($plan?->features_json['features_list'] ?? []))
+                            : ($plan?->features_json['features_list'] ?? []);
+                    @endphp
                     @if(count($featuresList) > 0)
                     <ul class="plan-features">
                         @foreach($featuresList as $feat)
@@ -426,13 +438,15 @@
                     {{-- Meta info --}}
                     <div class="plan-meta">
                         @if($tenant->status === 'trial' && $tenant->trial_ends_at)
-                            {{ __('settings.billing_trial_expires', ['date' => $tenant->trial_ends_at->format('d/m/Y')]) }}
+                            {{ __('settings.billing_trial_expires', ['date' => $tenant->trial_ends_at->format($isStripe ? 'M d, Y' : 'd/m/Y')]) }}
                             ({{ $tenant->trial_ends_at->diffForHumans() }})
-                        @elseif($tenant->subscription_status === 'active' && $tenant->asaas_subscription_id)
-                            {{ __('settings.billing_active_since', ['date' => $tenant->updated_at->format('d/m/Y')]) }}
+                        @elseif($tenant->subscription_status === 'active' && ($tenant->asaas_subscription_id || $tenant->stripe_subscription_id))
+                            {{ __('settings.billing_active_since', ['date' => $tenant->updated_at->format($isStripe ? 'M d, Y' : 'd/m/Y')]) }}
                         @endif
                         @if($tenant->asaas_subscription_id)
                             <br>ID: <strong>{{ $tenant->asaas_subscription_id }}</strong>
+                        @elseif($tenant->stripe_subscription_id)
+                            <br>ID: <strong>{{ $tenant->stripe_subscription_id }}</strong>
                         @endif
                     </div>
 
@@ -442,6 +456,15 @@
                             <i class="bi bi-lightning-charge-fill me-1"></i>
                             {{ __('settings.billing_subscribe') }}
                         </a>
+                    @elseif($tenant->subscription_status === 'active' && $isStripe && $tenant->stripe_subscription_id)
+                        <a href="{{ route('billing.stripe.portal') }}" class="btn-subscribe" style="margin-bottom:8px;">
+                            <i class="bi bi-gear me-1"></i>
+                            {{ $isStripe ? 'Manage Subscription' : __('settings.billing_manage_sub') }}
+                        </a>
+                        <button class="btn-cancel-sub" onclick="confirmCancel()">
+                            <i class="bi bi-x-circle me-1"></i>
+                            {{ __('settings.billing_cancel_sub') }}
+                        </button>
                     @elseif($tenant->subscription_status === 'active' && $tenant->asaas_subscription_id)
                         <button class="btn-cancel-sub" onclick="confirmCancel()">
                             <i class="bi bi-x-circle me-1"></i>
@@ -476,19 +499,24 @@
             </div>
 
             @php
-                $otherPlans = $plans->filter(fn($p) => $p->name !== $tenant->plan && $p->price_monthly > 0);
+                $otherPlans = $plans->filter(fn($p) => $p->name !== $tenant->plan && ($isStripe ? ($p->price_usd ?? $p->price_monthly) : $p->price_monthly) > 0);
             @endphp
 
             @if($otherPlans->isNotEmpty())
                 @foreach($otherPlans as $p)
+                @php
+                    $opPrice    = $isStripe ? ($p->price_usd ?? $p->price_monthly) : $p->price_monthly;
+                    $pFeatures  = $isStripe
+                        ? (($p->features_en_json['features_list'] ?? null) ?: ($p->features_json['features_list'] ?? []))
+                        : ($p->features_json['features_list'] ?? []);
+                @endphp
                 <div class="other-plan-card">
                     <div class="other-plan-left">
                         <div class="other-plan-name">{{ $p->display_name }}</div>
                         <div class="other-plan-price">
-                            {{ __('common.currency') }} {{ number_format($p->price_monthly, 2, __('common.decimal_sep'), __('common.thousands_sep')) }}
-                            <span>{{ __('settings.billing_per_month') }}</span>
+                            {{ $bCurrency }} {{ number_format($opPrice, 2, $bDecSep, $bThSep) }}
+                            <span>{{ $bPerMonth }}</span>
                         </div>
-                        @php $pFeatures = $p->features_json['features_list'] ?? []; @endphp
                         @if(count($pFeatures) > 0)
                         <div class="other-plan-features">
                             @foreach(array_slice($pFeatures, 0, 4) as $feat)
@@ -502,7 +530,7 @@
                     </div>
                     <div class="other-plan-right">
                         <a href="{{ route('billing.checkout') }}" class="btn-upgrade">
-                            {{ $p->price_monthly > ($plan?->price_monthly ?? 0) ? __('settings.billing_upgrade') : __('settings.billing_select') }}
+                            {{ $opPrice > $bPlanPrice ? __('settings.billing_upgrade') : __('settings.billing_select') }}
                         </a>
                     </div>
                 </div>
@@ -568,9 +596,9 @@
                     };
                 @endphp
                 <tr>
-                    <td>{{ \Carbon\Carbon::parse($charge['dateCreated'] ?? now())->format('d/m/Y') }}</td>
+                    <td>{{ \Carbon\Carbon::parse($charge['dateCreated'] ?? $charge['created_at'] ?? now())->format($isStripe ? 'M d, Y' : 'd/m/Y') }}</td>
                     <td>{{ $charge['description'] ?? '-' }}</td>
-                    <td style="font-weight:600;">{{ __('common.currency') }} {{ number_format((float)($charge['value'] ?? 0), 2, __('common.decimal_sep'), __('common.thousands_sep')) }}</td>
+                    <td style="font-weight:600;">{{ $bCurrency }} {{ number_format((float)($charge['value'] ?? $charge['amount'] ?? 0), 2, $bDecSep, $bThSep) }}</td>
                     <td>
                         <span class="charge-type-badge">
                             <i class="bi {{ $typeIcon }}"></i> {{ $typeLabel }}
@@ -603,27 +631,33 @@
 
 <script>
 const SLANG = @json(__('settings'));
+const IS_STRIPE_BILLING = {{ $isStripe ? 'true' : 'false' }};
 
 async function confirmCancel() {
-    if (!confirm(SLANG.billing_confirm_cancel)) return;
+    const msg = IS_STRIPE_BILLING ? 'Are you sure you want to cancel your subscription?' : SLANG.billing_confirm_cancel;
+    if (!confirm(msg)) return;
+
+    const cancelUrl = IS_STRIPE_BILLING
+        ? '{{ route('billing.stripe.cancel') }}'
+        : '{{ route('billing.cancel') }}';
+
+    const method = IS_STRIPE_BILLING ? 'GET' : 'POST';
+    const headers = { 'Content-Type': 'application/json' };
+    if (!IS_STRIPE_BILLING) headers['X-CSRF-TOKEN'] = document.querySelector('meta[name=csrf-token]')?.content;
 
     try {
-        const res = await fetch('{{ route('billing.cancel') }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content,
-            },
-        });
+        const res = await fetch(cancelUrl, { method, headers });
         const data = await res.json();
         if (data.success) {
-            toastr.success(data.message ?? SLANG.billing_cancelled_toast);
+            toastr.success(data.message ?? (IS_STRIPE_BILLING ? 'Subscription cancelled.' : SLANG.billing_cancelled_toast));
             setTimeout(() => window.location.reload(), 1500);
+        } else if (data.portal_url) {
+            window.location.href = data.portal_url;
         } else {
-            toastr.error(data.message ?? SLANG.billing_cancel_error);
+            toastr.error(data.message ?? (IS_STRIPE_BILLING ? 'Error cancelling subscription.' : SLANG.billing_cancel_error));
         }
     } catch (e) {
-        toastr.error(SLANG.billing_conn_error);
+        toastr.error(IS_STRIPE_BILLING ? 'Connection error. Try again.' : SLANG.billing_conn_error);
     }
 }
 </script>

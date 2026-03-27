@@ -22,13 +22,16 @@ class PlanController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'          => 'required|string|max:50|unique:plan_definitions,name',
-            'display_name'  => 'required|string|max:100',
-            'price_monthly' => 'required|numeric|min:0',
-            'trial_days'    => 'nullable|integer|min:0|max:365',
-            'features_json' => 'nullable|array',
-            'is_active'     => 'nullable|boolean',
-            'is_visible'    => 'nullable|boolean',
+            'name'             => 'required|string|max:50|unique:plan_definitions,name',
+            'display_name'     => 'required|string|max:100',
+            'price_monthly'    => 'required|numeric|min:0',
+            'price_usd'        => 'nullable|numeric|min:0',
+            'stripe_price_id'  => 'nullable|string|max:191',
+            'trial_days'       => 'nullable|integer|min:0|max:365',
+            'features_json'    => 'nullable|array',
+            'features_en_json' => 'nullable|array',
+            'is_active'        => 'nullable|boolean',
+            'is_visible'       => 'nullable|boolean',
         ]);
 
         $data['is_active']  = $request->boolean('is_active', true);
@@ -43,12 +46,15 @@ class PlanController extends Controller
     public function update(Request $request, PlanDefinition $plan): JsonResponse
     {
         $data = $request->validate([
-            'display_name'  => 'required|string|max:100',
-            'price_monthly' => 'required|numeric|min:0',
-            'trial_days'    => 'nullable|integer|min:0|max:365',
-            'features_json' => 'nullable|array',
-            'is_active'     => 'nullable|boolean',
-            'is_visible'    => 'nullable|boolean',
+            'display_name'     => 'required|string|max:100',
+            'price_monthly'    => 'required|numeric|min:0',
+            'price_usd'        => 'nullable|numeric|min:0',
+            'stripe_price_id'  => 'nullable|string|max:191',
+            'trial_days'       => 'nullable|integer|min:0|max:365',
+            'features_json'    => 'nullable|array',
+            'features_en_json' => 'nullable|array',
+            'is_active'        => 'nullable|boolean',
+            'is_visible'       => 'nullable|boolean',
         ]);
 
         $data['is_active']  = $request->boolean('is_active', true);

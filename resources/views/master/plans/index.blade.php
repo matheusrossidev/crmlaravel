@@ -23,6 +23,8 @@
                     <th>Nome</th>
                     <th>Exibição</th>
                     <th>Preço/mês</th>
+                    <th>USD/mês</th>
+                    <th>Stripe</th>
                     <th>Trial</th>
                     <th>Usuários</th>
                     <th>Leads</th>
@@ -45,6 +47,20 @@
                     <td><code style="font-size:12px;">{{ $plan->name }}</code></td>
                     <td style="font-weight:600;">{{ $plan->display_name }}</td>
                     <td>R$ {{ number_format($plan->price_monthly, 2, ',', '.') }}</td>
+                    <td>
+                        @if($plan->price_usd)
+                            $ {{ number_format((float)$plan->price_usd, 2, '.', ',') }}
+                        @else
+                            <span style="color:#9ca3af;font-size:12px;">—</span>
+                        @endif
+                    </td>
+                    <td>
+                        @if($plan->stripe_price_id)
+                            <code style="font-size:11px;background:#f3f4f6;padding:2px 6px;border-radius:4px;">{{ Str::limit($plan->stripe_price_id, 18) }}</code>
+                        @else
+                            <span style="color:#9ca3af;font-size:12px;">—</span>
+                        @endif
+                    </td>
                     <td>
                         @if($plan->trial_days !== null)
                             <span style="background:#fff7ed;color:#c2410c;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600;">{{ $plan->trial_days }}d</span>
@@ -149,6 +165,19 @@
                 <input type="number" id="planPrice" min="0" step="0.01" class="form-control" placeholder="0.00" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;">
             </div>
             <div>
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Preço mensal (USD)</label>
+                <input type="number" id="planPriceUsd" min="0" step="0.01" class="form-control" placeholder="0.00" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;">
+                <div style="font-size:11px;color:#9ca3af;margin-top:3px;">Preço em dólar para cobrança via Stripe</div>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div>
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Stripe Price ID</label>
+                <input type="text" id="planStripePriceId" class="form-control" placeholder="price_1Abc..." style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;">
+                <div style="font-size:11px;color:#9ca3af;margin-top:3px;">ID do preço no Stripe Dashboard</div>
+            </div>
+            <div>
                 <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Dias de trial gratuito</label>
                 <input type="number" id="planTrialDays" min="0" max="365" placeholder="ex: 14" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;">
                 <div style="font-size:11px;color:#9ca3af;margin-top:3px;">Vazio = sem período trial</div>
@@ -210,10 +239,10 @@
             </label>
         </div>
 
-        {{-- Repeater de funcionalidades visíveis --}}
+        {{-- Repeater de funcionalidades visíveis (PT-BR) --}}
         <div style="border-top:1px solid #f3f4f6;padding-top:18px;margin-bottom:20px;">
             <div style="font-size:12.5px;font-weight:600;color:#374151;margin-bottom:4px;">
-                Funcionalidades visíveis no card
+                <i class="bi bi-flag" style="margin-right:4px;"></i> Funcionalidades visíveis no card (PT-BR)
             </div>
             <div style="font-size:11.5px;color:#9ca3af;margin-bottom:12px;">
                 Textos que aparecem nos cards de plano para o usuário (ex: "Até 5 usuários", "Suporte prioritário")
@@ -230,6 +259,30 @@
                 <button type="button" onclick="addFeature()"
                     style="padding:8px 14px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">
                     + Adicionar
+                </button>
+            </div>
+        </div>
+
+        {{-- Repeater de funcionalidades visíveis (English) --}}
+        <div style="border-top:1px solid #f3f4f6;padding-top:18px;margin-bottom:20px;">
+            <div style="font-size:12.5px;font-weight:600;color:#374151;margin-bottom:4px;">
+                <i class="bi bi-translate" style="margin-right:4px;"></i> Features visible on card (English)
+            </div>
+            <div style="font-size:11.5px;color:#9ca3af;margin-bottom:12px;">
+                English version of the plan card features (e.g. "Up to 5 users", "Priority support")
+            </div>
+
+            <div id="featuresEnList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
+
+            <div style="display:flex;gap:8px;">
+                <input type="text" id="featureEnInput"
+                    placeholder="e.g. Up to 5 users"
+                    style="flex:1;border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;font-size:13px;"
+                    onkeydown="if(event.key==='Enter'){event.preventDefault();addFeatureEn();}"
+                >
+                <button type="button" onclick="addFeatureEn()"
+                    style="padding:8px 14px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">
+                    + Add
                 </button>
             </div>
         </div>
@@ -271,6 +324,7 @@ const ROUTE_DELETE = (id) => `/master/planos/${id}`;
 
 let editingId = null;
 let featuresList = [];
+let featuresEnList = [];
 
 function renderFeaturesList() {
     const container = document.getElementById('featuresList');
@@ -281,6 +335,20 @@ function renderFeaturesList() {
         div.innerHTML = `
             <span>✓ ${escapeHtml(feat)}</span>
             <button class="feat-remove" onclick="removeFeature(${idx})" title="Remover">×</button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function renderFeaturesEnList() {
+    const container = document.getElementById('featuresEnList');
+    container.innerHTML = '';
+    featuresEnList.forEach((feat, idx) => {
+        const div = document.createElement('div');
+        div.className = 'feature-item';
+        div.innerHTML = `
+            <span>✓ ${escapeHtml(feat)}</span>
+            <button class="feat-remove" onclick="removeFeatureEn(${idx})" title="Remove">×</button>
         `;
         container.appendChild(div);
     });
@@ -305,15 +373,33 @@ function removeFeature(idx) {
     renderFeaturesList();
 }
 
+function addFeatureEn() {
+    const input = document.getElementById('featureEnInput');
+    const val = input.value.trim();
+    if (!val) return;
+    featuresEnList.push(val);
+    input.value = '';
+    renderFeaturesEnList();
+    input.focus();
+}
+
+function removeFeatureEn(idx) {
+    featuresEnList.splice(idx, 1);
+    renderFeaturesEnList();
+}
+
 function openNewPlan() {
     editingId = null;
     featuresList = [];
+    featuresEnList = [];
     document.getElementById('planModalTitle').textContent = 'Novo Plano';
     document.getElementById('planId').value = '';
     document.getElementById('planName').value = '';
     document.getElementById('planName').disabled = false;
     document.getElementById('planDisplayName').value = '';
     document.getElementById('planPrice').value = '0';
+    document.getElementById('planPriceUsd').value = '';
+    document.getElementById('planStripePriceId').value = '';
     document.getElementById('planTrialDays').value = '';
     document.getElementById('fMaxUsers').value = '5';
     document.getElementById('fMaxLeads').value = '1000';
@@ -329,7 +415,9 @@ function openNewPlan() {
     document.getElementById('fIsActive').checked = true;
     document.getElementById('fIsVisible').checked = true;
     document.getElementById('featureInput').value = '';
+    document.getElementById('featureEnInput').value = '';
     renderFeaturesList();
+    renderFeaturesEnList();
     showModal();
 }
 
@@ -338,12 +426,17 @@ function editPlan(id, plan) {
     featuresList = (plan.features_json && Array.isArray(plan.features_json.features_list))
         ? [...plan.features_json.features_list]
         : [];
+    featuresEnList = (plan.features_en_json && Array.isArray(plan.features_en_json.features_list))
+        ? [...plan.features_en_json.features_list]
+        : [];
     document.getElementById('planModalTitle').textContent = 'Editar Plano: ' + plan.display_name;
     document.getElementById('planId').value = id;
     document.getElementById('planName').value = plan.name;
     document.getElementById('planName').disabled = true;
     document.getElementById('planDisplayName').value = plan.display_name;
     document.getElementById('planPrice').value = plan.price_monthly;
+    document.getElementById('planPriceUsd').value = plan.price_usd || '';
+    document.getElementById('planStripePriceId').value = plan.stripe_price_id || '';
     document.getElementById('planTrialDays').value = (plan.trial_days !== null && plan.trial_days !== undefined) ? plan.trial_days : '';
     const f = plan.features_json || {};
     document.getElementById('fMaxUsers').value       = f.max_users ?? 5;
@@ -360,7 +453,9 @@ function editPlan(id, plan) {
     document.getElementById('fIsActive').checked   = !!plan.is_active;
     document.getElementById('fIsVisible').checked  = plan.is_visible !== false && plan.is_visible !== 0;
     document.getElementById('featureInput').value = '';
+    document.getElementById('featureEnInput').value = '';
     renderFeaturesList();
+    renderFeaturesEnList();
     showModal();
 }
 
@@ -370,13 +465,18 @@ async function savePlan() {
 
     const trialRaw = document.getElementById('planTrialDays').value;
 
+    const priceUsdRaw = document.getElementById('planPriceUsd').value;
+    const stripePriceId = document.getElementById('planStripePriceId').value.trim();
+
     const payload = {
-        name:           document.getElementById('planName').value,
-        display_name:   document.getElementById('planDisplayName').value,
-        price_monthly:  parseFloat(document.getElementById('planPrice').value) || 0,
-        trial_days:     trialRaw !== '' ? parseInt(trialRaw) : null,
-        is_active:      document.getElementById('fIsActive').checked ? 1 : 0,
-        is_visible:     document.getElementById('fIsVisible').checked ? 1 : 0,
+        name:             document.getElementById('planName').value,
+        display_name:     document.getElementById('planDisplayName').value,
+        price_monthly:    parseFloat(document.getElementById('planPrice').value) || 0,
+        price_usd:        priceUsdRaw !== '' ? parseFloat(priceUsdRaw) : null,
+        stripe_price_id:  stripePriceId || null,
+        trial_days:       trialRaw !== '' ? parseInt(trialRaw) : null,
+        is_active:        document.getElementById('fIsActive').checked ? 1 : 0,
+        is_visible:       document.getElementById('fIsVisible').checked ? 1 : 0,
         features_json: {
             max_users:          parseInt(document.getElementById('fMaxUsers').value) || 0,
             max_leads:          parseInt(document.getElementById('fMaxLeads').value) || 0,
@@ -393,6 +493,7 @@ async function savePlan() {
             chatbot:            (parseInt(document.getElementById('fMaxChatbotFlows').value) || 0) > 0,
             features_list:      featuresList,
         },
+        features_en_json: featuresEnList.length > 0 ? { features_list: featuresEnList } : null,
     };
 
     const url    = editingId ? ROUTE_UPDATE(editingId) : ROUTE_STORE;

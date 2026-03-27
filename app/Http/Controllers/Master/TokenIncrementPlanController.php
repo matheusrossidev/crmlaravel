@@ -23,10 +23,12 @@ class TokenIncrementPlanController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'display_name'  => 'required|string|max:100',
-            'tokens_amount' => 'required|integer|min:1',
-            'price'         => 'required|numeric|min:0',
-            'is_active'     => 'nullable|boolean',
+            'display_name'    => 'required|string|max:100',
+            'tokens_amount'   => 'required|integer|min:1',
+            'price'           => 'required|numeric|min:0',
+            'price_usd'       => 'nullable|numeric|min:0',
+            'stripe_price_id' => 'nullable|string|max:191',
+            'is_active'       => 'nullable|boolean',
         ]);
 
         $data['is_active'] = $request->boolean('is_active', true);
@@ -39,10 +41,12 @@ class TokenIncrementPlanController extends Controller
     public function update(Request $request, TokenIncrementPlan $tokenIncrementPlan): JsonResponse
     {
         $data = $request->validate([
-            'display_name'  => 'required|string|max:100',
-            'tokens_amount' => 'required|integer|min:1',
-            'price'         => 'required|numeric|min:0',
-            'is_active'     => 'nullable|boolean',
+            'display_name'    => 'required|string|max:100',
+            'tokens_amount'   => 'required|integer|min:1',
+            'price'           => 'required|numeric|min:0',
+            'price_usd'       => 'nullable|numeric|min:0',
+            'stripe_price_id' => 'nullable|string|max:191',
+            'is_active'       => 'nullable|boolean',
         ]);
 
         $data['is_active'] = $request->boolean('is_active', true);
