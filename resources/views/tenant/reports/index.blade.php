@@ -1,6 +1,6 @@
 @extends('tenant.layouts.app')
 @php
-    $title   = 'Relatórios';
+    $title   = __('reports.title');
     $pageIcon = 'bar-chart-line';
 @endphp
 
@@ -548,19 +548,19 @@
         <div class="report-filter-inner">
 
             <div>
-                <label>De</label>
+                <label>{{ __('reports.from') }}</label>
                 <input type="date" name="date_from" value="{{ $dateFrom->format('Y-m-d') }}">
             </div>
 
             <div>
-                <label>Até</label>
+                <label>{{ __('reports.to') }}</label>
                 <input type="date" name="date_to" value="{{ $dateTo->format('Y-m-d') }}">
             </div>
 
             <div>
-                <label>Campanha</label>
+                <label>{{ __('reports.campaign') }}</label>
                 <select name="campaign_id">
-                    <option value="">Todas</option>
+                    <option value="">{{ __('reports.all_campaigns') }}</option>
                     @foreach($campaigns as $camp)
                     <option value="{{ $camp->id }}" @selected($filterCampaign == $camp->id)>{{ $camp->name }}</option>
                     @endforeach
@@ -568,9 +568,9 @@
             </div>
 
             <div>
-                <label>Pipeline</label>
+                <label>{{ __('reports.pipeline') }}</label>
                 <select name="pipeline_id">
-                    <option value="">Todos</option>
+                    <option value="">{{ __('reports.all_pipelines') }}</option>
                     @foreach($pipelines as $pipe)
                     <option value="{{ $pipe->id }}" @selected($filterPipeline == $pipe->id)>{{ $pipe->name }}</option>
                     @endforeach
@@ -579,17 +579,17 @@
 
             <div class="report-filter-actions">
                 <button type="submit" class="btn-apply">
-                    <i class="bi bi-funnel"></i> Aplicar
+                    <i class="bi bi-funnel"></i> {{ __('reports.apply') }}
                 </button>
 
                 @if($filterCampaign || $filterPipeline || $filterUser || request('date_from') || request('date_to'))
                 <a href="{{ route('reports.index') }}" class="btn-clear">
-                    <i class="bi bi-x"></i> Limpar
+                    <i class="bi bi-x"></i> {{ __('reports.clear') }}
                 </a>
                 @endif
 
                 <a href="{{ route('reports.pdf', request()->query()) }}" class="btn-apply" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
-                    <i class="bi bi-download"></i> Baixar relatório
+                    <i class="bi bi-download"></i> {{ __('reports.download_report') }}
                 </a>
             </div>
 
@@ -605,45 +605,45 @@
     <div class="kpi-grid">
         {{-- Leads --}}
         <div class="kpi-card">
-            <div class="kpi-label"><i class="bi bi-people" style="color:#3B82F6;"></i> Leads</div>
+            <div class="kpi-label"><i class="bi bi-people" style="color:#3B82F6;"></i> {{ __('reports.leads') }}</div>
             <div class="kpi-value">{{ number_format($totalLeads, 0, ',', '.') }}</div>
             @if($deltaLeads !== null)
             <div class="kpi-delta {{ $deltaLeads >= 0 ? 'up' : 'down' }}">
-                <i class="bi bi-arrow-{{ $deltaLeads >= 0 ? 'up' : 'down' }}"></i> {{ abs($deltaLeads) }}% vs período anterior
+                <i class="bi bi-arrow-{{ $deltaLeads >= 0 ? 'up' : 'down' }}"></i> {{ abs($deltaLeads) }}% {{ __('reports.vs_previous') }}
             </div>
             @else
-            <div class="kpi-delta neu">Sem dados anteriores</div>
+            <div class="kpi-delta neu">{{ __('reports.no_previous_data') }}</div>
             @endif
             <div class="kpi-spark"><canvas id="sparkLeads"></canvas></div>
         </div>
 
         {{-- Receita --}}
         <div class="kpi-card">
-            <div class="kpi-label"><i class="bi bi-cash-stack" style="color:#10B981;"></i> Receita</div>
+            <div class="kpi-label"><i class="bi bi-cash-stack" style="color:#10B981;"></i> {{ __('reports.revenue') }}</div>
             <div class="kpi-value" style="color:#10B981;">R$ {{ number_format($totalRevenue, 0, ',', '.') }}</div>
             @if($deltaRevenue !== null)
             <div class="kpi-delta {{ $deltaRevenue >= 0 ? 'up' : 'down' }}">
-                <i class="bi bi-arrow-{{ $deltaRevenue >= 0 ? 'up' : 'down' }}"></i> {{ abs($deltaRevenue) }}% vs período anterior
+                <i class="bi bi-arrow-{{ $deltaRevenue >= 0 ? 'up' : 'down' }}"></i> {{ abs($deltaRevenue) }}% {{ __('reports.vs_previous') }}
             </div>
             @else
-            <div class="kpi-delta neu">Sem dados anteriores</div>
+            <div class="kpi-delta neu">{{ __('reports.no_previous_data') }}</div>
             @endif
             <div class="kpi-spark"><canvas id="sparkRevenue"></canvas></div>
         </div>
 
         {{-- Ticket Médio --}}
         <div class="kpi-card">
-            <div class="kpi-label"><i class="bi bi-tag" style="color:#8B5CF6;"></i> Ticket Médio</div>
+            <div class="kpi-label"><i class="bi bi-tag" style="color:#8B5CF6;"></i> {{ __('reports.avg_ticket') }}</div>
             <div class="kpi-value" style="color:#8B5CF6;">R$ {{ number_format($avgTicket, 0, ',', '.') }}</div>
-            <div class="kpi-delta neu">{{ $salesCount }} venda(s) no período</div>
+            <div class="kpi-delta neu">{{ __('reports.sales_in_period', ['count' => $salesCount]) }}</div>
             <div class="kpi-spark"><canvas id="sparkTicket"></canvas></div>
         </div>
 
         {{-- Taxa de Conversão --}}
         <div class="kpi-card">
-            <div class="kpi-label"><i class="bi bi-arrow-up-right-circle" style="color:#F59E0B;"></i> Taxa de Conversão</div>
+            <div class="kpi-label"><i class="bi bi-arrow-up-right-circle" style="color:#F59E0B;"></i> {{ __('reports.conversion_rate') }}</div>
             <div class="kpi-value" style="color:#F59E0B;">{{ number_format((float)$convRate, 1, ',', '.') }}%</div>
-            <div class="kpi-delta neu">Leads → Vendas</div>
+            <div class="kpi-delta neu">{{ __('reports.leads_to_sales') }}</div>
             <div class="kpi-spark"><canvas id="sparkConv"></canvas></div>
         </div>
     </div>
@@ -654,13 +654,13 @@
     <div class="charts-row" style="margin-bottom:22px;">
 
         <div class="chart-box">
-            <div class="chart-title">Leads por dia</div>
+            <div class="chart-title">{{ __('reports.leads_per_day') }}</div>
             <div style="display:flex;gap:12px;margin-bottom:12px;font-size:12px;color:#6b7280;">
                 <span style="display:flex;align-items:center;gap:4px;">
-                    <span style="width:10px;height:10px;border-radius:2px;background:#3B82F6;"></span> Leads por dia
+                    <span style="width:10px;height:10px;border-radius:2px;background:#3B82F6;"></span> {{ __('reports.leads_per_day') }}
                 </span>
                 <span style="display:flex;align-items:center;gap:4px;">
-                    <span style="display:inline-block;width:16px;border-top:1.5px dashed #F59E0B;"></span> Média 7 dias
+                    <span style="display:inline-block;width:16px;border-top:1.5px dashed #F59E0B;"></span> {{ __('reports.avg_7_days') }}
                 </span>
             </div>
             <div style="position:relative;height:200px;">
@@ -669,7 +669,7 @@
         </div>
 
         <div class="chart-box">
-            <div class="chart-title">Leads por origem</div>
+            <div class="chart-title">{{ __('reports.leads_by_source') }}</div>
             <div style="position:relative;height:200px;">
                 <canvas id="chartLeadsBySource"></canvas>
             </div>
@@ -683,7 +683,7 @@
     <div class="report-section">
         <div class="report-section-header">
             <i class="bi bi-funnel"></i>
-            Funil de Conversão
+            {{ __('reports.conversion_funnel') }}
         </div>
         <div style="padding:0;">
             @php $funnelPipe = $pipelineRows->first(fn($r) => $r['stages']->isNotEmpty()); @endphp
@@ -709,19 +709,19 @@
                         <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;">
                             <span style="width:8px;height:8px;border-radius:2px;background:{{ $color }};"></span>
                             <span style="font-size:11px;font-weight:600;color:#6b7280;white-space:nowrap;">{{ $stage->name }}</span>
-                            @if($stage->is_won)  <span class="badge-won" style="font-size:8px;">GANHO</span> @endif
-                            @if($stage->is_lost) <span class="badge-lost" style="font-size:8px;">PERDIDO</span> @endif
+                            @if($stage->is_won)  <span class="badge-won" style="font-size:8px;">{{ __('reports.won') }}</span> @endif
+                            @if($stage->is_lost) <span class="badge-lost" style="font-size:8px;">{{ __('reports.lost') }}</span> @endif
                         </div>
                         <div style="font-size:20px;font-weight:800;color:{{ $count === 0 ? '#d1d5db' : '#1a1d23' }};margin-bottom:6px;">{{ $count }}</div>
                         <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:6px;">
                             @if($convRate !== null)
                             <span style="font-size:10px;font-weight:600;color:{{ $convRate === 0 ? '#EF4444' : ($convRate < 50 ? '#EF4444' : ($convRate < 80 ? '#F59E0B' : '#10B981')) }};{{ $convRate === 0 ? 'background:#fef2f2;padding:1px 6px;border-radius:4px;' : '' }}">
-                                <i class="bi bi-arrow-right" style="font-size:9px;"></i> {{ $convRate }}% da anterior
+                                <i class="bi bi-arrow-right" style="font-size:9px;"></i> {{ $convRate }}% {{ __('reports.from_previous') }}
                             </span>
                             @endif
                             @if($avgDays !== null)
                             <span style="font-size:10px;color:#9ca3af;">
-                                <i class="bi bi-clock" style="font-size:9px;"></i> {{ $avgDays }}d média
+                                <i class="bi bi-clock" style="font-size:9px;"></i> {{ $avgDays }}{{ __('reports.avg_days') }}
                             </span>
                             @endif
                         </div>
@@ -743,7 +743,7 @@
                 </div></div>{{-- /funnel-scroll-wrap --}}
             @else
                 <div class="report-section-body">
-                    <p style="color:#9ca3af;font-size:13px;text-align:center;padding:24px 0;">Nenhum pipeline com dados.</p>
+                    <p style="color:#9ca3af;font-size:13px;text-align:center;padding:24px 0;">{{ __('reports.no_pipeline_data') }}</p>
                 </div>
             @endif
         </div>
@@ -758,17 +758,17 @@
         <div class="report-section" style="margin-bottom:0;">
             <div class="report-section-header">
                 <i class="bi bi-megaphone"></i>
-                Campanhas
+                {{ __('reports.campaigns') }}
             </div>
             <div style="overflow-x:auto;">
                 <table class="report-table">
                     <thead>
                         <tr>
-                            <th>Campanha</th>
-                            <th class="num">Leads</th>
-                            <th class="num">Conv.</th>
-                            <th class="num">Conv.%</th>
-                            <th class="num">Receita</th>
+                            <th>{{ __('reports.col_campaign') }}</th>
+                            <th class="num">{{ __('reports.col_leads') }}</th>
+                            <th class="num">{{ __('reports.col_conv') }}</th>
+                            <th class="num">{{ __('reports.col_conv_pct') }}</th>
+                            <th class="num">{{ __('reports.col_revenue') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -802,7 +802,7 @@
                         <tr class="empty-row">
                             <td colspan="5">
                                 <i class="bi bi-megaphone" style="font-size:28px;opacity:.2;display:block;margin-bottom:6px;"></i>
-                                Nenhuma campanha com dados
+                                {{ __('reports.no_campaign_data') }}
                             </td>
                         </tr>
                         @endforelse
@@ -817,20 +817,20 @@
             @if($firstPipe)
             <div class="report-section-header">
                 <i class="bi bi-filter-left"></i>
-                Funil: {{ $firstPipe['pipeline']->name }}
+                {{ __('reports.funnel_prefix') }} {{ $firstPipe['pipeline']->name }}
                 <span style="margin-left:auto;font-size:12px;font-weight:500;color:#9ca3af;">
-                    {{ $firstPipe['total'] }} lead(s)
+                    {{ __('reports.lead_count', ['count' => $firstPipe['total']]) }}
                 </span>
             </div>
             <div style="overflow-x:auto;">
                 <table class="report-table">
                     <thead>
                         <tr>
-                            <th>Etapa</th>
-                            <th class="num">Leads</th>
+                            <th>{{ __('reports.col_stage') }}</th>
+                            <th class="num">{{ __('reports.col_leads') }}</th>
                             <th class="num">%</th>
-                            <th>Visualização</th>
-                            <th class="num">Tempo</th>
+                            <th>{{ __('reports.col_visualization') }}</th>
+                            <th class="num">{{ __('reports.col_time') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -859,8 +859,8 @@
                                 <div style="display:flex;align-items:center;gap:6px;">
                                     <span style="width:8px;height:8px;border-radius:2px;background:{{ $color }};flex-shrink:0;"></span>
                                     <span style="font-size:12px;font-weight:{{ $isMax ? '700' : '500' }};">{{ $stage->name }}</span>
-                                    @if($stage->is_won)  <span class="badge-won" style="font-size:8px;">GANHO</span>  @endif
-                                    @if($stage->is_lost) <span class="badge-lost" style="font-size:8px;">PERDIDO</span> @endif
+                                    @if($stage->is_won)  <span class="badge-won" style="font-size:8px;">{{ __('reports.won') }}</span>  @endif
+                                    @if($stage->is_lost) <span class="badge-lost" style="font-size:8px;">{{ __('reports.lost') }}</span> @endif
                                     @if($isMax) <span style="font-size:9px;color:#3B82F6;font-weight:700;">★</span> @endif
                                 </div>
                             </td>
@@ -883,15 +883,15 @@
                             </td>
                         </tr>
                         @empty
-                        <tr class="empty-row"><td colspan="5">Nenhuma etapa configurada</td></tr>
+                        <tr class="empty-row"><td colspan="5">{{ __('reports.no_stages') }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
             @else
-            <div class="report-section-header"><i class="bi bi-filter-left"></i> Pipeline / Funil</div>
+            <div class="report-section-header"><i class="bi bi-filter-left"></i> {{ __('reports.pipeline_funnel') }}</div>
             <div class="report-section-body" style="text-align:center;color:#9ca3af;padding:40px;">
-                Nenhum pipeline configurado.
+                {{ __('reports.no_pipeline_config') }}
             </div>
             @endif
         </div>
@@ -905,9 +905,9 @@
     <div class="report-section">
         <div class="report-section-header">
             <i class="bi bi-x-circle" style="color:#EF4444;"></i>
-            Leads Perdidos
+            {{ __('reports.lost_leads') }}
             <span style="margin-left:auto;font-size:12px;font-weight:500;color:#9ca3af;">
-                {{ $totalLost }} perda(s) · Valor potencial:
+                {{ __('reports.losses_count', ['count' => $totalLost]) }} · {{ __('reports.potential_value') }}
                 <strong style="color:#EF4444;">R$ {{ number_format($lostPotentialValue, 0, ',', '.') }}</strong>
             </span>
         </div>
@@ -915,14 +915,14 @@
         @if($totalLost === 0)
         <div style="text-align:center;padding:40px 20px;color:#10B981;">
             <i class="bi bi-shield-check" style="font-size:32px;display:block;margin-bottom:8px;opacity:.5;"></i>
-            <span style="font-size:13px;font-weight:600;">Nenhuma perda no período — excelente!</span>
+            <span style="font-size:13px;font-weight:600;">{{ __('reports.no_losses') }}</span>
         </div>
         @else
         <div class="report-section-body lost-grid-3">
 
             {{-- Por Motivo (Heatmap) --}}
             <div>
-                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">Por Motivo</div>
+                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">{{ __('reports.by_reason') }}</div>
                 @php $maxReason = collect($lostByReason)->max('total') ?: 1; @endphp
                 @forelse($lostByReason as $row)
                 @php
@@ -940,20 +940,20 @@
                 @endforelse
                 @if(count($lostByReason) > 0)
                 <div style="display:flex;align-items:center;gap:5px;margin-top:12px;">
-                    <span style="font-size:10px;color:#9ca3af;">menos</span>
+                    <span style="font-size:10px;color:#9ca3af;">{{ __('reports.heatmap_less') }}</span>
                     <div style="width:12px;height:8px;border-radius:2px;background:#FCEBEB;"></div>
                     <div style="width:12px;height:8px;border-radius:2px;background:#F7C1C1;"></div>
                     <div style="width:12px;height:8px;border-radius:2px;background:#F09595;"></div>
                     <div style="width:12px;height:8px;border-radius:2px;background:#E24B4A;"></div>
                     <div style="width:12px;height:8px;border-radius:2px;background:#A32D2D;"></div>
-                    <span style="font-size:10px;color:#9ca3af;">mais</span>
+                    <span style="font-size:10px;color:#9ca3af;">{{ __('reports.heatmap_more') }}</span>
                 </div>
                 @endif
             </div>
 
             {{-- Por Campanha (heatmap) --}}
             <div>
-                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">Por Campanha</div>
+                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">{{ __('reports.by_campaign') }}</div>
                 @php $maxCampLost = collect($lostByCampaign)->max('total') ?: 1; @endphp
                 @forelse($lostByCampaign as $row)
                 @php
@@ -972,7 +972,7 @@
 
             {{-- Por Vendedor (avatar + barra azul neutra) --}}
             <div>
-                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">Por Vendedor</div>
+                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">{{ __('reports.by_seller') }}</div>
                 @php $maxVendLost = collect($lostByVendedor)->max('total') ?: 1; @endphp
                 @forelse($lostByVendedor as $row)
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
@@ -1005,17 +1005,17 @@
     <div class="report-section">
         <div class="report-section-header">
             <i class="bi bi-person-badge"></i>
-            Desempenho por Vendedor
+            {{ __('reports.seller_performance') }}
         </div>
         <div style="overflow-x:auto;">
             <table class="report-table">
                 <thead>
                     <tr>
-                        <th>Vendedor</th>
-                        <th class="num">Leads</th>
-                        <th class="num">Vendas</th>
-                        <th class="num">Conversão</th>
-                        <th class="num">Receita</th>
+                        <th>{{ __('reports.col_seller') }}</th>
+                        <th class="num">{{ __('reports.col_leads') }}</th>
+                        <th class="num">{{ __('reports.col_sales') }}</th>
+                        <th class="num">{{ __('reports.col_conversion') }}</th>
+                        <th class="num">{{ __('reports.col_revenue') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1037,7 +1037,7 @@
                                 <div>
                                     <span style="font-weight:600;color:#1a1d23;font-size:13px;">{{ $row['user']->name }}</span>
                                     @if($isTop)
-                                    <span style="font-size:10px;font-weight:700;color:#F59E0B;margin-left:4px;">★ Top</span>
+                                    <span style="font-size:10px;font-weight:700;color:#F59E0B;margin-left:4px;">★ {{ __('reports.top_label') }}</span>
                                     @endif
                                 </div>
                             </div>
@@ -1060,7 +1060,7 @@
                     <tr class="empty-row">
                         <td colspan="5">
                             <i class="bi bi-person-badge" style="font-size:28px;opacity:.2;display:block;margin-bottom:6px;"></i>
-                            Nenhum vendedor com dados no período
+                            {{ __('reports.no_seller_data') }}
                         </td>
                     </tr>
                     @endforelse
@@ -1075,15 +1075,15 @@
     <div class="report-section">
         <div class="report-section-header">
             <i class="bi bi-whatsapp" style="color:#25D366;"></i>
-            WhatsApp — Atendimento
+            {{ __('reports.wa_conversations') }}
             @if($avgFirstResponse !== null)
             <span style="margin-left:auto;font-size:12px;font-weight:500;color:#9ca3af;">
-                1ª resposta:
+                {{ __('reports.first_response') }}
                 <strong style="color:#3B82F6;">
                     @if($avgFirstResponse < 60)
-                        {{ $avgFirstResponse }} min
+                        {{ $avgFirstResponse }} {{ __('reports.minutes_short') }}
                     @else
-                        {{ floor($avgFirstResponse / 60) }}h {{ $avgFirstResponse % 60 }}min
+                        {{ floor($avgFirstResponse / 60) }}{{ __('reports.hours_short') }} {{ $avgFirstResponse % 60 }}{{ __('reports.minutes_short') }}
                     @endif
                 </strong>
             </span>
@@ -1122,32 +1122,32 @@
                             stroke-dasharray="{{ $dRest }} {{ $circ - $dRest }}" stroke-dashoffset="{{ -$off4 }}"
                             style="transform:rotate(-90deg);transform-origin:center;"/>
                         <text x="{{ $cx }}" y="{{ $cy }}" text-anchor="middle" font-size="16" font-weight="700" fill="#1a1d23">{{ $waTotal }}</text>
-                        <text x="{{ $cx }}" y="{{ $cy + 12 }}" text-anchor="middle" font-size="8" fill="#9ca3af">conversas</text>
+                        <text x="{{ $cx }}" y="{{ $cy + 12 }}" text-anchor="middle" font-size="8" fill="#9ca3af">{{ __('reports.conversations') }}</text>
                     </svg>
                 </div>
                 {{-- KPI list --}}
                 <div style="display:flex;flex-direction:column;gap:8px;flex:1;">
                     <div style="display:flex;align-items:center;gap:8px;">
                         <span style="width:8px;height:8px;border-radius:2px;background:#10B981;"></span>
-                        <span style="font-size:12px;color:#6b7280;flex:1;">Viraram lead</span>
+                        <span style="font-size:12px;color:#6b7280;flex:1;">{{ __('reports.became_lead') }}</span>
                         <span style="font-size:13px;font-weight:700;color:#1a1d23;">{{ $waComLead }}</span>
                         <span style="font-size:11px;color:#10B981;font-weight:600;min-width:40px;text-align:right;">{{ $pctLead }}%</span>
                     </div>
                     <div style="display:flex;align-items:center;gap:8px;">
                         <span style="width:8px;height:8px;border-radius:2px;background:#3B82F6;"></span>
-                        <span style="font-size:12px;color:#6b7280;flex:1;">Fechadas</span>
+                        <span style="font-size:12px;color:#6b7280;flex:1;">{{ __('reports.closed') }}</span>
                         <span style="font-size:13px;font-weight:700;color:#1a1d23;">{{ $waFechadas }}</span>
                         <span style="font-size:11px;color:#3B82F6;font-weight:600;min-width:40px;text-align:right;">{{ $pctFech }}%</span>
                     </div>
                     <div style="display:flex;align-items:center;gap:8px;">
                         <span style="width:8px;height:8px;border-radius:2px;background:#e8eaf0;"></span>
-                        <span style="font-size:12px;color:#6b7280;flex:1;">Apenas conversa</span>
+                        <span style="font-size:12px;color:#6b7280;flex:1;">{{ __('reports.only_conversation') }}</span>
                         <span style="font-size:13px;font-weight:700;color:#1a1d23;">{{ $waRest }}</span>
                         <span style="font-size:11px;color:#9ca3af;font-weight:600;min-width:40px;text-align:right;">{{ number_format($pctRest, 1, ',', '.') }}%</span>
                     </div>
                     <div style="display:flex;align-items:center;gap:8px;">
                         <span style="width:8px;height:8px;border-radius:2px;background:#F59E0B;"></span>
-                        <span style="font-size:12px;color:#6b7280;flex:1;">Atendidas por IA</span>
+                        <span style="font-size:12px;color:#6b7280;flex:1;">{{ __('reports.ai_attended') }}</span>
                         <span style="font-size:13px;font-weight:700;color:#1a1d23;">{{ $waIA }}</span>
                         <span style="font-size:11px;color:#F59E0B;font-weight:600;min-width:40px;text-align:right;">{{ $waTotal > 0 ? round($waIA / $waTotal * 100, 1) : 0 }}%</span>
                     </div>
@@ -1155,11 +1155,11 @@
             </div>
 
             @if($waMsgByUser->isNotEmpty())
-            <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px;">Mensagens por atendente</div>
+            <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px;">{{ __('reports.msgs_by_agent') }}</div>
             @php $maxMsgs = $waMsgByUser->max('total') ?: 1; @endphp
             @foreach($waMsgByUser as $row)
             @php
-                $userName = $row->user?->name ?? 'Usuário #' . $row->user_id;
+                $userName = $row->user?->name ?? __('reports.user_prefix', ['id' => $row->user_id]);
                 $userInit = collect(explode(' ', $userName))->map(fn($w) => mb_strtoupper(mb_substr($w,0,1)))->take(2)->join('');
             @endphp
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
@@ -1170,13 +1170,13 @@
                 <div style="flex:1;height:6px;border-radius:3px;background:#f0f2f7;">
                     <div style="height:6px;border-radius:3px;background:#25D366;width:{{ round($row->total / $maxMsgs * 100) }}%;transition:width .5s;"></div>
                 </div>
-                <span style="font-size:12px;font-weight:700;color:#1a1d23;min-width:55px;text-align:right;">{{ number_format($row->total, 0, ',', '.') }} msgs</span>
+                <span style="font-size:12px;font-weight:700;color:#1a1d23;min-width:55px;text-align:right;">{{ number_format($row->total, 0, ',', '.') }} {{ __('reports.msgs_suffix') }}</span>
             </div>
             @endforeach
             @else
             <div style="text-align:center;padding:24px 0;color:#9ca3af;">
                 <i class="bi bi-chat-dots" style="font-size:24px;opacity:.3;display:block;margin-bottom:6px;"></i>
-                <span style="font-size:13px;">Nenhuma mensagem enviada por atendentes no período.</span>
+                <span style="font-size:13px;">{{ __('reports.no_msgs_period') }}</span>
             </div>
             @endif
         </div>
@@ -1190,9 +1190,9 @@
     <div class="report-section">
         <div class="report-section-header">
             <i class="bi bi-phone" style="color:#25D366;"></i>
-            Botão WhatsApp — Cliques
+            {{ __('reports.wa_button_clicks') }}
             <span style="margin-left:auto;font-size:12px;font-weight:500;color:#9ca3af;">
-                {{ $waClicksTotal }} clique(s) no período
+                {{ __('reports.clicks_in_period', ['count' => $waClicksTotal]) }}
             </span>
         </div>
         @if($waClicksTotal > 0)
@@ -1204,16 +1204,16 @@
             @endphp
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;">
                 <div style="background:#f8fafc;border-radius:8px;padding:12px 14px;">
-                    <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">Total cliques</div>
+                    <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">{{ __('reports.total_clicks') }}</div>
                     <div style="font-size:22px;font-weight:700;color:#1a1d23;">{{ number_format($waClicksTotal, 0, ',', '.') }}</div>
                 </div>
                 <div style="background:#f8fafc;border-radius:8px;padding:12px 14px;">
-                    <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">Matched</div>
+                    <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">{{ __('reports.matched') }}</div>
                     <div style="font-size:22px;font-weight:700;color:#10B981;">{{ $waClicksMatched }}</div>
-                    <div style="font-size:11px;color:#10B981;font-weight:600;">{{ $waMatchRate }}% do total</div>
+                    <div style="font-size:11px;color:#10B981;font-weight:600;">{{ __('reports.of_total', ['pct' => $waMatchRate]) }}</div>
                 </div>
                 <div style="background:#f8fafc;border-radius:8px;padding:12px 14px;">
-                    <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">Taxa de match</div>
+                    <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">{{ __('reports.match_rate') }}</div>
                     @php
                         $matchColor = $waMatchRate >= 50 ? '#10B981' : ($waMatchRate >= 20 ? '#F59E0B' : '#EF4444');
                         $matchBg = $waMatchRate >= 50 ? '#f0fdf4' : ($waMatchRate >= 20 ? '#fff7ed' : '#fef2f2');
@@ -1221,16 +1221,16 @@
                     <div style="font-size:22px;font-weight:700;color:{{ $matchColor }};">{{ $waMatchRate }}%</div>
                 </div>
                 <div style="background:#f8fafc;border-radius:8px;padding:12px 14px;">
-                    <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">Mobile</div>
+                    <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">{{ __('reports.mobile') }}</div>
                     <div style="font-size:22px;font-weight:700;color:#3B82F6;">{{ $waMobilePct }}%</div>
-                    <div style="font-size:11px;color:#9ca3af;">{{ $waClicksMobile }} de {{ $waClicksTotal }}</div>
+                    <div style="font-size:11px;color:#9ca3af;">{{ __('reports.x_of_y', ['x' => $waClicksMobile, 'y' => $waClicksTotal]) }}</div>
                 </div>
             </div>
 
             {{-- Chart cliques por dia --}}
             @if(count($waClicksByDay) > 1)
             <div style="margin-bottom:18px;">
-                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:8px;">Cliques por dia</div>
+                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:8px;">{{ __('reports.clicks_per_day') }}</div>
                 <div style="position:relative;height:120px;">
                     <canvas id="chartWaClicks"></canvas>
                 </div>
@@ -1240,7 +1240,7 @@
             {{-- Por Origem + Por Página lado a lado --}}
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
                 <div>
-                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;">Por Origem</div>
+                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;">{{ __('reports.by_source') }}</div>
                     @php $maxSrc = count($waClicksBySource) ? max($waClicksBySource) : 1; @endphp
                     @forelse($waClicksBySource as $src => $total)
                     @php
@@ -1257,7 +1257,7 @@
                     @endforelse
                 </div>
                 <div>
-                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;">Por Página</div>
+                    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;">{{ __('reports.by_page') }}</div>
                     @php $maxPg = count($waClicksByPage) ? max($waClicksByPage) : 1; @endphp
                     @forelse($waClicksByPage as $page => $total)
                     @php
@@ -1278,7 +1278,7 @@
         @else
         <div style="text-align:center;padding:32px 20px;color:#9ca3af;">
             <i class="bi bi-phone" style="font-size:28px;opacity:.3;display:block;margin-bottom:6px;"></i>
-            <span style="font-size:13px;">Nenhum clique no botão WhatsApp no período.</span>
+            <span style="font-size:13px;">{{ __('reports.no_clicks_period') }}</span>
         </div>
         @endif
     </div>
@@ -1290,22 +1290,22 @@
     <div class="report-section" style="margin-bottom:0;">
         <div class="report-section-header">
             <i class="bi bi-diagram-3"></i>
-            Origem × Conversão
+            {{ __('reports.source_performance') }}
         </div>
         <div style="overflow-x:auto;">
             <table class="report-table">
                 <thead>
                     <tr>
-                        <th>Origem</th>
-                        <th class="num">Leads</th>
-                        <th class="num">Vendas</th>
-                        <th class="num">Conversão</th>
-                        <th class="num">Receita</th>
+                        <th>{{ __('reports.col_source') }}</th>
+                        <th class="num">{{ __('reports.col_leads') }}</th>
+                        <th class="num">{{ __('reports.col_sales') }}</th>
+                        <th class="num">{{ __('reports.col_conversion') }}</th>
+                        <th class="num">{{ __('reports.col_revenue') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @php
-                        $srcDisplayNames = ['indicacao' => 'Indicação', 'manual' => 'Manual', 'whatsapp' => 'WhatsApp', 'instagram' => 'Instagram', 'facebook' => 'Facebook', 'google' => 'Google', 'linkedin' => 'LinkedIn', 'site' => 'Site', 'telefone' => 'Telefone', 'email' => 'Email'];
+                        $srcDisplayNames = ['indicacao' => __('reports.source_indicacao'), 'manual' => __('reports.source_manual'), 'whatsapp' => __('reports.source_whatsapp'), 'instagram' => __('reports.source_instagram'), 'facebook' => __('reports.source_facebook'), 'google' => __('reports.source_google'), 'linkedin' => __('reports.source_linkedin'), 'site' => __('reports.source_site'), 'telefone' => __('reports.source_telefone'), 'email' => __('reports.source_email')];
                         $srcColors = ['whatsapp' => '#25D366', 'instagram' => '#E1306C', 'facebook' => '#1877F2', 'site' => '#3B82F6', 'google' => '#FBBC04', 'linkedin' => '#0A66C2', 'indicacao' => '#8B5CF6', 'manual' => '#94A3B8', 'telefone' => '#F97316', 'email' => '#06B6D4'];
                         $srcFallback = ['#10B981','#F59E0B','#EF4444','#06B6D4','#F97316','#EC4899'];
                     @endphp
@@ -1316,7 +1316,7 @@
                         $convBg    = $conv == 0 ? '#f3f4f6' : ($conv <= 30 ? '#fef2f2' : ($conv <= 70 ? '#fff7ed' : '#f0fdf4'));
                         $srcKey = strtolower(trim($row['source'] ?? ''));
                         $srcColor = $srcColors[$srcKey] ?? ($srcFallback[$si % count($srcFallback)]);
-                        $srcName = $srcDisplayNames[$srcKey] ?? ucfirst($row['source'] ?? 'Desconhecido');
+                        $srcName = $srcDisplayNames[$srcKey] ?? ucfirst($row['source'] ?? __('reports.source_unknown'));
                     @endphp
                     <tr>
                         <td>
@@ -1336,7 +1336,7 @@
                     </tr>
                     @empty
                     <tr class="empty-row">
-                        <td colspan="5">Nenhum dado de origem no período</td>
+                        <td colspan="5">{{ __('reports.no_source_data') }}</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -1355,9 +1355,9 @@
     <div class="report-section" style="margin-bottom:0;">
         <div class="report-section-header">
             <i class="bi bi-box-seam"></i>
-            Produtos Mais Vendidos
+            {{ __('reports.product_performance') }}
             <span style="margin-left:auto;font-size:12px;font-weight:500;color:#9ca3af;">
-                Receita total: <strong style="color:#10B981;">R$ {{ number_format((float)$topProdRevenue, 2, ',', '.') }}</strong>
+                {{ __('reports.total_revenue') }} <strong style="color:#10B981;">R$ {{ number_format((float)$topProdRevenue, 2, ',', '.') }}</strong>
             </span>
         </div>
         <div style="overflow-x:auto;">
@@ -1365,11 +1365,11 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Produto</th>
-                        <th class="num">Preço Unit.</th>
-                        <th class="num">Vendas</th>
-                        <th class="num">Receita</th>
-                        <th style="min-width:100px;">Participação</th>
+                        <th>{{ __('reports.col_product') }}</th>
+                        <th class="num">{{ __('reports.col_unit_price') }}</th>
+                        <th class="num">{{ __('reports.col_sales') }}</th>
+                        <th class="num">{{ __('reports.col_revenue') }}</th>
+                        <th style="min-width:100px;">{{ __('reports.col_share') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1391,7 +1391,7 @@
                             <div>
                                 <span style="font-weight:600;color:#1a1d23;">{{ $prod->name }}</span>
                                 @if($isChamp)
-                                <span style="font-size:10px;font-weight:700;color:#F59E0B;margin-left:4px;">Campeão</span>
+                                <span style="font-size:10px;font-weight:700;color:#F59E0B;margin-left:4px;">{{ __('reports.champion') }}</span>
                                 @endif
                             </div>
                         </td>
@@ -1423,7 +1423,7 @@
     <div class="report-section">
         <div class="report-section-header">
             <i class="bi bi-activity"></i>
-            Atividade da Equipe
+            {{ __('reports.team_activity') }}
         </div>
         <div style="overflow-x:auto;">
             @php
@@ -1433,11 +1433,11 @@
             <table class="report-table">
                 <thead>
                     <tr>
-                        <th>Usuário</th>
-                        <th class="num">Msgs WA</th>
-                        <th class="num">Eventos CRM</th>
-                        <th class="num">Total</th>
-                        <th style="min-width:140px;">Atividade</th>
+                        <th>{{ __('reports.col_user') }}</th>
+                        <th class="num">{{ __('reports.col_wa_msgs') }}</th>
+                        <th class="num">{{ __('reports.col_crm_events') }}</th>
+                        <th class="num">{{ __('reports.col_total') }}</th>
+                        <th style="min-width:140px;">{{ __('reports.col_activity') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1457,7 +1457,7 @@
                                 <div>
                                     <span style="font-weight:600;color:#1a1d23;font-size:13px;">{{ $row['user']->name }}</span>
                                     @if($isTopAct)
-                                    <span style="font-size:10px;font-weight:700;color:#3B82F6;margin-left:4px;">★ Mais ativo</span>
+                                    <span style="font-size:10px;font-weight:700;color:#3B82F6;margin-left:4px;">★ {{ __('reports.most_active') }}</span>
                                     @endif
                                 </div>
                             </div>
@@ -1525,7 +1525,7 @@ const chartDates = @json($chartDates);
 const chartLeads = @json($chartLeads);
 
 @php
-    $sourceDisplayNames = ['indicacao' => 'Indicação', 'manual' => 'Manual', 'whatsapp' => 'WhatsApp', 'instagram' => 'Instagram', 'facebook' => 'Facebook', 'google' => 'Google', 'linkedin' => 'LinkedIn', 'site' => 'Site'];
+    $sourceDisplayNames = ['indicacao' => __('reports.source_indicacao'), 'manual' => __('reports.source_manual'), 'whatsapp' => __('reports.source_whatsapp'), 'instagram' => __('reports.source_instagram'), 'facebook' => __('reports.source_facebook'), 'google' => __('reports.source_google'), 'linkedin' => __('reports.source_linkedin'), 'site' => __('reports.source_site')];
     $srcLabels = $leadsBySource->pluck('source')->map(fn($s) => $sourceDisplayNames[$s] ?? ucfirst($s ?? 'manual'))->toArray();
     $srcData   = $leadsBySource->pluck('total')->toArray();
 @endphp
@@ -1647,7 +1647,7 @@ const crosshairPlugin = {
             datasets: [
                 {
                     type: 'bar',
-                    label: 'Leads',
+                    label: '{{ __('reports.leads') }}',
                     data: chartLeads,
                     backgroundColor: '#3B82F6',
                     borderRadius: 3,
@@ -1656,7 +1656,7 @@ const crosshairPlugin = {
                 },
                 {
                     type: 'line',
-                    label: 'Média 7d',
+                    label: '{{ __('reports.avg_7_days') }}',
                     data: ma,
                     borderColor: '#F59E0B',
                     borderWidth: 2,
@@ -1683,8 +1683,8 @@ const crosshairPlugin = {
                     padding: 10,
                     callbacks: {
                         label: function(ctx) {
-                            if (ctx.datasetIndex === 0) return ' ' + ctx.parsed.y + ' lead(s)';
-                            return ' Média: ' + ctx.parsed.y.toFixed(1);
+                            if (ctx.datasetIndex === 0) return ' ' + ctx.parsed.y + ' {{ __('reports.lead_suffix') }}';
+                            return ' {{ __('reports.avg_prefix') }}: ' + ctx.parsed.y.toFixed(1);
                         }
                     }
                 }
@@ -1787,7 +1787,7 @@ const crosshairPlugin = {
             maintainAspectRatio: false,
             plugins: { legend: { display: false }, tooltip: {
                 backgroundColor: '#1a1d23', titleColor: '#9ca3af', bodyColor: '#fff', padding: 8,
-                callbacks: { label: function(ctx) { return ' ' + ctx.parsed.y + ' clique(s)'; } }
+                callbacks: { label: function(ctx) { return ' ' + ctx.parsed.y + ' {{ __('reports.click_suffix') }}'; } }
             }},
             scales: {
                 x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10 }, color: '#9ca3af', maxRotation: 0, maxTicksLimit: 15 } },

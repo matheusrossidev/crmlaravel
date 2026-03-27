@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Tarefas';
+    $title    = __('tasks.title');
     $pageIcon = 'check2-square';
 @endphp
 
@@ -166,38 +166,38 @@
 <div class="page-container">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
         <i class="bi bi-check2-square" style="color:#3B82F6;font-size:16px;"></i>
-        <span style="font-size:15px;font-weight:700;color:#1a1d23;">Tarefas</span>
+        <span style="font-size:15px;font-weight:700;color:#1a1d23;">{{ __('tasks.title') }}</span>
         <div style="margin-left:auto;">
             <button class="btn-primary-sm" onclick="openTaskDrawer()" style="display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 14px;">
-                <i class="bi bi-plus-lg"></i> Nova Tarefa
+                <i class="bi bi-plus-lg"></i> {{ __('tasks.new_task') }}
             </button>
         </div>
     </div>
     <div class="task-filters">
-        <button class="task-tab active" data-status="">Todas</button>
-        <button class="task-tab" data-status="pending">Pendentes</button>
-        <button class="task-tab" data-status="overdue">Atrasadas</button>
-        <button class="task-tab" data-status="completed">Concluídas</button>
+        <button class="task-tab active" data-status="">{{ __('tasks.all') }}</button>
+        <button class="task-tab" data-status="pending">{{ __('tasks.pending') }}</button>
+        <button class="task-tab" data-status="overdue">{{ __('tasks.overdue') }}</button>
+        <button class="task-tab" data-status="completed">{{ __('tasks.completed') }}</button>
         <select class="task-filter-select" id="filterType">
-            <option value="">Tipo</option>
+            <option value="">{{ __('tasks.type_filter') }}</option>
             @foreach($typeLabels as $key => $label)
             <option value="{{ $key }}">{{ $label }}</option>
             @endforeach
         </select>
         <select class="task-filter-select" id="filterAssigned">
-            <option value="">Responsável</option>
+            <option value="">{{ __('tasks.responsible') }}</option>
             @foreach($users as $u)
             <option value="{{ $u->id }}">{{ $u->name }}</option>
             @endforeach
         </select>
         <label class="my-tasks-toggle">
-            <input type="checkbox" id="myTasksToggle"> Minhas Tarefas
+            <input type="checkbox" id="myTasksToggle"> {{ __('tasks.my_tasks') }}
         </label>
     </div>
     <div id="taskList" class="task-list"></div>
     <div id="taskEmpty" class="task-empty" style="display:none;">
         <i class="bi bi-check2-square"></i>
-        <p>Nenhuma tarefa encontrada.</p>
+        <p>{{ __('tasks.no_tasks') }}</p>
     </div>
 </div>
 
@@ -205,26 +205,26 @@
 <div id="taskDrawerOverlay" onclick="closeTaskDrawer()"></div>
 <aside id="taskDrawer">
     <div class="td-header">
-        <h3 id="tdTitle">Criar Tarefa</h3>
+        <h3 id="tdTitle">{{ __('tasks.create_task') }}</h3>
         <button class="td-close" onclick="closeTaskDrawer()">&times;</button>
     </div>
     <div class="td-body">
         <input type="hidden" id="tdEditId" value="">
 
         <div class="td-group">
-            <label>Assunto da tarefa <span class="req">*</span></label>
-            <input type="text" id="tdSubject" placeholder="Assunto da tarefa" maxlength="191">
+            <label>{{ __('tasks.subject') }} <span class="req">*</span></label>
+            <input type="text" id="tdSubject" placeholder="{{ __('tasks.subject_ph') }}" maxlength="191">
         </div>
 
         <div class="td-group">
-            <label>Descrição da tarefa</label>
-            <textarea id="tdDescription" placeholder="Descrição da tarefa"></textarea>
+            <label>{{ __('tasks.description') }}</label>
+            <textarea id="tdDescription" placeholder="{{ __('tasks.description_ph') }}"></textarea>
         </div>
 
         <div class="td-group">
-            <label>Responsável <span class="req">*</span></label>
+            <label>{{ __('tasks.assigned_to') }} <span class="req">*</span></label>
             <select id="tdAssignedTo">
-                <option value="">Selecione...</option>
+                <option value="">{{ __('tasks.select') }}</option>
                 @foreach($users as $u)
                 <option value="{{ $u->id }}">{{ $u->name }}</option>
                 @endforeach
@@ -233,7 +233,7 @@
 
         <div class="td-row">
             <div class="td-group">
-                <label>Tipo de tarefa <span class="req">*</span></label>
+                <label>{{ __('tasks.task_type') }} <span class="req">*</span></label>
                 <select id="tdType">
                     @foreach($typeLabels as $key => $label)
                     <option value="{{ $key }}">{{ $label }}</option>
@@ -241,45 +241,45 @@
                 </select>
             </div>
             <div class="td-group">
-                <label>Prioridade</label>
+                <label>{{ __('tasks.priority') }}</label>
                 <select id="tdPriority">
-                    <option value="low">Baixa</option>
-                    <option value="medium" selected>Média</option>
-                    <option value="high">Alta</option>
+                    <option value="low">{{ __('tasks.priority_low') }}</option>
+                    <option value="medium" selected>{{ __('tasks.priority_medium') }}</option>
+                    <option value="high">{{ __('tasks.priority_high') }}</option>
                 </select>
             </div>
         </div>
 
         <div class="td-row">
             <div class="td-group">
-                <label>Data do agendamento <span class="req">*</span></label>
+                <label>{{ __('tasks.due_date') }} <span class="req">*</span></label>
                 <input type="date" id="tdDueDate">
             </div>
             <div class="td-group">
-                <label>Horário da tarefa</label>
+                <label>{{ __('tasks.due_time') }}</label>
                 <input type="time" id="tdDueTime">
             </div>
         </div>
 
         <div class="td-group">
-            <label>Contato vinculado</label>
+            <label>{{ __('tasks.linked_contact') }}</label>
             <div id="tdLeadBadge" style="display:none;margin-bottom:8px;">
                 <span class="lead-selected-badge">
                     <i class="bi bi-person"></i>
                     <span id="tdLeadName"></span>
-                    <button onclick="clearLeadSelection()" title="Remover">&times;</button>
+                    <button onclick="clearLeadSelection()" title="{{ __('tasks.remove') }}">&times;</button>
                 </span>
             </div>
             <div class="lead-search-wrap" id="tdLeadSearchWrap">
-                <input type="text" class="lead-search-input" id="tdLeadSearch" placeholder="Buscar contato por nome, telefone ou email..." autocomplete="off">
+                <input type="text" class="lead-search-input" id="tdLeadSearch" placeholder="{{ __('tasks.search_contact') }}" autocomplete="off">
                 <input type="hidden" id="tdLeadId" value="">
                 <div class="lead-search-results" id="tdLeadResults"></div>
             </div>
         </div>
     </div>
     <div class="td-footer">
-        <button class="btn-cancel" onclick="closeTaskDrawer()">Cancelar</button>
-        <button class="btn-save" id="btnSaveTask" onclick="saveTask()">Salvar</button>
+        <button class="btn-cancel" onclick="closeTaskDrawer()">{{ __('tasks.cancel') }}</button>
+        <button class="btn-save" id="btnSaveTask" onclick="saveTask()">{{ __('tasks.save') }}</button>
     </div>
 </aside>
 @endsection
@@ -287,13 +287,14 @@
 @push('scripts')
 <script>
 (function() {
+    const TLANG = @json(__('tasks'));
     const STORE_URL      = @json(route('tasks.store'));
     const DATA_URL       = @json(route('tasks.data'));
     const BASE_URL       = @json(url('/tarefas'));
     const LEAD_SEARCH_URL = @json(route('tasks.search-leads'));
     const TYPES          = @json($typeLabels);
     const ICONS          = @json($typeIcons);
-    const priorityLabels = { low: 'Baixa', medium: 'Média', high: 'Alta' };
+    const priorityLabels = { low: TLANG.priority_low, medium: TLANG.priority_medium, high: TLANG.priority_high };
 
     let _currentStatus = '';
     let _tasks = [];
@@ -328,7 +329,7 @@
             const dueBadge = t.due_date_fmt
                 ? '<span class="task-due" style="background:' + uc + '20;color:' + uc + ';">' +
                   (t.due_time ? t.due_time + ' ' : '') + t.due_date_fmt +
-                  (t.is_overdue ? ' (atrasada)' : '') + '</span>' : '';
+                  (t.is_overdue ? ' ' + TLANG.overdue_label : '') + '</span>' : '';
             return '<div class="task-item' + (done ? ' completed' : '') + '" data-id="' + t.id + '">' +
                 '<div class="task-checkbox' + (done ? ' checked' : '') + '" onclick="event.stopPropagation();toggleTask(' + t.id + ')"></div>' +
                 '<div class="task-type-icon" style="background:' + uc + '15;color:' + uc + ';"><i class="bi ' + icon + '"></i></div>' +
@@ -344,8 +345,8 @@
                     '<span class="priority-badge priority-' + (t.priority || 'medium') + '">' + priorityLabels[t.priority || 'medium'] + '</span>' +
                     dueBadge +
                     '<div class="task-actions">' +
-                        '<button onclick="event.stopPropagation();editTask(' + t.id + ')" title="Editar"><i class="bi bi-pencil"></i></button>' +
-                        '<button onclick="event.stopPropagation();deleteTask(' + t.id + ')" title="Excluir"><i class="bi bi-trash3"></i></button>' +
+                        '<button onclick="event.stopPropagation();editTask(' + t.id + ')" title="' + TLANG.edit + '"><i class="bi bi-pencil"></i></button>' +
+                        '<button onclick="event.stopPropagation();deleteTask(' + t.id + ')" title="' + TLANG.delete + '"><i class="bi bi-trash3"></i></button>' +
                     '</div>' +
                 '</div>' +
             '</div>';
@@ -368,7 +369,7 @@
     // ── Drawer ──────────────────────────────────────────────────────────
     window.openTaskDrawer = function(leadId, leadName) {
         document.getElementById('tdEditId').value = '';
-        document.getElementById('tdTitle').textContent = 'Criar Tarefa';
+        document.getElementById('tdTitle').textContent = TLANG.create_task;
         document.getElementById('tdSubject').value = '';
         document.getElementById('tdDescription').value = '';
         document.getElementById('tdAssignedTo').value = '{{ auth()->id() }}';
@@ -424,7 +425,7 @@
             window.API.get(LEAD_SEARCH_URL + '?q=' + encodeURIComponent(q)).then(function(res) {
                 const items = res.data || [];
                 if (!items.length) {
-                    results.innerHTML = '<div class="lead-search-item" style="color:#9ca3af;">Nenhum contato encontrado</div>';
+                    results.innerHTML = '<div class="lead-search-item" style="color:#9ca3af;">' + TLANG.no_contact_found + '</div>';
                 } else {
                     results.innerHTML = items.map(function(l) {
                         const sub = [l.phone, l.email].filter(Boolean).join(' · ');
@@ -465,8 +466,8 @@
             lead_id:     document.getElementById('tdLeadId').value || null,
         };
 
-        if (!payload.subject) { toastr.error('Informe o assunto da tarefa.'); return; }
-        if (!payload.due_date) { toastr.error('Informe a data de vencimento.'); return; }
+        if (!payload.subject) { toastr.error(TLANG.subject_required); return; }
+        if (!payload.due_date) { toastr.error(TLANG.date_required); return; }
 
         const btn = document.getElementById('btnSaveTask');
         btn.disabled = true;
@@ -477,13 +478,13 @@
         window.API[method](url, payload)
             .then(function() {
                 btn.disabled = false;
-                toastr.success(editId ? 'Tarefa atualizada!' : 'Tarefa criada!');
+                toastr.success(editId ? TLANG.task_updated : TLANG.task_created);
                 closeTaskDrawer();
                 loadTasks();
             })
             .catch(function(err) {
                 btn.disabled = false;
-                const msg = err?.responseJSON?.message || err?.responseJSON?.error || 'Erro ao salvar.';
+                const msg = err?.responseJSON?.message || err?.responseJSON?.error || TLANG.error_save;
                 toastr.error(msg);
             });
     };
@@ -492,7 +493,7 @@
         const t = _tasks.find(function(x) { return x.id === id; });
         if (!t) return;
         document.getElementById('tdEditId').value = t.id;
-        document.getElementById('tdTitle').textContent = 'Editar Tarefa';
+        document.getElementById('tdTitle').textContent = TLANG.edit_task;
         document.getElementById('tdSubject').value = t.subject || '';
         document.getElementById('tdDescription').value = t.description || '';
         document.getElementById('tdAssignedTo').value = t.assigned_to || '';
@@ -518,12 +519,12 @@
 
     window.deleteTask = function(id) {
         window.confirmAction({
-            title: 'Excluir tarefa',
-            message: 'Tem certeza que deseja excluir esta tarefa?',
-            confirmText: 'Excluir',
+            title: TLANG.delete_title,
+            message: TLANG.delete_confirm,
+            confirmText: TLANG.delete,
             onConfirm: function() {
                 window.API.delete(BASE_URL + '/' + id).then(function() {
-                    toastr.success('Tarefa excluída.');
+                    toastr.success(TLANG.task_deleted);
                     loadTasks();
                 });
             }

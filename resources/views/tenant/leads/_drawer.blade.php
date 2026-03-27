@@ -27,18 +27,18 @@
     {{-- Header --}}
     <div style="padding:18px 22px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
         <div>
-            <div id="drawerTitle" style="font-size:15px;font-weight:700;color:#1a1d23;">Novo Lead</div>
+            <div id="drawerTitle" style="font-size:15px;font-weight:700;color:#1a1d23;">{{ __('leads.new_lead') }}</div>
             <div id="drawerSub" style="font-size:12px;color:#9ca3af;margin-top:2px;"></div>
         </div>
         <div style="display:flex;gap:6px;align-items:center;">
             <a id="drawerProfileLink" href="#" target="_blank" style="display:none;"
-               class="drawer-icon-btn" title="Ver perfil completo">
+               class="drawer-icon-btn" title="{{ __('leads.view_profile') }}">
                 <i class="bi bi-box-arrow-up-right"></i>
             </a>
-            <button id="btnDeleteLead" style="display:none;" class="drawer-icon-btn danger" title="Excluir lead" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
+            <button id="btnDeleteLead" style="display:none;" class="drawer-icon-btn danger" title="{{ __('leads.delete_lead') }}" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
                 <i class="bi bi-trash"></i>
             </button>
-            <button onclick="closeLeadDrawer()" class="drawer-icon-btn" title="Fechar">
+            <button onclick="closeLeadDrawer()" class="drawer-icon-btn" title="{{ __('leads.close') }}">
                 <i class="bi bi-x-lg"></i>
             </button>
         </div>
@@ -51,62 +51,62 @@
             <input type="hidden" id="leadId" value="">
 
             {{-- Informações Básicas --}}
-            <div class="drawer-section-label">Informações Básicas</div>
+            <div class="drawer-section-label">{{ __('leads.basic_info') }}</div>
 
             <div class="drawer-group">
-                <label>Nome <span style="color:#EF4444;">*</span></label>
-                <input type="text" id="fName" name="name" placeholder="Nome do lead" class="drawer-input">
+                <label>{{ __('leads.name') }} <span style="color:#EF4444;">*</span></label>
+                <input type="text" id="fName" name="name" placeholder="{{ __('leads.name_placeholder') }}" class="drawer-input">
                 <div class="drawer-error" id="err-name"></div>
             </div>
 
             <div class="drawer-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div class="drawer-group">
-                    <label>Telefone / WhatsApp</label>
-                    <input type="text" id="fPhone" name="phone" placeholder="(11) 99999-9999" class="drawer-input"
+                    <label>{{ __('leads.phone') }}</label>
+                    <input type="text" id="fPhone" name="phone" placeholder="{{ __('leads.phone_placeholder') }}" class="drawer-input"
                            oninput="maskPhone(this)" maxlength="15">
                     <div class="drawer-error" id="err-phone"></div>
                 </div>
                 <div class="drawer-group">
-                    <label>E-mail</label>
-                    <input type="email" id="fEmail" name="email" placeholder="email@exemplo.com" class="drawer-input">
+                    <label>{{ __('leads.email') }}</label>
+                    <input type="email" id="fEmail" name="email" placeholder="{{ __('leads.email_placeholder') }}" class="drawer-input">
                     <div class="drawer-error" id="err-email"></div>
                 </div>
             </div>
 
             <div class="drawer-group">
-                <label>Empresa</label>
-                <input type="text" id="fCompany" name="company" placeholder="Nome da empresa" class="drawer-input">
+                <label>{{ __('leads.company') }}</label>
+                <input type="text" id="fCompany" name="company" placeholder="{{ __('leads.company_placeholder') }}" class="drawer-input">
             </div>
 
             <div class="drawer-group">
-                <label>Data de Nascimento</label>
+                <label>{{ __('leads.birthday') }}</label>
                 <input type="date" id="fBirthday" name="birthday" class="drawer-input">
             </div>
 
             <div class="drawer-group">
-                <label>Valor (R$)</label>
-                <input type="number" id="fValue" name="value" placeholder="0,00" min="0" step="0.01" class="drawer-input">
+                <label>{{ __('leads.value') }}</label>
+                <input type="number" id="fValue" name="value" placeholder="{{ __('leads.value_placeholder') }}" min="0" step="0.01" class="drawer-input">
             </div>
 
             {{-- Tags (movido para cima para visibilidade) --}}
             <div class="drawer-group" style="margin-top:6px;">
-                <label>Tags</label>
+                <label>{{ __('leads.tags') }}</label>
                 <input type="hidden" id="fTagsHidden" name="tags_json" value="[]">
                 <div class="tag-input-wrap drawer-input" id="tagInputWrap" onclick="document.getElementById('tagRawInput').focus()">
                     <div id="tagBadgesContainer" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
-                    <input type="text" id="tagRawInput" placeholder="Digite e pressione Enter ou vírgula..." style="border:none;outline:none;font-size:13px;font-family:inherit;background:transparent;min-width:140px;padding:2px 0;">
+                    <input type="text" id="tagRawInput" placeholder="{{ __('leads.tags_placeholder') }}" style="border:none;outline:none;font-size:13px;font-family:inherit;background:transparent;min-width:140px;padding:2px 0;">
                 </div>
                 {{-- Sugestões de tags pré-configuradas --}}
                 <div id="tagSuggestions" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;"></div>
             </div>
 
             {{-- Pipeline / Etapa --}}
-            <div class="drawer-section-label" style="margin-top:18px;">Pipeline & Etapa</div>
+            <div class="drawer-section-label" style="margin-top:18px;">{{ __('leads.pipeline_stage') }}</div>
 
             <div class="drawer-group">
-                <label>Pipeline <span style="color:#EF4444;">*</span></label>
+                <label>{{ __('leads.pipeline') }} <span style="color:#EF4444;">*</span></label>
                 <select id="fPipeline" name="pipeline_id" class="drawer-input" onchange="loadStagesForPipeline(this.value)">
-                    <option value="">Selecione o pipeline</option>
+                    <option value="">{{ __('leads.select_pipeline') }}</option>
                     @foreach($pipelines as $p)
                     <option value="{{ $p->id }}">{{ $p->name }}</option>
                     @endforeach
@@ -115,47 +115,47 @@
             </div>
 
             <div class="drawer-group">
-                <label>Etapa <span style="color:#EF4444;">*</span></label>
+                <label>{{ __('leads.stage') }} <span style="color:#EF4444;">*</span></label>
                 <select id="fStage" name="stage_id" class="drawer-input">
-                    <option value="">Selecione primeiro o pipeline</option>
+                    <option value="">{{ __('leads.select_stage_first') }}</option>
                 </select>
                 <div class="drawer-error" id="err-stage_id"></div>
             </div>
 
             {{-- Negócio --}}
-            <div class="drawer-section-label" style="margin-top:18px;">Negócio</div>
+            <div class="drawer-section-label" style="margin-top:18px;">{{ __('leads.deal') }}</div>
 
             <div class="drawer-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div class="drawer-group">
-                    <label>Origem</label>
+                    <label>{{ __('leads.source') }}</label>
                     <select id="fSource" name="source" class="drawer-input">
-                        <option value="manual">Manual</option>
-                        <option value="facebook">Facebook Ads</option>
-                        <option value="google">Google Ads</option>
-                        <option value="instagram">Instagram</option>
-                        <option value="whatsapp">WhatsApp</option>
-                        <option value="site">Site</option>
-                        <option value="indicacao">Indicação</option>
-                        <option value="outro">Outro</option>
+                        <option value="manual">{{ __('leads.source_manual') }}</option>
+                        <option value="facebook">{{ __('leads.source_facebook') }}</option>
+                        <option value="google">{{ __('leads.source_google') }}</option>
+                        <option value="instagram">{{ __('leads.source_instagram') }}</option>
+                        <option value="whatsapp">{{ __('leads.source_whatsapp') }}</option>
+                        <option value="site">{{ __('leads.source_site') }}</option>
+                        <option value="indicacao">{{ __('leads.source_indicacao') }}</option>
+                        <option value="outro">{{ __('leads.source_outro') }}</option>
                     </select>
                 </div>
             </div>
 
             {{-- Notas (múltiplas — só em modo edição) --}}
             <div id="notesSection" style="display:none;margin-top:18px;">
-                <div class="drawer-section-label">Notas</div>
+                <div class="drawer-section-label">{{ __('leads.notes') }}</div>
                 <div id="notesList" style="margin-bottom:8px;"></div>
                 <div style="display:flex;flex-direction:column;gap:6px;">
-                    <textarea id="fNoteInput" placeholder="Escreva uma nota..." class="drawer-input" rows="2" style="resize:vertical;min-height:58px;"></textarea>
+                    <textarea id="fNoteInput" placeholder="{{ __('leads.note_placeholder') }}" class="drawer-input" rows="2" style="resize:vertical;min-height:58px;"></textarea>
                     <button type="button" onclick="addNote()" class="drawer-add-note-btn">
-                        <i class="bi bi-plus-lg"></i> Adicionar Nota
+                        <i class="bi bi-plus-lg"></i> {{ __('leads.add_note') }}
                     </button>
                 </div>
             </div>
 
             {{-- Anexos (só em modo edição) --}}
             <div id="attachmentsSection" style="display:none;margin-top:18px;">
-                <div class="drawer-section-label">Anexos</div>
+                <div class="drawer-section-label">{{ __('leads.attachments') }}</div>
 
                 <div id="attachDropzone"
                      style="border:2px dashed #d1d5db;border-radius:10px;padding:18px 14px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:10px;"
@@ -164,8 +164,8 @@
                      ondragleave="this.style.borderColor='#d1d5db';this.style.background='';"
                      ondrop="handleAttachDrop(event)">
                     <i class="bi bi-cloud-arrow-up" style="font-size:22px;color:#9ca3af;display:block;margin-bottom:4px;"></i>
-                    <div style="font-size:12.5px;color:#6b7280;font-weight:600;">Clique ou arraste arquivos</div>
-                    <div style="font-size:11px;color:#9ca3af;margin-top:2px;">PDF, imagens, documentos — máx. 20 MB</div>
+                    <div style="font-size:12.5px;color:#6b7280;font-weight:600;">{{ __('leads.drop_files') }}</div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:2px;">{{ __('leads.drop_desc') }}</div>
                 </div>
                 <input type="file" id="attachFileInput" style="display:none;"
                        accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.rar"
@@ -179,10 +179,10 @@
         {{-- Produtos vinculados (só em modo edição) --}}
         <div id="productsSection" style="display:none;margin-top:18px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <div class="drawer-section-label" style="margin-bottom:0;">Produtos</div>
+                <div class="drawer-section-label" style="margin-bottom:0;">{{ __('leads.products') }}</div>
                 <button type="button" id="btnAddProduct" onclick="toggleProductForm()"
                         style="font-size:12px;font-weight:600;color:#0085f3;background:none;border:none;cursor:pointer;padding:0;">
-                    <i class="bi bi-plus-lg"></i> Adicionar
+                    <i class="bi bi-plus-lg"></i> {{ __('leads.add') }}
                 </button>
             </div>
 
@@ -190,17 +190,17 @@
             <div id="addProductForm" style="display:none;background:#f8fafc;border:1px solid #e8eaf0;border-radius:10px;padding:12px;margin-bottom:10px;">
                 <div style="display:grid;grid-template-columns:1fr 80px;gap:8px;align-items:end;">
                     <div>
-                        <label style="font-size:11px;font-weight:600;color:#6b7280;display:block;margin-bottom:3px;">Produto</label>
+                        <label style="font-size:11px;font-weight:600;color:#6b7280;display:block;margin-bottom:3px;">{{ __('leads.product') }}</label>
                         <select id="addProductSelect" class="drawer-input" style="padding:7px 10px;font-size:12.5px;"></select>
                     </div>
                     <div>
-                        <label style="font-size:11px;font-weight:600;color:#6b7280;display:block;margin-bottom:3px;">Qtd</label>
+                        <label style="font-size:11px;font-weight:600;color:#6b7280;display:block;margin-bottom:3px;">{{ __('leads.qty') }}</label>
                         <input type="number" id="addProductQty" value="1" min="0.01" step="0.01" class="drawer-input" style="padding:7px 10px;font-size:12.5px;">
                     </div>
                 </div>
                 <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end;">
-                    <button type="button" onclick="toggleProductForm()" style="font-size:12px;color:#6b7280;background:none;border:1px solid #e8eaf0;border-radius:7px;padding:5px 12px;cursor:pointer;">Cancelar</button>
-                    <button type="button" onclick="addDrawerProduct()" style="font-size:12px;font-weight:600;color:#fff;background:#0085f3;border:none;border-radius:7px;padding:5px 12px;cursor:pointer;">Vincular</button>
+                    <button type="button" onclick="toggleProductForm()" style="font-size:12px;color:#6b7280;background:none;border:1px solid #e8eaf0;border-radius:7px;padding:5px 12px;cursor:pointer;">{{ __('leads.cancel') }}</button>
+                    <button type="button" onclick="addDrawerProduct()" style="font-size:12px;font-weight:600;color:#fff;background:#0085f3;border:none;border-radius:7px;padding:5px 12px;cursor:pointer;">{{ __('leads.link_product') }}</button>
                 </div>
             </div>
 
@@ -210,14 +210,14 @@
 
         {{-- Campos Personalizados --}}
         <div id="customFieldsSection" style="display:none;margin-top:18px;">
-            <div class="drawer-section-label">Campos Personalizados</div>
+            <div class="drawer-section-label">{{ __('leads.custom_fields') }}</div>
             <div id="customFieldsContainer"></div>
         </div>
 
         {{-- Accordion Avançado (UTM readonly) --}}
         <div id="drawerUtmSection" style="display:none;margin-top:18px;">
             <div onclick="toggleAdvancedAccordion()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 0;">
-                <div class="drawer-section-label" style="margin-bottom:0;">Avançado</div>
+                <div class="drawer-section-label" style="margin-bottom:0;">{{ __('leads.advanced') }}</div>
                 <i id="advancedAccordionIcon" class="fas fa-chevron-down" style="color:#9ca3af;font-size:12px;transition:transform .2s;"></i>
             </div>
             <div id="advancedAccordionBody" style="display:none;">
@@ -227,25 +227,25 @@
                 </div>
                 <div class="drawer-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div class="drawer-group">
-                        <label>Fonte (Source)</label>
+                        <label>{{ __('leads.utm_source') }}</label>
                         <input type="text" id="fUtmSource" class="drawer-input" readonly style="background:#f3f4f6;color:#6b7280;cursor:default;" placeholder="—">
                     </div>
                     <div class="drawer-group">
-                        <label>Mídia (Medium)</label>
+                        <label>{{ __('leads.utm_medium') }}</label>
                         <input type="text" id="fUtmMedium" class="drawer-input" readonly style="background:#f3f4f6;color:#6b7280;cursor:default;" placeholder="—">
                     </div>
                 </div>
                 <div class="drawer-group">
-                    <label>Campanha (Campaign)</label>
+                    <label>{{ __('leads.utm_campaign') }}</label>
                     <input type="text" id="fUtmCampaign" class="drawer-input" readonly style="background:#f3f4f6;color:#6b7280;cursor:default;" placeholder="—">
                 </div>
                 <div class="drawer-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div class="drawer-group">
-                        <label>Conteúdo (Content)</label>
+                        <label>{{ __('leads.utm_content') }}</label>
                         <input type="text" id="fUtmContent" class="drawer-input" readonly style="background:#f3f4f6;color:#6b7280;cursor:default;" placeholder="—">
                     </div>
                     <div class="drawer-group">
-                        <label>Termo (Term)</label>
+                        <label>{{ __('leads.utm_term') }}</label>
                         <input type="text" id="fUtmTerm" class="drawer-input" readonly style="background:#f3f4f6;color:#6b7280;cursor:default;" placeholder="—">
                     </div>
                 </div>
@@ -254,24 +254,24 @@
 
         {{-- Histórico de eventos (só na edição) --}}
         <div id="eventsSection" style="display:none;margin-top:22px;">
-            <div class="drawer-section-label">Histórico</div>
+            <div class="drawer-section-label">{{ __('leads.history') }}</div>
             <div id="eventsList" style="display:flex;flex-direction:column;gap:0;"></div>
         </div>
 
         {{-- Agendamentos (só na edição) --}}
         <div id="drawerScheduledSection" style="display:none;margin-top:22px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <div class="drawer-section-label" style="margin-bottom:0;">Agendamentos Pendentes</div>
+                <div class="drawer-section-label" style="margin-bottom:0;">{{ __('leads.scheduled_pending') }}</div>
                 <button type="button" id="drawerSchedBtn"
                         style="font-size:12px;font-weight:600;color:#0085f3;background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px;">
-                    <i class="bi bi-plus-lg"></i> Agendar
+                    <i class="bi bi-plus-lg"></i> {{ __('leads.schedule') }}
                 </button>
             </div>
             <div id="drawerScheduledList" style="display:flex;flex-direction:column;gap:6px;"></div>
             <div id="drawerScheduledViewAll" style="display:none;margin-top:8px;text-align:right;">
                 <a id="drawerScheduledLink" href="#" target="_blank"
                    style="font-size:12px;color:#3b82f6;text-decoration:none;">
-                    Ver todos <i class="bi bi-arrow-right"></i>
+                    {{ __('leads.view_all') }} <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
         </div>
@@ -281,11 +281,11 @@
     {{-- Footer com ações --}}
     <div style="padding:16px 22px;border-top:1px solid #f0f2f7;display:flex;gap:10px;flex-shrink:0;">
         <button type="button" onclick="closeLeadDrawer()" style="flex:0;padding:10px 18px;border:1.5px solid #e8eaf0;border-radius:100px;background:#fff;font-size:13.5px;font-weight:600;color:#6b7280;cursor:pointer;">
-            Cancelar
+            {{ __('leads.cancel') }}
         </button>
         <button type="button" id="btnSaveLead" style="flex:1;padding:10px;background:#0085f3;color:#fff;border:none;border-radius:100px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s;" {{ auth()->user()->isViewer() ? 'disabled style=opacity:.5;pointer-events:none;' : '' }}>
             <i class="bi bi-check-lg"></i>
-            Salvar
+            {{ __('leads.save') }}
         </button>
     </div>
 
@@ -592,6 +592,7 @@ $_configuredTagsJson = isset($_configuredTags)
 @endphp
 
 <script>
+const DLANG = @json(__('leads'));
 // ── Dados de pipelines e campos personalizados injetados pelo servidor ────
 const PIPELINES_DATA   = {!! json_encode($_pipelinesJson) !!};
 const CF_DEFS          = {!! json_encode($_cfDefsJson) !!};
@@ -691,7 +692,7 @@ function openNewLeadDrawer(defaults = {}) {
 
     resetDrawerForm();
 
-    document.getElementById('drawerTitle').textContent = 'Novo Lead';
+    document.getElementById('drawerTitle').textContent = DLANG.new_lead;
     document.getElementById('drawerSub').textContent   = '';
     document.getElementById('btnDeleteLead').style.display = 'none';
     document.getElementById('eventsSection').style.display = 'none';
@@ -720,7 +721,7 @@ function openLeadDrawer(leadId) {
     _drawerLeadId = leadId;
 
     resetDrawerForm();
-    document.getElementById('drawerTitle').textContent = 'Carregando...';
+    document.getElementById('drawerTitle').textContent = DLANG.loading;
     document.getElementById('drawerSub').textContent   = '';
     showDrawer();
 
@@ -732,7 +733,7 @@ function openLeadDrawer(leadId) {
             populateDrawer(res);
         },
         error() {
-            toastr.error('Erro ao carregar lead.');
+            toastr.error(DLANG.error_load);
             closeLeadDrawer();
         }
     });
@@ -743,7 +744,7 @@ function populateDrawer(res) {
     const lead = res.lead;
 
     document.getElementById('drawerTitle').textContent = lead.name;
-    document.getElementById('drawerSub').textContent   = `Criado em ${lead.created_at || ''}`;
+    document.getElementById('drawerSub').textContent   = DLANG.created_at.replace(':date', lead.created_at || '');
     document.getElementById('leadId').value            = lead.id;
     document.getElementById('btnDeleteLead').style.display = '';
 
@@ -831,7 +832,7 @@ function loadStagesForPipeline(pipelineId, selectedStageId = null) {
 function populateStages(stages, selectedId = null) {
     const sel = document.getElementById('fStage');
     if (!stages || !stages.length) {
-        sel.innerHTML = '<option value="">Nenhuma etapa disponível</option>';
+        sel.innerHTML = `<option value="">${DLANG.no_stages}</option>`;
         return;
     }
     sel.innerHTML = stages.map(s =>
@@ -865,7 +866,7 @@ function renderUtmSection(lead) {
 function renderNotes(notes) {
     const list = document.getElementById('notesList');
     if (!notes.length) {
-        list.innerHTML = '<p style="font-size:12px;color:#9ca3af;text-align:center;padding:6px 0 10px;">Nenhuma nota ainda.</p>';
+        list.innerHTML = `<p style="font-size:12px;color:#9ca3af;text-align:center;padding:6px 0 10px;">${DLANG.no_notes}</p>`;
         return;
     }
     list.innerHTML = notes.map(n => `
@@ -873,7 +874,7 @@ function renderNotes(notes) {
             <div class="note-header">
                 <span class="note-author">${escapeHtml(n.author)}</span>
                 <span class="note-date">${escapeHtml(n.created_at || '')}</span>
-                ${n.is_mine ? `<button type="button" class="note-del-btn" onclick="deleteNote(${n.id})" title="Excluir nota"><i class="bi bi-trash3"></i></button>` : ''}
+                ${n.is_mine ? `<button type="button" class="note-del-btn" onclick="deleteNote(${n.id})" title="${DLANG.delete_note_title}"><i class="bi bi-trash3"></i></button>` : ''}
             </div>
             <div class="note-body">${escapeHtml(n.body)}</div>
         </div>
@@ -905,19 +906,19 @@ function addNote() {
                     <div class="note-header">
                         <span class="note-author">${escapeHtml(res.note.author)}</span>
                         <span class="note-date">${escapeHtml(res.note.created_at || '')}</span>
-                        <button type="button" class="note-del-btn" onclick="deleteNote(${res.note.id})" title="Excluir nota"><i class="bi bi-trash3"></i></button>
+                        <button type="button" class="note-del-btn" onclick="deleteNote(${res.note.id})" title="${DLANG.delete_note_title}"><i class="bi bi-trash3"></i></button>
                     </div>
                     <div class="note-body">${escapeHtml(res.note.body)}</div>
                 </div>`;
             list.insertAdjacentHTML('afterbegin', html);
         },
-        error() { toastr.error('Erro ao adicionar nota.'); },
+        error() { toastr.error(DLANG.error_add_note); },
         complete() { btn.disabled = false; },
     });
 }
 
 function deleteNote(noteId) {
-    if (!confirm('Excluir esta nota?')) return;
+    if (!confirm(DLANG.confirm_delete_note)) return;
     $.ajax({
         url:    LEAD_NOTE_DEL.replace('__LEAD__', _drawerLeadId).replace('__NOTE__', noteId),
         method: 'DELETE',
@@ -928,10 +929,10 @@ function deleteNote(noteId) {
             if (el) el.remove();
             if (!document.querySelectorAll('.note-item').length) {
                 document.getElementById('notesList').innerHTML =
-                    '<p style="font-size:12px;color:#9ca3af;text-align:center;padding:6px 0 10px;">Nenhuma nota ainda.</p>';
+                    `<p style="font-size:12px;color:#9ca3af;text-align:center;padding:6px 0 10px;">${DLANG.no_notes}</p>`;
             }
         },
-        error(xhr) { toastr.error(xhr.responseJSON?.message || 'Erro ao excluir nota.'); },
+        error(xhr) { toastr.error(xhr.responseJSON?.message || DLANG.error_delete_note); },
     });
 }
 
@@ -947,11 +948,11 @@ function handleAttachDrop(e) {
 function uploadAttachment(file) {
     if (!file) return;
     if (file.size > 20 * 1024 * 1024) {
-        toastr.error('Arquivo muito grande (máx. 20 MB).');
+        toastr.error(DLANG.file_too_large);
         return;
     }
     if (!_drawerLeadId) {
-        toastr.warning('Salve o lead antes de anexar arquivos.');
+        toastr.warning(DLANG.save_first);
         return;
     }
 
@@ -985,21 +986,21 @@ function uploadAttachment(file) {
         if (temp) temp.remove();
         if (ok && data.attachment) {
             renderAttachItem(data.attachment);
-            toastr.success('Arquivo anexado!');
+            toastr.success(DLANG.file_attached);
         } else {
-            const msg = data.message || Object.values(data.errors || {}).flat().join(', ') || 'Erro ao enviar.';
+            const msg = data.message || Object.values(data.errors || {}).flat().join(', ') || DLANG.error_upload;
             toastr.error(msg);
         }
     })
     .catch(() => {
         const temp = document.getElementById(tempId);
         if (temp) temp.remove();
-        toastr.error('Erro de conexão.');
+        toastr.error(DLANG.error_connection);
     });
 }
 
 function deleteAttachment(attId) {
-    if (!confirm('Remover este anexo?')) return;
+    if (!confirm(DLANG.confirm_delete_attach)) return;
 
     const url = ATTACH_DEL.replace('__LEAD__', _drawerLeadId).replace('__ATT__', attId);
 
@@ -1016,10 +1017,10 @@ function deleteAttachment(attId) {
         if (data.success) {
             const el = document.getElementById('att-' + attId);
             if (el) el.remove();
-            toastr.success('Anexo removido.');
+            toastr.success(DLANG.attach_removed);
         }
     })
-    .catch(() => toastr.error('Erro ao remover anexo.'));
+    .catch(() => toastr.error(DLANG.error_remove_attach));
 }
 
 function renderAttachments(attachments) {
@@ -1047,8 +1048,8 @@ function renderAttachItem(a) {
                 <div class="attach-item-meta">${size} · ${escapeHtml(a.uploaded_by || '')} · ${escapeHtml(a.created_at || '')}</div>
             </div>
             <div class="attach-item-actions">
-                <a href="${a.url}" target="_blank" class="attach-item-btn" title="Abrir"><i class="bi bi-box-arrow-up-right"></i></a>
-                <button class="attach-item-btn danger" onclick="deleteAttachment(${a.id})" title="Remover"><i class="bi bi-trash3"></i></button>
+                <a href="${a.url}" target="_blank" class="attach-item-btn" title="${DLANG.open}"><i class="bi bi-box-arrow-up-right"></i></a>
+                <button class="attach-item-btn danger" onclick="deleteAttachment(${a.id})" title="${DLANG.remove}"><i class="bi bi-trash3"></i></button>
             </div>
         </div>
     `);
@@ -1079,15 +1080,15 @@ document.getElementById('btnSaveLead')?.addEventListener('click', () => {
     };
 
     if (!payload.name) {
-        showDrawerError('name', 'Nome é obrigatório');
+        showDrawerError('name', DLANG.name_required);
         return;
     }
     if (!payload.pipeline_id) {
-        showDrawerError('pipeline_id', 'Selecione um pipeline');
+        showDrawerError('pipeline_id', DLANG.pipeline_required);
         return;
     }
     if (!payload.stage_id) {
-        showDrawerError('stage_id', 'Selecione uma etapa');
+        showDrawerError('stage_id', DLANG.stage_required);
         return;
     }
 
@@ -1106,14 +1107,14 @@ document.getElementById('btnSaveLead')?.addEventListener('click', () => {
         headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'), 'Accept': 'application/json' },
         success(res) {
             if (res.success) {
-                toastr.success(isNew ? 'Lead criado!' : 'Lead atualizado!');
+                toastr.success(isNew ? DLANG.lead_created : DLANG.lead_updated);
                 closeLeadDrawer();
                 window.onLeadSaved && window.onLeadSaved(res.lead, isNew);
             }
         },
         error(xhr) {
             if (xhr.status === 422 && xhr.responseJSON?.limit_reached) {
-                showLimitModal(xhr.responseJSON.message || 'Limite do plano atingido.');
+                showLimitModal(xhr.responseJSON.message || DLANG.plan_limit);
             } else if (xhr.status === 422) {
                 const errors = xhr.responseJSON?.errors || {};
                 Object.entries(errors).forEach(([field, msgs]) => showDrawerError(field, msgs[0]));
@@ -1132,7 +1133,7 @@ document.getElementById('btnSaveLead')?.addEventListener('click', () => {
 document.getElementById('btnDeleteLead')?.addEventListener('click', () => {
     confirmAction({
         title: 'Excluir lead',
-        message: `Tem certeza que deseja excluir o lead "${document.getElementById('fName').value || 'sem nome'}"?`,
+        message: DLANG.confirm_delete,
         confirmText: 'Excluir',
         onConfirm: () => {
             $.ajax({
@@ -1141,12 +1142,12 @@ document.getElementById('btnDeleteLead')?.addEventListener('click', () => {
                 headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'), 'Accept': 'application/json' },
                 success(res) {
                     if (res.success) {
-                        toastr.success('Lead excluído.');
+                        toastr.success(DLANG.lead_deleted);
                         closeLeadDrawer();
                         window.onLeadDeleted && window.onLeadDeleted(_drawerLeadId);
                     }
                 },
-                error() { toastr.error('Erro ao excluir lead.'); }
+                error() { toastr.error(DLANG.error_delete); }
             });
         },
     });
@@ -1173,7 +1174,7 @@ function resetDrawerForm() {
     PIPELINES_DATA.forEach(p => {
         document.getElementById('fPipeline').insertAdjacentHTML('beforeend', `<option value="${p.id}">${escapeHtml(p.name)}</option>`);
     });
-    document.getElementById('fStage').innerHTML = '<option value="">Selecione primeiro o pipeline</option>';
+    document.getElementById('fStage').innerHTML = `<option value="">${DLANG.select_stage_first}</option>`;
     document.getElementById('eventsSection').style.display = 'none';
     document.getElementById('eventsList').innerHTML = '';
     document.getElementById('notesSection').style.display = 'none';
@@ -1315,7 +1316,7 @@ async function addDrawerProduct() {
     const sel = document.getElementById('addProductSelect');
     const productId = parseInt(sel.value);
     const qty = parseFloat(document.getElementById('addProductQty').value) || 1;
-    if (!productId) { toastr.error('Selecione um produto.'); return; }
+    if (!productId) { toastr.error(DLANG.select_product); return; }
 
     const leadId = document.getElementById('leadId').value;
     if (!leadId) return;
@@ -1566,7 +1567,7 @@ async function loadDrawerScheduled(leadId) {
         if (btn) btn.onclick = () => openDrawerSchedModal(leadId);
 
         if (!items.length) {
-            list.innerHTML = '<span style="font-size:12px;color:#9ca3af;">Nenhum agendamento pendente.</span>';
+            list.innerHTML = `<span style="font-size:12px;color:#9ca3af;">${DLANG.no_scheduled}</span>`;
             if (viewAll) viewAll.style.display = 'none';
         } else {
             const typeIcons = { text: 'bi-chat-text', image: 'bi-image', document: 'bi-file-earmark' };
@@ -1574,7 +1575,7 @@ async function loadDrawerScheduled(leadId) {
                 <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#fafafa;border:1px solid #f0f2f7;border-radius:8px;">
                     <i class="bi ${typeIcons[s.type] || 'bi-chat'}" style="color:#3b82f6;font-size:13px;flex-shrink:0;"></i>
                     <span style="flex:1;min-width:0;font-size:12px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                        ${escapeHtml(s.body || s.media_filename || 'Arquivo')}
+                        ${escapeHtml(s.body || s.media_filename || DLANG.file)}
                     </span>
                     <span style="font-size:11px;color:#9ca3af;white-space:nowrap;">${escapeHtml(s.send_at_human || '')}</span>
                 </div>`).join('');

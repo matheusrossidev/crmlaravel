@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Builder: ' . $flow->name;
+    $title    = __('chatbot.edit_builder_title') . ' ' . $flow->name;
     $pageIcon = 'diagram-3';
 @endphp
 
@@ -74,7 +74,7 @@
     {{-- Voltar --}}
     <a href="{{ route('chatbot.flows.index') }}"
        style="color:#2563eb;font-size:13.5px;font-weight:500;text-decoration:underline;display:inline-flex;align-items:center;gap:5px;font-family:'Inter',sans-serif;white-space:nowrap;">
-        <i class="bi bi-arrow-left" style="font-size:12px;"></i> Voltar
+        <i class="bi bi-arrow-left" style="font-size:12px;"></i> {{ __('chatbot.edit_back') }}
     </a>
 
     <div style="width:1px;height:18px;background:#e8eaf0;flex-shrink:0;"></div>
@@ -85,22 +85,22 @@
             {{ $flow->name }}
         </span>
         <span class="{{ $flow->is_active ? 'badge-active' : 'badge-inactive' }}">
-            {{ $flow->is_active ? 'Ativo' : 'Inativo' }}
+            {{ $flow->is_active ? __('chatbot.badge_active') : __('chatbot.badge_inactive') }}
         </span>
     </div>
 
     {{-- Ações --}}
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
         @if($flow->channel === 'website' && $flow->website_token)
-        <button type="button" class="builder-btn" onclick="showEmbedCode()" title="Código de incorporação">
-            <i class="bi bi-code-slash"></i> Embed
+        <button type="button" class="builder-btn" onclick="showEmbedCode()" title="{{ __('chatbot.edit_embed') }}">
+            <i class="bi bi-code-slash"></i> {{ __('chatbot.edit_embed') }}
         </button>
         @endif
         <a href="{{ route('chatbot.flows.edit', $flow) }}?settings=1" class="builder-btn">
-            <i class="bi bi-gear"></i> Configurações do fluxo
+            <i class="bi bi-gear"></i> {{ __('chatbot.edit_flow_settings') }}
         </a>
         <a href="{{ route('chatbot.flows.index') }}" class="builder-btn">
-            <i class="bi bi-grid"></i> Todos os fluxos
+            <i class="bi bi-grid"></i> {{ __('chatbot.edit_all_flows') }}
         </a>
     </div>
 
@@ -116,21 +116,23 @@
 <div id="embedModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
     <div style="background:#fff;border-radius:14px;padding:28px 32px;max-width:560px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.18);font-family:'Inter',sans-serif;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-            <h2 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0;">Código de Incorporação</h2>
+            <h2 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0;">{{ __('chatbot.edit_embed_title') }}</h2>
             <button onclick="closeEmbedModal()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#6b7280;">&times;</button>
         </div>
-        <p style="font-size:13px;color:#6b7280;margin-bottom:14px;">Cole este código antes do <code>&lt;/body&gt;</code> no seu site:</p>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:14px;">{!! __('chatbot.edit_embed_paste') !!}</p>
         <div style="position:relative;">
             <textarea id="embedCode" readonly style="width:100%;height:90px;font-family:monospace;font-size:12px;padding:10px 12px;border:1.5px solid #e8eaf0;border-radius:8px;background:#f9fafb;color:#374151;resize:none;box-sizing:border-box;outline:none;">&lt;script src="{{ config('app.url') }}/api/widget/{{ $flow->website_token }}.js"&gt;&lt;/script&gt;</textarea>
-            <button onclick="copyEmbed()" id="copyEmbedBtn" style="position:absolute;top:8px;right:8px;padding:4px 10px;background:#0085f3;color:#fff;border:none;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;">Copiar</button>
+            <button onclick="copyEmbed()" id="copyEmbedBtn" style="position:absolute;top:8px;right:8px;padding:4px 10px;background:#0085f3;color:#fff;border:none;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;">{{ __('chatbot.edit_copy') }}</button>
         </div>
-        <p style="font-size:11.5px;color:#9ca3af;margin-top:10px;">O widget aparecerá no canto inferior direito do seu site.</p>
+        <p style="font-size:11.5px;color:#9ca3af;margin-top:10px;">{{ __('chatbot.embed_widget_hint') }}</p>
     </div>
 </div>
 @endif
 
 @push('scripts')
 <script>
+const CBLANG = @json(__('chatbot'));
+
 window.chatbotBuilderData = {!! json_encode($builderData) !!};
 
 function showEmbedCode() {
@@ -147,7 +149,7 @@ function copyEmbed() {
     ta.select();
     document.execCommand('copy');
     const btn = document.getElementById('copyEmbedBtn');
-    if (btn) { btn.textContent = 'Copiado!'; setTimeout(() => btn.textContent = 'Copiar', 2000); }
+    if (btn) { btn.textContent = CBLANG.edit_copied; setTimeout(() => btn.textContent = CBLANG.edit_copy, 2000); }
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEmbedModal(); });
 </script>

@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Automações de Instagram';
+    $title    = __('ig_automations.page_title');
     $pageIcon = 'instagram';
 @endphp
 
@@ -634,8 +634,8 @@ textarea.form-control { resize: vertical; min-height: 68px; }
 
     <div class="section-header">
         <div>
-            <div class="section-title">Automações de Instagram</div>
-            <div class="section-subtitle">Responda comentários e envie DMs automaticamente com base em palavras-chave.</div>
+            <div class="section-title">{{ __('ig_automations.page_title') }}</div>
+            <div class="section-subtitle">{{ __('ig_automations.page_subtitle') }}</div>
         </div>
     </div>
 
@@ -644,8 +644,8 @@ textarea.form-control { resize: vertical; min-height: 68px; }
         <div class="ig-banner info">
             <i class="bi bi-info-circle-fill" style="font-size:17px;flex-shrink:0;margin-top:1px;"></i>
             <span>
-                Instagram não está conectado. Para usar Automações,
-                <a href="{{ route('settings.integrations.index') }}">vá em Integrações</a> e conecte sua conta.
+                {{ __('ig_automations.banner_not_connected') }}
+                <a href="{{ route('settings.integrations.index') }}">{{ __('ig_automations.banner_go_to_integrations') }}</a> {{ __('ig_automations.banner_connect_account') }}
             </span>
         </div>
     @endif
@@ -655,11 +655,11 @@ textarea.form-control { resize: vertical; min-height: 68px; }
         <div class="ig-card-head">
             <h2>
                 <i class="bi bi-chat-square-heart" style="color:#2a84ef;"></i>
-                Automações de Comentários
+                {{ __('ig_automations.card_title') }}
             </h2>
             <button class="btn-new-ig" onclick="openModal()"
                     {{ (! $instance || $instance->status !== 'connected') ? 'disabled' : '' }}>
-                <i class="bi bi-plus-lg"></i> Nova Automação
+                <i class="bi bi-plus-lg"></i> {{ __('ig_automations.btn_new') }}
             </button>
         </div>
 
@@ -677,11 +677,11 @@ textarea.form-control { resize: vertical; min-height: 68px; }
                     </div>
                     <div class="ig-item-body">
                         <div class="ig-item-name">
-                            {{ $auto->name ?: ($auto->media_id ? 'Publicação específica' : 'Todos os posts') }}
+                            {{ $auto->name ?: ($auto->media_id ? __('ig_automations.specific_post') : __('ig_automations.all_posts')) }}
                         </div>
                         <div class="ig-item-meta">
-                            {{ $auto->match_type === 'all' ? 'Todas as palavras' : 'Qualquer palavra' }}
-                            &bull; {{ count($auto->keywords) }} palavra(s)-chave
+                            {{ $auto->match_type === 'all' ? __('ig_automations.match_all') : __('ig_automations.match_any') }}
+                            &bull; {{ __('ig_automations.keywords_count', ['count' => count($auto->keywords)]) }}
                         </div>
                         <div class="ig-chips">
                             @foreach($auto->keywords as $kw)
@@ -707,28 +707,28 @@ textarea.form-control { resize: vertical; min-height: 68px; }
                                 @if($auto->comments_replied > 0)
                                     <span class="ig-metric">
                                         <i class="bi bi-chat-left-text"></i>
-                                        {{ number_format($auto->comments_replied) }} comentário(s) respondido(s)
+                                        {{ __('ig_automations.comments_replied', ['count' => number_format($auto->comments_replied)]) }}
                                     </span>
                                 @endif
                                 @if($auto->dms_sent > 0)
                                     <span class="ig-metric">
                                         <i class="bi bi-send-fill"></i>
-                                        {{ number_format($auto->dms_sent) }} DM(s) enviada(s)
+                                        {{ __('ig_automations.dms_sent', ['count' => number_format($auto->dms_sent)]) }}
                                     </span>
                                 @endif
                             </div>
                         @endif
                     </div>
                     <div class="ig-item-actions">
-                        <label class="ig-toggle" title="{{ $auto->is_active ? 'Ativa' : 'Inativa' }}">
+                        <label class="ig-toggle" title="{{ $auto->is_active ? __('ig_automations.toggle_active') : __('ig_automations.toggle_inactive') }}">
                             <input type="checkbox" {{ $auto->is_active ? 'checked' : '' }}
                                    onchange="toggleAuto({{ $auto->id }}, this)">
                             <span class="slider"></span>
                         </label>
-                        <button class="btn-icon" title="Editar" onclick="editAuto({{ $auto->id }})">
+                        <button class="btn-icon" title="{{ __('ig_automations.btn_edit') }}" onclick="editAuto({{ $auto->id }})">
                             <i class="bi bi-pencil"></i>
                         </button>
-                        <button class="btn-icon danger" title="Excluir"
+                        <button class="btn-icon danger" title="{{ __('ig_automations.btn_delete') }}"
                                 onclick="confirmDelete({{ $auto->id }})">
                             <i class="bi bi-trash"></i>
                         </button>
@@ -739,8 +739,8 @@ textarea.form-control { resize: vertical; min-height: 68px; }
             @if($automations->isEmpty())
                 <div class="ig-empty" id="emptyState">
                     <i class="bi bi-robot"></i>
-                    <p>Nenhuma automação criada ainda.<br>
-                       Clique em <strong>Nova Automação</strong> para começar.</p>
+                    <p>{{ __('ig_automations.empty_title') }}<br>
+                       {!! __('ig_automations.empty_hint') !!}</p>
                 </div>
             @endif
         </div>
@@ -752,7 +752,7 @@ textarea.form-control { resize: vertical; min-height: 68px; }
 <div id="igOverlay" class="ig-drawer-overlay" onclick="closeModal()"></div>
 <aside id="igDrawer" class="ig-drawer">
     <div class="ig-drawer-head">
-        <h3 id="modalTitle">Nova Automação</h3>
+        <h3 id="modalTitle">{{ __('ig_automations.drawer_title_new') }}</h3>
         <button class="btn-icon" onclick="closeModal()"><i class="bi bi-x-lg"></i></button>
     </div>
     <div class="ig-drawer-body">
@@ -760,22 +760,22 @@ textarea.form-control { resize: vertical; min-height: 68px; }
 
         {{-- Nome --}}
         <div class="form-group">
-            <label>Nome <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">(opcional)</span></label>
+            <label>{{ __('ig_automations.label_name') }} <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">{{ __('ig_automations.label_name_optional') }}</span></label>
             <input type="text" id="autoName" class="form-control"
-                   placeholder="Ex: Responder sobre preços" maxlength="100">
+                   placeholder="{{ __('ig_automations.placeholder_name') }}" maxlength="100">
         </div>
 
         {{-- Post --}}
         <div class="form-group">
-            <label>Publicação alvo</label>
+            <label>{{ __('ig_automations.label_target_post') }}</label>
             <div class="post-scope-radio">
                 <label>
                     <input type="radio" name="postScope" value="all" checked onchange="onScopeChange(this.value)">
-                    Todos os posts
+                    {{ __('ig_automations.scope_all_posts') }}
                 </label>
                 <label>
                     <input type="radio" name="postScope" value="specific" onchange="onScopeChange(this.value)">
-                    Publicação específica
+                    {{ __('ig_automations.scope_specific_post') }}
                 </label>
             </div>
             <div id="postPickerWrap" style="display:none;">
@@ -786,7 +786,7 @@ textarea.form-control { resize: vertical; min-height: 68px; }
                 </div>
                 <div class="load-more-posts" id="loadMoreWrap" style="display:none;">
                     <button class="btn-secondary-ig" style="font-size:12px;padding:5px 14px;" onclick="loadMorePosts()">
-                        <i class="bi bi-chevron-down"></i> Carregar mais
+                        <i class="bi bi-chevron-down"></i> {{ __('ig_automations.btn_load_more') }}
                     </button>
                 </div>
             </div>
@@ -797,24 +797,24 @@ textarea.form-control { resize: vertical; min-height: 68px; }
 
         {{-- Keywords --}}
         <div class="form-group">
-            <label>Palavras-chave <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">(Enter ou vírgula para adicionar)</span></label>
+            <label>{{ __('ig_automations.label_keywords') }} <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">{{ __('ig_automations.keywords_hint') }}</span></label>
             <div class="keyword-input-wrap" id="kwWrap"
                  onclick="document.getElementById('kwInput').focus()">
-                <input type="text" id="kwInput" class="kw-input" placeholder="Digite uma palavra...">
+                <input type="text" id="kwInput" class="kw-input" placeholder="{{ __('ig_automations.placeholder_keyword') }}">
             </div>
         </div>
 
         {{-- Match type --}}
         <div class="form-group">
-            <label>Correspondência</label>
+            <label>{{ __('ig_automations.label_match_type') }}</label>
             <div class="match-type-radio">
                 <label>
                     <input type="radio" name="matchType" value="any" checked>
-                    Qualquer palavra (OU)
+                    {{ __('ig_automations.match_any_or') }}
                 </label>
                 <label>
                     <input type="radio" name="matchType" value="all">
-                    Todas as palavras (E)
+                    {{ __('ig_automations.match_all_and') }}
                 </label>
             </div>
         </div>
@@ -823,11 +823,11 @@ textarea.form-control { resize: vertical; min-height: 68px; }
         <div class="form-group">
             <label>
                 <i class="bi bi-chat-left-text" style="color:#2a84ef;font-size:11px;"></i>
-                Responder ao comentário
-                <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">(opcional)</span>
+                {{ __('ig_automations.label_reply_comment') }}
+                <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">{{ __('ig_automations.label_reply_comment_optional') }}</span>
             </label>
             <textarea id="replyComment" class="form-control" maxlength="2200"
-                      placeholder="Resposta pública postada no comentário..."
+                      placeholder="{{ __('ig_automations.placeholder_reply_comment') }}"
                       oninput="updateCount('replyComment','countReply',2200)"></textarea>
             <div class="char-count" id="countReply">0 / 2200</div>
         </div>
@@ -836,34 +836,34 @@ textarea.form-control { resize: vertical; min-height: 68px; }
         <div class="form-group" style="margin-bottom:0;">
             <label>
                 <i class="bi bi-envelope-fill" style="color:#2a84ef;font-size:11px;"></i>
-                Enviar DM
-                <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">(opcional — sequência de mensagens)</span>
+                {{ __('ig_automations.label_send_dm') }}
+                <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">{{ __('ig_automations.label_send_dm_optional') }}</span>
             </label>
             <div id="dmBuilder"></div>
             <div class="dm-add-btns">
                 <button type="button" class="dm-add-btn" onclick="addDmBlock('text')">
-                    <i class="bi bi-chat-left-text"></i> Texto
+                    <i class="bi bi-chat-left-text"></i> {{ __('ig_automations.dm_block_text') }}
                 </button>
                 <button type="button" class="dm-add-btn" onclick="addDmBlock('image')">
-                    <i class="bi bi-image"></i> Imagem
+                    <i class="bi bi-image"></i> {{ __('ig_automations.dm_block_image') }}
                 </button>
             </div>
         </div>
     </div>
     <div class="ig-drawer-foot">
-        <button class="btn-secondary-ig" onclick="closeModal()">Cancelar</button>
-        <button class="btn-primary-ig" id="saveBtn" onclick="saveAutomation()">Salvar</button>
+        <button class="btn-secondary-ig" onclick="closeModal()">{{ __('ig_automations.btn_cancel') }}</button>
+        <button class="btn-primary-ig" id="saveBtn" onclick="saveAutomation()">{{ __('ig_automations.btn_save') }}</button>
     </div>
 </aside>
 
 {{-- ── Modal Confirmação de Exclusão ─────────────────────────────── --}}
 <div id="confirmModal" class="ig-confirm-overlay" onclick="if(event.target===this)closeConfirm()">
     <div class="ig-confirm-box">
-        <h4><i class="bi bi-trash" style="color:#ef4444;margin-right:6px;"></i>Excluir Automação</h4>
-        <p>Tem certeza que deseja excluir esta automação? Esta ação não pode ser desfeita.</p>
+        <h4><i class="bi bi-trash" style="color:#ef4444;margin-right:6px;"></i>{{ __('ig_automations.confirm_delete_title') }}</h4>
+        <p>{{ __('ig_automations.confirm_delete_message') }}</p>
         <div class="ig-confirm-actions">
-            <button class="btn-secondary-ig" onclick="closeConfirm()">Cancelar</button>
-            <button class="btn-danger-ig" id="confirmDeleteBtn" onclick="executeDelete()">Excluir</button>
+            <button class="btn-secondary-ig" onclick="closeConfirm()">{{ __('ig_automations.btn_cancel') }}</button>
+            <button class="btn-danger-ig" id="confirmDeleteBtn" onclick="executeDelete()">{{ __('ig_automations.btn_confirm_delete') }}</button>
         </div>
     </div>
 </div>
@@ -879,6 +879,7 @@ textarea.form-control { resize: vertical; min-height: 68px; }
 
 @push('scripts')
 <script>
+const IGLANG     = @json(__('ig_automations'));
 const CSRF       = '{{ csrf_token() }}';
 const STORE_URL  = '{{ $igStoreUrl }}';
 const UPD_URL    = '{{ $igUpdUrl }}';
@@ -896,7 +897,7 @@ let dmBlocks       = [];   // [{type, text, url, buttons:[]}]
 // ── Modal Nova/Editar ─────────────────────────────────────────────────────
 function openModal(auto = null) {
     document.getElementById('editingId').value              = auto ? auto.id : '';
-    document.getElementById('modalTitle').textContent       = auto ? 'Editar Automação' : 'Nova Automação';
+    document.getElementById('modalTitle').textContent       = auto ? IGLANG.drawer_title_edit : IGLANG.drawer_title_new;
     document.getElementById('autoName').value               = auto?.name ?? '';
     document.getElementById('selectedMediaId').value        = auto?.media_id ?? '';
     document.getElementById('selectedMediaThumb').value     = auto?.media_thumbnail_url ?? '';
@@ -951,23 +952,23 @@ async function executeDelete() {
     if (!id) return;
 
     btn.disabled = true;
-    btn.textContent = 'Excluindo…';
+    btn.textContent = IGLANG.btn_deleting;
 
     try {
         const res = await fetch(DEL_URL.replace('__ID__', id), {
             method: 'DELETE',
             headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
         });
-        if (!res.ok) { alert('Erro ao excluir.'); return; }
+        if (!res.ok) { alert(IGLANG.alert_error_delete); return; }
         automations = automations.filter(a => a.id != id);
         document.getElementById(`auto-${id}`)?.remove();
         checkEmpty();
         closeConfirm();
     } catch {
-        alert('Erro de rede. Tente novamente.');
+        alert(IGLANG.alert_network_error);
     } finally {
         btn.disabled    = false;
-        btn.textContent = 'Excluir';
+        btn.textContent = IGLANG.btn_confirm_delete;
     }
 }
 
@@ -1000,7 +1001,7 @@ async function loadPosts(preselectMediaId = null) {
         postNextCursor = data.next_cursor;
         document.getElementById('loadMoreWrap').style.display = postNextCursor ? 'block' : 'none';
     } catch {
-        grid.innerHTML = '<p style="color:#ef4444;font-size:12px;padding:8px;">Erro ao carregar publicações.</p>';
+        grid.innerHTML = `<p style="color:#ef4444;font-size:12px;padding:8px;">${escHtml(IGLANG.error_load_posts)}</p>`;
     }
 }
 
@@ -1141,7 +1142,7 @@ function updateDmPreview(idx, text) {
     const bubble = document.getElementById(`dmPreview-${idx}`);
     if (!bubble) return;
     if (!text) {
-        bubble.innerHTML = '<span style="color:#4b5563;font-style:italic;font-size:12px;">Prévia aparecerá aqui...</span>';
+        bubble.innerHTML = `<span style="color:#4b5563;font-style:italic;font-size:12px;">${escHtml(IGLANG.dm_preview_placeholder)}</span>`;
         return;
     }
     const escaped = escHtml(text);
@@ -1186,12 +1187,12 @@ function renderDmBuilder() {
         if (block.type === 'image') {
             div.innerHTML = `
                 <div class="dm-block-head">
-                    <span class="dm-block-type"><i class="bi bi-image" style="color:#2a84ef;"></i> Imagem</span>
+                    <span class="dm-block-type"><i class="bi bi-image" style="color:#2a84ef;"></i> ${IGLANG.dm_block_image}</span>
                     <button type="button" class="btn-icon danger" onclick="removeDmBlock(${idx})"><i class="bi bi-trash"></i></button>
                 </div>
                 <div class="dm-block-body">
                     <input type="url" class="form-control" id="dmUrl-${idx}"
-                           placeholder="https://public.com/imagem.jpg"
+                           placeholder="${escHtml(IGLANG.dm_placeholder_url)}"
                            value="${escHtml(block.url)}"
                            oninput="dmBlocks[${idx}].url=this.value;updateImgPreview(${idx})">
                     <img id="dmImgPrev-${idx}" class="dm-img-preview ${block.url ? 'show' : ''}"
@@ -1200,39 +1201,39 @@ function renderDmBuilder() {
         } else {
             div.innerHTML = `
                 <div class="dm-block-head">
-                    <span class="dm-block-type"><i class="bi bi-chat-left-text" style="color:#2a84ef;"></i> Texto</span>
+                    <span class="dm-block-type"><i class="bi bi-chat-left-text" style="color:#2a84ef;"></i> ${IGLANG.dm_block_text}</span>
                     <button type="button" class="btn-icon danger" onclick="removeDmBlock(${idx})"><i class="bi bi-trash"></i></button>
                 </div>
                 <div class="dm-block-body" style="padding:0;">
                     <div class="dm-wysiwyg-wrap">
                         <div class="dm-wysiwyg-toolbar">
-                            <span class="dm-wysiwyg-hint">Links ficam clicáveis automaticamente</span>
+                            <span class="dm-wysiwyg-hint">${escHtml(IGLANG.dm_links_hint)}</span>
                             <span class="dm-char-count" id="dmCharCount-${idx}">0/1000</span>
                         </div>
                         <div class="dm-wysiwyg-editor"
                              id="dmEditor-${idx}"
                              contenteditable="true"
-                             data-placeholder="Escreva sua mensagem..."
+                             data-placeholder="${escHtml(IGLANG.dm_placeholder_message)}"
                              oninput="onDmEditorInput(${idx})"></div>
                         <div class="dm-preview-wrap">
-                            <div class="dm-preview-label">Prévia Instagram DM</div>
-                            <div class="dm-preview-bubble" id="dmPreview-${idx}"><span style="color:#4b5563;font-style:italic;font-size:12px;">Prévia aparecerá aqui...</span></div>
+                            <div class="dm-preview-label">${escHtml(IGLANG.dm_preview_label)}</div>
+                            <div class="dm-preview-bubble" id="dmPreview-${idx}"><span style="color:#4b5563;font-style:italic;font-size:12px;">${escHtml(IGLANG.dm_preview_placeholder)}</span></div>
                             <div class="dm-btn-preview" id="dmBtnPreview-${idx}"></div>
                         </div>
                     </div>
                 </div>
                 <div class="dm-buttons-section">
                     <div class="dm-buttons-label">
-                        <i class="bi bi-hand-index"></i> Quick Reply Buttons <span class="text-muted">(opcional, max. 13)</span>
+                        <i class="bi bi-hand-index"></i> ${escHtml(IGLANG.dm_buttons_label)} <span class="text-muted">${escHtml(IGLANG.dm_buttons_optional)}</span>
                     </div>
                     <div class="dm-buttons-chips" id="dmBtnChips-${idx}"></div>
                     <div class="dm-btn-input-wrap">
                         <input type="text" class="form-control" id="dmBtnInput-${idx}"
-                               placeholder="Texto do botao (max. 20 chars)"
+                               placeholder="${escHtml(IGLANG.dm_btn_placeholder)}"
                                maxlength="20"
                                onkeydown="if(event.key==='Enter'){event.preventDefault();addButton(${idx});}">
                         <button type="button" class="dm-add-btn" onclick="addButton(${idx})"
-                                style="white-space:nowrap;">+ Botao</button>
+                                style="white-space:nowrap;">${escHtml(IGLANG.dm_btn_add)}</button>
                     </div>
                 </div>`;
         }
@@ -1275,7 +1276,7 @@ function addButton(idx) {
     if (!text) return;
     if (!dmBlocks[idx].buttons) dmBlocks[idx].buttons = [];
     if (dmBlocks[idx].buttons.length >= 13) {
-        toastr.warning('Maximo de 13 botoes por mensagem.');
+        toastr.warning(IGLANG.toastr_max_buttons);
         return;
     }
     dmBlocks[idx].buttons.push(text.substring(0, 20));
@@ -1336,10 +1337,10 @@ function serializeDmMessages() {
 
 // ── Save ──────────────────────────────────────────────────────────────────
 async function saveAutomation() {
-    if (keywords.length === 0) { alert('Adicione pelo menos uma palavra-chave.'); return; }
+    if (keywords.length === 0) { alert(IGLANG.alert_keyword_required); return; }
     const reply      = document.getElementById('replyComment').value.trim();
     const dmSerialized = serializeDmMessages();
-    if (!reply && dmSerialized.length === 0) { alert('Defina pelo menos uma ação: resposta ao comentário ou DM.'); return; }
+    if (!reply && dmSerialized.length === 0) { alert(IGLANG.alert_action_required); return; }
 
     const scope = document.querySelector('[name="postScope"]:checked').value;
     const id    = document.getElementById('editingId').value;
@@ -1361,7 +1362,7 @@ async function saveAutomation() {
 
     const btn = document.getElementById('saveBtn');
     btn.disabled    = true;
-    btn.textContent = 'Salvando…';
+    btn.textContent = IGLANG.btn_saving;
 
     try {
         const res  = await fetch(url, {
@@ -1375,7 +1376,7 @@ async function saveAutomation() {
         });
         const data = await res.json();
 
-        if (!res.ok) { alert(data.error || data.message || 'Erro ao salvar.'); return; }
+        if (!res.ok) { alert(data.error || data.message || IGLANG.alert_error_save); return; }
 
         const auto = data.automation;
         if (isEdit) {
@@ -1388,10 +1389,10 @@ async function saveAutomation() {
         }
         closeModal();
     } catch (e) {
-        alert('Erro ao salvar: ' + e.message);
+        alert(IGLANG.alert_error_save_detail.replace(':message', e.message));
     } finally {
         btn.disabled    = false;
-        btn.textContent = 'Salvar';
+        btn.textContent = IGLANG.btn_save;
     }
 }
 
@@ -1416,7 +1417,7 @@ function checkEmpty() {
     const empty = document.getElementById('emptyState');
     if (items.length === 0) {
         if (!empty) {
-            list.innerHTML = '<div class="ig-empty" id="emptyState"><i class="bi bi-robot"></i><p>Nenhuma automação criada ainda.<br>Clique em <strong>Nova Automação</strong> para começar.</p></div>';
+            list.innerHTML = `<div class="ig-empty" id="emptyState"><i class="bi bi-robot"></i><p>${escHtml(IGLANG.empty_title)}<br>${IGLANG.empty_hint}</p></div>`;
         }
     } else {
         empty?.remove();
@@ -1436,17 +1437,17 @@ function renderItem(auto, el) {
         ? `<span><i class="bi bi-envelope-fill" style="color:#2a84ef;"></i> ${escHtml(auto.dm_message.substring(0, 50))}${auto.dm_message.length > 50 ? '…' : ''}</span>` : '';
 
     const commentMetric = (auto.comments_replied > 0)
-        ? `<span class="ig-metric"><i class="bi bi-chat-left-text"></i> ${auto.comments_replied} comentário(s) respondido(s)</span>` : '';
+        ? `<span class="ig-metric"><i class="bi bi-chat-left-text"></i> ${IGLANG.comments_replied.replace(':count', auto.comments_replied)}</span>` : '';
     const dmMetric = (auto.dms_sent > 0)
-        ? `<span class="ig-metric"><i class="bi bi-send-fill"></i> ${auto.dms_sent} DM(s) enviada(s)</span>` : '';
+        ? `<span class="ig-metric"><i class="bi bi-send-fill"></i> ${IGLANG.dms_sent.replace(':count', auto.dms_sent)}</span>` : '';
     const metricsHtml = (commentMetric || dmMetric)
         ? `<div class="ig-metrics">${commentMetric}${dmMetric}</div>` : '';
 
     el.innerHTML = `
         <div class="ig-item-thumb">${thumbHtml}</div>
         <div class="ig-item-body">
-            <div class="ig-item-name">${escHtml(auto.name || (auto.media_id ? 'Publicação específica' : 'Todos os posts'))}</div>
-            <div class="ig-item-meta">${auto.match_type === 'all' ? 'Todas as palavras' : 'Qualquer palavra'} &bull; ${auto.keywords?.length ?? 0} palavra(s)-chave</div>
+            <div class="ig-item-name">${escHtml(auto.name || (auto.media_id ? IGLANG.specific_post : IGLANG.all_posts))}</div>
+            <div class="ig-item-meta">${auto.match_type === 'all' ? IGLANG.match_all : IGLANG.match_any} &bull; ${IGLANG.keywords_count.replace(':count', auto.keywords?.length ?? 0)}</div>
             <div class="ig-chips">${kwChips}</div>
             <div class="ig-action-preview">${replyPrev}${dmPrev}</div>
             ${metricsHtml}

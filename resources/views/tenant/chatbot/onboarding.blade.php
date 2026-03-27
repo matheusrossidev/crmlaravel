@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Novo Chatbot';
+    $title    = __('chatbot.onboarding_title');
     $pageIcon = 'diagram-3';
 @endphp
 
@@ -224,9 +224,9 @@
         {{-- Header --}}
         <div class="wizard-header">
             <button class="wizard-back-btn hidden" id="wBackBtn" onclick="wizardPrev()">
-                <i class="bi bi-arrow-left"></i> Voltar
+                <i class="bi bi-arrow-left"></i> {{ __('chatbot.onboarding_back') }}
             </button>
-            <span class="wizard-step-counter">Passo <span id="wStepNum">1</span> de <span id="wStepTotal">5</span></span>
+            <span class="wizard-step-counter" id="wStepCounter"></span>
         </div>
 
         {{-- Body --}}
@@ -234,45 +234,45 @@
 
             {{-- STEP: channel --}}
             <div class="wizard-step active" data-step="channel">
-                <div class="wizard-question">Para qual canal?</div>
-                <div class="wizard-subtitle">Escolha onde seu chatbot vai operar.</div>
+                <div class="wizard-question">{{ __('chatbot.wizard_channel_question') }}</div>
+                <div class="wizard-subtitle">{{ __('chatbot.wizard_channel_subtitle') }}</div>
                 <div class="wizard-cards cols-3">
                     <div class="wizard-option-card" data-field="channel" data-value="whatsapp" onclick="selectCard(this)">
                         <span class="card-icon"><i class="bi bi-whatsapp" style="color:#25d366;font-size:28px"></i></span>
                         <span class="card-label">WhatsApp</span>
-                        <span class="card-desc">Dispara por palavras-chave</span>
+                        <span class="card-desc">{{ __('chatbot.wizard_channel_whatsapp_desc') }}</span>
                     </div>
                     <div class="wizard-option-card" data-field="channel" data-value="instagram" onclick="selectCard(this)">
                         <span class="card-icon"><i class="bi bi-instagram" style="color:#e1306c;font-size:28px"></i></span>
                         <span class="card-label">Instagram</span>
-                        <span class="card-desc">DMs e respostas automáticas</span>
+                        <span class="card-desc">{{ __('chatbot.wizard_channel_instagram_desc') }}</span>
                     </div>
                     <div class="wizard-option-card" data-field="channel" data-value="website" onclick="selectCard(this)">
                         <span class="card-icon"><i class="bi bi-globe" style="color:#0085f3;font-size:28px"></i></span>
                         <span class="card-label">Website</span>
-                        <span class="card-desc">Widget de chat no seu site</span>
+                        <span class="card-desc">{{ __('chatbot.wizard_channel_website_desc') }}</span>
                     </div>
                 </div>
             </div>
 
             {{-- STEP: name --}}
             <div class="wizard-step" data-step="name">
-                <div class="wizard-question">Como quer chamar seu chatbot?</div>
-                <div class="wizard-subtitle">Um nome curto e descritivo.</div>
+                <div class="wizard-question">{{ __('chatbot.wizard_name_question') }}</div>
+                <div class="wizard-subtitle">{{ __('chatbot.wizard_name_subtitle') }}</div>
                 <input type="text" class="wizard-text-input" id="f_name"
-                       placeholder="Ex: Qualificador de Leads, Atendimento..." maxlength="100">
+                       placeholder="{{ __('chatbot.wizard_name_placeholder') }}" maxlength="100">
                 <div style="margin-top:14px;">
-                    <div style="font-size:12px;color:#6b7280;font-weight:600;margin-bottom:6px;">DESCRIÇÃO <span class="wizard-skip" onclick="wizardSkip()">Pular</span></div>
+                    <div style="font-size:12px;color:#6b7280;font-weight:600;margin-bottom:6px;">{{ __('chatbot.wizard_description_label') }} <span class="wizard-skip" onclick="wizardSkip()">{{ __('chatbot.onboarding_skip') }}</span></div>
                     <textarea class="wizard-text-input" id="f_description" rows="3"
-                              placeholder="Descreva brevemente o objetivo deste fluxo..." maxlength="500"></textarea>
+                              placeholder="{{ __('chatbot.wizard_description_placeholder') }}" maxlength="500"></textarea>
                 </div>
             </div>
 
             {{-- STEP: template --}}
             <div class="wizard-step" data-step="template">
-                <div class="wizard-question">Escolha um modelo ou comece do zero</div>
-                <div class="wizard-subtitle">Modelos pré-prontos aceleram a criação.</div>
-                <input type="text" class="tpl-search" id="tplSearch" placeholder="Buscar modelo..."
+                <div class="wizard-question">{{ __('chatbot.wizard_template_question') }}</div>
+                <div class="wizard-subtitle">{{ __('chatbot.wizard_template_subtitle') }}</div>
+                <input type="text" class="tpl-search" id="tplSearch" placeholder="{{ __('chatbot.wizard_template_search') }}"
                        oninput="filterTemplates()">
                 <div class="tpl-tabs" id="tplTabs"></div>
                 <div class="tpl-grid" id="tplGrid"></div>
@@ -280,25 +280,25 @@
 
             {{-- STEP: widget_settings (website only) --}}
             <div class="wizard-step" data-step="widget_settings">
-                <div class="wizard-question">Configure seu widget</div>
-                <div class="wizard-subtitle">Personalize a aparência do chat no seu site.</div>
+                <div class="wizard-question">{{ __('chatbot.wizard_widget_question') }}</div>
+                <div class="wizard-subtitle">{{ __('chatbot.wizard_widget_subtitle') }}</div>
 
                 <div class="widget-field">
-                    <div class="widget-label">Nome do bot</div>
+                    <div class="widget-label">{{ __('chatbot.wizard_widget_bot_name') }}</div>
                     <input type="text" class="wizard-text-input" id="f_bot_name"
-                           placeholder="Ex: Ana, Sofia, Assistente..." maxlength="50"
+                           placeholder="{{ __('chatbot.wizard_widget_bot_placeholder') }}" maxlength="50"
                            style="padding:10px 14px;font-size:14px;">
                 </div>
 
                 <div class="widget-field">
-                    <div class="widget-label">Avatar</div>
+                    <div class="widget-label">{{ __('chatbot.wizard_widget_avatar') }}</div>
                     <div class="avatar-row" id="avatarRow">
                         <img src="{{ asset('images/avatars/agent-1.png') }}" class="avatar-circle selected" data-avatar="agent-1" onclick="selectAvatar(this)" onerror="this.innerHTML='🤖';this.style.fontSize='20px'">
                         <img src="{{ asset('images/avatars/agent-2.png') }}" class="avatar-circle" data-avatar="agent-2" onclick="selectAvatar(this)" onerror="this.innerHTML='👩';this.style.fontSize='20px'">
                         <img src="{{ asset('images/avatars/agent-3.png') }}" class="avatar-circle" data-avatar="agent-3" onclick="selectAvatar(this)" onerror="this.innerHTML='👨';this.style.fontSize='20px'">
                         <img src="{{ asset('images/avatars/agent-4.png') }}" class="avatar-circle" data-avatar="agent-4" onclick="selectAvatar(this)" onerror="this.innerHTML='🎧';this.style.fontSize='20px'">
                         <img src="{{ asset('images/avatars/agent-5.png') }}" class="avatar-circle" data-avatar="agent-5" onclick="selectAvatar(this)" onerror="this.innerHTML='💬';this.style.fontSize='20px'">
-                        <div class="avatar-circle" onclick="document.getElementById('avatarUpload').click()" title="Upload personalizado">
+                        <div class="avatar-circle" onclick="document.getElementById('avatarUpload').click()" title="{{ __('chatbot.wizard_widget_upload') }}">
                             <i class="bi bi-plus-lg"></i>
                         </div>
                         <input type="file" id="avatarUpload" accept="image/*" style="display:none">
@@ -306,30 +306,30 @@
                 </div>
 
                 <div class="widget-field">
-                    <div class="widget-label">Mensagem de boas-vindas</div>
+                    <div class="widget-label">{{ __('chatbot.wizard_widget_welcome') }}</div>
                     <textarea class="wizard-text-input" id="f_welcome" rows="2"
-                              placeholder="Olá! 👋 Como posso te ajudar?" maxlength="300"
+                              placeholder="{{ __('chatbot.wizard_widget_welcome_placeholder') }}" maxlength="300"
                               style="padding:10px 14px;font-size:14px;"></textarea>
                 </div>
 
                 <div class="widget-field">
-                    <div class="widget-label">Tipo de widget</div>
+                    <div class="widget-label">{{ __('chatbot.wizard_widget_type') }}</div>
                     <div class="wizard-cards cols-2">
                         <div class="wizard-option-card selected" data-field="widget_type" data-value="bubble" onclick="selectWidgetType(this)" style="padding:12px;">
                             <span class="card-icon"><i class="bi bi-chat-dots" style="font-size:22px;color:#0085f3;"></i></span>
-                            <span class="card-label">Bubble</span>
-                            <span class="card-desc">Bolha flutuante no canto</span>
+                            <span class="card-label">{{ __('chatbot.wizard_widget_bubble') }}</span>
+                            <span class="card-desc">{{ __('chatbot.wizard_widget_bubble_desc') }}</span>
                         </div>
                         <div class="wizard-option-card" data-field="widget_type" data-value="inline" onclick="selectWidgetType(this)" style="padding:12px;">
                             <span class="card-icon"><i class="bi bi-window" style="font-size:22px;color:#0085f3;"></i></span>
-                            <span class="card-label">Inline / Página</span>
-                            <span class="card-desc">Incorporado na página</span>
+                            <span class="card-label">{{ __('chatbot.wizard_widget_inline') }}</span>
+                            <span class="card-desc">{{ __('chatbot.wizard_widget_inline_desc') }}</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="widget-field">
-                    <div class="widget-label">Cor do widget</div>
+                    <div class="widget-label">{{ __('chatbot.wizard_widget_color') }}</div>
                     <div class="color-row">
                         <input type="color" id="f_widget_color" value="#0085f3" oninput="document.getElementById('f_widget_color_hex').value=this.value">
                         <input type="text" id="f_widget_color_hex" value="#0085f3"
@@ -340,22 +340,22 @@
 
             {{-- STEP: trigger_keywords (whatsapp/instagram only) --}}
             <div class="wizard-step" data-step="trigger_keywords">
-                <div class="wizard-question">Palavras-chave de disparo</div>
+                <div class="wizard-question">{{ __('chatbot.wizard_keywords_question') }}</div>
                 <div class="wizard-subtitle">
-                    Quando o contato enviar uma dessas palavras, o fluxo inicia automaticamente. Separe por vírgula.
-                    <span class="wizard-skip" onclick="wizardSkip()">Pular</span>
+                    {{ __('chatbot.wizard_keywords_subtitle') }}
+                    <span class="wizard-skip" onclick="wizardSkip()">{{ __('chatbot.onboarding_skip') }}</span>
                 </div>
                 <input type="text" class="wizard-text-input" id="f_keywords"
-                       placeholder="oi, olá, bom dia, menu, preço" maxlength="500">
+                       placeholder="{{ __('chatbot.wizard_keywords_placeholder') }}" maxlength="500">
                 <div style="margin-top:10px;font-size:11.5px;color:#9ca3af;">
-                    <i class="bi bi-info-circle"></i> Se não definir palavras-chave, o fluxo só será ativado manualmente.
+                    <i class="bi bi-info-circle"></i> {{ __('chatbot.wizard_keywords_hint') }}
                 </div>
             </div>
 
             {{-- STEP: review --}}
             <div class="wizard-step" data-step="review">
-                <div class="wizard-question">Tudo certo? Revise antes de criar</div>
-                <div class="wizard-subtitle">Confirme as informações do seu chatbot.</div>
+                <div class="wizard-question">{{ __('chatbot.wizard_review_question') }}</div>
+                <div class="wizard-subtitle">{{ __('chatbot.wizard_review_subtitle') }}</div>
                 <div class="wizard-error" id="wError"></div>
                 <div class="review-grid" id="wReviewGrid"></div>
             </div>
@@ -365,10 +365,10 @@
         {{-- Footer --}}
         <div class="wizard-footer">
             <button class="btn-wizard-next" id="wNextBtn" onclick="wizardNext()">
-                Próximo <i class="bi bi-arrow-right"></i>
+                {{ __('chatbot.onboarding_next') }} <i class="bi bi-arrow-right"></i>
             </button>
             <button class="btn-wizard-create" id="wCreateBtn" style="display:none" onclick="wizardSubmit()">
-                <i class="bi bi-check-circle"></i> Criar Chatbot
+                <i class="bi bi-check-circle"></i> {{ __('chatbot.onboarding_create') }}
             </button>
         </div>
 
@@ -379,6 +379,8 @@
 
 @push('scripts')
 <script>
+const CBLANG = @json(__('chatbot'));
+
 // ── Build Lead Flow Helper (same as builder.blade.php) ──────────────────────
 function buildLeadFlow(greeting, extraQuestions, farewell) {
     var steps = [
@@ -479,8 +481,9 @@ function updateUI() {
 
     const pct = Math.round(((currentIdx + 1) / stepOrder.length) * 100);
     document.getElementById('wProgressFill').style.width = pct + '%';
-    document.getElementById('wStepNum').textContent = currentIdx + 1;
-    document.getElementById('wStepTotal').textContent = stepOrder.length;
+    document.getElementById('wStepCounter').textContent = CBLANG.onboarding_step_counter
+        .replace(':current', currentIdx + 1)
+        .replace(':total', stepOrder.length);
     document.getElementById('wBackBtn').classList.toggle('hidden', currentIdx === 0);
 
     const isLast = currentIdx === stepOrder.length - 1;
@@ -516,11 +519,11 @@ function saveCurrentStep() {
 function validateCurrentStep() {
     const step = currentStepName();
     if (step === 'channel' && !state.channel) {
-        toastr.warning('Selecione um canal.');
+        toastr.warning(CBLANG.wizard_select_channel);
         return false;
     }
     if (step === 'name' && !document.getElementById('f_name').value.trim()) {
-        toastr.warning('Dê um nome ao seu chatbot.');
+        toastr.warning(CBLANG.wizard_name_required);
         return false;
     }
     return true;
@@ -577,12 +580,41 @@ function selectAvatar(el) {
 
 // ── Templates ────────────────────────────────────────────────────────────────
 
-let _tplCategory = 'Todos';
+let _tplCategory = CBLANG.tpl_category_all;
+
+const CATEGORY_LABELS = {
+    'Geral': CBLANG.tpl_category_geral,
+    'Imoveis': CBLANG.tpl_category_imoveis,
+    'Saude': CBLANG.tpl_category_saude,
+    'Estetica': CBLANG.tpl_category_estetica,
+    'Fitness': CBLANG.tpl_category_fitness,
+    'Educacao': CBLANG.tpl_category_educacao,
+    'Alimentacao': CBLANG.tpl_category_alimentacao,
+    'Varejo': CBLANG.tpl_category_varejo,
+    'Servicos': CBLANG.tpl_category_servicos,
+    'Automotivo': CBLANG.tpl_category_automotivo,
+    'Tecnologia': CBLANG.tpl_category_tecnologia,
+    'Eventos': CBLANG.tpl_category_eventos,
+    'Turismo': CBLANG.tpl_category_turismo,
+    'Financeiro': CBLANG.tpl_category_financeiro,
+    'Construcao': CBLANG.tpl_category_construcao,
+};
 
 function getCategories() {
-    const cats = ['Todos'];
-    TEMPLATES.forEach(t => { if (!cats.includes(t.category)) cats.push(t.category); });
+    const cats = [CBLANG.tpl_category_all];
+    TEMPLATES.forEach(t => {
+        const label = CATEGORY_LABELS[t.category] || t.category;
+        if (!cats.includes(label)) cats.push(label);
+    });
     return cats;
+}
+
+function getCategoryKeyByLabel(label) {
+    if (label === CBLANG.tpl_category_all) return '__all__';
+    for (const [key, val] of Object.entries(CATEGORY_LABELS)) {
+        if (val === label) return key;
+    }
+    return label;
 }
 
 function renderTemplatesTabs() {
@@ -605,14 +637,15 @@ function renderTemplatesGrid() {
 
     // "From scratch" card always first
     grid.insertAdjacentHTML('beforeend', `
-        <div class="tpl-card from-scratch${!state.template ? ' selected' : ''}" onclick="selectTemplate(null, 'Do zero')">
+        <div class="tpl-card from-scratch${!state.template ? ' selected' : ''}" onclick="selectTemplate(null, CBLANG.review_from_scratch)">
             <span class="scratch-icon"><i class="bi bi-plus-circle"></i></span>
-            <span class="scratch-label">Começar do zero</span>
+            <span class="scratch-label">${escapeHtml(CBLANG.wizard_template_from_scratch)}</span>
         </div>
     `);
 
+    const catKey = getCategoryKeyByLabel(_tplCategory);
     const filtered = TEMPLATES.filter(t => {
-        if (_tplCategory !== 'Todos' && t.category !== _tplCategory) return false;
+        if (catKey !== '__all__' && t.category !== catKey) return false;
         if (!q) return true;
         return (t.name + ' ' + t.desc + ' ' + t.category).toLowerCase().includes(q);
     });
@@ -637,7 +670,7 @@ function filterTemplates() {
 
 function selectTemplate(id, name) {
     state.template = id;
-    state.template_name = name || 'Do zero';
+    state.template_name = name || CBLANG.review_from_scratch;
     document.querySelectorAll('.tpl-card').forEach(c => c.classList.remove('selected'));
     event.currentTarget.classList.add('selected');
     setTimeout(wizardNext, 300);
@@ -646,21 +679,21 @@ function selectTemplate(id, name) {
 // ── Review ───────────────────────────────────────────────────────────────────
 
 const LABELS = {
-    channel: 'Canal',
-    name: 'Nome',
-    description: 'Descrição',
-    template_name: 'Modelo',
-    bot_name: 'Nome do bot',
-    bot_avatar: 'Avatar',
-    welcome_message: 'Boas-vindas',
-    widget_type: 'Tipo widget',
-    widget_color: 'Cor',
-    trigger_keywords: 'Palavras-chave',
+    channel: CBLANG.review_channel,
+    name: CBLANG.review_name,
+    description: CBLANG.review_description,
+    template_name: CBLANG.review_template,
+    bot_name: CBLANG.review_bot_name,
+    bot_avatar: CBLANG.review_avatar,
+    welcome_message: CBLANG.review_welcome,
+    widget_type: CBLANG.review_widget_type,
+    widget_color: CBLANG.review_color,
+    trigger_keywords: CBLANG.review_keywords,
 };
 
 const DISPLAY = {
     channel: { whatsapp: 'WhatsApp', instagram: 'Instagram', website: 'Website' },
-    widget_type: { bubble: 'Bubble (flutuante)', inline: 'Inline (página)' },
+    widget_type: { bubble: CBLANG.review_widget_bubble, inline: CBLANG.review_widget_inline },
 };
 
 function buildReview() {
@@ -685,7 +718,7 @@ function buildReview() {
     });
 
     if (!grid.children.length) {
-        grid.innerHTML = '<div style="color:#9ca3af;font-size:13px;">Nenhum campo preenchido.</div>';
+        grid.innerHTML = '<div style="color:#9ca3af;font-size:13px;">' + escapeHtml(CBLANG.wizard_review_empty) + '</div>';
     }
 }
 
@@ -695,7 +728,7 @@ function wizardSubmit() {
     saveCurrentStep();
     const btn = document.getElementById('wCreateBtn');
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Criando...';
+    btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> ' + escapeHtml(CBLANG.onboarding_creating);
 
     // Build form data
     const fd = new FormData();
@@ -731,20 +764,20 @@ function wizardSubmit() {
     .then(r => r.json().then(data => ({ ok: r.ok, data })))
     .then(({ ok, data }) => {
         if (ok && data.success) {
-            toastr.success('Chatbot criado com sucesso!');
+            toastr.success(CBLANG.toast_created);
             window.location.href = data.redirect_url;
         } else {
-            const msg = data.message || Object.values(data.errors || {}).flat().join(', ') || 'Erro ao criar chatbot.';
+            const msg = data.message || Object.values(data.errors || {}).flat().join(', ') || CBLANG.toast_create_error;
             toastr.error(msg);
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-check-circle"></i> Criar Chatbot';
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> ' + escapeHtml(CBLANG.onboarding_create);
         }
     })
     .catch(err => {
         console.error(err);
-        toastr.error('Erro de conexão. Tente novamente.');
+        toastr.error(CBLANG.toast_connection_error);
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-check-circle"></i> Criar Chatbot';
+        btn.innerHTML = '<i class="bi bi-check-circle"></i> ' + escapeHtml(CBLANG.onboarding_create);
     });
 }
 

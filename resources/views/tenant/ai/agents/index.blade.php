@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Agente de IA';
+    $title    = __('ai_agents.index_title');
     $pageIcon = 'robot';
 @endphp
 
@@ -347,15 +347,15 @@
 
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
         <i class="bi bi-robot" style="color:#3B82F6;font-size:16px;"></i>
-        <span style="font-size:15px;font-weight:700;color:#1a1d23;">Agentes de IA</span>
+        <span style="font-size:15px;font-weight:700;color:#1a1d23;">{{ __('ai_agents.index_heading') }}</span>
         <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
             @if(auth()->user()->tenant->ai_tokens_exhausted)
             <button onclick="openQuotaModal()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#fff7ed;color:#ea580c;border:1.5px solid #fed7aa;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;">
-                <i class="bi bi-exclamation-triangle-fill"></i> Tokens esgotados
+                <i class="bi bi-exclamation-triangle-fill"></i> {{ __('ai_agents.tokens_exhausted_btn') }}
             </button>
             @endif
             <a href="{{ route('ai.agents.create') }}" class="btn-primary-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 14px;">
-                <i class="bi bi-plus-lg"></i> Novo Agente
+                <i class="bi bi-plus-lg"></i> {{ __('ai_agents.new_agent') }}
             </a>
         </div>
     </div>
@@ -363,11 +363,11 @@
     @if($agents->isEmpty())
     <div class="empty-state">
         <i class="bi bi-robot"></i>
-        <h3>Nenhum agente criado ainda</h3>
+        <h3>{{ __('ai_agents.empty_title') }}</h3>
         <p>
-            Crie um agente de IA para responder automaticamente nos seus chats.<br>
+            {{ __('ai_agents.empty_description') }}<br>
             <a href="{{ route('ai.agents.create') }}" style="color:#3B82F6;font-weight:600;">
-                Criar primeiro agente →
+                {{ __('ai_agents.empty_cta') }} →
             </a>
         </p>
     </div>
@@ -375,8 +375,8 @@
     <div class="agents-grid">
         @foreach($agents as $agent)
         @php
-            $objLabel = ['sales' => 'Vendas', 'support' => 'Suporte', 'general' => 'Geral'][$agent->objective] ?? $agent->objective;
-            $chLabel  = $agent->channel === 'whatsapp' ? 'WhatsApp' : 'Web Chat';
+            $objLabel = ['sales' => __('ai_agents.objective_sales'), 'support' => __('ai_agents.objective_support'), 'general' => __('ai_agents.objective_general')][$agent->objective] ?? $agent->objective;
+            $chLabel  = $agent->channel === 'whatsapp' ? __('ai_agents.channel_whatsapp') : ($agent->channel === 'instagram' ? __('ai_agents.channel_instagram') : __('ai_agents.channel_web_chat'));
             $chIcon   = $agent->channel === 'whatsapp' ? 'whatsapp' : 'chat-dots';
         @endphp
         <div class="agent-card" style="padding:18px 22px;display:flex;flex-direction:column;gap:14px;overflow:visible;">
@@ -390,7 +390,7 @@
                     </a>
 
                     {{-- Toggle --}}
-                    <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;cursor:pointer;" title="{{ $agent->is_active ? 'Desativar' : 'Ativar' }}">
+                    <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;cursor:pointer;" title="{{ $agent->is_active ? __('ai_agents.toggle_deactivate') : __('ai_agents.toggle_activate') }}">
                         <input type="checkbox" {{ $agent->is_active ? 'checked' : '' }}
                                onchange="toggleActive({{ $agent->id }}, {{ $agent->is_active ? 'true' : 'false' }}, this)"
                                style="opacity:0;width:0;height:0;">
@@ -405,14 +405,14 @@
                         </button>
                         <div class="agent-dropdown" style="display:none;position:absolute;right:0;top:36px;background:#fff;border:1px solid #e8eaf0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:180px;z-index:10;padding:6px 0;">
                             <a href="{{ route('ai.agents.edit', $agent) }}" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#374151;text-decoration:none;font-weight:500;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
-                                <i class="bi bi-pencil" style="font-size:12px;color:#6b7280;"></i> Editar
+                                <i class="bi bi-pencil" style="font-size:12px;color:#6b7280;"></i> {{ __('ai_agents.action_edit') }}
                             </a>
                             <button onclick="openTestChat({{ $agent->id }}, '{{ addslashes($agent->name) }}');this.closest('.agent-dropdown').classList.remove('show')" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#374151;background:none;border:none;width:100%;text-align:left;cursor:pointer;font-weight:500;font-family:inherit;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
-                                <i class="bi bi-chat-dots" style="font-size:12px;color:#6b7280;"></i> Testar
+                                <i class="bi bi-chat-dots" style="font-size:12px;color:#6b7280;"></i> {{ __('ai_agents.action_test') }}
                             </button>
                             <div style="height:1px;background:#f0f2f7;margin:4px 0;"></div>
                             <button onclick="deleteAgent({{ $agent->id }}, this);this.closest('.agent-dropdown').classList.remove('show')" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#ef4444;background:none;border:none;width:100%;text-align:left;cursor:pointer;font-weight:500;font-family:inherit;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background=''">
-                                <i class="bi bi-trash3" style="font-size:12px;"></i> Excluir
+                                <i class="bi bi-trash3" style="font-size:12px;"></i> {{ __('ai_agents.action_delete') }}
                             </button>
                         </div>
                     </div>
@@ -422,11 +422,11 @@
                 <div style="display:flex;flex-wrap:wrap;gap:6px;">
                     @if(auth()->user()->tenant->ai_tokens_exhausted)
                     <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:#fff7ed;color:#ea580c;cursor:pointer;" onclick="openQuotaModal()">
-                        <i class="bi bi-exclamation-triangle-fill" style="font-size:7px;"></i> Sem tokens
+                        <i class="bi bi-exclamation-triangle-fill" style="font-size:7px;"></i> {{ __('ai_agents.badge_no_tokens') }}
                     </span>
                     @else
                     <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;{{ $agent->is_active ? 'background:#d1fae5;color:#065f46;' : 'background:#f3f4f6;color:#6b7280;' }}">
-                        <i class="bi bi-circle-fill" style="font-size:6px;"></i> {{ $agent->is_active ? 'Ativo' : 'Inativo' }}
+                        <i class="bi bi-circle-fill" style="font-size:6px;"></i> {{ $agent->is_active ? __('ai_agents.badge_active') : __('ai_agents.badge_inactive') }}
                     </span>
                     @endif
                     <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:#eff6ff;color:#2563eb;">
@@ -439,12 +439,12 @@
 
                 {{-- Métricas --}}
                 <div style="display:flex;gap:16px;font-size:12px;color:#6b7280;">
-                    <span><i class="bi bi-chat-dots" style="margin-right:3px;"></i> {{ $agent->conversations_count }} {{ $agent->conversations_count === 1 ? 'conversa' : 'conversas' }}</span>
+                    <span><i class="bi bi-chat-dots" style="margin-right:3px;"></i> {{ $agent->conversations_count }} {{ $agent->conversations_count === 1 ? __('ai_agents.conversation_singular') : __('ai_agents.conversation_plural') }}</span>
                 </div>
 
                 {{-- Footer --}}
                 <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #f0f2f7;font-size:11px;color:#9ca3af;">
-                    <span>Criado: {{ $agent->created_at?->diffForHumans() }}</span>
+                    <span>{{ __('ai_agents.created_label') }} {{ $agent->created_at?->diffForHumans() }}</span>
                     <span>{{ $agent->created_at?->format('d/m/Y') }}</span>
                 </div>
         </div>
@@ -460,23 +460,23 @@
     <div class="tcm-header">
         <div class="tcm-header-icon"><i class="bi bi-robot"></i></div>
         <div class="tcm-header-info">
-            <h3 id="tcmAgentName">Agente</h3>
-            <span>Teste de conversa simulada</span>
+            <h3 id="tcmAgentName">{{ __('ai_agents.test_chat_title') }}</h3>
+            <span>{{ __('ai_agents.test_chat_subtitle') }}</span>
         </div>
-        <button class="tcm-header-btn" onclick="closeTestChat()" title="Fechar"><i class="bi bi-x-lg"></i></button>
+        <button class="tcm-header-btn" onclick="closeTestChat()" title="{{ __('ai_agents.test_chat_close') }}"><i class="bi bi-x-lg"></i></button>
     </div>
     <div class="tcm-messages" id="tcmMessages"></div>
     <div class="tcm-footer">
         <div class="tcm-input-row">
             <textarea class="tcm-input" id="tcmInput" rows="1"
-                      placeholder="Digite uma mensagem..."
+                      placeholder="{{ __('ai_agents.test_chat_placeholder') }}"
                       onkeydown="tcmKeyDown(event)"
                       oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,90)+'px'"></textarea>
-            <button class="tcm-send" id="tcmSendBtn" onclick="tcmSend()" title="Enviar">
+            <button class="tcm-send" id="tcmSendBtn" onclick="tcmSend()" title="{{ __('ai_agents.test_chat_send') }}">
                 <i class="bi bi-send-fill"></i>
             </button>
         </div>
-        <button class="tcm-reset" onclick="tcmReset()"><i class="bi bi-arrow-counterclockwise"></i> Reiniciar conversa</button>
+        <button class="tcm-reset" onclick="tcmReset()"><i class="bi bi-arrow-counterclockwise"></i> {{ __('ai_agents.test_chat_reset') }}</button>
     </div>
 </div>
 
@@ -484,11 +484,11 @@
 <div class="del-modal-overlay" id="delAgentModal">
     <div class="del-modal">
         <div class="del-modal-icon"><i class="bi bi-trash3-fill"></i></div>
-        <div class="del-modal-title">Excluir agente?</div>
-        <div class="del-modal-text">O agente será removido permanentemente.<br>Esta ação não pode ser desfeita.</div>
+        <div class="del-modal-title">{{ __('ai_agents.delete_modal_title') }}</div>
+        <div class="del-modal-text">{!! __('ai_agents.delete_modal_text') !!}</div>
         <div class="del-modal-footer">
-            <button class="btn-del-cancel" onclick="document.getElementById('delAgentModal').classList.remove('open')">Cancelar</button>
-            <button class="btn-del-confirm" onclick="_doDeleteAgent()">Excluir</button>
+            <button class="btn-del-cancel" onclick="document.getElementById('delAgentModal').classList.remove('open')">{{ __('ai_agents.delete_modal_cancel') }}</button>
+            <button class="btn-del-confirm" onclick="_doDeleteAgent()">{{ __('ai_agents.delete_modal_confirm') }}</button>
         </div>
     </div>
 </div>
@@ -500,10 +500,10 @@
     <div class="qts-header">
         <div class="qts-header-icon"><i class="bi bi-lightning-charge-fill"></i></div>
         <div class="qts-header-info">
-            <h3>Tokens de IA</h3>
-            <span>Consumo e pacotes de incremento</span>
+            <h3>{{ __('ai_agents.quota_sidebar_title') }}</h3>
+            <span>{{ __('ai_agents.quota_sidebar_subtitle') }}</span>
         </div>
-        <button class="qts-header-btn" onclick="closeQuotaModal()" title="Fechar"><i class="bi bi-x-lg"></i></button>
+        <button class="qts-header-btn" onclick="closeQuotaModal()" title="{{ __('ai_agents.test_chat_close') }}"><i class="bi bi-x-lg"></i></button>
     </div>
 
     <div class="qts-body">
@@ -512,8 +512,8 @@
         <div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;margin-bottom:18px;">
             <i class="bi bi-exclamation-triangle-fill" style="color:#f97316;font-size:16px;flex-shrink:0;margin-top:1px;"></i>
             <div>
-                <div style="font-size:13px;font-weight:700;color:#9a3412;margin-bottom:2px;">Quota esgotada este mês</div>
-                <div style="font-size:12px;color:#c2410c;line-height:1.5;">Seu agente foi pausado automaticamente. Adicione mais tokens para reativá-lo.</div>
+                <div style="font-size:13px;font-weight:700;color:#9a3412;margin-bottom:2px;">{{ __('ai_agents.quota_exhausted_title') }}</div>
+                <div style="font-size:12px;color:#c2410c;line-height:1.5;">{{ __('ai_agents.quota_exhausted_text') }}</div>
             </div>
         </div>
 
@@ -524,21 +524,21 @@
             $pct         = $tokensLimit > 0 ? min(100, round($tokensUsed / $tokensLimit * 100)) : 100;
         @endphp
         <div style="margin-bottom:18px;">
-            <div style="font-size:12px;font-weight:600;color:#6b7280;margin-bottom:6px;">Uso do mês atual</div>
+            <div style="font-size:12px;font-weight:600;color:#6b7280;margin-bottom:6px;">{{ __('ai_agents.quota_usage_label') }}</div>
             <div class="quota-progress-wrap">
                 <div class="quota-progress-bar" style="width:{{ $pct }}%"></div>
             </div>
             <div class="quota-label">
-                <span>{{ number_format($tokensUsed, 0, ',', '.') }} tokens usados</span>
-                <span>{{ $pct }}% do limite</span>
+                <span>{{ __('ai_agents.quota_tokens_used', ['count' => number_format($tokensUsed, 0, ',', '.')]) }}</span>
+                <span>{{ __('ai_agents.quota_percent_limit', ['pct' => $pct]) }}</span>
             </div>
-            <div style="font-size:11.5px;color:#9ca3af;">Limite: {{ number_format($tokensLimit, 0, ',', '.') }} tokens/mês</div>
+            <div style="font-size:11.5px;color:#9ca3af;">{{ __('ai_agents.quota_limit_label', ['count' => number_format($tokensLimit, 0, ',', '.')]) }}</div>
         </div>
 
         {{-- Gráfico diário --}}
         @if(isset($dailyUsage) && $dailyUsage->count() > 0)
         <div class="quota-chart-wrap">
-            <div class="quota-chart-title">Consumo — últimos 7 dias</div>
+            <div class="quota-chart-title">{{ __('ai_agents.quota_chart_title') }}</div>
             <div class="quota-bar-chart">
                 @php $maxDay = $dailyUsage->max('total') ?: 1; @endphp
                 @foreach($dailyUsage as $day)
@@ -554,7 +554,7 @@
 
         {{-- Pacotes --}}
         @if(isset($tokenIncrementPlans) && $tokenIncrementPlans->count() > 0)
-        <div style="font-size:12.5px;font-weight:700;color:#374151;margin-bottom:10px;">Escolha um pacote para continuar</div>
+        <div style="font-size:12.5px;font-weight:700;color:#374151;margin-bottom:10px;">{{ __('ai_agents.quota_choose_pack') }}</div>
         <div class="quota-packs">
             @foreach($tokenIncrementPlans as $pack)
             <div class="quota-pack-card" onclick="selectPack({{ $pack->id }}, this)" data-pack-id="{{ $pack->id }}">
@@ -570,14 +570,14 @@
         {{-- Campos de cadastro (primeira compra, sem asaas_customer_id) --}}
         @if(!auth()->user()->tenant->asaas_customer_id)
         <div id="quotaBillingFields" style="margin-top:14px;">
-            <div style="font-size:12px;font-weight:600;color:#6b7280;margin-bottom:8px;">Dados para cobrança (primeira compra)</div>
+            <div style="font-size:12px;font-weight:600;color:#6b7280;margin-bottom:8px;">{{ __('ai_agents.quota_billing_title') }}</div>
             <div style="margin-bottom:10px;">
-                <input type="text" id="quotaCpfCnpj" placeholder="CPF ou CNPJ"
+                <input type="text" id="quotaCpfCnpj" placeholder="{{ __('ai_agents.quota_cpf_cnpj') }}"
                        style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;"
                        maxlength="18">
             </div>
             <div>
-                <input type="email" id="quotaEmail" placeholder="Email para nota fiscal"
+                <input type="email" id="quotaEmail" placeholder="{{ __('ai_agents.quota_email_nf') }}"
                        value="{{ auth()->user()->email }}"
                        style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;">
             </div>
@@ -586,25 +586,25 @@
 
         {{-- PIX result --}}
         <div id="quotaPixResult" style="display:none;" class="quota-pix-wrap">
-            <div class="quota-pix-title"><i class="bi bi-qr-code"></i> Pague via PIX</div>
+            <div class="quota-pix-title"><i class="bi bi-qr-code"></i> {{ __('ai_agents.quota_pix_title') }}</div>
             <img id="quotaPixImg" class="quota-pix-img" src="" alt="QR Code PIX" style="display:none;">
             <div id="quotaPixCode" class="quota-pix-code" style="display:none;"></div>
             <button class="quota-pix-copy" id="quotaPixCopyBtn" style="display:none;" onclick="copyPixCode()">
-                <i class="bi bi-clipboard"></i> Copiar código PIX
+                <i class="bi bi-clipboard"></i> {{ __('ai_agents.quota_pix_copy') }}
             </button>
             <div id="quotaPixLink" style="margin-top:8px;display:none;">
                 <a id="quotaPixLinkA" href="#" target="_blank" style="font-size:12.5px;color:#3B82F6;font-weight:600;">
-                    <i class="bi bi-box-arrow-up-right"></i> Abrir fatura
+                    <i class="bi bi-box-arrow-up-right"></i> {{ __('ai_agents.quota_open_invoice') }}
                 </a>
             </div>
             <p style="font-size:12px;color:#6b7280;margin-top:10px;margin-bottom:0;">
-                Após o pagamento, seu agente será reativado automaticamente em até 5 minutos.
+                {{ __('ai_agents.quota_reactivation_notice') }}
             </p>
         </div>
 
         @else
         <p style="font-size:13px;color:#9ca3af;text-align:center;padding:20px 0;">
-            Nenhum pacote disponível no momento.<br>Entre em contato com o suporte.
+            {{ __('ai_agents.quota_no_packs') }}<br>{{ __('ai_agents.quota_no_packs_contact') }}
         </p>
         @endif
 
@@ -613,14 +613,14 @@
     @if(isset($tokenIncrementPlans) && $tokenIncrementPlans->count() > 0)
     <div class="qts-footer">
         <button class="quota-btn-buy" id="quotaBuyBtn" onclick="buyTokens()">
-            <i class="bi bi-lightning-charge-fill"></i> Comprar pacote selecionado
+            <i class="bi bi-lightning-charge-fill"></i> {{ __('ai_agents.quota_buy_btn') }}
         </button>
     </div>
     @endif
 
 </div>
 
-<a href="{{ route('ai.agents.create') }}" class="agent-fab" aria-label="Novo Agente">
+<a href="{{ route('ai.agents.create') }}" class="agent-fab" aria-label="{{ __('ai_agents.new_agent') }}">
     <i class="bi bi-plus-lg"></i>
 </a>
 @endsection
@@ -629,6 +629,7 @@
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 const AGENTS_BASE = '{{ url("/ia/agentes") }}';
+const AILANG = @json(__('ai_agents'));
 
 // Fechar dropdowns ao clicar fora
 document.addEventListener('click', function(e) {
@@ -711,11 +712,11 @@ async function tcmSend() {
             tcmHistory.push({ role: 'agent', content: data.reply });
             if (tcmHistory.length > 40) tcmHistory = tcmHistory.slice(-40);
         } else {
-            tcmAddMsg('system', '⚠ Erro: ' + (data.message || 'Falha ao obter resposta.'));
+            tcmAddMsg('system', AILANG.test_chat_error_prefix + (data.message || AILANG.test_chat_error_generic));
         }
     } catch (e) {
         typing.remove();
-        tcmAddMsg('system', '⚠ Erro de conexão.');
+        tcmAddMsg('system', AILANG.test_chat_error_connection);
     } finally {
         tcmBusy = false;
         document.getElementById('tcmSendBtn').disabled = false;
@@ -726,7 +727,7 @@ async function tcmSend() {
 function tcmReset() {
     tcmHistory = [];
     document.getElementById('tcmMessages').innerHTML = '';
-    tcmAddMsg('system', 'Conversa reiniciada. Digite uma mensagem para começar.');
+    tcmAddMsg('system', AILANG.test_chat_reset_msg);
 }
 
 /* ── Card actions ── */
@@ -736,7 +737,7 @@ async function toggleActive(id, isActive, btn) {
         headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json' },
     });
     const data = await res.json();
-    if (!data.success) { toastr.error('Erro.'); return; }
+    if (!data.success) { toastr.error('Error'); return; }
     location.reload();
 }
 
@@ -757,9 +758,9 @@ async function _doDeleteAgent() {
         headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
     });
     const data = await res.json();
-    if (!data.success) { toastr.error('Erro ao excluir.'); return; }
+    if (!data.success) { toastr.error(AILANG.toast_delete_error); return; }
     _deleteAgentBtn?.closest('.agent-card')?.remove();
-    toastr.success('Agente excluído.');
+    toastr.success(AILANG.toast_agent_deleted);
 }
 
 /* ── Quota Modal ── */
@@ -787,7 +788,7 @@ function selectPack(id, el) {
 
 async function buyTokens() {
     if (!selectedPackId) {
-        toastr.warning('Selecione um pacote antes de continuar.');
+        toastr.warning(AILANG.toast_select_pack);
         return;
     }
 
@@ -798,14 +799,14 @@ async function buyTokens() {
     const emailEl = document.getElementById('quotaEmail');
     if (cpfEl) {
         if (!cpfEl.value.trim()) {
-            toastr.warning('Informe o CPF ou CNPJ para continuar.');
+            toastr.warning(AILANG.toast_cpf_required);
             return;
         }
         payload.cpf_cnpj = cpfEl.value.trim();
     }
     if (emailEl) {
         if (!emailEl.value.trim() || !emailEl.value.includes('@')) {
-            toastr.warning('Informe um email válido.');
+            toastr.warning(AILANG.toast_email_required);
             return;
         }
         payload.email = emailEl.value.trim();
@@ -813,7 +814,7 @@ async function buyTokens() {
 
     const btn = document.getElementById('quotaBuyBtn');
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processando...';
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> ' + AILANG.toast_processing;
 
     try {
         const res  = await fetch('{{ route("settings.tokens.purchase") }}', {
@@ -824,7 +825,7 @@ async function buyTokens() {
         const data = await res.json();
 
         if (!res.ok || !data.success) {
-            toastr.error(data.message || 'Erro ao gerar cobrança.');
+            toastr.error(data.message || AILANG.toast_billing_error);
             return;
         }
 
@@ -853,21 +854,21 @@ async function buyTokens() {
             linkWrap.style.display = 'block';
         }
 
-        toastr.success('Cobrança gerada! Efetue o pagamento via PIX.');
+        toastr.success(AILANG.toast_billing_generated);
     } catch {
-        toastr.error('Erro de conexão. Tente novamente.');
+        toastr.error(AILANG.toast_connection_error);
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-lightning-charge-fill"></i> Comprar pacote selecionado';
+        btn.innerHTML = '<i class="bi bi-lightning-charge-fill"></i> ' + AILANG.quota_buy_btn;
     }
 }
 
 function copyPixCode() {
     const code = document.getElementById('quotaPixCode').textContent;
     navigator.clipboard.writeText(code).then(() => {
-        toastr.success('Código PIX copiado!');
+        toastr.success(AILANG.toast_pix_copied);
     }).catch(() => {
-        toastr.error('Não foi possível copiar automaticamente.');
+        toastr.error(AILANG.toast_pix_copy_error);
     });
 }
 

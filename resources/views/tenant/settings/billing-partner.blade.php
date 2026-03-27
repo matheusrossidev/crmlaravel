@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Configurações';
+    $title    = __('settings.billing_title');
     $pageIcon = 'gear';
 @endphp
 
@@ -232,17 +232,17 @@
                         <i class="bi bi-building-check" style="font-size:20px;color:#fff;"></i>
                     </div>
                     <div>
-                        <div class="partner-plan-label">Plano atual</div>
-                        <div class="partner-plan-name">Parceiro</div>
+                        <div class="partner-plan-label">{{ __('settings.partner_plan') }}</div>
+                        <div class="partner-plan-name">{{ __('settings.partner_name') }}</div>
                     </div>
                 </div>
                 <span class="partner-status-badge">
-                    <i class="bi bi-circle-fill" style="font-size:7px;margin-right:4px;"></i>Ativo
+                    <i class="bi bi-circle-fill" style="font-size:7px;margin-right:4px;"></i>{{ __('settings.partner_active') }}
                 </span>
             </div>
             <div class="partner-plan-body">
                 <div class="partner-since">
-                    Parceiro desde <strong>{{ $partnerSince->translatedFormat('d \d\e F \d\e Y') }}</strong>
+                    {{ __('settings.partner_since', ['date' => $partnerSince->translatedFormat('d \d\e F \d\e Y')]) }}
                 </div>
                 @php $featuresList = $planDef?->features_json['features_list'] ?? []; @endphp
                 @if(count($featuresList))
@@ -261,30 +261,30 @@
         <div class="partner-card">
             <div class="partner-card-header">
                 <i class="bi bi-link-45deg" style="color:#0085f3;"></i>
-                Link de Indicação
+                {{ __('settings.partner_referral') }}
             </div>
             <div class="partner-card-body">
                 @if($partnerCode && $registerLink)
                 <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">
-                    Compartilhe este link com seus clientes para que eles se cadastrem vinculados ao seu código de parceiro.
+                    {{ __('settings.partner_referral_desc') }}
                 </p>
                 <div class="link-input-group">
                     <input type="text" value="{{ $registerLink }}" readonly>
                     <button onclick="copyLink()">
-                        <i class="bi bi-clipboard me-1"></i> Copiar Link
+                        <i class="bi bi-clipboard me-1"></i> {{ __('settings.partner_copy_link') }}
                     </button>
                 </div>
                 <div class="code-row">
                     <span class="code-badge">{{ $partnerCode->code }}</span>
                     <button class="btn-copy-code" onclick="copyCode()">
-                        <i class="bi bi-clipboard"></i> Copiar Código
+                        <i class="bi bi-clipboard"></i> {{ __('settings.partner_copy_code') }}
                     </button>
-                    <span style="font-size:12.5px;color:#9ca3af;">Código único do seu plano</span>
+                    <span style="font-size:12.5px;color:#9ca3af;">{{ __('settings.partner_code_hint') }}</span>
                 </div>
                 @else
                 <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f9fafb;border-radius:10px;border:1.5px dashed #e5e7eb;">
                     <i class="bi bi-info-circle" style="color:#9ca3af;font-size:18px;flex-shrink:0;"></i>
-                    <span style="font-size:13px;color:#6b7280;">Nenhum código de parceiro atribuído ainda. Solicite ao administrador para vincular seu código.</span>
+                    <span style="font-size:13px;color:#6b7280;">{{ __('settings.partner_no_code') }}</span>
                 </div>
                 @endif
             </div>
@@ -293,19 +293,19 @@
         <div class="partner-card">
             <div class="partner-card-header">
                 <i class="bi bi-building" style="color:#0085f3;"></i>
-                Clientes Indicados
+                {{ __('settings.partner_clients') }}
             </div>
             <div class="partner-card-body">
                 <div class="client-counter-row">
                     <div class="client-counter-info">
-                        <div class="label">Total de empresas cadastradas</div>
-                        <div class="sub">com o seu código de parceiro</div>
+                        <div class="label">{{ __('settings.partner_total') }}</div>
+                        <div class="sub">{{ __('settings.partner_with_code') }}</div>
                     </div>
                     <div class="client-counter-number">{{ $clientCount }}</div>
                 </div>
                 <a href="{{ route('agency.clients') }}" class="btn-view-clients">
                     <i class="bi bi-building"></i>
-                    Ver todos os clientes
+                    {{ __('settings.partner_view_all') }}
                     <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
@@ -318,11 +318,13 @@
 
 @push('scripts')
 <script>
+const SLANG = @json(__('settings'));
+
 function copyLink() {
-    navigator.clipboard.writeText('{{ $registerLink ?? '' }}').then(() => toastr.success('Link copiado!'));
+    navigator.clipboard.writeText('{{ $registerLink ?? '' }}').then(() => toastr.success(SLANG.partner_link_copied));
 }
 function copyCode() {
-    navigator.clipboard.writeText('{{ $partnerCode->code ?? '' }}').then(() => toastr.success('Código copiado!'));
+    navigator.clipboard.writeText('{{ $partnerCode->code ?? '' }}').then(() => toastr.success(SLANG.partner_code_copied));
 }
 </script>
 @endpush

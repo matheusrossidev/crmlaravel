@@ -1,6 +1,6 @@
 @extends('tenant.layouts.app')
 @php
-    $title    = 'Notificações';
+    $title    = __('settings.notif_title');
     $pageIcon = 'bell';
 @endphp
 
@@ -176,49 +176,48 @@
 
 <div style="margin-top:20px;">
 
-    {{-- Card 1: Permissões do Navegador --}}
+    {{-- Card 1: Browser Permissions --}}
     <div class="notif-card">
         <div class="notif-card-header">
-            <i class="bi bi-globe2"></i> Permissões do Navegador
+            <i class="bi bi-globe2"></i> {{ __('settings.notif_browser') }}
         </div>
         <div class="notif-card-body">
             <p style="font-size:13px; color:#6b7280; margin-bottom:12px;">
-                Para receber notificações, é necessário permitir que o navegador exiba alertas.
+                {{ __('settings.notif_perm_desc') }}
             </p>
             <div id="permStatusWrap">
                 <span class="perm-status default" id="permBadge">
-                    <i class="bi bi-question-circle"></i> Verificando...
+                    <i class="bi bi-question-circle"></i> {{ __('settings.notif_checking') }}
                 </span>
             </div>
             <div id="iosHint" style="display:none; margin-top:12px; padding:12px 16px; background:#eff6ff; border-radius:10px; border:1px solid #bfdbfe; font-size:12.5px; color:#1e40af; line-height:1.5;">
                 <i class="bi bi-phone" style="margin-right:4px;"></i>
-                <strong>iPhone/iPad:</strong> Para receber notificações, adicione o Syncro à tela inicial.
-                Toque em <strong>Compartilhar</strong> <i class="bi bi-box-arrow-up"></i> &rarr; <strong>Adicionar à Tela de Início</strong>.
+                <strong>{{ __('settings.notif_ios_hint') }}</strong>
             </div>
             <div class="perm-actions">
                 <button class="btn-save-prefs" id="btnRequestPerm" onclick="requestNotifPermission()" style="padding:8px 18px; font-size:12.5px;">
-                    <i class="bi bi-bell"></i> Permitir Notificações
+                    <i class="bi bi-bell"></i> {{ __('settings.notif_btn_allow') }}
                 </button>
                 <button class="btn-save-prefs" id="btnSubscribePush" onclick="togglePushSubscription()" style="padding:8px 18px; font-size:12.5px; background:#eff6ff; color:#0085f3; border:1.5px solid #bfdbfe;">
-                    <i class="bi bi-phone"></i> <span id="pushBtnLabel">Ativar Push</span>
+                    <i class="bi bi-phone"></i> <span id="pushBtnLabel">{{ __('settings.notif_btn_push_on') }}</span>
                 </button>
             </div>
         </div>
     </div>
 
-    {{-- Card 2: Preferências por Tipo --}}
+    {{-- Card 2: Preferences by Type --}}
     <div class="notif-card">
         <div class="notif-card-header">
-            <i class="bi bi-sliders"></i> Preferências por Tipo
+            <i class="bi bi-sliders"></i> {{ __('settings.notif_preferences') }}
         </div>
         <div class="notif-card-body">
             <table class="pref-table">
                 <thead>
                     <tr>
-                        <th>Evento</th>
-                        <th>Browser</th>
-                        <th>Push</th>
-                        <th>Som</th>
+                        <th>{{ __('settings.notif_col_event') }}</th>
+                        <th>{{ __('settings.notif_col_browser') }}</th>
+                        <th>{{ __('settings.notif_col_push') }}</th>
+                        <th>{{ __('settings.notif_col_sound') }}</th>
                     </tr>
                 </thead>
                 <tbody id="prefTableBody">
@@ -227,10 +226,10 @@
         </div>
     </div>
 
-    {{-- Card 3: Sons --}}
+    {{-- Card 3: Sounds --}}
     <div class="notif-card">
         <div class="notif-card-header">
-            <i class="bi bi-volume-up"></i> Sons
+            <i class="bi bi-volume-up"></i> {{ __('settings.notif_sounds') }}
         </div>
         <div class="notif-card-body">
             <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
@@ -238,17 +237,17 @@
                     <input type="checkbox" id="soundMasterToggle" onchange="updateSoundMaster()">
                     <span class="toggle-slider"></span>
                 </label>
-                <span style="font-size:13px; font-weight:500; color:#374151;">Som de notificações ativado</span>
+                <span style="font-size:13px; font-weight:500; color:#374151;">{{ __('settings.notif_sound_on') }}</span>
             </div>
             <div id="soundPerType" style="display:grid; grid-template-columns:1fr 1fr; gap:10px 20px;">
             </div>
         </div>
     </div>
 
-    {{-- Card 4: Horário Silencioso --}}
+    {{-- Card 4: Quiet Hours --}}
     <div class="notif-card">
         <div class="notif-card-header">
-            <i class="bi bi-moon"></i> Horário Silencioso
+            <i class="bi bi-moon"></i> {{ __('settings.notif_quiet') }}
         </div>
         <div class="notif-card-body">
             <div style="display:flex; align-items:center; gap:12px;">
@@ -256,24 +255,24 @@
                     <input type="checkbox" id="quietToggle" onchange="markDirty()">
                     <span class="toggle-slider"></span>
                 </label>
-                <span style="font-size:13px; font-weight:500; color:#374151;">Ativar horário silencioso</span>
+                <span style="font-size:13px; font-weight:500; color:#374151;">{{ __('settings.notif_quiet_enable') }}</span>
             </div>
             <div class="quiet-row" id="quietTimeRow" style="display:none;">
-                <span>De</span>
+                <span>{{ __('settings.notif_quiet_from') }}</span>
                 <input type="time" id="quietStart" value="22:00" onchange="markDirty()">
-                <span>até</span>
+                <span>{{ __('settings.notif_quiet_to') }}</span>
                 <input type="time" id="quietEnd" value="07:00" onchange="markDirty()">
             </div>
             <p style="font-size:11.5px; color:#9ca3af; margin-top:10px;">
-                Durante o horário silencioso, nenhuma notificação será emitida (browser, push ou som).
+                {{ __('settings.notif_quiet_help') }}
             </p>
         </div>
     </div>
 
-    {{-- Botão salvar --}}
+    {{-- Save button --}}
     <div style="text-align:right; margin-top:4px;">
         <button class="btn-save-prefs" id="btnSavePrefs" onclick="savePreferences()" disabled>
-            <i class="bi bi-check2"></i> Salvar Preferências
+            <i class="bi bi-check2"></i> {{ __('settings.notif_save') }}
         </button>
     </div>
 </div>
@@ -286,24 +285,25 @@
 (function() {
     var prefs = @json($preferences ?? []);
     var dirty = false;
+    const SLANG = @json(__('settings'));
 
     // Notification types config
     var notifTypes = [
-        { key: 'new_lead',            icon: 'bi-person-plus',    label: 'Novo lead criado',               sound: 'notification-chime' },
-        { key: 'lead_assigned',       icon: 'bi-person-check',   label: 'Lead atribuído a mim',           sound: 'notification-chime' },
-        { key: 'lead_stage_changed',  icon: 'bi-arrow-right',    label: 'Lead movido de etapa',           sound: 'notification-chime' },
-        { key: 'whatsapp_message',    icon: 'bi-whatsapp',       label: 'Nova mensagem WhatsApp',         sound: 'message-received' },
-        { key: 'whatsapp_assigned',   icon: 'bi-chat-dots',      label: 'Conversa atribuída',             sound: 'notification-chime' },
-        { key: 'ai_intent',           icon: 'bi-robot',          label: 'Sinal de intenção (IA)',         sound: 'notification-chime' },
-        { key: 'ai_analyst',          icon: 'bi-lightbulb',      label: 'Sugestão do analista (IA)',      sound: 'notification-chime' },
-        { key: 'campaign_completed',  icon: 'bi-megaphone',      label: 'Campanha finalizada',            sound: 'alert' },
-        { key: 'master_notification', icon: 'bi-info-circle',    label: 'Notificação do sistema',         sound: 'alert' },
+        { key: 'new_lead',            icon: 'bi-person-plus',    label: SLANG.notif_new_lead,        sound: 'notification-chime' },
+        { key: 'lead_assigned',       icon: 'bi-person-check',   label: SLANG.notif_lead_assigned,   sound: 'notification-chime' },
+        { key: 'lead_stage_changed',  icon: 'bi-arrow-right',    label: SLANG.notif_lead_stage,      sound: 'notification-chime' },
+        { key: 'whatsapp_message',    icon: 'bi-whatsapp',       label: SLANG.notif_wa_message,      sound: 'message-received' },
+        { key: 'whatsapp_assigned',   icon: 'bi-chat-dots',      label: SLANG.notif_wa_assigned,     sound: 'notification-chime' },
+        { key: 'ai_intent',           icon: 'bi-robot',          label: SLANG.notif_ai_intent,       sound: 'notification-chime' },
+        { key: 'ai_analyst',          icon: 'bi-lightbulb',      label: SLANG.notif_ai_analyst,      sound: 'notification-chime' },
+        { key: 'campaign_completed',  icon: 'bi-megaphone',      label: SLANG.notif_campaign_done,   sound: 'alert' },
+        { key: 'master_notification', icon: 'bi-info-circle',    label: SLANG.notif_master,          sound: 'alert' },
     ];
 
     var soundOptions = [
         { value: 'notification-chime', label: 'Chime' },
-        { value: 'message-received',   label: 'Mensagem' },
-        { value: 'alert',              label: 'Alerta' },
+        { value: 'message-received',   label: 'Message' },
+        { value: 'alert',              label: 'Alert' },
     ];
 
     window.markDirty = function() {
@@ -348,7 +348,7 @@
                 html += '<option value="' + s.value + '"' + (currentSound === s.value ? ' selected' : '') + '>' + s.label + '</option>';
             });
             html += '</select>';
-            html += '<button class="sound-preview-btn" onclick="previewSound(\'' + t.key + '\')" title="Ouvir"><i class="bi bi-play-circle"></i></button>';
+            html += '<button class="sound-preview-btn" onclick="previewSound(\'' + t.key + '\')" title="' + SLANG.notif_btn_preview + '"><i class="bi bi-play-circle"></i></button>';
             html += '</div>';
         });
 
@@ -362,10 +362,10 @@
         var btnReq = document.getElementById('btnRequestPerm');
 
         var map = {
-            granted:     { cls: 'granted',     icon: 'bi-check-circle', text: 'Permitido' },
-            denied:      { cls: 'denied',      icon: 'bi-x-circle',    text: 'Bloqueado' },
-            default:     { cls: 'default',     icon: 'bi-dash-circle', text: 'Não solicitado' },
-            unsupported: { cls: 'unsupported', icon: 'bi-slash-circle', text: 'Não suportado' },
+            granted:     { cls: 'granted',     icon: 'bi-check-circle', text: SLANG.notif_granted },
+            denied:      { cls: 'denied',      icon: 'bi-x-circle',    text: SLANG.notif_denied },
+            default:     { cls: 'default',     icon: 'bi-dash-circle', text: SLANG.notif_default },
+            unsupported: { cls: 'unsupported', icon: 'bi-slash-circle', text: SLANG.notif_unsupported },
         };
 
         var s = map[status] || map.unsupported;
@@ -388,12 +388,12 @@
             var label = document.getElementById('pushBtnLabel');
             var btn = document.getElementById('btnSubscribePush');
             if (subscribed) {
-                label.textContent = 'Desativar Push';
+                label.textContent = SLANG.notif_btn_push_off;
                 btn.style.background = '#fef2f2';
                 btn.style.color = '#dc2626';
                 btn.style.borderColor = '#fecaca';
             } else {
-                label.textContent = 'Ativar Push';
+                label.textContent = SLANG.notif_btn_push_on;
                 btn.style.background = '#eff6ff';
                 btn.style.color = '#0085f3';
                 btn.style.borderColor = '#bfdbfe';
@@ -413,21 +413,21 @@
         window.NotifManager.isPushSubscribed().then(function(subscribed) {
             if (subscribed) {
                 window.NotifManager.unsubscribePush().then(function() {
-                    toastr.info('Push desativado.');
+                    toastr.info(SLANG.notif_push_off);
                     updatePushStatus();
                 }).catch(function() {
-                    toastr.error('Erro ao desativar push.');
+                    toastr.error(SLANG.notif_push_off_error);
                 });
             } else {
                 window.NotifManager.subscribePush().then(function() {
-                    toastr.success('Push ativado!');
+                    toastr.success(SLANG.notif_push_on);
                     updatePushStatus();
                     updatePermStatus();
                 }).catch(function(err) {
                     if (err.message && err.message.indexOf('denied') !== -1) {
-                        toastr.error('Permissão negada pelo navegador.');
+                        toastr.error(SLANG.notif_push_denied);
                     } else {
-                        toastr.error('Erro ao ativar push.');
+                        toastr.error(SLANG.notif_push_on_error);
                     }
                     updatePermStatus();
                 });
@@ -482,7 +482,7 @@
 
         var btn = document.getElementById('btnSavePrefs');
         btn.disabled = true;
-        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando...';
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> ' + SLANG.notif_saving;
 
         $.ajax({
             url: '{{ route("settings.notifications.update") }}',
@@ -494,15 +494,15 @@
             },
             data: JSON.stringify(data),
             success: function(resp) {
-                toastr.success(resp.message || 'Preferências salvas!');
+                toastr.success(resp.message || SLANG.notif_saved);
                 window.notificationPrefs = resp.preferences || data;
                 dirty = false;
-                btn.innerHTML = '<i class="bi bi-check2"></i> Salvar Preferências';
+                btn.innerHTML = '<i class="bi bi-check2"></i> ' + SLANG.notif_save;
             },
             error: function() {
-                toastr.error('Erro ao salvar preferências.');
+                toastr.error(SLANG.notif_error_save);
                 btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-check2"></i> Salvar Preferências';
+                btn.innerHTML = '<i class="bi bi-check2"></i> ' + SLANG.notif_save;
             }
         });
     };

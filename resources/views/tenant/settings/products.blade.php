@@ -1,6 +1,6 @@
 @extends('tenant.layouts.app')
 @php
-    $title    = 'Produtos e Serviços';
+    $title    = __('products.title');
     $pageIcon = 'box-seam';
 @endphp
 
@@ -55,29 +55,29 @@
 
     <div class="cf-card">
         <div class="cf-card-header">
-            <h3><i class="bi bi-box-seam" style="color:#3B82F6;"></i> Produtos e Serviços</h3>
+            <h3><i class="bi bi-box-seam" style="color:#3B82F6;"></i> {{ __('products.title') }}</h3>
             <button class="btn-new" onclick="openDrawer()">
-                <i class="bi bi-plus-lg"></i> Novo produto
+                <i class="bi bi-plus-lg"></i> {{ __('products.new_product') }}
             </button>
         </div>
 
         @if($products->isEmpty())
         <div class="empty-state">
             <i class="bi bi-box-seam"></i>
-            <p style="font-weight:600;color:#374151;">Nenhum produto cadastrado</p>
-            <p style="font-size:13px;">Cadastre produtos e serviços para vincular a leads e usar com a IA.</p>
+            <p style="font-weight:600;color:#374151;">{{ __('products.no_products') }}</p>
+            <p style="font-size:13px;">{{ __('products.no_products_desc') }}</p>
         </div>
         @else
         <table class="cf-table" id="productsTable">
             <thead>
                 <tr>
-                    <th>Produto</th>
-                    <th>SKU</th>
-                    <th>Categoria</th>
-                    <th>Preço</th>
-                    <th>Unidade</th>
-                    <th>Galeria</th>
-                    <th>Status</th>
+                    <th>{{ __('products.col_product') }}</th>
+                    <th>{{ __('products.col_sku') }}</th>
+                    <th>{{ __('products.col_category') }}</th>
+                    <th>{{ __('products.col_price') }}</th>
+                    <th>{{ __('products.col_unit') }}</th>
+                    <th>{{ __('products.col_gallery') }}</th>
+                    <th>{{ __('products.col_status') }}</th>
                     <th style="width:100px;"></th>
                 </tr>
             </thead>
@@ -114,14 +114,14 @@
                     </td>
                     <td>
                         <span class="status-badge {{ $p->is_active ? 'status-active' : 'status-inactive' }}">
-                            {{ $p->is_active ? 'Ativo' : 'Inativo' }}
+                            {{ $p->is_active ? __('products.active') : __('products.inactive') }}
                         </span>
                     </td>
                     <td>
                         <div style="display:flex;gap:4px;">
-                            <button class="btn-icon" onclick="editProduct({{ $p->id }})" title="Editar"><i class="bi bi-pencil"></i></button>
-                            <button class="btn-icon" onclick="openGallery({{ $p->id }})" title="Galeria"><i class="bi bi-images"></i></button>
-                            <button class="btn-icon danger" onclick="deleteProduct({{ $p->id }})" title="Excluir"><i class="bi bi-trash3"></i></button>
+                            <button class="btn-icon" onclick="editProduct({{ $p->id }})" title="{{ __('products.edit') }}"><i class="bi bi-pencil"></i></button>
+                            <button class="btn-icon" onclick="openGallery({{ $p->id }})" title="{{ __('products.gallery') }}"><i class="bi bi-images"></i></button>
+                            <button class="btn-icon danger" onclick="deleteProduct({{ $p->id }})" title="{{ __('products.delete') }}"><i class="bi bi-trash3"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -133,7 +133,7 @@
 
     <div class="info-box">
         <i class="bi bi-info-circle"></i>
-        Produtos cadastrados ficam disponíveis para vincular a leads e para o agente de IA consultar preços, enviar fotos e vincular automaticamente durante conversas.
+        {{ __('products.info_box') }}
     </div>
 </div>
 
@@ -141,66 +141,66 @@
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
     <div class="drawer-header">
-        <h4 id="drawerTitle" style="font-size:15px;font-weight:700;color:#1a1d23;margin:0;">Novo Produto</h4>
+        <h4 id="drawerTitle" style="font-size:15px;font-weight:700;color:#1a1d23;margin:0;">{{ __('products.new_product_title') }}</h4>
         <button class="btn-icon" onclick="closeDrawer()"><i class="bi bi-x-lg"></i></button>
     </div>
     <div class="drawer-body">
         <input type="hidden" id="productId">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
             <div style="grid-column:1/-1;">
-                <label class="form-label">Nome *</label>
-                <input type="text" id="productName" class="form-input" placeholder="Ex: Cortina Romana">
+                <label class="form-label">{{ __('products.name') }} *</label>
+                <input type="text" id="productName" class="form-input" placeholder="{{ __('products.name_ph') }}">
             </div>
             <div style="grid-column:1/-1;">
-                <label class="form-label">Descricao</label>
-                <textarea id="productDescription" class="form-input" rows="3" placeholder="Descricao detalhada..."></textarea>
+                <label class="form-label">{{ __('products.description') }}</label>
+                <textarea id="productDescription" class="form-input" rows="3" placeholder="{{ __('products.description_ph') }}"></textarea>
             </div>
             <div>
-                <label class="form-label">Preco *</label>
+                <label class="form-label">{{ __('products.price') }} *</label>
                 <input type="number" id="productPrice" class="form-input" step="0.01" min="0" placeholder="0,00">
             </div>
             <div>
-                <label class="form-label">Preco de custo</label>
+                <label class="form-label">{{ __('products.cost_price') }}</label>
                 <input type="number" id="productCostPrice" class="form-input" step="0.01" min="0" placeholder="0,00">
             </div>
             <div>
-                <label class="form-label">SKU</label>
+                <label class="form-label">{{ __('products.sku') }}</label>
                 <input type="text" id="productSku" class="form-input" placeholder="CRT-001">
             </div>
             <div>
-                <label class="form-label">Unidade</label>
+                <label class="form-label">{{ __('products.unit') }}</label>
                 <select id="productUnit" class="form-input">
-                    <option value="">Selecione</option>
-                    <option value="un">Unidade (un)</option>
-                    <option value="m2">Metro quadrado (m2)</option>
-                    <option value="m">Metro linear (m)</option>
-                    <option value="hr">Hora (hr)</option>
-                    <option value="mes">Mensal</option>
-                    <option value="kg">Quilograma (kg)</option>
-                    <option value="L">Litro (L)</option>
-                    <option value="pc">Peca (pc)</option>
+                    <option value="">{{ __('products.select') }}</option>
+                    <option value="un">{{ __('products.unit_un') }}</option>
+                    <option value="m2">{{ __('products.unit_m2') }}</option>
+                    <option value="m">{{ __('products.unit_m') }}</option>
+                    <option value="hr">{{ __('products.unit_hr') }}</option>
+                    <option value="mes">{{ __('products.unit_month') }}</option>
+                    <option value="kg">{{ __('products.unit_kg') }}</option>
+                    <option value="L">{{ __('products.unit_l') }}</option>
+                    <option value="pc">{{ __('products.unit_pc') }}</option>
                 </select>
             </div>
             <div>
-                <label class="form-label">Categoria</label>
+                <label class="form-label">{{ __('products.category') }}</label>
                 <select id="productCategoryId" class="form-input" onchange="onParentCatChange()">
-                    <option value="">— Selecione —</option>
+                    <option value="">{{ __('products.select_option') }}</option>
                     @foreach($categories as $cat)
                         <option value="{{ $cat->id }}" data-has-children="{{ $cat->children->count() > 0 ? '1' : '0' }}">{{ $cat->name }}</option>
                     @endforeach
                 </select>
             </div>
             <div id="subCatWrap" style="display:none;">
-                <label class="form-label">Subcategoria</label>
+                <label class="form-label">{{ __('products.subcategory') }}</label>
                 <select id="productSubCategoryId" class="form-input">
-                    <option value="">— Selecione —</option>
+                    <option value="">{{ __('products.select_option') }}</option>
                 </select>
             </div>
             <div>
-                <label class="form-label">Status</label>
+                <label class="form-label">{{ __('products.status') }}</label>
                 <select id="productActive" class="form-input">
-                    <option value="1">Ativo</option>
-                    <option value="0">Inativo</option>
+                    <option value="1">{{ __('products.active') }}</option>
+                    <option value="0">{{ __('products.inactive') }}</option>
                 </select>
             </div>
         </div>
@@ -208,7 +208,7 @@
         {{-- Galeria (dentro do drawer, aparece ao editar) --}}
         <div id="gallerySection" style="display:none;margin-top:20px;padding-top:18px;border-top:1px solid #f0f2f7;">
             <label class="form-label" style="font-size:13px;margin-bottom:10px;">
-                <i class="bi bi-images" style="color:#3B82F6;"></i> Galeria
+                <i class="bi bi-images" style="color:#3B82F6;"></i> {{ __('products.gallery_label') }}
             </label>
             <div style="border:2px dashed #d1d5db;border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:12px;"
                  onclick="document.getElementById('galleryFileInput').click()"
@@ -216,16 +216,16 @@
                  ondragleave="this.style.borderColor='#d1d5db'"
                  ondrop="handleDrop(event)">
                 <i class="bi bi-cloud-arrow-up" style="font-size:22px;color:#9ca3af;"></i>
-                <p style="font-size:12px;color:#6b7280;margin:4px 0 0;">Clique ou arraste fotos/videos</p>
-                <p style="font-size:10.5px;color:#9ca3af;margin:2px 0 0;">JPG, PNG, MP4, PDF — Max 10MB</p>
+                <p style="font-size:12px;color:#6b7280;margin:4px 0 0;">{{ __('products.drop_files') }}</p>
+                <p style="font-size:10.5px;color:#9ca3af;margin:2px 0 0;">{{ __('products.file_formats') }}</p>
             </div>
             <input type="file" id="galleryFileInput" style="display:none" accept="image/*,video/mp4,video/mov,application/pdf" multiple onchange="uploadFiles(this.files)">
             <div id="galleryGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;"></div>
         </div>
     </div>
     <div class="drawer-footer">
-        <button class="btn-cancel" onclick="closeDrawer()">Cancelar</button>
-        <button class="btn-save" onclick="saveProduct()"><i class="bi bi-check-lg"></i> Salvar</button>
+        <button class="btn-cancel" onclick="closeDrawer()">{{ __('products.cancel') }}</button>
+        <button class="btn-save" onclick="saveProduct()"><i class="bi bi-check-lg"></i> {{ __('products.save') }}</button>
     </div>
 </div>
 
@@ -234,12 +234,13 @@
 
 @push('scripts')
 <script>
+const PRLANG = @json(__('products'));
 const PRODUCTS = @json($products);
 
 function openDrawer(id) {
     const isEdit = !!id;
     const p = isEdit ? PRODUCTS.find(x => x.id === id) : null;
-    document.getElementById('drawerTitle').textContent = isEdit ? 'Editar Produto' : 'Novo Produto';
+    document.getElementById('drawerTitle').textContent = isEdit ? PRLANG.edit_product_title : PRLANG.new_product_title;
     document.getElementById('productId').value = id || '';
     document.getElementById('productName').value = p?.name || '';
     document.getElementById('productDescription').value = p?.description || '';
@@ -281,20 +282,20 @@ function saveProduct() {
         category_id: document.getElementById('productSubCategoryId')?.value || document.getElementById('productCategoryId').value || null,
         is_active: document.getElementById('productActive').value === '1',
     };
-    if (!data.name) { toastr.error('Nome e obrigatorio.'); return; }
+    if (!data.name) { toastr.error(PRLANG.name_required); return; }
     const url = id ? `{{ url('configuracoes/produtos') }}/${id}` : '{{ route("settings.products.store") }}';
     const method = id ? 'PUT' : 'POST';
     API.call(method, url, data).done(() => {
         closeDrawer();
-        toastr.success(id ? 'Produto atualizado.' : 'Produto criado.');
+        toastr.success(id ? PRLANG.product_updated : PRLANG.product_created);
         location.reload();
     });
 }
 
 function deleteProduct(id) {
-    if (!confirm('Excluir este produto?')) return;
+    if (!confirm(PRLANG.confirm_delete)) return;
     API.delete(`{{ url('configuracoes/produtos') }}/${id}`).done(() => {
-        toastr.success('Produto excluido.');
+        toastr.success(PRLANG.product_deleted);
         location.reload();
     });
 }
@@ -306,7 +307,7 @@ function renderGallery(media) {
     const grid = document.getElementById('galleryGrid');
     const pid = document.getElementById('productId').value;
     if (!media.length) {
-        grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#9ca3af;padding:20px;">Nenhuma midia adicionada.</p>';
+        grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:#9ca3af;padding:20px;">${PRLANG.no_media}</p>`;
         return;
     }
     grid.innerHTML = media.map(m => {
@@ -335,9 +336,9 @@ function uploadFiles(files) {
             if (res.success) {
                 const p = PRODUCTS.find(x => x.id === parseInt(pid));
                 if (p) { if (!p.media) p.media = []; p.media.push(res.media); renderGallery(p.media); }
-                toastr.success('Midia adicionada.');
+                toastr.success(PRLANG.media_added);
             }
-        }).fail(() => toastr.error('Erro ao fazer upload.'));
+        }).fail(() => toastr.error(PRLANG.error_upload));
     });
     document.getElementById('galleryFileInput').value = '';
 }
@@ -345,11 +346,11 @@ function uploadFiles(files) {
 function handleDrop(e) { e.preventDefault(); e.target.closest('[ondrop]').style.borderColor='#d1d5db'; uploadFiles(e.dataTransfer.files); }
 
 function deleteMedia(productId, mediaId) {
-    if (!confirm('Remover esta midia?')) return;
+    if (!confirm(PRLANG.confirm_delete_media)) return;
     API.delete(`{{ url('configuracoes/produtos') }}/${productId}/media/${mediaId}`).done(() => {
         const p = PRODUCTS.find(x => x.id === productId);
         if (p && p.media) { p.media = p.media.filter(m => m.id !== mediaId); renderGallery(p.media); }
-        toastr.success('Midia removida.');
+        toastr.success(PRLANG.media_removed);
     });
 }
 
@@ -369,7 +370,7 @@ function onParentCatChange(preselect) {
             cat.children.map(s => `<option value="${s.id}" ${preselect == s.id ? 'selected' : ''}>${s.name}</option>`).join('');
     } else {
         subWrap.style.display = 'none';
-        subSel.innerHTML = '<option value="">— Selecione —</option>';
+        subSel.innerHTML = `<option value="">${PRLANG.select_option}</option>`;
     }
 }
 

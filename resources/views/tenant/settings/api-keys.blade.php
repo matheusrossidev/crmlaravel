@@ -1,6 +1,6 @@
 @extends('tenant.layouts.app')
 @php
-    $title    = 'API / Webhooks';
+    $title    = __('apikeys.page_title');
     $pageIcon = 'key';
 @endphp
 
@@ -320,9 +320,9 @@
         {{-- API Keys --}}
         <div class="api-card" style="margin-bottom:22px;">
             <div class="api-card-header">
-                <h3><i class="bi bi-key" style="color:#3B82F6;"></i> Suas API Keys</h3>
+                <h3><i class="bi bi-key" style="color:#3B82F6;"></i> {{ __('apikeys.your_api_keys') }}</h3>
                 <button class="btn-primary-sm" onclick="openNewKeyModal()">
-                    <i class="bi bi-plus-lg"></i> Nova API Key
+                    <i class="bi bi-plus-lg"></i> {{ __('apikeys.new_api_key') }}
                 </button>
             </div>
             <div class="api-card-body" style="padding:0 22px;">
@@ -333,28 +333,28 @@
                         <div class="key-name">{{ $key->name }}</div>
                         <div class="key-prefix">{{ $key->key_prefix }}</div>
                         <div class="key-meta">
-                            Criada em {{ $key->created_at?->format('d/m/Y') }}
+                            {{ __('apikeys.created_at', ['date' => $key->created_at?->format('d/m/Y')]) }}
                             @if($key->last_used_at)
-                                · Último uso: {{ $key->last_used_at->diffForHumans() }}
+                                · {{ __('apikeys.last_used', ['time' => $key->last_used_at->diffForHumans()]) }}
                             @else
-                                · Nunca utilizada
+                                · {{ __('apikeys.never_used') }}
                             @endif
                         </div>
                     </div>
                     <span class="{{ $key->is_active ? 'badge-active' : 'badge-inactive' }}">
-                        {{ $key->is_active ? 'Ativa' : 'Revogada' }}
+                        {{ $key->is_active ? __('apikeys.badge_active') : __('apikeys.badge_revoked') }}
                     </span>
                     @if($key->is_active)
                     <button class="btn-revoke" onclick="revokeKey({{ $key->id }}, this)">
-                        <i class="bi bi-trash"></i> Revogar
+                        <i class="bi bi-trash"></i> {{ __('apikeys.btn_revoke') }}
                     </button>
                     @endif
                 </div>
                 @empty
                 <div class="keys-empty">
                     <i class="bi bi-key"></i>
-                    Nenhuma API Key criada ainda.<br>
-                    Clique em <strong>Nova API Key</strong> para criar.
+                    {{ __('apikeys.empty_title') }}<br>
+                    {!! __('apikeys.empty_cta') !!}
                 </div>
                 @endforelse
             </div>
@@ -363,12 +363,11 @@
         {{-- Endpoints --}}
         <div class="api-card">
             <div class="api-card-header">
-                <h3><i class="bi bi-book" style="color:#8B5CF6;"></i> Documentação dos Endpoints</h3>
+                <h3><i class="bi bi-book" style="color:#8B5CF6;"></i> {{ __('apikeys.endpoints_title') }}</h3>
             </div>
             <div class="api-card-body">
                 <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">
-                    Inclua o header <code style="background:#f0f4ff;color:#6366f1;padding:2px 6px;border-radius:4px;font-size:12px;">X-API-Key: sua_key</code>
-                    em todas as requisições. URL base: <code style="background:#f0f4ff;color:#6366f1;padding:2px 6px;border-radius:4px;font-size:12px;">{{ url('/api/v1') }}</code>
+                    {!! __('apikeys.endpoints_intro') !!} <code style="background:#f0f4ff;color:#6366f1;padding:2px 6px;border-radius:4px;font-size:12px;">{{ url('/api/v1') }}</code>
                 </p>
 
                 {{-- ── POST /leads (Builder) ── --}}
@@ -377,7 +376,7 @@
                         <div>
                             <span class="endpoint-method method-post">POST</span>
                             <span class="endpoint-path">/leads</span>
-                            <div class="endpoint-desc">Criar novo lead — use o builder para montar o payload</div>
+                            <div class="endpoint-desc">{{ __('apikeys.ep_post_leads') }}</div>
                         </div>
                         <i class="bi bi-chevron-down ep-chevron" style="color:#9ca3af;font-size:12px;"></i>
                     </div>
@@ -385,7 +384,7 @@
                     <div class="builder-wrap">
                         {{-- Form side --}}
                         <div class="builder-form">
-                            <div class="bsec-title">Campos Principais</div>
+                            <div class="bsec-title">{{ __('apikeys.builder_main_fields') }}</div>
 
                             {{-- name (required) --}}
                             <div class="bfield">
@@ -394,7 +393,7 @@
                                 <div style="display:flex;gap:5px;align-items:center;">
                                     <input type="text" class="binput" id="bld-name"
                                            value="João Silva" oninput="updateCreateCurl()">
-                                    <span class="bfield-req">req</span>
+                                    <span class="bfield-req">{{ __('apikeys.builder_req') }}</span>
                                 </div>
                             </div>
 
@@ -456,14 +455,14 @@
                                     </label>
                                     @endforeach
                                     @if($tags->isEmpty())
-                                    <span style="font-size:11px;color:#9ca3af;">Nenhuma tag configurada</span>
+                                    <span style="font-size:11px;color:#9ca3af;">{{ __('apikeys.builder_no_tags') }}</span>
                                     @endif
                                 </div>
                             </div>
 
                             {{-- Pipeline & Stage --}}
                             @if($pipelines->count())
-                            <div class="bsec-title">Pipeline & Etapa <span style="color:#EF4444;font-size:9px;">obrigatório</span></div>
+                            <div class="bsec-title">{{ __('apikeys.builder_pipeline_stage') }} <span style="color:#EF4444;font-size:9px;">{{ __('apikeys.builder_required') }}</span></div>
 
                             <div class="bfield">
                                 <i class="bi bi-diagram-3" style="color:#d1d5db;font-size:10px;"></i>
@@ -483,18 +482,18 @@
                                         onchange="updateCreateCurl()"></select>
                             </div>
                             @else
-                            <div class="bsec-title">Pipeline & Etapa</div>
+                            <div class="bsec-title">{{ __('apikeys.builder_pipeline_stage') }}</div>
                             <p style="font-size:12px;color:#9ca3af;margin:0 0 8px;">
                                 <i class="bi bi-info-circle"></i>
-                                Nenhum pipeline configurado. Crie um em
-                                <a href="{{ route('settings.pipelines') }}">Configurações → Funis</a>.
+                                {{ __('apikeys.builder_no_pipeline') }}
+                                <a href="{{ route('settings.pipelines') }}">{{ __('apikeys.builder_settings_funnels') }}</a>.
                             </p>
                             @endif
 
                             {{-- Custom Fields --}}
                             @if($customFields->count())
                             <div class="bsec-title" style="display:flex;align-items:center;gap:6px;">
-                                Campos Personalizados
+                                {{ __('apikeys.builder_custom_fields') }}
                                 <span style="font-size:10px;font-weight:400;color:#9ca3af;text-transform:none;letter-spacing:0;">(custom_fields.*)</span>
                             </div>
                             @foreach($customFields as $cf)
@@ -512,8 +511,8 @@
 
                             {{-- Campanha & UTM --}}
                             <div class="bsec-title" style="display:flex;align-items:center;gap:6px;margin-top:10px;">
-                                Campanha & UTM
-                                <span style="font-size:10px;font-weight:400;color:#9ca3af;text-transform:none;letter-spacing:0;">(atribuição automática)</span>
+                                {{ __('apikeys.builder_campaign_utm') }}
+                                <span style="font-size:10px;font-weight:400;color:#9ca3af;text-transform:none;letter-spacing:0;">{{ __('apikeys.builder_utm_hint') }}</span>
                             </div>
 
                             @if($campaigns->count())
@@ -522,7 +521,7 @@
                                        onchange="toggleBldInput('bld-campaign'); updateCreateCurl()">
                                 <span class="bfield-label">campaign_id</span>
                                 <select class="bselect" id="bld-campaign" disabled onchange="updateCreateCurl()">
-                                    <option value="">— Nenhuma —</option>
+                                    <option value="">{{ __('apikeys.builder_campaign_none') }}</option>
                                     @foreach($campaigns as $c)
                                     <option value="{{ $c->id }}">{{ $c->name }}</option>
                                     @endforeach
@@ -574,9 +573,9 @@
                         {{-- Curl preview --}}
                         <div class="builder-preview-pane">
                             <div class="builder-preview-header">
-                                <span><i class="bi bi-terminal" style="margin-right:4px;"></i>cURL gerado</span>
+                                <span><i class="bi bi-terminal" style="margin-right:4px;"></i>{{ __('apikeys.curl_generated') }}</span>
                                 <button class="btn-copy-curl" onclick="copyCurl('curl-create', this)">
-                                    <i class="bi bi-clipboard"></i> Copiar
+                                    <i class="bi bi-clipboard"></i> {{ __('apikeys.btn_copy') }}
                                 </button>
                             </div>
                             <pre class="curl-live" id="curl-create"></pre>
@@ -590,7 +589,7 @@
                         <div>
                             <span class="endpoint-method method-get">GET</span>
                             <span class="endpoint-path">/leads/{id}</span>
-                            <div class="endpoint-desc">Buscar lead por ID</div>
+                            <div class="endpoint-desc">{{ __('apikeys.ep_get_lead') }}</div>
                         </div>
                         <i class="bi bi-chevron-down ep-chevron" style="color:#9ca3af;font-size:12px;"></i>
                     </div>
@@ -604,20 +603,20 @@
                         <div>
                             <span class="endpoint-method method-put">PUT</span>
                             <span class="endpoint-path">/leads/{id}/stage</span>
-                            <div class="endpoint-desc">Mover lead para outra etapa</div>
+                            <div class="endpoint-desc">{{ __('apikeys.ep_put_stage') }}</div>
                         </div>
                         <i class="bi bi-chevron-down ep-chevron" style="color:#9ca3af;font-size:12px;"></i>
                     </div>
                     <div class="mini-builder">
                         <div class="mini-form">
                             <div class="mfield">
-                                <label class="mfield-label">Lead ID</label>
+                                <label class="mfield-label">{{ __('apikeys.label_lead_id') }}</label>
                                 <input type="number" class="binput" id="stage-lead-id"
                                        value="1" oninput="updateStageCurl()">
                             </div>
                             @if($pipelines->count())
                             <div class="mfield">
-                                <label class="mfield-label">Pipeline</label>
+                                <label class="mfield-label">{{ __('apikeys.label_pipeline') }}</label>
                                 <select class="bselect" id="stage-pipeline"
                                         onchange="populateStagesFor('stage-pipeline','stage-stage','all'); updateStageCurl()">
                                     @foreach($pipelines as $p)
@@ -626,16 +625,16 @@
                                 </select>
                             </div>
                             <div class="mfield">
-                                <label class="mfield-label">Etapa</label>
+                                <label class="mfield-label">{{ __('apikeys.label_stage') }}</label>
                                 <select class="bselect" id="stage-stage" onchange="updateStageCurl()"></select>
                             </div>
                             @endif
                         </div>
                         <div class="mini-preview">
                             <div class="builder-preview-header">
-                                <span><i class="bi bi-terminal" style="margin-right:4px;"></i>cURL gerado</span>
+                                <span><i class="bi bi-terminal" style="margin-right:4px;"></i>{{ __('apikeys.curl_generated') }}</span>
                                 <button class="btn-copy-curl" onclick="copyCurl('curl-stage', this)">
-                                    <i class="bi bi-clipboard"></i> Copiar
+                                    <i class="bi bi-clipboard"></i> {{ __('apikeys.btn_copy') }}
                                 </button>
                             </div>
                             <pre class="mini-curl" id="curl-stage"></pre>
@@ -649,20 +648,20 @@
                         <div>
                             <span class="endpoint-method method-put">PUT</span>
                             <span class="endpoint-path">/leads/{id}/won</span>
-                            <div class="endpoint-desc">Marcar lead como ganho</div>
+                            <div class="endpoint-desc">{{ __('apikeys.ep_put_won') }}</div>
                         </div>
                         <i class="bi bi-chevron-down ep-chevron" style="color:#9ca3af;font-size:12px;"></i>
                     </div>
                     <div class="mini-builder">
                         <div class="mini-form">
                             <div class="mfield">
-                                <label class="mfield-label">Lead ID</label>
+                                <label class="mfield-label">{{ __('apikeys.label_lead_id') }}</label>
                                 <input type="number" class="binput" id="won-lead-id"
                                        value="1" oninput="updateWonCurl()">
                             </div>
                             @if($pipelines->count())
                             <div class="mfield">
-                                <label class="mfield-label">Pipeline <span style="font-weight:400;color:#9ca3af;">(filtro)</span></label>
+                                <label class="mfield-label">{{ __('apikeys.label_pipeline_filter') }} <span style="font-weight:400;color:#9ca3af;">{{ __('apikeys.label_filter_hint') }}</span></label>
                                 <select class="bselect" id="won-pipeline"
                                         onchange="populateStagesFor('won-pipeline','won-stage','won'); updateWonCurl()">
                                     @foreach($pipelines as $p)
@@ -671,21 +670,21 @@
                                 </select>
                             </div>
                             <div class="mfield">
-                                <label class="mfield-label">Etapa de Ganho</label>
+                                <label class="mfield-label">{{ __('apikeys.label_won_stage') }}</label>
                                 <select class="bselect" id="won-stage" onchange="updateWonCurl()"></select>
                             </div>
                             @endif
                             <div class="mfield">
-                                <label class="mfield-label">Valor (opcional)</label>
+                                <label class="mfield-label">{{ __('apikeys.label_value_optional') }}</label>
                                 <input type="number" class="binput" id="won-value"
                                        placeholder="2000.00" oninput="updateWonCurl()">
                             </div>
                         </div>
                         <div class="mini-preview">
                             <div class="builder-preview-header">
-                                <span><i class="bi bi-terminal" style="margin-right:4px;"></i>cURL gerado</span>
+                                <span><i class="bi bi-terminal" style="margin-right:4px;"></i>{{ __('apikeys.curl_generated') }}</span>
                                 <button class="btn-copy-curl" onclick="copyCurl('curl-won', this)">
-                                    <i class="bi bi-clipboard"></i> Copiar
+                                    <i class="bi bi-clipboard"></i> {{ __('apikeys.btn_copy') }}
                                 </button>
                             </div>
                             <pre class="mini-curl" id="curl-won"></pre>
@@ -699,20 +698,20 @@
                         <div>
                             <span class="endpoint-method method-put">PUT</span>
                             <span class="endpoint-path">/leads/{id}/lost</span>
-                            <div class="endpoint-desc">Marcar lead como perdido</div>
+                            <div class="endpoint-desc">{{ __('apikeys.ep_put_lost') }}</div>
                         </div>
                         <i class="bi bi-chevron-down ep-chevron" style="color:#9ca3af;font-size:12px;"></i>
                     </div>
                     <div class="mini-builder">
                         <div class="mini-form">
                             <div class="mfield">
-                                <label class="mfield-label">Lead ID</label>
+                                <label class="mfield-label">{{ __('apikeys.label_lead_id') }}</label>
                                 <input type="number" class="binput" id="lost-lead-id"
                                        value="1" oninput="updateLostCurl()">
                             </div>
                             @if($pipelines->count())
                             <div class="mfield">
-                                <label class="mfield-label">Pipeline <span style="font-weight:400;color:#9ca3af;">(filtro)</span></label>
+                                <label class="mfield-label">{{ __('apikeys.label_pipeline_filter') }} <span style="font-weight:400;color:#9ca3af;">{{ __('apikeys.label_filter_hint') }}</span></label>
                                 <select class="bselect" id="lost-pipeline"
                                         onchange="populateStagesFor('lost-pipeline','lost-stage','lost'); updateLostCurl()">
                                     @foreach($pipelines as $p)
@@ -721,21 +720,21 @@
                                 </select>
                             </div>
                             <div class="mfield">
-                                <label class="mfield-label">Etapa de Perda</label>
+                                <label class="mfield-label">{{ __('apikeys.label_lost_stage') }}</label>
                                 <select class="bselect" id="lost-stage" onchange="updateLostCurl()"></select>
                             </div>
                             @endif
                             <div class="mfield">
-                                <label class="mfield-label">Motivo ID (opcional)</label>
+                                <label class="mfield-label">{{ __('apikeys.label_reason_optional') }}</label>
                                 <input type="number" class="binput" id="lost-reason"
-                                       placeholder="ID do motivo" oninput="updateLostCurl()">
+                                       placeholder="{{ __('apikeys.label_reason_placeholder') }}" oninput="updateLostCurl()">
                             </div>
                         </div>
                         <div class="mini-preview">
                             <div class="builder-preview-header">
-                                <span><i class="bi bi-terminal" style="margin-right:4px;"></i>cURL gerado</span>
+                                <span><i class="bi bi-terminal" style="margin-right:4px;"></i>{{ __('apikeys.curl_generated') }}</span>
                                 <button class="btn-copy-curl" onclick="copyCurl('curl-lost', this)">
-                                    <i class="bi bi-clipboard"></i> Copiar
+                                    <i class="bi bi-clipboard"></i> {{ __('apikeys.btn_copy') }}
                                 </button>
                             </div>
                             <pre class="mini-curl" id="curl-lost"></pre>
@@ -749,7 +748,7 @@
                         <div>
                             <span class="endpoint-method method-delete">DELETE</span>
                             <span class="endpoint-path">/leads/{id}</span>
-                            <div class="endpoint-desc">Deletar lead</div>
+                            <div class="endpoint-desc">{{ __('apikeys.ep_delete_lead') }}</div>
                         </div>
                         <i class="bi bi-chevron-down ep-chevron" style="color:#9ca3af;font-size:12px;"></i>
                     </div>
@@ -763,7 +762,7 @@
                         <div>
                             <span class="endpoint-method method-get">GET</span>
                             <span class="endpoint-path">/pipelines</span>
-                            <div class="endpoint-desc">Listar pipelines e etapas disponíveis</div>
+                            <div class="endpoint-desc">{{ __('apikeys.ep_get_pipelines') }}</div>
                         </div>
                         <i class="bi bi-chevron-down ep-chevron" style="color:#9ca3af;font-size:12px;"></i>
                     </div>
@@ -780,41 +779,41 @@
     <div>
         <div class="api-card">
             <div class="api-card-header">
-                <h3><i class="bi bi-info-circle" style="color:#F59E0B;"></i> Como usar</h3>
+                <h3><i class="bi bi-info-circle" style="color:#F59E0B;"></i> {{ __('apikeys.how_to_use') }}</h3>
             </div>
             <div class="api-card-body" style="font-size:13px;color:#374151;line-height:1.6;">
-                <p><strong>1. Gere uma API Key</strong><br>
-                Clique em <em>Nova API Key</em>, dê um nome para identificar onde será usada (ex: "Site", "Automação") e copie a key.</p>
+                <p><strong>{{ __('apikeys.step1_title') }}</strong><br>
+                {!! __('apikeys.step1_text') !!}</p>
 
-                <p style="margin-top:12px;"><strong>2. Salve com segurança</strong><br>
-                A key completa é exibida <strong>apenas uma vez</strong>. Guarde em um local seguro.</p>
+                <p style="margin-top:12px;"><strong>{{ __('apikeys.step2_title') }}</strong><br>
+                {!! __('apikeys.step2_text') !!}</p>
 
-                <p style="margin-top:12px;"><strong>3. Inclua no header</strong></p>
+                <p style="margin-top:12px;"><strong>{{ __('apikeys.step3_title') }}</strong></p>
                 <div style="background:#f8fafc;border:1px solid #e8eaf0;border-radius:8px;padding:10px 12px;font-family:monospace;font-size:12px;margin:8px 0;word-break:break-all;">
-                    X-API-Key: crm_sua_key_aqui
+                    {{ __('apikeys.step3_example') }}
                 </div>
 
-                <p style="margin-top:12px;"><strong>4. URL base</strong></p>
+                <p style="margin-top:12px;"><strong>{{ __('apikeys.step4_title') }}</strong></p>
                 <div style="background:#f8fafc;border:1px solid #e8eaf0;border-radius:8px;padding:10px 12px;font-family:monospace;font-size:12px;word-break:break-all;">
                     {{ url('/api/v1') }}
                 </div>
 
                 <hr style="border:none;border-top:1px solid #f0f2f7;margin:16px 0;">
 
-                <p style="font-size:12px;color:#374151;"><strong>Builder interativo</strong><br>
-                Expanda <span class="endpoint-method method-post" style="font-size:10px;">POST</span> <code style="font-size:11px;">/leads</code> para usar o builder — selecione campos, pipeline e etapa e veja o cURL gerado em tempo real.</p>
+                <p style="font-size:12px;color:#374151;"><strong>{{ __('apikeys.builder_tip_title') }}</strong><br>
+                {!! __('apikeys.builder_tip_text') !!}</p>
 
                 <hr style="border:none;border-top:1px solid #f0f2f7;margin:16px 0;">
 
                 <p style="font-size:12px;color:#9ca3af;">
                     <i class="bi bi-shield-check" style="color:#10B981;"></i>
-                    Todas as requisições são isoladas por conta.
+                    {{ __('apikeys.isolation_notice') }}
                 </p>
 
                 @if($customFields->count())
                 <hr style="border:none;border-top:1px solid #f0f2f7;margin:16px 0;">
-                <p style="font-size:12px;"><strong>Campos personalizados</strong></p>
-                <p style="font-size:12px;color:#6b7280;">Passe em <code style="font-size:11px;">custom_fields</code>:</p>
+                <p style="font-size:12px;"><strong>{{ __('apikeys.custom_fields_title') }}</strong></p>
+                <p style="font-size:12px;color:#6b7280;">{!! __('apikeys.custom_fields_hint') !!}</p>
                 @foreach($customFields as $cf)
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
                     <code style="font-size:11px;background:#f0f4ff;color:#6366f1;padding:1px 6px;border-radius:4px;">{{ $cf->name }}</code>
@@ -833,29 +832,29 @@
 <div class="modal-overlay" id="modalNewKey">
     <div class="modal-box">
         <div class="modal-title">
-            <i class="bi bi-key" style="color:#3B82F6;"></i> Nova API Key
+            <i class="bi bi-key" style="color:#3B82F6;"></i> {{ __('apikeys.modal_new_key_title') }}
         </div>
         <div id="newKeyForm">
-            <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Nome da key</label>
-            <input type="text" id="newKeyName" class="drawer-input" placeholder="Ex: Site, Landing Page, Automação...">
+            <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">{{ __('apikeys.modal_key_name_label') }}</label>
+            <input type="text" id="newKeyName" class="drawer-input" placeholder="{{ __('apikeys.modal_key_name_placeholder') }}">
             <div style="display:flex;gap:8px;justify-content:flex-end;">
-                <button onclick="closeNewKeyModal()" style="padding:9px 18px;border:1.5px solid #e8eaf0;border-radius:9px;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;">Cancelar</button>
+                <button onclick="closeNewKeyModal()" style="padding:9px 18px;border:1.5px solid #e8eaf0;border-radius:9px;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;">{{ __('apikeys.modal_cancel') }}</button>
                 <button onclick="createKey()" id="btnCreateKey" style="padding:9px 22px;border:none;border-radius:9px;background:#3B82F6;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">
-                    <i class="bi bi-plus-lg"></i> Criar
+                    <i class="bi bi-plus-lg"></i> {{ __('apikeys.modal_create') }}
                 </button>
             </div>
         </div>
         <div id="keyRevealSection" style="display:none;">
             <div class="warning-box">
                 <i class="bi bi-exclamation-triangle-fill"></i>
-                <span>Copie agora! Esta key <strong>não será exibida novamente</strong>.</span>
+                <span>{!! __('apikeys.modal_copy_warning') !!}</span>
             </div>
             <div class="key-reveal-box">
                 <span id="rawKeyText"></span>
-                <button class="btn-copy" onclick="copyKey()" id="btnCopy">Copiar</button>
+                <button class="btn-copy" onclick="copyKey()" id="btnCopy">{{ __('apikeys.btn_copy') }}</button>
             </div>
             <button onclick="closeAndReload()" style="width:100%;padding:10px;border:none;border-radius:9px;background:#10B981;color:#fff;font-size:13.5px;font-weight:600;cursor:pointer;">
-                <i class="bi bi-check-lg"></i> Feito, já copiei
+                <i class="bi bi-check-lg"></i> {{ __('apikeys.modal_done_copied') }}
             </button>
         </div>
     </div>
@@ -864,6 +863,7 @@
 
 @push('scripts')
 <script>
+const ALANG           = @json(__('apikeys'));
 const API_KEY_STORE   = @json(route('settings.api-keys.store'));
 const API_KEY_DESTROY = @json(route('settings.api-keys.destroy', ['apiKey' => '__ID__']));
 const BASE_URL        = @json(url('/api/v1'));
@@ -893,11 +893,11 @@ function closeAndReload() {
 
 async function createKey() {
     const name = document.getElementById('newKeyName').value.trim();
-    if (!name) { toastr.warning('Informe um nome para a API Key.'); return; }
+    if (!name) { toastr.warning(ALANG.toast_name_required); return; }
 
     const btn = document.getElementById('btnCreateKey');
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Criando...';
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> ' + ALANG.modal_creating;
 
     try {
         const res  = await fetch(API_KEY_STORE, {
@@ -916,13 +916,13 @@ async function createKey() {
             document.getElementById('newKeyForm').style.display = 'none';
             document.getElementById('keyRevealSection').style.display = '';
         } else {
-            toastr.error('Erro ao criar API Key.');
+            toastr.error(ALANG.toast_create_error);
         }
     } catch (e) {
-        toastr.error('Erro de conexão.');
+        toastr.error(ALANG.toast_connection_error);
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-plus-lg"></i> Criar';
+        btn.innerHTML = '<i class="bi bi-plus-lg"></i> ' + ALANG.modal_create;
     }
 }
 
@@ -930,18 +930,18 @@ function copyKey() {
     const text = document.getElementById('rawKeyText').textContent;
     navigator.clipboard.writeText(text).then(() => {
         const btn = document.getElementById('btnCopy');
-        btn.textContent = 'Copiado!';
+        btn.textContent = ALANG.btn_copied;
         btn.classList.add('copied');
-        setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 2000);
+        setTimeout(() => { btn.textContent = ALANG.btn_copy; btn.classList.remove('copied'); }, 2000);
     });
 }
 
 // ── Revogar key ─────────────────────────────────────────────────────────────
 function revokeKey(id, btn) {
     confirmAction({
-        title: 'Revogar API Key',
-        message: 'Sistemas que utilizam esta chave perderão acesso imediatamente.',
-        confirmText: 'Revogar',
+        title: ALANG.confirm_revoke_title,
+        message: ALANG.confirm_revoke_message,
+        confirmText: ALANG.confirm_revoke_btn,
         onConfirm: async () => {
             btn.disabled = true;
             try {
@@ -954,14 +954,14 @@ function revokeKey(id, btn) {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    toastr.success('API Key revogada.');
+                    toastr.success(ALANG.toast_revoked_success);
                     document.getElementById(`key-row-${id}`)?.remove();
                 } else {
-                    toastr.error('Erro ao revogar.');
+                    toastr.error(ALANG.toast_revoke_error);
                     btn.disabled = false;
                 }
             } catch (e) {
-                toastr.error('Erro de conexão.');
+                toastr.error(ALANG.toast_connection_error);
                 btn.disabled = false;
             }
         },
@@ -999,10 +999,10 @@ function populateStagesFor(pipeSelId, stageSelId, filter) {
         const o = document.createElement('option');
         o.value = '';
         o.textContent = filter === 'won'
-            ? '— Nenhuma etapa de ganho neste pipeline —'
+            ? ALANG.no_won_stages
             : filter === 'lost'
-                ? '— Nenhuma etapa de perda neste pipeline —'
-                : '— Nenhuma etapa disponível —';
+                ? ALANG.no_lost_stages
+                : ALANG.no_stages;
         sel.appendChild(o);
     } else {
         stages.forEach(s => {
@@ -1027,7 +1027,7 @@ function copyCurl(preId, btn) {
     if (!text) return;
     navigator.clipboard.writeText(text).then(() => {
         const orig = btn.innerHTML;
-        btn.innerHTML = '<i class="bi bi-check-lg"></i> Copiado!';
+        btn.innerHTML = '<i class="bi bi-check-lg"></i> ' + ALANG.btn_copied;
         btn.classList.add('copied');
         setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
     });

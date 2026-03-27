@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Agente de IA';
+    $title    = __('ai_agents.config_title');
     $pageIcon = 'robot';
 @endphp
 
@@ -94,19 +94,19 @@
 <div class="page-container">
 
     <div style="margin-bottom:24px;">
-        <div style="font-size:15px;font-weight:700;color:#1a1d23;">Inteligência Artificial — Configuração</div>
+        <div style="font-size:15px;font-weight:700;color:#1a1d23;">{{ __('ai_agents.config_heading') }}</div>
         <div style="font-size:13px;color:#9ca3af;margin-top:3px;">
-            Configure o provedor de LLM para uso nos agentes de IA.
+            {{ __('ai_agents.config_subtitle') }}
         </div>
     </div>
 
     <div class="ai-card">
-        <div class="ai-card-title">Provedor de LLM</div>
-        <div class="ai-card-subtitle">Escolha qual serviço de IA será usado pelos seus agentes.</div>
+        <div class="ai-card-title">{{ __('ai_agents.config_provider_title') }}</div>
+        <div class="ai-card-subtitle">{{ __('ai_agents.config_provider_subtitle') }}</div>
 
         {{-- Provider select --}}
         <div class="form-group">
-            <label class="form-label">Serviço</label>
+            <label class="form-label">{{ __('ai_agents.config_provider_label') }}</label>
             <div class="provider-grid" id="providerGrid">
                 @foreach([
                     ['openai',    '🤖', 'OpenAI'],
@@ -126,24 +126,24 @@
 
         {{-- API Key --}}
         <div class="form-group">
-            <label class="form-label">API Key</label>
+            <label class="form-label">{{ __('ai_agents.config_api_key') }}</label>
             <div class="key-wrap">
                 <input type="password" id="llm_api_key" class="form-control"
                        value="{{ $config->llm_api_key ? str_repeat('•', 20) : '' }}"
-                       placeholder="Insira sua chave de API"
+                       placeholder="{{ __('ai_agents.config_api_key_placeholder') }}"
                        autocomplete="off">
-                <button type="button" class="btn-eye" onclick="toggleKey()" title="Mostrar/ocultar">
+                <button type="button" class="btn-eye" onclick="toggleKey()" title="{{ __('ai_agents.config_show_hide') }}">
                     <i class="bi bi-eye" id="eyeIcon"></i>
                 </button>
             </div>
             <div style="font-size:11.5px;color:#9ca3af;margin-top:5px;">
-                A chave é armazenada de forma segura e nunca é exposta ao navegador.
+                {{ __('ai_agents.config_api_key_hint') }}
             </div>
         </div>
 
         {{-- Model --}}
         <div class="form-group">
-            <label class="form-label">Modelo</label>
+            <label class="form-label">{{ __('ai_agents.config_model') }}</label>
             <select id="llm_model" class="form-control">
                 @foreach($modelOptions as $provider => $models)
                 @foreach($models as $m)
@@ -159,10 +159,10 @@
 
         <div class="form-actions">
             <button class="btn-primary" id="btnSaveConfig" onclick="saveConfig()">
-                <i class="bi bi-floppy"></i> Salvar
+                <i class="bi bi-floppy"></i> {{ __('ai_agents.config_save') }}
             </button>
             <button class="btn-secondary" id="btnTest" onclick="testConn()">
-                <i class="bi bi-lightning"></i> Testar conexão
+                <i class="bi bi-lightning"></i> {{ __('ai_agents.config_test') }}
             </button>
             <span class="test-result" id="testResult"></span>
         </div>
@@ -170,12 +170,12 @@
 
     <div style="margin-top:28px;padding:16px 20px;background:#f8fafc;border-radius:12px;border:1px solid #e8eaf0;max-width:640px;">
         <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;">
-            <i class="bi bi-arrow-right-circle" style="color:#3B82F6;"></i> Próximo passo
+            <i class="bi bi-arrow-right-circle" style="color:#3B82F6;"></i> {{ __('ai_agents.config_next_step_title') }}
         </div>
         <div style="font-size:13px;color:#6b7280;">
-            Após configurar o provedor, acesse
-            <a href="{{ route('ai.agents.index') }}" style="color:#3B82F6;font-weight:600;">Agentes</a>
-            para criar seu primeiro agente de IA.
+            {{ __('ai_agents.config_next_step_text') }}
+            <a href="{{ route('ai.agents.index') }}" style="color:#3B82F6;font-weight:600;">{{ __('ai_agents.config_next_step_link') }}</a>
+            {{ __('ai_agents.config_next_step_suffix') }}
         </div>
     </div>
 
@@ -188,6 +188,7 @@ const CSRF       = document.querySelector('meta[name="csrf-token"]')?.content ??
 const URL_SAVE   = '{{ route('master.ai.config.update') }}';
 const URL_TEST   = '{{ route('master.ai.test') }}';
 const MODEL_OPTS = @json($modelOptions);
+const AILANG     = @json(__('ai_agents'));
 
 let keyChanged = false;
 document.getElementById('llm_api_key').addEventListener('input', () => { keyChanged = true; });
@@ -242,13 +243,13 @@ async function saveConfig() {
         });
         const data = await res.json();
         if (data.success) { toastr.success(data.message); keyChanged = false; }
-        else toastr.error(data.message ?? 'Erro ao salvar.');
+        else toastr.error(data.message ?? AILANG.config_save_error);
     } finally { btn.disabled = false; }
 }
 
 async function testConn() {
     const key = document.getElementById('llm_api_key').value;
-    if (!key || key.includes('•')) { toastr.warning('Insira a API key antes de testar.'); return; }
+    if (!key || key.includes('•')) { toastr.warning(AILANG.config_test_api_key_warning); return; }
     const btn = document.getElementById('btnTest');
     btn.disabled = true;
     const res = document.getElementById('testResult');
@@ -265,7 +266,7 @@ async function testConn() {
         });
         const d = await r.json();
         res.className = 'test-result ' + (d.success ? 'ok' : 'err');
-        res.textContent = d.success ? '✓ Conexão OK' : '✗ ' + d.message;
+        res.textContent = d.success ? ('✓ ' + AILANG.config_test_ok) : ('✗ ' + d.message);
         res.style.display = 'inline-block';
     } finally { btn.disabled = false; }
 }

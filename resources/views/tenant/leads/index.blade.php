@@ -1,7 +1,9 @@
 @extends('tenant.layouts.app')
 
-@php($title = 'Contatos')
-@php($pageIcon = 'people')
+@php
+    $title = __('leads.contacts_title');
+    $pageIcon = 'people';
+@endphp
 
 {{-- topbar_actions removido — botões movidos para page header --}}
 
@@ -254,33 +256,33 @@
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
         <div style="display:flex;align-items:center;gap:8px;">
             <i class="bi bi-people" style="color:#3B82F6;font-size:16px;"></i>
-            <span style="font-size:15px;font-weight:700;color:#1a1d23;">Contatos</span>
+            <span style="font-size:15px;font-weight:700;color:#1a1d23;">{{ __('leads.contacts_title') }}</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;">
             <form method="GET" action="{{ route('leads.index') }}" id="filterForm" style="display:flex;align-items:center;gap:6px;">
                 <div style="position:relative;">
                     <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:13px;"></i>
                     <input type="text" name="search" value="{{ request('search') }}"
-                           placeholder="Buscar..." style="padding:6px 12px 6px 30px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:12px;font-family:inherit;outline:none;width:180px;background:#fafafa;"
+                           placeholder="{{ __('leads.search') }}" style="padding:6px 12px 6px 30px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:12px;font-family:inherit;outline:none;width:180px;background:#fafafa;"
                            id="searchInput">
                 </div>
                 <select name="assigned_to" class="filter-select leads-hide-mobile" onchange="this.form.submit()" title="Filtrar por responsável"
                         style="padding:6px 10px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:12px;background:#fafafa;color:#374151;cursor:pointer;">
-                    <option value="">Responsável</option>
-                    <option value="ai" {{ request('assigned_to') === 'ai' ? 'selected' : '' }}>Agente IA</option>
+                    <option value="">{{ __('leads.responsible_filter') }}</option>
+                    <option value="ai" {{ request('assigned_to') === 'ai' ? 'selected' : '' }}>{{ __('leads.ai_agent_filter') }}</option>
                     @foreach($users as $u)
                     <option value="{{ $u->id }}" {{ request('assigned_to') == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
                     @endforeach
                 </select>
             </form>
             <a href="{{ route('leads.export') }}" class="btn-secondary-sm leads-hide-mobile" style="display:flex;align-items:center;gap:5px;text-decoration:none;font-size:12px;padding:6px 12px;">
-                <i class="bi bi-download"></i> Exportar
+                <i class="bi bi-download"></i> {{ __('leads.export') }}
             </a>
             <button class="btn-secondary-sm leads-hide-mobile" id="btnImportLead" style="display:flex;align-items:center;gap:5px;font-size:12px;padding:6px 12px;" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
-                <i class="bi bi-upload"></i> Importar
+                <i class="bi bi-upload"></i> {{ __('leads.import') }}
             </button>
             <button class="btn-primary-sm leads-hide-mobile" id="btnNovoLead" style="font-size:12px;padding:6px 14px;" {{ auth()->user()->isViewer() ? 'disabled style=opacity:.5;pointer-events:none;' : '' }}>
-                <i class="bi bi-plus-lg"></i> Novo Lead
+                <i class="bi bi-plus-lg"></i> {{ __('leads.new_lead') }}
             </button>
         </div>
     </div>
@@ -289,14 +291,14 @@
         <table class="leads-table">
             <thead>
                 <tr>
-                    <th>Nome</th>
-                    <th>Telefone</th>
-                    <th>E-mail</th>
-                    <th>Etapa</th>
-                    <th>Valor</th>
-                    <th>Origem</th>
-                    <th>Campanha</th>
-                    <th>Cadastro</th>
+                    <th>{{ __('leads.col_name') }}</th>
+                    <th>{{ __('leads.col_phone') }}</th>
+                    <th>{{ __('leads.col_email') }}</th>
+                    <th>{{ __('leads.col_stage') }}</th>
+                    <th>{{ __('leads.col_value') }}</th>
+                    <th>{{ __('leads.col_source') }}</th>
+                    <th>{{ __('leads.col_campaign') }}</th>
+                    <th>{{ __('leads.col_created') }}</th>
                 </tr>
             </thead>
             <tbody id="leadsTableBody">
@@ -313,7 +315,7 @@
                             </div>
                             <span>{{ $lead->name }}</span>
                             <a href="{{ route('leads.profile', $lead) }}"
-                               title="Ver perfil completo"
+                               title="{{ __('leads.view_profile') }}"
                                onclick="event.stopPropagation();"
                                style="color:#d1d5db;font-size:12px;flex-shrink:0;line-height:1;transition:color .15s;"
                                onmouseover="this.style.color='#3b82f6'" onmouseout="this.style.color='#d1d5db'">
@@ -362,8 +364,8 @@
                     <td colspan="8">
                         <div class="empty-table">
                             <div><i class="bi bi-people"></i></div>
-                            <p>Nenhum lead encontrado.<br>
-                                <a href="#" id="emptyAddLead" style="color:#3B82F6;">Adicionar o primeiro lead</a>
+                            <p>{{ __('leads.no_leads') }}<br>
+                                <a href="#" id="emptyAddLead" style="color:#3B82F6;">{{ __('leads.add_first_lead') }}</a>
                             </p>
                         </div>
                     </td>
@@ -374,7 +376,7 @@
 
         @if($leads->hasPages())
         <div class="pagination-wrap">
-            <span>{{ $leads->firstItem() }}–{{ $leads->lastItem() }} de {{ $leads->total() }} leads</span>
+            <span>{{ $leads->firstItem() }}–{{ $leads->lastItem() }} {{ __('leads.of_leads', ['total' => $leads->total()]) }}</span>
             {{ $leads->links('pagination::bootstrap-5') }}
         </div>
         @endif
@@ -388,10 +390,10 @@
 {{-- Modal Import --}}
 <div id="importModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center;">
     <div style="background:#fff;border-radius:14px;padding:28px;width:440px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.18);">
-        <div style="font-size:16px;font-weight:700;color:#1a1d23;margin-bottom:6px;">Importar Leads</div>
+        <div style="font-size:16px;font-weight:700;color:#1a1d23;margin-bottom:6px;">{{ __('leads.import_title') }}</div>
         <p style="font-size:13px;color:#6b7280;margin-bottom:18px;">
-            Envie um arquivo <strong>.xlsx</strong> ou <strong>.csv</strong> com as colunas:<br>
-            <code style="font-size:12px;background:#f4f6fb;padding:2px 6px;border-radius:5px;">nome, telefone, email, valor, origem</code>
+            {!! __('leads.import_desc') !!}<br>
+            <code style="font-size:12px;background:#f4f6fb;padding:2px 6px;border-radius:5px;">{{ __('leads.import_columns') }}</code>
         </p>
         <form id="importForm" enctype="multipart/form-data">
             <input type="file" id="importFile" name="file" accept=".xlsx,.xls,.csv"
@@ -399,19 +401,21 @@
         </form>
         <div id="importResult" style="display:none;margin-top:14px;padding:10px 14px;border-radius:9px;font-size:13px;"></div>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;">
-            <button onclick="closeImportModal()" style="padding:8px 18px;border-radius:100px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;">Cancelar</button>
-            <button id="btnDoImport" onclick="doImport()" style="padding:8px 20px;border-radius:100px;border:none;background:#0085f3;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Importar</button>
+            <button onclick="closeImportModal()" style="padding:8px 18px;border-radius:100px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;">{{ __('leads.cancel') }}</button>
+            <button id="btnDoImport" onclick="doImport()" style="padding:8px 20px;border-radius:100px;border:none;background:#0085f3;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">{{ __('leads.import_btn') }}</button>
         </div>
     </div>
 </div>
 
-<button class="fab-novo-lead" id="fabNovoLead" title="Novo Lead" {{ auth()->user()->isViewer() ? 'disabled style=opacity:.5;pointer-events:none;' : '' }}>
+<button class="fab-novo-lead" id="fabNovoLead" title="{{ __('leads.new_lead') }}" {{ auth()->user()->isViewer() ? 'disabled style=opacity:.5;pointer-events:none;' : '' }}>
     <i class="bi bi-plus-lg"></i>
 </button>
 @endsection
 
 @push('scripts')
 <script>
+const CLANG = @json(__('leads'));
+
 function formatBrPhone(phone) {
     let d = (phone || '').replace(/\D/g, '');
     if (d.startsWith('55') && d.length >= 12) d = d.slice(2);
@@ -444,15 +448,15 @@ document.getElementById('fabNovoLead')?.addEventListener('click', () => openNewL
 document.getElementById('emptyAddLead')?.addEventListener('click', e => { e.preventDefault(); openNewLeadDrawer(); });
 
 const SOURCE_META = {
-    facebook:  { icon: 'bi-facebook',    color: '#1877F2', label: 'Facebook Ads' },
-    google:    { icon: 'bi-google',       color: '#4285F4', label: 'Google Ads' },
-    instagram: { icon: 'bi-instagram',   color: '#E1306C', label: 'Instagram' },
-    whatsapp:  { icon: 'bi-whatsapp',    color: '#25D366', label: 'WhatsApp' },
-    site:      { icon: 'bi-globe',       color: '#6366F1', label: 'Site' },
-    indicacao: { icon: 'bi-people-fill', color: '#F59E0B', label: 'Indicação' },
-    api:       { icon: 'bi-code-slash',  color: '#8B5CF6', label: 'API' },
-    manual:    { icon: 'bi-pencil',      color: '#6B7280', label: 'Manual' },
-    outro:     { icon: 'bi-three-dots',  color: '#9CA3AF', label: 'Outro' },
+    facebook:  { icon: 'bi-facebook',    color: '#1877F2', label: CLANG.source_facebook },
+    google:    { icon: 'bi-google',       color: '#4285F4', label: CLANG.source_google },
+    instagram: { icon: 'bi-instagram',   color: '#E1306C', label: CLANG.source_instagram },
+    whatsapp:  { icon: 'bi-whatsapp',    color: '#25D366', label: CLANG.source_whatsapp },
+    site:      { icon: 'bi-globe',       color: '#6366F1', label: CLANG.source_site },
+    indicacao: { icon: 'bi-people-fill', color: '#F59E0B', label: CLANG.source_indicacao },
+    api:       { icon: 'bi-code-slash',  color: '#8B5CF6', label: CLANG.source_api },
+    manual:    { icon: 'bi-pencil',      color: '#6B7280', label: CLANG.source_manual },
+    outro:     { icon: 'bi-three-dots',  color: '#9CA3AF', label: CLANG.source_outro },
 };
 function renderSourceBadge(source, cls = 'source-pill') {
     const m = SOURCE_META[source] || SOURCE_META.outro;
@@ -534,11 +538,11 @@ document.getElementById('importModalOverlay')?.addEventListener('click', e => {
 
 async function doImport() {
     const file = document.getElementById('importFile').files[0];
-    if (!file) { alert('Selecione um arquivo.'); return; }
+    if (!file) { alert(CLANG.select_file_alert); return; }
 
     const btn = document.getElementById('btnDoImport');
     btn.disabled = true;
-    btn.textContent = 'Importando...';
+    btn.textContent = CLANG.importing;
 
     const formData = new FormData();
     formData.append('file', file);
@@ -553,18 +557,18 @@ async function doImport() {
         if (data.success) {
             resultEl.style.background = '#d1fae5';
             resultEl.style.color = '#065f46';
-            resultEl.textContent = `${data.imported} lead(s) importado(s). ${data.skipped ? data.skipped + ' ignorado(s).' : ''}`;
+            resultEl.textContent = CLANG.import_success.replace(':imported', data.imported) + (data.skipped ? ' ' + CLANG.import_skipped.replace(':skipped', data.skipped) : '');
             setTimeout(() => { closeImportModal(); location.reload(); }, 2000);
         } else {
             resultEl.style.background = '#fee2e2';
             resultEl.style.color = '#991b1b';
-            resultEl.textContent = data.message || 'Erro ao importar.';
+            resultEl.textContent = data.message || CLANG.import_error;
         }
     } catch(e) {
-        alert('Erro de conexão.');
+        alert(CLANG.error_connection);
     } finally {
         btn.disabled = false;
-        btn.textContent = 'Importar';
+        btn.textContent = CLANG.import_btn;
     }
 }
 

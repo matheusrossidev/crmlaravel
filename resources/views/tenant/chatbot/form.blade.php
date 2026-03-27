@@ -2,14 +2,14 @@
 
 @php
     $isEdit   = $flow->exists;
-    $title    = $isEdit ? 'Editar Fluxo' : 'Novo Fluxo';
+    $title    = $isEdit ? __('chatbot.form_title_edit') : __('chatbot.form_title_new');
     $pageIcon = 'diagram-3';
 @endphp
 
 @section('topbar_actions')
 <div class="topbar-actions">
     <a href="{{ route('chatbot.flows.index') }}" style="color:#2563eb;font-size:13.5px;font-weight:500;text-decoration:underline;display:inline-flex;align-items:center;gap:5px;">
-        <i class="bi bi-arrow-left" style="font-size:12px;"></i> Voltar
+        <i class="bi bi-arrow-left" style="font-size:12px;"></i> {{ __('chatbot.form_back') }}
     </a>
 </div>
 @endsection
@@ -220,7 +220,7 @@
             @if($isEdit) @method('PUT') @endif
 
             {{-- Canal --}}
-            <div class="form-section-label">Canal</div>
+            <div class="form-section-label">{{ __('chatbot.form_section_channel') }}</div>
 
             @php $currentChannel = old('channel', $flow->channel ?? 'whatsapp'); @endphp
             <div class="form-group">
@@ -240,14 +240,14 @@
             </div>
 
             {{-- Identificação --}}
-            <div class="form-section-label">Identificação</div>
+            <div class="form-section-label">{{ __('chatbot.form_section_identification') }}</div>
 
             <div class="form-group">
-                <label>Nome do fluxo <span style="color:#EF4444;">*</span></label>
+                <label>{{ __('chatbot.form_flow_name') }} <span style="color:#EF4444;">*</span></label>
                 <input type="text" name="name"
                     class="field-input {{ $errors->has('name') ? 'is-invalid' : '' }}"
                     value="{{ old('name', $flow->name) }}"
-                    placeholder="Ex: Qualificação de Lead"
+                    placeholder="{{ __('chatbot.form_flow_name_placeholder') }}"
                     required>
                 @error('name')
                     <div class="field-error">{{ $message }}</div>
@@ -255,19 +255,19 @@
             </div>
 
             <div class="form-group">
-                <label>Descrição</label>
+                <label>{{ __('chatbot.form_description') }}</label>
                 <textarea name="description" class="field-input" rows="2"
-                    placeholder="Para que serve este fluxo?">{{ old('description', $flow->description) }}</textarea>
+                    placeholder="{{ __('chatbot.form_description_placeholder') }}">{{ old('description', $flow->description) }}</textarea>
             </div>
 
             {{-- Slug (URL pública) — só para website --}}
             <div id="slug-field" style="{{ ($currentChannel === 'website') ? '' : 'display:none;' }}">
                 <div class="form-group" style="margin-top:14px;">
-                    <label>Slug (URL pública)</label>
+                    <label>{{ __('chatbot.form_slug') }}</label>
                     <div style="display:flex;align-items:center;gap:8px;">
                         <input type="text" name="slug" class="field-input" style="flex:1;"
                             value="{{ old('slug', $flow->slug) }}"
-                            placeholder="meu-chatbot"
+                            placeholder="{{ __('chatbot.form_slug_placeholder') }}"
                             oninput="updateSlugPreview(this.value)">
                     </div>
                     <div class="hint" style="margin-top:6px;">
@@ -284,18 +284,18 @@
 
             {{-- Widget Website --}}
             <div id="website-settings" style="{{ ($currentChannel === 'website') ? '' : 'display:none;' }}">
-                <div class="form-section-label">Aparência do Widget</div>
+                <div class="form-section-label">{{ __('chatbot.form_section_widget') }}</div>
 
                 <div class="form-group">
-                    <label>Nome do bot</label>
+                    <label>{{ __('chatbot.form_bot_name') }}</label>
                     <input type="text" name="bot_name" class="field-input"
                         value="{{ old('bot_name', $flow->bot_name) }}"
-                        placeholder="Ex: Ana, Sofia, Assistente...">
-                    <div class="hint">Aparece no cabeçalho do chat.</div>
+                        placeholder="{{ __('chatbot.form_bot_name_placeholder') }}">
+                    <div class="hint">{{ __('chatbot.form_bot_name_hint') }}</div>
                 </div>
 
                 <div class="form-group">
-                    <label>Avatar do bot</label>
+                    <label>{{ __('chatbot.form_bot_avatar') }}</label>
                     <input type="hidden" name="bot_avatar" id="bot_avatar_value" value="{{ old('bot_avatar', $flow->bot_avatar) }}">
 
                     {{-- Grade de avatares pré-definidos + upload --}}
@@ -336,18 +336,18 @@
                         </div>
                         <input type="file" id="avatar-upload-input" accept="image/*" style="display:none;">
                     </div>
-                    <div class="hint" style="margin-top:8px;">Escolha um avatar ou clique no último ícone para fazer upload de uma imagem personalizada.</div>
+                    <div class="hint" style="margin-top:8px;">{{ __('chatbot.form_bot_avatar_hint') }}</div>
                 </div>
 
                 <div class="form-group">
-                    <label>Mensagem de entrada</label>
+                    <label>{{ __('chatbot.form_welcome_message') }}</label>
                     <textarea name="welcome_message" class="field-input" rows="2"
-                        placeholder="Olá! 👋 Posso te ajudar?">{{ old('welcome_message', $flow->welcome_message) }}</textarea>
-                    <div class="hint">Aparece como bolinha flutuante acima do botão do chat após 3 segundos. Deixe vazio para desativar. (Apenas no modo Bubble)</div>
+                        placeholder="{{ __('chatbot.form_welcome_placeholder') }}">{{ old('welcome_message', $flow->welcome_message) }}</textarea>
+                    <div class="hint">{!! __('chatbot.form_welcome_hint') !!}</div>
                 </div>
 
                 <div class="form-group">
-                    <label>Tipo de Widget</label>
+                    <label>{{ __('chatbot.form_widget_type') }}</label>
                     @php $currentType = old('widget_type', $flow->widget_type ?? 'bubble'); @endphp
                     <div style="display:flex;gap:12px;margin-top:4px;" id="widget-type-cards">
                         <label class="widget-type-card {{ $currentType === 'bubble' ? 'selected' : '' }}" data-type="bubble" style="flex:1;cursor:pointer;border:1.5px solid {{ $currentType === 'bubble' ? '#0085f3' : '#e8eaf0' }};border-radius:10px;padding:12px 10px;text-align:center;background:{{ $currentType === 'bubble' ? '#eff6ff' : '#fff' }};transition:all .15s;">
@@ -355,28 +355,28 @@
                             <div style="margin-bottom:6px;display:flex;justify-content:center;">
                                 <svg viewBox="0 0 24 24" style="width:28px;height:28px;fill:{{ $currentType === 'bubble' ? '#0085f3' : '#9ca3af' }};"><path d="M20 2H4C2.9 2 2 2.9 2 4v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
                             </div>
-                            <div style="font-size:13px;font-weight:700;color:#1a1d23;">Bubble</div>
-                            <div style="font-size:11px;color:#6b7280;margin-top:2px;">Botão flutuante no canto da tela</div>
+                            <div style="font-size:13px;font-weight:700;color:#1a1d23;">{{ __('chatbot.form_widget_bubble') }}</div>
+                            <div style="font-size:11px;color:#6b7280;margin-top:2px;">{{ __('chatbot.form_widget_bubble_desc') }}</div>
                         </label>
                         <label class="widget-type-card {{ $currentType === 'inline' ? 'selected' : '' }}" data-type="inline" style="flex:1;cursor:pointer;border:1.5px solid {{ $currentType === 'inline' ? '#0085f3' : '#e8eaf0' }};border-radius:10px;padding:12px 10px;text-align:center;background:{{ $currentType === 'inline' ? '#eff6ff' : '#fff' }};transition:all .15s;">
                             <input type="radio" name="widget_type" value="inline" {{ $currentType === 'inline' ? 'checked' : '' }} style="display:none;">
                             <div style="margin-bottom:6px;display:flex;justify-content:center;">
                                 <svg viewBox="0 0 24 24" style="width:28px;height:28px;fill:{{ $currentType === 'inline' ? '#0085f3' : '#9ca3af' }};"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h4v2H6zm0-3h12v2H6zm0 6h8v2H6z"/></svg>
                             </div>
-                            <div style="font-size:13px;font-weight:700;color:#1a1d23;">Inline / Página</div>
-                            <div style="font-size:11px;color:#6b7280;margin-top:2px;">Embebido em elemento da página</div>
+                            <div style="font-size:13px;font-weight:700;color:#1a1d23;">{{ __('chatbot.form_widget_inline') }}</div>
+                            <div style="font-size:11px;color:#6b7280;margin-top:2px;">{{ __('chatbot.form_widget_inline_desc') }}</div>
                         </label>
                     </div>
                     <div id="bubble-type-hint" class="hint" style="{{ $currentType !== 'inline' ? '' : 'display:none;' }}">
-                        Adicione <code>&lt;script src="..." data-token="..."&gt;&lt;/script&gt;</code> antes de <code>&lt;/body&gt;</code>.
+                        {!! __('chatbot.form_bubble_hint') !!}
                     </div>
                     <div id="inline-type-hint" class="hint" style="{{ $currentType === 'inline' ? '' : 'display:none;' }}">
-                        Adicione <code>&lt;div id="syncro-chat"&gt;&lt;/div&gt;</code> onde deseja o chat, e o <code>&lt;script&gt;</code> no final do body.
+                        {!! __('chatbot.form_inline_hint') !!}
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Cor dos botões</label>
+                    <label>{{ __('chatbot.form_button_color') }}</label>
                     @php $currentColor = old('widget_color', $flow->widget_color ?? '#0085f3'); @endphp
                     <div style="display:flex;align-items:center;gap:10px;">
                         <input type="color" name="widget_color" id="widget-color-picker"
@@ -387,37 +387,37 @@
                             value="{{ $currentColor }}" maxlength="7"
                             oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value)) document.getElementById('widget-color-picker').value = this.value">
                     </div>
-                    <div class="hint">Define a cor do botão do chat, cabeçalho e balões de mensagem enviada.</div>
+                    <div class="hint">{{ __('chatbot.form_button_color_hint') }}</div>
                 </div>
             </div>
 
             {{-- Disparo --}}
-            <div class="form-section-label">Disparo Automático</div>
+            <div class="form-section-label">{{ __('chatbot.form_section_trigger') }}</div>
 
             <div class="form-group">
-                <label>Keywords de disparo</label>
+                <label>{{ __('chatbot.form_trigger_keywords') }}</label>
                 <input type="text" name="trigger_keywords" class="field-input"
                     value="{{ old('trigger_keywords', $flow->trigger_keywords ? implode(', ', $flow->trigger_keywords) : '') }}"
-                    placeholder="oi, olá, bom dia">
-                <div class="hint">Separadas por vírgula. Deixe vazio para atribuição apenas manual. Quando um contato enviar uma mensagem contendo uma dessas palavras, o fluxo será iniciado automaticamente.</div>
+                    placeholder="{{ __('chatbot.form_trigger_placeholder') }}">
+                <div class="hint">{{ __('chatbot.form_trigger_hint') }}</div>
             </div>
 
             {{-- Variáveis --}}
-            <div class="form-section-label">Variáveis de Sessão</div>
+            <div class="form-section-label">{{ __('chatbot.form_section_variables') }}</div>
 
             <div class="form-group">
-                <label>Variáveis</label>
+                <label>{{ __('chatbot.form_variables') }}</label>
                 <input type="text" name="variables" class="field-input"
                     value="{{ old('variables', $flow->variables ? implode(', ', array_column($flow->variables, 'name')) : '') }}"
-                    placeholder="nome, email, interesse">
+                    placeholder="{{ __('chatbot.form_variables_placeholder') }}">
                 <div class="hint">
-                    Nomes das variáveis que o fluxo irá coletar. Ex: <code>nome</code> → use <code>&#123;&#123;nome&#125;&#125;</code> em mensagens.
+                    {!! __('chatbot.form_variables_hint') !!}
                 </div>
             </div>
 
             @if($isEdit)
             {{-- Status --}}
-            <div class="form-section-label">Status</div>
+            <div class="form-section-label">{{ __('chatbot.form_section_status') }}</div>
 
             <div class="form-group">
                 <div class="switch-row">
@@ -427,8 +427,8 @@
                             {{ old('is_active', $flow->is_active) ? 'checked' : '' }}>
                     </div>
                     <div>
-                        <label for="isActive">Fluxo ativo</label>
-                        <div class="switch-desc">Quando ativo, o fluxo responde automaticamente às mensagens.</div>
+                        <label for="isActive">{{ __('chatbot.form_active_label') }}</label>
+                        <div class="switch-desc">{{ __('chatbot.form_active_hint') }}</div>
                     </div>
                 </div>
             </div>
@@ -437,13 +437,13 @@
             <div class="form-actions">
                 <button type="submit" class="btn-form-primary">
                     @if($isEdit)
-                        <i class="bi bi-check-lg"></i> Salvar alterações
+                        <i class="bi bi-check-lg"></i> {{ __('chatbot.form_save_changes') }}
                     @else
-                        <i class="bi bi-arrow-right-circle"></i> Criar e editar nós
+                        <i class="bi bi-arrow-right-circle"></i> {{ __('chatbot.form_create_and_edit') }}
                     @endif
                 </button>
                 <a href="{{ route('chatbot.flows.index') }}" class="btn-form-secondary">
-                    Cancelar
+                    {{ __('chatbot.form_cancel') }}
                 </a>
             </div>
         </form>
@@ -452,7 +452,7 @@
     @if($isEdit)
     <div class="open-builder-row">
         <a href="{{ route('chatbot.flows.edit', $flow) }}" class="btn-open-builder">
-            <i class="bi bi-diagram-3"></i> Abrir Builder de Nós
+            <i class="bi bi-diagram-3"></i> {{ __('chatbot.form_open_builder') }}
         </a>
     </div>
     @endif

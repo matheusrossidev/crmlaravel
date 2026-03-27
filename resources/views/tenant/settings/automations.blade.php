@@ -1,22 +1,22 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Automações';
+    $title    = __('automations.title');
     $pageIcon = 'lightning-charge';
 
     $actionLabels = [
-        'add_tag_lead'          => 'Tag no lead',
-        'remove_tag_lead'       => 'Remover tag',
-        'add_tag_conversation'  => 'Tag na conversa',
-        'move_to_stage'         => 'Mover etapa',
-        'set_lead_source'       => 'Definir origem',
-        'assign_to_user'        => 'Atribuir usuário',
-        'add_note'              => 'Adicionar nota',
-        'assign_ai_agent'       => 'Agente IA',
-        'assign_chatbot_flow'   => 'Chatbot',
-        'close_conversation'    => 'Fechar conversa',
-        'send_whatsapp_message' => 'Enviar msg WA',
-        'create_task'           => 'Criar tarefa',
+        'add_tag_lead'          => __('automations.action_add_tag_lead'),
+        'remove_tag_lead'       => __('automations.action_remove_tag_lead'),
+        'add_tag_conversation'  => __('automations.action_add_tag_conversation'),
+        'move_to_stage'         => __('automations.action_move_to_stage'),
+        'set_lead_source'       => __('automations.action_set_lead_source'),
+        'assign_to_user'        => __('automations.action_assign_to_user'),
+        'add_note'              => __('automations.action_add_note'),
+        'assign_ai_agent'       => __('automations.action_assign_ai_agent'),
+        'assign_chatbot_flow'   => __('automations.action_assign_chatbot_flow'),
+        'close_conversation'    => __('automations.action_close_conversation'),
+        'send_whatsapp_message' => __('automations.action_send_whatsapp_message'),
+        'create_task'           => __('automations.action_create_task'),
     ];
 @endphp
 
@@ -91,11 +91,11 @@
 
     <div class="section-header">
         <div>
-            <div class="section-title">Automações</div>
-            <div class="section-subtitle">Crie regras para automatizar ações quando eventos ocorrerem no CRM.</div>
+            <div class="section-title">{{ __('automations.title') }}</div>
+            <div class="section-subtitle">{{ __('automations.subtitle') }}</div>
         </div>
         <a href="{{ route('settings.automations.create') }}" class="btn-primary-sm">
-            <i class="bi bi-plus-lg"></i> Nova Automação
+            <i class="bi bi-plus-lg"></i> {{ __('automations.new_automation') }}
         </a>
     </div>
 
@@ -103,17 +103,17 @@
         @if($automations->isEmpty())
             <div class="at-empty">
                 <i class="bi bi-lightning-charge"></i>
-                <p>Nenhuma automação criada ainda.<br>Clique em <strong>Nova Automação</strong> para começar.</p>
+                <p>{{ __('automations.empty_icon') }}<br>{!! __('automations.empty_hint') !!}</p>
             </div>
         @else
             <table class="at-table">
                 <thead>
                     <tr>
-                        <th>Nome</th>
-                        <th>Gatilho</th>
-                        <th>Ações</th>
-                        <th style="width:110px;">Execuções</th>
-                        <th style="width:80px;">Ativo</th>
+                        <th>{{ __('automations.col_name') }}</th>
+                        <th>{{ __('automations.col_trigger') }}</th>
+                        <th>{{ __('automations.col_actions') }}</th>
+                        <th style="width:110px;">{{ __('automations.col_runs') }}</th>
+                        <th style="width:80px;">{{ __('automations.col_active') }}</th>
                         <th style="width:80px;"></th>
                     </tr>
                 </thead>
@@ -146,10 +146,10 @@
                         <td>
                             <div class="d-flex gap-1">
                                 <a href="{{ route('settings.automations.edit', $auto) }}"
-                                   class="btn-icon" title="Editar">
+                                   class="btn-icon" title="{{ __('automations.btn_edit') }}">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <button class="btn-icon danger" title="Excluir"
+                                <button class="btn-icon danger" title="{{ __('automations.btn_delete') }}"
                                     onclick="deleteAutomation({{ $auto->id }})">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -165,23 +165,25 @@
 </div>
 
 <script>
+const AUTLANG = @json(__('automations'));
+
 function toggleAutomation(id, cb) {
     fetch(`/configuracoes/automacoes/${id}/toggle`, {
         method: 'PATCH',
         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content },
     }).then(r => r.json()).then(res => {
-        if (res.success) toastr.success(res.is_active ? 'Ativada.' : 'Desativada.');
-        else { cb.checked = !cb.checked; toastr.error('Erro.'); }
+        if (res.success) toastr.success(res.is_active ? AUTLANG.toast_activated : AUTLANG.toast_deactivated);
+        else { cb.checked = !cb.checked; toastr.error(AUTLANG.toast_error); }
     });
 }
 function deleteAutomation(id) {
-    if (!confirm('Excluir esta automação?')) return;
+    if (!confirm(AUTLANG.confirm_delete)) return;
     fetch(`/configuracoes/automacoes/${id}`, {
         method: 'DELETE',
         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content },
     }).then(r => r.json()).then(res => {
-        if (res.success) { document.getElementById(`at-row-${id}`)?.remove(); toastr.success('Excluída.'); }
-        else toastr.error('Erro ao excluir.');
+        if (res.success) { document.getElementById(`at-row-${id}`)?.remove(); toastr.success(AUTLANG.toast_deleted); }
+        else toastr.error(AUTLANG.toast_delete_error);
     });
 }
 </script>

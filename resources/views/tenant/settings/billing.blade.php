@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Configurações';
+    $title    = __('settings.billing_title');
     $pageIcon = 'gear';
 @endphp
 
@@ -362,8 +362,8 @@
 
     <div class="section-header">
         <div>
-            <div class="section-title">Cobrança</div>
-            <div class="section-subtitle">Gerencie sua assinatura e plano de acesso.</div>
+            <div class="section-title">{{ __('settings.billing_title') }}</div>
+            <div class="section-subtitle">{{ __('settings.billing_subtitle') }}</div>
         </div>
     </div>
 
@@ -373,15 +373,15 @@
         <div class="billing-sidebar">
             <div class="current-plan-card">
                 <div class="current-plan-header">
-                    <div class="current-plan-label">Seu plano atual</div>
-                    <div class="current-plan-name">{{ $plan?->display_name ?? 'Plano Atual' }}</div>
+                    <div class="current-plan-label">{{ __('settings.billing_current_plan') }}</div>
+                    <div class="current-plan-name">{{ $plan?->display_name ?? __('settings.billing_current_plan') }}</div>
                     <div class="current-plan-price">
                         @if($plan && $plan->price_monthly > 0)
                             <span class="amount">R$ {{ number_format($plan->price_monthly, 2, ',', '.') }}</span>
-                            <span class="period">/mês</span>
+                            <span class="period">{{ __('settings.billing_per_month') }}</span>
                         @else
-                            <span class="amount" style="font-size:22px;">Grátis</span>
-                            <span class="period">trial</span>
+                            <span class="amount" style="font-size:22px;">{{ __('settings.billing_free') }}</span>
+                            <span class="period">{{ __('settings.billing_trial') }}</span>
                         @endif
                     </div>
                 </div>
@@ -389,15 +389,15 @@
                 <div class="current-plan-body">
                     {{-- Status --}}
                     <div class="plan-status-row">
-                        <span style="font-size:12.5px;color:#6b7280;font-weight:500;">Status</span>
+                        <span style="font-size:12.5px;color:#6b7280;font-weight:500;">{{ __('settings.billing_col_status') }}</span>
                         @php
                             $statusLabel = match($tenant->subscription_status ?? $tenant->status) {
-                                'active'    => ['Ativo', 'active'],
-                                'trial'     => ['Em Trial', 'trial'],
-                                'overdue'   => ['Pagamento pendente', 'overdue'],
-                                'inactive'  => ['Inativo', 'inactive'],
-                                'cancelled' => ['Cancelado', 'cancelled'],
-                                default     => ['Trial', 'trial'],
+                                'active'    => [__('settings.billing_active'), 'active'],
+                                'trial'     => [__('settings.billing_in_trial'), 'trial'],
+                                'overdue'   => [__('settings.billing_overdue'), 'overdue'],
+                                'inactive'  => [__('settings.billing_inactive'), 'inactive'],
+                                'cancelled' => [__('settings.billing_cancelled'), 'cancelled'],
+                                default     => [__('settings.billing_trial'), 'trial'],
                             };
                         @endphp
                         <span class="status-badge {{ $statusLabel[1] }}">
@@ -419,17 +419,17 @@
                     </ul>
                     @else
                     <p style="font-size:12.5px;color:#9ca3af;margin-bottom:20px;">
-                        Nenhuma funcionalidade cadastrada para este plano.
+                        {{ __('settings.billing_no_features') }}
                     </p>
                     @endif
 
                     {{-- Meta info --}}
                     <div class="plan-meta">
                         @if($tenant->status === 'trial' && $tenant->trial_ends_at)
-                            Trial expira em <strong>{{ $tenant->trial_ends_at->format('d/m/Y') }}</strong>
+                            {{ __('settings.billing_trial_expires', ['date' => $tenant->trial_ends_at->format('d/m/Y')]) }}
                             ({{ $tenant->trial_ends_at->diffForHumans() }})
                         @elseif($tenant->subscription_status === 'active' && $tenant->asaas_subscription_id)
-                            Assinatura ativa desde <strong>{{ $tenant->updated_at->format('d/m/Y') }}</strong>
+                            {{ __('settings.billing_active_since', ['date' => $tenant->updated_at->format('d/m/Y')]) }}
                         @endif
                         @if($tenant->asaas_subscription_id)
                             <br>ID: <strong>{{ $tenant->asaas_subscription_id }}</strong>
@@ -440,12 +440,12 @@
                     @if(!$tenant->hasActiveSubscription())
                         <a href="{{ route('billing.checkout') }}" class="btn-subscribe">
                             <i class="bi bi-lightning-charge-fill me-1"></i>
-                            Assinar agora
+                            {{ __('settings.billing_subscribe') }}
                         </a>
                     @elseif($tenant->subscription_status === 'active' && $tenant->asaas_subscription_id)
                         <button class="btn-cancel-sub" onclick="confirmCancel()">
                             <i class="bi bi-x-circle me-1"></i>
-                            Cancelar assinatura
+                            {{ __('settings.billing_cancel_sub') }}
                         </button>
                     @endif
                 </div>
@@ -460,18 +460,18 @@
             <div class="overdue-banner">
                 <div class="overdue-text">
                     <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                    Há uma falha no pagamento. Regularize para manter o acesso completo.
+                    {{ __('settings.billing_overdue_msg') }}
                 </div>
                 <a href="{{ route('billing.checkout') }}" class="btn-primary-sm">
-                    Regularizar agora
+                    {{ __('settings.billing_regularize') }}
                 </a>
             </div>
             @endif
 
             <div class="section-header" style="margin-bottom:16px;">
                 <div>
-                    <div class="section-title" style="font-size:14px;">Outros planos disponíveis</div>
-                    <div class="section-subtitle">Faça upgrade ou downgrade a qualquer momento.</div>
+                    <div class="section-title" style="font-size:14px;">{{ __('settings.billing_other_plans') }}</div>
+                    <div class="section-subtitle">{{ __('settings.billing_other_sub') }}</div>
                 </div>
             </div>
 
@@ -486,7 +486,7 @@
                         <div class="other-plan-name">{{ $p->display_name }}</div>
                         <div class="other-plan-price">
                             R$ {{ number_format($p->price_monthly, 2, ',', '.') }}
-                            <span>/mês</span>
+                            <span>{{ __('settings.billing_per_month') }}</span>
                         </div>
                         @php $pFeatures = $p->features_json['features_list'] ?? []; @endphp
                         @if(count($pFeatures) > 0)
@@ -495,14 +495,14 @@
                                 <span class="other-plan-feat-tag">✓ {{ $feat }}</span>
                             @endforeach
                             @if(count($pFeatures) > 4)
-                                <span class="other-plan-feat-tag" style="color:#9ca3af;">+{{ count($pFeatures) - 4 }} mais</span>
+                                <span class="other-plan-feat-tag" style="color:#9ca3af;">{{ __('settings.billing_more_features', ['count' => count($pFeatures) - 4]) }}</span>
                             @endif
                         </div>
                         @endif
                     </div>
                     <div class="other-plan-right">
                         <a href="{{ route('billing.checkout') }}" class="btn-upgrade">
-                            {{ $p->price_monthly > ($plan?->price_monthly ?? 0) ? 'Fazer upgrade' : 'Selecionar' }}
+                            {{ $p->price_monthly > ($plan?->price_monthly ?? 0) ? __('settings.billing_upgrade') : __('settings.billing_select') }}
                         </a>
                     </div>
                 </div>
@@ -510,8 +510,8 @@
             @else
                 <div class="no-other-plans">
                     <i class="bi bi-trophy-fill" style="font-size:32px;color:#fbbf24;display:block;margin-bottom:12px;"></i>
-                    <div style="font-weight:600;color:#374151;margin-bottom:4px;">Você está no melhor plano!</div>
-                    <div>Não há outros planos disponíveis no momento.</div>
+                    <div style="font-weight:600;color:#374151;margin-bottom:4px;">{{ __('settings.billing_best_plan') }}</div>
+                    <div>{{ __('settings.billing_best_msg') }}</div>
                 </div>
             @endif
         </div>
@@ -521,43 +521,43 @@
     {{-- ── Histórico de cobranças ── --}}
     <div class="charges-card">
         <div class="charges-header">
-            <div class="charges-title">Histórico de cobranças</div>
-            <div class="charges-subtitle">Todas as cobranças e pagamentos da sua conta.</div>
+            <div class="charges-title">{{ __('settings.billing_charges') }}</div>
+            <div class="charges-subtitle">{{ __('settings.billing_charges_sub') }}</div>
         </div>
 
         @if(isset($charges) && $charges->count() > 0)
         <table class="charges-table">
             <thead>
                 <tr>
-                    <th>Data</th>
-                    <th>Descrição</th>
-                    <th>Valor</th>
-                    <th>Tipo</th>
-                    <th>Status</th>
-                    <th>Fatura</th>
+                    <th>{{ __('settings.billing_col_date') }}</th>
+                    <th>{{ __('settings.billing_col_desc') }}</th>
+                    <th>{{ __('settings.billing_col_value') }}</th>
+                    <th>{{ __('settings.billing_col_type') }}</th>
+                    <th>{{ __('settings.billing_col_status') }}</th>
+                    <th>{{ __('settings.billing_col_invoice') }}</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($charges as $charge)
                 @php
                     $statusMap = [
-                        'PENDING'            => ['Pendente', 'st-pending'],
-                        'RECEIVED'           => ['Pago', 'st-received'],
-                        'CONFIRMED'          => ['Confirmado', 'st-confirmed'],
-                        'OVERDUE'            => ['Atrasado', 'st-overdue'],
-                        'REFUNDED'           => ['Estornado', 'st-refunded'],
-                        'RECEIVED_IN_CASH'   => ['Pago', 'st-received'],
-                        'REFUND_REQUESTED'   => ['Estorno solicitado', 'st-refunded'],
-                        'CHARGEBACK_REQUESTED' => ['Chargeback', 'st-overdue'],
-                        'CHARGEBACK_DISPUTE' => ['Em disputa', 'st-overdue'],
-                        'DUNNING_REQUESTED'  => ['Negativação', 'st-overdue'],
-                        'DUNNING_RECEIVED'   => ['Recuperado', 'st-received'],
+                        'PENDING'            => [__('settings.billing_pending'), 'st-pending'],
+                        'RECEIVED'           => [__('settings.billing_received'), 'st-received'],
+                        'CONFIRMED'          => [__('settings.billing_confirmed'), 'st-confirmed'],
+                        'OVERDUE'            => [__('settings.billing_charge_overdue'), 'st-overdue'],
+                        'REFUNDED'           => [__('settings.billing_refunded'), 'st-refunded'],
+                        'RECEIVED_IN_CASH'   => [__('settings.billing_received'), 'st-received'],
+                        'REFUND_REQUESTED'   => [__('settings.billing_refund_requested'), 'st-refunded'],
+                        'CHARGEBACK_REQUESTED' => [__('settings.billing_chargeback'), 'st-overdue'],
+                        'CHARGEBACK_DISPUTE' => [__('settings.billing_dispute'), 'st-overdue'],
+                        'DUNNING_REQUESTED'  => [__('settings.billing_dunning_req'), 'st-overdue'],
+                        'DUNNING_RECEIVED'   => [__('settings.billing_dunning_recv'), 'st-received'],
                     ];
                     $st = $statusMap[$charge['status'] ?? ''] ?? [$charge['status'] ?? '-', 'st-pending'];
                     $typeLabel = match($charge['billingType'] ?? '') {
-                        'PIX'         => 'PIX',
-                        'CREDIT_CARD' => 'Cartão',
-                        'BOLETO'      => 'Boleto',
+                        'PIX'         => __('settings.billing_pix'),
+                        'CREDIT_CARD' => __('settings.billing_credit_card'),
+                        'BOLETO'      => __('settings.billing_boleto'),
                         default       => $charge['billingType'] ?? '-',
                     };
                     $typeIcon = match($charge['billingType'] ?? '') {
@@ -581,7 +581,7 @@
                         @if(!empty($charge['invoiceUrl']))
                             <a href="{{ $charge['invoiceUrl'] }}" target="_blank"
                                style="font-size:12px;color:#0085f3;font-weight:600;text-decoration:none;">
-                                <i class="bi bi-box-arrow-up-right"></i> Ver
+                                <i class="bi bi-box-arrow-up-right"></i> {{ __('settings.billing_view_invoice') }}
                             </a>
                         @else
                             <span style="color:#d1d5db;">-</span>
@@ -594,7 +594,7 @@
         @else
         <div class="charges-empty">
             <i class="bi bi-receipt" style="font-size:28px;display:block;margin-bottom:10px;color:#d1d5db;"></i>
-            Nenhuma cobrança encontrada.
+            {{ __('settings.billing_no_charges') }}
         </div>
         @endif
     </div>
@@ -602,8 +602,10 @@
 </div>
 
 <script>
+const SLANG = @json(__('settings'));
+
 async function confirmCancel() {
-    if (!confirm('Tem certeza que deseja cancelar sua assinatura? O acesso será encerrado imediatamente.')) return;
+    if (!confirm(SLANG.billing_confirm_cancel)) return;
 
     try {
         const res = await fetch('{{ route('billing.cancel') }}', {
@@ -615,13 +617,13 @@ async function confirmCancel() {
         });
         const data = await res.json();
         if (data.success) {
-            toastr.success(data.message ?? 'Assinatura cancelada.');
+            toastr.success(data.message ?? SLANG.billing_cancelled_toast);
             setTimeout(() => window.location.reload(), 1500);
         } else {
-            toastr.error(data.message ?? 'Erro ao cancelar.');
+            toastr.error(data.message ?? SLANG.billing_cancel_error);
         }
     } catch (e) {
-        toastr.error('Erro de conexão. Tente novamente.');
+        toastr.error(SLANG.billing_conn_error);
     }
 }
 </script>

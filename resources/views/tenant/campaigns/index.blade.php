@@ -1,6 +1,6 @@
 @extends('tenant.layouts.app')
 @php
-    $title    = 'Campanhas';
+    $title    = __('campaigns.title');
     $pageIcon = 'megaphone';
 @endphp
 
@@ -262,6 +262,7 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
+const CLANG = @json(__('campaigns'));
 document.addEventListener('DOMContentLoaded', () => {
     const DAYS   = {{ $days }};
     const ANALYTICS_URL = "{{ url('/campanhas/analytics') }}";
@@ -299,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
             data: {
                 labels: {!! json_encode($barLabels) !!},
                 datasets: [{
-                    label: 'Leads', data: {!! json_encode($barData) !!},
+                    label: CLANG.leads, data: {!! json_encode($barData) !!},
                     backgroundColor: '#3B82F6', borderRadius: 6, maxBarThickness: 40,
                 }]
             },
@@ -320,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
             data: {
                 labels: {!! json_encode($lineLabels) !!},
                 datasets: [{
-                    label: 'Leads com UTM', data: {!! json_encode($lineData) !!},
+                    label: CLANG.leads + ' (UTM)', data: {!! json_encode($lineData) !!},
                     borderColor: '#3B82F6', backgroundColor: 'rgba(59,130,246,.1)',
                     tension: 0.3, fill: true, pointRadius: 4, pointBackgroundColor: '#3B82F6',
                 }]
@@ -456,15 +457,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let dimChart = null;
     function loadDimension(dim) {
         const container = document.getElementById('dimension-content');
-        container.innerHTML = '<div class="analytics-loader"><i class="bi bi-arrow-repeat"></i> Carregando...</div>';
+        container.innerHTML = '<div class="analytics-loader"><i class="bi bi-arrow-repeat"></i> ' + CLANG.loading + '</div>';
         fetch(`${ANALYTICS_URL}?section=dimension&dimension=${dim}&days=${DAYS}`, {headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
             .then(r => r.json())
             .then(data => {
                 const items = data.data || [];
-                if (!items.length) { container.innerHTML = '<div class="analytics-empty">Sem dados para esta dimensao.</div>'; return; }
+                if (!items.length) { container.innerHTML = '<div class="analytics-empty">' + CLANG.no_data_dimension + '</div>'; return; }
                 const maxL = Math.max(...items.map(i => i.leads), 1);
                 let html = '<div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;">';
-                html += '<div><table class="dim-table"><thead><tr><th>Valor</th><th class="num">Leads</th><th class="num">Conv.</th><th class="num">Receita</th><th class="num">Conv. %</th></tr></thead><tbody>';
+                html += '<div><table class="dim-table"><thead><tr><th>' + CLANG.value + '</th><th class="num">' + CLANG.leads + '</th><th class="num">' + CLANG.col_conversions + '</th><th class="num">' + CLANG.col_revenue + '</th><th class="num">' + CLANG.col_conv_pct + '</th></tr></thead><tbody>';
                 items.forEach(i => {
                     const crClass = i.conv_rate >= 10 ? 'badge-high' : (i.conv_rate >= 3 ? 'badge-mid' : 'badge-low');
                     html += `<tr><td><span class="utm-badge">${escapeHtml(i.value)}</span></td><td class="num" style="font-weight:700;">${i.leads}</td><td class="num">${i.conversions}</td><td class="num">R$ ${formatMoney(i.revenue)}</td><td class="num"><span class="badge-conv ${crClass}">${i.conv_rate}%</span></td></tr>`;
@@ -481,7 +482,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     data: {
                         labels: items.slice(0, 10).map(i => i.value.length > 20 ? i.value.slice(0,18)+'...' : i.value),
                         datasets: [{
-                            label: 'Leads', data: items.slice(0, 10).map(i => i.leads),
+                            label: CLANG.leads, data: items.slice(0, 10).map(i => i.leads),
                             backgroundColor: '#3B82F6', borderRadius: 6, maxBarThickness: 36,
                         }]
                     },
@@ -500,8 +501,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectB = document.getElementById('compareB');
         const wrap    = document.getElementById('comparison-results');
         wrap.innerHTML = '';
-        selectA.innerHTML = '<option value="">Selecione...</option>';
-        selectB.innerHTML = '<option value="">Selecione...</option>';
+        selectA.innerHTML = '<option value="">' + CLANG.select + '</option>';
+        selectB.innerHTML = '<option value="">' + CLANG.select + '</option>';
         document.getElementById('compareDim').value = dim;
 
         fetch(`${ANALYTICS_URL}?section=comparison&dimension=${dim}&days=${DAYS}`, {headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
@@ -519,13 +520,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const a   = document.getElementById('compareA').value;
         const b   = document.getElementById('compareB').value;
         const wrap = document.getElementById('comparison-results');
-        if (!a || !b) { if (typeof toastr !== 'undefined') toastr.warning('Selecione dois valores para comparar.'); return; }
-        wrap.innerHTML = '<div class="analytics-loader"><i class="bi bi-arrow-repeat"></i> Carregando...</div>';
+        if (!a || !b) { if (typeof toastr !== 'undefined') toastr.warning(CLANG.select_two_values); return; }
+        wrap.innerHTML = '<div class="analytics-loader"><i class="bi bi-arrow-repeat"></i> ' + CLANG.loading + '</div>';
 
         fetch(`${ANALYTICS_URL}?section=comparison&dimension=${dim}&a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}&days=${DAYS}`, {headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
             .then(r => r.json())
             .then(data => {
-                if (!data.a || !data.b) { wrap.innerHTML = '<div class="analytics-empty">Sem dados.</div>'; return; }
+                if (!data.a || !data.b) { wrap.innerHTML = '<div class="analytics-empty">' + CLANG.no_data + '</div>'; return; }
                 const maxLeads = Math.max(data.a.leads, data.b.leads, 1);
                 const maxRev   = Math.max(data.a.revenue, data.b.revenue, 1);
                 wrap.innerHTML = `
@@ -540,32 +541,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const avgConvDays = d.avg_hours_conv ? (d.avg_hours_conv / 24).toFixed(1) : '—';
         return `<div class="comparison-card" style="border-top:3px solid ${color};">
             <h4>${escapeHtml(d.value)}</h4>
-            <div class="comparison-metric"><div class="comparison-metric-label">Leads</div><div class="comparison-metric-value">${d.leads}</div>
+            <div class="comparison-metric"><div class="comparison-metric-label">${CLANG.leads}</div><div class="comparison-metric-value">${d.leads}</div>
                 <div class="comparison-bar-wrap"><div class="comparison-bar" style="width:${(d.leads/maxL*100).toFixed(0)}%;background:${color};height:8px;border-radius:4px;"></div></div></div>
-            <div class="comparison-metric"><div class="comparison-metric-label">Taxa de Conversao</div><div class="comparison-metric-value">${d.conv_rate}%</div></div>
-            <div class="comparison-metric"><div class="comparison-metric-label">Receita</div><div class="comparison-metric-value">R$ ${formatMoney(d.revenue)}</div>
+            <div class="comparison-metric"><div class="comparison-metric-label">${CLANG.conv_rate_label}</div><div class="comparison-metric-value">${d.conv_rate}%</div></div>
+            <div class="comparison-metric"><div class="comparison-metric-label">${CLANG.revenue}</div><div class="comparison-metric-value">R$ ${formatMoney(d.revenue)}</div>
                 <div class="comparison-bar-wrap"><div class="comparison-bar" style="width:${(d.revenue/maxR*100).toFixed(0)}%;background:${color};height:8px;border-radius:4px;"></div></div></div>
-            <div class="comparison-metric"><div class="comparison-metric-label">Tempo medio (dias)</div><div class="comparison-metric-value">${avgConvDays}</div></div>
+            <div class="comparison-metric"><div class="comparison-metric-label">${CLANG.avg_conv_days}</div><div class="comparison-metric-value">${avgConvDays}</div></div>
         </div>`;
     }
 
     // ── 3. Funnel ──
     function loadFunnel(dim) {
         const container = document.getElementById('funnel-content');
-        container.innerHTML = '<div class="analytics-loader"><i class="bi bi-arrow-repeat"></i> Carregando...</div>';
+        container.innerHTML = '<div class="analytics-loader"><i class="bi bi-arrow-repeat"></i> ' + CLANG.loading + '</div>';
         fetch(`${ANALYTICS_URL}?section=funnel&dimension=${dim}&days=${DAYS}`, {headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
             .then(r => r.json())
             .then(data => {
                 const matrix = data.matrix || {};
                 const stages = data.stages || [];
                 const sources = Object.keys(matrix);
-                if (!sources.length || !stages.length) { container.innerHTML = '<div class="analytics-empty">Sem dados de funil.</div>'; return; }
+                if (!sources.length || !stages.length) { container.innerHTML = '<div class="analytics-empty">' + CLANG.no_funnel_data + '</div>'; return; }
                 let maxVal = 0;
                 sources.forEach(s => stages.forEach(st => { maxVal = Math.max(maxVal, matrix[s][st] || 0); }));
 
                 let html = '<div class="heatmap-wrap"><table class="heatmap-table"><thead><tr><th>' + escapeHtml(dim) + '</th>';
                 stages.forEach(st => { html += '<th>' + escapeHtml(st) + '</th>'; });
-                html += '<th>Total</th></tr></thead><tbody>';
+                html += '<th>' + CLANG.total + '</th></tr></thead><tbody>';
                 sources.forEach(src => {
                     let total = 0;
                     html += '<tr><td>' + escapeHtml(src) + '</td>';
@@ -588,11 +589,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let trendsChart = null;
     function loadTrends(dim, granularity) {
         const container = document.getElementById('trends-content');
-        container.innerHTML = '<div class="analytics-loader"><i class="bi bi-arrow-repeat"></i> Carregando...</div>';
+        container.innerHTML = '<div class="analytics-loader"><i class="bi bi-arrow-repeat"></i> ' + CLANG.loading + '</div>';
         fetch(`${ANALYTICS_URL}?section=trends&dimension=${dim}&granularity=${granularity}&days=${DAYS}`, {headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
             .then(r => r.json())
             .then(data => {
-                if (!data.labels || !data.labels.length) { container.innerHTML = '<div class="analytics-empty">Sem dados de tendencia.</div>'; return; }
+                if (!data.labels || !data.labels.length) { container.innerHTML = '<div class="analytics-empty">' + CLANG.no_trend_data + '</div>'; return; }
                 container.innerHTML = '<canvas id="trendsChart" height="280"></canvas>';
                 const ctx = document.getElementById('trendsChart');
                 if (trendsChart) trendsChart.destroy();
@@ -659,14 +660,14 @@ function drillDown(btn, source, medium, campaign, term, content) {
             const colspan = row.children.length;
             tr.innerHTML = `<td colspan="${colspan}"><div class="drill-body">${
                 leads.length
-                ? `<table class="drill-table"><thead><tr><th>Nome</th><th>Email</th><th>Telefone</th><th>Data</th><th>Pipeline</th><th>Etapa</th><th>UTM ID</th><th>Term</th><th>Content</th></tr></thead><tbody>${
+                ? `<table class="drill-table"><thead><tr><th>${CLANG.col_name}</th><th>${CLANG.col_email}</th><th>${CLANG.col_phone}</th><th>${CLANG.col_date}</th><th>${CLANG.col_pipeline}</th><th>${CLANG.col_stage}</th><th>UTM ID</th><th>Term</th><th>Content</th></tr></thead><tbody>${
                     leads.map(l => `<tr><td>${escapeHtml(l.name||'—')}</td><td>${escapeHtml(l.email||'—')}</td><td>${escapeHtml(l.phone||'—')}</td><td>${escapeHtml(l.created_at||'—')}</td><td>${escapeHtml(l.pipeline||'—')}</td><td>${escapeHtml(l.stage||'—')}</td><td>${escapeHtml(l.utm_id||'—')}</td><td>${escapeHtml(l.utm_term||'—')}</td><td>${escapeHtml(l.utm_content||'—')}</td></tr>`).join('')
                 }</tbody></table>`
-                : '<span style="color:#9ca3af;font-size:12px;">Nenhum lead encontrado.</span>'
+                : '<span style="color:#9ca3af;font-size:12px;">' + CLANG.no_lead_found + '</span>'
             }</div></td>`;
             row.after(tr);
         })
-        .catch(() => { if (typeof toastr !== 'undefined') toastr.error('Erro ao carregar leads.'); })
+        .catch(() => { if (typeof toastr !== 'undefined') toastr.error(CLANG.error_load_leads); })
         .finally(() => { btn.disabled = false; });
 }
 
@@ -699,68 +700,68 @@ function exportCSV() {
 
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
         <i class="bi bi-megaphone" style="color:#3B82F6;font-size:16px;"></i>
-        <span style="font-size:15px;font-weight:700;color:#1a1d23;">Campanhas</span>
+        <span style="font-size:15px;font-weight:700;color:#1a1d23;">{{ __('campaigns.title') }}</span>
         <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
             <select id="periodFilter" onchange="window.location.href='?days='+this.value"
                     style="border:1.5px solid #e8eaf0;border-radius:8px;padding:6px 12px;font-size:12px;color:#374151;background:#fff;outline:none;">
-                @foreach([7 => '7 dias', 30 => '30 dias', 60 => '60 dias', 90 => '90 dias', 180 => '6 meses', 365 => '1 ano'] as $d => $label)
+                @foreach([7 => __('campaigns.7_days'), 30 => __('campaigns.30_days'), 60 => __('campaigns.60_days'), 90 => __('campaigns.90_days'), 180 => __('campaigns.6_months'), 365 => __('campaigns.1_year')] as $d => $label)
                 <option value="{{ $d }}" {{ $days == $d ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
             <a href="{{ route('campaigns.reports.pdf', ['days' => $days]) }}" class="btn-primary-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 14px;">
-                <i class="bi bi-download"></i> Baixar relatório
+                <i class="bi bi-download"></i> {{ __('campaigns.download_report') }}
             </a>
         </div>
     </div>
 
     {{-- FAB download mobile --}}
-    <a href="{{ route('campaigns.reports.pdf', ['days' => $days]) }}" class="fab-download-report d-md-none" title="Baixar relatório">
+    <a href="{{ route('campaigns.reports.pdf', ['days' => $days]) }}" class="fab-download-report d-md-none" title="{{ __('campaigns.download_report') }}">
         <i class="bi bi-download"></i>
     </a>
 
     {{-- KPI Cards --}}
     <div class="kpi-grid">
         <div class="kpi-card">
-            <div class="kpi-label"><i class="bi bi-person-plus"></i> Leads</div>
+            <div class="kpi-label"><i class="bi bi-person-plus"></i> {{ __('campaigns.leads') }}</div>
             <div class="kpi-value">{{ number_format($totalLeads) }}</div>
             @if($deltaLeads !== null)
                 <span class="kpi-delta {{ $deltaLeads >= 0 ? 'up' : 'down' }}">
                     <i class="bi bi-arrow-{{ $deltaLeads >= 0 ? 'up' : 'down' }}-short"></i>
-                    {{ abs($deltaLeads) }}% vs período anterior
+                    {{ abs($deltaLeads) }}% {{ __('campaigns.vs_previous') }}
                 </span>
             @else
-                <span class="kpi-delta neu">com UTM no periodo</span>
+                <span class="kpi-delta neu">{{ __('campaigns.with_utm') }}</span>
             @endif
         </div>
         <div class="kpi-card">
-            <div class="kpi-label"><i class="bi bi-check2-circle"></i> Conversões</div>
+            <div class="kpi-label"><i class="bi bi-check2-circle"></i> {{ __('campaigns.conversions') }}</div>
             <div class="kpi-value">{{ number_format($totalConversions) }}</div>
             @if($deltaConv !== null)
                 <span class="kpi-delta {{ $deltaConv >= 0 ? 'up' : 'down' }}">
                     <i class="bi bi-arrow-{{ $deltaConv >= 0 ? 'up' : 'down' }}-short"></i>
-                    {{ abs($deltaConv) }}% vs período anterior
+                    {{ abs($deltaConv) }}% {{ __('campaigns.vs_previous') }}
                 </span>
             @else
-                <span class="kpi-delta neu">vendas fechadas</span>
+                <span class="kpi-delta neu">{{ __('campaigns.sales_closed') }}</span>
             @endif
         </div>
         <div class="kpi-card">
-            <div class="kpi-label"><i class="bi bi-percent"></i> Taxa de Conv.</div>
+            <div class="kpi-label"><i class="bi bi-percent"></i> {{ __('campaigns.conv_rate') }}</div>
             <div class="kpi-value">{{ $convRate }}%</div>
             <span class="kpi-delta {{ $convRate >= 5 ? 'up' : ($convRate >= 2 ? 'neu' : 'down') }}">
-                {{ $convRate >= 5 ? 'excelente' : ($convRate >= 2 ? 'regular' : 'baixa') }}
+                {{ $convRate >= 5 ? __('campaigns.excellent') : ($convRate >= 2 ? __('campaigns.regular') : __('campaigns.low')) }}
             </span>
         </div>
         <div class="kpi-card">
-            <div class="kpi-label"><i class="bi bi-currency-dollar"></i> Receita</div>
+            <div class="kpi-label"><i class="bi bi-currency-dollar"></i> {{ __('campaigns.revenue') }}</div>
             <div class="kpi-value">R$ {{ number_format($totalRevenue, 0, ',', '.') }}</div>
             @if($deltaRev !== null)
                 <span class="kpi-delta {{ $deltaRev >= 0 ? 'up' : 'down' }}">
                     <i class="bi bi-arrow-{{ $deltaRev >= 0 ? 'up' : 'down' }}-short"></i>
-                    {{ abs($deltaRev) }}% vs período anterior
+                    {{ abs($deltaRev) }}% {{ __('campaigns.vs_previous') }}
                 </span>
             @else
-                <span class="kpi-delta neu">total gerado</span>
+                <span class="kpi-delta neu">{{ __('campaigns.total_generated') }}</span>
             @endif
         </div>
     </div>
@@ -771,7 +772,7 @@ function exportCSV() {
         <div class="top-card">
             <div class="top-icon source"><i class="bi bi-box-arrow-in-right"></i></div>
             <div>
-                <div class="top-label">Melhor Fonte</div>
+                <div class="top-label">{{ __('campaigns.best_source') }}</div>
                 <div class="top-name">{{ $topSourceName }}</div>
                 <div class="top-count">{{ number_format($topSource ?? 0) }} leads</div>
             </div>
@@ -779,7 +780,7 @@ function exportCSV() {
         <div class="top-card">
             <div class="top-icon medium"><i class="bi bi-broadcast"></i></div>
             <div>
-                <div class="top-label">Melhor Mídia</div>
+                <div class="top-label">{{ __('campaigns.best_medium') }}</div>
                 <div class="top-name">{{ $topMediumName }}</div>
                 <div class="top-count">{{ number_format($topMedium ?? 0) }} leads</div>
             </div>
@@ -787,13 +788,13 @@ function exportCSV() {
         <div class="top-card">
             <div class="top-icon campaign"><i class="bi bi-trophy"></i></div>
             <div>
-                <div class="top-label">Melhor Campanha</div>
+                <div class="top-label">{{ __('campaigns.best_campaign') }}</div>
                 @if($topCampaign)
                     <div class="top-name">{{ $topCampaign['utm_campaign'] }}</div>
-                    <div class="top-count">{{ $topCampaign['conv_rate'] }}% conversão ({{ $topCampaign['leads'] }} leads)</div>
+                    <div class="top-count">{{ $topCampaign['conv_rate'] }}% {{ __('campaigns.conversion') }} ({{ $topCampaign['leads'] }} leads)</div>
                 @else
                     <div class="top-name">&mdash;</div>
-                    <div class="top-count">sem dados suficientes</div>
+                    <div class="top-count">{{ __('campaigns.no_enough_data') }}</div>
                 @endif
             </div>
         </div>
@@ -805,7 +806,7 @@ function exportCSV() {
     <div class="charts-row">
         <div class="chart-card">
             <div class="chart-card-header">
-                <h4><i class="bi bi-pie-chart" style="color:#3B82F6;"></i> Por Source</h4>
+                <h4><i class="bi bi-pie-chart" style="color:#3B82F6;"></i> {{ __('campaigns.by_source') }}</h4>
             </div>
             <div style="flex:1;min-height:220px;display:flex;align-items:center;justify-content:center;">
                 <canvas id="doughnutChart"></canvas>
@@ -813,7 +814,7 @@ function exportCSV() {
         </div>
         <div class="chart-card">
             <div class="chart-card-header">
-                <h4><i class="bi bi-bar-chart" style="color:#3B82F6;"></i> Leads por</h4>
+                <h4><i class="bi bi-bar-chart" style="color:#3B82F6;"></i> {{ __('campaigns.leads_by') }}</h4>
                 <select class="chart-dim-select" onchange="switchBarDimension(this.value)">
                     <option value="campaign">Campaign</option>
                     <option value="source">Source</option>
@@ -828,7 +829,7 @@ function exportCSV() {
         </div>
         <div class="chart-card">
             <div class="chart-card-header">
-                <h4><i class="bi bi-graph-up" style="color:#3B82F6;"></i> Tendencia por</h4>
+                <h4><i class="bi bi-graph-up" style="color:#3B82F6;"></i> {{ __('campaigns.trend_by') }}</h4>
                 <select class="chart-dim-select" onchange="switchLineDimension(this.value)">
                     <option value="source">Source</option>
                     <option value="medium">Medium</option>
@@ -847,12 +848,12 @@ function exportCSV() {
     {{-- UTM Breakdown Table --}}
     <div class="utm-card">
         <div class="utm-card-header">
-            <h3><i class="bi bi-funnel"></i> Detalhamento UTM</h3>
+            <h3><i class="bi bi-funnel"></i> {{ __('campaigns.utm_detail') }}</h3>
             <div class="utm-filters">
-                <input type="text" id="utmSearch" placeholder="Buscar..." oninput="filterUtmTable()">
+                <input type="text" id="utmSearch" placeholder="{{ __('campaigns.search') }}" oninput="filterUtmTable()">
                 <div class="col-toggle-dropdown">
                     <button class="btn-export" id="colToggleBtn" onclick="toggleColMenu()">
-                        <i class="bi bi-sliders"></i> Colunas
+                        <i class="bi bi-sliders"></i> {{ __('campaigns.columns') }}
                     </button>
                     <div class="col-toggle-menu" id="colToggleMenu">
                         <label><input type="checkbox" class="col-toggle-cb" data-col="term"> utm_term</label>
@@ -868,8 +869,8 @@ function exportCSV() {
         @if($utmBreakdown->isEmpty())
             <div class="empty-utm">
                 <i class="bi bi-funnel"></i>
-                <p>Nenhum lead com UTM nos ultimos {{ $days }} dias.<br>
-                   UTMs sao capturados automaticamente do widget do chatbot.</p>
+                <p>{!! __('campaigns.no_utm_leads', ['days' => $days]) !!}<br>
+                   {{ __('campaigns.utm_auto_captured') }}</p>
             </div>
         @else
             <div class="utm-table-wrap">
@@ -881,10 +882,10 @@ function exportCSV() {
                             <th data-col="campaign">Campaign <span class="sort-icon"></span></th>
                             <th data-col="term" class="col-term">Term <span class="sort-icon"></span></th>
                             <th data-col="content" class="col-content">Content <span class="sort-icon"></span></th>
-                            <th data-col="leads" class="num">Leads <span class="sort-icon"></span></th>
-                            <th data-col="conversions" class="num">Conversões <span class="sort-icon"></span></th>
-                            <th data-col="revenue" class="num">Receita <span class="sort-icon"></span></th>
-                            <th data-col="conv_rate" class="num">Conv. % <span class="sort-icon"></span></th>
+                            <th data-col="leads" class="num">{{ __('campaigns.leads') }} <span class="sort-icon"></span></th>
+                            <th data-col="conversions" class="num">{{ __('campaigns.col_conversions') }} <span class="sort-icon"></span></th>
+                            <th data-col="revenue" class="num">{{ __('campaigns.col_revenue') }} <span class="sort-icon"></span></th>
+                            <th data-col="conv_rate" class="num">{{ __('campaigns.col_conv_pct') }} <span class="sort-icon"></span></th>
                             <th class="col-actions" style="width:40px;"></th>
                         </tr>
                     </thead>
@@ -923,7 +924,7 @@ function exportCSV() {
                                 <button type="button"
                                         onclick="drillDown(this, '{{ addslashes($row['utm_source']) }}', '{{ addslashes($row['utm_medium']) }}', '{{ addslashes($row['utm_campaign']) }}', '{{ addslashes($row['utm_term']) }}', '{{ addslashes($row['utm_content']) }}')"
                                         style="background:none;border:none;color:#3B82F6;cursor:pointer;font-size:13px;padding:4px 6px;border-radius:6px;"
-                                        title="Ver leads">
+                                        title="{{ __('campaigns.view_leads') }}">
                                     <i class="bi bi-chevron-down"></i>
                                 </button>
                             </td>
@@ -942,7 +943,7 @@ function exportCSV() {
     {{-- 1. Performance by Dimension --}}
     <div class="analytics-section">
         <div class="analytics-section-header" id="header-dimension" onclick="toggleAnalyticsSection('dimension')">
-            <h3><i class="bi bi-grid-3x3-gap" style="color:#3B82F6;"></i> Performance por Dimensao UTM</h3>
+            <h3><i class="bi bi-grid-3x3-gap" style="color:#3B82F6;"></i> {{ __('campaigns.perf_by_dimension') }}</h3>
             <i class="bi bi-chevron-down chevron"></i>
         </div>
         <div class="analytics-section-body" id="body-dimension">
@@ -953,20 +954,20 @@ function exportCSV() {
                 <button class="dim-tab" data-dim="term" onclick="dimTabClick('dimension','term',this)">Term</button>
                 <button class="dim-tab" data-dim="content" onclick="dimTabClick('dimension','content',this)">Content</button>
             </div>
-            <div id="dimension-content"><div class="analytics-loader">Selecione uma dimensao para carregar.</div></div>
+            <div id="dimension-content"><div class="analytics-loader">{{ __('campaigns.select_dimension') }}</div></div>
         </div>
     </div>
 
     {{-- 2. Comparison --}}
     <div class="analytics-section">
         <div class="analytics-section-header" id="header-comparison" onclick="toggleAnalyticsSection('comparison')">
-            <h3><i class="bi bi-arrow-left-right" style="color:#3B82F6;"></i> Comparar</h3>
+            <h3><i class="bi bi-arrow-left-right" style="color:#3B82F6;"></i> {{ __('campaigns.compare') }}</h3>
             <i class="bi bi-chevron-down chevron"></i>
         </div>
         <div class="analytics-section-body" id="body-comparison">
             <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:20px;">
                 <div>
-                    <label style="font-size:11px;font-weight:600;color:#6b7280;display:block;margin-bottom:4px;">Dimensao</label>
+                    <label style="font-size:11px;font-weight:600;color:#6b7280;display:block;margin-bottom:4px;">{{ __('campaigns.dimension') }}</label>
                     <div class="dim-tabs" style="margin-bottom:0;">
                         <button class="dim-tab active" onclick="dimTabClick('comparison','source',this)">Source</button>
                         <button class="dim-tab" onclick="dimTabClick('comparison','medium',this)">Medium</button>
@@ -977,15 +978,15 @@ function exportCSV() {
                 </div>
                 <input type="hidden" id="compareDim" value="source">
                 <div>
-                    <label style="font-size:11px;font-weight:600;color:#6b7280;display:block;margin-bottom:4px;">Valor A</label>
-                    <select id="compareA" class="chart-dim-select" style="min-width:140px;padding:6px 10px;font-size:12px;"><option value="">Selecione...</option></select>
+                    <label style="font-size:11px;font-weight:600;color:#6b7280;display:block;margin-bottom:4px;">{{ __('campaigns.value_a') }}</label>
+                    <select id="compareA" class="chart-dim-select" style="min-width:140px;padding:6px 10px;font-size:12px;"><option value="">{{ __('campaigns.select') }}</option></select>
                 </div>
                 <div>
-                    <label style="font-size:11px;font-weight:600;color:#6b7280;display:block;margin-bottom:4px;">Valor B</label>
-                    <select id="compareB" class="chart-dim-select" style="min-width:140px;padding:6px 10px;font-size:12px;"><option value="">Selecione...</option></select>
+                    <label style="font-size:11px;font-weight:600;color:#6b7280;display:block;margin-bottom:4px;">{{ __('campaigns.value_b') }}</label>
+                    <select id="compareB" class="chart-dim-select" style="min-width:140px;padding:6px 10px;font-size:12px;"><option value="">{{ __('campaigns.select') }}</option></select>
                 </div>
                 <button class="btn-export" onclick="runComparison()" style="background:#0085f3;color:#fff;border-color:#0085f3;">
-                    <i class="bi bi-arrow-left-right"></i> Comparar
+                    <i class="bi bi-arrow-left-right"></i> {{ __('campaigns.compare') }}
                 </button>
             </div>
             <div id="comparison-results"></div>
@@ -995,7 +996,7 @@ function exportCSV() {
     {{-- 3. Funnel Attribution --}}
     <div class="analytics-section">
         <div class="analytics-section-header" id="header-funnel" onclick="toggleAnalyticsSection('funnel')">
-            <h3><i class="bi bi-bar-chart-steps" style="color:#3B82F6;"></i> Funil por Origem</h3>
+            <h3><i class="bi bi-bar-chart-steps" style="color:#3B82F6;"></i> {{ __('campaigns.funnel_by_source') }}</h3>
             <i class="bi bi-chevron-down chevron"></i>
         </div>
         <div class="analytics-section-body" id="body-funnel">
@@ -1006,14 +1007,14 @@ function exportCSV() {
                 <button class="dim-tab" data-dim="term" onclick="dimTabClick('funnel','term',this)">Term</button>
                 <button class="dim-tab" data-dim="content" onclick="dimTabClick('funnel','content',this)">Content</button>
             </div>
-            <div id="funnel-content"><div class="analytics-loader">Selecione uma dimensao para carregar.</div></div>
+            <div id="funnel-content"><div class="analytics-loader">{{ __('campaigns.select_dimension') }}</div></div>
         </div>
     </div>
 
     {{-- 4. Trends --}}
     <div class="analytics-section">
         <div class="analytics-section-header" id="header-trends" onclick="toggleAnalyticsSection('trends')">
-            <h3><i class="bi bi-graph-up-arrow" style="color:#3B82F6;"></i> Tendencias</h3>
+            <h3><i class="bi bi-graph-up-arrow" style="color:#3B82F6;"></i> {{ __('campaigns.trends') }}</h3>
             <i class="bi bi-chevron-down chevron"></i>
         </div>
         <div class="analytics-section-body" id="body-trends">
@@ -1026,12 +1027,12 @@ function exportCSV() {
                     <button class="dim-tab" data-dim="content" onclick="dimTabClick('trends','content',this)">Content</button>
                 </div>
                 <div class="gran-tabs">
-                    <button class="gran-tab" data-gran="daily" onclick="granTabClick('daily',this)">Diario</button>
-                    <button class="gran-tab active" data-gran="weekly" onclick="granTabClick('weekly',this)">Semanal</button>
-                    <button class="gran-tab" data-gran="monthly" onclick="granTabClick('monthly',this)">Mensal</button>
+                    <button class="gran-tab" data-gran="daily" onclick="granTabClick('daily',this)">{{ __('campaigns.daily') }}</button>
+                    <button class="gran-tab active" data-gran="weekly" onclick="granTabClick('weekly',this)">{{ __('campaigns.weekly') }}</button>
+                    <button class="gran-tab" data-gran="monthly" onclick="granTabClick('monthly',this)">{{ __('campaigns.monthly') }}</button>
                 </div>
             </div>
-            <div id="trends-content"><div class="analytics-loader">Selecione uma dimensao para carregar.</div></div>
+            <div id="trends-content"><div class="analytics-loader">{{ __('campaigns.select_dimension') }}</div></div>
         </div>
     </div>
 

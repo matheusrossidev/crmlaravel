@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Tags';
+    $title    = __('settings.tags_title');
     $pageIcon = 'tags';
 @endphp
 
@@ -162,11 +162,11 @@
 
     <div class="section-header">
         <div>
-            <div class="section-title">Tags</div>
-            <div class="section-subtitle">Crie tags com cores para categorizar leads e conversas.</div>
+            <div class="section-title">{{ __('settings.tags_title') }}</div>
+            <div class="section-subtitle">{{ __('settings.tags_subtitle') }}</div>
         </div>
         <button class="btn-primary-sm" id="btnNewTag">
-            <i class="bi bi-plus-lg"></i> Nova Tag
+            <i class="bi bi-plus-lg"></i> {{ __('settings.tags_new') }}
         </button>
     </div>
 
@@ -174,8 +174,8 @@
         <table class="wt-table">
             <thead>
                 <tr>
-                    <th>Tag</th>
-                    <th style="width:140px;">Cor</th>
+                    <th>{{ __('settings.tags_col_tag') }}</th>
+                    <th style="width:140px;">{{ __('settings.tags_col_color') }}</th>
                     <th style="width:80px;"></th>
                 </tr>
             </thead>
@@ -199,11 +199,11 @@
                     </td>
                     <td>
                         <div style="display:flex;gap:5px;justify-content:flex-end;">
-                            <button class="btn-icon" title="Editar"
+                            <button class="btn-icon" title="{{ __('settings.tags_edit') }}"
                                     onclick="openEdit({{ $tag->id }},'{{ addslashes($tag->name) }}','{{ $tag->color }}')">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn-icon danger" title="Excluir"
+                            <button class="btn-icon danger" title="{{ __('settings.tags_delete') }}"
                                     onclick="deleteTag({{ $tag->id }},this)">
                                 <i class="bi bi-trash"></i>
                             </button>
@@ -215,7 +215,7 @@
                     <td colspan="3">
                         <div class="empty-state">
                             <i class="bi bi-tag"></i>
-                            Nenhuma tag criada. Clique em <strong>Nova Tag</strong> para começar.
+                            {!! __('settings.tags_no_tags') !!}
                         </div>
                     </td>
                 </tr>
@@ -230,7 +230,7 @@
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
     <div class="drawer-header">
-        <span id="drawerTitle">Nova Tag</span>
+        <span id="drawerTitle">{{ __('settings.tags_new_title') }}</span>
         <button onclick="closeDrawer()" style="background:none;border:none;font-size:18px;color:#6b7280;cursor:pointer;">
             <i class="bi bi-x-lg"></i>
         </button>
@@ -239,14 +239,14 @@
         <input type="hidden" id="tagId">
 
         <div class="form-group">
-            <label class="form-label">Nome</label>
+            <label class="form-label">{{ __('settings.tags_name') }}</label>
             <input type="text" id="tagName" class="form-input"
-                   placeholder="Ex: VIP, Urgente, Suporte..."
+                   placeholder="{{ __('settings.tags_name_ph') }}"
                    oninput="updatePreview()">
         </div>
 
         <div class="form-group">
-            <label class="form-label">Cor</label>
+            <label class="form-label">{{ __('settings.tags_color') }}</label>
             <div class="color-row">
                 <input type="color" id="tagColorPicker" class="color-picker-input" value="#3B82F6"
                        oninput="syncFromPicker()">
@@ -263,14 +263,14 @@
         </div>
 
         <div class="preview-wrap">
-            <span style="font-size:11px;color:#9ca3af;white-space:nowrap;">Preview:</span>
+            <span style="font-size:11px;color:#9ca3af;white-space:nowrap;">{{ __('settings.tags_preview') }}</span>
             <span id="previewChip" class="tag-chip">Tag</span>
         </div>
     </div>
     <div class="drawer-footer">
-        <button class="btn-cancel" onclick="closeDrawer()">Cancelar</button>
+        <button class="btn-cancel" onclick="closeDrawer()">{{ __('settings.tags_cancel') }}</button>
         <button class="btn-save" id="btnSave" onclick="saveTag()">
-            <i class="bi bi-check2"></i> Salvar
+            <i class="bi bi-check2"></i> {{ __('settings.tags_save') }}
         </button>
     </div>
 </div>
@@ -278,6 +278,7 @@
 
 @push('scripts')
 <script>
+const SLANG = @json(__('settings'));
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 const URL_STORE   = '{{ route('settings.tags.store') }}';
 const URL_UPDATE  = '{{ route('settings.tags.update', ['tag' => '__ID__']) }}';
@@ -344,7 +345,7 @@ function closeDrawer() {
 }
 
 document.getElementById('btnNewTag').addEventListener('click', () => {
-    document.getElementById('drawerTitle').textContent = 'Nova Tag';
+    document.getElementById('drawerTitle').textContent = SLANG.tags_new_title;
     document.getElementById('tagId').value   = '';
     document.getElementById('tagName').value = '';
     setPreset('#3B82F6');
@@ -353,7 +354,7 @@ document.getElementById('btnNewTag').addEventListener('click', () => {
 });
 
 function openEdit(id, name, color) {
-    document.getElementById('drawerTitle').textContent = 'Editar Tag';
+    document.getElementById('drawerTitle').textContent = SLANG.tags_edit_title;
     document.getElementById('tagId').value   = id;
     document.getElementById('tagName').value = name;
     setPreset(color);
@@ -372,7 +373,7 @@ async function saveTag() {
                || document.getElementById('tagColorPicker').value;
 
     if (!name)              { document.getElementById('tagName').focus(); return; }
-    if (!isValidHex(color)) { toastr.error('Cor inválida. Use formato #RRGGBB.'); return; }
+    if (!isValidHex(color)) { toastr.error(SLANG.tags_invalid_color); return; }
 
     const btn = document.getElementById('btnSave');
     btn.disabled = true;
@@ -388,7 +389,7 @@ async function saveTag() {
         const data = await res.json();
 
         if (!data.success) {
-            toastr.error(data.message || 'Erro ao salvar.');
+            toastr.error(data.message || SLANG.tags_error_save);
             return;
         }
 
@@ -400,7 +401,7 @@ async function saveTag() {
         } else {
             insertRow(t);
         }
-        toastr.success(id ? 'Tag atualizada.' : 'Tag criada.');
+        toastr.success(id ? SLANG.tags_updated : SLANG.tags_created);
     } finally {
         btn.disabled = false;
     }
@@ -421,10 +422,10 @@ function buildRow(t) {
         </td>
         <td>
             <div style="display:flex;gap:5px;justify-content:flex-end;">
-                <button class="btn-icon" title="Editar" onclick="openEdit(${t.id},'${t.name.replace(/'/g,"\\'")}','${t.color}')">
+                <button class="btn-icon" title="${SLANG.tags_edit}" onclick="openEdit(${t.id},'${t.name.replace(/'/g,"\\'")}','${t.color}')">
                     <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn-icon danger" title="Excluir" onclick="deleteTag(${t.id},this)">
+                <button class="btn-icon danger" title="${SLANG.tags_delete}" onclick="deleteTag(${t.id},this)">
                     <i class="bi bi-trash"></i>
                 </button>
             </div>
@@ -450,9 +451,9 @@ function updateRow(t) {
 
 function deleteTag(id, btn) {
     confirmAction({
-        title: 'Excluir tag',
-        message: 'As conversas que a utilizam manterão o nome, mas perderão a cor.<br>Esta ação não pode ser desfeita.',
-        confirmText: 'Excluir',
+        title: SLANG.tags_delete_title,
+        message: SLANG.tags_delete_msg,
+        confirmText: SLANG.tags_delete,
         onConfirm: async () => {
             const row = btn.closest('tr');
             const res  = await fetch(URL_DESTROY.replace('__ID__', id), {
@@ -460,17 +461,17 @@ function deleteTag(id, btn) {
                 headers: { 'X-CSRF-TOKEN': CSRF },
             });
             const data = await res.json();
-            if (!data.success) { toastr.error('Erro ao excluir.'); return; }
+            if (!data.success) { toastr.error(SLANG.tags_error_delete); return; }
 
             row.remove();
-            toastr.success('Tag excluída.');
+            toastr.success(SLANG.tags_deleted);
 
             if (!document.querySelector('#tagsBody tr[data-id]')) {
                 document.getElementById('tagsBody').innerHTML = `
                     <tr id="emptyRow"><td colspan="3">
                         <div class="empty-state">
                             <i class="bi bi-tag"></i>
-                            Nenhuma tag criada.
+                            ${SLANG.tags_no_tags_short}
                         </div>
                     </td></tr>`;
             }

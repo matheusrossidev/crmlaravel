@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title = 'Pipelines';
+    $title = __('pipelines.title');
     $pageIcon = 'funnel';
 @endphp
 
@@ -234,9 +234,9 @@
 <div class="page-container">
 
     <div class="section-header">
-        <div class="section-title">Funis</div>
+        <div class="section-title">{{ __('pipelines.title') }}</div>
         <button class="btn-primary-sm" id="btnNovoPipeline">
-            <i class="bi bi-plus-lg"></i> Novo Funil
+            <i class="bi bi-plus-lg"></i> {{ __('pipelines.new_pipeline') }}
         </button>
     </div>
 
@@ -247,16 +247,16 @@
                 <span class="pipeline-color-dot" style="background: {{ $pipeline->color }};"></span>
                 <span class="pipeline-name">{{ $pipeline->name }}</span>
                 @if($pipeline->is_default)
-                <span class="default-badge">Padrão</span>
+                <span class="default-badge">{{ __('pipelines.default') }}</span>
                 @endif
                 <div class="pipeline-actions" onclick="event.stopPropagation()">
-                    <button class="btn-icon" title="Definir como padrão" onclick="setDefaultPipeline({{ $pipeline->id }}, '{{ addslashes($pipeline->name) }}', '{{ $pipeline->color }}')">
+                    <button class="btn-icon" title="{{ __('pipelines.set_default') }}" onclick="setDefaultPipeline({{ $pipeline->id }}, '{{ addslashes($pipeline->name) }}', '{{ $pipeline->color }}')">
                         <i class="bi bi-star{{ $pipeline->is_default ? '-fill' : '' }}" style="{{ $pipeline->is_default ? 'color:#f59e0b;' : '' }}"></i>
                     </button>
-                    <button class="btn-icon" title="Editar" onclick="openEditPipelineDrawer({{ $pipeline->id }})">
+                    <button class="btn-icon" title="{{ __('pipelines.edit') }}" onclick="openEditPipelineDrawer({{ $pipeline->id }})">
                         <i class="bi bi-pencil"></i>
                     </button>
-                    <button class="btn-icon danger" title="Excluir" onclick="deletePipeline({{ $pipeline->id }}, this)">
+                    <button class="btn-icon danger" title="{{ __('pipelines.delete') }}" onclick="deletePipeline({{ $pipeline->id }}, this)">
                         <i class="bi bi-trash"></i>
                     </button>
                     <i class="bi bi-chevron-down" style="font-size:13px;color:#9ca3af;transition:transform .2s;" id="chevron-{{ $pipeline->id }}"></i>
@@ -269,8 +269,8 @@
                         <i class="bi bi-grip-vertical stage-drag-handle"></i>
                         <span class="stage-color-dot" style="background: {{ $stage->color }};"></span>
                         <span class="stage-name">{{ $stage->name }}</span>
-                        @if($stage->is_won)  <span class="stage-badge won-badge">Ganho</span>  @endif
-                        @if($stage->is_lost) <span class="stage-badge lost-badge">Perdido</span> @endif
+                        @if($stage->is_won)  <span class="stage-badge won-badge">{{ __('pipelines.won') }}</span>  @endif
+                        @if($stage->is_lost) <span class="stage-badge lost-badge">{{ __('pipelines.lost') }}</span> @endif
                         <div style="display:flex;gap:5px;">
                             <button class="btn-icon" onclick="openEditPipelineDrawer({{ $pipeline->id }})">
                                 <i class="bi bi-pencil"></i>
@@ -283,14 +283,14 @@
                     @endforeach
                 </ul>
                 <button class="add-stage-btn" onclick="openEditPipelineDrawer({{ $pipeline->id }})">
-                    <i class="bi bi-plus-lg"></i> Adicionar etapa
+                    <i class="bi bi-plus-lg"></i> {{ __('pipelines.add_stage') }}
                 </button>
             </div>
         </div>
         @empty
         <div id="emptyPipelines" style="text-align:center;padding:60px 20px;color:#9ca3af;">
             <i class="bi bi-diagram-3" style="font-size:40px;opacity:.3;display:block;margin-bottom:12px;"></i>
-            <p style="font-size:14px;margin:0;">Nenhum funil criado ainda.</p>
+            <p style="font-size:14px;margin:0;">{{ __('pipelines.no_pipelines') }}</p>
         </div>
         @endforelse
     </div>
@@ -301,31 +301,31 @@
 <div class="drawer-overlay" id="drawerOverlay"></div>
 <div class="drawer" id="drawerPipeline">
     <div class="drawer-header">
-        <h4 id="drawerTitle">Novo Funil</h4>
+        <h4 id="drawerTitle">{{ __('pipelines.new_pipeline_title') }}</h4>
         <button class="drawer-close" onclick="closeDrawer()"><i class="bi bi-x-lg"></i></button>
     </div>
     <div class="drawer-body">
         <input type="hidden" id="pipelineId">
 
         <div class="form-group">
-            <label class="form-label">Nome do Funil</label>
-            <input type="text" id="pipelineName" class="form-control" placeholder="Ex: Vendas Principais">
+            <label class="form-label">{{ __('pipelines.pipeline_name') }}</label>
+            <input type="text" id="pipelineName" class="form-control" placeholder="{{ __('pipelines.pipeline_name_ph') }}">
         </div>
         <div class="form-group">
-            <label class="form-label">Cor</label>
+            <label class="form-label">{{ __('pipelines.color') }}</label>
             <div class="color-row">
                 <input type="color" id="pipelineColor" class="color-input" value="#3B82F6">
                 <input type="text" id="pipelineColorText" class="form-control" value="#3B82F6" placeholder="#3B82F6" style="flex:1;">
             </div>
         </div>
         <div class="form-group" style="margin-top:14px;">
-            <label class="form-label" style="margin-bottom:8px;">Auto-criar lead</label>
+            <label class="form-label" style="margin-bottom:8px;">{{ __('pipelines.auto_create_lead') }}</label>
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
                 <label class="toggle">
                     <input type="checkbox" id="autoCreateLead" checked onchange="toggleChannelToggles()">
                     <span class="toggle-slider"></span>
                 </label>
-                <span style="font-size:12px;color:#374151;">Criar lead ao receber mensagem</span>
+                <span style="font-size:12px;color:#374151;">{{ __('pipelines.create_on_message') }}</span>
             </div>
             <div id="channelToggles" style="display:flex;gap:16px;padding-left:4px;">
                 <div style="display:flex;align-items:center;gap:6px;">
@@ -347,16 +347,16 @@
 
         {{-- Stages section --}}
         <div class="drawer-stages-section">
-            <div class="drawer-stages-title">Etapas</div>
+            <div class="drawer-stages-title">{{ __('pipelines.stages') }}</div>
             <ul class="drawer-stages-list" id="drawerStagesList"></ul>
             <button type="button" class="btn-add-stage-drawer" onclick="addDrawerStageRow()">
-                <i class="bi bi-plus-lg"></i> Nova Etapa
+                <i class="bi bi-plus-lg"></i> {{ __('pipelines.new_stage') }}
             </button>
         </div>
     </div>
     <div class="drawer-footer">
-        <button class="btn-cancel" onclick="closeDrawer()">Cancelar</button>
-        <button class="btn-save" id="btnSaveDrawer" onclick="saveDrawer()">Salvar</button>
+        <button class="btn-cancel" onclick="closeDrawer()">{{ __('pipelines.cancel') }}</button>
+        <button class="btn-save" id="btnSaveDrawer" onclick="saveDrawer()">{{ __('pipelines.save') }}</button>
     </div>
 </div>
 @endsection
@@ -364,6 +364,7 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
+const PLANG = @json(__('pipelines'));
 const PIPE_STORE  = @json(route('settings.pipelines.store'));
 const PIPE_UPD    = @json(route('settings.pipelines.update',  ['pipeline' => '__ID__']));
 const PIPE_DEL    = @json(route('settings.pipelines.destroy', ['pipeline' => '__ID__']));
@@ -453,11 +454,11 @@ function addDrawerStageRow(data) {
     li.dataset.idx = idx;
     li.innerHTML = `
         <i class="bi bi-grip-vertical stage-drag-handle"></i>
-        <input type="text" class="form-control" style="flex:1;min-width:0;" placeholder="Nome da etapa" value="${escapeHtml(name)}" data-field="name">
+        <input type="text" class="form-control" style="flex:1;min-width:0;" placeholder="${escapeHtml(PLANG.stage_name_ph)}" value="${escapeHtml(name)}" data-field="name">
         <input type="color" class="color-input" value="${color}" data-field="color">
-        <label class="drawer-stage-checkbox" title="Ganho"><input type="checkbox" data-field="is_won" ${isWon ? 'checked' : ''}> G</label>
-        <label class="drawer-stage-checkbox" title="Perdido"><input type="checkbox" data-field="is_lost" ${isLost ? 'checked' : ''}> P</label>
-        <button type="button" class="drawer-stage-delete" onclick="removeDrawerStageRow(this)" title="Remover etapa"><i class="bi bi-trash"></i></button>
+        <label class="drawer-stage-checkbox" title="${escapeHtml(PLANG.won_title)}"><input type="checkbox" data-field="is_won" ${isWon ? 'checked' : ''}> ${PLANG.won_abbr}</label>
+        <label class="drawer-stage-checkbox" title="${escapeHtml(PLANG.lost_title)}"><input type="checkbox" data-field="is_lost" ${isLost ? 'checked' : ''}> ${PLANG.lost_abbr}</label>
+        <button type="button" class="drawer-stage-delete" onclick="removeDrawerStageRow(this)" title="${escapeHtml(PLANG.remove_stage)}"><i class="bi bi-trash"></i></button>
     `;
     list.appendChild(li);
 
@@ -489,7 +490,7 @@ function clearDrawerStages() {
 
 /* ---- Open drawer: New pipeline ---- */
 document.getElementById('btnNovoPipeline').addEventListener('click', () => {
-    document.getElementById('drawerTitle').textContent = 'Novo Funil';
+    document.getElementById('drawerTitle').textContent = PLANG.new_pipeline_title;
     document.getElementById('pipelineId').value = '';
     document.getElementById('pipelineName').value = '';
     document.getElementById('pipelineColor').value = '#3B82F6';
@@ -508,7 +509,7 @@ function openEditPipelineDrawer(pipelineId) {
     const p = pipelinesData[pipelineId];
     if (!p) return;
 
-    document.getElementById('drawerTitle').textContent = 'Editar Funil';
+    document.getElementById('drawerTitle').textContent = PLANG.edit_pipeline_title;
     document.getElementById('pipelineId').value = p.id;
     document.getElementById('pipelineName').value = p.name;
     document.getElementById('pipelineColor').value = p.color;
@@ -568,7 +569,7 @@ async function saveDrawer() {
         const pipeData = await pipeRes.json();
         if (!pipeData.success) {
             if (checkLimitReached(pipeData)) return;
-            alert(pipeData.message || 'Erro ao salvar funil.'); return;
+            alert(pipeData.message || PLANG.error_save); return;
         }
 
         const pipelineId = pipeData.pipeline.id;
@@ -679,15 +680,15 @@ async function setDefaultPipeline(id, name, color) {
 /* ---- Delete pipeline ---- */
 function deletePipeline(id, btn) {
     confirmAction({
-        title: 'Excluir funil',
-        message: 'Excluir este funil? Todos os leads devem ser movidos primeiro.',
-        confirmText: 'Excluir',
+        title: PLANG.delete_pipeline_title,
+        message: PLANG.delete_pipeline_msg,
+        confirmText: PLANG.delete,
         onConfirm: async () => {
             const res  = await fetch(PIPE_DEL.replace('__ID__', id), {
                 method: 'DELETE', headers: { 'X-CSRF-TOKEN': CSRF }
             });
             const data = await res.json();
-            if (!data.success) { toastr.error(data.message || 'Não foi possível excluir.'); return; }
+            if (!data.success) { toastr.error(data.message || PLANG.error_delete); return; }
             btn.closest('.pipeline-card').remove();
             delete pipelinesData[id];
         },
@@ -697,15 +698,15 @@ function deletePipeline(id, btn) {
 /* ---- Delete stage (from accordion) ---- */
 function deleteStage(pipelineId, stageId, btn) {
     confirmAction({
-        title: 'Excluir etapa',
-        message: 'Tem certeza que deseja excluir esta etapa?',
-        confirmText: 'Excluir',
+        title: PLANG.delete_stage_title,
+        message: PLANG.delete_stage_msg,
+        confirmText: PLANG.delete,
         onConfirm: async () => {
             const res  = await fetch(STAGE_DEL.replace('__P__', pipelineId).replace('__S__', stageId), {
                 method: 'DELETE', headers: { 'X-CSRF-TOKEN': CSRF }
             });
             const data = await res.json();
-            if (!data.success) { toastr.error(data.message || 'Não foi possível excluir.'); return; }
+            if (!data.success) { toastr.error(data.message || PLANG.error_delete); return; }
             btn.closest('.stage-item').remove();
             // Update local data
             if (pipelinesData[pipelineId]) {
@@ -736,7 +737,7 @@ function buildPipelineCard(p) {
         </div>
         <div class="pipeline-body" id="body-${p.id}">
             <ul class="stages-list" data-pipeline-id="${p.id}" id="stages-${p.id}"></ul>
-            <button class="add-stage-btn" onclick="openEditPipelineDrawer(${p.id})"><i class="bi bi-plus-lg"></i> Adicionar etapa</button>
+            <button class="add-stage-btn" onclick="openEditPipelineDrawer(${p.id})"><i class="bi bi-plus-lg"></i> ${escapeHtml(PLANG.add_stage)}</button>
         </div>
     </div>`;
 }

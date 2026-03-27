@@ -1,11 +1,11 @@
 @extends('tenant.layouts.app')
 
-@php($title = 'Início')
+@php($title = __('nav.home'))
 @php($pageIcon = 'house')
 
 @section('topbar_actions')
 <div class="topbar-actions">
-    <button class="topbar-btn" onclick="openCustomize()" title="Personalizar dashboard">
+    <button class="topbar-btn" onclick="openCustomize()" title="{{ __('dashboard.customize') }}">
         <i class="bi bi-sliders"></i>
     </button>
 </div>
@@ -416,8 +416,8 @@
     {{-- Welcome Banner --}}
     <div class="welcome-banner">
         <span class="welcome-banner-label">{{ now()->translatedFormat('l, d \d\e F') }}</span>
-        <h1 class="welcome-banner-title">Bem-vindo de volta, {{ auth()->user()->name }}.</h1>
-        <p class="welcome-banner-sub">Acompanhe seus leads, pipeline de vendas e conversas — tudo em um só lugar.</p>
+        <h1 class="welcome-banner-title">{{ __('dashboard.welcome_back', ['name' => auth()->user()->name]) }}</h1>
+        <p class="welcome-banner-sub">{{ __('dashboard.welcome_sub') }}</p>
     </div>
 
     {{-- ── Row 1: Stat Cards ─────────────────────────────────────────── --}}
@@ -428,7 +428,7 @@
         <div class="stat-card blue">
             <div class="stat-card-top">
                 <div class="stat-icon blue"><i class="bi bi-people"></i></div>
-                <span class="stat-label" title="Leads criados de 1 a {{ now()->endOfMonth()->day }} de {{ now()->translatedFormat('F/Y') }}">Leads este mês</span>
+                <span class="stat-label">{{ __('dashboard.leads_this_month') }}</span>
             </div>
             <div class="stat-bottom">
                 <div class="stat-value-row">
@@ -437,7 +437,7 @@
                     <span class="trend-badge {{ $leadsTrend >= 0 ? 'up' : 'down' }}"><i class="bi bi-arrow-{{ $leadsTrend >= 0 ? 'up' : 'down' }}-right"></i> {{ abs($leadsTrend) }}%</span>
                     @endif
                 </div>
-                <span class="stat-sub">{{ $leadsTrend !== null ? 'vs mês ant.' : 'sem dados anteriores' }}</span>
+                <span class="stat-sub">{{ $leadsTrend !== null ? __('dashboard.vs_prev_month') : __('dashboard.no_prev_data') }}</span>
             </div>
         </div>
         @break
@@ -445,7 +445,7 @@
         <div class="stat-card green">
             <div class="stat-card-top">
                 <div class="stat-icon green"><i class="bi bi-currency-dollar"></i></div>
-                <span class="stat-label">Vendas este mês</span>
+                <span class="stat-label">{{ __('dashboard.sales_this_month') }}</span>
             </div>
             <div class="stat-bottom">
                 <div class="stat-value-row">
@@ -454,7 +454,7 @@
                     <span class="trend-badge {{ $salesTrend >= 0 ? 'up' : 'down' }}"><i class="bi bi-arrow-{{ $salesTrend >= 0 ? 'up' : 'down' }}-right"></i> {{ abs($salesTrend) }}%</span>
                     @endif
                 </div>
-                <span class="stat-sub">{{ $salesTrend !== null ? 'vs mês ant.' : 'receita fechada' }}</span>
+                <span class="stat-sub">{{ $salesTrend !== null ? __('dashboard.vs_prev_month') : __('dashboard.no_prev_data') }}</span>
             </div>
         </div>
         @break
@@ -462,13 +462,13 @@
         <div class="stat-card purple">
             <div class="stat-card-top">
                 <div class="stat-icon purple"><i class="bi bi-percent"></i></div>
-                <span class="stat-label">Taxa de Conversão</span>
+                <span class="stat-label">{{ __('dashboard.conversion_rate') }}</span>
             </div>
             <div class="stat-bottom">
                 <div class="stat-value-row">
                     <span class="stat-value" data-val="{{ $conversionRate }}" data-prefix="" data-suffix="%" data-decimals="1">{{ $conversionRate }}%</span>
                 </div>
-                <span class="stat-sub">leads → vendas</span>
+                <span class="stat-sub">{{ __('dashboard.leads_to_sales') }}</span>
             </div>
         </div>
         @break
@@ -476,13 +476,13 @@
         <div class="stat-card orange">
             <div class="stat-card-top">
                 <div class="stat-icon orange"><i class="bi bi-graph-up"></i></div>
-                <span class="stat-label">Ticket Médio</span>
+                <span class="stat-label">{{ __('dashboard.avg_ticket') }}</span>
             </div>
             <div class="stat-bottom">
                 <div class="stat-value-row">
                     <span class="stat-value" data-val="{{ $ticketMedio }}" data-prefix="R$ " data-suffix="">{{ $cfTicket }}</span>
                 </div>
-                <span class="stat-sub">{{ $leadsGanhos }} negócio{{ $leadsGanhos !== 1 ? 's' : '' }} este mês</span>
+                <span class="stat-sub">{{ __('dashboard.deals_this_month', ['count' => $leadsGanhos]) }}</span>
             </div>
         </div>
         @break
@@ -490,13 +490,13 @@
         <div class="stat-card red">
             <div class="stat-card-top">
                 <div class="stat-icon red"><i class="bi bi-x-circle"></i></div>
-                <span class="stat-label">Leads Perdidos</span>
+                <span class="stat-label">{{ __('dashboard.lost_leads') }}</span>
             </div>
             <div class="stat-bottom">
                 <div class="stat-value-row">
                     <span class="stat-value" data-val="{{ $leadsPerdidos }}" data-prefix="" data-suffix="">{{ $cfPerdidos }}</span>
                 </div>
-                <span class="stat-sub">perdidos este mês</span>
+                <span class="stat-sub">{{ __('dashboard.lost_this_month') }}</span>
             </div>
         </div>
         @break
@@ -507,8 +507,8 @@
     {{-- ── Funil de Vendas ──────────────────────────────────────────────── --}}
     <div class="content-card" style="margin-bottom:16px;">
         <div class="content-card-header">
-            <h3><i class="bi bi-funnel"></i> {{ $pipeline?->name ?? 'Funil de Vendas' }}</h3>
-            <a href="{{ route('crm.kanban') }}" class="card-link">Kanban <i class="bi bi-arrow-right"></i></a>
+            <h3><i class="bi bi-funnel"></i> {{ $pipeline?->name ?? __('dashboard.sales_funnel') }}</h3>
+            <a href="{{ route('crm.kanban') }}" class="card-link">{{ __('dashboard.kanban') }} <i class="bi bi-arrow-right"></i></a>
         </div>
         <div class="content-card-body" style="padding:0;">
             @if(count($stagesWithCount) > 0)
@@ -523,8 +523,8 @@
                             </div>
                             <div style="font-size:18px;font-weight:800;color:#1a1d23;margin-bottom:10px;">R$ {{ number_format($stage['value'], 0, ',', '.') }}</div>
                             <div style="font-size:11px;color:#6b7280;margin-bottom:4px;">
-                                <span>Quantidade</span><br>
-                                <span style="font-weight:700;color:#374151;">{{ $stage['count'] }} negócios</span>
+                                <span>{{ __('dashboard.quantity') }}</span><br>
+                                <span style="font-weight:700;color:#374151;">{{ $stage['count'] }} {{ __('dashboard.deals') }}</span>
                             </div>
                             <div style="height:24px;background:{{ $stage['color'] ?? '#3B82F6' }}15;border-radius:99px;display:flex;align-items:center;justify-content:center;margin-top:6px;">
                                 <span style="font-size:10px;font-weight:700;color:{{ $stage['color'] ?? '#3B82F6' }};">{{ collect($stagesWithCount)->sum('count') > 0 ? round($stage['count'] * 100 / collect($stagesWithCount)->sum('count')) : 0 }}%</span>
@@ -581,7 +581,7 @@
             @else
             <div class="empty-state" style="padding:24px;">
                 <i class="bi bi-kanban"></i>
-                <p>Nenhum pipeline configurado. <a href="{{ route('settings.pipelines') }}" style="color:#3B82F6;">Criar pipeline</a></p>
+                <p>{{ __('dashboard.no_pipeline') }} <a href="{{ route('settings.pipelines') }}" style="color:#3B82F6;">{{ __('dashboard.create_pipeline') }}</a></p>
             </div>
             @endif
         </div>
@@ -594,29 +594,29 @@
         <div class="content-card">
             <div class="content-card-header" style="flex-wrap:wrap;gap:10px;">
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <h3><i class="bi bi-people"></i> Leads</h3>
-                    <span id="leadsBadge" style="background:#eff6ff;color:#0085f3;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;">{{ $leadsThisMonth }} este mês</span>
+                    <h3><i class="bi bi-people"></i> {{ __('dashboard.leads') }}</h3>
+                    <span id="leadsBadge" style="background:#eff6ff;color:#0085f3;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;">{{ $leadsThisMonth }} {{ __('dashboard.this_month') }}</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:12px;">
                     <div id="leadsChartFilter" style="display:flex;gap:4px;">
-                        <button type="button" class="leads-period-btn" data-period="week" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;cursor:pointer;">Semana</button>
-                        <button type="button" class="leads-period-btn active" data-period="month" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #0085f3;background:#0085f3;color:#fff;cursor:pointer;">Mês</button>
-                        <button type="button" class="leads-period-btn" data-period="3months" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;cursor:pointer;">3 Meses</button>
-                        <button type="button" class="leads-period-btn" data-period="6months" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;cursor:pointer;">6 Meses</button>
+                        <button type="button" class="leads-period-btn" data-period="week" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;cursor:pointer;">{{ __('dashboard.week') }}</button>
+                        <button type="button" class="leads-period-btn active" data-period="month" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #0085f3;background:#0085f3;color:#fff;cursor:pointer;">{{ __('dashboard.month') }}</button>
+                        <button type="button" class="leads-period-btn" data-period="3months" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;cursor:pointer;">{{ __('dashboard.3_months') }}</button>
+                        <button type="button" class="leads-period-btn" data-period="6months" style="padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;cursor:pointer;">{{ __('dashboard.6_months') }}</button>
                     </div>
-                    <a href="{{ route('leads.index') }}" class="card-link">Ver todos <i class="bi bi-arrow-right"></i></a>
+                    <a href="{{ route('leads.index') }}" class="card-link">{{ __('dashboard.view_all') }} <i class="bi bi-arrow-right"></i></a>
                 </div>
             </div>
             <div class="content-card-body">
                 {{-- Metric cards --}}
                 <div class="leads-metric-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
                     <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;">
-                        <div style="font-size:12px;color:#6b7280;">Total de leads</div>
+                        <div style="font-size:12px;color:#6b7280;">{{ __('dashboard.total_leads') }}</div>
                         <div id="metricTotal" style="font-size:20px;font-weight:500;color:#1a1d23;">{{ $leadsThisMonth }}</div>
-                        <div style="font-size:11px;color:#9ca3af;">Mês atual</div>
+                        <div style="font-size:11px;color:#9ca3af;">{{ __('dashboard.current_month') }}</div>
                     </div>
                     <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;">
-                        <div style="font-size:12px;color:#6b7280;">Canal principal</div>
+                        <div style="font-size:12px;color:#6b7280;">{{ __('dashboard.main_channel') }}</div>
                         <div id="metricTopChannel" style="font-size:20px;font-weight:500;color:#1a1d23;">
                             @if(count($leadsBySource) > 0)
                                 {{ ucfirst(collect($leadsBySource)->keys()->first(fn($k) => $leadsBySource[$k] === max($leadsBySource)) ?? 'N/A') }}
@@ -631,11 +631,11 @@
                         </div>
                     </div>
                     <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;">
-                        <div style="font-size:12px;color:#6b7280;">Dias com leads</div>
+                        <div style="font-size:12px;color:#6b7280;">{{ __('dashboard.days_with_leads') }}</div>
                         <div id="metricDaysWithLeads" style="font-size:20px;font-weight:500;color:#1a1d23;">
                             {{ collect($leadsPerDay)->filter(fn($v) => $v > 0)->count() }}
                         </div>
-                        <div style="font-size:11px;color:#9ca3af;">de {{ count($dayLabels) }} dias</div>
+                        <div style="font-size:11px;color:#9ca3af;">{{ __('dashboard.of_days', ['total' => count($dayLabels)]) }}</div>
                     </div>
                 </div>
                 {{-- Legenda interativa --}}
@@ -650,25 +650,25 @@
         {{-- Ações Rápidas --}}
         <div class="content-card">
             <div class="content-card-header">
-                <h3><i class="bi bi-lightning-charge"></i> Ações Rápidas</h3>
+                <h3><i class="bi bi-lightning-charge"></i> {{ __('dashboard.quick_actions') }}</h3>
             </div>
             <div class="content-card-body">
                 <div class="quick-actions">
                     <a href="{{ route('leads.index') }}" class="quick-action">
                         <div class="qa-icon"><i class="bi bi-person-plus"></i></div>
-                        Adicionar Lead
+                        {{ __('dashboard.add_lead') }}
                     </a>
                     <a href="{{ route('crm.kanban') }}" class="quick-action">
                         <div class="qa-icon"><i class="bi bi-kanban"></i></div>
-                        Ver Kanban
+                        {{ __('dashboard.view_kanban') }}
                     </a>
                     <a href="{{ route('settings.pipelines') }}" class="quick-action">
                         <div class="qa-icon"><i class="bi bi-funnel"></i></div>
-                        Pipelines
+                        {{ __('dashboard.pipelines') }}
                     </a>
                     <a href="{{ route('settings.profile') }}" class="quick-action">
                         <div class="qa-icon"><i class="bi bi-gear"></i></div>
-                        Configurações
+                        {{ __('dashboard.settings') }}
                     </a>
                 </div>
             </div>
@@ -682,7 +682,7 @@
         {{-- Card 1: Leads por Origem (SVG donut + lista) --}}
         <div class="content-card" style="padding:14px;">
             <div style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;margin-bottom:14px;color:#374151;">
-                <i class="bi bi-pie-chart" style="color:#0085f3;"></i> Leads por Origem
+                <i class="bi bi-pie-chart" style="color:#0085f3;"></i> {{ __('dashboard.leads_by_source') }}
             </div>
             @if(count($leadsBySource) > 0)
             <div class="donut-flex" style="display:flex;align-items:center;gap:14px;">
@@ -692,6 +692,7 @@
             <script>
             document.addEventListener('DOMContentLoaded', function(){
                 var SC = {whatsapp:'#25D366',instagram:'#E1306C',facebook:'#1877F2',site:'#3B82F6',google:'#FBBC04',linkedin:'#0A66C2',indicacao:'#8B5CF6',manual:'#94A3B8',telefone:'#F97316',email:'#06B6D4'};
+                var SN = {whatsapp:@json(__('dashboard.source_whatsapp')),instagram:@json(__('dashboard.source_instagram')),facebook:@json(__('dashboard.source_facebook')),site:@json(__('dashboard.source_site')),google:@json(__('dashboard.source_google')),linkedin:@json(__('dashboard.source_linkedin')),indicacao:@json(__('dashboard.source_indicacao')),manual:@json(__('dashboard.source_manual')),telefone:@json(__('dashboard.source_telefone')),email:@json(__('dashboard.source_email'))};
                 var FB = ['#10B981','#F59E0B','#EF4444','#06B6D4','#F97316','#EC4899'];
                 function gc(k,i){return SC[k.toLowerCase()]||FB[i%FB.length];}
                 var data = @json($leadsBySource);
@@ -709,26 +710,27 @@
                 var list = '';
                 entries.forEach(function(e, i){
                     var pct = Math.round(e[1] / total * 100);
-                    list += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="display:flex;align-items:center;gap:6px;min-width:0;"><span style="width:8px;height:8px;min-width:8px;border-radius:2px;background:'+gc(e[0],i)+';"></span><span style="font-size:11px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+e[0].charAt(0).toUpperCase()+e[0].slice(1)+'</span></div><span style="font-size:11px;font-weight:600;color:#1a1d23;white-space:nowrap;">'+pct+'%</span></div>';
+                    var srcName = SN[e[0].toLowerCase()] || (e[0].charAt(0).toUpperCase()+e[0].slice(1));
+                    list += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="display:flex;align-items:center;gap:6px;min-width:0;"><span style="width:8px;height:8px;min-width:8px;border-radius:2px;background:'+gc(e[0],i)+';"></span><span style="font-size:11px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+srcName+'</span></div><span style="font-size:11px;font-weight:600;color:#1a1d23;white-space:nowrap;">'+pct+'%</span></div>';
                 });
                 document.getElementById('donutList').innerHTML = list;
             });
             </script>
             @else
-            <div class="empty-state"><i class="bi bi-pie-chart"></i><p>Nenhuma origem registrada.</p></div>
+            <div class="empty-state"><i class="bi bi-pie-chart"></i><p>{{ __('dashboard.no_source') }}</p></div>
             @endif
         </div>
 
         {{-- Card 2: Motivos de Perda (Heatmap) --}}
         <div class="content-card" style="padding:14px;">
             <div style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;margin-bottom:14px;color:#374151;">
-                <i class="bi bi-slash-circle" style="color:#EF4444;"></i> Motivos de Perda
+                <i class="bi bi-slash-circle" style="color:#EF4444;"></i> {{ __('dashboard.loss_reasons') }}
             </div>
             @if(count($lostByReason) > 0)
             <div style="display:grid;grid-template-columns:1fr 52px 52px;gap:4px 6px;align-items:center;">
-                <div style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.3px;">Motivo</div>
-                <div style="font-size:10px;color:#9ca3af;font-weight:600;text-align:center;">Atual</div>
-                <div style="font-size:10px;color:#9ca3af;font-weight:600;text-align:center;">Anterior</div>
+                <div style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.3px;">{{ __('dashboard.reason') }}</div>
+                <div style="font-size:10px;color:#9ca3af;font-weight:600;text-align:center;">{{ __('dashboard.current') }}</div>
+                <div style="font-size:10px;color:#9ca3af;font-weight:600;text-align:center;">{{ __('dashboard.previous') }}</div>
                 @foreach($lostByReason as $reason)
                 <div style="font-size:12px;color:#374151;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ $reason['name'] }}</div>
                 <div style="background:{{ $reason['total'] >= 5 ? '#A32D2D' : ($reason['total'] >= 4 ? '#E24B4A' : ($reason['total'] >= 3 ? '#F09595' : ($reason['total'] >= 2 ? '#F7C1C1' : '#FCEBEB'))) }};border-radius:5px;height:26px;display:flex;align-items:center;justify-content:center;">
@@ -740,16 +742,16 @@
                 @endforeach
             </div>
             <div style="display:flex;align-items:center;gap:6px;margin-top:12px;">
-                <span style="font-size:10px;color:#9ca3af;">menos</span>
+                <span style="font-size:10px;color:#9ca3af;">{{ __('dashboard.less') }}</span>
                 <div style="width:14px;height:10px;border-radius:2px;background:#FCEBEB;"></div>
                 <div style="width:14px;height:10px;border-radius:2px;background:#F7C1C1;"></div>
                 <div style="width:14px;height:10px;border-radius:2px;background:#F09595;"></div>
                 <div style="width:14px;height:10px;border-radius:2px;background:#E24B4A;"></div>
                 <div style="width:14px;height:10px;border-radius:2px;background:#A32D2D;"></div>
-                <span style="font-size:10px;color:#9ca3af;">mais</span>
+                <span style="font-size:10px;color:#9ca3af;">{{ __('dashboard.more') }}</span>
             </div>
             @else
-            <div class="empty-state"><i class="bi bi-slash-circle"></i><p>Nenhum lead perdido.</p></div>
+            <div class="empty-state"><i class="bi bi-slash-circle"></i><p>{{ __('dashboard.no_loss') }}</p></div>
             @endif
         </div>
 
@@ -757,7 +759,7 @@
         <div class="content-card" style="padding:14px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
                 <span style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;color:#374151;">
-                    <i class="bi bi-currency-dollar" style="color:#10b981;"></i> Vendas
+                    <i class="bi bi-currency-dollar" style="color:#10b981;"></i> {{ __('dashboard.sales') }}
                 </span>
                 <span style="font-size:10px;color:#9ca3af;">
                     <span>12m:</span> <strong style="color:#1a1d23;">R$ {{ number_format(array_sum($salesPerMonth), 0, ',', '.') }}</strong>
@@ -768,11 +770,11 @@
             <div style="display:flex;gap:12px;margin-bottom:10px;">
                 <div style="display:flex;align-items:center;gap:4px;">
                     <span style="width:10px;height:10px;border-radius:2px;background:#93c5fd;"></span>
-                    <span style="font-size:10px;color:#6b7280;">Vendas mensais</span>
+                    <span style="font-size:10px;color:#6b7280;">{{ __('dashboard.monthly_sales') }}</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:4px;">
                     <span style="width:16px;border-top:1.5px dashed #f59e0b;"></span>
-                    <span style="font-size:10px;color:#6b7280;">Média móvel (3m)</span>
+                    <span style="font-size:10px;color:#6b7280;">{{ __('dashboard.moving_avg') }}</span>
                 </div>
             </div>
             <div style="position:relative;width:100%;height:150px;">
@@ -789,7 +791,7 @@
      style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1050; align-items:center; justify-content:center;">
     <div style="background:#fff; border-radius:16px; width:360px; max-width:95vw; padding:24px; box-shadow:0 8px 48px rgba(0,0,0,.2);">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-            <h3 style="font-size:15px; font-weight:700; color:#1a1d23; margin:0;">Personalizar Dashboard</h3>
+            <h3 style="font-size:15px; font-weight:700; color:#1a1d23; margin:0;">{{ __('dashboard.customize_title') }}</h3>
             <button onclick="closeCustomize()" style="background:none; border:none; cursor:pointer; font-size:22px; color:#9ca3af; line-height:1; padding:0;">×</button>
         </div>
         <p style="font-size:12px; color:#9ca3af; margin:0 0 16px;">Arraste para reordenar. Marque para exibir.</p>
@@ -816,6 +818,23 @@
     const dayLabels              = @json($dayLabels);
     const leadsPerDay            = @json($leadsPerDay);
     const leadsPerDayBySource    = {!! json_encode($leadsPerDayBySource) !!};
+
+    // Source name translations
+    const SOURCE_NAMES = {
+        'whatsapp':  @json(__('dashboard.source_whatsapp')),
+        'instagram': @json(__('dashboard.source_instagram')),
+        'facebook':  @json(__('dashboard.source_facebook')),
+        'site':      @json(__('dashboard.source_site')),
+        'google':    @json(__('dashboard.source_google')),
+        'linkedin':  @json(__('dashboard.source_linkedin')),
+        'indicacao': @json(__('dashboard.source_indicacao')),
+        'manual':    @json(__('dashboard.source_manual')),
+        'telefone':  @json(__('dashboard.source_telefone')),
+        'email':     @json(__('dashboard.source_email')),
+    };
+    function translateSource(name) {
+        return SOURCE_NAMES[(name||'').toLowerCase()] || (name ? name.charAt(0).toUpperCase() + name.slice(1) : '');
+    }
 
     const SOURCE_COLORS = {
         'whatsapp':  '#25D366',
@@ -884,8 +903,6 @@
         const hidden = new Set();
 
         function getColor(src, idx) { return sourceColor(src, idx || 0); }
-        function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
-
         function buildLegend(datasetsObj) {
             const el = document.getElementById('leadsLegend');
             if (!el) return;
@@ -894,7 +911,7 @@
                 const item = document.createElement('span');
                 item.style.cssText = 'display:inline-flex;align-items:center;gap:5px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:opacity .15s;user-select:none;';
                 item.style.opacity = hidden.has(i) ? '0.35' : '1';
-                item.innerHTML = '<span style="width:10px;height:10px;border-radius:2px;background:' + getColor(src, i) + ';display:inline-block;"></span>' + capitalize(src);
+                item.innerHTML = '<span style="width:10px;height:10px;border-radius:2px;background:' + getColor(src, i) + ';display:inline-block;"></span>' + translateSource(src);
                 item.onclick = function() {
                     if (hidden.has(i)) hidden.delete(i); else hidden.add(i);
                     item.style.opacity = hidden.has(i) ? '0.35' : '1';
@@ -927,7 +944,7 @@
             const filtLabels = filteredIdx.map(i => labels[i]);
 
             const datasets = allSources.map((src, i) => ({
-                label: capitalize(src),
+                label: translateSource(src),
                 data: filteredIdx.map(di => datasetsObj[src][di] || 0),
                 backgroundColor: getColor(src, i),
                 borderRadius: { topLeft: 3, topRight: 3 },
@@ -1112,11 +1129,11 @@ document.querySelectorAll('.stat-value[data-val]').forEach(el => {
 
 // ── Personalizar Dashboard ──────────────────────────────────────────────────
 const ALL_CARDS = {
-    leads:     'Leads este mês',
-    vendas:    'Vendas este mês',
-    conversao: 'Taxa de Conversão',
-    ticket:    'Ticket Médio',
-    perdidos:  'Leads Perdidos',
+    leads:     @json(__('dashboard.leads_this_month')),
+    vendas:    @json(__('dashboard.sales_this_month')),
+    conversao: @json(__('dashboard.conversion_rate')),
+    ticket:    @json(__('dashboard.avg_ticket')),
+    perdidos:  @json(__('dashboard.lost_leads')),
 };
 const currentCards = @json($visibleCards);
 

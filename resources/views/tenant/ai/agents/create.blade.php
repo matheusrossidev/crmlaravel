@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Novo Agente de IA';
+    $title    = __('ai_agents.create_title');
     $pageIcon = 'robot';
 @endphp
 
@@ -259,9 +259,9 @@
         {{-- Header --}}
         <div class="wizard-header">
             <button class="wizard-back-btn hidden" id="wBackBtn" onclick="wizardPrev()">
-                <i class="bi bi-arrow-left"></i> Voltar
+                <i class="bi bi-arrow-left"></i> {{ __('ai_agents.wizard_back') }}
             </button>
-            <span class="wizard-step-counter">Passo <span id="wStepNum">1</span> de 10</span>
+            <span class="wizard-step-counter" id="wStepCounter"></span>
         </div>
 
         {{-- Body: steps --}}
@@ -269,89 +269,89 @@
 
             {{-- STEP 1: Nome --}}
             <div class="wizard-step active" data-step="1">
-                <div class="wizard-question">Como chamar seu agente? 🤖</div>
-                <div class="wizard-subtitle">Dê um nome que represente a identidade do agente.</div>
+                <div class="wizard-question">{{ __('ai_agents.step1_question') }} 🤖</div>
+                <div class="wizard-subtitle">{{ __('ai_agents.step1_subtitle') }}</div>
                 <input type="text" class="wizard-text-input" id="f_name"
-                       placeholder="Ex: Ana, Victor, Bot de Vendas"
+                       placeholder="{{ __('ai_agents.step1_placeholder') }}"
                        maxlength="100">
             </div>
 
             {{-- STEP 2: Empresa --}}
             <div class="wizard-step" data-step="2">
-                <div class="wizard-question">Qual empresa vai usar esse agente?</div>
+                <div class="wizard-question">{{ __('ai_agents.step2_question') }}</div>
                 <div class="wizard-subtitle">
-                    Opcional — usado para o agente se apresentar corretamente.
-                    <span class="wizard-skip" onclick="wizardSkip()">Pular este passo</span>
+                    {{ __('ai_agents.step2_subtitle') }}
+                    <span class="wizard-skip" onclick="wizardSkip()">{{ __('ai_agents.wizard_skip') }}</span>
                 </div>
                 <input type="text" class="wizard-text-input" id="f_company_name"
-                       placeholder="Ex: Loja do João, Clínica Bem-Estar"
+                       placeholder="{{ __('ai_agents.step2_placeholder') }}"
                        maxlength="150">
             </div>
 
             {{-- STEP 3: Objetivo --}}
             <div class="wizard-step" data-step="3">
-                <div class="wizard-question">Qual o objetivo principal?</div>
-                <div class="wizard-subtitle">Define o foco das respostas do agente.</div>
+                <div class="wizard-question">{{ __('ai_agents.step3_question') }}</div>
+                <div class="wizard-subtitle">{{ __('ai_agents.step3_subtitle') }}</div>
                 <div class="wizard-cards cols-3">
                     <div class="wizard-option-card" data-field="objective" data-value="sales" onclick="selectCard(this)">
                         <span class="card-icon">📈</span>
-                        <span class="card-label">Vendas</span>
-                        <span class="card-desc">Captura leads e conduz negociações</span>
+                        <span class="card-label">{{ __('ai_agents.step3_sales') }}</span>
+                        <span class="card-desc">{{ __('ai_agents.step3_sales_desc') }}</span>
                     </div>
                     <div class="wizard-option-card" data-field="objective" data-value="support" onclick="selectCard(this)">
                         <span class="card-icon">🤝</span>
-                        <span class="card-label">Suporte</span>
-                        <span class="card-desc">Resolve dúvidas e problemas</span>
+                        <span class="card-label">{{ __('ai_agents.step3_support') }}</span>
+                        <span class="card-desc">{{ __('ai_agents.step3_support_desc') }}</span>
                     </div>
                     <div class="wizard-option-card" data-field="objective" data-value="general" onclick="selectCard(this)">
                         <span class="card-icon">💬</span>
-                        <span class="card-label">Geral</span>
-                        <span class="card-desc">Atendimento sem foco específico</span>
+                        <span class="card-label">{{ __('ai_agents.step3_general') }}</span>
+                        <span class="card-desc">{{ __('ai_agents.step3_general_desc') }}</span>
                     </div>
                 </div>
             </div>
 
             {{-- STEP 4: Estilo de comunicação --}}
             <div class="wizard-step" data-step="4">
-                <div class="wizard-question">Como ele deve se comunicar?</div>
-                <div class="wizard-subtitle">Define o tom das mensagens do agente.</div>
+                <div class="wizard-question">{{ __('ai_agents.step4_question') }}</div>
+                <div class="wizard-subtitle">{{ __('ai_agents.step4_subtitle') }}</div>
                 <div class="wizard-cards cols-3">
                     <div class="wizard-option-card" data-field="communication_style" data-value="formal" onclick="selectCard(this)">
                         <span class="card-icon">👔</span>
-                        <span class="card-label">Formal</span>
-                        <span class="card-desc">Profissional e estruturado</span>
+                        <span class="card-label">{{ __('ai_agents.step4_formal') }}</span>
+                        <span class="card-desc">{{ __('ai_agents.step4_formal_desc') }}</span>
                     </div>
                     <div class="wizard-option-card" data-field="communication_style" data-value="normal" onclick="selectCard(this)">
                         <span class="card-icon">🙂</span>
-                        <span class="card-label">Normal</span>
-                        <span class="card-desc">Natural e cordial</span>
+                        <span class="card-label">{{ __('ai_agents.step4_normal') }}</span>
+                        <span class="card-desc">{{ __('ai_agents.step4_normal_desc') }}</span>
                     </div>
                     <div class="wizard-option-card" data-field="communication_style" data-value="casual" onclick="selectCard(this)">
                         <span class="card-icon">😎</span>
-                        <span class="card-label">Informal</span>
-                        <span class="card-desc">Descontraído e amigável</span>
+                        <span class="card-label">{{ __('ai_agents.step4_casual') }}</span>
+                        <span class="card-desc">{{ __('ai_agents.step4_casual_desc') }}</span>
                     </div>
                 </div>
             </div>
 
             {{-- STEP 5: Idioma --}}
             <div class="wizard-step" data-step="5">
-                <div class="wizard-question">Em qual idioma?</div>
-                <div class="wizard-subtitle">Idioma padrão das respostas do agente.</div>
+                <div class="wizard-question">{{ __('ai_agents.step5_question') }}</div>
+                <div class="wizard-subtitle">{{ __('ai_agents.step5_subtitle') }}</div>
                 <div class="wizard-cards cols-3">
                     <div class="wizard-option-card" data-field="language" data-value="pt-BR" onclick="selectCard(this)">
                         <span class="card-icon">🇧🇷</span>
-                        <span class="card-label">Português</span>
+                        <span class="card-label">{{ __('ai_agents.step5_pt') }}</span>
                         <span class="card-desc">pt-BR</span>
                     </div>
                     <div class="wizard-option-card" data-field="language" data-value="en-US" onclick="selectCard(this)">
                         <span class="card-icon">🇺🇸</span>
-                        <span class="card-label">Inglês</span>
+                        <span class="card-label">{{ __('ai_agents.step5_en') }}</span>
                         <span class="card-desc">en-US</span>
                     </div>
                     <div class="wizard-option-card" data-field="language" data-value="es-ES" onclick="selectCard(this)">
                         <span class="card-icon">🇪🇸</span>
-                        <span class="card-label">Espanhol</span>
+                        <span class="card-label">{{ __('ai_agents.step5_es') }}</span>
                         <span class="card-desc">es-ES</span>
                     </div>
                 </div>
@@ -359,70 +359,70 @@
 
             {{-- STEP 6: Personalidade --}}
             <div class="wizard-step" data-step="6">
-                <div class="wizard-question">Descreva a personalidade do agente</div>
+                <div class="wizard-question">{{ __('ai_agents.step6_question') }}</div>
                 <div class="wizard-subtitle">
-                    Como o agente deve se apresentar e se comportar?
-                    <span class="wizard-skip" onclick="wizardSkip()">Pular</span>
+                    {{ __('ai_agents.step6_subtitle') }}
+                    <span class="wizard-skip" onclick="wizardSkip()">{{ __('ai_agents.wizard_skip_short') }}</span>
                 </div>
                 <textarea class="wizard-text-input" id="f_persona_description" rows="5"
-                    placeholder="Ex: Você é Ana, uma assistente virtual da Loja do João. Você é simpática, paciente e sempre focada em ajudar o cliente a encontrar o produto ideal..."></textarea>
+                    placeholder="{{ __('ai_agents.step6_placeholder') }}"></textarea>
             </div>
 
             {{-- STEP 7: Regras de comportamento --}}
             <div class="wizard-step" data-step="7">
-                <div class="wizard-question">Regras de comportamento</div>
+                <div class="wizard-question">{{ __('ai_agents.step7_question') }}</div>
                 <div class="wizard-subtitle">
-                    O que o agente DEVE e NÃO DEVE fazer?
-                    <span class="wizard-skip" onclick="wizardSkip()">Pular</span>
+                    {{ __('ai_agents.step7_subtitle') }}
+                    <span class="wizard-skip" onclick="wizardSkip()">{{ __('ai_agents.wizard_skip_short') }}</span>
                 </div>
                 <textarea class="wizard-text-input" id="f_behavior" rows="5"
-                    placeholder="Ex: Sempre cumprimente o cliente pelo nome. Nunca forneça preços sem confirmar disponibilidade. Encaminhe reclamações graves para um humano..."></textarea>
+                    placeholder="{{ __('ai_agents.step7_placeholder') }}"></textarea>
             </div>
 
             {{-- STEP 8: Mensagem de encerramento --}}
             <div class="wizard-step" data-step="8">
-                <div class="wizard-question">Mensagem ao encerrar atendimento</div>
+                <div class="wizard-question">{{ __('ai_agents.step8_question') }}</div>
                 <div class="wizard-subtitle">
-                    O que o agente deve dizer ao finalizar a conversa?
-                    <span class="wizard-skip" onclick="wizardSkip()">Pular</span>
+                    {{ __('ai_agents.step8_subtitle') }}
+                    <span class="wizard-skip" onclick="wizardSkip()">{{ __('ai_agents.wizard_skip_short') }}</span>
                 </div>
                 <textarea class="wizard-text-input" id="f_on_finish_action" rows="4"
-                    placeholder="Ex: Obrigado pelo contato! Se precisar de mais alguma coisa, é só chamar. Tenha um ótimo dia! 😊"></textarea>
+                    placeholder="{{ __('ai_agents.step8_placeholder') }}"></textarea>
             </div>
 
             {{-- STEP 9: Base de conhecimento --}}
             <div class="wizard-step" data-step="9">
-                <div class="wizard-question">Base de conhecimento</div>
+                <div class="wizard-question">{{ __('ai_agents.step9_question') }}</div>
                 <div class="wizard-subtitle">
-                    Informações sobre sua empresa, produtos, preços, políticas…
-                    <span class="wizard-skip" onclick="wizardSkip()">Pular</span>
+                    {{ __('ai_agents.step9_subtitle') }}
+                    <span class="wizard-skip" onclick="wizardSkip()">{{ __('ai_agents.wizard_skip_short') }}</span>
                 </div>
                 <textarea class="wizard-text-input" id="f_knowledge_base" rows="7"
-                    placeholder="Produto A: R$ 99,90, disponível em azul e vermelho.&#10;Produto B: R$ 149,00, prazo de entrega 5 dias.&#10;Política de troca: 7 dias após a compra..."></textarea>
+                    placeholder="{{ __('ai_agents.step9_placeholder') }}"></textarea>
             </div>
 
             {{-- STEP 10: Canal --}}
             <div class="wizard-step" data-step="10">
-                <div class="wizard-question">Canal de atendimento</div>
-                <div class="wizard-subtitle">Onde este agente vai operar?</div>
+                <div class="wizard-question">{{ __('ai_agents.step10_question') }}</div>
+                <div class="wizard-subtitle">{{ __('ai_agents.step10_subtitle') }}</div>
                 <div class="wizard-cards cols-2">
                     <div class="wizard-option-card" data-field="channel" data-value="whatsapp" onclick="selectCard(this)">
                         <span class="card-icon">📱</span>
-                        <span class="card-label">WhatsApp</span>
-                        <span class="card-desc">Integração com WAHA / WhatsApp Web</span>
+                        <span class="card-label">{{ __('ai_agents.step10_whatsapp') }}</span>
+                        <span class="card-desc">{{ __('ai_agents.step10_whatsapp_desc') }}</span>
                     </div>
                     <div class="wizard-option-card" data-field="channel" data-value="web_chat" onclick="selectCard(this)">
                         <span class="card-icon">🌐</span>
-                        <span class="card-label">Web Chat</span>
-                        <span class="card-desc">Widget no site da empresa</span>
+                        <span class="card-label">{{ __('ai_agents.step10_web_chat') }}</span>
+                        <span class="card-desc">{{ __('ai_agents.step10_web_chat_desc') }}</span>
                     </div>
                 </div>
             </div>
 
             {{-- STEP 11: Revisão --}}
             <div class="wizard-step" data-step="11">
-                <div class="wizard-question">Tudo certo? Revise antes de criar ✅</div>
-                <div class="wizard-subtitle">Confirme as informações do agente.</div>
+                <div class="wizard-question">{{ __('ai_agents.step11_question') }} ✅</div>
+                <div class="wizard-subtitle">{{ __('ai_agents.step11_subtitle') }}</div>
                 <div class="wizard-error" id="wError"></div>
                 <div class="review-grid" id="wReviewGrid">
                     {{-- Preenchido via JS --}}
@@ -434,10 +434,10 @@
         {{-- Footer --}}
         <div class="wizard-footer">
             <button class="btn-wizard-next" id="wNextBtn" onclick="wizardNext()">
-                Próximo <i class="bi bi-arrow-right"></i>
+                {{ __('ai_agents.wizard_next') }} <i class="bi bi-arrow-right"></i>
             </button>
             <button class="btn-wizard-create" id="wCreateBtn" style="display:none" onclick="wizardSubmit()">
-                <i class="bi bi-check-circle"></i> Criar Agente
+                <i class="bi bi-check-circle"></i> {{ __('ai_agents.wizard_create_agent') }}
             </button>
         </div>
 
@@ -451,6 +451,7 @@
 const TOTAL_STEPS = 11;
 const STORE_URL   = @json(route('ai.agents.store'));
 const CSRF        = document.querySelector('meta[name="csrf-token"]').content;
+const AILANG      = @json(__('ai_agents'));
 
 let currentStep = 1;
 
@@ -479,7 +480,8 @@ function updateUI() {
     // Progress
     const pct = Math.round((currentStep / TOTAL_STEPS) * 100);
     document.getElementById('wProgressFill').style.width = pct + '%';
-    document.getElementById('wStepNum').textContent = currentStep;
+    document.getElementById('wStepCounter').textContent =
+        AILANG.wizard_step_counter.replace(':current', currentStep).replace(':total', TOTAL_STEPS);
 
     // Back button
     const backBtn = document.getElementById('wBackBtn');
@@ -516,23 +518,23 @@ function saveCurrentStep() {
 function validateCurrentStep() {
     const step = currentStep;
     if (step === 1 && !document.getElementById('f_name').value.trim()) {
-        toastr.warning('Por favor, dê um nome ao agente.');
+        toastr.warning(AILANG.toast_name_required);
         return false;
     }
     if (step === 3 && !state.objective) {
-        toastr.warning('Selecione o objetivo do agente.');
+        toastr.warning(AILANG.toast_objective_required);
         return false;
     }
     if (step === 4 && !state.communication_style) {
-        toastr.warning('Selecione o estilo de comunicação.');
+        toastr.warning(AILANG.toast_style_required);
         return false;
     }
     if (step === 5 && !state.language) {
-        toastr.warning('Selecione o idioma.');
+        toastr.warning(AILANG.toast_language_required);
         return false;
     }
     if (step === 10 && !state.channel) {
-        toastr.warning('Selecione o canal de atendimento.');
+        toastr.warning(AILANG.toast_channel_required);
         return false;
     }
     return true;
@@ -579,23 +581,23 @@ function selectCard(el) {
 // ── Review ─────────────────────────────────────────────────────────────────
 
 const LABELS = {
-    name:                 'Nome',
-    company_name:         'Empresa',
-    objective:            'Objetivo',
-    communication_style:  'Estilo',
-    language:             'Idioma',
-    persona_description:  'Personalidade',
-    behavior:             'Regras',
-    on_finish_action:     'Encerramento',
-    knowledge_base:       'Base de conhecimento',
-    channel:              'Canal',
+    name:                 AILANG.review_name,
+    company_name:         AILANG.review_company,
+    objective:            AILANG.review_objective,
+    communication_style:  AILANG.review_style,
+    language:             AILANG.review_language,
+    persona_description:  AILANG.review_persona,
+    behavior:             AILANG.review_behavior,
+    on_finish_action:     AILANG.review_finish_action,
+    knowledge_base:       AILANG.review_knowledge,
+    channel:              AILANG.review_channel,
 };
 
 const DISPLAY = {
-    objective:           { sales: 'Vendas 📈', support: 'Suporte 🤝', general: 'Geral 💬' },
-    communication_style: { formal: 'Formal 👔', normal: 'Normal 🙂', casual: 'Informal 😎' },
-    language:            { 'pt-BR': '🇧🇷 Português', 'en-US': '🇺🇸 Inglês', 'es-ES': '🇪🇸 Espanhol' },
-    channel:             { whatsapp: '📱 WhatsApp', web_chat: '🌐 Web Chat' },
+    objective:           { sales: AILANG.step3_sales + ' 📈', support: AILANG.step3_support + ' 🤝', general: AILANG.step3_general + ' 💬' },
+    communication_style: { formal: AILANG.step4_formal + ' 👔', normal: AILANG.step4_normal + ' 🙂', casual: AILANG.step4_casual + ' 😎' },
+    language:            { 'pt-BR': '🇧🇷 ' + AILANG.step5_pt, 'en-US': '🇺🇸 ' + AILANG.step5_en, 'es-ES': '🇪🇸 ' + AILANG.step5_es },
+    channel:             { whatsapp: '📱 ' + AILANG.step10_whatsapp, web_chat: '🌐 ' + AILANG.step10_web_chat },
 };
 
 function buildReview() {
@@ -621,7 +623,7 @@ function buildReview() {
     });
 
     if (!grid.children.length) {
-        grid.innerHTML = '<div style="color:#9ca3af;font-size:13px;">Nenhum campo preenchido.</div>';
+        grid.innerHTML = '<div style="color:#9ca3af;font-size:13px;">' + AILANG.review_empty + '</div>';
     }
 }
 
@@ -634,7 +636,7 @@ async function wizardSubmit() {
     const createBtn = document.getElementById('wCreateBtn');
     errEl.style.display = 'none';
     createBtn.disabled = true;
-    createBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Criando…';
+    createBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> ' + AILANG.wizard_creating;
 
     const body = {
         name:                 state.name,
@@ -666,7 +668,7 @@ async function wizardSubmit() {
         const data = await res.json();
 
         if (res.ok && data.success) {
-            toastr.success('Agente criado! Redirecionando para edição…');
+            toastr.success(AILANG.toast_agent_created);
             setTimeout(() => window.location.href = data.redirect, 800);
             return;
         }
@@ -677,15 +679,15 @@ async function wizardSubmit() {
             errEl.textContent = msgs;
             errEl.style.display = 'block';
         } else {
-            errEl.textContent = data.message || 'Erro ao criar o agente. Tente novamente.';
+            errEl.textContent = data.message || AILANG.toast_create_error;
             errEl.style.display = 'block';
         }
     } catch (e) {
-        errEl.textContent = 'Erro de conexão. Verifique sua internet e tente novamente.';
+        errEl.textContent = AILANG.toast_connection_error_create;
         errEl.style.display = 'block';
     } finally {
         createBtn.disabled = false;
-        createBtn.innerHTML = '<i class="bi bi-check-circle"></i> Criar Agente';
+        createBtn.innerHTML = '<i class="bi bi-check-circle"></i> ' + AILANG.wizard_create_agent;
     }
 }
 

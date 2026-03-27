@@ -1,6 +1,6 @@
 @extends('tenant.layouts.app')
 @php
-    $title    = 'Usuários';
+    $title    = __('settings.users_title');
     $pageIcon = 'people';
 @endphp
 
@@ -208,10 +208,10 @@
 
     <div class="users-card">
         <div class="users-card-header">
-            <h3><i class="bi bi-people" style="color:#3B82F6;"></i> Usuários da Conta</h3>
+            <h3><i class="bi bi-people" style="color:#3B82F6;"></i> {{ __('settings.users_card_title') }}</h3>
             @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
             <button class="btn-new" onclick="openDrawer()">
-                <i class="bi bi-plus-lg"></i> Novo usuário
+                <i class="bi bi-plus-lg"></i> {{ __('settings.users_new') }}
             </button>
             @endif
         </div>
@@ -219,17 +219,17 @@
         @if($users->isEmpty())
         <div class="empty-state">
             <i class="bi bi-people"></i>
-            <p style="font-weight:600;color:#374151;">Nenhum usuário encontrado</p>
+            <p style="font-weight:600;color:#374151;">{{ __('settings.users_empty') }}</p>
         </div>
         @else
         <table class="users-table" id="usersTable">
             <thead>
                 <tr>
-                    <th>Usuário</th>
-                    <th>E-mail</th>
-                    <th>Papel</th>
-                    <th>Departamentos</th>
-                    <th>Desde</th>
+                    <th>{{ __('settings.users_col_user') }}</th>
+                    <th>{{ __('settings.users_col_email') }}</th>
+                    <th>{{ __('settings.users_col_role') }}</th>
+                    <th>{{ __('settings.users_col_depts') }}</th>
+                    <th>{{ __('settings.users_col_since') }}</th>
                     <th style="width:80px;"></th>
                 </tr>
             </thead>
@@ -248,7 +248,7 @@
                             <div>
                                 <div style="font-weight:600;color:#1a1d23;">{{ $u->name }}</div>
                                 @if($u->id === auth()->id())
-                                    <div style="font-size:11px;color:#9ca3af;">Você</div>
+                                    <div style="font-size:11px;color:#9ca3af;">{{ __('settings.users_you') }}</div>
                                 @endif
                             </div>
                         </div>
@@ -277,11 +277,11 @@
                     <td>
                         @if($u->id !== auth()->id() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin()))
                         <div style="display:flex;gap:4px;">
-                            <button class="btn-icon" title="Editar"
+                            <button class="btn-icon" title="{{ __('settings.users_edit') }}"
                                 onclick="editUser({{ $u->id }}, '{{ addslashes($u->name) }}', '{{ $u->email }}', '{{ $u->role }}', {{ json_encode($u->departments->pluck('id')) }}, {{ $u->can_see_all_conversations ? 'true' : 'false' }}, {{ json_encode($u->pipelines->pluck('id')) }})">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn-icon danger" title="Excluir"
+                            <button class="btn-icon danger" title="{{ __('settings.users_delete') }}"
                                 onclick="deleteUser({{ $u->id }}, '{{ addslashes($u->name) }}')">
                                 <i class="bi bi-trash3"></i>
                             </button>
@@ -307,7 +307,7 @@
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
     <div class="drawer-header">
-        <span id="drawerTitle">Novo Usuário</span>
+        <span id="drawerTitle">{{ __('settings.users_new_title') }}</span>
         <button onclick="closeDrawer()" style="background:none;border:none;font-size:18px;color:#6b7280;cursor:pointer;">
             <i class="bi bi-x-lg"></i>
         </button>
@@ -315,34 +315,34 @@
     <div class="drawer-body">
         <input type="hidden" id="editUserId">
         <div class="form-group">
-            <label>Nome completo</label>
-            <input type="text" class="form-control" id="drawerName" placeholder="Nome do usuário">
+            <label>{{ __('settings.users_name') }}</label>
+            <input type="text" class="form-control" id="drawerName" placeholder="{{ __('settings.users_name_ph') }}">
             <div class="form-error d-none" id="errDName"></div>
         </div>
         <div class="form-group">
-            <label>E-mail</label>
-            <input type="email" class="form-control" id="drawerEmail" placeholder="email@empresa.com">
+            <label>{{ __('settings.users_email') }}</label>
+            <input type="email" class="form-control" id="drawerEmail" placeholder="{{ __('settings.users_email_ph') }}">
             <div class="form-error d-none" id="errDEmail"></div>
         </div>
         <div class="form-group" id="pwdGroup">
-            <label>Senha</label>
-            <input type="password" class="form-control" id="drawerPassword" placeholder="Mínimo 8 caracteres">
+            <label>{{ __('settings.users_password') }}</label>
+            <input type="password" class="form-control" id="drawerPassword" placeholder="{{ __('settings.users_password_ph') }}">
             <div class="form-error d-none" id="errDPwd"></div>
         </div>
         <div class="form-group">
-            <label>Papel</label>
+            <label>{{ __('settings.users_role') }}</label>
             <select class="form-control" id="drawerRole">
-                <option value="viewer">Viewer — somente leitura</option>
-                <option value="manager">Manager — gerencia leads</option>
+                <option value="viewer">{{ __('settings.users_role_viewer') }}</option>
+                <option value="manager">{{ __('settings.users_role_manager') }}</option>
                 @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
-                <option value="admin">Admin — acesso completo</option>
+                <option value="admin">{{ __('settings.users_role_admin') }}</option>
                 @endif
             </select>
             <div class="form-error d-none" id="errDRole"></div>
         </div>
         @if(isset($departments) && $departments->count())
         <div class="form-group">
-            <label>Departamentos</label>
+            <label>{{ __('settings.users_departments') }}</label>
             <div style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;border:1px solid #e8eaf0;border-radius:9px;padding:8px;">
                 @foreach($departments as $dept)
                 @php
@@ -358,18 +358,18 @@
         <div class="form-group">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
                 <input type="checkbox" id="drawerSeeAll" checked style="accent-color:#3B82F6;">
-                <span>Ver todas as conversas</span>
+                <span>{{ __('settings.users_see_all') }}</span>
             </label>
             <div style="font-size:11.5px;color:#9ca3af;margin-top:4px;">
-                Se desmarcado, o usuário verá apenas conversas do(s) seu(s) departamento(s).
+                {{ __('settings.users_see_all_hint') }}
             </div>
         </div>
         @endif
         @if(isset($pipelines) && $pipelines->count())
         <div class="form-group">
-            <label>Pipelines visíveis</label>
+            <label>{{ __('settings.users_visible_pipes') }}</label>
             <div style="font-size:11.5px;color:#9ca3af;margin-bottom:6px;">
-                Se nenhuma selecionada, o usuário vê todas as pipelines.
+                {{ __('settings.users_pipes_hint') }}
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;border:1px solid #e8eaf0;border-radius:9px;padding:8px;">
                 @foreach($pipelines as $pl)
@@ -383,9 +383,9 @@
         @endif
     </div>
     <div class="drawer-footer">
-        <button class="btn-cancel" onclick="closeDrawer()">Cancelar</button>
+        <button class="btn-cancel" onclick="closeDrawer()">{{ __('settings.users_cancel') }}</button>
         <button class="btn-save" id="btnDrawerSave" onclick="saveUser()">
-            <i class="bi bi-check2"></i> Salvar
+            <i class="bi bi-check2"></i> {{ __('settings.users_save') }}
         </button>
     </div>
 </div>
@@ -393,6 +393,7 @@
 
 @push('scripts')
 <script>
+const SLANG = @json(__('settings'));
 const storeUrl  = "{{ route('settings.users.store') }}";
 const updateUrl = (id) => `{{ url('configuracoes/usuarios') }}/${id}`;
 const deleteUrl = (id) => `{{ url('configuracoes/usuarios') }}/${id}`;
@@ -416,7 +417,7 @@ function resetPipelineChecks(selectedIds = []) {
 
 function openDrawer(mode = 'create') {
     editingId = null;
-    document.getElementById('drawerTitle').textContent = 'Novo Usuário';
+    document.getElementById('drawerTitle').textContent = SLANG.users_new_title;
     document.getElementById('editUserId').value = '';
     document.getElementById('drawerName').value = '';
     document.getElementById('drawerEmail').value = '';
@@ -432,7 +433,7 @@ function openDrawer(mode = 'create') {
 
 function editUser(id, name, email, role, deptIds = [], canSeeAll = true, pipelineIds = []) {
     editingId = id;
-    document.getElementById('drawerTitle').textContent = 'Editar Usuário';
+    document.getElementById('drawerTitle').textContent = SLANG.users_edit_title;
     document.getElementById('editUserId').value = id;
     document.getElementById('drawerName').value = name;
     document.getElementById('drawerEmail').value = email;
@@ -486,7 +487,7 @@ async function saveUser() {
         const data = await res.json();
 
         if ((res.status === 200 || res.status === 201) && data.success) {
-            toastr.success(isEdit ? 'Usuário atualizado!' : 'Usuário criado!');
+            toastr.success(isEdit ? SLANG.users_updated : SLANG.users_created);
             closeDrawer();
             setTimeout(() => location.reload(), 800);
         } else if (checkLimitReached(data)) {
@@ -494,17 +495,17 @@ async function saveUser() {
         } else if (data.errors) {
             showDrawerErrors(data.errors);
         } else {
-            toastr.error(data.message ?? 'Erro ao salvar.');
+            toastr.error(data.message ?? SLANG.users_error_save);
         }
-    } catch { toastr.error('Erro de conexão.'); }
+    } catch { toastr.error(SLANG.users_error_conn); }
     btn.disabled = false;
 }
 
 function deleteUser(id, name) {
     confirmAction({
-        title: 'Excluir usuário',
-        message: `Tem certeza que deseja excluir o usuário "${name}"?`,
-        confirmText: 'Excluir',
+        title: SLANG.users_del_title,
+        message: SLANG.users_del_msg,
+        confirmText: SLANG.users_delete,
         onConfirm: async () => {
             try {
                 const res  = await fetch(deleteUrl(id), {
@@ -513,13 +514,13 @@ function deleteUser(id, name) {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    toastr.success('Usuário excluído.');
+                    toastr.success(SLANG.users_deleted);
                     const row = document.getElementById(`user-row-${id}`);
                     if (row) row.remove();
                 } else {
-                    toastr.error(data.message ?? 'Erro ao excluir.');
+                    toastr.error(data.message ?? SLANG.users_error_delete);
                 }
-            } catch { toastr.error('Erro de conexão.'); }
+            } catch { toastr.error(SLANG.users_error_conn); }
         },
     });
 }

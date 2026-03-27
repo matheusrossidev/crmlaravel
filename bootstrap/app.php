@@ -6,6 +6,7 @@ use App\Http\Middleware\CheckPlanLimit;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SuperAdminMiddleware;
+use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\TenantMiddleware;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -37,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'tenant'        => TenantMiddleware::class,
+            'locale'        => SetLocale::class,
             'super_admin'   => SuperAdminMiddleware::class,
             'api_key'       => ApiKeyMiddleware::class,
             'agno_internal' => AgnoInternalMiddleware::class,

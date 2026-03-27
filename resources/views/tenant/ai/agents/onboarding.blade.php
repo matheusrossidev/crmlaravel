@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Novo Agente de IA';
+    $title    = __('ai_agents.onboarding_title');
     $pageIcon = 'robot';
 @endphp
 
@@ -182,9 +182,9 @@
         {{-- Header --}}
         <div class="wizard-header">
             <button class="wizard-back-btn hidden" id="wBackBtn" onclick="wizardPrev()">
-                <i class="bi bi-arrow-left"></i> Voltar
+                <i class="bi bi-arrow-left"></i> {{ __('ai_agents.wizard_back') }}
             </button>
-            <span class="wizard-step-counter">Passo <span id="wStepNum">1</span> de <span id="wStepTotal">12</span></span>
+            <span class="wizard-step-counter" id="wStepCounter"></span>
         </div>
 
         {{-- Body --}}
@@ -192,122 +192,122 @@
 
             {{-- STEP 1: name --}}
             <div class="wizard-step active" data-step="name">
-                <div class="wizard-question">Como quer chamar seu agente?</div>
-                <div class="wizard-subtitle">Um nome que identifique o agente (ex: Ana Vendas, Suporte Bot).</div>
+                <div class="wizard-question">{{ __('ai_agents.ob_step1_question') }}</div>
+                <div class="wizard-subtitle">{{ __('ai_agents.ob_step1_subtitle') }}</div>
                 <input type="text" class="wizard-text-input" id="f_name"
-                       placeholder="Ex: Ana, Assistente Comercial..." maxlength="100">
+                       placeholder="{{ __('ai_agents.ob_step1_placeholder') }}" maxlength="100">
             </div>
 
             {{-- STEP 2: company --}}
             <div class="wizard-step" data-step="company">
-                <div class="wizard-question">Qual a empresa? <span class="wizard-skip" onclick="wizardSkip()">Pular</span></div>
-                <div class="wizard-subtitle">O agente vai se apresentar representando esta empresa.</div>
+                <div class="wizard-question">{{ __('ai_agents.ob_step2_question') }} <span class="wizard-skip" onclick="wizardSkip()">{{ __('ai_agents.wizard_skip_short') }}</span></div>
+                <div class="wizard-subtitle">{{ __('ai_agents.ob_step2_subtitle') }}</div>
                 <input type="text" class="wizard-text-input" id="f_company"
-                       placeholder="Ex: Loja do João, Clínica Saúde Total..." maxlength="150">
+                       placeholder="{{ __('ai_agents.ob_step2_placeholder') }}" maxlength="150">
             </div>
 
             {{-- STEP 3: objective --}}
             <div class="wizard-step" data-step="objective">
-                <div class="wizard-question">Qual o objetivo do agente?</div>
-                <div class="wizard-subtitle">Isso define o comportamento base das respostas.</div>
+                <div class="wizard-question">{{ __('ai_agents.ob_step3_question') }}</div>
+                <div class="wizard-subtitle">{{ __('ai_agents.ob_step3_subtitle') }}</div>
                 <div class="wizard-cards cols-3">
                     <div class="wizard-option-card" data-field="objective" data-value="sales" onclick="selectCard(this)">
                         <span class="card-icon"><i class="bi bi-graph-up" style="font-size:26px;color:#0085f3"></i></span>
-                        <span class="card-label">Vendas</span>
-                        <span class="card-desc">Qualificar leads e fechar negócios</span>
+                        <span class="card-label">{{ __('ai_agents.ob_step3_sales') }}</span>
+                        <span class="card-desc">{{ __('ai_agents.ob_step3_sales_desc') }}</span>
                     </div>
                     <div class="wizard-option-card" data-field="objective" data-value="support" onclick="selectCard(this)">
                         <span class="card-icon"><i class="bi bi-headset" style="font-size:26px;color:#0085f3"></i></span>
-                        <span class="card-label">Suporte</span>
-                        <span class="card-desc">Atender dúvidas e resolver problemas</span>
+                        <span class="card-label">{{ __('ai_agents.ob_step3_support') }}</span>
+                        <span class="card-desc">{{ __('ai_agents.ob_step3_support_desc') }}</span>
                     </div>
                     <div class="wizard-option-card" data-field="objective" data-value="general" onclick="selectCard(this)">
                         <span class="card-icon"><i class="bi bi-chat-dots" style="font-size:26px;color:#0085f3"></i></span>
-                        <span class="card-label">Geral</span>
-                        <span class="card-desc">Atendimento versátil e informativo</span>
+                        <span class="card-label">{{ __('ai_agents.ob_step3_general') }}</span>
+                        <span class="card-desc">{{ __('ai_agents.ob_step3_general_desc') }}</span>
                     </div>
                 </div>
             </div>
 
             {{-- STEP 4: style --}}
             <div class="wizard-step" data-step="style">
-                <div class="wizard-question">Estilo de comunicação</div>
-                <div class="wizard-subtitle">Como o agente deve se comunicar com os contatos.</div>
+                <div class="wizard-question">{{ __('ai_agents.ob_step4_question') }}</div>
+                <div class="wizard-subtitle">{{ __('ai_agents.ob_step4_subtitle') }}</div>
                 <div class="wizard-cards cols-3">
                     <div class="wizard-option-card" data-field="communication_style" data-value="formal" onclick="selectCard(this)">
                         <span class="card-icon"><i class="bi bi-briefcase" style="font-size:26px;color:#0085f3"></i></span>
-                        <span class="card-label">Formal</span>
-                        <span class="card-desc">Profissional e objetivo</span>
+                        <span class="card-label">{{ __('ai_agents.ob_step4_formal') }}</span>
+                        <span class="card-desc">{{ __('ai_agents.ob_step4_formal_desc') }}</span>
                     </div>
                     <div class="wizard-option-card" data-field="communication_style" data-value="normal" onclick="selectCard(this)">
                         <span class="card-icon"><i class="bi bi-people" style="font-size:26px;color:#0085f3"></i></span>
-                        <span class="card-label">Normal</span>
-                        <span class="card-desc">Natural e cordial</span>
+                        <span class="card-label">{{ __('ai_agents.ob_step4_normal') }}</span>
+                        <span class="card-desc">{{ __('ai_agents.ob_step4_normal_desc') }}</span>
                     </div>
                     <div class="wizard-option-card" data-field="communication_style" data-value="casual" onclick="selectCard(this)">
                         <span class="card-icon"><i class="bi bi-emoji-smile" style="font-size:26px;color:#0085f3"></i></span>
-                        <span class="card-label">Casual</span>
-                        <span class="card-desc">Descontraído e amigável</span>
+                        <span class="card-label">{{ __('ai_agents.ob_step4_casual') }}</span>
+                        <span class="card-desc">{{ __('ai_agents.ob_step4_casual_desc') }}</span>
                     </div>
                 </div>
             </div>
 
             {{-- STEP 5: language --}}
             <div class="wizard-step" data-step="language">
-                <div class="wizard-question">Idioma de resposta</div>
-                <div class="wizard-subtitle">Em qual idioma o agente deve responder.</div>
+                <div class="wizard-question">{{ __('ai_agents.ob_step5_question') }}</div>
+                <div class="wizard-subtitle">{{ __('ai_agents.ob_step5_subtitle') }}</div>
                 <div class="wizard-cards cols-3">
                     <div class="wizard-option-card" data-field="language" data-value="pt-BR" onclick="selectCard(this)">
                         <span class="card-icon"><i class="bi bi-translate" style="font-size:26px;color:#0085f3"></i></span>
-                        <span class="card-label">Português</span>
+                        <span class="card-label">{{ __('ai_agents.ob_step5_pt') }}</span>
                     </div>
                     <div class="wizard-option-card" data-field="language" data-value="en-US" onclick="selectCard(this)">
                         <span class="card-icon"><i class="bi bi-translate" style="font-size:26px;color:#0085f3"></i></span>
-                        <span class="card-label">English</span>
+                        <span class="card-label">{{ __('ai_agents.ob_step5_en') }}</span>
                     </div>
                     <div class="wizard-option-card" data-field="language" data-value="es-ES" onclick="selectCard(this)">
                         <span class="card-icon"><i class="bi bi-translate" style="font-size:26px;color:#0085f3"></i></span>
-                        <span class="card-label">Español</span>
+                        <span class="card-label">{{ __('ai_agents.ob_step5_es') }}</span>
                     </div>
                 </div>
             </div>
 
             {{-- STEP 6: persona --}}
             <div class="wizard-step" data-step="persona">
-                <div class="wizard-question">Persona do agente <span class="wizard-skip" onclick="wizardSkip()">Pular</span></div>
-                <div class="wizard-subtitle">Descreva a personalidade e perfil do atendente virtual.</div>
+                <div class="wizard-question">{{ __('ai_agents.ob_step6_question') }} <span class="wizard-skip" onclick="wizardSkip()">{{ __('ai_agents.wizard_skip_short') }}</span></div>
+                <div class="wizard-subtitle">{{ __('ai_agents.ob_step6_subtitle') }}</div>
                 <textarea class="wizard-text-input" id="f_persona" rows="5"
-                          placeholder="Ex: Sou a Ana, consultora de vendas com 5 anos de experiência no mercado imobiliário. Sou simpática, atenciosa e sempre busco entender as necessidades do cliente..." maxlength="2000"></textarea>
+                          placeholder="{{ __('ai_agents.ob_step6_placeholder') }}" maxlength="2000"></textarea>
             </div>
 
             {{-- STEP 7: behavior --}}
             <div class="wizard-step" data-step="behavior">
-                <div class="wizard-question">Regras de comportamento <span class="wizard-skip" onclick="wizardSkip()">Pular</span></div>
-                <div class="wizard-subtitle">Defina o que o agente DEVE e NÃO DEVE fazer.</div>
+                <div class="wizard-question">{{ __('ai_agents.ob_step7_question') }} <span class="wizard-skip" onclick="wizardSkip()">{{ __('ai_agents.wizard_skip_short') }}</span></div>
+                <div class="wizard-subtitle">{{ __('ai_agents.ob_step7_subtitle') }}</div>
                 <textarea class="wizard-text-input" id="f_behavior" rows="5"
-                          placeholder="Ex: DEVE sempre perguntar o nome do cliente. NÃO DEVE dar descontos sem aprovação. DEVE transferir para humano quando o cliente ficar irritado..." maxlength="2000"></textarea>
+                          placeholder="{{ __('ai_agents.ob_step7_placeholder') }}" maxlength="2000"></textarea>
             </div>
 
             {{-- STEP 8: finish action --}}
             <div class="wizard-step" data-step="finish">
-                <div class="wizard-question">Mensagem de finalização <span class="wizard-skip" onclick="wizardSkip()">Pular</span></div>
-                <div class="wizard-subtitle">O que o agente deve dizer ao encerrar o atendimento.</div>
+                <div class="wizard-question">{{ __('ai_agents.ob_step8_question') }} <span class="wizard-skip" onclick="wizardSkip()">{{ __('ai_agents.wizard_skip_short') }}</span></div>
+                <div class="wizard-subtitle">{{ __('ai_agents.ob_step8_subtitle') }}</div>
                 <textarea class="wizard-text-input" id="f_finish" rows="3"
-                          placeholder="Ex: Obrigado pelo contato! Se tiver mais dúvidas, é só chamar. 😊" maxlength="1000"></textarea>
+                          placeholder="{{ __('ai_agents.ob_step8_placeholder') }}" maxlength="1000"></textarea>
             </div>
 
             {{-- STEP 9: knowledge --}}
             <div class="wizard-step" data-step="knowledge">
-                <div class="wizard-question">Base de conhecimento <span class="wizard-skip" onclick="wizardSkip()">Pular</span></div>
-                <div class="wizard-subtitle">Cole aqui informações sobre sua empresa, produtos, preços, FAQ, etc.</div>
+                <div class="wizard-question">{{ __('ai_agents.ob_step9_question') }} <span class="wizard-skip" onclick="wizardSkip()">{{ __('ai_agents.wizard_skip_short') }}</span></div>
+                <div class="wizard-subtitle">{{ __('ai_agents.ob_step9_subtitle') }}</div>
                 <textarea class="wizard-text-input" id="f_knowledge" rows="6"
-                          placeholder="Ex: Nossa empresa oferece planos a partir de R$ 49/mês. Horário de funcionamento: segunda a sexta, 9h-18h. Endereço: Rua..." maxlength="10000"></textarea>
+                          placeholder="{{ __('ai_agents.ob_step9_placeholder') }}" maxlength="10000"></textarea>
             </div>
 
             {{-- STEP 10: media --}}
             <div class="wizard-step" data-step="media">
-                <div class="wizard-question">Mídias para envio <span class="wizard-skip" onclick="wizardSkip()">Pular</span></div>
-                <div class="wizard-subtitle">Envie imagens, PDFs e catálogos que o agente pode enviar aos contatos durante a conversa.</div>
+                <div class="wizard-question">{{ __('ai_agents.ob_step10_question') }} <span class="wizard-skip" onclick="wizardSkip()">{{ __('ai_agents.wizard_skip_short') }}</span></div>
+                <div class="wizard-subtitle">{{ __('ai_agents.ob_step10_subtitle') }}</div>
 
                 <div class="media-dropzone" id="mediaDropzone"
                      onclick="document.getElementById('mediaFileInput').click()"
@@ -315,8 +315,8 @@
                      ondragleave="this.classList.remove('dragover')"
                      ondrop="handleMediaDrop(event)">
                     <div class="media-dropzone-icon"><i class="bi bi-cloud-arrow-up"></i></div>
-                    <div class="media-dropzone-text">Clique ou arraste arquivos aqui</div>
-                    <div class="media-dropzone-hint">PNG, JPG, PDF, DOC — máx. 20 MB</div>
+                    <div class="media-dropzone-text">{{ __('ai_agents.ob_step10_dropzone') }}</div>
+                    <div class="media-dropzone-hint">{{ __('ai_agents.ob_step10_dropzone_hint') }}</div>
                 </div>
                 <input type="file" id="mediaFileInput" style="display:none"
                        accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.doc,.docx"
@@ -324,8 +324,8 @@
 
                 <div id="mediaDescRow" class="media-desc-row" style="display:none">
                     <input type="text" class="media-desc-input" id="mediaDescInput"
-                           placeholder="Descreva quando enviar (ex: catálogo de produtos, tabela de preços)" maxlength="500">
-                    <button class="media-upload-btn" id="mediaUploadBtn" onclick="uploadMediaFile()">Enviar</button>
+                           placeholder="{{ __('ai_agents.ob_step10_desc_placeholder') }}" maxlength="500">
+                    <button class="media-upload-btn" id="mediaUploadBtn" onclick="uploadMediaFile()">{{ __('ai_agents.ob_step10_upload_btn') }}</button>
                 </div>
 
                 <div class="media-list" id="mediaList"></div>
@@ -333,26 +333,26 @@
 
             {{-- STEP 11: channel --}}
             <div class="wizard-step" data-step="channel">
-                <div class="wizard-question">Canal de atendimento</div>
-                <div class="wizard-subtitle">Onde o agente vai atuar.</div>
+                <div class="wizard-question">{{ __('ai_agents.ob_step11_question') }}</div>
+                <div class="wizard-subtitle">{{ __('ai_agents.ob_step11_subtitle') }}</div>
                 <div class="wizard-cards cols-2">
                     <div class="wizard-option-card" data-field="channel" data-value="whatsapp" onclick="selectCard(this)">
                         <span class="card-icon"><i class="bi bi-whatsapp" style="color:#25d366;font-size:28px"></i></span>
-                        <span class="card-label">WhatsApp</span>
-                        <span class="card-desc">Atendimento via WhatsApp</span>
+                        <span class="card-label">{{ __('ai_agents.ob_step11_whatsapp') }}</span>
+                        <span class="card-desc">{{ __('ai_agents.ob_step11_whatsapp_desc') }}</span>
                     </div>
                     <div class="wizard-option-card" data-field="channel" data-value="web_chat" onclick="selectCard(this)">
                         <span class="card-icon"><i class="bi bi-chat-dots" style="color:#0085f3;font-size:28px"></i></span>
-                        <span class="card-label">Web Chat</span>
-                        <span class="card-desc">Widget de chat no site</span>
+                        <span class="card-label">{{ __('ai_agents.ob_step11_web_chat') }}</span>
+                        <span class="card-desc">{{ __('ai_agents.ob_step11_web_chat_desc') }}</span>
                     </div>
                 </div>
             </div>
 
             {{-- STEP 12: review --}}
             <div class="wizard-step" data-step="review">
-                <div class="wizard-question">Tudo certo? Revise antes de criar</div>
-                <div class="wizard-subtitle">Confirme as informações do seu agente.</div>
+                <div class="wizard-question">{{ __('ai_agents.ob_step12_question') }}</div>
+                <div class="wizard-subtitle">{{ __('ai_agents.ob_step12_subtitle') }}</div>
                 <div class="wizard-error" id="wError"></div>
                 <div class="review-grid" id="wReviewGrid"></div>
             </div>
@@ -362,10 +362,10 @@
         {{-- Footer --}}
         <div class="wizard-footer">
             <button class="btn-wizard-next" id="wNextBtn" onclick="wizardNext()">
-                Próximo <i class="bi bi-arrow-right"></i>
+                {{ __('ai_agents.wizard_next') }} <i class="bi bi-arrow-right"></i>
             </button>
             <button class="btn-wizard-create" id="wCreateBtn" style="display:none" onclick="wizardSubmit()">
-                <i class="bi bi-check-circle"></i> Criar Agente
+                <i class="bi bi-check-circle"></i> {{ __('ai_agents.wizard_create_agent') }}
             </button>
         </div>
 
@@ -377,6 +377,8 @@
 @push('scripts')
 <script>
 // ── State ────────────────────────────────────────────────────────────────────
+const AILANG = @json(__('ai_agents'));
+
 const state = {
     name: '',
     company_name: '',
@@ -407,8 +409,8 @@ function updateUI() {
 
     const pct = Math.round(((currentIdx + 1) / STEPS.length) * 100);
     document.getElementById('wProgressFill').style.width = pct + '%';
-    document.getElementById('wStepNum').textContent = currentIdx + 1;
-    document.getElementById('wStepTotal').textContent = STEPS.length;
+    document.getElementById('wStepCounter').textContent =
+        AILANG.wizard_step_counter.replace(':current', currentIdx + 1).replace(':total', STEPS.length);
     document.getElementById('wBackBtn').classList.toggle('hidden', currentIdx === 0);
 
     const isLast = currentIdx === STEPS.length - 1;
@@ -437,23 +439,23 @@ function saveCurrentStep() {
 function validateCurrentStep() {
     const step = currentStepName();
     if (step === 'name' && !document.getElementById('f_name').value.trim()) {
-        toastr.warning('Dê um nome ao seu agente.');
+        toastr.warning(AILANG.ob_toast_name_required);
         return false;
     }
     if (step === 'objective' && !state.objective) {
-        toastr.warning('Selecione o objetivo do agente.');
+        toastr.warning(AILANG.toast_objective_required);
         return false;
     }
     if (step === 'style' && !state.communication_style) {
-        toastr.warning('Selecione o estilo de comunicação.');
+        toastr.warning(AILANG.toast_style_required);
         return false;
     }
     if (step === 'language' && !state.language) {
-        toastr.warning('Selecione o idioma.');
+        toastr.warning(AILANG.toast_language_required);
         return false;
     }
     if (step === 'channel' && !state.channel) {
-        toastr.warning('Selecione o canal de atendimento.');
+        toastr.warning(AILANG.toast_channel_required);
         return false;
     }
     return true;
@@ -512,7 +514,7 @@ function createAgentFirst(callback) {
     saveCurrentStep();
     const btn = document.getElementById('wNextBtn');
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Preparando...';
+    btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> ' + AILANG.ob_toast_preparing;
 
     const body = {
         name: state.name,
@@ -541,22 +543,22 @@ function createAgentFirst(callback) {
     .then(r => r.json().then(data => ({ ok: r.ok, data })))
     .then(({ ok, data }) => {
         btn.disabled = false;
-        btn.innerHTML = 'Próximo <i class="bi bi-arrow-right"></i>';
+        btn.innerHTML = AILANG.wizard_next + ' <i class="bi bi-arrow-right"></i>';
         if (ok && data.success) {
             // Extract agent ID from redirect URL
             const m = data.redirect.match(/agentes\/(\d+)\//);
             if (m) state.agent_id = parseInt(m[1]);
             if (callback) callback();
         } else {
-            const msg = data.message || Object.values(data.errors || {}).flat().join(', ') || 'Erro ao preparar agente.';
+            const msg = data.message || Object.values(data.errors || {}).flat().join(', ') || AILANG.ob_toast_prepare_error;
             toastr.error(msg);
         }
     })
     .catch(err => {
         console.error(err);
         btn.disabled = false;
-        btn.innerHTML = 'Próximo <i class="bi bi-arrow-right"></i>';
-        toastr.error('Erro de conexão.');
+        btn.innerHTML = AILANG.wizard_next + ' <i class="bi bi-arrow-right"></i>';
+        toastr.error(AILANG.toast_connection_error);
     });
 }
 
@@ -573,13 +575,13 @@ function handleMediaDrop(e) {
 function prepareMediaFile(file) {
     if (!file) return;
     if (file.size > 20 * 1024 * 1024) {
-        toastr.error('Arquivo muito grande (máx. 20 MB).');
+        toastr.error(AILANG.ob_toast_file_too_large);
         return;
     }
     _pendingFile = file;
     document.getElementById('mediaDescRow').style.display = 'flex';
     document.getElementById('mediaDescInput').value = '';
-    document.getElementById('mediaDescInput').placeholder = `Descreva "${file.name}" (ex: catálogo de produtos)`;
+    document.getElementById('mediaDescInput').placeholder = AILANG.ob_step10_desc_placeholder;
     document.getElementById('mediaDescInput').focus();
     document.getElementById('mediaFileInput').value = '';
 }
@@ -588,7 +590,7 @@ function uploadMediaFile() {
     if (!_pendingFile) return;
     const desc = document.getElementById('mediaDescInput').value.trim();
     if (!desc) {
-        toastr.warning('Descreva quando o agente deve enviar este arquivo.');
+        toastr.warning(AILANG.ob_toast_describe_file);
         return;
     }
 
@@ -600,7 +602,7 @@ function uploadMediaFile() {
 
     const btn = document.getElementById('mediaUploadBtn');
     btn.disabled = true;
-    btn.textContent = 'Enviando...';
+    btn.textContent = AILANG.ob_toast_sending;
 
     const fd = new FormData();
     fd.append('file', _pendingFile);
@@ -617,7 +619,7 @@ function uploadMediaFile() {
     .then(r => r.json().then(data => ({ ok: r.ok, data })))
     .then(({ ok, data }) => {
         btn.disabled = false;
-        btn.textContent = 'Enviar';
+        btn.textContent = AILANG.ob_step10_upload_btn;
         if (ok && data.id) {
             state.media_files.push({
                 id: data.id,
@@ -628,22 +630,22 @@ function uploadMediaFile() {
             renderMediaList();
             _pendingFile = null;
             document.getElementById('mediaDescRow').style.display = 'none';
-            toastr.success('Arquivo enviado!');
+            toastr.success(AILANG.ob_toast_file_uploaded);
         } else {
-            const msg = data.message || Object.values(data.errors || {}).flat().join(', ') || 'Erro ao enviar arquivo.';
+            const msg = data.message || Object.values(data.errors || {}).flat().join(', ') || AILANG.ob_toast_file_error;
             toastr.error(msg);
         }
     })
     .catch(err => {
         console.error(err);
         btn.disabled = false;
-        btn.textContent = 'Enviar';
-        toastr.error('Erro de conexão.');
+        btn.textContent = AILANG.ob_step10_upload_btn;
+        toastr.error(AILANG.toast_connection_error);
     });
 }
 
 function deleteMediaFile(mediaId) {
-    if (!confirm('Remover este arquivo?')) return;
+    if (!confirm(AILANG.ob_toast_remove_confirm)) return;
 
     const url = '{{ url("/ia/agentes") }}/' + state.agent_id + '/media/' + mediaId;
     fetch(url, {
@@ -680,7 +682,7 @@ function renderMediaList() {
                     <div class="media-item-name">${escapeHtml(m.name)}</div>
                     <div class="media-item-desc">${escapeHtml(m.description)}</div>
                 </div>
-                <button class="media-item-del" onclick="deleteMediaFile(${m.id})" title="Remover">
+                <button class="media-item-del" onclick="deleteMediaFile(${m.id})" title="${escapeHtml(AILANG.action_delete)}">
                     <i class="bi bi-trash3"></i>
                 </button>
             </div>
@@ -691,24 +693,24 @@ function renderMediaList() {
 // ── Review ───────────────────────────────────────────────────────────────────
 
 const LABELS = {
-    name: 'Nome',
-    company_name: 'Empresa',
-    objective: 'Objetivo',
-    communication_style: 'Estilo',
-    language: 'Idioma',
-    persona_description: 'Persona',
-    behavior: 'Comportamento',
-    on_finish_action: 'Finalização',
-    knowledge_base: 'Conhecimento',
-    channel: 'Canal',
-    media_count: 'Mídias',
+    name: AILANG.ob_review_name,
+    company_name: AILANG.ob_review_company,
+    objective: AILANG.ob_review_objective,
+    communication_style: AILANG.ob_review_style,
+    language: AILANG.ob_review_language,
+    persona_description: AILANG.ob_review_persona,
+    behavior: AILANG.ob_review_behavior,
+    on_finish_action: AILANG.ob_review_finish_action,
+    knowledge_base: AILANG.ob_review_knowledge,
+    channel: AILANG.ob_review_channel,
+    media_count: AILANG.ob_review_media,
 };
 
 const DISPLAY = {
-    objective: { sales: 'Vendas', support: 'Suporte', general: 'Geral' },
-    communication_style: { formal: 'Formal', normal: 'Normal', casual: 'Casual' },
-    language: { 'pt-BR': 'Português', 'en-US': 'English', 'es-ES': 'Español' },
-    channel: { whatsapp: 'WhatsApp', web_chat: 'Web Chat' },
+    objective: { sales: AILANG.ob_step3_sales, support: AILANG.ob_step3_support, general: AILANG.ob_step3_general },
+    communication_style: { formal: AILANG.ob_step4_formal, normal: AILANG.ob_step4_normal, casual: AILANG.ob_step4_casual },
+    language: { 'pt-BR': AILANG.ob_step5_pt, 'en-US': AILANG.ob_step5_en, 'es-ES': AILANG.ob_step5_es },
+    channel: { whatsapp: AILANG.ob_step11_whatsapp, web_chat: AILANG.ob_step11_web_chat },
 };
 
 function buildReview() {
@@ -734,10 +736,13 @@ function buildReview() {
 
     if (state.media_files.length > 0) {
         const names = state.media_files.map(m => m.name).join(', ');
+        const mediaText = AILANG.ob_review_media_files
+            .replace(':count', state.media_files.length)
+            .replace(':names', names);
         grid.insertAdjacentHTML('beforeend', `
             <div class="review-item">
                 <div class="review-label">${LABELS.media_count}</div>
-                <div class="review-value">${state.media_files.length} arquivo(s): ${escapeHtml(names)}</div>
+                <div class="review-value">${escapeHtml(mediaText)}</div>
             </div>
         `);
     }
@@ -749,7 +754,7 @@ function wizardSubmit() {
     saveCurrentStep();
     const btn = document.getElementById('wCreateBtn');
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Finalizando...';
+    btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> ' + AILANG.ob_toast_finalizing;
 
     if (state.agent_id) {
         // Agent already created — just update with final data + activate
@@ -778,7 +783,7 @@ function wizardSubmit() {
             body: JSON.stringify(body),
         })
         .then(r => {
-            toastr.success('Agente criado com sucesso!');
+            toastr.success(AILANG.ob_toast_agent_created);
             window.location.href = '{{ url("/ia/agentes") }}/' + state.agent_id + '/editar';
         })
         .catch(err => {
@@ -815,20 +820,20 @@ function wizardSubmit() {
         .then(r => r.json().then(data => ({ ok: r.ok, data })))
         .then(({ ok, data }) => {
             if (ok && data.success) {
-                toastr.success('Agente criado com sucesso!');
+                toastr.success(AILANG.ob_toast_agent_created);
                 window.location.href = data.redirect;
             } else {
-                const msg = data.message || Object.values(data.errors || {}).flat().join(', ') || 'Erro ao criar agente.';
+                const msg = data.message || Object.values(data.errors || {}).flat().join(', ') || AILANG.ob_toast_prepare_error;
                 toastr.error(msg);
                 btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-check-circle"></i> Criar Agente';
+                btn.innerHTML = '<i class="bi bi-check-circle"></i> ' + AILANG.wizard_create_agent;
             }
         })
         .catch(err => {
             console.error(err);
-            toastr.error('Erro de conexão.');
+            toastr.error(AILANG.toast_connection_error);
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-check-circle"></i> Criar Agente';
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> ' + AILANG.wizard_create_agent;
         });
     }
 }

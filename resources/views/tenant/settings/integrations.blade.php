@@ -1,6 +1,6 @@
 @extends('tenant.layouts.app')
 @php
-    $title = 'Integrações';
+    $title = __('integrations.title');
     $pageIcon = 'plugin';
 @endphp
 
@@ -409,24 +409,24 @@
                     <i class="bi bi-whatsapp" style="font-size:20px;"></i>
                 </div>
                 <div class="integration-title">
-                    <h3>WhatsApp Business</h3>
-                    <p>Receba e envie mensagens direto do CRM</p>
+                    <h3>{{ __('integrations.wa_title') }}</h3>
+                    <p>{{ __('integrations.wa_subtitle') }}</p>
                 </div>
                 @php
                     $waConnected = $whatsappInstances->where('status', 'connected')->count();
                 @endphp
                 @if($waConnected > 0)
-                    <span class="conn-badge conn-active">{{ $waConnected }} ativo(s)</span>
+                    <span class="conn-badge conn-active">{{ __('integrations.wa_active', ['count' => $waConnected]) }}</span>
                 @else
-                    <span class="conn-badge conn-none">Desconectado</span>
+                    <span class="conn-badge conn-none">{{ __('integrations.wa_disconnected') }}</span>
                 @endif
             </div>
             <div class="integration-body">
                 <ul class="integration-features">
-                    <li>Receba e envie mensagens direto do CRM</li>
-                    <li>Chatbot com fluxo visual de automação</li>
-                    <li>Agente de IA para atendimento automático</li>
-                    <li>Transcrição de áudios via IA</li>
+                    <li>{{ __('integrations.wa_feat_1') }}</li>
+                    <li>{{ __('integrations.wa_feat_2') }}</li>
+                    <li>{{ __('integrations.wa_feat_3') }}</li>
+                    <li>{{ __('integrations.wa_feat_4') }}</li>
                 </ul>
 
                 {{-- Instâncias conectadas --}}
@@ -437,7 +437,7 @@
                         <div class="wa-instance-detail">
                             <div class="wa-label-wrap">
                                 <input type="text" class="wa-label-input" value="{{ $inst->label ?? '' }}"
-                                       placeholder="Dar um nome..."
+                                       placeholder="{{ __('integrations.wa_label_ph') }}"
                                        data-instance-id="{{ $inst->id }}" onblur="saveWaLabel(this)">
                                 <i class="bi bi-pencil wa-edit-icon"></i>
                             </div>
@@ -445,22 +445,22 @@
                         </div>
                         <div class="wa-instance-actions">
                             @if($inst->status === 'connected')
-                                <button class="btn-sync" style="padding:5px 12px;font-size:11.5px;" onclick="openImportModal({{ $inst->id }})" title="Importar histórico de mensagens">
-                                    <i class="bi bi-cloud-download"></i> Importar
+                                <button class="btn-sync" style="padding:5px 12px;font-size:11.5px;" onclick="openImportModal({{ $inst->id }})" title="{{ __('integrations.wa_import') }}">
+                                    <i class="bi bi-cloud-download"></i> {{ __('integrations.wa_import') }}
                                 </button>
                                 <button class="btn-disconnect" style="padding:5px 12px;font-size:11.5px;" onclick="disconnectWhatsapp(this, {{ $inst->id }})">
-                                    <i class="bi bi-x-circle"></i> Desconectar
+                                    <i class="bi bi-x-circle"></i> {{ __('integrations.wa_disconnect') }}
                                 </button>
                             @elseif($inst->status === 'qr')
                                 <button class="btn-connect" style="padding:5px 12px;font-size:11.5px;" onclick="openWaModal({{ $inst->id }})">
-                                    <i class="bi bi-qr-code"></i> QR
+                                    <i class="bi bi-qr-code"></i> {{ __('integrations.wa_qr') }}
                                 </button>
                                 <button class="btn-disconnect" style="padding:5px 8px;font-size:11.5px;" onclick="deleteWhatsappInstance(this, {{ $inst->id }})">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             @else
                                 <button class="btn-connect" style="padding:5px 12px;font-size:11.5px;" onclick="reconnectWhatsapp(this, {{ $inst->id }})">
-                                    <i class="bi bi-arrow-clockwise"></i> Reconectar
+                                    <i class="bi bi-arrow-clockwise"></i> {{ __('integrations.wa_reconnect') }}
                                 </button>
                                 <button class="btn-disconnect" style="padding:5px 8px;font-size:11.5px;" onclick="deleteWhatsappInstance(this, {{ $inst->id }})">
                                     <i class="bi bi-trash"></i>
@@ -474,11 +474,11 @@
                 <div class="integration-actions">
                     @if($whatsappInstancesRemain === null || $whatsappInstancesRemain > 0)
                         <button class="btn-connect" id="btnAddWaNumber" onclick="startWhatsappConnect(this)">
-                            <i class="bi bi-plus-lg"></i> Adicionar número
+                            <i class="bi bi-plus-lg"></i> {{ __('integrations.wa_add_number') }}
                         </button>
                     @else
                         <span class="btn-coming-soon">
-                            <i class="bi bi-lock"></i> Limite de {{ $maxWhatsappInstances }} número(s)
+                            <i class="bi bi-lock"></i> {{ __('integrations.wa_limit', ['max' => $maxWhatsappInstances]) }}
                         </span>
                     @endif
                 </div>
@@ -498,52 +498,52 @@
             <div class="integration-header">
                 <div class="integration-logo google">G</div>
                 <div class="integration-title">
-                    <h3>Google Calendar</h3>
-                    <p>Agenda integrada — crie e gerencie eventos direto no CRM</p>
+                    <h3>{{ __('integrations.gcal_title') }}</h3>
+                    <p>{{ __('integrations.gcal_subtitle') }}</p>
                 </div>
                 @if($hasCalendar)
-                    <span class="conn-badge conn-active">Conectado</span>
+                    <span class="conn-badge conn-active">{{ __('integrations.gcal_connected') }}</span>
                 @elseif($needsReconnect)
-                    <span class="conn-badge conn-expired">Reconectar</span>
+                    <span class="conn-badge conn-expired">{{ __('integrations.gcal_reconnect_badge') }}</span>
                 @else
-                    <span class="conn-badge conn-none">Desconectado</span>
+                    <span class="conn-badge conn-none">{{ __('integrations.gcal_disconnected') }}</span>
                 @endif
             </div>
             <div class="integration-body">
                 <ul class="integration-features">
-                    <li>Visualize e gerencie seus eventos diretamente no CRM</li>
-                    <li>Crie, edite e exclua eventos com arrastar e soltar</li>
-                    <li>O Agente de IA pode marcar reuniões automaticamente</li>
-                    <li>Sincronização bidirecional com o Google Calendar</li>
+                    <li>{{ __('integrations.gcal_feat_1') }}</li>
+                    <li>{{ __('integrations.gcal_feat_2') }}</li>
+                    <li>{{ __('integrations.gcal_feat_3') }}</li>
+                    <li>{{ __('integrations.gcal_feat_4') }}</li>
                 </ul>
 
                 @if($hasCalendar && $google)
                 <div class="conn-detail">
-                    <strong>{{ $google->platform_user_name ?? 'Conta conectada' }}</strong><br>
-                    <span>Agenda habilitada para o Agente de IA</span>
+                    <strong>{{ $google->platform_user_name ?? __('integrations.gcal_default_name') }}</strong><br>
+                    <span>{{ __('integrations.gcal_ai_hint') }}</span>
                 </div>
                 @elseif($needsReconnect)
                 <div class="conn-detail" style="color:#b45309;">
                     <i class="bi bi-exclamation-triangle me-1"></i>
-                    Google conectado, mas sem permissão de agenda. Reconecte para habilitar.
+                    {{ __('integrations.gcal_needs_reconnect') }}
                 </div>
                 @else
                 <div class="conn-detail" style="color:#9ca3af;">
-                    Conecte sua conta Google para acessar o Google Calendar.
+                    {{ __('integrations.gcal_not_connected') }}
                 </div>
                 @endif
 
                 <div class="integration-actions">
                     @if($hasCalendar)
                         <a href="{{ route('calendar.index') }}" class="btn-sync" style="text-decoration:none;">
-                            <i class="bi bi-calendar3"></i> Abrir Agenda
+                            <i class="bi bi-calendar3"></i> {{ __('integrations.gcal_open') }}
                         </a>
                         <button class="btn-disconnect" onclick="disconnectPlatform('google', this)">
-                            <i class="bi bi-x-circle"></i> Desconectar
+                            <i class="bi bi-x-circle"></i> {{ __('integrations.gcal_disconnect') }}
                         </button>
                     @else
                         <a href="{{ route('settings.integrations.google.redirect') }}" class="btn-connect">
-                            <i class="bi bi-google"></i> {{ $needsReconnect ? 'Reconectar Google' : 'Conectar Google' }}
+                            <i class="bi bi-google"></i> {{ $needsReconnect ? __('integrations.gcal_reconnect') : __('integrations.gcal_connect') }}
                         </a>
                     @endif
                 </div>
@@ -559,42 +559,42 @@
                     <i class="bi bi-instagram" style="font-size:20px;"></i>
                 </div>
                 <div class="integration-title">
-                    <h3>Instagram</h3>
-                    <p>Chat de mensagens diretas (DMs)</p>
+                    <h3>{{ __('integrations.ig_title') }}</h3>
+                    <p>{{ __('integrations.ig_subtitle') }}</p>
                 </div>
                 @if($instagram && $instagram->status === 'connected')
-                    <span class="conn-badge conn-active">Conectado</span>
+                    <span class="conn-badge conn-active">{{ __('integrations.ig_connected') }}</span>
                 @elseif($instagram)
-                    <span class="conn-badge conn-expired">Reconectar</span>
+                    <span class="conn-badge conn-expired">{{ __('integrations.ig_reconnect') }}</span>
                 @else
-                    <span class="conn-badge conn-none">Desconectado</span>
+                    <span class="conn-badge conn-none">{{ __('integrations.ig_disconnected') }}</span>
                 @endif
             </div>
             <div class="integration-body">
                 <ul class="integration-features">
-                    <li>Chat de mensagens diretas (DMs) no CRM</li>
-                    <li>Agente de IA para atender DMs automaticamente</li>
-                    <li>Criação automática de leads a partir de DMs</li>
-                    <li>Histórico completo de conversas</li>
+                    <li>{{ __('integrations.ig_feat_1') }}</li>
+                    <li>{{ __('integrations.ig_feat_2') }}</li>
+                    <li>{{ __('integrations.ig_feat_3') }}</li>
+                    <li>{{ __('integrations.ig_feat_4') }}</li>
                 </ul>
                 @if($instagram)
                 <div class="conn-detail">
-                    <strong>{{ $instagram->username ?? 'Conta conectada' }}</strong><br>
-                    <span>Conectado {{ $instagram->updated_at?->diffForHumans() ?? '' }}</span>
+                    <strong>{{ $instagram->username ?? __('integrations.ig_default_name') }}</strong><br>
+                    <span>{{ __('integrations.ig_connected') }} {{ $instagram->updated_at?->diffForHumans() ?? '' }}</span>
                 </div>
                 @else
                 <div class="conn-detail" style="color:#9ca3af;">
-                    Nenhuma conta conectada.
+                    {{ __('integrations.ig_not_connected') }}
                 </div>
                 @endif
                 <div class="integration-actions">
                     @if($instagram)
                         <button class="btn-disconnect" onclick="disconnectInstagram(this)">
-                            <i class="bi bi-x-circle"></i> Desconectar
+                            <i class="bi bi-x-circle"></i> {{ __('integrations.ig_disconnect') }}
                         </button>
                     @else
                         <a href="{{ route('settings.integrations.instagram.redirect') }}" class="btn-connect">
-                            <i class="bi bi-instagram"></i> Conectar Instagram
+                            <i class="bi bi-instagram"></i> {{ __('integrations.ig_connect') }}
                         </a>
                     @endif
                 </div>
@@ -610,21 +610,21 @@
                 <i class="bi bi-chat-dots-fill" style="font-size:20px;"></i>
             </div>
             <div class="integration-title">
-                <h3>Botão WhatsApp</h3>
-                <p>Botão para site com rastreamento de cliques</p>
+                <h3>{{ __('integrations.wabtn_title') }}</h3>
+                <p>{{ __('integrations.wabtn_subtitle') }}</p>
             </div>
             @if($waBtn && $waBtn->is_active)
-                <span class="conn-badge conn-active">Ativo</span>
+                <span class="conn-badge conn-active">{{ __('integrations.wabtn_active') }}</span>
             @else
-                <span class="conn-badge conn-none">Inativo</span>
+                <span class="conn-badge conn-none">{{ __('integrations.wabtn_inactive') }}</span>
             @endif
         </div>
         <div class="integration-body">
             <ul class="integration-features">
-                <li>Botão flutuante e/ou inline com animação</li>
-                <li>Rastreia UTMs, fbclid e gclid</li>
-                <li>Analytics de cliques por origem</li>
-                <li>Classe para Google Tag Manager</li>
+                <li>{{ __('integrations.wabtn_feat_1') }}</li>
+                <li>{{ __('integrations.wabtn_feat_2') }}</li>
+                <li>{{ __('integrations.wabtn_feat_3') }}</li>
+                <li>{{ __('integrations.wabtn_feat_4') }}</li>
             </ul>
 
             @if($waBtn)
@@ -633,19 +633,19 @@
                 @endphp
                 <div class="conn-detail">
                     <strong>{{ $waBtn->phone_number }}</strong><br>
-                    <span>{{ $clicks7d }} cliques nos últimos 7 dias</span>
+                    <span>{{ __('integrations.wabtn_clicks_7d', ['count' => $clicks7d]) }}</span>
                 </div>
             @else
-                <div class="conn-detail" style="color:#9ca3af;">Nenhum botão configurado.</div>
+                <div class="conn-detail" style="color:#9ca3af;">{{ __('integrations.wabtn_no_button') }}</div>
             @endif
 
             <div class="integration-actions">
                 <button class="btn-connect" style="background:#25D366;" onclick="openWaBtnDrawer()">
-                    <i class="bi bi-{{ $waBtn ? 'gear' : 'plus-lg' }}"></i> {{ $waBtn ? 'Configurar' : 'Criar botão' }}
+                    <i class="bi bi-{{ $waBtn ? 'gear' : 'plus-lg' }}"></i> {{ $waBtn ? __('integrations.wabtn_configure') : __('integrations.wabtn_create') }}
                 </button>
                 @if($waBtn)
                 <button class="btn-disconnect" onclick="deleteWaButton()">
-                    <i class="bi bi-trash"></i> Remover
+                    <i class="bi bi-trash"></i> {{ __('integrations.wabtn_remove') }}
                 </button>
                 @endif
             </div>
@@ -656,44 +656,44 @@
     <div id="waBtnOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;" onclick="closeWaBtnDrawer()"></div>
     <div id="waBtnDrawer" style="position:fixed;top:0;right:-500px;width:480px;height:100%;background:#fff;z-index:301;box-shadow:-4px 0 20px rgba(0,0,0,0.1);transition:right .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;">
         <div style="padding:20px 24px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;">
-            <h4 style="margin:0;font-size:16px;font-weight:700;color:#1a1d23;">Configurar Botão WhatsApp</h4>
+            <h4 style="margin:0;font-size:16px;font-weight:700;color:#1a1d23;">{{ __('integrations.wabtn_drawer_title') }}</h4>
             <button onclick="closeWaBtnDrawer()" style="background:none;border:none;font-size:20px;color:#9ca3af;cursor:pointer;padding:4px;"><i class="bi bi-x-lg"></i></button>
         </div>
         <div style="flex:1;overflow-y:auto;padding:20px 24px;">
             <div style="margin-bottom:14px;">
-                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Número WhatsApp *</label>
-                <input type="text" id="waBtnPhone" class="form-control" placeholder="5561999999999" value="{{ $waBtn->phone_number ?? '' }}" style="font-size:13px;">
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">{{ __('integrations.wabtn_phone') }}</label>
+                <input type="text" id="waBtnPhone" class="form-control" placeholder="{{ __('integrations.wabtn_phone_ph') }}" value="{{ $waBtn->phone_number ?? '' }}" style="font-size:13px;">
             </div>
             <div style="margin-bottom:14px;">
-                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Label do botão</label>
-                <input type="text" id="waBtnLabel" class="form-control" placeholder="Fale no WhatsApp" value="{{ $waBtn->button_label ?? 'Fale no WhatsApp' }}" style="font-size:13px;">
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">{{ __('integrations.wabtn_label') }}</label>
+                <input type="text" id="waBtnLabel" class="form-control" placeholder="{{ __('integrations.wabtn_label_ph') }}" value="{{ $waBtn->button_label ?? __('integrations.wabtn_label_ph') }}" style="font-size:13px;">
             </div>
             <div style="margin-bottom:14px;">
-                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Mensagem padrão</label>
-                <textarea id="waBtnMessage" class="form-control" rows="3" placeholder="Olá! Vi seu site e gostaria de saber mais." style="font-size:13px;resize:vertical;">{{ $waBtn->default_message ?? 'Olá! Vi seu site e gostaria de saber mais.' }}</textarea>
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">{{ __('integrations.wabtn_message') }}</label>
+                <textarea id="waBtnMessage" class="form-control" rows="3" placeholder="{{ __('integrations.wabtn_message_ph') }}" style="font-size:13px;resize:vertical;">{{ $waBtn->default_message ?? __('integrations.wabtn_message_ph') }}</textarea>
             </div>
             <div style="margin-bottom:20px;display:flex;align-items:center;gap:8px;">
                 <input type="checkbox" id="waBtnFloating" {{ ($waBtn->show_floating ?? true) ? 'checked' : '' }} style="width:16px;height:16px;">
-                <label for="waBtnFloating" style="font-size:12.5px;color:#374151;cursor:pointer;">Botão flutuante (canto inferior direito)</label>
+                <label for="waBtnFloating" style="font-size:12.5px;color:#374151;cursor:pointer;">{{ __('integrations.wabtn_floating') }}</label>
             </div>
 
             @if($waBtn)
             <div style="padding-top:16px;border-top:1px solid #f0f2f7;">
-                <label style="font-size:13px;font-weight:700;color:#1a1d23;display:block;margin-bottom:6px;"><i class="bi bi-code-slash"></i> Código de Incorporação</label>
+                <label style="font-size:13px;font-weight:700;color:#1a1d23;display:block;margin-bottom:6px;"><i class="bi bi-code-slash"></i> {{ __('integrations.wabtn_embed') }}</label>
                 <p style="font-size:11.5px;color:#6b7280;margin-bottom:8px;">Cole antes do <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:10.5px;">&lt;/body&gt;</code> do seu site. Para botão inline: <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:10.5px;">&lt;div class="syncro-wa-inline"&gt;&lt;/div&gt;</code></p>
                 <div style="position:relative;">
                     <textarea id="waBtnEmbed" readonly onclick="this.select()" style="width:100%;height:50px;font-family:monospace;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 70px 10px 10px;resize:none;color:#334155;">&lt;script src="{{ rtrim(config('app.url'), '/') }}/api/widget/{{ $waBtn->website_token }}/wa-button.js"&gt;&lt;/script&gt;</textarea>
-                    <button onclick="navigator.clipboard.writeText(document.getElementById('waBtnEmbed').value.replace(/&lt;/g,'<').replace(/&gt;/g,'>'));toastr.success('Copiado!')" style="position:absolute;top:8px;right:8px;background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="bi bi-clipboard"></i> Copiar</button>
+                    <button onclick="navigator.clipboard.writeText(document.getElementById('waBtnEmbed').value.replace(/&lt;/g,'<').replace(/&gt;/g,'>'));toastr.success(ILANG.toast_copied)" style="position:absolute;top:8px;right:8px;background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="bi bi-clipboard"></i> {{ __('integrations.wabtn_copy') }}</button>
                 </div>
             <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f2f7;">
-                <label style="font-size:13px;font-weight:700;color:#1a1d23;display:block;margin-bottom:6px;"><i class="bi bi-link-45deg"></i> Link de Rastreamento</label>
-                <p style="font-size:11.5px;color:#6b7280;margin-bottom:8px;">Use este link nos anúncios do Google Ads / Facebook Ads. Os UTMs da URL são capturados automaticamente no servidor.</p>
+                <label style="font-size:13px;font-weight:700;color:#1a1d23;display:block;margin-bottom:6px;"><i class="bi bi-link-45deg"></i> {{ __('integrations.wabtn_tracking') }}</label>
+                <p style="font-size:11.5px;color:#6b7280;margin-bottom:8px;">{{ __('integrations.wabtn_tracking_hint') }}</p>
                 <div style="position:relative;">
                     <input type="text" id="waBtnTrackLink" readonly onclick="this.select()" value="{{ rtrim(config('app.url'), '/') }}/wa/{{ $waBtn->website_token }}" style="width:100%;font-family:monospace;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 70px 10px 10px;color:#334155;">
-                    <button onclick="navigator.clipboard.writeText(document.getElementById('waBtnTrackLink').value);toastr.success('Link copiado!')" style="position:absolute;top:6px;right:8px;background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="bi bi-clipboard"></i> Copiar</button>
+                    <button onclick="navigator.clipboard.writeText(document.getElementById('waBtnTrackLink').value);toastr.success(ILANG.toast_link_copied)" style="position:absolute;top:6px;right:8px;background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="bi bi-clipboard"></i> {{ __('integrations.wabtn_copy') }}</button>
                 </div>
                 <div style="margin-top:8px;padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;">
-                    <div style="font-size:11px;font-weight:600;color:#92400e;margin-bottom:4px;">Exemplo para Google Ads:</div>
+                    <div style="font-size:11px;font-weight:600;color:#92400e;margin-bottom:4px;">{{ __('integrations.wabtn_google_example') }}</div>
                     <code style="font-size:10px;color:#78350f;word-break:break-all;">{{ rtrim(config('app.url'), '/') }}/wa/{{ $waBtn->website_token }}?utm_source=google&utm_medium=cpc&utm_campaign=@{{campaignid}}&utm_term=@{{keyword}}&gclid=@{{gclid}}</code>
                 </div>
             </div>
@@ -706,23 +706,23 @@
                 <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
                     <div style="text-align:center;padding:10px 8px;background:#f0fdf4;border-radius:8px;">
                         <div style="font-size:18px;font-weight:700;color:#16a34a;">{{ $clicksToday }}</div>
-                        <div style="font-size:10.5px;color:#6b7280;">Hoje</div>
+                        <div style="font-size:10.5px;color:#6b7280;">{{ __('integrations.wabtn_today') }}</div>
                     </div>
                     <div style="text-align:center;padding:10px 8px;background:#eff6ff;border-radius:8px;">
                         <div style="font-size:18px;font-weight:700;color:#0085f3;">{{ $clicks7d_ }}</div>
-                        <div style="font-size:10.5px;color:#6b7280;">7 dias</div>
+                        <div style="font-size:10.5px;color:#6b7280;">{{ __('integrations.wabtn_7d') }}</div>
                     </div>
                     <div style="text-align:center;padding:10px 8px;background:#f5f3ff;border-radius:8px;">
                         <div style="font-size:18px;font-weight:700;color:#8B5CF6;">{{ $clicks30d }}</div>
-                        <div style="font-size:10.5px;color:#6b7280;">30 dias</div>
+                        <div style="font-size:10.5px;color:#6b7280;">{{ __('integrations.wabtn_30d') }}</div>
                     </div>
                 </div>
             </div>
             @endif
         </div>
         <div style="padding:16px 24px;border-top:1px solid #f0f2f7;display:flex;gap:8px;justify-content:flex-end;">
-            <button onclick="closeWaBtnDrawer()" style="padding:8px 20px;border:1px solid #e2e8f0;background:#fff;border-radius:100px;font-size:13px;cursor:pointer;color:#374151;">Cancelar</button>
-            <button onclick="saveWaButton()" style="padding:8px 20px;background:#25D366;color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;"><i class="bi bi-check-lg"></i> Salvar</button>
+            <button onclick="closeWaBtnDrawer()" style="padding:8px 20px;border:1px solid #e2e8f0;background:#fff;border-radius:100px;font-size:13px;cursor:pointer;color:#374151;">{{ __('integrations.wabtn_cancel') }}</button>
+            <button onclick="saveWaButton()" style="padding:8px 20px;background:#25D366;color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;"><i class="bi bi-check-lg"></i> {{ __('integrations.wabtn_save') }}</button>
         </div>
     </div>
 
@@ -733,23 +733,23 @@
 {{-- ─── Modal QR WhatsApp ──────────────────────────────────────────── --}}
 <div id="waQrModal" class="wa-modal-overlay">
     <div class="wa-modal">
-        <h4><i class="bi bi-whatsapp" style="color:#25D366;margin-right:6px;"></i>Conectar WhatsApp</h4>
-        <p>Escaneie o código QR com seu celular para vincular o número</p>
+        <h4><i class="bi bi-whatsapp" style="color:#25D366;margin-right:6px;"></i>{{ __('integrations.qr_title') }}</h4>
+        <p>{{ __('integrations.qr_subtitle') }}</p>
 
         <ol class="wa-steps">
-            <li>Abra o <strong>WhatsApp</strong> no seu celular</li>
-            <li>Toque em <strong>⋮ Mais opções</strong> (Android) ou <strong>Configurações</strong> (iPhone)</li>
-            <li>Selecione <strong>Aparelhos conectados → Conectar um aparelho</strong></li>
-            <li>Aponte a câmera para o QR Code abaixo</li>
+            <li>{!! __('integrations.qr_step_1') !!}</li>
+            <li>{!! __('integrations.qr_step_2') !!}</li>
+            <li>{!! __('integrations.qr_step_3') !!}</li>
+            <li>{!! __('integrations.qr_step_4') !!}</li>
         </ol>
 
         <div class="wa-qr-area" id="waQrArea">
             <i class="bi bi-arrow-clockwise spin" style="font-size:36px;color:#9ca3af;"></i>
         </div>
 
-        <p id="waQrStatus">Aguardando QR Code...</p>
+        <p id="waQrStatus">{{ __('integrations.qr_waiting') }}</p>
 
-        <button class="btn-wa-cancel" onclick="closeWaModal()">Cancelar</button>
+        <button class="btn-wa-cancel" onclick="closeWaModal()">{{ __('integrations.qr_cancel') }}</button>
     </div>
 </div>
 
@@ -759,24 +759,24 @@
         {{-- Estado 1: Configuração --}}
         <div id="importConfigState">
             <h4 style="margin:0 0 4px;font-size:16px;font-weight:700;color:#1a1d23;">
-                <i class="bi bi-cloud-download" style="color:#0085f3;margin-right:6px;"></i>Importar Mensagens
+                <i class="bi bi-cloud-download" style="color:#0085f3;margin-right:6px;"></i>{{ __('integrations.import_title') }}
             </h4>
-            <p style="font-size:13px;color:#6b7280;margin:0 0 18px;">Importa o histórico de conversas do WhatsApp para o CRM</p>
+            <p style="font-size:13px;color:#6b7280;margin:0 0 18px;">{{ __('integrations.import_subtitle') }}</p>
 
             <div style="text-align:left;margin-bottom:20px;">
-                <label style="font-size:13px;font-weight:600;color:#1a1d23;display:block;margin-bottom:6px;">Período</label>
+                <label style="font-size:13px;font-weight:600;color:#1a1d23;display:block;margin-bottom:6px;">{{ __('integrations.import_period') }}</label>
                 <select id="importDaysSelect" style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:13px;color:#374151;background:#fff;outline:none;">
-                    <option value="7">Últimos 7 dias</option>
-                    <option value="15">Últimos 15 dias</option>
-                    <option value="30" selected>Últimos 30 dias</option>
+                    <option value="7">{{ __('integrations.import_7d') }}</option>
+                    <option value="15">{{ __('integrations.import_15d') }}</option>
+                    <option value="30" selected>{{ __('integrations.import_30d') }}</option>
                 </select>
-                <p style="font-size:11.5px;color:#9ca3af;margin:8px 0 0;">A importação roda em segundo plano. Mensagens já existentes serão ignoradas.</p>
+                <p style="font-size:11.5px;color:#9ca3af;margin:8px 0 0;">{{ __('integrations.import_help') }}</p>
             </div>
 
             <div style="display:flex;gap:8px;justify-content:center;">
-                <button class="btn-wa-cancel" onclick="closeImportModal()">Cancelar</button>
+                <button class="btn-wa-cancel" onclick="closeImportModal()">{{ __('integrations.import_cancel') }}</button>
                 <button class="btn-connect" id="btnStartImport" onclick="startImport()">
-                    <i class="bi bi-cloud-download"></i> Importar
+                    <i class="bi bi-cloud-download"></i> {{ __('integrations.import_btn') }}
                 </button>
             </div>
         </div>
@@ -784,9 +784,9 @@
         {{-- Estado 2: Progresso --}}
         <div id="importProgressState" style="display:none;">
             <h4 id="importProgressTitle" style="margin:0 0 4px;font-size:16px;font-weight:700;color:#1a1d23;">
-                <i class="bi bi-arrow-clockwise spin" style="color:#0085f3;margin-right:6px;"></i>Importando Mensagens...
+                <i class="bi bi-arrow-clockwise spin" style="color:#0085f3;margin-right:6px;"></i>{{ __('integrations.import_progress') }}
             </h4>
-            <p id="importProgressSubtitle" style="font-size:13px;color:#6b7280;margin:0 0 18px;">Buscando conversas do WhatsApp...</p>
+            <p id="importProgressSubtitle" style="font-size:13px;color:#6b7280;margin:0 0 18px;">{{ __('integrations.import_progress_sub') }}</p>
 
             {{-- Barra de progresso --}}
             <div style="background:#f3f4f6;border-radius:8px;height:10px;overflow:hidden;margin-bottom:18px;">
@@ -797,19 +797,19 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
                 <div style="background:#f0f7ff;border-radius:10px;padding:12px 14px;text-align:center;">
                     <div style="font-size:22px;font-weight:700;color:#0085f3;" id="importCountChats">0</div>
-                    <div style="font-size:11px;color:#6b7280;font-weight:600;">Conversas</div>
+                    <div style="font-size:11px;color:#6b7280;font-weight:600;">{{ __('integrations.import_conversations') }}</div>
                 </div>
                 <div style="background:#ecfdf5;border-radius:10px;padding:12px 14px;text-align:center;">
                     <div style="font-size:22px;font-weight:700;color:#059669;" id="importCountMessages">0</div>
-                    <div style="font-size:11px;color:#6b7280;font-weight:600;">Mensagens</div>
+                    <div style="font-size:11px;color:#6b7280;font-weight:600;">{{ __('integrations.import_messages') }}</div>
                 </div>
                 <div style="background:#fef3c7;border-radius:10px;padding:12px 14px;text-align:center;">
                     <div style="font-size:22px;font-weight:700;color:#d97706;" id="importCountSkipped">0</div>
-                    <div style="font-size:11px;color:#6b7280;font-weight:600;">Duplicadas</div>
+                    <div style="font-size:11px;color:#6b7280;font-weight:600;">{{ __('integrations.import_duplicates') }}</div>
                 </div>
                 <div style="background:#f3f4f6;border-radius:10px;padding:12px 14px;text-align:center;">
                     <div style="font-size:22px;font-weight:700;color:#374151;" id="importCountTime">0:00</div>
-                    <div style="font-size:11px;color:#6b7280;font-weight:600;">Tempo</div>
+                    <div style="font-size:11px;color:#6b7280;font-weight:600;">{{ __('integrations.import_time') }}</div>
                 </div>
             </div>
 
@@ -818,7 +818,7 @@
 
             {{-- Botão fechar --}}
             <div style="text-align:center;">
-                <button class="btn-wa-cancel" id="importCloseBtn" onclick="closeImportModal()">Fechar</button>
+                <button class="btn-wa-cancel" id="importCloseBtn" onclick="closeImportModal()">{{ __('integrations.import_close') }}</button>
             </div>
         </div>
     </div>
@@ -828,6 +828,7 @@
 
 @push('scripts')
 <script>
+const ILANG = @json(__('integrations'));
 const SYNC_URL            = @json(route('settings.integrations.sync',       ['platform' => '__P__']));
 const DISCONNECT_URL      = @json(route('settings.integrations.disconnect', ['platform' => '__P__']));
 const WA_CONNECT_URL      = @json(route('settings.integrations.whatsapp.connect'));
@@ -842,7 +843,7 @@ let waCurrentInstanceId = null;
 
 async function startWhatsappConnect(btn) {
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Conectando...';
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> ' + ILANG.import_connecting;
 
     try {
         const res  = await fetch(WA_CONNECT_URL, {
@@ -860,21 +861,21 @@ async function startWhatsappConnect(btn) {
             waCurrentInstanceId = data.instance_id;
             openWaModal(data.instance_id);
         } else {
-            toastr.error(data.message || 'Erro ao iniciar conexão.');
+            toastr.error(data.message || ILANG.toast_connect_error);
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-plus-lg"></i> Adicionar número';
+            btn.innerHTML = '<i class="bi bi-plus-lg"></i> ' + ILANG.wa_add_number;
         }
     } catch (e) {
-        toastr.error('Erro de conexão.');
+        toastr.error(ILANG.toast_conn_error);
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-plus-lg"></i> Adicionar número';
+        btn.innerHTML = '<i class="bi bi-plus-lg"></i> ' + ILANG.wa_add_number;
     }
 }
 
 function openWaModal(instanceId) {
     waCurrentInstanceId = instanceId;
     document.getElementById('waQrModal').classList.add('open');
-    document.getElementById('waQrStatus').textContent = 'Aguardando QR Code...';
+    document.getElementById('waQrStatus').textContent = ILANG.qr_waiting;
     document.getElementById('waQrStatus').className = '';
     document.getElementById('waQrArea').innerHTML = '<i class="bi bi-arrow-clockwise spin" style="font-size:36px;color:#9ca3af;"></i>';
 
@@ -901,27 +902,27 @@ async function pollWaQr() {
             clearInterval(waQrPollInterval);
             document.getElementById('waQrArea').innerHTML = '<i class="bi bi-check-circle-fill" style="font-size:64px;color:#25D366;"></i>';
             const st = document.getElementById('waQrStatus');
-            st.textContent = 'WhatsApp conectado com sucesso!';
+            st.textContent = ILANG.qr_connected;
             st.className = 'connected';
             setTimeout(() => location.reload(), 1800);
         } else if (data.qr_base64) {
             waQrNullCount = 0;
             document.getElementById('waQrArea').innerHTML = `<img src="data:image/png;base64,${data.qr_base64}" alt="QR Code">`;
-            document.getElementById('waQrStatus').textContent = 'Escaneie o código com seu celular';
+            document.getElementById('waQrStatus').textContent = ILANG.qr_scan_now;
         } else if (data.status === 'disconnected' || ++waQrNullCount >= 5) {
             clearInterval(waQrPollInterval);
             document.getElementById('waQrArea').innerHTML =
                 '<i class="bi bi-x-circle-fill" style="font-size:48px;color:#ef4444;margin-bottom:12px;display:block;"></i>';
             const st = document.getElementById('waQrStatus');
-            st.textContent = 'QR Code expirado ou sessão falhou.';
+            st.textContent = ILANG.qr_expired;
             if (!document.getElementById('btnWaRetry')) {
                 st.insertAdjacentHTML('afterend',
                     '<button id="btnWaRetry" style="margin-top:12px;padding:8px 20px;background:#25D366;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;">'
-                    + '<i class="bi bi-arrow-clockwise"></i> Tentar novamente</button>');
+                    + '<i class="bi bi-arrow-clockwise"></i> ' + ILANG.qr_retry + '</button>');
                 document.getElementById('btnWaRetry').addEventListener('click', async () => {
                     document.getElementById('btnWaRetry').remove();
                     document.getElementById('waQrArea').innerHTML = '<i class="bi bi-arrow-clockwise spin" style="font-size:36px;color:#9ca3af;"></i>';
-                    document.getElementById('waQrStatus').textContent = 'Aguardando QR Code...';
+                    document.getElementById('waQrStatus').textContent = ILANG.qr_waiting;
                     waQrNullCount = 0;
                     openWaModal(waCurrentInstanceId);
                 });
@@ -940,9 +941,9 @@ async function reconnectWhatsapp(btn, instanceId) {
 
 async function disconnectWhatsapp(btn, instanceId) {
     confirmAction({
-        title: 'Desconectar WhatsApp',
-        message: 'Tem certeza que deseja desconectar este número?',
-        confirmText: 'Desconectar',
+        title: ILANG.confirm_wa_disc_title,
+        message: ILANG.confirm_wa_disc_msg,
+        confirmText: ILANG.confirm_wa_disc_btn,
         onConfirm: async () => {
             btn.disabled = true;
             try {
@@ -955,14 +956,14 @@ async function disconnectWhatsapp(btn, instanceId) {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    toastr.success('WhatsApp desconectado.');
+                    toastr.success(ILANG.toast_wa_disconnected);
                     setTimeout(() => location.reload(), 1200);
                 } else {
-                    toastr.error('Erro ao desconectar.');
+                    toastr.error(ILANG.toast_disconnect_error);
                     btn.disabled = false;
                 }
             } catch (e) {
-                toastr.error('Erro de conexão.');
+                toastr.error(ILANG.toast_conn_error);
                 btn.disabled = false;
             }
         },
@@ -971,9 +972,9 @@ async function disconnectWhatsapp(btn, instanceId) {
 
 async function deleteWhatsappInstance(btn, instanceId) {
     confirmAction({
-        title: 'Remover número',
-        message: 'Tem certeza que deseja remover este número? As conversas serão mantidas.',
-        confirmText: 'Remover',
+        title: ILANG.confirm_wa_remove_title,
+        message: ILANG.confirm_wa_remove_msg,
+        confirmText: ILANG.confirm_wa_remove_btn,
         onConfirm: async () => {
             btn.disabled = true;
             try {
@@ -986,14 +987,14 @@ async function deleteWhatsappInstance(btn, instanceId) {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    toastr.success('Número removido.');
+                    toastr.success(ILANG.toast_number_removed);
                     setTimeout(() => location.reload(), 1200);
                 } else {
-                    toastr.error('Erro ao remover.');
+                    toastr.error(ILANG.toast_remove_error);
                     btn.disabled = false;
                 }
             } catch (e) {
-                toastr.error('Erro de conexão.');
+                toastr.error(ILANG.toast_conn_error);
                 btn.disabled = false;
             }
         },
@@ -1074,7 +1075,7 @@ async function startImport() {
     const days = document.getElementById('importDaysSelect').value;
     const btn  = document.getElementById('btnStartImport');
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Iniciando...';
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> ' + ILANG.import_starting;
 
     try {
         const res  = await fetch(`${WA_BASE_URL}/${waImportInstanceId}/import`, {
@@ -1092,14 +1093,14 @@ async function startImport() {
             showProgressState();
             startProgressPolling(waImportInstanceId);
         } else {
-            toastr.error(data.message || 'Erro ao iniciar importação.');
+            toastr.error(data.message || ILANG.toast_import_error);
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-cloud-download"></i> Importar';
+            btn.innerHTML = '<i class="bi bi-cloud-download"></i> ' + ILANG.import_btn;
         }
     } catch (e) {
-        toastr.error('Erro de conexão.');
+        toastr.error(ILANG.toast_conn_error);
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-cloud-download"></i> Importar';
+        btn.innerHTML = '<i class="bi bi-cloud-download"></i> ' + ILANG.import_btn;
     }
 }
 
@@ -1112,8 +1113,8 @@ function showProgressState() {
     document.getElementById('importCountSkipped').textContent = '0';
     document.getElementById('importCountTime').textContent = '0:00';
     document.getElementById('importCurrentChat').textContent = '';
-    document.getElementById('importProgressTitle').innerHTML = '<i class="bi bi-arrow-clockwise spin" style="color:#0085f3;margin-right:6px;"></i>Importando Mensagens...';
-    document.getElementById('importProgressSubtitle').textContent = 'Buscando conversas do WhatsApp...';
+    document.getElementById('importProgressTitle').innerHTML = '<i class="bi bi-arrow-clockwise spin" style="color:#0085f3;margin-right:6px;"></i>' + ILANG.import_progress;
+    document.getElementById('importProgressSubtitle').textContent = ILANG.import_progress_sub;
 
     importStartedTime = Date.now();
     if (importTimeTimer) clearInterval(importTimeTimer);
@@ -1169,20 +1170,20 @@ function updateProgressUI(data) {
     }
 
     if (current) {
-        document.getElementById('importCurrentChat').textContent = `Processando: ${current}`;
-        document.getElementById('importProgressSubtitle').textContent = `Processando conversas...`;
+        document.getElementById('importCurrentChat').textContent = ILANG.import_processing.replace(':current', current);
+        document.getElementById('importProgressSubtitle').textContent = ILANG.import_processing_chats;
     }
 
     if (data.status === 'completed') {
-        document.getElementById('importProgressTitle').innerHTML = '<i class="bi bi-check-circle-fill" style="color:#059669;margin-right:6px;"></i>Importação Concluída';
-        document.getElementById('importProgressSubtitle').textContent = `${processed} conversas processadas com sucesso.`;
+        document.getElementById('importProgressTitle').innerHTML = '<i class="bi bi-check-circle-fill" style="color:#059669;margin-right:6px;"></i>' + ILANG.import_completed;
+        document.getElementById('importProgressSubtitle').textContent = ILANG.import_completed_msg.replace(':count', processed);
         document.getElementById('importProgressBar').style.width = '100%';
         document.getElementById('importProgressBar').style.background = '#059669';
         document.getElementById('importCurrentChat').textContent = '';
-        document.getElementById('importCloseBtn').textContent = 'Fechar';
+        document.getElementById('importCloseBtn').textContent = ILANG.import_close;
     } else if (data.status === 'failed') {
-        document.getElementById('importProgressTitle').innerHTML = '<i class="bi bi-exclamation-triangle-fill" style="color:#dc2626;margin-right:6px;"></i>Erro na Importação';
-        document.getElementById('importProgressSubtitle').textContent = data.error || 'Ocorreu um erro durante a importação.';
+        document.getElementById('importProgressTitle').innerHTML = '<i class="bi bi-exclamation-triangle-fill" style="color:#dc2626;margin-right:6px;"></i>' + ILANG.import_error_title;
+        document.getElementById('importProgressSubtitle').textContent = data.error || ILANG.import_error_default;
         document.getElementById('importProgressBar').style.background = '#dc2626';
         document.getElementById('importCurrentChat').textContent = '';
     }
@@ -1204,12 +1205,12 @@ async function syncNow(platform, btn) {
         });
         const data = await res.json();
         if (data.success) {
-            toastr.success('Sincronização iniciada em segundo plano.');
+            toastr.success(ILANG.toast_sync_started);
         } else {
-            toastr.error(data.message || 'Erro ao sincronizar.');
+            toastr.error(data.message || ILANG.toast_sync_error);
         }
     } catch (e) {
-        toastr.error('Erro de conexão.');
+        toastr.error(ILANG.toast_conn_error);
     } finally {
         btn.disabled = false;
         icon.className = 'bi bi-arrow-clockwise';
@@ -1218,9 +1219,9 @@ async function syncNow(platform, btn) {
 
 function disconnectPlatform(platform, btn) {
     confirmAction({
-        title: 'Desconectar integração',
-        message: 'Tem certeza que deseja desconectar esta integração?',
-        confirmText: 'Desconectar',
+        title: ILANG.confirm_disc_title,
+        message: ILANG.confirm_disc_msg,
+        confirmText: ILANG.confirm_disc_btn,
         onConfirm: async () => {
             const url = DISCONNECT_URL.replace('__P__', platform);
             btn.disabled = true;
@@ -1234,14 +1235,14 @@ function disconnectPlatform(platform, btn) {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    toastr.success('Integração desconectada.');
+                    toastr.success(ILANG.toast_integration_disc);
                     setTimeout(() => location.reload(), 1200);
                 } else {
-                    toastr.error('Erro ao desconectar.');
+                    toastr.error(ILANG.toast_disconnect_error);
                     btn.disabled = false;
                 }
             } catch (e) {
-                toastr.error('Erro de conexão.');
+                toastr.error(ILANG.toast_conn_error);
                 btn.disabled = false;
             }
         },
@@ -1250,9 +1251,9 @@ function disconnectPlatform(platform, btn) {
 
 async function disconnectInstagram(btn) {
     confirmAction({
-        title: 'Desconectar Instagram',
-        message: 'Tem certeza que deseja desconectar a conta do Instagram?',
-        confirmText: 'Desconectar',
+        title: ILANG.confirm_ig_disc_title,
+        message: ILANG.confirm_ig_disc_msg,
+        confirmText: ILANG.confirm_ig_disc_btn,
         onConfirm: async () => {
             btn.disabled = true;
             try {
@@ -1265,14 +1266,14 @@ async function disconnectInstagram(btn) {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    toastr.success('Instagram desconectado.');
+                    toastr.success(ILANG.toast_ig_disconnected);
                     setTimeout(() => location.reload(), 1200);
                 } else {
-                    toastr.error('Erro ao desconectar.');
+                    toastr.error(ILANG.toast_disconnect_error);
                     btn.disabled = false;
                 }
             } catch (e) {
-                toastr.error('Erro de conexão.');
+                toastr.error(ILANG.toast_conn_error);
                 btn.disabled = false;
             }
         },
@@ -1293,23 +1294,23 @@ function closeWaBtnDrawer() {
 
 function saveWaButton() {
     var phone = document.getElementById('waBtnPhone').value.trim();
-    if (!phone) { toastr.error('Informe o número do WhatsApp.'); return; }
+    if (!phone) { toastr.error(ILANG.toast_phone_required); return; }
 
     var data = {
         phone_number: phone,
-        default_message: document.getElementById('waBtnMessage').value || 'Olá! Vi seu site e gostaria de saber mais.',
-        button_label: document.getElementById('waBtnLabel').value || 'Fale no WhatsApp',
+        default_message: document.getElementById('waBtnMessage').value || ILANG.wabtn_message_ph,
+        button_label: document.getElementById('waBtnLabel').value || ILANG.wabtn_label_ph,
         show_floating: document.getElementById('waBtnFloating').checked,
     };
 
     if (_waBtnId) {
         API.put("{{ route('settings.integrations.wa-button.store') }}/" + _waBtnId, data).done(function() {
-            toastr.success('Botão atualizado!');
+            toastr.success(ILANG.toast_btn_updated);
             setTimeout(function(){ location.reload(); }, 800);
         });
     } else {
         API.post("{{ route('settings.integrations.wa-button.store') }}", data).done(function(r) {
-            toastr.success('Botão criado!');
+            toastr.success(ILANG.toast_btn_created);
             _waBtnId = r.button?.id;
             setTimeout(function(){ location.reload(); }, 800);
         });
@@ -1318,9 +1319,9 @@ function saveWaButton() {
 
 function deleteWaButton() {
     if (!_waBtnId) return;
-    if (!confirm('Remover o botão WhatsApp? O embed code deixará de funcionar.')) return;
+    if (!confirm(ILANG.confirm_btn_remove)) return;
     API.delete("{{ route('settings.integrations.wa-button.store') }}/" + _waBtnId).done(function() {
-        toastr.success('Botão removido.');
+        toastr.success(ILANG.toast_btn_removed);
         setTimeout(function(){ location.reload(); }, 800);
     });
 }

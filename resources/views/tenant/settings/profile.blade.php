@@ -1,6 +1,6 @@
 @extends('tenant.layouts.app')
 @php
-    $title    = 'Meu Perfil';
+    $title    = __('settings.profile_title');
     $pageIcon = 'person-circle';
 @endphp
 
@@ -141,25 +141,25 @@
             <div class="profile-card">
                 <div class="profile-card-header">
                     <i class="bi bi-person" style="color:#3B82F6;"></i>
-                    Informações Pessoais
+                    {{ __('settings.profile_personal') }}
                 </div>
                 <div class="profile-card-body">
                     <form id="formProfile">
                         <div class="form-group">
-                            <label>Nome completo</label>
+                            <label>{{ __('settings.profile_name') }}</label>
                             <input type="text" class="form-control" id="profileName"
-                                   value="{{ auth()->user()->name }}" placeholder="Seu nome">
+                                   value="{{ auth()->user()->name }}" placeholder="{{ __('settings.profile_name_ph') }}">
                             <div class="form-error d-none" id="errName"></div>
                         </div>
                         <div class="form-group">
-                            <label>E-mail</label>
+                            <label>{{ __('settings.profile_email') }}</label>
                             <input type="email" class="form-control" id="profileEmail"
-                                   value="{{ auth()->user()->email }}" placeholder="seu@email.com">
+                                   value="{{ auth()->user()->email }}" placeholder="{{ __('settings.profile_email_ph') }}">
                             <div class="form-error d-none" id="errEmail"></div>
                         </div>
                         <div style="display:flex;align-items:center;gap:10px;margin-top:20px;">
                             <button type="submit" class="btn-save" id="btnProfile">
-                                <i class="bi bi-check2"></i> Salvar alterações
+                                <i class="bi bi-check2"></i> {{ __('settings.profile_save_changes') }}
                             </button>
                         </div>
                     </form>
@@ -170,30 +170,50 @@
             <div class="profile-card">
                 <div class="profile-card-header">
                     <i class="bi bi-lock" style="color:#3B82F6;"></i>
-                    Alterar Senha
+                    {{ __('settings.profile_password') }}
                 </div>
                 <div class="profile-card-body">
                     <form id="formPassword">
                         <div class="form-group">
-                            <label>Senha atual</label>
-                            <input type="password" class="form-control" id="currentPassword" placeholder="••••••••">
+                            <label>{{ __('settings.profile_current_pw') }}</label>
+                            <input type="password" class="form-control" id="currentPassword" placeholder="{{ __('settings.profile_pw_ph') }}">
                             <div class="form-error d-none" id="errCurrentPwd"></div>
                         </div>
                         <div class="form-group">
-                            <label>Nova senha</label>
-                            <input type="password" class="form-control" id="newPassword" placeholder="Mínimo 8 caracteres">
+                            <label>{{ __('settings.profile_new_pw') }}</label>
+                            <input type="password" class="form-control" id="newPassword" placeholder="{{ __('settings.profile_new_pw_ph') }}">
                             <div class="form-error d-none" id="errNewPwd"></div>
                         </div>
                         <div class="form-group">
-                            <label>Confirmar nova senha</label>
-                            <input type="password" class="form-control" id="confirmPassword" placeholder="••••••••">
+                            <label>{{ __('settings.profile_confirm_pw') }}</label>
+                            <input type="password" class="form-control" id="confirmPassword" placeholder="{{ __('settings.profile_pw_ph') }}">
                         </div>
                         <button type="submit" class="btn-save" id="btnPassword" style="margin-top:4px;">
-                            <i class="bi bi-shield-lock"></i> Alterar senha
+                            <i class="bi bi-shield-lock"></i> {{ __('settings.profile_change_pw') }}
                         </button>
                     </form>
                 </div>
             </div>
+
+            {{-- Card: Idioma --}}
+            @if(auth()->user()->isAdmin())
+            <div class="profile-card">
+                <div class="profile-card-header">
+                    <i class="bi bi-translate" style="color:#3B82F6;"></i>
+                    {{ __('common.language') }}
+                </div>
+                <div class="profile-card-body">
+                    <div class="form-group">
+                        <label>{{ __('common.language') }}</label>
+                        <select class="form-control" id="localeSelect" onchange="updateLocale(this.value)">
+                            <option value="pt_BR" {{ (auth()->user()->tenant->locale ?? 'pt_BR') === 'pt_BR' ? 'selected' : '' }}>{{ __('common.portuguese') }}</option>
+                            <option value="en" {{ (auth()->user()->tenant->locale ?? 'pt_BR') === 'en' ? 'selected' : '' }}>{{ __('common.english') }}</option>
+                        </select>
+                        <p style="font-size:11px;color:#9ca3af;margin-top:6px;">{{ __('settings.profile_lang_hint') }}</p>
+                    </div>
+                </div>
+            </div>
+            @endif
 
         </div>
 
@@ -202,7 +222,7 @@
             <div class="profile-card">
                 <div class="profile-card-header">
                     <i class="bi bi-image" style="color:#3B82F6;"></i>
-                    Foto de Perfil
+                    {{ __('settings.profile_avatar') }}
                 </div>
                 <div class="profile-card-body">
                     <div class="avatar-wrap">
@@ -217,9 +237,9 @@
                         <label class="avatar-upload-zone" for="avatarFile">
                             <i class="bi bi-cloud-upload" style="font-size:22px;color:#9ca3af;"></i>
                             <div style="font-size:13px;font-weight:600;color:#374151;margin-top:6px;">
-                                Clique para enviar
+                                {{ __('settings.profile_upload') }}
                             </div>
-                            <div class="upload-hint">JPG, PNG ou WebP · máx. 2MB</div>
+                            <div class="upload-hint">{{ __('settings.profile_upload_hint') }}</div>
                             <input type="file" id="avatarFile" accept="image/*">
                         </label>
                     </div>
@@ -230,19 +250,19 @@
             <div class="profile-card">
                 <div class="profile-card-header">
                     <i class="bi bi-info-circle" style="color:#3B82F6;"></i>
-                    Conta
+                    {{ __('settings.profile_account') }}
                 </div>
                 <div class="profile-card-body" style="font-size:13px;color:#6b7280;">
                     <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f7f8fa;">
-                        <span>Papel</span>
+                        <span>{{ __('settings.profile_role') }}</span>
                         <span style="font-weight:600;color:#1a1d23;">{{ ucfirst(auth()->user()->role) }}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f7f8fa;">
-                        <span>Empresa</span>
+                        <span>{{ __('settings.profile_company') }}</span>
                         <span style="font-weight:600;color:#1a1d23;">{{ auth()->user()->tenant->name ?? '—' }}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;padding:6px 0;">
-                        <span>Membro desde</span>
+                        <span>{{ __('settings.profile_member_since') }}</span>
                         <span style="font-weight:600;color:#1a1d23;">{{ auth()->user()->created_at->format('d/m/Y') }}</span>
                     </div>
                 </div>
@@ -253,26 +273,26 @@
             <div class="profile-card">
                 <div class="profile-card-header">
                     <i class="bi bi-building-check" style="color:#3B82F6;"></i>
-                    Agência Parceira
+                    {{ __('settings.profile_agency') }}
                 </div>
                 <div class="profile-card-body">
                     @if($agencyTenant)
                         <div style="display:flex;align-items:center;gap:10px;padding:6px 0;">
                             <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:20px;padding:4px 12px;font-size:12.5px;font-weight:600;">
-                                <i class="bi bi-check-circle-fill"></i> Vinculada
+                                <i class="bi bi-check-circle-fill"></i> {{ __('settings.profile_agency_linked') }}
                             </span>
                             <span style="font-size:13.5px;font-weight:600;color:#1a1d23;">{{ $agencyTenant->name }}</span>
                         </div>
-                        <p style="font-size:12px;color:#9ca3af;margin:8px 0 0;">Sua conta está associada a esta agência parceira.</p>
+                        <p style="font-size:12px;color:#9ca3af;margin:8px 0 0;">{{ __('settings.profile_agency_desc') }}</p>
                     @else
-                        <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">Vincule sua conta a uma agência parceira inserindo o código fornecido por ela.</p>
+                        <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">{{ __('settings.profile_agency_none') }}</p>
                         <div style="display:flex;gap:8px;align-items:flex-start;">
                             <input type="text" id="agencyCodeInput"
                                    class="form-control" style="font-family:monospace;font-weight:700;letter-spacing:.06em;flex:1;"
-                                   placeholder="AGC-EXEMPLO" maxlength="20"
+                                   placeholder="{{ __('settings.profile_agency_ph') }}" maxlength="20"
                                    oninput="this.value=this.value.toUpperCase()">
                             <button id="btnLinkAgency" class="btn-save" style="white-space:nowrap;">
-                                <i class="bi bi-link-45deg"></i> Vincular
+                                <i class="bi bi-link-45deg"></i> {{ __('settings.profile_link_agency') }}
                             </button>
                         </div>
                         <div class="form-error d-none" id="errAgency" style="margin-top:6px;"></div>
@@ -285,7 +305,7 @@
             <div class="profile-card">
                 <div class="profile-card-header">
                     <i class="bi bi-building" style="color:#3B82F6;"></i>
-                    Identidade Visual
+                    {{ __('settings.profile_visual') }}
                 </div>
                 <div class="profile-card-body">
                     <div class="avatar-wrap">
@@ -304,14 +324,14 @@
                         <label class="avatar-upload-zone" for="logoFile">
                             <i class="bi bi-cloud-upload" style="font-size:22px;color:#9ca3af;"></i>
                             <div style="font-size:13px;font-weight:600;color:#374151;margin-top:6px;">
-                                Clique para enviar o logo
+                                {{ __('settings.profile_logo_upload') }}
                             </div>
-                            <div class="upload-hint">JPG, PNG ou WebP · máx. 2MB</div>
+                            <div class="upload-hint">{{ __('settings.profile_upload_hint') }}</div>
                             <input type="file" id="logoFile" accept="image/*">
                         </label>
                     </div>
                     <p style="font-size:11.5px;color:#9ca3af;margin-top:10px;text-align:center;">
-                        Aparece no menu lateral para todos os usuários do workspace.
+                        {{ __('settings.profile_logo_hint') }}
                     </p>
                 </div>
             </div>
@@ -324,6 +344,7 @@
 
 @push('scripts')
 <script>
+const SLANG = @json(__('settings'));
 const profileUrl  = "{{ route('settings.profile.update') }}";
 const passwordUrl = "{{ route('settings.profile.password') }}";
 const avatarUrl   = "{{ route('settings.profile.avatar') }}";
@@ -351,13 +372,13 @@ document.getElementById('formProfile').addEventListener('submit', async function
         });
         const data = await res.json();
         if (res.ok && data.success) {
-            toastr.success(data.message ?? 'Perfil atualizado!');
+            toastr.success(data.message ?? SLANG.profile_updated);
         } else if (data.errors) {
             showErrors(data.errors, {name: 'errName', email: 'errEmail'});
         } else {
-            toastr.error(data.message ?? 'Erro ao atualizar.');
+            toastr.error(data.message ?? SLANG.profile_update_error);
         }
-    } catch { toastr.error('Erro de conexão.'); }
+    } catch { toastr.error(SLANG.profile_conn_error); }
     btn.disabled = false;
 });
 
@@ -384,14 +405,14 @@ document.getElementById('formPassword').addEventListener('submit', async functio
         });
         const data = await res.json();
         if (res.ok && data.success) {
-            toastr.success(data.message ?? 'Senha alterada!');
+            toastr.success(data.message ?? SLANG.profile_pw_changed);
             document.getElementById('formPassword').reset();
         } else if (data.errors) {
             showErrors(data.errors, {current_password: 'errCurrentPwd', password: 'errNewPwd'});
         } else {
-            toastr.error(data.message ?? 'Erro ao alterar senha.');
+            toastr.error(data.message ?? SLANG.profile_pw_error);
         }
-    } catch { toastr.error('Erro de conexão.'); }
+    } catch { toastr.error(SLANG.profile_conn_error); }
     btn.disabled = false;
 });
 
@@ -401,7 +422,7 @@ document.getElementById('avatarFile').addEventListener('change', async function(
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-        toastr.error('Arquivo muito grande. Máximo 2MB.');
+        toastr.error(SLANG.profile_avatar_large);
         return;
     }
 
@@ -413,7 +434,7 @@ document.getElementById('avatarFile').addEventListener('change', async function(
         const res = await fetch(avatarUrl, { method: 'POST', body: fd, headers: { 'Accept': 'application/json' } });
         const data = await res.json();
         if (res.ok && data.success) {
-            toastr.success(data.message ?? 'Foto atualizada!');
+            toastr.success(data.message ?? SLANG.profile_avatar_ok);
             // Atualiza preview
             const preview = document.getElementById('avatarPreview');
             preview.innerHTML = `<img src="${data.avatar_url}?t=${Date.now()}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">`;
@@ -423,9 +444,9 @@ document.getElementById('avatarFile').addEventListener('change', async function(
                 el.innerHTML = `<img src="${data.avatar_url}?t=${Date.now()}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
             });
         } else {
-            toastr.error(data.message ?? 'Erro ao enviar imagem.');
+            toastr.error(data.message ?? SLANG.profile_avatar_error);
         }
-    } catch { toastr.error('Erro de conexão.'); }
+    } catch { toastr.error(SLANG.profile_conn_error); }
 });
 
 // ── Logo do Workspace ─────────────────────────────────────
@@ -436,7 +457,7 @@ if (logoFileInput) {
         if (!file) return;
 
         if (file.size > 2 * 1024 * 1024) {
-            toastr.error('Arquivo muito grande. Máximo 2MB.');
+            toastr.error(SLANG.profile_avatar_large);
             return;
         }
 
@@ -448,7 +469,7 @@ if (logoFileInput) {
             const res = await fetch(logoUrl, { method: 'POST', body: fd, headers: { 'Accept': 'application/json' } });
             const data = await res.json();
             if (res.ok && data.success) {
-                toastr.success(data.message ?? 'Logo atualizado!');
+                toastr.success(data.message ?? SLANG.profile_logo_ok);
                 // Atualiza preview
                 const preview = document.getElementById('logoPreview');
                 preview.style.background = 'transparent';
@@ -461,9 +482,9 @@ if (logoFileInput) {
                         style="width:100%;height:100%;object-fit:cover;border-radius:8px;" alt="">`;
                 });
             } else {
-                toastr.error(data.message ?? 'Erro ao enviar logo.');
+                toastr.error(data.message ?? SLANG.profile_logo_error);
             }
-        } catch { toastr.error('Erro de conexão.'); }
+        } catch { toastr.error(SLANG.profile_conn_error); }
     });
 }
 
@@ -477,7 +498,7 @@ if (btnLinkAgency) {
         errEl.textContent = '';
 
         if (!code) {
-            errEl.textContent = 'Informe o código da agência.';
+            errEl.textContent = SLANG.profile_agency_required;
             errEl.classList.remove('d-none');
             return;
         }
@@ -495,13 +516,13 @@ if (btnLinkAgency) {
             });
             const data = await res.json();
             if (res.ok && data.success) {
-                toastr.success(data.message ?? 'Agência vinculada com sucesso!');
+                toastr.success(data.message ?? SLANG.profile_agency_ok);
                 setTimeout(() => location.reload(), 1000);
             } else {
-                errEl.textContent = data.message ?? 'Código inválido ou não encontrado.';
+                errEl.textContent = data.message ?? SLANG.profile_agency_error;
                 errEl.classList.remove('d-none');
             }
-        } catch { toastr.error('Erro de conexão.'); }
+        } catch { toastr.error(SLANG.profile_conn_error); }
         btnLinkAgency.disabled = false;
     });
 }
@@ -521,6 +542,16 @@ function showErrors(errors, map) {
             if (el) { el.textContent = errors[field][0]; el.classList.remove('d-none'); }
         }
     });
+}
+
+// ── Locale ───────────────────────────────────────────────
+function updateLocale(locale) {
+    window.API.put('{{ route("settings.profile.locale") }}', { locale: locale })
+        .then(function() {
+            toastr.success(SLANG.profile_locale_ok);
+            setTimeout(function() { location.reload(); }, 500);
+        })
+        .catch(function() { toastr.error(SLANG.profile_locale_error); });
 }
 </script>
 @endpush

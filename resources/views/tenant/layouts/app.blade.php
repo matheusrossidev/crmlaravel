@@ -756,45 +756,45 @@
         {{-- Center: Menu items --}}
         <nav class="navbar-menu" id="navbarMenu">
             <a href="{{ route('inicio') }}" class="nm-item {{ request()->routeIs('inicio', 'dashboard') ? 'active' : '' }}">
-                <i class="bi bi-house"></i> Início
+                <i class="bi bi-house"></i> {{ __('nav.home') }}
             </a>
             <a href="{{ route('chats.index') }}" class="nm-item {{ request()->routeIs('chats.*') ? 'active' : '' }}">
-                <i class="bi bi-chat-dots"></i> Chats
+                <i class="bi bi-chat-dots"></i> {{ __('nav.chats') }}
             </a>
 
             {{-- CRM dropdown --}}
             <div class="nm-dropdown">
                 <button class="nm-item {{ $crmActive ? 'active' : '' }}" onclick="toggleNavDropdown(this)">
-                    <i class="bi bi-kanban"></i> CRM <i class="bi bi-chevron-down nm-chev"></i>
+                    <i class="bi bi-kanban"></i> {{ __('nav.crm') }} <i class="bi bi-chevron-down nm-chev"></i>
                 </button>
                 <div class="nm-dropdown-menu">
                     <a href="{{ route('crm.kanban') }}" class="nm-dd-item {{ request()->routeIs('crm*') ? 'active' : '' }}">
-                        <i class="bi bi-kanban"></i> Negócios
+                        <i class="bi bi-kanban"></i> {{ __('nav.deals') }}
                     </a>
                     <a href="{{ route('leads.index') }}" class="nm-dd-item {{ request()->routeIs('leads*') ? 'active' : '' }}">
-                        <i class="bi bi-people"></i> Contatos
+                        <i class="bi bi-people"></i> {{ __('nav.contacts') }}
                     </a>
                     <a href="{{ route('calendar.index') }}" class="nm-dd-item {{ request()->routeIs('calendar.*') ? 'active' : '' }}">
-                        <i class="bi bi-calendar3"></i> Agenda
+                        <i class="bi bi-calendar3"></i> {{ __('nav.calendar') }}
                     </a>
                     <a href="{{ route('tasks.index') }}" class="nm-dd-item {{ request()->routeIs('tasks*') ? 'active' : '' }}">
-                        <i class="bi bi-check2-square"></i> Tarefas
+                        <i class="bi bi-check2-square"></i> {{ __('nav.tasks') }}
                     </a>
                     <div class="nm-dd-sep"></div>
                     <a href="{{ route('settings.pipelines') }}" class="nm-dd-item {{ request()->routeIs('settings.pipelines*') ? 'active' : '' }}">
-                        <i class="bi bi-funnel"></i> Pipelines
+                        <i class="bi bi-funnel"></i> {{ __('nav.pipelines') }}
                     </a>
                     <a href="{{ route('settings.products') }}" class="nm-dd-item {{ request()->routeIs('settings.products*') ? 'active' : '' }}">
-                        <i class="bi bi-box-seam"></i> Produtos
+                        <i class="bi bi-box-seam"></i> {{ __('nav.products') }}
                     </a>
                     <a href="{{ route('settings.custom-fields') }}" class="nm-dd-item {{ request()->routeIs('settings.custom-fields*') ? 'active' : '' }}">
-                        <i class="bi bi-input-cursor-text"></i> Campos Extras
+                        <i class="bi bi-input-cursor-text"></i> {{ __('nav.custom_fields') }}
                     </a>
                     <a href="{{ route('settings.lost-reasons') }}" class="nm-dd-item {{ request()->routeIs('settings.lost-reasons*') ? 'active' : '' }}">
-                        <i class="bi bi-x-circle"></i> Motivos de Perda
+                        <i class="bi bi-x-circle"></i> {{ __('nav.lost_reasons') }}
                     </a>
                     <a href="{{ route('settings.tags') }}" class="nm-dd-item {{ request()->routeIs('settings.tags*') ? 'active' : '' }}">
-                        <i class="bi bi-tags"></i> Tags
+                        <i class="bi bi-tags"></i> {{ __('nav.tags') }}
                     </a>
                 </div>
             </div>
@@ -802,21 +802,21 @@
             {{-- Automação dropdown --}}
             <div class="nm-dropdown">
                 <button class="nm-item {{ $autoActive ? 'active' : '' }}" onclick="toggleNavDropdown(this)">
-                    <i class="bi bi-lightning"></i> Automação <i class="bi bi-chevron-down nm-chev"></i>
+                    <i class="bi bi-lightning"></i> {{ __('nav.automation') }} <i class="bi bi-chevron-down nm-chev"></i>
                 </button>
                 <div class="nm-dropdown-menu">
                     <a href="{{ route('chatbot.flows.index') }}" class="nm-dd-item {{ request()->routeIs('chatbot.flows.*') ? 'active' : '' }}">
-                        <i class="bi bi-diagram-3"></i> Chatbot
+                        <i class="bi bi-diagram-3"></i> {{ __('nav.chatbot') }}
                     </a>
                     <a href="{{ route('ai.agents.index') }}" class="nm-dd-item {{ request()->routeIs('ai.agents.*', 'ai.intent-signals.*') ? 'active' : '' }}">
-                        <i class="bi bi-robot"></i> Agentes de IA
+                        <i class="bi bi-robot"></i> {{ __('nav.ai_agents') }}
                     </a>
                     <a href="{{ route('settings.automations') }}" class="nm-dd-item {{ request()->routeIs('settings.automations*') ? 'active' : '' }}">
-                        <i class="bi bi-lightning"></i> Automações
+                        <i class="bi bi-lightning"></i> {{ __('nav.automations') }}
                     </a>
                     @if($igConnected)
                     <a href="{{ route('settings.ig-automations.index') }}" class="nm-dd-item {{ request()->routeIs('settings.ig-automations.*') ? 'active' : '' }}">
-                        <i class="bi bi-instagram"></i> Autom. Instagram
+                        <i class="bi bi-instagram"></i> {{ __('nav.ig_automations') }}
                     </a>
                     @endif
                 </div>
@@ -825,14 +825,14 @@
             {{-- Relatórios dropdown --}}
             <div class="nm-dropdown">
                 <button class="nm-item {{ $reportActive ? 'active' : '' }}" onclick="toggleNavDropdown(this)">
-                    <i class="bi bi-bar-chart-line"></i> Relatórios <i class="bi bi-chevron-down nm-chev"></i>
+                    <i class="bi bi-bar-chart-line"></i> {{ __('nav.reports') }} <i class="bi bi-chevron-down nm-chev"></i>
                 </button>
                 <div class="nm-dropdown-menu">
                     <a href="{{ route('reports.index') }}" class="nm-dd-item {{ request()->routeIs('reports*') ? 'active' : '' }}">
-                        <i class="bi bi-bar-chart-line"></i> Indicadores
+                        <i class="bi bi-bar-chart-line"></i> {{ __('nav.indicators') }}
                     </a>
                     <a href="{{ route('campaigns.index') }}" class="nm-dd-item {{ request()->routeIs('campaigns*') ? 'active' : '' }}">
-                        <i class="bi bi-megaphone"></i> Campanhas
+                        <i class="bi bi-megaphone"></i> {{ __('nav.campaigns') }}
                     </a>
                 </div>
             </div>
@@ -840,29 +840,29 @@
             {{-- Configurações dropdown --}}
             <div class="nm-dropdown">
                 <button class="nm-item {{ $settingsActive ? 'active' : '' }}" onclick="toggleNavDropdown(this)">
-                    <i class="bi bi-gear"></i> Configurações <i class="bi bi-chevron-down nm-chev"></i>
+                    <i class="bi bi-gear"></i> {{ __('nav.settings') }} <i class="bi bi-chevron-down nm-chev"></i>
                 </button>
                 <div class="nm-dropdown-menu">
                     <a href="{{ route('settings.profile') }}" class="nm-dd-item {{ request()->routeIs('settings.profile*') ? 'active' : '' }}">
-                        <i class="bi bi-person"></i> Perfil
+                        <i class="bi bi-person"></i> {{ __('nav.profile') }}
                     </a>
                     <a href="{{ route('settings.notifications') }}" class="nm-dd-item {{ request()->routeIs('settings.notifications*') ? 'active' : '' }}">
-                        <i class="bi bi-bell"></i> Notificações
+                        <i class="bi bi-bell"></i> {{ __('nav.notifications') }}
                     </a>
                     <a href="{{ route('settings.users') }}" class="nm-dd-item {{ request()->routeIs('settings.users*') ? 'active' : '' }}">
-                        <i class="bi bi-people-fill"></i> Usuários
+                        <i class="bi bi-people-fill"></i> {{ __('nav.users') }}
                     </a>
                     <a href="{{ route('settings.integrations.index') }}" class="nm-dd-item {{ request()->routeIs('settings.integrations*') ? 'active' : '' }}">
-                        <i class="bi bi-plug"></i> Integrações
+                        <i class="bi bi-plug"></i> {{ __('nav.integrations') }}
                     </a>
                     <a href="{{ route('settings.departments') }}" class="nm-dd-item {{ request()->routeIs('settings.departments*') ? 'active' : '' }}">
-                        <i class="bi bi-building"></i> Departamentos
+                        <i class="bi bi-building"></i> {{ __('nav.departments') }}
                     </a>
                     <a href="{{ route('settings.billing') }}" class="nm-dd-item {{ request()->routeIs('settings.billing*', 'billing.*') ? 'active' : '' }}">
-                        <i class="bi bi-credit-card"></i> Cobrança
+                        <i class="bi bi-credit-card"></i> {{ __('nav.billing') }}
                     </a>
                     <a href="{{ route('settings.api-keys') }}" class="nm-dd-item {{ request()->routeIs('settings.api-keys*') ? 'active' : '' }}">
-                        <i class="bi bi-code-slash"></i> API / Webhooks
+                        <i class="bi bi-code-slash"></i> {{ __('nav.api_webhooks') }}
                     </a>
                 </div>
             </div>
@@ -870,7 +870,7 @@
             {{-- Master (super_admin only) --}}
             @if(auth()->user()->isSuperAdmin())
             <a href="{{ route('master.tenants') }}" class="nm-item {{ request()->routeIs('master.tenants*') ? 'active' : '' }}">
-                <i class="bi bi-shield-lock"></i> Master
+                <i class="bi bi-shield-lock"></i> {{ __('nav.master_panel') }}
             </a>
             @endif
         </nav>

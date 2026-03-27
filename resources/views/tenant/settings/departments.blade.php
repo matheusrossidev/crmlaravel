@@ -208,11 +208,11 @@
 
     <div class="section-header">
         <div>
-            <div class="section-title">Departamentos</div>
-            <div class="section-subtitle">Organize sua equipe em setores e atribua agentes ou bots padrão.</div>
+            <div class="section-title">{{ __('settings.dept_title') }}</div>
+            <div class="section-subtitle">{{ __('settings.dept_subtitle') }}</div>
         </div>
         <button class="btn-primary-sm" id="btnNewDept">
-            <i class="bi bi-plus-lg"></i> Novo Departamento
+            <i class="bi bi-plus-lg"></i> {{ __('settings.dept_new') }}
         </button>
     </div>
 
@@ -220,11 +220,11 @@
         <table class="dept-table">
             <thead>
                 <tr>
-                    <th>Departamento</th>
-                    <th>Membros</th>
-                    <th>Agente / Bot</th>
-                    <th>Estratégia</th>
-                    <th style="width:60px;">Status</th>
+                    <th>{{ __('settings.dept_col_dept') }}</th>
+                    <th>{{ __('settings.dept_col_members') }}</th>
+                    <th>{{ __('settings.dept_col_agent_bot') }}</th>
+                    <th>{{ __('settings.dept_col_strategy') }}</th>
+                    <th style="width:60px;">{{ __('settings.dept_col_status') }}</th>
                     <th style="width:80px;"></th>
                 </tr>
             </thead>
@@ -256,19 +256,19 @@
                     </td>
                     <td>
                         <span class="badge-strategy">
-                            {{ $dept->assignment_strategy === 'round_robin' ? 'Round-robin' : 'Menos ocupado' }}
+                            {{ $dept->assignment_strategy === 'round_robin' ? __('settings.dept_round_robin') : __('settings.dept_least_busy') }}
                         </span>
                     </td>
                     <td style="text-align:center;">
                         <span class="status-dot {{ $dept->is_active ? 'active' : 'inactive' }}"
-                              title="{{ $dept->is_active ? 'Ativo' : 'Inativo' }}"></span>
+                              title="{{ $dept->is_active ? __('settings.dept_active') : __('settings.dept_inactive') }}"></span>
                     </td>
                     <td>
                         <div style="display:flex;gap:5px;justify-content:flex-end;">
-                            <button class="btn-icon" title="Editar" onclick="openEdit({{ $dept->id }})">
+                            <button class="btn-icon" title="{{ __('settings.dept_edit') }}" onclick="openEdit({{ $dept->id }})">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn-icon danger" title="Excluir" onclick="deleteDept({{ $dept->id }},this)">
+                            <button class="btn-icon danger" title="{{ __('settings.dept_delete') }}" onclick="deleteDept({{ $dept->id }},this)">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
@@ -279,7 +279,7 @@
                     <td colspan="6">
                         <div class="empty-state">
                             <i class="bi bi-building"></i>
-                            Nenhum departamento criado. Clique em <strong>Novo Departamento</strong> para começar.
+                            {!! __('settings.dept_empty_cta') !!}
                         </div>
                     </td>
                 </tr>
@@ -294,7 +294,7 @@
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
     <div class="drawer-header">
-        <h4 style="margin:0;font-size:15px;font-weight:700;color:#1a1d23;" id="drawerTitle">Novo Departamento</h4>
+        <h4 style="margin:0;font-size:15px;font-weight:700;color:#1a1d23;" id="drawerTitle">{{ __('settings.dept_new_title') }}</h4>
         <button onclick="closeDrawer()" style="background:none;border:none;font-size:18px;color:#6b7280;cursor:pointer;">
             <i class="bi bi-x-lg"></i>
         </button>
@@ -304,33 +304,33 @@
 
         <div class="form-row">
             <div class="form-group" style="flex:2;">
-                <label class="form-label">Nome</label>
-                <input type="text" id="deptName" class="form-input" placeholder="Ex: Financeiro, Suporte...">
+                <label class="form-label">{{ __('settings.dept_name') }}</label>
+                <input type="text" id="deptName" class="form-input" placeholder="{{ __('settings.dept_name_ph') }}">
             </div>
             <div class="form-group" style="flex:1;">
-                <label class="form-label">Ícone</label>
+                <label class="form-label">{{ __('settings.dept_icon') }}</label>
                 <select id="deptIcon" class="form-input">
-                    <option value="bi-building">Prédio</option>
-                    <option value="bi-headset">Headset</option>
-                    <option value="bi-cash-stack">Financeiro</option>
-                    <option value="bi-megaphone">Marketing</option>
-                    <option value="bi-graph-up">Vendas</option>
-                    <option value="bi-tools">Técnico</option>
-                    <option value="bi-people">Equipe</option>
-                    <option value="bi-shield-check">Compliance</option>
-                    <option value="bi-truck">Logística</option>
-                    <option value="bi-briefcase">Negócios</option>
+                    <option value="bi-building">{{ __('settings.dept_icon_building') }}</option>
+                    <option value="bi-headset">{{ __('settings.dept_icon_headset') }}</option>
+                    <option value="bi-cash-stack">{{ __('settings.dept_icon_finance') }}</option>
+                    <option value="bi-megaphone">{{ __('settings.dept_icon_marketing') }}</option>
+                    <option value="bi-graph-up">{{ __('settings.dept_icon_sales') }}</option>
+                    <option value="bi-tools">{{ __('settings.dept_icon_technical') }}</option>
+                    <option value="bi-people">{{ __('settings.dept_icon_team') }}</option>
+                    <option value="bi-shield-check">{{ __('settings.dept_icon_compliance') }}</option>
+                    <option value="bi-truck">{{ __('settings.dept_icon_logistics') }}</option>
+                    <option value="bi-briefcase">{{ __('settings.dept_icon_business') }}</option>
                 </select>
             </div>
         </div>
 
         <div class="form-group">
-            <label class="form-label">Descrição</label>
-            <input type="text" id="deptDescription" class="form-input" placeholder="Breve descrição do setor (opcional)">
+            <label class="form-label">{{ __('settings.dept_description') }}</label>
+            <input type="text" id="deptDescription" class="form-input" placeholder="{{ __('settings.dept_description_ph') }}">
         </div>
 
         <div class="form-group">
-            <label class="form-label">Cor</label>
+            <label class="form-label">{{ __('settings.dept_color') }}</label>
             <div class="color-row">
                 <input type="color" id="deptColorPicker" class="color-picker-input" value="#3B82F6"
                        oninput="document.getElementById('deptColorText').value=this.value; highlightPreset(this.value);">
@@ -349,18 +349,18 @@
 
         <div class="form-row">
             <div class="form-group">
-                <label class="form-label">Agente IA Padrão</label>
+                <label class="form-label">{{ __('settings.dept_ai_agent') }}</label>
                 <select id="deptAiAgent" class="form-input">
-                    <option value="">Nenhum</option>
+                    <option value="">{{ __('settings.dept_none') }}</option>
                     @foreach($aiAgents as $agent)
                     <option value="{{ $agent->id }}">{{ $agent->name }}</option>
                     @endforeach
                 </select>
             </div>
             <div class="form-group">
-                <label class="form-label">Chatbot Padrão</label>
+                <label class="form-label">{{ __('settings.dept_chatbot') }}</label>
                 <select id="deptChatbot" class="form-input">
-                    <option value="">Nenhum</option>
+                    <option value="">{{ __('settings.dept_none') }}</option>
                     @foreach($chatbotFlows as $flow)
                     <option value="{{ $flow->id }}">{{ $flow->name }}</option>
                     @endforeach
@@ -369,15 +369,15 @@
         </div>
 
         <div class="form-group">
-            <label class="form-label">Estratégia de Distribuição</label>
+            <label class="form-label">{{ __('settings.dept_strategy') }}</label>
             <select id="deptStrategy" class="form-input">
-                <option value="round_robin">Round-robin (revezamento)</option>
-                <option value="least_busy">Menos ocupado</option>
+                <option value="round_robin">{{ __('settings.dept_round_robin_opt') }}</option>
+                <option value="least_busy">{{ __('settings.dept_least_busy_opt') }}</option>
             </select>
         </div>
 
         <div class="form-group">
-            <label class="form-label">Membros</label>
+            <label class="form-label">{{ __('settings.dept_members') }}</label>
             <div class="user-list" id="userList">
                 @foreach($users as $u)
                 <label class="user-item">
@@ -392,9 +392,9 @@
         </div>
     </div>
     <div class="drawer-footer">
-        <button class="btn-cancel" onclick="closeDrawer()">Cancelar</button>
+        <button class="btn-cancel" onclick="closeDrawer()">{{ __('settings.dept_cancel') }}</button>
         <button class="btn-save" id="btnSave" onclick="saveDept()">
-            <i class="bi bi-check2"></i> Salvar
+            <i class="bi bi-check2"></i> {{ __('settings.dept_save') }}
         </button>
     </div>
 </div>
@@ -402,6 +402,7 @@
 
 @push('scripts')
 <script>
+const SLANG = @json(__('settings'));
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 const URL_STORE   = '{{ route('settings.departments.store') }}';
 const URL_UPDATE  = '{{ route('settings.departments.update', ['department' => '__ID__']) }}';
@@ -457,7 +458,7 @@ function closeDrawer() {
 }
 
 document.getElementById('btnNewDept').addEventListener('click', () => {
-    document.getElementById('drawerTitle').textContent = 'Novo Departamento';
+    document.getElementById('drawerTitle').textContent = SLANG.dept_new_title;
     document.getElementById('deptId').value = '';
     document.getElementById('deptName').value = '';
     document.getElementById('deptDescription').value = '';
@@ -474,7 +475,7 @@ document.getElementById('btnNewDept').addEventListener('click', () => {
 function openEdit(id) {
     const d = DEPTS_DATA.find(x => x.id === id);
     if (!d) return;
-    document.getElementById('drawerTitle').textContent = 'Editar Departamento';
+    document.getElementById('drawerTitle').textContent = SLANG.dept_edit_title;
     document.getElementById('deptId').value = d.id;
     document.getElementById('deptName').value = d.name;
     document.getElementById('deptDescription').value = d.description || '';
@@ -530,7 +531,7 @@ async function saveDept() {
 
         if (!data.success) {
             if (checkLimitReached(data)) return;
-            toastr.error(data.message || Object.values(data.errors || {}).flat().join(', ') || 'Erro ao salvar.');
+            toastr.error(data.message || Object.values(data.errors || {}).flat().join(', ') || SLANG.dept_error_save);
             return;
         }
 
@@ -546,7 +547,7 @@ async function saveDept() {
         // Recarregar página para refletir mudanças
         location.reload();
     } catch (e) {
-        toastr.error('Erro de rede.');
+        toastr.error(SLANG.dept_error_network);
     } finally {
         btn.disabled = false;
     }
@@ -559,9 +560,9 @@ function deleteDept(id, btn) {
     _deleteId  = id;
     _deleteBtn = btn;
     confirmAction({
-        title: 'Excluir departamento?',
-        message: 'As conversas deste setor ficarão sem departamento atribuído. Esta ação não pode ser desfeita.',
-        confirmText: 'Excluir',
+        title: SLANG.dept_del_title,
+        message: SLANG.dept_del_msg,
+        confirmText: SLANG.dept_del_confirm,
         onConfirm: () => _doDeleteDept(),
     });
 }
@@ -575,10 +576,10 @@ async function _doDeleteDept() {
         headers: { 'X-CSRF-TOKEN': CSRF },
     });
     const data = await res.json();
-    if (!data.success) { toastr.error('Erro ao excluir.'); return; }
+    if (!data.success) { toastr.error(SLANG.dept_error_delete); return; }
 
     row.remove();
-    toastr.success('Departamento excluído.');
+    toastr.success(SLANG.dept_deleted);
 
     // Remover do cache
     const idx = DEPTS_DATA.findIndex(x => x.id === _deleteId);
@@ -589,7 +590,7 @@ async function _doDeleteDept() {
             <tr id="emptyRow"><td colspan="6">
                 <div class="empty-state">
                     <i class="bi bi-building"></i>
-                    Nenhum departamento criado.
+                    ${SLANG.dept_empty}
                 </div>
             </td></tr>`;
     }

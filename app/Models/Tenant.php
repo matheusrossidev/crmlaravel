@@ -17,7 +17,7 @@ class Tenant extends Model
         'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields', 'max_chatbot_flows', 'max_ai_agents', 'max_departments', 'max_whatsapp_instances', 'api_rate_limit',
         'asaas_customer_id', 'asaas_subscription_id', 'subscription_status', 'subscription_ends_at',
         'onboarding_completed_at', 'ai_tokens_exhausted', 'referred_by_agency_id',
-        'partner_billing_starts_at',
+        'partner_billing_starts_at', 'locale',
     ];
 
     protected $casts = [

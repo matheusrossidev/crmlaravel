@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Automações';
+    $title    = __('automations.title');
     $pageIcon = 'gear';
     $isEdit   = isset($automation);
 
@@ -300,21 +300,21 @@
 
     {{-- Header --}}
     <div class="af-header">
-        <a href="{{ route('settings.automations') }}" class="af-back" title="Voltar">
+        <a href="{{ route('settings.automations') }}" class="af-back" title="{{ __('automations.back') }}">
             <i class="bi bi-arrow-left"></i>
         </a>
         <input type="text" class="af-name-input" id="afName"
-            placeholder="Nome da automação..."
+            placeholder="{{ __('automations.name_placeholder') }}"
             value="{{ $isEdit ? $automation->name : '' }}">
         <div class="af-header-right">
             @if($isEdit)
                 <span class="af-status-badge {{ $automation->is_active ? 'active' : '' }}" id="afStatusBadge">
-                    {{ $automation->is_active ? 'Ativa' : 'Inativa' }}
+                    {{ $automation->is_active ? __('automations.status_active') : __('automations.status_inactive') }}
                 </span>
             @endif
-            <a href="{{ route('settings.automations') }}" class="btn-cancel-sm">Cancelar</a>
+            <a href="{{ route('settings.automations') }}" class="btn-cancel-sm">{{ __('automations.btn_cancel') }}</a>
             <button class="btn-primary-sm" onclick="saveAutomation()">
-                <i class="bi bi-check2"></i> Salvar automação
+                <i class="bi bi-check2"></i> {{ __('automations.btn_save') }}
             </button>
         </div>
     </div>
@@ -326,102 +326,102 @@
         <div class="af-sidebar">
 
             <div class="af-sidebar-section">
-                <div class="af-sidebar-section-title">Gatilho</div>
+                <div class="af-sidebar-section-title">{{ __('automations.sidebar_trigger') }}</div>
                 <div class="af-block-item trigger" onclick="setTrigger('message_received')">
-                    <span class="af-block-icon"><i class="bi bi-chat-dots"></i></span>Mensagem recebida
+                    <span class="af-block-icon"><i class="bi bi-chat-dots"></i></span>{{ __('automations.sidebar_message_received') }}
                 </div>
                 <div class="af-block-item trigger" onclick="setTrigger('conversation_created')">
-                    <span class="af-block-icon"><i class="bi bi-plus-circle"></i></span>Nova conversa
+                    <span class="af-block-icon"><i class="bi bi-plus-circle"></i></span>{{ __('automations.sidebar_conversation_created') }}
                 </div>
                 <div class="af-block-item trigger" onclick="setTrigger('lead_created')">
-                    <span class="af-block-icon"><i class="bi bi-person-plus"></i></span>Lead criado
+                    <span class="af-block-icon"><i class="bi bi-person-plus"></i></span>{{ __('automations.sidebar_lead_created') }}
                 </div>
                 <div class="af-block-item trigger" onclick="setTrigger('lead_stage_changed')">
-                    <span class="af-block-icon"><i class="bi bi-arrow-right-circle"></i></span>Lead movido de etapa
+                    <span class="af-block-icon"><i class="bi bi-arrow-right-circle"></i></span>{{ __('automations.sidebar_lead_stage_changed') }}
                 </div>
                 <div class="af-block-item trigger" onclick="setTrigger('lead_won')">
-                    <span class="af-block-icon"><i class="bi bi-trophy"></i></span>Lead ganho
+                    <span class="af-block-icon"><i class="bi bi-trophy"></i></span>{{ __('automations.sidebar_lead_won') }}
                 </div>
                 <div class="af-block-item trigger" onclick="setTrigger('lead_lost')">
-                    <span class="af-block-icon"><i class="bi bi-x-circle"></i></span>Lead perdido
+                    <span class="af-block-icon"><i class="bi bi-x-circle"></i></span>{{ __('automations.sidebar_lead_lost') }}
                 </div>
                 <div class="af-block-item trigger" onclick="setTrigger('date_field')">
-                    <span class="af-block-icon"><i class="bi bi-calendar-event"></i></span>Data / Aniversário
+                    <span class="af-block-icon"><i class="bi bi-calendar-event"></i></span>{{ __('automations.sidebar_date_field') }}
                 </div>
                 <div class="af-block-item trigger" onclick="setTrigger('recurring')">
-                    <span class="af-block-icon"><i class="bi bi-arrow-repeat"></i></span>Recorrente
+                    <span class="af-block-icon"><i class="bi bi-arrow-repeat"></i></span>{{ __('automations.sidebar_recurring') }}
                 </div>
             </div>
 
             <div class="af-sidebar-divider"></div>
 
             <div class="af-sidebar-section">
-                <div class="af-sidebar-section-title">Condições</div>
+                <div class="af-sidebar-section-title">{{ __('automations.sidebar_conditions') }}</div>
                 <div class="af-block-item condition" onclick="addConditionBlock('message_body')">
-                    <span class="af-block-icon"><i class="bi bi-chat-text"></i></span>Corpo da mensagem
+                    <span class="af-block-icon"><i class="bi bi-chat-text"></i></span>{{ __('automations.sidebar_cond_message_body') }}
                 </div>
                 <div class="af-block-item condition" onclick="addConditionBlock('lead_source')">
-                    <span class="af-block-icon"><i class="bi bi-pin-map"></i></span>Origem do lead
+                    <span class="af-block-icon"><i class="bi bi-pin-map"></i></span>{{ __('automations.sidebar_cond_lead_source') }}
                 </div>
                 <div class="af-block-item condition" onclick="addConditionBlock('lead_tag')">
-                    <span class="af-block-icon"><i class="bi bi-tag"></i></span>Tag do lead
+                    <span class="af-block-icon"><i class="bi bi-tag"></i></span>{{ __('automations.sidebar_cond_lead_tag') }}
                 </div>
                 <div class="af-block-item condition" onclick="addConditionBlock('conversation_tag')">
-                    <span class="af-block-icon"><i class="bi bi-chat-square-text"></i></span>Tag da conversa
+                    <span class="af-block-icon"><i class="bi bi-chat-square-text"></i></span>{{ __('automations.sidebar_cond_conversation_tag') }}
                 </div>
             </div>
 
             <div class="af-sidebar-divider"></div>
 
             <div class="af-sidebar-section">
-                <div class="af-sidebar-section-title">Ações</div>
+                <div class="af-sidebar-section-title">{{ __('automations.sidebar_actions') }}</div>
                 <div class="af-block-item action" onclick="addActionBlock('add_tag_lead')">
-                    <span class="af-block-icon"><i class="bi bi-tag-fill"></i></span>Adicionar tag ao lead
+                    <span class="af-block-icon"><i class="bi bi-tag-fill"></i></span>{{ __('automations.sidebar_act_add_tag_lead') }}
                 </div>
                 <div class="af-block-item action" onclick="addActionBlock('remove_tag_lead')">
-                    <span class="af-block-icon"><i class="bi bi-tag"></i></span>Remover tag do lead
+                    <span class="af-block-icon"><i class="bi bi-tag"></i></span>{{ __('automations.sidebar_act_remove_tag_lead') }}
                 </div>
                 <div class="af-block-item action" onclick="addActionBlock('add_tag_conversation')">
-                    <span class="af-block-icon"><i class="bi bi-chat-square-dots"></i></span>Tag na conversa
+                    <span class="af-block-icon"><i class="bi bi-chat-square-dots"></i></span>{{ __('automations.sidebar_act_add_tag_conversation') }}
                 </div>
                 <div class="af-block-item action" onclick="addActionBlock('move_to_stage')">
-                    <span class="af-block-icon"><i class="bi bi-arrow-right-short"></i></span>Mover para etapa
+                    <span class="af-block-icon"><i class="bi bi-arrow-right-short"></i></span>{{ __('automations.sidebar_act_move_to_stage') }}
                 </div>
                 <div class="af-block-item action" onclick="addActionBlock('set_lead_source')">
-                    <span class="af-block-icon"><i class="bi bi-pin-angle"></i></span>Definir origem do lead
+                    <span class="af-block-icon"><i class="bi bi-pin-angle"></i></span>{{ __('automations.sidebar_act_set_lead_source') }}
                 </div>
                 <div class="af-block-item action" onclick="addActionBlock('assign_to_user')">
-                    <span class="af-block-icon"><i class="bi bi-person-check"></i></span>Atribuir a usuário
+                    <span class="af-block-icon"><i class="bi bi-person-check"></i></span>{{ __('automations.sidebar_act_assign_to_user') }}
                 </div>
                 <div class="af-block-item action" onclick="addActionBlock('add_note')">
-                    <span class="af-block-icon"><i class="bi bi-sticky"></i></span>Adicionar nota
+                    <span class="af-block-icon"><i class="bi bi-sticky"></i></span>{{ __('automations.sidebar_act_add_note') }}
                 </div>
                 <div class="af-block-item action" onclick="addActionBlock('assign_ai_agent')">
-                    <span class="af-block-icon"><i class="bi bi-robot"></i></span>Atribuir agente de IA
+                    <span class="af-block-icon"><i class="bi bi-robot"></i></span>{{ __('automations.sidebar_act_assign_ai_agent') }}
                 </div>
                 <div class="af-block-item action" onclick="addActionBlock('assign_chatbot_flow')">
-                    <span class="af-block-icon"><i class="bi bi-diagram-3"></i></span>Atribuir chatbot
+                    <span class="af-block-icon"><i class="bi bi-diagram-3"></i></span>{{ __('automations.sidebar_act_assign_chatbot_flow') }}
                 </div>
                 <div class="af-block-item action" onclick="addActionBlock('transfer_to_department')">
-                    <span class="af-block-icon"><i class="bi bi-building"></i></span>Transferir p/ departamento
+                    <span class="af-block-icon"><i class="bi bi-building"></i></span>{{ __('automations.sidebar_act_transfer_to_department') }}
                 </div>
                 <div class="af-block-item action" onclick="addActionBlock('close_conversation')">
-                    <span class="af-block-icon"><i class="bi bi-lock"></i></span>Fechar conversa
+                    <span class="af-block-icon"><i class="bi bi-lock"></i></span>{{ __('automations.sidebar_act_close_conversation') }}
                 </div>
                 <div class="af-block-item action" onclick="addActionBlock('send_whatsapp_message')">
-                    <span class="af-block-icon"><i class="bi bi-whatsapp"></i></span>Enviar msg WhatsApp
+                    <span class="af-block-icon"><i class="bi bi-whatsapp"></i></span>{{ __('automations.sidebar_act_send_whatsapp_message') }}
                 </div>
                 <div class="af-block-item action" onclick="addActionBlock('schedule_whatsapp_message')">
-                    <span class="af-block-icon"><i class="bi bi-clock"></i></span>Agendar msg WhatsApp
+                    <span class="af-block-icon"><i class="bi bi-clock"></i></span>{{ __('automations.sidebar_act_schedule_whatsapp_message') }}
                 </div>
                 <div class="af-block-item action" onclick="addActionBlock('assign_campaign')">
-                    <span class="af-block-icon"><i class="bi bi-megaphone"></i></span>Atribuir campanha
+                    <span class="af-block-icon"><i class="bi bi-megaphone"></i></span>{{ __('automations.sidebar_act_assign_campaign') }}
                 </div>
                 <div class="af-block-item action" onclick="addActionBlock('set_utm_params')">
-                    <span class="af-block-icon"><i class="bi bi-link-45deg"></i></span>Definir parâmetros UTM
+                    <span class="af-block-icon"><i class="bi bi-link-45deg"></i></span>{{ __('automations.sidebar_act_set_utm_params') }}
                 </div>
                 <div class="af-block-item action" onclick="addActionBlock('create_task')">
-                    <span class="af-block-icon"><i class="bi bi-check2-square"></i></span>Criar tarefa
+                    <span class="af-block-icon"><i class="bi bi-check2-square"></i></span>{{ __('automations.sidebar_act_create_task') }}
                 </div>
             </div>
         </div>
@@ -434,25 +434,25 @@
                 <div id="afTriggerSlot">
                     <div class="af-trigger-placeholder" id="afTriggerPlaceholder">
                         <i class="bi bi-lightning-charge"></i>
-                        Selecione um <strong>Gatilho</strong> no painel esquerdo para começar
+                        {!! __('automations.trigger_placeholder') !!}
                     </div>
                 </div>
 
                 {{-- Conditions area --}}
                 <div id="afConditionsArea" style="display:none;">
                     <div class="af-connector"></div>
-                    <div class="af-group-label">SE as condições forem atendidas...</div>
+                    <div class="af-group-label">{{ __('automations.conditions_label') }}</div>
                     <div id="afConditionsList"></div>
                 </div>
 
                 {{-- Actions area --}}
                 <div id="afActionsArea" style="display:none;">
                     <div class="af-connector"></div>
-                    <div class="af-group-label">ENTÃO executar...</div>
+                    <div class="af-group-label">{{ __('automations.actions_label') }}</div>
                     <div id="afActionsList"></div>
                     <div class="af-connector" style="height:16px;"></div>
                     <button type="button" class="af-add-action" onclick="showActionPicker()">
-                        <i class="bi bi-plus-circle"></i> Adicionar ação
+                        <i class="bi bi-plus-circle"></i> {{ __('automations.add_action_btn') }}
                     </button>
                 </div>
 
@@ -466,6 +466,7 @@
 @endphp
 
 <script>
+const AUTLANG        = @json(__('automations'));
 const PIPELINES      = @json($pipelinesJs);
 const USERS          = @json($users);
 const AI_AGENTS      = @json($aiAgents);
@@ -491,14 +492,14 @@ const _tagSugCache = {};
 // Trigger
 // ─────────────────────────────────────────────────────────────────────
 const TRIGGER_META = {
-    message_received:    { icon:'bi-chat-dots',          label:'Mensagem recebida' },
-    conversation_created:{ icon:'bi-plus-circle',        label:'Nova conversa' },
-    lead_created:        { icon:'bi-person-plus',        label:'Lead criado' },
-    lead_stage_changed:  { icon:'bi-arrow-right-circle', label:'Lead movido de etapa' },
-    lead_won:            { icon:'bi-trophy',             label:'Lead ganho' },
-    lead_lost:           { icon:'bi-x-circle',           label:'Lead perdido' },
-    date_field:          { icon:'bi-calendar-event',     label:'Data / Aniversário' },
-    recurring:           { icon:'bi-arrow-repeat',       label:'Recorrente (Semanal/Mensal)' },
+    message_received:    { icon:'bi-chat-dots',          label: AUTLANG.trigger_message_received },
+    conversation_created:{ icon:'bi-plus-circle',        label: AUTLANG.trigger_conversation_created },
+    lead_created:        { icon:'bi-person-plus',        label: AUTLANG.trigger_lead_created },
+    lead_stage_changed:  { icon:'bi-arrow-right-circle', label: AUTLANG.trigger_lead_stage_changed },
+    lead_won:            { icon:'bi-trophy',             label: AUTLANG.trigger_lead_won },
+    lead_lost:           { icon:'bi-x-circle',           label: AUTLANG.trigger_lead_lost },
+    date_field:          { icon:'bi-calendar-event',     label: AUTLANG.trigger_date_field },
+    recurring:           { icon:'bi-arrow-repeat',       label: AUTLANG.trigger_recurring_full },
 };
 
 function setTrigger(type, prefillConfig) {
@@ -513,7 +514,7 @@ function setTrigger(type, prefillConfig) {
             <div class="af-node-head">
                 <span class="af-node-icon"><i class="bi ${meta.icon}"></i></span>
                 <div class="af-node-label">
-                    <div class="af-node-type">Gatilho</div>
+                    <div class="af-node-type">${h(AUTLANG.node_type_trigger)}</div>
                     <div class="af-node-name">${h(meta.label)}</div>
                 </div>
             </div>
@@ -529,21 +530,19 @@ function setTrigger(type, prefillConfig) {
 function buildTriggerConfig(type, prefill) {
     let html = '';
     if (['message_received','conversation_created'].includes(type)) {
-        const opts = [['both','WhatsApp e Instagram'],['whatsapp','Somente WhatsApp'],['instagram','Somente Instagram']]
-            .map(([v,l]) => `<option value="${v}" ${prefill.channel===v?'selected':''}>${l}</option>`).join('');
-        html += `<label>Canal</label>
-            <select class="form-select" id="tcChannel"><option value="both">WhatsApp e Instagram</option>
-            <option value="whatsapp" ${prefill.channel==='whatsapp'?'selected':''}>Somente WhatsApp</option>
-            <option value="instagram" ${prefill.channel==='instagram'?'selected':''}>Somente Instagram</option></select>`;
+        html += `<label>${h(AUTLANG.label_channel)}</label>
+            <select class="form-select" id="tcChannel"><option value="both">${h(AUTLANG.channel_both)}</option>
+            <option value="whatsapp" ${prefill.channel==='whatsapp'?'selected':''}>${h(AUTLANG.channel_whatsapp)}</option>
+            <option value="instagram" ${prefill.channel==='instagram'?'selected':''}>${h(AUTLANG.channel_instagram)}</option></select>`;
     }
     if (type === 'lead_stage_changed') {
         const pOpts = PIPELINES.map(p => `<option value="${p.id}" ${prefill.pipeline_id==p.id?'selected':''}>${h(p.name)}</option>`).join('');
-        html += `<label>Funil <small style="font-weight:400;color:#9ca3af;">(opcional)</small></label>
+        html += `<label>${h(AUTLANG.label_pipeline)} <small style="font-weight:400;color:#9ca3af;">(${h(AUTLANG.label_pipeline_optional)})</small></label>
             <select class="form-select" id="tcPipeline" onchange="onTcPipelineChange()">
-                <option value="">Qualquer funil</option>${pOpts}
+                <option value="">${h(AUTLANG.any_pipeline)}</option>${pOpts}
             </select>
-            <label style="margin-top:10px;">Etapa destino <small style="font-weight:400;color:#9ca3af;">(opcional)</small></label>
-            <select class="form-select" id="tcStage"><option value="">Qualquer etapa</option></select>`;
+            <label style="margin-top:10px;">${h(AUTLANG.label_target_stage)} <small style="font-weight:400;color:#9ca3af;">(${h(AUTLANG.label_pipeline_optional)})</small></label>
+            <select class="form-select" id="tcStage"><option value="">${h(AUTLANG.any_stage)}</option></select>`;
         if (prefill.pipeline_id) {
             setTimeout(() => {
                 const pEl = document.getElementById('tcPipeline');
@@ -557,37 +556,37 @@ function buildTriggerConfig(type, prefill) {
     }
     if (['lead_created','lead_won','lead_lost'].includes(type)) {
         const pOpts = PIPELINES.map(p => `<option value="${p.id}" ${prefill.pipeline_id==p.id?'selected':''}>${h(p.name)}</option>`).join('');
-        html += `<label>Funil <small style="font-weight:400;color:#9ca3af;">(opcional)</small></label>
+        html += `<label>${h(AUTLANG.label_pipeline)} <small style="font-weight:400;color:#9ca3af;">(${h(AUTLANG.label_pipeline_optional)})</small></label>
             <select class="form-select" id="tcPipeline">
-                <option value="">Qualquer funil</option>${pOpts}
+                <option value="">${h(AUTLANG.any_pipeline)}</option>${pOpts}
             </select>`;
     }
     if (type === 'lead_created') {
         const srcOpts = LEAD_SOURCES.map(s => `<option value="${s}" ${prefill.source===s?'selected':''}>${h(s)}</option>`).join('');
-        html += `<label style="margin-top:10px;">Origem <small style="font-weight:400;color:#9ca3af;">(opcional)</small></label>
+        html += `<label style="margin-top:10px;">${h(AUTLANG.label_source)} <small style="font-weight:400;color:#9ca3af;">(${h(AUTLANG.label_pipeline_optional)})</small></label>
             <select class="form-select" id="tcSource">
-                <option value="">Qualquer origem</option>${srcOpts}
+                <option value="">${h(AUTLANG.any_source)}</option>${srcOpts}
             </select>`;
     }
     if (type === 'date_field') {
-        const nativeOpts = `<option value="birthday" ${prefill.date_field==='birthday'?'selected':''}>Aniversário (campo nativo)</option>`;
+        const nativeOpts = `<option value="birthday" ${prefill.date_field==='birthday'?'selected':''}>${h(AUTLANG.date_field_birthday)}</option>`;
         const cfOpts = DATE_CUSTOM_FIELDS
-            .map(f => `<option value="cf:${f.id}" ${prefill.date_field===`cf:${f.id}`?'selected':''}>Campo: ${h(f.label)}</option>`)
+            .map(f => `<option value="cf:${f.id}" ${prefill.date_field===`cf:${f.id}`?'selected':''}>${h(AUTLANG.date_field_custom_prefix)} ${h(f.label)}</option>`)
             .join('');
         const dbVal  = prefill.days_before  ?? 0;
         const repVal = prefill.repeat_yearly !== undefined ? prefill.repeat_yearly : true;
-        html += `<label>Campo de data</label>
+        html += `<label>${h(AUTLANG.label_date_field)}</label>
             <select class="form-select" id="tcDateField">
-                <optgroup label="Campo nativo">${nativeOpts}</optgroup>
-                ${DATE_CUSTOM_FIELDS.length ? `<optgroup label="Campos personalizados">${cfOpts}</optgroup>` : ''}
+                <optgroup label="${h(AUTLANG.date_field_native_group)}">${nativeOpts}</optgroup>
+                ${DATE_CUSTOM_FIELDS.length ? `<optgroup label="${h(AUTLANG.date_field_custom_group)}">${cfOpts}</optgroup>` : ''}
             </select>
-            <label style="margin-top:10px;">Dias de antecedência <small style="font-weight:400;color:#9ca3af;">(0 = no próprio dia)</small></label>
+            <label style="margin-top:10px;">${h(AUTLANG.label_days_before)} <small style="font-weight:400;color:#9ca3af;">(${h(AUTLANG.days_before_hint)})</small></label>
             <input type="number" class="form-control" id="tcDaysBefore"
                    min="0" max="365" value="${h(String(dbVal))}" style="margin-bottom:10px;">
             <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
                 <input type="checkbox" id="tcRepeatYearly" ${repVal ? 'checked' : ''} style="cursor:pointer;">
                 <label for="tcRepeatYearly" style="margin:0;cursor:pointer;font-weight:500;font-size:13px;color:#374151;">
-                    Repetir anualmente (ex: aniversários)
+                    ${h(AUTLANG.label_repeat_yearly)}
                 </label>
             </div>`;
     }
@@ -602,17 +601,19 @@ function buildTriggerConfig(type, prefill) {
 
         const pOpts = PIPELINES.map(p => p.stages.map(s => `<option value="${s.id}" ${fv==s.id?'selected':''}>${h(p.name)} → ${h(s.name)}</option>`).join('')).join('');
 
-        html += `<label>Tipo de recorrência</label>
+        const dayAbbrs = [AUTLANG.day_sun, AUTLANG.day_mon, AUTLANG.day_tue, AUTLANG.day_wed, AUTLANG.day_thu, AUTLANG.day_fri, AUTLANG.day_sat];
+
+        html += `<label>${h(AUTLANG.label_recurrence_type)}</label>
             <div style="display:flex;gap:8px;margin-bottom:12px;">
                 <label style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:1px solid ${rt==='weekly'?'#0085f3':'#e2e8f0'};border-radius:8px;cursor:pointer;background:${rt==='weekly'?'#eff6ff':'#fff'};font-size:13px;">
-                    <input type="radio" name="recType" value="weekly" ${rt==='weekly'?'checked':''} onchange="toggleRecDays()" style="display:none;"> Semanal
+                    <input type="radio" name="recType" value="weekly" ${rt==='weekly'?'checked':''} onchange="toggleRecDays()" style="display:none;"> ${h(AUTLANG.recurrence_weekly)}
                 </label>
                 <label style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:1px solid ${rt==='monthly'?'#0085f3':'#e2e8f0'};border-radius:8px;cursor:pointer;background:${rt==='monthly'?'#eff6ff':'#fff'};font-size:13px;">
-                    <input type="radio" name="recType" value="monthly" ${rt==='monthly'?'checked':''} onchange="toggleRecDays()" style="display:none;"> Mensal
+                    <input type="radio" name="recType" value="monthly" ${rt==='monthly'?'checked':''} onchange="toggleRecDays()" style="display:none;"> ${h(AUTLANG.recurrence_monthly)}
                 </label>
             </div>
             <div id="recWeekly" style="display:${rt==='weekly'?'flex':'none'};gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-                ${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((d,i) => {
+                ${dayAbbrs.map((d,i) => {
                     const chk = (prefill.days||[]).includes(i);
                     return `<label style="display:flex;align-items:center;gap:4px;padding:4px 10px;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:12.5px;">
                         <input type="checkbox" class="recDayCheck" value="${i}" ${chk?'checked':''}> ${d}
@@ -620,39 +621,39 @@ function buildTriggerConfig(type, prefill) {
                 }).join('')}
             </div>
             <div id="recMonthly" style="display:${rt==='monthly'?'block':'none'};margin-bottom:12px;">
-                <label>Dias do mês <small style="font-weight:400;color:#9ca3af;">(separe por vírgula: 10, 20)</small></label>
-                <input type="text" class="form-control" id="tcRecDays" value="${h(rds)}" placeholder="10, 20">
+                <label>${h(AUTLANG.label_month_days)} <small style="font-weight:400;color:#9ca3af;">(${h(AUTLANG.month_days_hint)})</small></label>
+                <input type="text" class="form-control" id="tcRecDays" value="${h(rds)}" placeholder="${h(AUTLANG.month_days_placeholder)}">
             </div>
-            <label>Horário de envio</label>
+            <label>${h(AUTLANG.label_send_time)}</label>
             <input type="time" class="form-control" id="tcRecTime" value="${h(rtm)}" style="margin-bottom:12px;">
-            <label>Filtrar leads por</label>
+            <label>${h(AUTLANG.label_filter_leads)}</label>
             <select class="form-select" id="tcRecFilter" onchange="toggleRecFilter()" style="margin-bottom:8px;">
-                <option value="all" ${ft==='all'?'selected':''}>Todos os leads</option>
-                <option value="tag" ${ft==='tag'?'selected':''}>Tag específica</option>
-                <option value="stage" ${ft==='stage'?'selected':''}>Etapa do funil</option>
+                <option value="all" ${ft==='all'?'selected':''}>${h(AUTLANG.filter_all)}</option>
+                <option value="tag" ${ft==='tag'?'selected':''}>${h(AUTLANG.filter_tag)}</option>
+                <option value="stage" ${ft==='stage'?'selected':''}>${h(AUTLANG.filter_stage)}</option>
             </select>
             <div id="recFilterTag" style="display:${ft==='tag'?'block':'none'};margin-bottom:12px;">
-                <input type="text" class="form-control" id="tcRecTagValue" value="${h(fv)}" placeholder="Nome da tag (ex: Pais)">
+                <input type="text" class="form-control" id="tcRecTagValue" value="${h(fv)}" placeholder="${h(AUTLANG.filter_tag_placeholder)}">
             </div>
             <div id="recFilterStage" style="display:${ft==='stage'?'block':'none'};margin-bottom:12px;">
                 <select class="form-select" id="tcRecStageValue">${pOpts}</select>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
                 <div>
-                    <label>Limite diário</label>
+                    <label>${h(AUTLANG.label_daily_limit)}</label>
                     <input type="number" class="form-control" id="tcRecLimit" min="1" max="500" value="${dl}">
                 </div>
                 <div>
-                    <label>Delay entre envios (s)</label>
+                    <label>${h(AUTLANG.label_delay_between)}</label>
                     <input type="number" class="form-control" id="tcRecDelay" min="1" max="60" value="${ds}">
                 </div>
             </div>
             <p style="margin-top:10px;font-size:11.5px;color:#9ca3af;">
-                <i class="bi bi-shield-check"></i> Só envia para leads com conversa WhatsApp existente. Delay entre envios para evitar bloqueio.
+                <i class="bi bi-shield-check"></i> ${h(AUTLANG.recurring_safety_note)}
             </p>`;
     }
     if (!html) {
-        html = `<p style="font-size:12px;color:#9ca3af;margin:0;">Nenhuma configuração necessária para este gatilho.</p>`;
+        html = `<p style="font-size:12px;color:#9ca3af;margin:0;">${h(AUTLANG.no_trigger_config)}</p>`;
     }
     return html;
 }
@@ -678,7 +679,7 @@ function onTcPipelineChange() {
     const sel  = document.getElementById('tcStage');
     if (!sel) return;
     const p = PIPELINES.find(p => p.id === pId);
-    sel.innerHTML = '<option value="">Qualquer etapa</option>' +
+    sel.innerHTML = `<option value="">${h(AUTLANG.any_stage)}</option>` +
         (p ? p.stages.map(s => `<option value="${s.id}">${h(s.name)}</option>`).join('') : '');
 }
 
@@ -686,10 +687,10 @@ function onTcPipelineChange() {
 // Conditions
 // ─────────────────────────────────────────────────────────────────────
 const CONDITION_META = {
-    message_body:     { icon:'bi-chat-text',        label:'Corpo da mensagem' },
-    lead_source:      { icon:'bi-pin-map',          label:'Origem do lead' },
-    lead_tag:         { icon:'bi-tag',              label:'Tag do lead' },
-    conversation_tag: { icon:'bi-chat-square-text', label:'Tag da conversa' },
+    message_body:     { icon:'bi-chat-text',        label: AUTLANG.sidebar_cond_message_body },
+    lead_source:      { icon:'bi-pin-map',          label: AUTLANG.sidebar_cond_lead_source },
+    lead_tag:         { icon:'bi-tag',              label: AUTLANG.sidebar_cond_lead_tag },
+    conversation_tag: { icon:'bi-chat-square-text', label: AUTLANG.sidebar_cond_conversation_tag },
 };
 
 function addConditionBlock(field, prefill) {
@@ -709,7 +710,7 @@ function addConditionBlock(field, prefill) {
         <div class="af-node-head">
             <span class="af-node-icon"><i class="bi ${meta.icon}"></i></span>
             <div class="af-node-label">
-                <div class="af-node-type">Condição</div>
+                <div class="af-node-type">${h(AUTLANG.node_type_condition)}</div>
                 <div class="af-node-name">${h(meta.label)}</div>
             </div>
             <button type="button" class="af-node-remove" onclick="removeCondNode(${idx})">
@@ -724,36 +725,36 @@ function addConditionBlock(field, prefill) {
 
 function buildConditionBody(field, idx, prefill) {
     if (field === 'message_body') {
-        const opOpts = [['contains','contém'],['not_contains','não contém'],['equals','é igual a'],['starts_with','começa com']]
-            .map(([v,l]) => `<option value="${v}" ${prefill.operator===v?'selected':''}>${l}</option>`).join('');
+        const opOpts = [['contains', AUTLANG.operator_contains],['not_contains', AUTLANG.operator_not_contains],['equals', AUTLANG.operator_equals],['starts_with', AUTLANG.operator_starts_with]]
+            .map(([v,l]) => `<option value="${v}" ${prefill.operator===v?'selected':''}>${h(l)}</option>`).join('');
         return `<div class="row-pair">
-            <div><label>Operador</label><select class="form-select" id="cop-${idx}">${opOpts}</select></div>
-            <div><label>Valor</label><input type="text" class="form-control" id="cval-${idx}" placeholder="Palavra-chave..." value="${h(prefill.value||'')}"></div>
+            <div><label>${h(AUTLANG.label_operator)}</label><select class="form-select" id="cop-${idx}">${opOpts}</select></div>
+            <div><label>${h(AUTLANG.label_value)}</label><input type="text" class="form-control" id="cval-${idx}" placeholder="${h(AUTLANG.placeholder_keyword)}" value="${h(prefill.value||'')}"></div>
         </div>`;
     }
     if (field === 'lead_source') {
         const srcOpts = ALL_LEAD_SOURCES.map(s => `<option value="${s}" ${prefill.value===s?'selected':''}>${h(s)}</option>`).join('');
-        const opOpts = [['equals','é'],['not_equals','não é']]
-            .map(([v,l]) => `<option value="${v}" ${prefill.operator===v?'selected':''}>${l}</option>`).join('');
+        const opOpts = [['equals', AUTLANG.operator_is],['not_equals', AUTLANG.operator_is_not]]
+            .map(([v,l]) => `<option value="${v}" ${prefill.operator===v?'selected':''}>${h(l)}</option>`).join('');
         return `<div class="row-pair">
-            <div><label>Operador</label><select class="form-select" id="cop-${idx}">${opOpts}</select></div>
-            <div><label>Origem</label><select class="form-select" id="cval-${idx}">
-                <option value="">Selecione...</option>${srcOpts}</select></div>
+            <div><label>${h(AUTLANG.label_operator)}</label><select class="form-select" id="cop-${idx}">${opOpts}</select></div>
+            <div><label>${h(AUTLANG.label_origin)}</label><select class="form-select" id="cval-${idx}">
+                <option value="">${h(AUTLANG.placeholder_select)}</option>${srcOpts}</select></div>
         </div>`;
     }
     if (field === 'lead_tag') {
-        const opOpts = [['contains','contém'],['not_contains','não contém']]
-            .map(([v,l]) => `<option value="${v}" ${prefill.operator===v?'selected':''}>${l}</option>`).join('');
+        const opOpts = [['contains', AUTLANG.operator_contains],['not_contains', AUTLANG.operator_not_contains]]
+            .map(([v,l]) => `<option value="${v}" ${prefill.operator===v?'selected':''}>${h(l)}</option>`).join('');
         const tagWidget = buildTagSelect(`cval-${idx}`, LEAD_TAGS, prefill.value ? [prefill.value] : []);
-        return `<label>Operador</label><select class="form-select" id="cop-${idx}" style="margin-bottom:8px;">${opOpts}</select>
-            <label>Tag</label>${tagWidget}`;
+        return `<label>${h(AUTLANG.label_operator)}</label><select class="form-select" id="cop-${idx}" style="margin-bottom:8px;">${opOpts}</select>
+            <label>${h(AUTLANG.label_tag)}</label>${tagWidget}`;
     }
     if (field === 'conversation_tag') {
-        const opOpts = [['contains','contém'],['not_contains','não contém']]
-            .map(([v,l]) => `<option value="${v}" ${prefill.operator===v?'selected':''}>${l}</option>`).join('');
+        const opOpts = [['contains', AUTLANG.operator_contains],['not_contains', AUTLANG.operator_not_contains]]
+            .map(([v,l]) => `<option value="${v}" ${prefill.operator===v?'selected':''}>${h(l)}</option>`).join('');
         const tagWidget = buildTagSelect(`cval-${idx}`, WAPP_TAGS, prefill.value ? [prefill.value] : []);
-        return `<label>Operador</label><select class="form-select" id="cop-${idx}" style="margin-bottom:8px;">${opOpts}</select>
-            <label>Tag</label>${tagWidget}`;
+        return `<label>${h(AUTLANG.label_operator)}</label><select class="form-select" id="cop-${idx}" style="margin-bottom:8px;">${opOpts}</select>
+            <label>${h(AUTLANG.label_tag)}</label>${tagWidget}`;
     }
     return '';
 }
@@ -769,22 +770,22 @@ function removeCondNode(idx) {
 // Actions
 // ─────────────────────────────────────────────────────────────────────
 const ACTION_META = {
-    add_tag_lead:          { icon:'bi-tag-fill',          label:'Adicionar tag ao lead' },
-    remove_tag_lead:       { icon:'bi-tag',               label:'Remover tag do lead' },
-    add_tag_conversation:  { icon:'bi-chat-square-dots',  label:'Tag na conversa' },
-    move_to_stage:         { icon:'bi-arrow-right-short', label:'Mover para etapa' },
-    set_lead_source:       { icon:'bi-pin-angle',         label:'Definir origem do lead' },
-    assign_to_user:        { icon:'bi-person-check',      label:'Atribuir a usuário' },
-    add_note:              { icon:'bi-sticky',            label:'Adicionar nota' },
-    assign_ai_agent:       { icon:'bi-robot',             label:'Atribuir agente de IA' },
-    assign_chatbot_flow:   { icon:'bi-diagram-3',         label:'Atribuir chatbot' },
-    transfer_to_department:{ icon:'bi-building',           label:'Transferir p/ departamento' },
-    close_conversation:    { icon:'bi-lock',              label:'Fechar conversa' },
-    send_whatsapp_message:     { icon:'bi-whatsapp',    label:'Enviar msg WhatsApp' },
-    schedule_whatsapp_message: { icon:'bi-clock',       label:'Agendar msg WhatsApp' },
-    assign_campaign:           { icon:'bi-megaphone',   label:'Atribuir campanha' },
-    set_utm_params:            { icon:'bi-link-45deg',  label:'Definir parâmetros UTM' },
-    create_task:               { icon:'bi-check2-square', label:'Criar tarefa' },
+    add_tag_lead:          { icon:'bi-tag-fill',          label: AUTLANG.sidebar_act_add_tag_lead },
+    remove_tag_lead:       { icon:'bi-tag',               label: AUTLANG.sidebar_act_remove_tag_lead },
+    add_tag_conversation:  { icon:'bi-chat-square-dots',  label: AUTLANG.sidebar_act_add_tag_conversation },
+    move_to_stage:         { icon:'bi-arrow-right-short', label: AUTLANG.sidebar_act_move_to_stage },
+    set_lead_source:       { icon:'bi-pin-angle',         label: AUTLANG.sidebar_act_set_lead_source },
+    assign_to_user:        { icon:'bi-person-check',      label: AUTLANG.sidebar_act_assign_to_user },
+    add_note:              { icon:'bi-sticky',            label: AUTLANG.sidebar_act_add_note },
+    assign_ai_agent:       { icon:'bi-robot',             label: AUTLANG.sidebar_act_assign_ai_agent },
+    assign_chatbot_flow:   { icon:'bi-diagram-3',         label: AUTLANG.sidebar_act_assign_chatbot_flow },
+    transfer_to_department:{ icon:'bi-building',           label: AUTLANG.sidebar_act_transfer_to_department },
+    close_conversation:    { icon:'bi-lock',              label: AUTLANG.sidebar_act_close_conversation },
+    send_whatsapp_message:     { icon:'bi-whatsapp',    label: AUTLANG.sidebar_act_send_whatsapp_message },
+    schedule_whatsapp_message: { icon:'bi-clock',       label: AUTLANG.sidebar_act_schedule_whatsapp_message },
+    assign_campaign:           { icon:'bi-megaphone',   label: AUTLANG.sidebar_act_assign_campaign },
+    set_utm_params:            { icon:'bi-link-45deg',  label: AUTLANG.sidebar_act_set_utm_params },
+    create_task:               { icon:'bi-check2-square', label: AUTLANG.sidebar_act_create_task },
 };
 
 function addActionBlock(type, prefill) {
@@ -804,7 +805,7 @@ function addActionBlock(type, prefill) {
         <div class="af-node-head">
             <span class="af-node-icon"><i class="bi ${meta.icon}"></i></span>
             <div class="af-node-label">
-                <div class="af-node-type">Ação</div>
+                <div class="af-node-type">${h(AUTLANG.node_type_action)}</div>
                 <div class="af-node-name">${h(meta.label)}</div>
             </div>
             <button type="button" class="af-node-remove" onclick="removeActNode(${idx})">
@@ -819,10 +820,10 @@ function addActionBlock(type, prefill) {
 
 function buildActionBody(type, idx, prefill) {
     if (type === 'add_tag_lead' || type === 'remove_tag_lead') {
-        return `<label>Tags</label>${buildTagSelect(`aval-${idx}`, LEAD_TAGS, prefill.tags || [])}`;
+        return `<label>${h(AUTLANG.label_tags)}</label>${buildTagSelect(`aval-${idx}`, LEAD_TAGS, prefill.tags || [])}`;
     }
     if (type === 'add_tag_conversation') {
-        return `<label>Tags</label>${buildTagSelect(`aval-${idx}`, WAPP_TAGS, prefill.tags || [])}`;
+        return `<label>${h(AUTLANG.label_tags)}</label>${buildTagSelect(`aval-${idx}`, WAPP_TAGS, prefill.tags || [])}`;
     }
     if (type === 'move_to_stage') {
         const pOpts = PIPELINES.map(p => `<option value="${p.id}">${h(p.name)}</option>`).join('');
@@ -835,128 +836,128 @@ function buildActionBody(type, idx, prefill) {
             ? (PIPELINES.find(p => p.stages.some(s => s.id == prefill.stage_id))?.id || '')
             : '';
         return `<div class="row-pair">
-            <div><label>Funil</label>
+            <div><label>${h(AUTLANG.label_pipeline)}</label>
                 <select class="form-select" id="apipe-${idx}" onchange="onActPipelineChange(${idx})">
-                    <option value="">Funil...</option>${pOpts}
+                    <option value="">${h(AUTLANG.placeholder_pipeline)}</option>${pOpts}
                 </select></div>
-            <div><label>Etapa</label>
+            <div><label>${h(AUTLANG.label_stage)}</label>
                 <select class="form-select" id="astage-${idx}">
-                    <option value="">Etapa...</option>${stageOpts}
+                    <option value="">${h(AUTLANG.placeholder_stage)}</option>${stageOpts}
                 </select></div>
         </div>` + (selPipe ? `<script>setTimeout(()=>{const e=document.getElementById('apipe-${idx}');if(e){e.value=${selPipe};onActPipelineChange(${idx});setTimeout(()=>{const s=document.getElementById('astage-${idx}');if(s)s.value=${prefill.stage_id||0};},60);}},30);<\/script>` : '');
     }
     if (type === 'set_lead_source') {
         const srcOpts = ALL_LEAD_SOURCES.map(s => `<option value="${s}" ${prefill.source===s?'selected':''}>${h(s)}</option>`).join('');
-        return `<label>Origem</label><select class="form-select" id="aval-${idx}">
-            <option value="">Selecione...</option>${srcOpts}</select>`;
+        return `<label>${h(AUTLANG.label_source)}</label><select class="form-select" id="aval-${idx}">
+            <option value="">${h(AUTLANG.placeholder_select)}</option>${srcOpts}</select>`;
     }
     if (type === 'assign_to_user') {
         const uOpts = USERS.map(u => `<option value="${u.id}" ${prefill.user_id==u.id?'selected':''}>${h(u.name)}</option>`).join('');
-        return `<label>Usuário</label><select class="form-select" id="aval-${idx}">
-            <option value="">Selecione...</option>${uOpts}</select>`;
+        return `<label>${h(AUTLANG.label_user)}</label><select class="form-select" id="aval-${idx}">
+            <option value="">${h(AUTLANG.placeholder_select)}</option>${uOpts}</select>`;
     }
     if (type === 'add_note') {
-        return `<label>Texto da nota <small style="font-weight:400;color:#9ca3af;">(${NOTE_VARS_HINT})</small></label>
-            <textarea class="form-control" id="aval-${idx}" rows="2" placeholder="Digite a nota...">${h(prefill.body||'')}</textarea>`;
+        return `<label>${h(AUTLANG.label_note_text)} <small style="font-weight:400;color:#9ca3af;">(${NOTE_VARS_HINT})</small></label>
+            <textarea class="form-control" id="aval-${idx}" rows="2" placeholder="${h(AUTLANG.placeholder_note)}">${h(prefill.body||'')}</textarea>`;
     }
     if (type === 'assign_ai_agent') {
-        if (!AI_AGENTS.length) return `<p style="font-size:12px;color:#9ca3af;margin:0;">Nenhum agente de IA ativo (WhatsApp).</p>`;
+        if (!AI_AGENTS.length) return `<p style="font-size:12px;color:#9ca3af;margin:0;">${h(AUTLANG.no_ai_agents)}</p>`;
         const aOpts = AI_AGENTS.map(a => `<option value="${a.id}" ${prefill.ai_agent_id==a.id?'selected':''}>${h(a.name)}</option>`).join('');
-        return `<label>Agente de IA</label><select class="form-select" id="aval-${idx}">
-            <option value="">Selecione...</option>${aOpts}</select>`;
+        return `<label>${h(AUTLANG.label_ai_agent)}</label><select class="form-select" id="aval-${idx}">
+            <option value="">${h(AUTLANG.placeholder_select)}</option>${aOpts}</select>`;
     }
     if (type === 'assign_chatbot_flow') {
-        if (!CHATBOT_FLOWS.length) return `<p style="font-size:12px;color:#9ca3af;margin:0;">Nenhum fluxo de chatbot ativo.</p>`;
+        if (!CHATBOT_FLOWS.length) return `<p style="font-size:12px;color:#9ca3af;margin:0;">${h(AUTLANG.no_chatbot_flows)}</p>`;
         const fOpts = CHATBOT_FLOWS.map(f => `<option value="${f.id}" ${prefill.chatbot_flow_id==f.id?'selected':''}>${h(f.name)}</option>`).join('');
-        return `<label>Fluxo</label><select class="form-select" id="aval-${idx}">
-            <option value="">Selecione...</option>${fOpts}</select>`;
+        return `<label>${h(AUTLANG.label_flow)}</label><select class="form-select" id="aval-${idx}">
+            <option value="">${h(AUTLANG.placeholder_select)}</option>${fOpts}</select>`;
     }
     if (type === 'transfer_to_department') {
-        if (!DEPARTMENTS.length) return `<p style="font-size:12px;color:#9ca3af;margin:0;">Nenhum departamento ativo.</p>`;
+        if (!DEPARTMENTS.length) return `<p style="font-size:12px;color:#9ca3af;margin:0;">${h(AUTLANG.no_departments)}</p>`;
         const dOpts = DEPARTMENTS.map(d => `<option value="${d.id}" ${prefill.department_id==d.id?'selected':''}>${h(d.name)}</option>`).join('');
-        return `<label>Departamento</label><select class="form-select" id="aval-${idx}">
-            <option value="">Selecione...</option>${dOpts}</select>`;
+        return `<label>${h(AUTLANG.label_department)}</label><select class="form-select" id="aval-${idx}">
+            <option value="">${h(AUTLANG.placeholder_select)}</option>${dOpts}</select>`;
     }
     if (type === 'close_conversation') {
-        return `<p style="font-size:12px;color:#6b7280;margin:0;"><i class="bi bi-info-circle me-1"></i>A conversa vinculada ao lead será fechada automaticamente.</p>`;
+        return `<p style="font-size:12px;color:#6b7280;margin:0;"><i class="bi bi-info-circle me-1"></i>${h(AUTLANG.close_conversation_info)}</p>`;
     }
     if (type === 'assign_campaign') {
-        if (!CAMPAIGNS.length) return `<p style="font-size:12px;color:#9ca3af;margin:0;">Nenhuma campanha cadastrada.</p>`;
+        if (!CAMPAIGNS.length) return `<p style="font-size:12px;color:#9ca3af;margin:0;">${h(AUTLANG.no_campaigns)}</p>`;
         const cOpts = CAMPAIGNS.map(c => `<option value="${c.id}" ${prefill.campaign_id==c.id?'selected':''}>${h(c.name)}</option>`).join('');
-        return `<label>Campanha</label><select class="form-select" id="aval-${idx}">
-            <option value="">Selecione...</option>${cOpts}</select>`;
+        return `<label>${h(AUTLANG.label_campaign)}</label><select class="form-select" id="aval-${idx}">
+            <option value="">${h(AUTLANG.placeholder_select)}</option>${cOpts}</select>`;
     }
     if (type === 'set_utm_params') {
         const fields = [
-            ['utm_source',   'UTM Source',   'ex: google'],
-            ['utm_medium',   'UTM Medium',   'ex: cpc'],
-            ['utm_campaign', 'UTM Campaign', 'ex: black-friday'],
-            ['utm_term',     'UTM Term',     'ex: crm+software'],
-            ['utm_content',  'UTM Content',  'ex: banner-topo'],
+            ['utm_source',   AUTLANG.utm_source,   AUTLANG.utm_placeholder_source],
+            ['utm_medium',   AUTLANG.utm_medium,   AUTLANG.utm_placeholder_medium],
+            ['utm_campaign', AUTLANG.utm_campaign,  AUTLANG.utm_placeholder_campaign],
+            ['utm_term',     AUTLANG.utm_term,      AUTLANG.utm_placeholder_term],
+            ['utm_content',  AUTLANG.utm_content,   AUTLANG.utm_placeholder_content],
         ];
         return fields.map(([name, label, ph]) =>
-            `<label style="margin-top:6px;">${label} <small style="font-weight:400;color:#9ca3af;">(opcional)</small></label>
+            `<label style="margin-top:6px;">${h(label)} <small style="font-weight:400;color:#9ca3af;">(${h(AUTLANG.utm_optional)})</small></label>
             <input type="text" class="form-control utm-field" id="autm_${name}_${idx}"
-                   data-utm="${name}" placeholder="${ph}" value="${h(prefill[name]||'')}">`
-        ).join('') + `<p style="font-size:11px;color:#9ca3af;margin-top:6px;margin-bottom:0;">Deixe em branco os campos que não deseja alterar.</p>`;
+                   data-utm="${name}" placeholder="${h(ph)}" value="${h(prefill[name]||'')}">`
+        ).join('') + `<p style="font-size:11px;color:#9ca3af;margin-top:6px;margin-bottom:0;">${h(AUTLANG.utm_blank_hint)}</p>`;
     }
     if (type === 'send_whatsapp_message') {
-        if (!WAHA_CONNECTED) return `<p style="font-size:12px;color:#f59e0b;margin:0;"><i class="bi bi-exclamation-triangle me-1"></i>Nenhuma instância WhatsApp conectada.</p>`;
-        return `<label>Mensagem <small style="font-weight:400;color:#9ca3af;">(${MSG_VARS_HINT})</small></label>
-            <textarea class="form-control" id="aval-${idx}" rows="2" placeholder="Digite a mensagem...">${h(prefill.message||'')}</textarea>`;
+        if (!WAHA_CONNECTED) return `<p style="font-size:12px;color:#f59e0b;margin:0;"><i class="bi bi-exclamation-triangle me-1"></i>${h(AUTLANG.no_whatsapp_instance)}</p>`;
+        return `<label>${h(AUTLANG.label_message)} <small style="font-weight:400;color:#9ca3af;">(${MSG_VARS_HINT})</small></label>
+            <textarea class="form-control" id="aval-${idx}" rows="2" placeholder="${h(AUTLANG.placeholder_message)}">${h(prefill.message||'')}</textarea>`;
     }
     if (type === 'schedule_whatsapp_message') {
-        if (!WAHA_CONNECTED) return `<p style="font-size:12px;color:#f59e0b;margin:0;"><i class="bi bi-exclamation-triangle me-1"></i>Nenhuma instância WhatsApp conectada.</p>`;
-        return `<label>Mensagem <small style="font-weight:400;color:#9ca3af;">(${MSG_VARS_HINT})</small></label>
-            <textarea class="form-control" id="aval-${idx}" rows="2" placeholder="Digite a mensagem...">${h(prefill.message||'')}</textarea>
+        if (!WAHA_CONNECTED) return `<p style="font-size:12px;color:#f59e0b;margin:0;"><i class="bi bi-exclamation-triangle me-1"></i>${h(AUTLANG.no_whatsapp_instance)}</p>`;
+        return `<label>${h(AUTLANG.label_message)} <small style="font-weight:400;color:#9ca3af;">(${MSG_VARS_HINT})</small></label>
+            <textarea class="form-control" id="aval-${idx}" rows="2" placeholder="${h(AUTLANG.placeholder_message)}">${h(prefill.message||'')}</textarea>
             <div style="display:flex;gap:8px;margin-top:8px;">
                 <div style="flex:1;">
-                    <label>Enviar após</label>
+                    <label>${h(AUTLANG.label_send_after)}</label>
                     <input type="number" class="form-control" id="adelay-${idx}" min="1" max="365" value="${prefill.delay_value||1}">
                 </div>
                 <div style="flex:1;">
-                    <label>Unidade</label>
+                    <label>${h(AUTLANG.label_unit)}</label>
                     <select class="form-control" id="adelayunit-${idx}">
-                        <option value="hours" ${prefill.delay_unit==='hours'?'selected':''}>Horas</option>
-                        <option value="days"  ${prefill.delay_unit==='days'||!prefill.delay_unit?'selected':''}>Dias</option>
+                        <option value="hours" ${prefill.delay_unit==='hours'?'selected':''}>${h(AUTLANG.unit_hours)}</option>
+                        <option value="days"  ${prefill.delay_unit==='days'||!prefill.delay_unit?'selected':''}>${h(AUTLANG.unit_days)}</option>
                     </select>
                 </div>
             </div>`;
     }
     if (type === 'create_task') {
-        const ttypes = [['call','Ligar'],['email','Email'],['task','Tarefa'],['visit','Visita'],['whatsapp','WhatsApp'],['meeting','Reunião']];
-        const prios  = [['low','Baixa'],['medium','Média'],['high','Alta']];
-        return `<label>Assunto <small style="font-weight:400;color:#9ca3af;">(${MSG_VARS_HINT})</small></label>
-            <input type="text" class="form-control" id="aval-${idx}" placeholder="Ligar para @{{contact_name}}" value="${h(prefill.subject||'')}">
-            <label style="margin-top:6px;">Descrição</label>
-            <textarea class="form-control" id="ataskdesc-${idx}" rows="2" placeholder="Detalhes da tarefa...">${h(prefill.description||'')}</textarea>
+        const ttypes = [['call', AUTLANG.task_type_call],['email', AUTLANG.task_type_email],['task', AUTLANG.task_type_task],['visit', AUTLANG.task_type_visit],['whatsapp', AUTLANG.task_type_whatsapp],['meeting', AUTLANG.task_type_meeting]];
+        const prios  = [['low', AUTLANG.priority_low],['medium', AUTLANG.priority_medium],['high', AUTLANG.priority_high]];
+        return `<label>${h(AUTLANG.label_subject)} <small style="font-weight:400;color:#9ca3af;">(${MSG_VARS_HINT})</small></label>
+            <input type="text" class="form-control" id="aval-${idx}" placeholder="${h(AUTLANG.placeholder_subject)}" value="${h(prefill.subject||'')}">
+            <label style="margin-top:6px;">${h(AUTLANG.label_description)}</label>
+            <textarea class="form-control" id="ataskdesc-${idx}" rows="2" placeholder="${h(AUTLANG.placeholder_description)}">${h(prefill.description||'')}</textarea>
             <div style="display:flex;gap:8px;margin-top:6px;">
                 <div style="flex:1;">
-                    <label>Tipo</label>
+                    <label>${h(AUTLANG.label_task_type)}</label>
                     <select class="form-control" id="atasktype-${idx}">
-                        ${ttypes.map(t => `<option value="${t[0]}" ${(prefill.task_type||'task')===t[0]?'selected':''}>${t[1]}</option>`).join('')}
+                        ${ttypes.map(t => `<option value="${t[0]}" ${(prefill.task_type||'task')===t[0]?'selected':''}>${h(t[1])}</option>`).join('')}
                     </select>
                 </div>
                 <div style="flex:1;">
-                    <label>Prioridade</label>
+                    <label>${h(AUTLANG.label_priority)}</label>
                     <select class="form-control" id="ataskprio-${idx}">
-                        ${prios.map(p => `<option value="${p[0]}" ${(prefill.priority||'medium')===p[0]?'selected':''}>${p[1]}</option>`).join('')}
+                        ${prios.map(p => `<option value="${p[0]}" ${(prefill.priority||'medium')===p[0]?'selected':''}>${h(p[1])}</option>`).join('')}
                     </select>
                 </div>
             </div>
             <div style="display:flex;gap:8px;margin-top:6px;">
                 <div style="flex:1;">
-                    <label>Prazo (dias)</label>
+                    <label>${h(AUTLANG.label_due_days)}</label>
                     <input type="number" class="form-control" id="ataskdays-${idx}" min="0" max="365" value="${prefill.due_date_offset??1}">
                 </div>
                 <div style="flex:1;">
-                    <label>Horário</label>
+                    <label>${h(AUTLANG.label_due_time)}</label>
                     <input type="time" class="form-control" id="atasktime-${idx}" value="${h(prefill.due_time||'09:00')}">
                 </div>
             </div>
-            <label style="margin-top:6px;">Atribuir a</label>
+            <label style="margin-top:6px;">${h(AUTLANG.label_assign_to)}</label>
             <select class="form-control" id="ataskuser-${idx}">
-                <option value="">Automático (responsável do lead)</option>
+                <option value="">${h(AUTLANG.assign_auto)}</option>
                 ${USERS.map(u => `<option value="${u.id}" ${prefill.assigned_to==u.id?'selected':''}>${h(u.name)}</option>`).join('')}
             </select>`;
     }
@@ -976,13 +977,13 @@ function onActPipelineChange(idx) {
     const sel  = document.getElementById(`astage-${idx}`);
     if (!sel) return;
     const p = PIPELINES.find(p => p.id === pId);
-    sel.innerHTML = '<option value="">Etapa...</option>' +
+    sel.innerHTML = `<option value="">${h(AUTLANG.placeholder_stage)}</option>` +
         (p ? p.stages.map(s => `<option value="${s.id}">${h(s.name)}</option>`).join('') : '');
 }
 
 function showActionPicker() {
     // Scroll sidebar to action section visually — or just show a toast hint
-    toastr.info('Selecione uma ação no painel esquerdo.', '', {timeOut:2000});
+    toastr.info(AUTLANG.toast_select_action_hint, '', {timeOut:2000});
     document.querySelector('.af-sidebar').scrollTo({ top: 9999, behavior: 'smooth' });
 }
 
@@ -998,7 +999,7 @@ function buildTagSelect(inputId, suggestions, selectedTags) {
         <div class="position-relative">
             <div class="tag-select-wrap" id="${inputId}-wrap" onclick="document.getElementById('${inputId}-input').focus()">
                 ${chips}
-                <input type="text" id="${inputId}-input" class="tag-input-ghost" placeholder="Digite ou selecione..."
+                <input type="text" id="${inputId}-input" class="tag-input-ghost" placeholder="${h(AUTLANG.tag_placeholder)}"
                     autocomplete="off"
                     oninput="showTagSugs('${inputId}', this.value)"
                     onfocus="showTagSugs('${inputId}', this.value)"
@@ -1017,9 +1018,9 @@ function showTagSugs(id, query) {
     const filtered = suggestions.filter(s => !existing.includes(s) && (!lower || s.toLowerCase().includes(lower)));
     let html = filtered.map(s => `<div class="tag-sug-item" onmousedown="addTagChip('${id}','${h(s)}')">${h(s)}</div>`).join('');
     if (lower && !suggestions.some(s => s.toLowerCase() === lower) && !existing.includes(lower)) {
-        html += `<div class="tag-sug-item" style="color:#0085f3;" onmousedown="addTagChip('${id}','${lower}')"><i class="bi bi-plus me-1"></i>Adicionar "${lower}"</div>`;
+        html += `<div class="tag-sug-item" style="color:#0085f3;" onmousedown="addTagChip('${id}','${lower}')"><i class="bi bi-plus me-1"></i>${h(AUTLANG.tag_add_new)} "${lower}"</div>`;
     }
-    sug.innerHTML = html || '<div class="tag-sug-item" style="color:#9ca3af;font-size:12px;">Sem sugestões</div>';
+    sug.innerHTML = html || `<div class="tag-sug-item" style="color:#9ca3af;font-size:12px;">${h(AUTLANG.tag_no_suggestions)}</div>`;
     sug.style.display = 'block';
 }
 
@@ -1065,10 +1066,10 @@ document.addEventListener('click', e => {
 // ─────────────────────────────────────────────────────────────────────
 function saveAutomation() {
     const name = document.getElementById('afName').value.trim();
-    if (!name) { toastr.warning('Informe o nome da automação.'); return; }
+    if (!name) { toastr.warning(AUTLANG.validation_name_required); return; }
 
     const triggerNode = document.getElementById('afTriggerNode');
-    if (!triggerNode) { toastr.warning('Selecione um gatilho.'); return; }
+    if (!triggerNode) { toastr.warning(AUTLANG.validation_trigger_required); return; }
 
     const triggerType = triggerNode.dataset.triggerType;
     const tc = {};
@@ -1096,7 +1097,7 @@ function saveAutomation() {
         if (tc.filter_type === 'stage') tc.filter_value = document.getElementById('tcRecStageValue')?.value || '';
         tc.daily_limit = parseInt(document.getElementById('tcRecLimit')?.value || '100');
         tc.delay_seconds = parseInt(document.getElementById('tcRecDelay')?.value || '8');
-        if (!tc.days.length) { toastr.warning('Selecione pelo menos um dia para a recorrência.'); return; }
+        if (!tc.days.length) { toastr.warning(AUTLANG.validation_recurring_days); return; }
     }
 
     const conditions = [];
@@ -1125,51 +1126,51 @@ function saveAutomation() {
         const config = {};
         if (['add_tag_lead','remove_tag_lead','add_tag_conversation'].includes(type)) {
             config.tags = getTagValues(`aval-${idx}`);
-            if (!config.tags.length) { toastr.warning('Selecione ao menos uma tag.'); err = true; return; }
+            if (!config.tags.length) { toastr.warning(AUTLANG.validation_select_tag); err = true; return; }
         } else if (type === 'move_to_stage') {
             const v = document.getElementById(`astage-${idx}`)?.value;
-            if (!v) { toastr.warning('Selecione a etapa destino.'); err = true; return; }
+            if (!v) { toastr.warning(AUTLANG.validation_select_stage); err = true; return; }
             config.stage_id = parseInt(v);
         } else if (type === 'set_lead_source') {
             config.source = document.getElementById(`aval-${idx}`)?.value || '';
-            if (!config.source) { toastr.warning('Selecione a origem.'); err = true; return; }
+            if (!config.source) { toastr.warning(AUTLANG.validation_select_source); err = true; return; }
         } else if (type === 'assign_to_user') {
             config.user_id = parseInt(document.getElementById(`aval-${idx}`)?.value || 0);
-            if (!config.user_id) { toastr.warning('Selecione o usuário.'); err = true; return; }
+            if (!config.user_id) { toastr.warning(AUTLANG.validation_select_user); err = true; return; }
         } else if (type === 'add_note') {
             config.body = (document.getElementById(`aval-${idx}`)?.value || '').trim();
-            if (!config.body) { toastr.warning('Informe o texto da nota.'); err = true; return; }
+            if (!config.body) { toastr.warning(AUTLANG.validation_note_required); err = true; return; }
         } else if (type === 'assign_ai_agent') {
             config.ai_agent_id = parseInt(document.getElementById(`aval-${idx}`)?.value || 0);
-            if (!config.ai_agent_id) { toastr.warning('Selecione o agente de IA.'); err = true; return; }
+            if (!config.ai_agent_id) { toastr.warning(AUTLANG.validation_select_ai_agent); err = true; return; }
         } else if (type === 'assign_chatbot_flow') {
             config.chatbot_flow_id = parseInt(document.getElementById(`aval-${idx}`)?.value || 0);
-            if (!config.chatbot_flow_id) { toastr.warning('Selecione o fluxo.'); err = true; return; }
+            if (!config.chatbot_flow_id) { toastr.warning(AUTLANG.validation_select_flow); err = true; return; }
         } else if (type === 'transfer_to_department') {
             config.department_id = parseInt(document.getElementById(`aval-${idx}`)?.value || 0);
-            if (!config.department_id) { toastr.warning('Selecione o departamento.'); err = true; return; }
+            if (!config.department_id) { toastr.warning(AUTLANG.validation_select_department); err = true; return; }
         } else if (type === 'send_whatsapp_message') {
             config.message = (document.getElementById(`aval-${idx}`)?.value || '').trim();
-            if (!config.message) { toastr.warning('Informe a mensagem.'); err = true; return; }
+            if (!config.message) { toastr.warning(AUTLANG.validation_message_required); err = true; return; }
         } else if (type === 'schedule_whatsapp_message') {
             config.message = (document.getElementById(`aval-${idx}`)?.value || '').trim();
-            if (!config.message) { toastr.warning('Informe a mensagem para agendar.'); err = true; return; }
+            if (!config.message) { toastr.warning(AUTLANG.validation_schedule_message_required); err = true; return; }
             config.delay_value = parseInt(document.getElementById(`adelay-${idx}`)?.value || '1');
             config.delay_unit  = document.getElementById(`adelayunit-${idx}`)?.value || 'days';
-            if (config.delay_value < 1) { toastr.warning('O delay deve ser ao menos 1.'); err = true; return; }
+            if (config.delay_value < 1) { toastr.warning(AUTLANG.validation_delay_min); err = true; return; }
         } else if (type === 'assign_campaign') {
             config.campaign_id = parseInt(document.getElementById(`aval-${idx}`)?.value || 0);
-            if (!config.campaign_id) { toastr.warning('Selecione a campanha.'); err = true; return; }
+            if (!config.campaign_id) { toastr.warning(AUTLANG.validation_select_campaign); err = true; return; }
         } else if (type === 'set_utm_params') {
             document.querySelectorAll(`#actBody-${idx} .utm-field`).forEach(el => {
                 const name = el.dataset.utm;
                 const val  = el.value.trim();
                 if (val) config[name] = val;
             });
-            if (!Object.keys(config).length) { toastr.warning('Preencha ao menos um campo UTM.'); err = true; return; }
+            if (!Object.keys(config).length) { toastr.warning(AUTLANG.validation_utm_required); err = true; return; }
         } else if (type === 'create_task') {
             config.subject = (document.getElementById(`aval-${idx}`)?.value || '').trim();
-            if (!config.subject) { toastr.warning('Informe o assunto da tarefa.'); err = true; return; }
+            if (!config.subject) { toastr.warning(AUTLANG.validation_subject_required); err = true; return; }
             config.description     = (document.getElementById(`ataskdesc-${idx}`)?.value || '').trim();
             config.task_type       = document.getElementById(`atasktype-${idx}`)?.value || 'task';
             config.priority        = document.getElementById(`ataskprio-${idx}`)?.value || 'medium';
@@ -1180,7 +1181,7 @@ function saveAutomation() {
         actions.push({ type, config });
     });
     if (err) return;
-    if (!actions.length) { toastr.warning('Adicione ao menos uma ação.'); return; }
+    if (!actions.length) { toastr.warning(AUTLANG.validation_action_required); return; }
 
     const url    = IS_EDIT ? `/configuracoes/automacoes/${EDIT_ID}` : '/configuracoes/automacoes';
     const method = IS_EDIT ? 'PUT' : 'POST';
@@ -1194,12 +1195,12 @@ function saveAutomation() {
         body: JSON.stringify({ name, trigger_type: triggerType, trigger_config: tc, conditions, actions }),
     }).then(r => r.json()).then(res => {
         if (res.success) {
-            toastr.success(IS_EDIT ? 'Automação atualizada.' : 'Automação criada.');
+            toastr.success(IS_EDIT ? AUTLANG.toast_updated : AUTLANG.toast_created);
             setTimeout(() => { window.location.href = '{{ route("settings.automations") }}'; }, 600);
         } else {
-            toastr.error(res.message || 'Erro ao salvar.');
+            toastr.error(res.message || AUTLANG.toast_save_error);
         }
-    }).catch(() => toastr.error('Erro de comunicação.'));
+    }).catch(() => toastr.error(AUTLANG.toast_comm_error));
 }
 
 // ─────────────────────────────────────────────────────────────────────

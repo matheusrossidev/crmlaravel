@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title = 'Motivos de Perda';
+    $title = __('settings.lr_title');
     $pageIcon = 'x-circle';
 @endphp
 
@@ -104,9 +104,9 @@
 <div class="page-container">
 
     <div class="section-header">
-        <div class="section-title">Motivos de Perda</div>
+        <div class="section-title">{{ __('settings.lr_title') }}</div>
         <button class="btn-primary-sm" id="btnNovoMotivo">
-            <i class="bi bi-plus-lg"></i> Novo Motivo
+            <i class="bi bi-plus-lg"></i> {{ __('settings.lr_new') }}
         </button>
     </div>
 
@@ -114,8 +114,8 @@
         <table class="reason-table">
             <thead>
                 <tr>
-                    <th>Nome</th>
-                    <th style="width:100px;text-align:center;">Ativo</th>
+                    <th>{{ __('settings.lr_col_name') }}</th>
+                    <th style="width:100px;text-align:center;">{{ __('settings.lr_col_active') }}</th>
                     <th style="width:80px;"></th>
                 </tr>
             </thead>
@@ -143,7 +143,7 @@
                 </tr>
                 @empty
                 <tr id="emptyReasons">
-                    <td colspan="3" style="text-align:center;padding:40px;color:#9ca3af;">Nenhum motivo cadastrado.</td>
+                    <td colspan="3" style="text-align:center;padding:40px;color:#9ca3af;">{{ __('settings.lr_no_reasons') }}</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -156,7 +156,7 @@
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
     <div class="drawer-header">
-        <span id="drawerTitle">Novo Motivo</span>
+        <span id="drawerTitle">{{ __('settings.lr_new_title') }}</span>
         <button onclick="closeDrawer()" style="background:none;border:none;font-size:18px;color:#6b7280;cursor:pointer;">
             <i class="bi bi-x-lg"></i>
         </button>
@@ -164,14 +164,14 @@
     <div class="drawer-body">
         <input type="hidden" id="reasonId">
         <div class="form-group">
-            <label class="form-label">Nome do Motivo</label>
-            <input type="text" id="reasonName" class="form-input" placeholder="Ex: Sem orçamento">
+            <label class="form-label">{{ __('settings.lr_name') }}</label>
+            <input type="text" id="reasonName" class="form-input" placeholder="{{ __('settings.lr_name_ph') }}">
         </div>
     </div>
     <div class="drawer-footer">
-        <button class="btn-cancel" onclick="closeDrawer()">Cancelar</button>
+        <button class="btn-cancel" onclick="closeDrawer()">{{ __('settings.lr_cancel') }}</button>
         <button class="btn-save" onclick="saveReason()">
-            <i class="bi bi-check2"></i> Salvar
+            <i class="bi bi-check2"></i> {{ __('settings.lr_save') }}
         </button>
     </div>
 </div>
@@ -179,6 +179,7 @@
 
 @push('scripts')
 <script>
+const SLANG = @json(__('settings'));
 const REASON_STORE = @json(route('settings.lost-reasons.store'));
 const REASON_UPD   = @json(route('settings.lost-reasons.update',  ['reason' => '__ID__']));
 const REASON_DEL   = @json(route('settings.lost-reasons.destroy', ['reason' => '__ID__']));
@@ -198,14 +199,14 @@ function closeDrawer() {
 
 /* ---- New / Edit ---- */
 document.getElementById('btnNovoMotivo').addEventListener('click', () => {
-    document.getElementById('drawerTitle').textContent = 'Novo Motivo';
+    document.getElementById('drawerTitle').textContent = SLANG.lr_new_title;
     document.getElementById('reasonId').value = '';
     document.getElementById('reasonName').value = '';
     openDrawer();
 });
 
 function openEditReason(id, name) {
-    document.getElementById('drawerTitle').textContent = 'Editar Motivo';
+    document.getElementById('drawerTitle').textContent = SLANG.lr_edit_title;
     document.getElementById('reasonId').value = id;
     document.getElementById('reasonName').value = name;
     openDrawer();
@@ -267,17 +268,17 @@ async function toggleReason(id, name, active) {
 /* ---- Delete ---- */
 function deleteReason(id, btn) {
     confirmAction({
-        title: 'Excluir motivo',
-        message: 'Tem certeza que deseja excluir este motivo de perda?',
-        confirmText: 'Excluir',
+        title: SLANG.lr_delete_title,
+        message: SLANG.lr_delete_msg,
+        confirmText: SLANG.lr_delete,
         onConfirm: async () => {
             const res  = await fetch(REASON_DEL.replace('__ID__', id), {
                 method: 'DELETE', headers: { 'X-CSRF-TOKEN': CSRF }
             });
             const data = await res.json();
-            if (!data.success) { toastr.error(data.message || 'Erro ao excluir.'); return; }
+            if (!data.success) { toastr.error(data.message || SLANG.lr_error_delete); return; }
             if (data.deactivated) {
-                toastr.warning('Este motivo possui registros e foi desativado.');
+                toastr.warning(SLANG.lr_deactivated);
                 const row = document.querySelector(`tr[data-reason-id="${id}"]`);
                 if (row) row.querySelector('input[type=checkbox]').checked = false;
             } else {

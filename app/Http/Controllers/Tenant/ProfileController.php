@@ -57,6 +57,18 @@ class ProfileController extends Controller
         return response()->json(['success' => true, 'message' => 'Senha alterada com sucesso.']);
     }
 
+    public function updateLocale(Request $request): JsonResponse
+    {
+        $request->validate([
+            'locale' => 'required|in:pt_BR,en',
+        ]);
+
+        $tenant = auth()->user()->tenant;
+        $tenant->update(['locale' => $request->input('locale')]);
+
+        return response()->json(['success' => true, 'message' => 'Idioma atualizado.']);
+    }
+
     public function updateAvatar(Request $request): JsonResponse
     {
         $request->validate([

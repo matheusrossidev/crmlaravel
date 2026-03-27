@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Inteligência Artificial';
+    $title    = __('ai_agents.form_title');
     $pageIcon = 'robot';
     $isEdit   = $agent->exists;
 @endphp
@@ -277,7 +277,7 @@
         </a>
         <div>
             <div style="font-size:15px;font-weight:700;color:#1a1d23;">
-                {{ $isEdit ? 'Editar Agente' : 'Novo Agente' }}
+                {{ $isEdit ? __('ai_agents.form_heading_edit') : __('ai_agents.form_heading_create') }}
             </div>
         </div>
     </div>
@@ -291,10 +291,10 @@
 
         {{-- Seletor de Canal --}}
         <div style="margin-bottom:16px;">
-            <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Canal de atuação</div>
+            <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">{{ __('ai_agents.channel_label') }}</div>
             <div style="display:flex;gap:10px;">
                 @php $currentChannel = old('channel', $agent->channel ?? 'whatsapp'); @endphp
-                @foreach([['whatsapp','WhatsApp','whatsapp'],['instagram','Instagram','instagram'],['web_chat','Web Chat','globe']] as [$val,$label,$icon])
+                @foreach([['whatsapp',__('ai_agents.channel_whatsapp'),'whatsapp'],['instagram',__('ai_agents.channel_instagram'),'instagram'],['web_chat',__('ai_agents.channel_web_chat'),'globe']] as [$val,$label,$icon])
                 <label style="flex:1;cursor:pointer;">
                     <input type="radio" name="channel" value="{{ $val }}" {{ $currentChannel === $val ? 'checked' : '' }}
                            style="display:none;" onchange="updateChannelCards()">
@@ -312,9 +312,9 @@
             <div class="toggle-switch {{ $agent->is_active ? 'on' : '' }}" id="toggleSwitch"></div>
             <div>
                 <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="toggleLabel">
-                    {{ $agent->is_active ? 'Agente Ativo' : 'Agente Inativo' }}
+                    {{ $agent->is_active ? __('ai_agents.toggle_active_on') : __('ai_agents.toggle_active_off') }}
                 </div>
-                <div style="font-size:11.5px;color:#9ca3af;">Ativar para que responda automaticamente</div>
+                <div style="font-size:11.5px;color:#9ca3af;">{{ __('ai_agents.toggle_active_desc') }}</div>
             </div>
         </div>
         <input type="hidden" name="is_active" id="isActiveInput" value="{{ $agent->is_active ? '1' : '0' }}">
@@ -324,9 +324,9 @@
             <div class="toggle-switch {{ ($agent->auto_assign ?? false) ? 'on' : '' }}" id="autoAssignSwitch"></div>
             <div>
                 <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="autoAssignLabel">
-                    {{ ($agent->auto_assign ?? false) ? 'Auto-assign Ativado' : 'Auto-assign Desativado' }}
+                    {{ ($agent->auto_assign ?? false) ? __('ai_agents.toggle_auto_assign_on') : __('ai_agents.toggle_auto_assign_off') }}
                 </div>
-                <div style="font-size:11.5px;color:#9ca3af;">Atribuir automaticamente a novas conversas WhatsApp</div>
+                <div style="font-size:11.5px;color:#9ca3af;">{{ __('ai_agents.toggle_auto_assign_desc') }}</div>
             </div>
         </div>
         <input type="hidden" name="auto_assign" id="autoAssignInput" value="{{ ($agent->auto_assign ?? false) ? '1' : '0' }}">
@@ -336,9 +336,9 @@
         @php $selectedInstances = $agent->whatsappInstances?->pluck('id')->toArray() ?? []; @endphp
         <div id="whatsappInstancesSection" style="{{ $currentChannel === 'whatsapp' ? '' : 'display:none;' }}margin-top:6px;padding:12px 14px;background:#f9fafb;border-radius:10px;border:1px solid #e8eaf0;">
             <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px;">
-                <i class="bi bi-telephone" style="margin-right:4px;"></i> Instâncias WhatsApp
+                <i class="bi bi-telephone" style="margin-right:4px;"></i> {{ __('ai_agents.wa_instances_title') }}
             </div>
-            <div style="font-size:11px;color:#6b7280;margin-bottom:8px;">Selecione quais números este agente atende. Se nenhum for selecionado, atende todos.</div>
+            <div style="font-size:11px;color:#6b7280;margin-bottom:8px;">{{ __('ai_agents.wa_instances_hint') }}</div>
             @foreach($whatsappInstances as $inst)
             <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
                 <input type="checkbox" name="whatsapp_instance_ids[]" value="{{ $inst->id }}"
@@ -357,52 +357,52 @@
         <div class="section-card">
             <div class="section-card-header" onclick="toggleSection('identity')">
                 <div class="section-icon"><i class="bi bi-person-badge"></i></div>
-                <div class="section-card-title">1. Identidade</div>
+                <div class="section-card-title">{{ __('ai_agents.s1_title') }}</div>
                 <i class="bi bi-chevron-down chevron open" id="chevron-identity"></i>
             </div>
             <div class="section-card-body" id="body-identity">
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Nome do Agente *</label>
+                        <label class="form-label">{{ __('ai_agents.s1_name') }}</label>
                         <input type="text" name="name" class="form-control" required
-                               value="{{ old('name', $agent->name) }}" placeholder="Ex: Assistente de Vendas">
+                               value="{{ old('name', $agent->name) }}" placeholder="{{ __('ai_agents.s1_name_placeholder') }}">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Nome da Empresa</label>
+                        <label class="form-label">{{ __('ai_agents.s1_company') }}</label>
                         <input type="text" name="company_name" class="form-control"
-                               value="{{ old('company_name', $agent->company_name) }}" placeholder="Sua Empresa Ltda.">
+                               value="{{ old('company_name', $agent->company_name) }}" placeholder="{{ __('ai_agents.s1_company_placeholder') }}">
                     </div>
                 </div>
                 <div class="form-row three">
                     <div class="form-group">
-                        <label class="form-label">Objetivo *</label>
+                        <label class="form-label">{{ __('ai_agents.s1_objective') }}</label>
                         <select name="objective" class="form-control">
-                            @foreach(['sales' => 'Vendas', 'support' => 'Suporte', 'general' => 'Geral'] as $v => $l)
+                            @foreach(['sales' => __('ai_agents.s1_objective_sales'), 'support' => __('ai_agents.s1_objective_support'), 'general' => __('ai_agents.s1_objective_general')] as $v => $l)
                             <option value="{{ $v }}" {{ old('objective', $agent->objective) === $v ? 'selected' : '' }}>{{ $l }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Comunicação *</label>
+                        <label class="form-label">{{ __('ai_agents.s1_communication') }}</label>
                         <select name="communication_style" class="form-control">
-                            @foreach(['formal' => 'Formal', 'normal' => 'Normal', 'casual' => 'Descontraído'] as $v => $l)
+                            @foreach(['formal' => __('ai_agents.s1_style_formal'), 'normal' => __('ai_agents.s1_style_normal'), 'casual' => __('ai_agents.s1_style_casual')] as $v => $l)
                             <option value="{{ $v }}" {{ old('communication_style', $agent->communication_style) === $v ? 'selected' : '' }}>{{ $l }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Idioma *</label>
+                        <label class="form-label">{{ __('ai_agents.s1_language') }}</label>
                         <select name="language" class="form-control">
-                            @foreach(['pt-BR' => 'Português (BR)', 'en-US' => 'English', 'es-ES' => 'Español'] as $v => $l)
+                            @foreach(['pt-BR' => __('ai_agents.s1_lang_pt'), 'en-US' => __('ai_agents.s1_lang_en'), 'es-ES' => __('ai_agents.s1_lang_es')] as $v => $l)
                             <option value="{{ $v }}" {{ old('language', $agent->language ?? 'pt-BR') === $v ? 'selected' : '' }}>{{ $l }}</option>
                             @endforeach
                         </select>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Setor / Indústria</label>
+                    <label class="form-label">{{ __('ai_agents.s1_industry') }}</label>
                     <input type="text" name="industry" class="form-control"
-                           value="{{ old('industry', $agent->industry) }}" placeholder="Ex: E-commerce, SaaS, Saúde...">
+                           value="{{ old('industry', $agent->industry) }}" placeholder="{{ __('ai_agents.s1_industry_placeholder') }}">
                 </div>
             </div>
         </div>
@@ -411,19 +411,19 @@
         <div class="section-card">
             <div class="section-card-header" onclick="toggleSection('persona')">
                 <div class="section-icon"><i class="bi bi-chat-quote"></i></div>
-                <div class="section-card-title">2. Persona e Comportamento</div>
+                <div class="section-card-title">{{ __('ai_agents.s2_title') }}</div>
                 <i class="bi bi-chevron-down chevron open" id="chevron-persona"></i>
             </div>
             <div class="section-card-body" id="body-persona">
                 <div class="form-group">
-                    <label class="form-label">Descrição da Persona</label>
+                    <label class="form-label">{{ __('ai_agents.s2_persona') }}</label>
                     <textarea name="persona_description" class="form-control" rows="4"
-                              placeholder="Ex: Você é Maria, uma consultora de vendas simpática e proativa que adora ajudar clientes a encontrar a solução certa...">{{ old('persona_description', $agent->persona_description) }}</textarea>
+                              placeholder="{{ __('ai_agents.s2_persona_placeholder') }}">{{ old('persona_description', $agent->persona_description) }}</textarea>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Comportamento</label>
+                    <label class="form-label">{{ __('ai_agents.s2_behavior') }}</label>
                     <textarea name="behavior" class="form-control" rows="4"
-                              placeholder="Ex: Sempre pergunte o nome do cliente. Nunca ofereça descontos sem consultar primeiro. Priorize resolver o problema antes de vender...">{{ old('behavior', $agent->behavior) }}</textarea>
+                              placeholder="{{ __('ai_agents.s2_behavior_placeholder') }}">{{ old('behavior', $agent->behavior) }}</textarea>
                 </div>
             </div>
         </div>
@@ -432,24 +432,24 @@
         <div class="section-card">
             <div class="section-card-header" onclick="toggleSection('flow')">
                 <div class="section-icon"><i class="bi bi-signpost-split"></i></div>
-                <div class="section-card-title">3. Fluxo do Atendimento</div>
+                <div class="section-card-title">{{ __('ai_agents.s3_title') }}</div>
                 <i class="bi bi-chevron-down chevron open" id="chevron-flow"></i>
             </div>
             <div class="section-card-body" id="body-flow">
                 <div class="form-group">
-                    <label class="form-label">Ao Finalizar o Atendimento</label>
+                    <label class="form-label">{{ __('ai_agents.s3_on_finish') }}</label>
                     <textarea name="on_finish_action" class="form-control" rows="3"
-                              placeholder="Ex: Agradeça o contato, ofereça avaliação de 1-5 estrelas e encerre com uma mensagem positiva.">{{ old('on_finish_action', $agent->on_finish_action) }}</textarea>
+                              placeholder="{{ __('ai_agents.s3_on_finish_placeholder') }}">{{ old('on_finish_action', $agent->on_finish_action) }}</textarea>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Quando Transferir para Humano</label>
+                    <label class="form-label">{{ __('ai_agents.s3_on_transfer') }}</label>
                     <textarea name="on_transfer_message" class="form-control" rows="3"
-                              placeholder="Ex: Se o cliente solicitar falar com atendente, peça desculpas pela demora e informe que um humano vai assumir em breve.">{{ old('on_transfer_message', $agent->on_transfer_message) }}</textarea>
+                              placeholder="{{ __('ai_agents.s3_on_transfer_placeholder') }}">{{ old('on_transfer_message', $agent->on_transfer_message) }}</textarea>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Ao Receber Mensagem Inválida / Tentativa de Jailbreak</label>
+                    <label class="form-label">{{ __('ai_agents.s3_on_invalid') }}</label>
                     <textarea name="on_invalid_response" class="form-control" rows="3"
-                              placeholder="Ex: Informe que só pode ajudar com assuntos relacionados ao nosso serviço e ofereça opções válidas.">{{ old('on_invalid_response', $agent->on_invalid_response) }}</textarea>
+                              placeholder="{{ __('ai_agents.s3_on_invalid_placeholder') }}">{{ old('on_invalid_response', $agent->on_invalid_response) }}</textarea>
                 </div>
             </div>
         </div>
@@ -458,12 +458,12 @@
         <div class="section-card">
             <div class="section-card-header" onclick="toggleSection('stages')">
                 <div class="section-icon"><i class="bi bi-list-ol"></i></div>
-                <div class="section-card-title">4. Etapas da Conversa</div>
+                <div class="section-card-title">{{ __('ai_agents.s4_title') }}</div>
                 <i class="bi bi-chevron-down chevron" id="chevron-stages"></i>
             </div>
             <div class="section-card-body collapsed" id="body-stages">
                 <div style="font-size:12.5px;color:#9ca3af;margin-bottom:12px;">
-                    Defina as etapas que o agente deve seguir durante a conversa (opcional).
+                    {{ __('ai_agents.s4_description') }}
                 </div>
                 <div class="stages-list" id="stagesList">
                     @foreach(old('conversation_stages', $agent->conversation_stages ?? []) as $i => $stage)
@@ -473,18 +473,18 @@
                             <input type="text" name="conversation_stages[{{ $i }}][name]"
                                    class="form-control" style="min-height:unset;"
                                    value="{{ $stage['name'] ?? '' }}"
-                                   placeholder="Nome da etapa">
+                                   placeholder="{{ __('ai_agents.s4_stage_name_placeholder') }}">
                             <input type="text" name="conversation_stages[{{ $i }}][description]"
                                    class="form-control" style="min-height:unset;"
                                    value="{{ $stage['description'] ?? '' }}"
-                                   placeholder="Descrição (opcional)">
+                                   placeholder="{{ __('ai_agents.s4_stage_desc_placeholder') }}">
                         </div>
                         <button type="button" class="stage-del" onclick="removeStage(this)">×</button>
                     </div>
                     @endforeach
                 </div>
                 <button type="button" class="btn-add-stage" onclick="addStage()">
-                    <i class="bi bi-plus"></i> Adicionar etapa
+                    <i class="bi bi-plus"></i> {{ __('ai_agents.s4_add_stage') }}
                 </button>
             </div>
         </div>
@@ -493,25 +493,24 @@
         <div class="section-card">
             <div class="section-card-header" onclick="toggleSection('kb')">
                 <div class="section-icon"><i class="bi bi-database"></i></div>
-                <div class="section-card-title">5. Base de Conhecimento</div>
+                <div class="section-card-title">{{ __('ai_agents.s5_title') }}</div>
                 <i class="bi bi-chevron-down chevron" id="chevron-kb"></i>
             </div>
             <div class="section-card-body collapsed" id="body-kb">
                 <div style="font-size:12.5px;color:#9ca3af;margin-bottom:10px;">
-                    Inclua informações sobre sua empresa, produtos, preços, FAQs, políticas, etc.
-                    O agente usará estas informações para responder.
+                    {{ __('ai_agents.s5_description') }}
                 </div>
                 <textarea name="knowledge_base" class="form-control" rows="8"
-                          placeholder="Empresa: XYZ Tecnologia&#10;Produtos: Plano Básico R$49/mês, Plano Pro R$99/mês&#10;Horário: seg-sex 9h-18h&#10;Telefone: (11) 1234-5678&#10;...">{{ old('knowledge_base', $agent->knowledge_base) }}</textarea>
+                          placeholder="{{ __('ai_agents.s5_kb_placeholder') }}">{{ old('knowledge_base', $agent->knowledge_base) }}</textarea>
 
                 @if($isEdit)
                 {{-- Upload de arquivos --}}
                 <div style="margin-top:20px;">
                     <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">
-                        <i class="bi bi-paperclip" style="margin-right:4px;"></i>Arquivos de Conhecimento
+                        <i class="bi bi-paperclip" style="margin-right:4px;"></i>{{ __('ai_agents.s5_files_title') }}
                     </div>
                     <div style="font-size:12px;color:#9ca3af;margin-bottom:10px;">
-                        Faça upload de PDFs, imagens ou arquivos de texto. O conteúdo será extraído automaticamente e usado pelo agente.
+                        {{ __('ai_agents.s5_files_description') }}
                     </div>
 
                     {{-- Dropzone --}}
@@ -521,8 +520,8 @@
                          ondragleave="this.style.borderColor='#d1d5db';this.style.background='';"
                          ondrop="handleKbDrop(event)">
                         <i class="bi bi-cloud-arrow-up" style="font-size:26px;color:#9ca3af;display:block;margin-bottom:6px;"></i>
-                        <div style="font-size:13px;color:#6b7280;font-weight:600;">Clique ou arraste arquivos aqui</div>
-                        <div style="font-size:11.5px;color:#9ca3af;margin-top:3px;">PDF, TXT, CSV, PNG, JPG, WEBP — máx. 20 MB</div>
+                        <div style="font-size:13px;color:#6b7280;font-weight:600;">{{ __('ai_agents.s5_dropzone_text') }}</div>
+                        <div style="font-size:11.5px;color:#9ca3af;margin-top:3px;">{{ __('ai_agents.s5_dropzone_hint') }}</div>
                     </div>
                     <input type="file" id="kbFileInput" style="display:none;"
                            accept=".pdf,.txt,.csv,.png,.jpg,.jpeg,.webp,.gif"
@@ -544,22 +543,22 @@
                             <div class="kb-file-info">
                                 <div class="kb-file-name">{{ $kbFile->original_name }}</div>
                                 @if($kbFile->status === 'done')
-                                    <span class="kb-status-badge done">Extraído</span>
+                                    <span class="kb-status-badge done">{{ __('ai_agents.s5_status_extracted') }}</span>
                                     @if($kbFile->extracted_text)
                                     <button type="button" class="kb-preview-btn" onclick="toggleKbPreview({{ $kbFile->id }})">
-                                        <i class="bi bi-eye"></i> Ver prévia
+                                        <i class="bi bi-eye"></i> {{ __('ai_agents.s5_preview_btn') }}
                                     </button>
                                     @endif
                                 @elseif($kbFile->status === 'failed')
-                                    <span class="kb-status-badge failed">Falhou</span>
+                                    <span class="kb-status-badge failed">{{ __('ai_agents.s5_status_failed') }}</span>
                                     @if($kbFile->error_message)
                                     <span style="font-size:11px;color:#ef4444;display:block;margin-top:2px;">{{ $kbFile->error_message }}</span>
                                     @endif
                                 @else
-                                    <span class="kb-status-badge pending">Pendente</span>
+                                    <span class="kb-status-badge pending">{{ __('ai_agents.s5_status_pending') }}</span>
                                 @endif
                             </div>
-                            <button type="button" class="kb-del-btn" onclick="deleteKbFile({{ $kbFile->id }}, '{{ e($kbFile->original_name) }}')" title="Remover">
+                            <button type="button" class="kb-del-btn" onclick="deleteKbFile({{ $kbFile->id }}, '{{ e($kbFile->original_name) }}')" title="{{ __('ai_agents.s5_remove_btn') }}">
                                 <i class="bi bi-trash3"></i>
                             </button>
                         </div>
@@ -580,13 +579,12 @@
         <div class="section-card">
             <div class="section-card-header" onclick="toggleSection('media')">
                 <div class="section-icon"><i class="bi bi-images"></i></div>
-                <div class="section-card-title">Mídias do Agente</div>
+                <div class="section-card-title">{{ __('ai_agents.s5b_title') }}</div>
                 <i class="bi bi-chevron-down chevron" id="chevron-media"></i>
             </div>
             <div class="section-card-body collapsed" id="body-media">
                 <p style="font-size:12.5px;color:#6b7280;margin-bottom:14px;">
-                    Arquivos que o agente pode <strong>enviar ao contato</strong> durante a conversa (catálogos, fotos, PDFs).
-                    Diferente da Base de Conhecimento, que é apenas para contexto interno.
+                    {!! __('ai_agents.s5b_description') !!}
                 </p>
 
                 {{-- Upload preview area --}}
@@ -598,11 +596,11 @@
                         <div style="padding:12px 14px;">
                             <div id="mediaPendingName" style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
                             <input type="text" id="mediaDescEdit" style="width:100%;border:1.5px solid #e8eaf0;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;transition:border-color .15s;"
-                                   placeholder="Descreva quando o agente deve enviar este arquivo" maxlength="500"
+                                   placeholder="{{ __('ai_agents.s5b_desc_placeholder') }}" maxlength="500"
                                    onfocus="this.style.borderColor='#0085f3'" onblur="this.style.borderColor='#e8eaf0'">
                             <div style="display:flex;gap:8px;margin-top:10px;">
-                                <button type="button" onclick="cancelMediaPending()" style="flex:1;padding:9px;background:#f3f4f6;color:#374151;border:1.5px solid #e8eaf0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Cancelar</button>
-                                <button type="button" id="mediaUploadBtnEdit" onclick="uploadMediaEdit()" style="flex:1;padding:9px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Enviar</button>
+                                <button type="button" onclick="cancelMediaPending()" style="flex:1;padding:9px;background:#f3f4f6;color:#374151;border:1.5px solid #e8eaf0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">{{ __('ai_agents.s5b_cancel') }}</button>
+                                <button type="button" id="mediaUploadBtnEdit" onclick="uploadMediaEdit()" style="flex:1;padding:9px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">{{ __('ai_agents.s5b_upload') }}</button>
                             </div>
                         </div>
                     </div>
@@ -614,8 +612,8 @@
                      ondragleave="this.style.borderColor='#d1d5db';this.style.background='';"
                      ondrop="handleMediaDropEdit(event)">
                     <i class="bi bi-cloud-arrow-up" style="font-size:26px;color:#9ca3af;"></i>
-                    <div style="font-size:13px;color:#6b7280;margin-top:4px;">Clique ou arraste arquivos aqui</div>
-                    <div style="font-size:11px;color:#9ca3af;margin-top:2px;">PNG, JPG, PDF, DOC — máx. 20 MB</div>
+                    <div style="font-size:13px;color:#6b7280;margin-top:4px;">{{ __('ai_agents.s5b_dropzone_text') }}</div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:2px;">{{ __('ai_agents.s5b_dropzone_hint') }}</div>
                 </div>
                 <input type="file" id="mediaFileInput" style="display:none"
                        accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.doc,.docx"
@@ -635,9 +633,9 @@
                         </div>
                         <div class="media-card-body">
                             <div class="media-card-name" title="{{ $media->original_name }}">{{ $media->original_name }}</div>
-                            <div class="media-card-desc">{{ $media->description ?: 'Sem descrição' }}</div>
+                            <div class="media-card-desc">{{ $media->description ?: __('ai_agents.s5b_no_description') }}</div>
                         </div>
-                        <button type="button" class="media-card-del" onclick="deleteMediaEdit({{ $media->id }}, '{{ e($media->original_name) }}')" title="Remover">
+                        <button type="button" class="media-card-del" onclick="deleteMediaEdit({{ $media->id }}, '{{ e($media->original_name) }}')" title="{{ __('ai_agents.s5_remove_btn') }}">
                             <i class="bi bi-trash3"></i>
                         </button>
                     </div>
@@ -651,7 +649,7 @@
         <div class="section-card">
             <div class="section-card-header" onclick="toggleSection('tools')">
                 <div class="section-icon"><i class="bi bi-tools"></i></div>
-                <div class="section-card-title">6. Ferramentas do Agente</div>
+                <div class="section-card-title">{{ __('ai_agents.s6_title') }}</div>
                 <i class="bi bi-chevron-down chevron" id="chevron-tools"></i>
             </div>
             <div class="section-card-body collapsed" id="body-tools">
@@ -660,9 +658,9 @@
                     <div class="toggle-switch {{ ($agent->enable_pipeline_tool ?? false) ? 'on' : '' }}" id="pipelineToolSwitch"></div>
                     <div style="margin-left:10px;">
                         <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="pipelineToolLabel">
-                            {{ ($agent->enable_pipeline_tool ?? false) ? 'Controle de Funil Ativado' : 'Controle de Funil Desativado' }}
+                            {{ ($agent->enable_pipeline_tool ?? false) ? __('ai_agents.s6_pipeline_on') : __('ai_agents.s6_pipeline_off') }}
                         </div>
-                        <div style="font-size:11px;color:#9ca3af;">O agente pode mover o lead entre as etapas do funil automaticamente durante o atendimento</div>
+                        <div style="font-size:11px;color:#9ca3af;">{{ __('ai_agents.s6_pipeline_desc') }}</div>
                     </div>
                 </div>
                 <input type="hidden" name="enable_pipeline_tool" id="pipelineToolInput" value="{{ ($agent->enable_pipeline_tool ?? false) ? '1' : '0' }}">
@@ -672,9 +670,9 @@
                     <div class="toggle-switch {{ ($agent->enable_tags_tool ?? false) ? 'on' : '' }}" id="tagsToolSwitch"></div>
                     <div style="margin-left:10px;">
                         <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="tagsToolLabel">
-                            {{ ($agent->enable_tags_tool ?? false) ? 'Atribuição de Tags Ativada' : 'Atribuição de Tags Desativada' }}
+                            {{ ($agent->enable_tags_tool ?? false) ? __('ai_agents.s6_tags_on') : __('ai_agents.s6_tags_off') }}
                         </div>
-                        <div style="font-size:11px;color:#9ca3af;">O agente pode adicionar tags à conversa automaticamente conforme o contexto</div>
+                        <div style="font-size:11px;color:#9ca3af;">{{ __('ai_agents.s6_tags_desc') }}</div>
                     </div>
                 </div>
                 <input type="hidden" name="enable_tags_tool" id="tagsToolInput" value="{{ ($agent->enable_tags_tool ?? false) ? '1' : '0' }}">
@@ -684,9 +682,9 @@
                     <div class="toggle-switch {{ ($agent->enable_intent_notify ?? false) ? 'on' : '' }}" id="intentNotifySwitch"></div>
                     <div style="margin-left:10px;">
                         <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="intentNotifyLabel">
-                            {{ ($agent->enable_intent_notify ?? false) ? 'Detecção de Intenção Ativada' : 'Detecção de Intenção Desativada' }}
+                            {{ ($agent->enable_intent_notify ?? false) ? __('ai_agents.s6_intent_on') : __('ai_agents.s6_intent_off') }}
                         </div>
-                        <div style="font-size:11px;color:#9ca3af;">Notifica quando o agente identificar sinais claros de intenção de compra, agendamento ou fechamento</div>
+                        <div style="font-size:11px;color:#9ca3af;">{{ __('ai_agents.s6_intent_desc') }}</div>
                     </div>
                 </div>
                 <input type="hidden" name="enable_intent_notify" id="intentNotifyInput" value="{{ ($agent->enable_intent_notify ?? false) ? '1' : '0' }}">
@@ -696,9 +694,9 @@
                     <div class="toggle-switch {{ ($agent->enable_calendar_tool ?? false) ? 'on' : '' }}" id="calendarToolSwitch"></div>
                     <div style="margin-left:10px;">
                         <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="calendarToolLabel">
-                            {{ ($agent->enable_calendar_tool ?? false) ? 'Agenda Google Calendar Ativada' : 'Agenda Google Calendar Desativada' }}
+                            {{ ($agent->enable_calendar_tool ?? false) ? __('ai_agents.s6_calendar_on') : __('ai_agents.s6_calendar_off') }}
                         </div>
-                        <div style="font-size:11px;color:#9ca3af;">O agente pode criar, reagendar e cancelar eventos no Google Calendar conforme a conversa</div>
+                        <div style="font-size:11px;color:#9ca3af;">{{ __('ai_agents.s6_calendar_desc') }}</div>
                     </div>
                 </div>
                 <input type="hidden" name="enable_calendar_tool" id="calendarToolInput" value="{{ ($agent->enable_calendar_tool ?? false) ? '1' : '0' }}">
@@ -708,9 +706,9 @@
                     <div class="toggle-switch {{ ($agent->enable_products_tool ?? false) ? 'on' : '' }}" id="productsToolSwitch"></div>
                     <div style="margin-left:10px;">
                         <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="productsToolLabel">
-                            {{ ($agent->enable_products_tool ?? false) ? 'Catálogo de Produtos Ativado' : 'Catálogo de Produtos Desativado' }}
+                            {{ ($agent->enable_products_tool ?? false) ? __('ai_agents.s6_products_on') : __('ai_agents.s6_products_off') }}
                         </div>
-                        <div style="font-size:11px;color:#9ca3af;">O agente consulta preços, envia fotos/vídeos dos produtos e vincula itens ao lead automaticamente</div>
+                        <div style="font-size:11px;color:#9ca3af;">{{ __('ai_agents.s6_products_desc') }}</div>
                     </div>
                 </div>
                 <input type="hidden" name="enable_products_tool" id="productsToolInput" value="{{ ($agent->enable_products_tool ?? false) ? '1' : '0' }}">
@@ -719,27 +717,27 @@
                 <div id="calendarToolOptions" style="{{ ($agent->enable_calendar_tool ?? false) ? '' : 'display:none' }}">
                     {{-- Seleção de agenda --}}
                     <div style="margin-top:12px;">
-                        <label class="form-label fw-semibold" style="font-size:13px;">Agenda do Google Calendar</label>
+                        <label class="form-label fw-semibold" style="font-size:13px;">{{ __('ai_agents.s6_calendar_select_label') }}</label>
                         <select name="calendar_id" id="calendarIdSelect" class="form-select form-select-sm" style="max-width:320px;">
-                            <option value="">Agenda principal (primary)</option>
+                            <option value="">{{ __('ai_agents.s6_calendar_primary') }}</option>
                         </select>
                         <div class="form-text" style="font-size:11px;color:#9ca3af;margin-top:4px;">
-                            Selecione em qual agenda o agente criará eventos. As agendas são carregadas da conta Google conectada.
-                            <a href="#" onclick="loadAgentCalendars(); return false;" style="color:#0085f3;">Recarregar lista</a>
+                            {{ __('ai_agents.s6_calendar_hint') }}
+                            <a href="#" onclick="loadAgentCalendars(); return false;" style="color:#0085f3;">{{ __('ai_agents.s6_calendar_reload') }}</a>
                         </div>
                     </div>
 
                     <div style="margin-top:12px;">
-                        <label class="form-label fw-semibold" style="font-size:13px;">Como o agente deve usar a agenda</label>
+                        <label class="form-label fw-semibold" style="font-size:13px;">{{ __('ai_agents.s6_calendar_instructions') }}</label>
                         <textarea name="calendar_tool_instructions"
                                   class="form-control"
                                   rows="4"
                                   maxlength="2000"
-                                  placeholder="Ex: Quando o usuário pedir para marcar uma reunião, verifique os eventos já agendados e crie o evento. Reuniões têm 1 hora de duração por padrão. Sempre confirme o horário com o usuário antes de criar."
+                                  placeholder="{{ __('ai_agents.s6_calendar_instructions_ph') }}"
                                   style="font-size:13px;resize:vertical;">{{ old('calendar_tool_instructions', $agent->calendar_tool_instructions ?? '') }}</textarea>
                         <div class="form-text" style="font-size:11px;color:#9ca3af;margin-top:4px;">
-                            O agente receberá estas instruções no prompt. Certifique-se de ter conectado o Google Calendar em
-                            <a href="{{ route('settings.integrations.index') }}" target="_blank" style="color:#0085f3;">Configurações → Integrações</a>.
+                            {{ __('ai_agents.s6_calendar_integrations') }}
+                            <a href="{{ route('settings.integrations.index') }}" target="_blank" style="color:#0085f3;">{{ __('ai_agents.s6_calendar_integrations_link') }}</a>.
                         </div>
                     </div>
                 </div>
@@ -750,9 +748,9 @@
 
                 {{-- Departamento de transferência --}}
                 <div style="margin-top:16px;">
-                    <label class="form-label fw-semibold" style="font-size:13px;">Transferir para departamento</label>
+                    <label class="form-label fw-semibold" style="font-size:13px;">{{ __('ai_agents.s6_transfer_department') }}</label>
                     <select name="transfer_to_department_id" class="form-select form-select-sm" style="max-width:320px;">
-                        <option value="">— Nenhum —</option>
+                        <option value="">{{ __('ai_agents.s6_transfer_dept_none') }}</option>
                         @foreach($departments ?? [] as $dept)
                             <option value="{{ $dept->id }}"
                                 {{ old('transfer_to_department_id', $agent->transfer_to_department_id ?? '') == $dept->id ? 'selected' : '' }}>
@@ -760,14 +758,14 @@
                             </option>
                         @endforeach
                     </select>
-                    <div class="form-text" style="font-size:11px;color:#9ca3af;">Se definido, ao transferir para humano a conversa será encaminhada ao departamento (com distribuição automática). Tem prioridade sobre o usuário abaixo.</div>
+                    <div class="form-text" style="font-size:11px;color:#9ca3af;">{{ __('ai_agents.s6_transfer_dept_hint') }}</div>
                 </div>
 
                 {{-- Usuário de transferência --}}
                 <div style="margin-top:16px;">
-                    <label class="form-label fw-semibold" style="font-size:13px;">Atribuir conversa a usuário (ao transferir)</label>
+                    <label class="form-label fw-semibold" style="font-size:13px;">{{ __('ai_agents.s6_transfer_user') }}</label>
                     <select name="transfer_to_user_id" class="form-select form-select-sm" style="max-width:320px;">
-                        <option value="">— Nenhum (sem atribuição automática) —</option>
+                        <option value="">{{ __('ai_agents.s6_transfer_user_none') }}</option>
                         @foreach($users as $u)
                             <option value="{{ $u->id }}"
                                 {{ old('transfer_to_user_id', $agent->transfer_to_user_id ?? '') == $u->id ? 'selected' : '' }}>
@@ -775,7 +773,7 @@
                             </option>
                         @endforeach
                     </select>
-                    <div class="form-text" style="font-size:11px;color:#9ca3af;">Fallback: se nenhum departamento for definido, a conversa será atribuída a este usuário e o IA desativado.</div>
+                    <div class="form-text" style="font-size:11px;color:#9ca3af;">{{ __('ai_agents.s6_transfer_user_hint') }}</div>
                 </div>
             </div>
         </div>
@@ -784,34 +782,34 @@
         <div class="section-card">
             <div class="section-card-header" onclick="toggleSection('advanced')">
                 <div class="section-icon"><i class="bi bi-sliders"></i></div>
-                <div class="section-card-title">7. Configurações Avançadas</div>
+                <div class="section-card-title">{{ __('ai_agents.s7_title') }}</div>
                 <i class="bi bi-chevron-down chevron" id="chevron-advanced"></i>
             </div>
             <div class="section-card-body collapsed" id="body-advanced">
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Tamanho Máx. de Mensagem (caracteres)</label>
+                        <label class="form-label">{{ __('ai_agents.s7_max_message_length') }}</label>
                         <input type="number" name="max_message_length" class="form-control"
                                value="{{ old('max_message_length', $agent->max_message_length ?? 500) }}"
                                min="50" max="4000" step="50">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Delay entre mensagens (segundos)</label>
+                        <label class="form-label">{{ __('ai_agents.s7_response_delay') }}</label>
                         <input type="number" name="response_delay_seconds" class="form-control"
                                value="{{ old('response_delay_seconds', $agent->response_delay_seconds ?? 2) }}"
                                min="0" max="30"
-                               title="Pausa entre cada parte da resposta (quando dividida em múltiplas mensagens)">
+                               title="{{ __('ai_agents.s7_response_delay_tooltip') }}">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Tempo de espera para batching (segundos)</label>
+                        <label class="form-label">{{ __('ai_agents.s7_response_wait') }}</label>
                         <input type="number" name="response_wait_seconds" class="form-control"
                                value="{{ old('response_wait_seconds', $agent->response_wait_seconds ?? 0) }}"
                                min="0" max="30"
-                               title="Aguardar X segundos antes de processar, para agrupar mensagens enviadas em sequência. 0 = sem espera.">
+                               title="{{ __('ai_agents.s7_response_wait_tooltip') }}">
                         <div style="font-size:11px;color:#9ca3af;margin-top:4px;">
-                            Quando o usuário manda várias mensagens seguidas, o agente aguarda este tempo antes de responder, processando todas juntas.
+                            {{ __('ai_agents.s7_response_wait_desc') }}
                         </div>
                     </div>
                 </div>
@@ -822,7 +820,7 @@
         <div class="section-card">
             <div class="section-card-header" onclick="toggleSection('followup')">
                 <div class="section-icon"><i class="bi bi-arrow-repeat"></i></div>
-                <div class="section-card-title">8. Follow-up Automático</div>
+                <div class="section-card-title">{{ __('ai_agents.s8_title') }}</div>
                 <i class="bi bi-chevron-down chevron" id="chevron-followup"></i>
             </div>
             <div class="section-card-body collapsed" id="body-followup">
@@ -831,9 +829,9 @@
                     <div class="toggle-switch {{ ($agent->followup_enabled ?? false) ? 'on' : '' }}" id="followupSwitch"></div>
                     <div style="margin-left:10px;">
                         <div style="font-size:13px;font-weight:700;color:#1a1d23;" id="followupLabel">
-                            {{ ($agent->followup_enabled ?? false) ? 'Follow-up Ativado' : 'Follow-up Desativado' }}
+                            {{ ($agent->followup_enabled ?? false) ? __('ai_agents.s8_followup_on') : __('ai_agents.s8_followup_off') }}
                         </div>
-                        <div style="font-size:11px;color:#9ca3af;">Quando o cliente para de responder, o agente retoma o contato automaticamente</div>
+                        <div style="font-size:11px;color:#9ca3af;">{{ __('ai_agents.s8_followup_desc') }}</div>
                     </div>
                 </div>
                 <input type="hidden" name="followup_enabled" id="followupInput" value="{{ ($agent->followup_enabled ?? false) ? '1' : '0' }}">
@@ -842,34 +840,34 @@
                 <div id="followupOptions" style="{{ ($agent->followup_enabled ?? false) ? '' : 'display:none' }}">
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Intervalo entre tentativas (minutos)</label>
+                            <label class="form-label">{{ __('ai_agents.s8_delay_minutes') }}</label>
                             <input type="number" name="followup_delay_minutes" class="form-control"
                                    value="{{ old('followup_delay_minutes', $agent->followup_delay_minutes ?? 40) }}"
                                    min="5" max="1440">
-                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Padrão: 40 minutos</div>
+                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">{{ __('ai_agents.s8_delay_default') }}</div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Máximo de tentativas por conversa</label>
+                            <label class="form-label">{{ __('ai_agents.s8_max_count') }}</label>
                             <input type="number" name="followup_max_count" class="form-control"
                                    value="{{ old('followup_max_count', $agent->followup_max_count ?? 3) }}"
                                    min="1" max="10">
-                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Após este limite a conversa é ignorada</div>
+                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">{{ __('ai_agents.s8_max_count_hint') }}</div>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Horário comercial — início (hora)</label>
+                            <label class="form-label">{{ __('ai_agents.s8_hour_start') }}</label>
                             <input type="number" name="followup_hour_start" class="form-control"
                                    value="{{ old('followup_hour_start', $agent->followup_hour_start ?? 8) }}"
                                    min="0" max="23">
-                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Ex: 8 = a partir das 08:00</div>
+                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">{{ __('ai_agents.s8_hour_start_hint') }}</div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Horário comercial — fim (hora)</label>
+                            <label class="form-label">{{ __('ai_agents.s8_hour_end') }}</label>
                             <input type="number" name="followup_hour_end" class="form-control"
                                    value="{{ old('followup_hour_end', $agent->followup_hour_end ?? 18) }}"
                                    min="1" max="23">
-                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Ex: 18 = até as 18:59</div>
+                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">{{ __('ai_agents.s8_hour_end_hint') }}</div>
                         </div>
                     </div>
                 </div>
@@ -892,43 +890,43 @@
         <div class="section-card" id="widgetSection" style="{{ $showWidget ? '' : 'display:none' }}">
             <div class="section-card-header" onclick="toggleSection('widget')">
                 <div class="section-icon"><i class="bi bi-window-stack"></i></div>
-                <div class="section-card-title">9. Widget do Chat</div>
+                <div class="section-card-title">{{ __('ai_agents.s9_title') }}</div>
                 <i class="bi bi-chevron-down chevron" id="chevron-widget"></i>
             </div>
             <div class="section-card-body {{ $showWidget && $isEdit ? '' : 'collapsed' }}" id="body-widget">
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Nome do Bot</label>
+                        <label class="form-label">{{ __('ai_agents.s9_bot_name') }}</label>
                         <input type="text" name="bot_name" class="form-control"
                                value="{{ old('bot_name', $agent->bot_name ?? '') }}"
-                               placeholder="Ex: Assistente Virtual" maxlength="100">
-                        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Exibido no cabeçalho do widget</div>
+                               placeholder="{{ __('ai_agents.s9_bot_name_placeholder') }}" maxlength="100">
+                        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">{{ __('ai_agents.s9_bot_name_hint') }}</div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Tipo do Widget</label>
+                        <label class="form-label">{{ __('ai_agents.s9_widget_type') }}</label>
                         <div style="display:flex;gap:10px;margin-top:4px;">
                             @php $wType = old('widget_type', $agent->widget_type ?? 'bubble'); @endphp
                             <label style="flex:1;cursor:pointer;">
                                 <input type="radio" name="widget_type" value="bubble" {{ $wType === 'bubble' ? 'checked' : '' }} style="display:none;" onchange="updateWidgetTypeCards()">
                                 <div class="channel-card {{ $wType === 'bubble' ? 'selected' : '' }}" data-wtype="bubble">
                                     <i class="bi bi-chat-dots" style="font-size:16px;"></i>
-                                    <span>Bubble</span>
+                                    <span>{{ __('ai_agents.s9_widget_bubble') }}</span>
                                 </div>
                             </label>
                             <label style="flex:1;cursor:pointer;">
                                 <input type="radio" name="widget_type" value="inline" {{ $wType === 'inline' ? 'checked' : '' }} style="display:none;" onchange="updateWidgetTypeCards()">
                                 <div class="channel-card {{ $wType === 'inline' ? 'selected' : '' }}" data-wtype="inline">
                                     <i class="bi bi-layout-sidebar-inset" style="font-size:16px;"></i>
-                                    <span>Inline</span>
+                                    <span>{{ __('ai_agents.s9_widget_inline') }}</span>
                                 </div>
                             </label>
                         </div>
-                        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Bubble: botão flutuante. Inline: embutido na página.</div>
+                        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">{{ __('ai_agents.s9_widget_type_hint') }}</div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Avatar do Bot</label>
+                    <label class="form-label">{{ __('ai_agents.s9_avatar') }}</label>
                     <input type="hidden" name="bot_avatar" id="agentAvatarValue" value="{{ $currentAvatar }}">
                     <div style="display:flex;gap:10px;flex-wrap:wrap;" id="agentAvatarGrid">
                         @foreach($predefinedAvatars as $av)
@@ -952,19 +950,19 @@
                         </div>
                         <input type="file" id="agentAvatarUploadInput" accept="image/*" style="display:none;">
                     </div>
-                    <div style="font-size:11px;color:#9ca3af;margin-top:6px;">Escolha um avatar ou envie uma imagem personalizada.</div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:6px;">{{ __('ai_agents.s9_avatar_hint') }}</div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Mensagem de Boas-Vindas</label>
+                    <label class="form-label">{{ __('ai_agents.s9_welcome_message') }}</label>
                     <textarea name="welcome_message" class="form-control" rows="3"
-                              placeholder="Olá! Como posso te ajudar hoje?">{{ old('welcome_message', $agent->welcome_message ?? '') }}</textarea>
-                    <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Enviada automaticamente quando o visitante abre o chat.</div>
+                              placeholder="{{ __('ai_agents.s9_welcome_placeholder') }}">{{ old('welcome_message', $agent->welcome_message ?? '') }}</textarea>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:4px;">{{ __('ai_agents.s9_welcome_hint') }}</div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Cor do Widget</label>
+                        <label class="form-label">{{ __('ai_agents.s9_widget_color') }}</label>
                         <div style="display:flex;gap:8px;align-items:center;">
                             <input type="color" id="widgetColorPicker"
                                    value="{{ old('widget_color', $agent->widget_color ?? '#0085f3') }}"
@@ -981,16 +979,16 @@
 
                 @if($isEdit && ($embedScriptUrl ?? null))
                 <div class="form-group" style="margin-top:8px;">
-                    <label class="form-label">Código de Incorporação</label>
+                    <label class="form-label">{{ __('ai_agents.s9_embed_code') }}</label>
                     <div style="display:flex;gap:8px;align-items:center;">
                         <input type="text" class="form-control" readonly id="embedCodeInput"
                                value='<script src="{{ $embedScriptUrl }}"></script>'
                                style="font-family:monospace;font-size:12px;background:#f8fafc;">
                         <button type="button" class="btn-primary" style="white-space:nowrap;padding:9px 16px;" onclick="copyEmbedCode()">
-                            <i class="bi bi-clipboard"></i> Copiar
+                            <i class="bi bi-clipboard"></i> {{ __('ai_agents.s9_embed_copy') }}
                         </button>
                     </div>
-                    <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Cole este código no HTML do seu site para exibir o widget de chat.</div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:4px;">{{ __('ai_agents.s9_embed_hint') }}</div>
                 </div>
                 @endif
             </div>
@@ -998,12 +996,12 @@
 
         <div class="form-footer">
             <button type="submit" class="btn-primary">
-                <i class="bi bi-floppy"></i> {{ $isEdit ? 'Salvar alterações' : 'Criar Agente' }}
+                <i class="bi bi-floppy"></i> {{ $isEdit ? __('ai_agents.form_save') : __('ai_agents.form_create') }}
             </button>
-            <a href="{{ route('ai.agents.index') }}" class="btn-cancel">Cancelar</a>
+            <a href="{{ route('ai.agents.index') }}" class="btn-cancel">{{ __('ai_agents.form_cancel') }}</a>
             @if($isEdit)
             <button type="button" class="btn-cancel" style="margin-left:auto;" onclick="toggleTestChat()">
-                <i class="bi bi-chat-dots"></i> Testar Agente
+                <i class="bi bi-chat-dots"></i> {{ __('ai_agents.form_test_agent') }}
             </button>
             @endif
         </div>
@@ -1014,15 +1012,15 @@
     {{-- Widget de teste --}}
     <div class="test-chat-panel" id="testChatPanel" style="display:none;">
         <div class="test-chat-header" onclick="toggleTestChat()">
-            <span class="test-chat-title"><i class="bi bi-robot"></i> Testar: {{ $agent->name }}</span>
+            <span class="test-chat-title"><i class="bi bi-robot"></i> {{ __('ai_agents.form_test_title') }} {{ $agent->name }}</span>
             <i class="bi bi-chevron-down test-chat-toggle" id="testChatChevron"></i>
         </div>
         <div class="test-chat-body" id="testChatBody">
-            <div class="chat-bubble agent">Olá! Sou {{ $agent->name }}. Como posso ajudar?</div>
+            <div class="chat-bubble agent">{{ __('ai_agents.form_test_greeting', ['name' => $agent->name]) }}</div>
         </div>
         <div class="test-chat-input-wrap" id="testInputWrap">
             <input type="text" class="test-chat-input" id="testInput"
-                   placeholder="Digite uma mensagem..."
+                   placeholder="{{ __('ai_agents.form_test_placeholder') }}"
                    onkeydown="if(event.key==='Enter'){event.preventDefault();sendTest();}">
             <button class="test-send-btn" id="testSendBtn" onclick="sendTest()">
                 <i class="bi bi-send"></i>
@@ -1036,6 +1034,7 @@
 
 @push('scripts')
 <script>
+const AILANG    = @json(__('ai_agents'));
 const AGENT_ID  = {{ $agent->id ?? 'null' }};
 const CSRF      = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 const KB_UPLOAD = '{{ $isEdit ? route('ai.agents.knowledge-files.store', $agent) : '' }}';
@@ -1067,7 +1066,7 @@ async function uploadKbFile(file) {
     const tmpEl = document.createElement('div');
     tmpEl.className = 'kb-uploading';
     tmpEl.id = tmpId;
-    tmpEl.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Fazendo upload e extraindo conteúdo de <strong>' + escapeHtml(file.name) + '</strong>…';
+    tmpEl.innerHTML = '<span class="spinner-border spinner-border-sm"></span> ' + AILANG.toast_kb_uploading + ' <strong>' + escapeHtml(file.name) + '</strong>…';
     list.prepend(tmpEl);
 
     const fd = new FormData();
@@ -1080,22 +1079,22 @@ async function uploadKbFile(file) {
         tmpEl.remove();
 
         if (!res.ok) {
-            toastr.error(data.message ?? 'Erro ao fazer upload.', 'Erro');
+            toastr.error(data.message ?? AILANG.toast_kb_upload_error);
             return;
         }
 
         // Montar HTML do novo arquivo
         let badgeHtml = '';
         if (data.status === 'done') {
-            badgeHtml = '<span class="kb-status-badge done">Extraído</span>';
+            badgeHtml = '<span class="kb-status-badge done">' + AILANG.s5_status_extracted + '</span>';
             if (data.preview) {
-                badgeHtml += ' <button type="button" class="kb-preview-btn" onclick="toggleKbPreview(' + data.id + ')"><i class="bi bi-eye"></i> Ver prévia</button>';
+                badgeHtml += ' <button type="button" class="kb-preview-btn" onclick="toggleKbPreview(' + data.id + ')"><i class="bi bi-eye"></i> ' + AILANG.s5_preview_btn + '</button>';
             }
         } else if (data.status === 'failed') {
-            badgeHtml = '<span class="kb-status-badge failed">Falhou</span>';
+            badgeHtml = '<span class="kb-status-badge failed">' + AILANG.s5_status_failed + '</span>';
             if (data.error_message) badgeHtml += '<span style="font-size:11px;color:#ef4444;display:block;margin-top:2px;">' + escapeHtml(data.error_message) + '</span>';
         } else {
-            badgeHtml = '<span class="kb-status-badge pending">Pendente</span>';
+            badgeHtml = '<span class="kb-status-badge pending">' + AILANG.s5_status_pending + '</span>';
         }
 
         const itemEl = document.createElement('div');
@@ -1107,7 +1106,7 @@ async function uploadKbFile(file) {
                 <div class="kb-file-name">${escapeHtml(data.original_name)}</div>
                 ${badgeHtml}
             </div>
-            <button type="button" class="kb-del-btn" onclick="deleteKbFile(${data.id}, '${escapeHtml(data.original_name)}')" title="Remover">
+            <button type="button" class="kb-del-btn" onclick="deleteKbFile(${data.id}, '${escapeHtml(data.original_name)}')" title="${AILANG.s5_remove_btn}">
                 <i class="bi bi-trash3"></i>
             </button>`;
         list.prepend(itemEl);
@@ -1121,11 +1120,11 @@ async function uploadKbFile(file) {
             itemEl.insertAdjacentElement('afterend', prevEl);
         }
 
-        if (data.status === 'done') toastr.success('Arquivo processado com sucesso!', 'OK');
-        else if (data.status === 'failed') toastr.warning('Extração falhou. Veja o motivo na lista.', 'Atenção');
+        if (data.status === 'done') toastr.success(AILANG.toast_kb_processed);
+        else if (data.status === 'failed') toastr.warning(AILANG.toast_kb_extract_failed);
     } catch (err) {
         tmpEl.remove();
-        toastr.error('Erro de rede. Tente novamente.', 'Erro');
+        toastr.error(AILANG.toast_kb_network_error);
     }
 
     // Reset input
@@ -1138,20 +1137,20 @@ function toggleKbPreview(id) {
 }
 
 async function deleteKbFile(id, name) {
-    if (!confirm('Remover "' + name + '" da base de conhecimento?')) return;
+    if (!confirm(AILANG.toast_kb_delete_confirm.replace(':name', name))) return;
 
     try {
         const res = await fetch(KB_DELETE + '/' + id, {
             method: 'DELETE',
             headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
         });
-        if (!res.ok) { toastr.error('Erro ao remover arquivo.'); return; }
+        if (!res.ok) { toastr.error(AILANG.toast_kb_delete_error); return; }
 
         document.getElementById('kb-file-' + id)?.remove();
         document.getElementById('kb-preview-' + id)?.remove();
-        toastr.success('Arquivo removido.', 'OK');
+        toastr.success(AILANG.toast_kb_deleted);
     } catch {
-        toastr.error('Erro de rede.', 'Erro');
+        toastr.error(AILANG.toast_kb_network_error);
     }
 }
 
@@ -1169,7 +1168,7 @@ function handleMediaDropEdit(e) {
 
 function prepareMediaEdit(file) {
     if (!file) return;
-    if (file.size > 20 * 1024 * 1024) { toastr.error('Arquivo muito grande (máx. 20 MB).'); return; }
+    if (file.size > 20 * 1024 * 1024) { toastr.error(AILANG.toast_media_too_large); return; }
     _pendingMediaFile = file;
 
     const preview = document.getElementById('mediaPendingPreview');
@@ -1194,7 +1193,7 @@ function prepareMediaEdit(file) {
 
     document.getElementById('mediaPendingName').textContent = file.name;
     document.getElementById('mediaDescEdit').value = '';
-    document.getElementById('mediaDescEdit').placeholder = `Descreva "${file.name}" (ex: catálogo de produtos)`;
+    document.getElementById('mediaDescEdit').placeholder = AILANG.s5b_desc_placeholder;
 
     preview.style.display = 'block';
     dropzone.style.display = 'none';
@@ -1211,10 +1210,10 @@ function cancelMediaPending() {
 async function uploadMediaEdit() {
     if (!_pendingMediaFile) return;
     const desc = document.getElementById('mediaDescEdit').value.trim();
-    if (!desc) { toastr.warning('Descreva quando o agente deve enviar este arquivo.'); return; }
+    if (!desc) { toastr.warning(AILANG.toast_media_describe); return; }
 
     const btn = document.getElementById('mediaUploadBtnEdit');
-    btn.disabled = true; btn.textContent = 'Enviando...';
+    btn.disabled = true; btn.textContent = AILANG.s5b_uploading;
 
     try {
         const fd = new FormData();
@@ -1228,10 +1227,10 @@ async function uploadMediaEdit() {
             body: fd,
         });
         const data = await res.json();
-        btn.disabled = false; btn.textContent = 'Enviar';
+        btn.disabled = false; btn.textContent = AILANG.s5b_upload;
 
         if (!res.ok) {
-            toastr.error(data.message || Object.values(data.errors || {}).flat().join(', ') || 'Erro ao enviar.');
+            toastr.error(data.message || Object.values(data.errors || {}).flat().join(', ') || AILANG.toast_media_upload_error);
             return;
         }
 
@@ -1251,7 +1250,7 @@ async function uploadMediaEdit() {
                     <div class="media-card-name" title="${data.original_name}">${data.original_name}</div>
                     <div class="media-card-desc">${data.description}</div>
                 </div>
-                <button type="button" class="media-card-del" onclick="deleteMediaEdit(${data.id}, '${safeName}')" title="Remover">
+                <button type="button" class="media-card-del" onclick="deleteMediaEdit(${data.id}, '${safeName}')" title="${AILANG.s5_remove_btn}">
                     <i class="bi bi-trash3"></i>
                 </button>
             </div>
@@ -1260,25 +1259,25 @@ async function uploadMediaEdit() {
         _pendingMediaFile = null;
         document.getElementById('mediaPendingPreview').style.display = 'none';
         document.getElementById('mediaDropzone').style.display = 'block';
-        toastr.success('Arquivo enviado!');
+        toastr.success(AILANG.toast_media_uploaded);
     } catch {
-        btn.disabled = false; btn.textContent = 'Enviar';
-        toastr.error('Erro de rede.');
+        btn.disabled = false; btn.textContent = AILANG.s5b_upload;
+        toastr.error(AILANG.toast_media_network_error);
     }
 }
 
 async function deleteMediaEdit(id, name) {
-    if (!confirm('Remover "' + name + '"?')) return;
+    if (!confirm(AILANG.toast_media_delete_confirm.replace(':name', name))) return;
     try {
         const res = await fetch(MEDIA_DELETE + '/' + id, {
             method: 'DELETE',
             headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
         });
-        if (!res.ok) { toastr.error('Erro ao remover.'); return; }
+        if (!res.ok) { toastr.error(AILANG.toast_media_delete_error); return; }
         document.getElementById('media-file-' + id)?.remove();
-        toastr.success('Arquivo removido.');
+        toastr.success(AILANG.toast_media_deleted);
     } catch {
-        toastr.error('Erro de rede.');
+        toastr.error(AILANG.toast_media_network_error);
     }
 }
 
@@ -1365,7 +1364,7 @@ function copyEmbedCode() {
     navigator.clipboard.writeText(input.value).then(() => {
         const btn = input.nextElementSibling;
         const original = btn.innerHTML;
-        btn.innerHTML = '<i class="bi bi-check-lg"></i> Copiado!';
+        btn.innerHTML = '<i class="bi bi-check-lg"></i> ' + AILANG.s9_embed_copied;
         setTimeout(() => btn.innerHTML = original, 2000);
     });
 }
@@ -1378,7 +1377,7 @@ function toggleActive() {
     const isOn  = input.value === '1';
     input.value = isOn ? '0' : '1';
     sw.classList.toggle('on', !isOn);
-    label.textContent = isOn ? 'Agente Inativo' : 'Agente Ativo';
+    label.textContent = isOn ? AILANG.toggle_active_off : AILANG.toggle_active_on;
 }
 
 /* ── Toggle auto-assign ── */
@@ -1389,7 +1388,7 @@ function toggleAutoAssign() {
     const isOn  = input.value === '1';
     input.value = isOn ? '0' : '1';
     sw.classList.toggle('on', !isOn);
-    label.textContent = isOn ? 'Auto-assign Desativado' : 'Auto-assign Ativado';
+    label.textContent = isOn ? AILANG.toggle_auto_assign_off : AILANG.toggle_auto_assign_on;
 }
 
 function togglePipelineTool() {
@@ -1399,7 +1398,7 @@ function togglePipelineTool() {
     const isOn  = input.value === '1';
     input.value = isOn ? '0' : '1';
     sw.classList.toggle('on', !isOn);
-    label.textContent = isOn ? 'Controle de Funil Desativado' : 'Controle de Funil Ativado';
+    label.textContent = isOn ? AILANG.s6_pipeline_off : AILANG.s6_pipeline_on;
 }
 
 function toggleTagsTool() {
@@ -1409,7 +1408,7 @@ function toggleTagsTool() {
     const isOn  = input.value === '1';
     input.value = isOn ? '0' : '1';
     sw.classList.toggle('on', !isOn);
-    label.textContent = isOn ? 'Atribuição de Tags Desativada' : 'Atribuição de Tags Ativada';
+    label.textContent = isOn ? AILANG.s6_tags_off : AILANG.s6_tags_on;
 }
 
 function toggleIntentNotify() {
@@ -1419,7 +1418,7 @@ function toggleIntentNotify() {
     const isOn  = input.value === '1';
     input.value = isOn ? '0' : '1';
     sw.classList.toggle('on', !isOn);
-    label.textContent = isOn ? 'Detecção de Intenção Desativada' : 'Detecção de Intenção Ativada';
+    label.textContent = isOn ? AILANG.s6_intent_off : AILANG.s6_intent_on;
 }
 
 function toggleCalendarTool() {
@@ -1430,7 +1429,7 @@ function toggleCalendarTool() {
     const isOn    = input.value === '1';
     input.value = isOn ? '0' : '1';
     sw.classList.toggle('on', !isOn);
-    label.textContent = isOn ? 'Agenda Google Calendar Desativada' : 'Agenda Google Calendar Ativada';
+    label.textContent = isOn ? AILANG.s6_calendar_off : AILANG.s6_calendar_on;
     options.style.display = isOn ? 'none' : '';
     // Load calendars when enabling for the first time
     if (!isOn) loadAgentCalendars();
@@ -1443,7 +1442,7 @@ function toggleProductsTool() {
     const isOn  = input.value === '1';
     input.value = isOn ? '0' : '1';
     sw.classList.toggle('on', !isOn);
-    label.textContent = isOn ? 'Catálogo de Produtos Desativado' : 'Catálogo de Produtos Ativado';
+    label.textContent = isOn ? AILANG.s6_products_off : AILANG.s6_products_on;
 }
 
 const SAVED_CALENDAR_ID = @json(old('calendar_id', $agent->calendar_id ?? ''));
@@ -1452,7 +1451,7 @@ let agentCalendarsLoaded = false;
 function loadAgentCalendars() {
     if (agentCalendarsLoaded) return;
     const select = document.getElementById('calendarIdSelect');
-    select.innerHTML = '<option value="">Carregando...</option>';
+    select.innerHTML = '<option value="">' + AILANG.s6_calendar_loading + '</option>';
 
     fetch('{{ route("calendar.calendars") }}', {
         headers: { Accept: 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content },
@@ -1460,12 +1459,12 @@ function loadAgentCalendars() {
     .then(r => r.json())
     .then(data => {
         if (data.error) {
-            select.innerHTML = '<option value="">Agenda principal (primary)</option>';
+            select.innerHTML = '<option value="">' + AILANG.s6_calendar_primary + '</option>';
             return;
         }
-        let html = '<option value="">Agenda principal (primary)</option>';
+        let html = '<option value="">' + AILANG.s6_calendar_primary + '</option>';
         data.forEach(c => {
-            const label    = c.summary + (c.primary ? ' (principal)' : '');
+            const label    = c.summary + (c.primary ? ' ' + AILANG.s6_calendar_principal : '');
             const selected = (SAVED_CALENDAR_ID === c.id) ? ' selected' : '';
             html += `<option value="${c.id}"${selected}>${label}</option>`;
         });
@@ -1473,7 +1472,7 @@ function loadAgentCalendars() {
         agentCalendarsLoaded = true;
     })
     .catch(() => {
-        select.innerHTML = '<option value="">Agenda principal (primary)</option>';
+        select.innerHTML = '<option value="">' + AILANG.s6_calendar_primary + '</option>';
     });
 }
 
@@ -1492,7 +1491,7 @@ function toggleFollowup() {
     const isOn    = input.value === '1';
     input.value = isOn ? '0' : '1';
     sw.classList.toggle('on', !isOn);
-    label.textContent = isOn ? 'Follow-up Desativado' : 'Follow-up Ativado';
+    label.textContent = isOn ? AILANG.s8_followup_off : AILANG.s8_followup_on;
     options.style.display = isOn ? 'none' : '';
 }
 
@@ -1517,10 +1516,10 @@ function addStage() {
             <div class="stage-inputs">
                 <input type="text" name="conversation_stages[${i}][name]"
                        class="form-control" style="min-height:unset;"
-                       placeholder="Nome da etapa">
+                       placeholder="${AILANG.s4_stage_name_placeholder}">
                 <input type="text" name="conversation_stages[${i}][description]"
                        class="form-control" style="min-height:unset;"
-                       placeholder="Descrição (opcional)">
+                       placeholder="${AILANG.s4_stage_desc_placeholder}">
             </div>
             <button type="button" class="stage-del" onclick="removeStage(this)">×</button>
         </div>
@@ -1587,11 +1586,11 @@ async function sendTest() {
             // Mantém histórico máximo de 20 trocas
             if (testHistory.length > 40) testHistory = testHistory.slice(-40);
         } else {
-            appendBubble('agent', '⚠️ Erro: ' + (data.message || 'Falha ao obter resposta.'));
+            appendBubble('agent', '⚠️ ' + AILANG.form_test_error + (data.message || AILANG.form_test_error_generic));
         }
     } catch (e) {
         typingBubble.remove();
-        appendBubble('agent', '⚠️ Erro de conexão.');
+        appendBubble('agent', '⚠️ ' + AILANG.form_test_error_connection);
     } finally {
         document.getElementById('testSendBtn').disabled = false;
         input.focus();

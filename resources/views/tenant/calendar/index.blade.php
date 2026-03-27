@@ -1,18 +1,18 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Agenda';
+    $title    = __('calendar.title');
     $pageIcon = 'calendar3';
 @endphp
 
 @if($calendarConnected)
 @section('topbar_actions')
 <div class="topbar-actions" style="gap:8px;">
-    <button class="btn-outline-sm" onclick="openCalendarSelector()" title="Selecionar agendas">
-        <i class="bi bi-collection"></i> Agendas
+    <button class="btn-outline-sm" onclick="openCalendarSelector()" title="{{ __('calendar.select_calendars') }}">
+        <i class="bi bi-collection"></i> {{ __('calendar.calendars_btn') }}
     </button>
     <button class="btn-primary-sm cal-hide-mobile" onclick="openCreateModal()">
-        <i class="bi bi-plus-lg"></i> Novo evento
+        <i class="bi bi-plus-lg"></i> {{ __('calendar.new_event') }}
     </button>
 </div>
 @endsection
@@ -482,16 +482,16 @@
         <div style="width:80px;height:80px;border-radius:20px;background:#eff6ff;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
             <i class="bi bi-calendar3" style="font-size:36px;color:#0085f3;"></i>
         </div>
-        <h2 style="font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 8px;">Sua agenda está quase pronta</h2>
+        <h2 style="font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 8px;">{{ __('calendar.almost_ready') }}</h2>
         <p style="font-size:14px;color:#6b7280;max-width:420px;margin:0 0 28px;line-height:1.6;">
-            Conecte sua conta do Google Calendar para visualizar, criar e gerenciar seus eventos diretamente pelo Syncro.
+            {{ __('calendar.connect_desc') }}
         </p>
         <a href="{{ route('settings.integrations.index') }}"
            style="display:inline-flex;align-items:center;gap:8px;background:#0085f3;color:#fff;border:none;border-radius:9px;padding:10px 24px;font-size:13px;font-weight:600;text-decoration:none;transition:background .15s;">
-            <i class="bi bi-google"></i> Conectar Google Calendar
+            <i class="bi bi-google"></i> {{ __('calendar.connect_google') }}
         </a>
         <p style="font-size:12px;color:#9ca3af;margin-top:16px;">
-            Você será redirecionado para as configurações de integrações
+            {{ __('calendar.redirect_note') }}
         </p>
     </div>
     @else
@@ -502,23 +502,23 @@
         <div class="sloth-toolbar">
             <span class="sloth-title" id="slothTitle"></span>
             <button class="sloth-today-btn" onclick="goToday()">
-                <span class="dot"></span> Hoje
+                <span class="dot"></span> {{ __('calendar.today') }}
             </button>
             <button class="sloth-nav-btn" onclick="goPrev()"><i class="bi bi-chevron-left"></i></button>
             <button class="sloth-nav-btn" onclick="goNext()"><i class="bi bi-chevron-right"></i></button>
             <span class="sloth-spacer"></span>
             <div class="sloth-view-group" id="viewGroup">
-                <button class="sloth-view-btn active" data-view="dayGridMonth" onclick="switchView(this)">Mes</button>
-                <button class="sloth-view-btn" data-view="timeGridWeek" onclick="switchView(this)">Semana</button>
-                <button class="sloth-view-btn" data-view="timeGridDay" onclick="switchView(this)">Dia</button>
+                <button class="sloth-view-btn active" data-view="dayGridMonth" onclick="switchView(this)">{{ __('calendar.month') }}</button>
+                <button class="sloth-view-btn" data-view="timeGridWeek" onclick="switchView(this)">{{ __('calendar.week') }}</button>
+                <button class="sloth-view-btn" data-view="timeGridDay" onclick="switchView(this)">{{ __('calendar.day') }}</button>
             </div>
         </div>
 
         {{-- Mobile view selector --}}
         <div class="sloth-view-mobile" id="viewGroupMobile">
-            <button class="sloth-view-btn active" data-view="dayGridMonth" onclick="switchView(this)">Mes</button>
-            <button class="sloth-view-btn" data-view="timeGridWeek" onclick="switchView(this)">Semana</button>
-            <button class="sloth-view-btn" data-view="timeGridDay" onclick="switchView(this)">Dia</button>
+            <button class="sloth-view-btn active" data-view="dayGridMonth" onclick="switchView(this)">{{ __('calendar.month') }}</button>
+            <button class="sloth-view-btn" data-view="timeGridWeek" onclick="switchView(this)">{{ __('calendar.week') }}</button>
+            <button class="sloth-view-btn" data-view="timeGridDay" onclick="switchView(this)">{{ __('calendar.day') }}</button>
         </div>
 
         <div id="calendar"></div>
@@ -531,15 +531,15 @@
 <div class="cal-selector-overlay" id="calSelectorOverlay" onclick="closeCalendarSelector()"></div>
 <div class="cal-selector-modal" id="calSelectorModal">
     <div class="cal-selector-header">
-        <h3><i class="bi bi-collection" style="margin-right:6px;color:#0085f3"></i>Selecionar Agendas</h3>
+        <h3><i class="bi bi-collection" style="margin-right:6px;color:#0085f3"></i>{{ __('calendar.select_calendars_title') }}</h3>
         <button onclick="closeCalendarSelector()" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:20px;line-height:1;padding:4px;">x</button>
     </div>
     <div class="cal-selector-body" id="calSelectorBody">
-        <div class="cal-selector-loading"><i class="bi bi-arrow-repeat"></i> Carregando agendas...</div>
+        <div class="cal-selector-loading"><i class="bi bi-arrow-repeat"></i> {{ __('calendar.loading_calendars') }}</div>
     </div>
     <div class="cal-selector-footer">
-        <button onclick="closeCalendarSelector()" style="padding:8px 18px;background:#f1f5f9;border:1px solid #e2e8f0;color:#374151;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">Cancelar</button>
-        <button onclick="saveCalendarPrefs()" id="btnSaveCalPrefs" style="padding:8px 20px;background:#0085f3;border:none;color:#fff;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">Salvar</button>
+        <button onclick="closeCalendarSelector()" style="padding:8px 18px;background:#f1f5f9;border:1px solid #e2e8f0;color:#374151;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">{{ __('calendar.cancel') }}</button>
+        <button onclick="saveCalendarPrefs()" id="btnSaveCalPrefs" style="padding:8px 20px;background:#0085f3;border:none;color:#fff;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">{{ __('calendar.save') }}</button>
     </div>
 </div>
 
@@ -554,9 +554,9 @@
         <div class="ev-popup-dot" id="popupDot"></div>
         <div class="ev-popup-title" id="popupTitle"></div>
         <div class="ev-popup-btns">
-            <button class="ev-popup-btn" title="Editar"  onclick="editFromPopup()"><i class="bi bi-pencil"></i></button>
-            <button class="ev-popup-btn" title="Excluir" onclick="deleteFromPopup()"><i class="bi bi-trash3"></i></button>
-            <button class="ev-popup-btn" title="Fechar"  onclick="closePopup()"><i class="bi bi-x-lg"></i></button>
+            <button class="ev-popup-btn" title="{{ __('calendar.edit') }}"   onclick="editFromPopup()"><i class="bi bi-pencil"></i></button>
+            <button class="ev-popup-btn" title="{{ __('calendar.delete') }}" onclick="deleteFromPopup()"><i class="bi bi-trash3"></i></button>
+            <button class="ev-popup-btn" title="{{ __('calendar.close') }}"  onclick="closePopup()"><i class="bi bi-x-lg"></i></button>
         </div>
     </div>
     <div id="popupBody"></div>
@@ -584,7 +584,7 @@
     {{-- Header --}}
     <div style="display:flex;align-items:center;justify-content:space-between;
                 padding:20px 24px;border-bottom:1px solid #e2e8f0;flex-shrink:0">
-        <h3 id="calDrawerTitle" style="font-size:16px;font-weight:600;color:#0f172a;margin:0">Novo Evento</h3>
+        <h3 id="calDrawerTitle" style="font-size:16px;font-weight:600;color:#0f172a;margin:0">{{ __('calendar.new_event_title') }}</h3>
         <button onclick="closeCalDrawer()" style="
             background:none;border:none;cursor:pointer;
             color:#94a3b8;font-size:22px;line-height:1;padding:4px;
@@ -598,19 +598,19 @@
         {{-- Titulo --}}
         <div style="margin-bottom:18px">
             <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">
-                Titulo <span style="color:#ef4444">*</span>
+                {{ __('calendar.event_title') }} <span style="color:#ef4444">*</span>
             </label>
-            <input type="text" class="cal-inp" id="calTitle" placeholder="Ex: Reuniao com cliente">
+            <input type="text" class="cal-inp" id="calTitle" placeholder="{{ __('calendar.event_title_ph') }}">
         </div>
 
         {{-- Data/Hora --}}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px" class="cal-datetime-grid">
             <div>
-                <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Inicio</label>
+                <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">{{ __('calendar.start') }}</label>
                 <input type="datetime-local" class="cal-inp" id="calStart" style="max-width:100%">
             </div>
             <div>
-                <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">Fim</label>
+                <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">{{ __('calendar.end') }}</label>
                 <input type="datetime-local" class="cal-inp" id="calEnd" style="max-width:100%">
             </div>
         </div>
@@ -618,39 +618,39 @@
         {{-- Local --}}
         <div style="margin-bottom:18px">
             <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">
-                <i class="bi bi-geo-alt" style="margin-right:4px;color:#9ca3af"></i>Local
+                <i class="bi bi-geo-alt" style="margin-right:4px;color:#9ca3af"></i>{{ __('calendar.location') }}
             </label>
-            <input type="text" class="cal-inp" id="calLocation" placeholder="Ex: Google Meet, Sala de reuniao...">
+            <input type="text" class="cal-inp" id="calLocation" placeholder="{{ __('calendar.location_ph') }}">
         </div>
 
         {{-- Convidados --}}
         <div style="margin-bottom:18px">
             <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">
-                <i class="bi bi-person-plus" style="margin-right:4px;color:#9ca3af"></i>Convidados
+                <i class="bi bi-person-plus" style="margin-right:4px;color:#9ca3af"></i>{{ __('calendar.attendees') }}
             </label>
             <div id="calAttendeeTags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
             <div style="display:flex;gap:8px">
-                <input type="email" class="cal-inp" id="calAttendeeInput" placeholder="email@exemplo.com"
+                <input type="email" class="cal-inp" id="calAttendeeInput" placeholder="{{ __('calendar.attendees_ph') }}"
                        style="flex:1"
                        onkeydown="if(event.key==='Enter'){event.preventDefault();addCalAttendee()}">
                 <button type="button" onclick="addCalAttendee()" style="
                     padding:9px 14px;background:#f1f5f9;border:1px solid #e2e8f0;
                     border-radius:8px;font-size:13px;font-weight:500;color:#374151;
                     cursor:pointer;white-space:nowrap;flex-shrink:0;
-                "><i class="bi bi-plus"></i> Adicionar</button>
+                "><i class="bi bi-plus"></i> {{ __('calendar.add_attendee') }}</button>
             </div>
             <p style="margin:6px 0 0;font-size:12px;color:#94a3b8">
-                Os convidados receberao um convite por e-mail do Google Calendar.
+                {{ __('calendar.attendees_note') }}
             </p>
         </div>
 
         {{-- Descricao --}}
         <div style="margin-bottom:18px">
             <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px">
-                <i class="bi bi-card-text" style="margin-right:4px;color:#9ca3af"></i>Descricao
+                <i class="bi bi-card-text" style="margin-right:4px;color:#9ca3af"></i>{{ __('calendar.description') }}
             </label>
             <textarea class="cal-inp" id="calDescription" rows="4"
-                      placeholder="Observacoes sobre o evento..."
+                      placeholder="{{ __('calendar.description_ph') }}"
                       style="resize:vertical"></textarea>
         </div>
 
@@ -665,16 +665,16 @@
             display:none;margin-right:auto;
             padding:8px 14px;background:#fff;border:1px solid #fecaca;
             color:#dc2626;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;
-        "><i class="bi bi-trash3" style="margin-right:4px"></i>Excluir</button>
+        "><i class="bi bi-trash3" style="margin-right:4px"></i>{{ __('calendar.delete') }}</button>
         <button onclick="closeCalDrawer()" style="
             padding:8px 20px;background:#f1f5f9;border:1px solid #e2e8f0;
             color:#374151;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;
-        ">Cancelar</button>
+        ">{{ __('calendar.cancel') }}</button>
         <button id="btnCalSave" onclick="saveEvent()" style="
             padding:8px 24px;background:#0085f3;border:none;
             color:#fff;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;
             transition:background .15s;
-        ">Salvar</button>
+        ">{{ __('calendar.save') }}</button>
     </div>
 </aside>
 @endif
@@ -688,7 +688,8 @@
 <script>
 'use strict';
 
-const CSRF   = document.querySelector('meta[name=csrf-token]')?.content;
+const LANG = @json(__('calendar'));
+const CSRF = document.querySelector('meta[name=csrf-token]')?.content;
 const ROUTES = {
     events:      '{{ route('calendar.events') }}',
     store:       '{{ route('calendar.store') }}',
@@ -716,8 +717,8 @@ let popupEvent      = null;
 let calAttendees    = [];
 
 // ── PT-BR helpers ─────────────────────────────────────────────────────────
-const MONTHS_LONG  = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const WDAYS_SHORT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+const MONTHS_LONG  = LANG.months;
+const WDAYS_SHORT  = LANG.weekdays_short;
 // ── Custom toolbar controls ──────────────────────────────────────────────
 function updateTitle() {
     const d = calendar.getDate();
@@ -745,7 +746,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initialView:  'dayGridMonth',
         headerToolbar: false,
         locale:     'pt-br',
-        allDayText: 'Dia inteiro',
+        allDayText: LANG.all_day,
         firstDay:   0,
 
         editable:    true,
@@ -754,7 +755,7 @@ document.addEventListener('DOMContentLoaded', () => {
         nowIndicator: true,
         eventDisplay: 'block',
         dayMaxEvents: 3,
-        moreLinkText: 'mais',
+        moreLinkText: LANG.more,
 
         eventClassNames(arg) {
             return arg.event.allDay ? ['fc-allday-custom'] : [];
@@ -767,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(r => r.json())
             .then(data => {
                 if (data.error) {
-                    toastr.error('Erro ao carregar agenda: ' + data.error, 'Calendario');
+                    toastr.error(LANG.error_load_events + data.error, LANG.calendar_label);
                     fail(data.error);
                     return;
                 }
@@ -783,7 +784,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ok(colored);
             })
             .catch(err => {
-                toastr.error('Nao foi possivel conectar ao Google Calendar. Verifique a integracao nas configuracoes.', 'Calendario');
+                toastr.error(LANG.error_google_connect, LANG.calendar_label);
                 fail(err);
             });
         },
@@ -822,7 +823,7 @@ function showPopup(event, jsEvent) {
     popupEvent = event;
     const color = eventColor(event.id || event.title || '');
     document.getElementById('popupDot').style.background = color;
-    document.getElementById('popupTitle').textContent = event.title || 'Sem titulo';
+    document.getElementById('popupTitle').textContent = event.title || LANG.no_title;
 
     let body = '';
     if (event.start) {
@@ -841,7 +842,7 @@ function showPopup(event, jsEvent) {
     if (desc) body += row('bi-card-text', `<span style="white-space:pre-line">${esc(desc.substring(0,250))}${desc.length>250?'...':''}</span>`);
 
     const gUrl = event.extendedProps?.googleUrl;
-    if (gUrl) body += row('bi-box-arrow-up-right', `<a href="${gUrl}" target="_blank" rel="noopener" style="color:#3B82F6;text-decoration:none;font-size:12px;">Abrir no Google Calendar</a>`);
+    if (gUrl) body += row('bi-box-arrow-up-right', `<a href="${gUrl}" target="_blank" rel="noopener" style="color:#3B82F6;text-decoration:none;font-size:12px;">${esc(LANG.open_google)}</a>`);
 
     document.getElementById('popupBody').innerHTML = body;
 
@@ -906,7 +907,7 @@ function closeModal() { closeCalDrawer(); }
 function openCreateModal(start, end) {
     currentEventId = null;
     calAttendees   = [];
-    document.getElementById('calDrawerTitle').textContent    = 'Novo Evento';
+    document.getElementById('calDrawerTitle').textContent    = LANG.new_event_title;
     document.getElementById('calEventId').value              = '';
     document.getElementById('calTitle').value                = '';
     document.getElementById('calStart').value                = start ? toDTL(start) : '';
@@ -926,7 +927,7 @@ function openEditModal(event) {
     const rawAttendees = event.extendedProps?.attendees || [];
     calAttendees = rawAttendees.map(a => (typeof a === 'string' ? a : a.email)).filter(Boolean);
 
-    document.getElementById('calDrawerTitle').textContent    = 'Editar Evento';
+    document.getElementById('calDrawerTitle').textContent    = LANG.edit_event_title;
     document.getElementById('calEventId').value              = event.id;
     document.getElementById('calTitle').value                = event.title || '';
     document.getElementById('calStart').value                = event.start ? toDTL(event.start.toISOString()) : '';
@@ -983,13 +984,13 @@ async function saveEvent() {
     const start = document.getElementById('calStart').value;
     const end   = document.getElementById('calEnd').value;
 
-    if (!title)        { showErr('O titulo e obrigatorio.'); return; }
-    if (!start)        { showErr('Informe a data/hora de inicio.'); return; }
-    if (!end)          { showErr('Informe a data/hora de fim.'); return; }
-    if (start >= end)  { showErr('O fim deve ser apos o inicio.'); return; }
+    if (!title)        { showErr(LANG.title_required); return; }
+    if (!start)        { showErr(LANG.start_required); return; }
+    if (!end)          { showErr(LANG.end_required); return; }
+    if (start >= end)  { showErr(LANG.end_after_start); return; }
 
     const btn = document.getElementById('btnCalSave');
-    btn.disabled = true; btn.textContent = 'Salvando...';
+    btn.disabled = true; btn.textContent = LANG.saving;
     hideErr();
 
     const isEdit = !!currentEventId;
@@ -1008,19 +1009,19 @@ async function saveEvent() {
         });
         const data = await res.json();
         if (data.success) { closeCalDrawer(); calendar.refetchEvents(); }
-        else showErr(data.message || 'Erro ao salvar evento.');
-    } catch { showErr('Erro de conexao. Tente novamente.'); }
+        else showErr(data.message || LANG.error_save_event);
+    } catch { showErr(LANG.error_connection); }
 
-    btn.disabled = false; btn.textContent = 'Salvar';
+    btn.disabled = false; btn.textContent = LANG.save;
 }
 
 // ── Delete ────────────────────────────────────────────────────────────────
 function deleteEvent() {
     if (!currentEventId) return;
     confirmAction({
-        title: 'Excluir evento',
-        message: 'Tem certeza que deseja excluir este evento do Google Calendar?',
-        confirmText: 'Excluir',
+        title: LANG.delete_title,
+        message: LANG.delete_confirm,
+        confirmText: LANG.delete,
         onConfirm: async () => {
             try {
                 const res  = await fetch(ROUTES.destroy(currentEventId), {
@@ -1028,8 +1029,8 @@ function deleteEvent() {
                 });
                 const data = await res.json();
                 if (data.success) { closeCalDrawer(); calendar.refetchEvents(); }
-                else showErr(data.message || 'Erro ao excluir.');
-            } catch { showErr('Erro de conexao.'); }
+                else showErr(data.message || LANG.error_delete);
+            } catch { showErr(LANG.error_connection); }
         },
     });
 }
@@ -1075,7 +1076,7 @@ function closeCalendarSelector() {
 
 async function loadCalendarList() {
     const body = document.getElementById('calSelectorBody');
-    body.innerHTML = '<div class="cal-selector-loading"><i class="bi bi-arrow-repeat"></i> Carregando agendas...</div>';
+    body.innerHTML = `<div class="cal-selector-loading"><i class="bi bi-arrow-repeat"></i> ${esc(LANG.loading_calendars)}</div>`;
 
     try {
         const res  = await fetch(ROUTES.calendars, { headers: { Accept: 'application/json', 'X-CSRF-TOKEN': CSRF } });
@@ -1088,14 +1089,14 @@ async function loadCalendarList() {
 
         renderCalendarList();
     } catch {
-        body.innerHTML = '<div class="cal-selector-loading" style="color:#ef4444">Erro ao carregar agendas.</div>';
+        body.innerHTML = `<div class="cal-selector-loading" style="color:#ef4444">${esc(LANG.error_load_calendars)}</div>`;
     }
 }
 
 function renderCalendarList() {
     const body = document.getElementById('calSelectorBody');
     if (!availableCalendars.length) {
-        body.innerHTML = '<div class="cal-selector-loading">Nenhuma agenda encontrada.</div>';
+        body.innerHTML = `<div class="cal-selector-loading">${esc(LANG.no_calendars)}</div>`;
         return;
     }
 
@@ -1103,7 +1104,7 @@ function renderCalendarList() {
         const checked  = selectedVisibleIds.includes(c.id) ? 'checked' : '';
         const isDefault = selectedDefaultId === c.id;
         const color    = calendarColorMap[c.id] || eventColor(c.id);
-        const label    = c.summary + (c.primary ? ' (principal)' : '');
+        const label    = c.summary + (c.primary ? ` (${LANG.primary})` : '');
         return `
         <div class="cal-selector-item">
             <input type="checkbox" class="cal-selector-check" value="${esc(c.id)}" ${checked}
@@ -1114,8 +1115,8 @@ function renderCalendarList() {
                 <span class="cal-selector-default ${isDefault ? 'active' : ''}"
                       onclick="setDefaultCalendar('${esc(c.id)}')"
                       data-cal-id="${esc(c.id)}"
-                      title="Usar como agenda padrao para criar eventos">
-                    ${isDefault ? '&#10003; Padrao' : 'Definir padrao'}
+                      title="${esc(LANG.default_title)}">
+                    ${isDefault ? '&#10003; ' + esc(LANG.default) : esc(LANG.set_default)}
                 </span>
             </div>
         </div>`;
@@ -1149,12 +1150,12 @@ function setDefaultCalendar(id) {
 
 async function saveCalendarPrefs() {
     if (!selectedVisibleIds.length) {
-        toastr.warning('Selecione ao menos uma agenda.');
+        toastr.warning(LANG.select_at_least_one);
         return;
     }
 
     const btn = document.getElementById('btnSaveCalPrefs');
-    btn.disabled = true; btn.textContent = 'Salvando...';
+    btn.disabled = true; btn.textContent = LANG.saving;
 
     try {
         const res = await fetch(ROUTES.preferences, {
@@ -1166,14 +1167,14 @@ async function saveCalendarPrefs() {
         if (data.success) {
             closeCalendarSelector();
             calendar.refetchEvents();
-            toastr.success('Preferencias de agenda salvas!');
+            toastr.success(LANG.prefs_saved);
         } else {
-            toastr.error(data.message || 'Erro ao salvar preferencias.');
+            toastr.error(data.message || LANG.error_save_prefs);
         }
     } catch {
-        toastr.error('Erro de conexao.');
+        toastr.error(LANG.error_connection);
     }
-    btn.disabled = false; btn.textContent = 'Salvar';
+    btn.disabled = false; btn.textContent = LANG.save;
 }
 </script>
 @endpush

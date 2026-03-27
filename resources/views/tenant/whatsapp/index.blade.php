@@ -1,6 +1,6 @@
 @extends('tenant.layouts.app')
 @php
-$title = 'Chats';
+$title = __('chat.title');
 $pageIcon = 'chat-dots';
 @endphp
 
@@ -1068,10 +1068,10 @@ $pageIcon = 'chat-dots';
         <div class="wa-icon-circle">
             <i class="bi bi-chat-dots-fill"></i>
         </div>
-        <h3>WhatsApp não conectado</h3>
-        <p>Para usar o chat, você precisa conectar seu número de WhatsApp em Integrações.</p>
+        <h3>{{ __('chat.wa_not_connected') }}</h3>
+        <p>{{ __('chat.wa_not_connected_desc') }}</p>
         <a href="{{ route('settings.integrations.index') }}" class="btn-go-integrations">
-            <i class="bi bi-plugin"></i> Ir para Integrações
+            <i class="bi bi-plugin"></i> {{ __('chat.go_to_integrations') }}
         </a>
     </div>
 
@@ -1083,27 +1083,27 @@ $pageIcon = 'chat-dots';
         <div class="wa-sidebar-header">
             <div class="wa-search">
                 <i class="bi bi-search"></i>
-                <input type="text" id="searchInput" placeholder="Buscar conversa...">
+                <input type="text" id="searchInput" placeholder="{{ __('chat.search_conversation') }}">
             </div>
         </div>
 
         <div class="wa-channel-tabs">
             <button class="wa-channel-tab active" data-channel="all">
-                <i class="bi bi-grid-3x3-gap-fill"></i> Geral
+                <i class="bi bi-grid-3x3-gap-fill"></i> {{ __('chat.tab_all') }}
             </button>
             <button class="wa-channel-tab" data-channel="whatsapp">
-                <i class="bi bi-whatsapp"></i> WhatsApp
+                <i class="bi bi-whatsapp"></i> {{ __('chat.tab_whatsapp') }}
             </button>
             <button class="wa-channel-tab" data-channel="instagram">
-                <i class="bi bi-instagram"></i> Instagram
+                <i class="bi bi-instagram"></i> {{ __('chat.tab_instagram') }}
             </button>
         </div>
 
         <div class="wa-filters">
-            <button class="wa-filter-btn active" data-filter="all">Todas</button>
-            <button class="wa-filter-btn" data-filter="mine">Para mim</button>
-            <button class="wa-filter-btn" data-filter="open">Abertas</button>
-            <button class="wa-filter-btn" data-filter="closed">Fechadas</button>
+            <button class="wa-filter-btn active" data-filter="all">{{ __('chat.filter_all') }}</button>
+            <button class="wa-filter-btn" data-filter="mine">{{ __('chat.filter_mine') }}</button>
+            <button class="wa-filter-btn" data-filter="open">{{ __('chat.filter_open') }}</button>
+            <button class="wa-filter-btn" data-filter="closed">{{ __('chat.filter_closed') }}</button>
         </div>
 
         <div class="wa-conv-list" id="convList">
@@ -1111,8 +1111,8 @@ $pageIcon = 'chat-dots';
             @php
                 $ch      = $conv->_channel;
                 $convName = match($ch) {
-                    'instagram' => $conv->contact_name ?? $conv->contact_username ?? 'Contato Instagram',
-                    default     => $conv->contact_name ?? ($conv->is_group ? 'Grupo' : $conv->phone),
+                    'instagram' => $conv->contact_name ?? $conv->contact_username ?? __('chat.ig_contact'),
+                    default     => $conv->contact_name ?? ($conv->is_group ? __('chat.group') : $conv->phone),
                 };
                 $convPhone = match($ch) {
                     'instagram' => '@' . ltrim($conv->contact_username ?? '', '@'),
@@ -1157,11 +1157,11 @@ $pageIcon = 'chat-dots';
                     <div class="wa-conv-bottom">
                         <span class="wa-conv-preview">
                             @if($conv->latestMessage)
-                            @if($conv->latestMessage->type === 'image') 📷 Imagem
-                            @elseif($conv->latestMessage->type === 'share') 📷 Publicação
-                            @elseif($conv->latestMessage->type === 'audio') 🎵 Áudio
-                            @elseif($conv->latestMessage->type === 'document') 📎 {{ $conv->latestMessage->media_filename ?? 'Arquivo' }}
-                            @elseif($conv->latestMessage->type === 'note') 🔒 Nota interna
+                            @if($conv->latestMessage->type === 'image') {{ __('chat.preview_image') }}
+                            @elseif($conv->latestMessage->type === 'share') {{ __('chat.preview_post') }}
+                            @elseif($conv->latestMessage->type === 'audio') {{ __('chat.preview_audio') }}
+                            @elseif($conv->latestMessage->type === 'document') 📎 {{ $conv->latestMessage->media_filename ?? __('chat.preview_file') }}
+                            @elseif($conv->latestMessage->type === 'note') {{ __('chat.preview_note') }}
                             @else {{ Str::limit($conv->latestMessage->body ?? '', 40) }}
                             @endif
                             @endif
@@ -1193,7 +1193,7 @@ $pageIcon = 'chat-dots';
             @empty
             <div style="padding:32px 16px;text-align:center;color:#9ca3af;font-size:13px;">
                 <i class="bi bi-chat-dots" style="font-size:32px;display:block;margin-bottom:10px;opacity:.4;"></i>
-                Nenhuma conversa ainda.<br>As mensagens recebidas aparecerão aqui.
+                {!! nl2br(e(__('chat.no_conversations'))) !!}
             </div>
             @endforelse
         </div>
@@ -1208,7 +1208,7 @@ $pageIcon = 'chat-dots';
 
         {{-- Header do chat (oculto até abrir conversa) --}}
         <div class="wa-chat-header" id="chatHeader" style="display:none;">
-            <button class="wa-chat-back-btn" onclick="mobileBackToList()" title="Voltar">
+            <button class="wa-chat-back-btn" onclick="mobileBackToList()" title="{{ __('chat.back') }}">
                 <i class="bi bi-arrow-left"></i>
             </button>
             <div class="wa-conv-avatar-wrap">
@@ -1222,15 +1222,15 @@ $pageIcon = 'chat-dots';
                 <div class="wa-chat-contact-phone" id="chatContactPhone"></div>
             </div>
             <div class="wa-chat-actions">
-                <button class="wa-action-btn" id="btnToggleDetails" title="Detalhes" onclick="toggleDetails()">
+                <button class="wa-action-btn" id="btnToggleDetails" title="{{ __('chat.details') }}" onclick="toggleDetails()">
                     <i class="bi bi-info-circle"></i>
                 </button>
                 <div style="position:relative;">
-                    <button class="wa-action-btn" id="btnCloseConv" title="Fechar conversa" onclick="toggleConvStatus()">
+                    <button class="wa-action-btn" id="btnCloseConv" title="{{ __('chat.close_conversation') }}" onclick="toggleConvStatus()">
                         <i class="bi bi-check-circle"></i>
                     </button>
                 </div>
-                <button class="wa-action-btn" title="Deletar conversa" onclick="deleteConversation()"
+                <button class="wa-action-btn" title="{{ __('chat.delete_conversation') }}" onclick="deleteConversation()"
                     style="color:#ef4444;" id="btnDeleteConv">
                     <i class="bi bi-trash3"></i>
                 </button>
@@ -1244,31 +1244,31 @@ $pageIcon = 'chat-dots';
         @if(!empty($isPartnerView))
         <div class="wa-compose-area" id="composeArea" style="display:none;">
             <div style="padding:14px 18px;text-align:center;color:#6b7280;font-size:13px;background:#f8fafc;border-top:1px solid #f0f2f7;">
-                <i class="bi bi-eye" style="margin-right:5px;"></i> Modo visualização — agência parceira não pode enviar mensagens
+                <i class="bi bi-eye" style="margin-right:5px;"></i> {{ __('chat.view_only_agency') }}
             </div>
         </div>
         @elseif(auth()->user()->isViewer())
         <div class="wa-compose-area" id="composeArea" style="display:none;">
             <div style="padding:12px 16px;text-align:center;color:#9ca3af;font-size:13px;background:#f9fafb;border-top:1px solid #e8eaf0;">
-                <i class="bi bi-eye" style="margin-right:5px;"></i> Modo visualização — você não tem permissão para enviar mensagens
+                <i class="bi bi-eye" style="margin-right:5px;"></i> {{ __('chat.view_only_viewer') }}
             </div>
         </div>
         @else
         <div class="wa-compose-area" id="composeArea" style="display:none;">
             <div class="wa-compose-tabs">
-                <button class="wa-tab-btn active" id="tabReply" onclick="setComposeMode('reply')">Responder</button>
-                <button class="wa-tab-btn" id="tabNote" onclick="setComposeMode('note')">Nota Privada</button>
+                <button class="wa-tab-btn active" id="tabReply" onclick="setComposeMode('reply')">{{ __('chat.reply') }}</button>
+                <button class="wa-tab-btn" id="tabNote" onclick="setComposeMode('note')">{{ __('chat.private_note') }}</button>
             </div>
 
             <div class="wa-compose-row" id="recordingRow" style="display:none;">
                 <div class="wa-recording-indicator" style="display:flex;" id="recordingIndicator">
                     <div class="wa-recording-dot"></div>
-                    Gravando áudio... <span id="recordingTimer">0:00</span>
+                    {{ __('chat.recording_audio') }} <span id="recordingTimer">0:00</span>
                 </div>
-                <button class="wa-btn-icon" onclick="cancelRecording()" title="Cancelar">
+                <button class="wa-btn-icon" onclick="cancelRecording()" title="{{ __('chat.cancel') }}">
                     <i class="bi bi-x"></i>
                 </button>
-                <button class="wa-btn-send" onclick="stopAndSendRecording()" title="Enviar áudio">
+                <button class="wa-btn-send" onclick="stopAndSendRecording()" title="{{ __('chat.send_audio') }}">
                     <i class="bi bi-send"></i>
                 </button>
             </div>
@@ -1278,23 +1278,23 @@ $pageIcon = 'chat-dots';
                 <input type="file" id="docInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.csv" style="display:none;" onchange="sendDocument(this)">
                 {{-- Botão "+" com menu de anexos --}}
                 <div style="position:relative;" id="attachMenuWrap">
-                    <button class="wa-btn-icon" onclick="toggleAttachMenu()" title="Anexar" id="btnAttach">
+                    <button class="wa-btn-icon" onclick="toggleAttachMenu()" title="{{ __('chat.attach') }}" id="btnAttach">
                         <i class="bi bi-plus-lg"></i>
                     </button>
                     <div id="attachMenu" style="display:none;position:absolute;bottom:calc(100% + 8px);left:0;
                          width:200px;background:#fff;border:1px solid #e8eaf0;border-radius:12px;
                          box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:1000;overflow:hidden;">
                         <button onclick="document.getElementById('fileInput').click();closeAttachMenu()" class="wa-attach-item">
-                            <i class="bi bi-image" style="color:#3b82f6;"></i> Imagem
+                            <i class="bi bi-image" style="color:#3b82f6;"></i> {{ __('chat.image') }}
                         </button>
                         <button onclick="document.getElementById('docInput').click();closeAttachMenu()" class="wa-attach-item">
-                            <i class="bi bi-paperclip" style="color:#6b7280;"></i> Documento
+                            <i class="bi bi-paperclip" style="color:#6b7280;"></i> {{ __('chat.document') }}
                         </button>
                         <button onclick="startRecording();closeAttachMenu()" class="wa-attach-item" id="btnMic">
-                            <i class="bi bi-mic" style="color:#ef4444;"></i> Gravar Áudio
+                            <i class="bi bi-mic" style="color:#ef4444;"></i> {{ __('chat.record_audio') }}
                         </button>
                         <button onclick="openQmModal();closeAttachMenu()" class="wa-attach-item" id="btnQuickMsgs">
-                            <i class="bi bi-lightning-charge-fill" style="color:#f59e0b;"></i> Resposta Rápida
+                            <i class="bi bi-lightning-charge-fill" style="color:#f59e0b;"></i> {{ __('chat.quick_reply') }}
                         </button>
                     </div>
                 </div>
@@ -1304,17 +1304,17 @@ $pageIcon = 'chat-dots';
                          width:340px;background:#fff;border:1px solid #e8eaf0;border-radius:12px;
                          box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:1000;max-height:280px;overflow-y:auto;">
                         <div style="padding:8px 10px;border-bottom:1px solid #f0f2f7;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">
-                            Mensagens Rápidas
+                            {{ __('chat.quick_messages') }}
                         </div>
                         <div id="quickMsgList"></div>
                     </div>
                     <textarea class="wa-textarea"
                         id="messageInput"
-                        placeholder="Digite uma mensagem ou / para mensagens rápidas..."
+                        placeholder="{{ __('chat.placeholder') }}"
                         rows="1"
                         oninput="autoResize(this);handleQmTrigger(this)"></textarea>
                 </div>
-                <button class="wa-btn-send" id="btnSend" onclick="sendMessage()" title="Enviar">
+                <button class="wa-btn-send" id="btnSend" onclick="sendMessage()" title="{{ __('chat.send') }}">
                     <i class="bi bi-send"></i>
                 </button>
             </div>
@@ -1326,10 +1326,10 @@ $pageIcon = 'chat-dots';
     <div class="wa-details" id="detailsPanel">
         <div class="wa-details-section">
             <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
-                Contato
+                {{ __('chat.contact') }}
                 <button onclick="toggleContactEdit()" id="btnEditContact"
                     style="background:none;border:none;cursor:pointer;color:#6b7280;padding:2px 4px;font-size:13px;"
-                    title="Editar contato">
+                    title="{{ __('chat.edit_contact') }}">
                     <i class="bi bi-pencil"></i>
                 </button>
             </div>
@@ -1342,18 +1342,18 @@ $pageIcon = 'chat-dots';
             <div id="contactEditMode" style="display:none;">
                 <input id="editContactName" class="wa-textarea"
                     style="min-height:unset;height:34px;padding:5px 8px;font-size:13px;margin-bottom:6px;"
-                    placeholder="Nome do contato">
+                    placeholder="{{ __('chat.contact_name') }}">
                 <input id="editContactPhone" class="wa-textarea"
                     style="min-height:unset;height:34px;padding:5px 8px;font-size:13px;margin-bottom:6px;"
-                    placeholder="Telefone (só dígitos)">
+                    placeholder="{{ __('chat.phone_digits') }}">
                 <div style="display:flex;gap:6px;">
                     <button onclick="saveContact()"
                         style="flex:1;padding:5px 10px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">
-                        Salvar
+                        {{ __('chat.save') }}
                     </button>
                     <button onclick="toggleContactEdit()"
                         style="flex:1;padding:5px 10px;background:#f1f5f9;color:#374151;border:none;border-radius:6px;font-size:12px;cursor:pointer;">
-                        Cancelar
+                        {{ __('chat.cancel') }}
                     </button>
                 </div>
             </div>
@@ -1362,9 +1362,9 @@ $pageIcon = 'chat-dots';
         {{-- Tags --}}
         <div class="wa-details-section">
             <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
-                Tags
+                {{ __('chat.tags') }}
                 <a href="{{ route('settings.tags') }}" target="_blank"
-                    style="font-size:11px;color:#9ca3af;text-decoration:none;" title="Gerenciar tags">
+                    style="font-size:11px;color:#9ca3af;text-decoration:none;" title="{{ __('chat.manage_tags') }}">
                     <i class="bi bi-gear" style="font-size:12px;"></i>
                 </a>
             </div>
@@ -1375,7 +1375,7 @@ $pageIcon = 'chat-dots';
             {{-- Chips predefinidos --}}
             @if(isset($whatsappTags) && $whatsappTags->isNotEmpty())
             <div style="margin-bottom:8px;">
-                <div style="font-size:10px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">Selecionar tag</div>
+                <div style="font-size:10px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">{{ __('chat.select_tag') }}</div>
                 <div style="display:flex;flex-wrap:wrap;gap:4px;">
                     @foreach($whatsappTags as $wTag)
                     <button type="button"
@@ -1394,7 +1394,7 @@ $pageIcon = 'chat-dots';
             <div style="display:flex;gap:6px;">
                 <input id="tagInput" class="wa-textarea"
                     style="min-height:unset;height:30px;padding:4px 8px;font-size:12px;"
-                    placeholder="Digitar tag..."
+                    placeholder="{{ __('chat.type_tag') }}"
                     onkeydown="if(event.key==='Enter'){event.preventDefault();addTag();}">
                 <button onclick="addTag()"
                     style="padding:4px 10px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;white-space:nowrap;">
@@ -1406,53 +1406,53 @@ $pageIcon = 'chat-dots';
         {{-- Seção Lead / CRM --}}
         <div class="wa-details-section" id="leadSection" style="display:none;">
             <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
-                Lead
+                {{ __('chat.lead') }}
                 <div style="display:flex;align-items:center;gap:8px;">
                     <a id="leadProfileLink" href="#" target="_blank"
                         style="font-size:11px;color:#3b82f6;font-weight:600;text-decoration:none;">
-                        Ver perfil →
+                        {{ __('chat.view_profile') }}
                     </a>
-                    <button onclick="unlinkCurrentLead()" class="unlink-lead-btn" title="Desvincular lead desta conversa">
-                        <i class="bi bi-x-circle"></i> Desvincular
+                    <button onclick="unlinkCurrentLead()" class="unlink-lead-btn" title="{{ __('chat.unlink') }}">
+                        <i class="bi bi-x-circle"></i> {{ __('chat.unlink') }}
                     </button>
                 </div>
             </div>
             <div id="leadNameDisplay" style="font-size:13px;font-weight:600;color:#1a1d23;margin-bottom:6px;"></div>
-            <div class="wa-details-label" style="margin-top:8px;">Pipeline</div>
+            <div class="wa-details-label" style="margin-top:8px;">{{ __('chat.pipeline') }}</div>
             <select class="wa-textarea" style="min-height:unset;height:34px;padding:5px 8px;font-size:12px;margin-bottom:6px;"
                 id="pipelineSelect" onchange="onPipelineChange()">
-                <option value="">Selecionar pipeline...</option>
+                <option value="">{{ __('chat.select_pipeline') }}</option>
                 @foreach($pipelines as $pipeline)
                 <option value="{{ $pipeline->id }}" data-stages="{{ $pipeline->stages->toJson() }}">
                     {{ $pipeline->name }}
                 </option>
                 @endforeach
             </select>
-            <div class="wa-details-label">Estágio</div>
+            <div class="wa-details-label">{{ __('chat.stage') }}</div>
             <select class="wa-textarea" style="min-height:unset;height:34px;padding:5px 8px;font-size:12px;"
                 id="stageSelect" onchange="saveLeadCrm()">
-                <option value="">Selecionar estágio...</option>
+                <option value="">{{ __('chat.select_stage') }}</option>
             </select>
         </div>
 
         <div class="wa-details-section" id="noLeadSection" style="display:none;">
-            <div class="wa-details-label">Lead</div>
+            <div class="wa-details-label">{{ __('chat.lead') }}</div>
             <div id="noLeadDefault">
-                <div style="font-size:12px;color:#9ca3af;margin-bottom:8px;">Sem lead vinculado</div>
+                <div style="font-size:12px;color:#9ca3af;margin-bottom:8px;">{{ __('chat.no_lead_linked') }}</div>
                 <button onclick="showCreateLeadForm()"
                     style="width:100%;padding:6px 10px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
-                    <i class="bi bi-plus-lg"></i> Criar lead na pipeline
+                    <i class="bi bi-plus-lg"></i> {{ __('chat.create_lead_pipeline') }}
                 </button>
-                <div style="text-align:center;font-size:11px;color:#9ca3af;margin:6px 0;">ou</div>
+                <div style="text-align:center;font-size:11px;color:#9ca3af;margin:6px 0;">{{ __('chat.or') }}</div>
                 <button onclick="showLinkExistingLead()" class="btn-link-existing">
-                    <i class="bi bi-search"></i> Vincular lead existente
+                    <i class="bi bi-search"></i> {{ __('chat.link_existing_lead') }}
                 </button>
                 <div id="linkExistingPanel" style="display:none;margin-top:8px;">
                     <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
-                        <input type="text" id="leadSearchInput" placeholder="Buscar por nome ou telefone..."
+                        <input type="text" id="leadSearchInput" placeholder="{{ __('chat.search_lead') }}"
                                class="wa-textarea" oninput="onLeadSearch(this.value)"
                                style="min-height:unset;height:32px;padding:5px 8px;font-size:12px;flex:1;" />
-                        <button onclick="hideLinkExistingLead()" title="Cancelar"
+                        <button onclick="hideLinkExistingLead()" title="{{ __('chat.cancel') }}"
                             style="width:28px;height:28px;flex-shrink:0;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:7px;cursor:pointer;font-size:13px;color:#6b7280;">
                             ×
                         </button>
@@ -1469,25 +1469,25 @@ $pageIcon = 'chat-dots';
                 </select>
                 <select id="createLeadStage"
                     class="wa-textarea" style="min-height:unset;height:34px;padding:5px 8px;font-size:12px;margin-bottom:8px;">
-                    <option value="">Selecionar estágio...</option>
+                    <option value="">{{ __('chat.select_stage') }}</option>
                 </select>
                 <div style="display:flex;gap:6px;">
                     <button onclick="cancelCreateLead()"
                         style="flex:1;padding:6px;background:#f3f4f6;color:#374151;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
-                        Cancelar
+                        {{ __('chat.cancel') }}
                     </button>
                     <button onclick="doCreateLead()"
                         style="flex:1;padding:6px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
-                        Criar
+                        {{ __('common.create') }}
                     </button>
                 </div>
             </div>
         </div>
 
         <div class="wa-details-section">
-            <div class="wa-details-label">Atribuído a</div>
+            <div class="wa-details-label">{{ __('chat.assigned_to') }}</div>
             <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="assignSelect" onchange="assignUser()" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
-                <option value="">Sem atribuição</option>
+                <option value="">{{ __('chat.no_assignment') }}</option>
                 @foreach($users as $u)
                 <option value="{{ $u->id }}">{{ $u->name }}</option>
                 @endforeach
@@ -1497,9 +1497,9 @@ $pageIcon = 'chat-dots';
         {{-- Setor / Departamento --}}
         @if(isset($departments) && $departments->isNotEmpty())
         <div class="wa-details-section">
-            <div class="wa-details-label"><i class="bi bi-building" style="margin-right:4px;color:#0085f3;"></i> Setor</div>
+            <div class="wa-details-label"><i class="bi bi-building" style="margin-right:4px;color:#0085f3;"></i> {{ __('chat.department') }}</div>
             <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="departmentSelect" onchange="assignDepartment()" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
-                <option value="">Sem setor</option>
+                <option value="">{{ __('chat.no_department') }}</option>
                 @foreach($departments as $dept)
                 <option value="{{ $dept->id }}" data-color="{{ $dept->color }}">{{ $dept->name }}</option>
                 @endforeach
@@ -1511,11 +1511,11 @@ $pageIcon = 'chat-dots';
         @if(isset($aiAgents) && $aiAgents->isNotEmpty())
         <div class="wa-details-section">
             <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
-                <span><i class="bi bi-robot" style="margin-right:4px;color:#6366f1;"></i> Agente de IA</span>
+                <span><i class="bi bi-robot" style="margin-right:4px;color:#6366f1;"></i> {{ __('chat.ai_agent') }}</span>
                 <span id="aiAgentStatus" style="font-size:11px;font-weight:600;"></span>
             </div>
             <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="aiAgentSelect" onchange="assignAiAgent()" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
-                <option value="">Sem agente (IA desativada)</option>
+                <option value="">{{ __('chat.no_ai_agent') }}</option>
                 @foreach($aiAgents as $ag)
                 <option value="{{ $ag->id }}">{{ $ag->name }}</option>
                 @endforeach
@@ -1524,13 +1524,13 @@ $pageIcon = 'chat-dots';
 
         <div class="wa-details-section">
             <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
-                <span><i class="bi bi-diagram-3" style="margin-right:4px;color:#8b5cf6;"></i> Chatbot</span>
-                <a href="{{ route('chatbot.flows.index') }}" style="font-size:11px;color:#8b5cf6;text-decoration:none;" title="Gerenciar fluxos">
+                <span><i class="bi bi-diagram-3" style="margin-right:4px;color:#8b5cf6;"></i> {{ __('chat.chatbot') }}</span>
+                <a href="{{ route('chatbot.flows.index') }}" style="font-size:11px;color:#8b5cf6;text-decoration:none;" title="{{ __('chat.manage_flows') }}">
                     <i class="fas fa-external-link-alt"></i>
                 </a>
             </div>
             <select class="wa-textarea" style="min-height:unset;height:36px;padding:6px 10px;" id="chatbotFlowSelect" onchange="assignChatbotFlow()" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
-                <option value="">Sem fluxo (chatbot desativado)</option>
+                <option value="">{{ __('chat.no_chatbot') }}</option>
                 @foreach($chatbotFlows as $cf)
                 <option value="{{ $cf->id }}" data-channel="{{ $cf->channel }}">{{ $cf->name }}</option>
                 @endforeach
@@ -1542,21 +1542,21 @@ $pageIcon = 'chat-dots';
         {{-- IA Analista — Sugestões --}}
         <div class="wa-details-section" id="analystSection" style="display:none;">
             <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
-                <span><i class="bi bi-robot" style="margin-right:4px;color:#0085f3;"></i> Sugestões da IA</span>
+                <span><i class="bi bi-robot" style="margin-right:4px;color:#0085f3;"></i> {{ __('chat.ai_suggestions') }}</span>
                 <button onclick="triggerAnalysis()" id="analyzeBtn" type="button"
                         style="background:none;border:none;padding:0;font-size:11px;color:#0085f3;cursor:pointer;font-weight:600;">
-                    Analisar ▶
+                    {{ __('chat.analyze') }}
                 </button>
             </div>
             <div id="analystList" style="margin-top:6px;"></div>
             <button id="approveAllBtn" onclick="approveAllSuggestions()" type="button"
                     style="display:none;width:100%;margin-top:6px;padding:5px 8px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600;">
-                <i class="bi bi-check-all"></i> Aprovar todas
+                <i class="bi bi-check-all"></i> {{ __('chat.approve_all') }}
             </button>
         </div>
 
         <div class="wa-details-section">
-            <div class="wa-details-label">Status</div>
+            <div class="wa-details-label">{{ __('chat.status') }}</div>
             <div class="wa-details-value" id="detailsStatus"></div>
         </div>
     </div>
@@ -1574,11 +1574,11 @@ $pageIcon = 'chat-dots';
 <div class="del-modal-overlay" id="delConvModal">
     <div class="del-modal">
         <div class="del-modal-icon"><i class="bi bi-trash3-fill"></i></div>
-        <div class="del-modal-title">Excluir conversa?</div>
-        <div class="del-modal-text">Todas as mensagens serão removidas permanentemente.<br>Esta ação não pode ser desfeita.</div>
+        <div class="del-modal-title">{{ __('chat.delete_title') }}</div>
+        <div class="del-modal-text">{!! nl2br(e(__('chat.delete_desc'))) !!}</div>
         <div class="del-modal-footer">
-            <button class="btn-del-cancel" onclick="document.getElementById('delConvModal').classList.remove('open')">Cancelar</button>
-            <button class="btn-del-confirm" onclick="_doDeleteConversation()">Excluir</button>
+            <button class="btn-del-cancel" onclick="document.getElementById('delConvModal').classList.remove('open')">{{ __('chat.cancel') }}</button>
+            <button class="btn-del-confirm" onclick="_doDeleteConversation()">{{ __('chat.delete') }}</button>
         </div>
     </div>
 </div>
@@ -1594,7 +1594,7 @@ $pageIcon = 'chat-dots';
         <div style="padding:18px 22px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
             <div style="font-size:15px;font-weight:700;color:#1a1d23;display:flex;align-items:center;gap:8px;">
                 <i class="bi bi-lightning-charge-fill" style="color:#f59e0b;"></i>
-                Mensagens Rápidas
+                {{ __('chat.qm_title') }}
             </div>
             <button onclick="closeQmModal()" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;line-height:1;">
                 <i class="bi bi-x-lg"></i>
@@ -1611,46 +1611,46 @@ $pageIcon = 'chat-dots';
                 <input type="hidden" id="qmEditId" value="">
                 <div style="margin-bottom:10px;">
                     <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">
-                        Título <span style="color:#ef4444;">*</span>
+                        {{ __('chat.qm_field_title') }} <span style="color:#ef4444;">*</span>
                     </label>
-                    <input type="text" id="qmTitle" maxlength="100" placeholder="Ex: Boas-vindas, Horário de atendimento..."
+                    <input type="text" id="qmTitle" maxlength="100" placeholder="{{ __('chat.qm_placeholder_title') }}"
                            style="width:100%;padding:8px 12px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:13.5px;
                                   font-family:inherit;outline:none;box-sizing:border-box;background:#fff;">
                 </div>
                 <div style="margin-bottom:10px;">
                     <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">
-                        Mensagem <span style="color:#ef4444;">*</span>
+                        {{ __('chat.qm_field_message') }} <span style="color:#ef4444;">*</span>
                     </label>
                     {{-- Toolbar de formatação WhatsApp --}}
                     <div style="display:flex;gap:4px;margin-bottom:6px;">
-                        <button type="button" onclick="qmFormat('bold')" title="Negrito (*texto*)"
+                        <button type="button" onclick="qmFormat('bold')" title="{{ __('chat.qm_bold') }}"
                                 style="padding:4px 9px;border:1.5px solid #e8eaf0;border-radius:6px;background:#fff;
                                        font-size:12px;font-weight:700;cursor:pointer;">B</button>
-                        <button type="button" onclick="qmFormat('italic')" title="Itálico (_texto_)"
+                        <button type="button" onclick="qmFormat('italic')" title="{{ __('chat.qm_italic') }}"
                                 style="padding:4px 9px;border:1.5px solid #e8eaf0;border-radius:6px;background:#fff;
                                        font-size:12px;font-style:italic;cursor:pointer;">I</button>
-                        <button type="button" onclick="qmFormat('strike')" title="Tachado (~texto~)"
+                        <button type="button" onclick="qmFormat('strike')" title="{{ __('chat.qm_strikethrough') }}"
                                 style="padding:4px 9px;border:1.5px solid #e8eaf0;border-radius:6px;background:#fff;
                                        font-size:12px;text-decoration:line-through;cursor:pointer;">S</button>
-                        <button type="button" onclick="qmFormat('mono')" title="Monoespaçado (`texto`)"
+                        <button type="button" onclick="qmFormat('mono')" title="{{ __('chat.qm_mono') }}"
                                 style="padding:4px 9px;border:1.5px solid #e8eaf0;border-radius:6px;background:#fff;
                                        font-size:12px;font-family:monospace;cursor:pointer;">&lt;/&gt;</button>
                     </div>
-                    <textarea id="qmBody" rows="5" maxlength="2000" placeholder="Digite a mensagem..."
+                    <textarea id="qmBody" rows="5" maxlength="2000" placeholder="{{ __('chat.qm_placeholder_msg') }}"
                               style="width:100%;padding:9px 12px;border:1.5px solid #e8eaf0;border-radius:9px;
                                      font-size:13.5px;font-family:inherit;resize:vertical;
                                      outline:none;box-sizing:border-box;background:#fff;min-height:100px;"></textarea>
                     <div style="font-size:11px;color:#9ca3af;text-align:right;margin-top:2px;">
-                        Use *negrito*, _itálico_, ~tachado~, `mono`
+                        {{ __('chat.qm_help') }}
                     </div>
                 </div>
                 <div style="display:flex;gap:8px;justify-content:flex-end;">
                     <button type="button" onclick="cancelQmForm()"
                             style="padding:8px 16px;border:1.5px solid #e8eaf0;border-radius:8px;background:#fff;
-                                   font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;">Cancelar</button>
+                                   font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;">{{ __('chat.cancel') }}</button>
                     <button type="button" onclick="saveQm()"
                             style="padding:8px 18px;border:none;border-radius:8px;background:#3B82F6;
-                                   color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Salvar</button>
+                                   color:#fff;font-size:13px;font-weight:600;cursor:pointer;">{{ __('chat.save') }}</button>
                 </div>
             </div>
         </div>
@@ -1661,7 +1661,7 @@ $pageIcon = 'chat-dots';
                     style="width:100%;padding:9px;background:#f0f7ff;color:#3B82F6;
                            border:1.5px dashed #3B82F6;border-radius:9px;
                            font-size:13.5px;font-weight:600;cursor:pointer;">
-                <i class="bi bi-plus-lg"></i> Nova mensagem rápida
+                <i class="bi bi-plus-lg"></i> {{ __('chat.qm_new') }}
             </button>
         </div>
     </div>
@@ -1670,6 +1670,9 @@ $pageIcon = 'chat-dots';
 
 @push('scripts')
 <script>
+    // ── Traduções (i18n) ─────────────────────────────────────────────────────────
+    const LANG = @json(__('chat'));
+
     // ── Estado global ─────────────────────────────────────────────────────────────
     let activeConvId = null;
     let activeConvChannel = 'whatsapp'; // 'whatsapp' | 'instagram'
@@ -1831,7 +1834,7 @@ $pageIcon = 'chat-dots';
         startFallbackPolling();
 
         if (!window.Echo || !TENANT_ID) {
-            showWsStatus('error', 'Tempo real indisponível — atualizando a cada 5s');
+            showWsStatus('error', LANG.ws_unavailable);
             return;
         }
 
@@ -1852,8 +1855,8 @@ $pageIcon = 'chat-dots';
                 // Sound + browser notification for inbound messages
                 if (data.direction === 'inbound' && window.NotifManager) {
                     window.NotifManager.notify(
-                        data.user_name || 'Nova mensagem',
-                        data.body ? data.body.substring(0, 100) : 'Nova mensagem WhatsApp',
+                        data.user_name || LANG.new_message,
+                        data.body ? data.body.substring(0, 100) : LANG.new_wa_message,
                         '/chats?conv=' + data.conversation_id,
                         'whatsapp_message',
                         'message-received'
@@ -1866,16 +1869,16 @@ $pageIcon = 'chat-dots';
             channel.listen('.whatsapp.conversation', data => {
                 updateConvInSidebar(data);
                 if (data.assigned_user_id && data.assigned_user_id == CURRENT_USER_ID) {
-                    const name = data.contact_name || data.phone || 'Contato';
+                    const name = data.contact_name || data.phone || LANG.contact;
                     toastr.info(
-                        `Conversa de <b>${escHtml(name)}</b> foi atribuída a você`,
-                        'Nova atribuição',
+                        LANG.assigned_toast.replace(':name', escHtml(name)),
+                        LANG.new_assignment,
                         { timeOut: 8000, closeButton: true, progressBar: true }
                     );
                     if (window.NotifManager) {
                         window.NotifManager.notify(
-                            'Conversa Atribuída',
-                            'Conversa de ' + name + ' foi atribuída a você',
+                            LANG.conv_assigned,
+                            LANG.assigned_toast.replace(':name', name).replace(/<[^>]+>/g, ''),
                             '/chats?conv=' + data.id,
                             'whatsapp_assigned',
                             'notification-chime'
@@ -1901,10 +1904,10 @@ $pageIcon = 'chat-dots';
             channel.listen('.instagram.conversation', data => {
                 updateConvInSidebar(data);
                 if (data.assigned_user_id && data.assigned_user_id == CURRENT_USER_ID) {
-                    const name = data.contact_name || 'Contato Instagram';
+                    const name = data.contact_name || LANG.ig_contact;
                     toastr.info(
-                        `Conversa de <b>${escHtml(name)}</b> foi atribuída a você`,
-                        'Nova atribuição',
+                        LANG.assigned_toast.replace(':name', escHtml(name)),
+                        LANG.new_assignment,
                         { timeOut: 8000, closeButton: true, progressBar: true }
                     );
                 }
@@ -1922,7 +1925,7 @@ $pageIcon = 'chat-dots';
             conn.bind('unavailable', () => {
                 echoConnected = false;
                 startFallbackPolling();
-                showWsStatus('error', 'Sem conexão em tempo real — atualizando a cada 5s');
+                showWsStatus('error', LANG.ws_no_connection);
             });
             conn.bind('disconnected', () => {
                 echoConnected = false;
@@ -1930,7 +1933,7 @@ $pageIcon = 'chat-dots';
             });
         } catch (e) {
             // Echo setup failed — polling already running, no action needed
-            showWsStatus('error', 'Tempo real indisponível — atualizando a cada 5s');
+            showWsStatus('error', LANG.ws_unavailable);
         }
     }
 
@@ -2043,8 +2046,8 @@ $pageIcon = 'chat-dots';
         renderTags(tagsRaw);
         document.getElementById('contactViewMode').style.display = '';
         document.getElementById('contactEditMode').style.display = 'none';
-        document.getElementById('detailsStatus').textContent = activeConvStatus === 'open' ? '🟢 Aberta' : '⚫ Fechada';
-        document.getElementById('btnCloseConv').title = activeConvStatus === 'open' ? 'Fechar conversa' : 'Reabrir conversa';
+        document.getElementById('detailsStatus').textContent = activeConvStatus === 'open' ? LANG.status_open : LANG.status_closed;
+        document.getElementById('btnCloseConv').title = activeConvStatus === 'open' ? LANG.close_conversation : LANG.reopen;
         document.getElementById('btnCloseConv').querySelector('i').className = activeConvStatus === 'open' ?
             'bi bi-check-circle' : 'bi bi-arrow-counterclockwise';
 
@@ -2084,7 +2087,7 @@ $pageIcon = 'chat-dots';
 
         // Atualiza nome/telefone com dados frescos do servidor (pode ter migrado de LID)
         if (data.contact_name || data.phone) {
-            const freshName = data.contact_name || (data.is_group ? 'Grupo' : data.phone);
+            const freshName = data.contact_name || (data.is_group ? LANG.group : data.phone);
             const freshPhone = data.phone;
             document.getElementById('chatContactName').textContent = freshName;
             setPhoneDisplay(document.getElementById('chatContactPhone'), freshPhone);
@@ -2138,7 +2141,7 @@ $pageIcon = 'chat-dots';
             chatbotSel.value = data.chatbot_flow_id ?? '';
             if (chatbotInfo) {
                 chatbotInfo.style.display = data.chatbot_flow_id ? 'block' : 'none';
-                if (data.chatbot_flow_id) chatbotInfo.textContent = 'Fluxo ativo nesta conversa.';
+                if (data.chatbot_flow_id) chatbotInfo.textContent = LANG.chatbot_active;
             }
         }
 
@@ -2175,7 +2178,7 @@ $pageIcon = 'chat-dots';
                 sep.className = 'wa-date-sep';
                 const today = new Date().toLocaleDateString('pt-BR');
                 const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('pt-BR');
-                sep.textContent = msgDate === today ? 'Hoje' : msgDate === yesterday ? 'Ontem' : msgDate;
+                sep.textContent = msgDate === today ? LANG.today : msgDate === yesterday ? LANG.yesterday : msgDate;
                 container.appendChild(sep);
             }
 
@@ -2213,7 +2216,7 @@ $pageIcon = 'chat-dots';
 
             const title = document.createElement('div');
             title.className = 'wa-event-title';
-            title.textContent = msg.media_filename || 'Ação realizada';
+            title.textContent = msg.media_filename || LANG.action_done;
             content.appendChild(title);
 
             if (msg.body) {
@@ -2229,7 +2232,7 @@ $pageIcon = 'chat-dots';
                 const d = new Date(msg.sent_at);
                 const dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
                 const timeStr = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                time.textContent = `${dateStr} às ${timeStr}`;
+                time.textContent = `${dateStr} ${LANG.at} ${timeStr}`;
                 content.appendChild(time);
             }
 
@@ -2255,7 +2258,7 @@ $pageIcon = 'chat-dots';
             content.className = 'wa-event-content';
             const title = document.createElement('div');
             title.className = 'wa-event-title';
-            title.textContent = 'Nota criada';
+            title.textContent = LANG.note_created;
             content.appendChild(title);
             if (msg.body) {
                 const desc = document.createElement('div');
@@ -2269,7 +2272,7 @@ $pageIcon = 'chat-dots';
                 const d = new Date(msg.sent_at);
                 const dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
                 const timeStr = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                time.textContent = `${dateStr} às ${timeStr}`;
+                time.textContent = `${dateStr} ${LANG.at} ${timeStr}`;
                 content.appendChild(time);
             }
             box.appendChild(content);
@@ -2289,7 +2292,7 @@ $pageIcon = 'chat-dots';
         bubble.className = `wa-bubble${msg.is_deleted ? ' deleted' : ''}`;
 
         if (msg.is_deleted) {
-            bubble.innerHTML = '<i class="bi bi-slash-circle" style="margin-right:4px;"></i>Esta mensagem foi apagada';
+            bubble.innerHTML = '<i class="bi bi-slash-circle" style="margin-right:4px;"></i>' + escHtml(LANG.msg_deleted);
         } else if (msg.type === 'image' && msg.media_url) {
             bubble.innerHTML = `<img src="${escHtml(msg.media_url)}" class="wa-img-thumb" onclick="window.open(this.src,'_blank')" alt="Imagem">`;
             if (msg.body) bubble.innerHTML += `<div style="margin-top:6px;font-size:13px;">${escHtml(msg.body)}</div>`;
@@ -2305,7 +2308,7 @@ $pageIcon = 'chat-dots';
                 </div>
                 <div class="ap-bottom-row">
                     <span class="ap-timer">0:00</span>
-                    <span class="ap-label">Áudio</span>
+                    <span class="ap-label">${LANG.audio}</span>
                 </div>
                 <audio preload="metadata" src="${escHtml(msg.media_url)}" style="display:none;"></audio>
             </div>`;
@@ -2313,7 +2316,7 @@ $pageIcon = 'chat-dots';
             bubble.innerHTML = `<video src="${escHtml(msg.media_url)}" controls preload="metadata" style="max-width:100%;border-radius:8px;display:block;"></video>`;
             if (msg.body) bubble.innerHTML += `<div style="margin-top:6px;font-size:13px;">${escHtml(msg.body)}</div>`;
         } else if (msg.type === 'document' && msg.media_url) {
-            const fname = escHtml(msg.media_filename || 'Arquivo');
+            const fname = escHtml(msg.media_filename || LANG.preview_file.replace('📎 ', ''));
             bubble.innerHTML = `<a href="${escHtml(msg.media_url)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none;"><i class="bi bi-file-earmark-text" style="font-size:20px;color:#3b82f6;flex-shrink:0;"></i><span style="word-break:break-all;">${fname}</span><i class="bi bi-download" style="margin-left:4px;font-size:13px;flex-shrink:0;"></i></a>`;
             if (msg.body) bubble.innerHTML += `<div style="margin-top:4px;font-size:12px;color:#6b7280;">${escHtml(msg.body)}</div>`;
         } else if (msg.type === 'share') {
@@ -2323,9 +2326,9 @@ $pageIcon = 'chat-dots';
             }
             const postLink = escHtml(msg.body || '');
             if (postLink) {
-                inner += `<div style="margin-top:6px;font-size:12px;"><i class="bi bi-instagram" style="color:#e1306c;margin-right:4px;"></i><a href="${postLink}" target="_blank" rel="noopener" style="color:inherit;">Ver publicação</a></div>`;
+                inner += `<div style="margin-top:6px;font-size:12px;"><i class="bi bi-instagram" style="color:#e1306c;margin-right:4px;"></i><a href="${postLink}" target="_blank" rel="noopener" style="color:inherit;">${escHtml(LANG.view_post)}</a></div>`;
             }
-            if (!inner) inner = '<span style="color:#6b7280;font-style:italic;">📷 Publicação compartilhada</span>';
+            if (!inner) inner = `<span style="color:#6b7280;font-style:italic;">${escHtml(LANG.shared_post)}</span>`;
             bubble.innerHTML = inner;
         } else {
             bubble.textContent = msg.body || '';
@@ -2426,7 +2429,7 @@ $pageIcon = 'chat-dots';
         if (data.success) {
             appendMessages([data.message]);
         } else {
-            toastr.error(data.error || 'Erro ao enviar mensagem');
+            toastr.error(data.error || LANG.error_send_msg);
         }
     }
 
@@ -2450,7 +2453,7 @@ $pageIcon = 'chat-dots';
         if (data.success) {
             appendMessages([data.message]);
         } else {
-            toastr.error(data.error || 'Erro ao enviar imagem');
+            toastr.error(data.error || LANG.error_send_image);
         }
 
         input.value = '';
@@ -2476,7 +2479,7 @@ $pageIcon = 'chat-dots';
         if (data.success) {
             appendMessages([data.message]);
         } else {
-            toastr.error(data.error || 'Erro ao enviar arquivo');
+            toastr.error(data.error || LANG.error_send_file);
         }
 
         input.value = '';
@@ -2525,7 +2528,7 @@ $pageIcon = 'chat-dots';
                 document.getElementById('recordingTimer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
             }, 1000);
         } catch (e) {
-            toastr.error('Permissão de microfone negada.');
+            toastr.error(LANG.error_mic);
         }
     }
 
@@ -2622,7 +2625,7 @@ $pageIcon = 'chat-dots';
             if (data.success) {
                 appendMessages([data.message]);
             } else {
-                toastr.error(data.error || 'Erro ao enviar áudio');
+                toastr.error(data.error || LANG.error_send_audio);
             }
         };
 
@@ -2638,7 +2641,7 @@ $pageIcon = 'chat-dots';
         document.getElementById('tabReply').classList.toggle('active', mode === 'reply');
         document.getElementById('tabNote').classList.toggle('active', mode === 'note');
         textarea.classList.toggle('note-mode', mode === 'note');
-        textarea.placeholder = mode === 'note' ? 'Adicionar nota interna...' : 'Digite uma mensagem...';
+        textarea.placeholder = mode === 'note' ? LANG.placeholder_note : LANG.placeholder;
         document.getElementById('normalRow').querySelectorAll('.wa-btn-icon').forEach(b => {
             b.style.display = mode === 'note' ? 'none' : '';
         });
@@ -2666,11 +2669,11 @@ $pageIcon = 'chat-dots';
             activeConvStatus = newStatus;
             const convEl = document.querySelector(`[data-conv-id="${activeConvId}"]`);
             if (convEl) convEl.dataset.status = newStatus;
-            document.getElementById('detailsStatus').textContent = newStatus === 'open' ? '🟢 Aberta' : '⚫ Fechada';
-            document.getElementById('btnCloseConv').title = newStatus === 'open' ? 'Fechar conversa' : 'Reabrir conversa';
+            document.getElementById('detailsStatus').textContent = newStatus === 'open' ? LANG.status_open : LANG.status_closed;
+            document.getElementById('btnCloseConv').title = newStatus === 'open' ? LANG.close_conversation : LANG.reopen;
             document.getElementById('btnCloseConv').querySelector('i').className = newStatus === 'open' ?
                 'bi bi-check-circle' : 'bi bi-arrow-counterclockwise';
-            toastr.success(newStatus === 'closed' ? 'Conversa fechada.' : 'Conversa reaberta.');
+            toastr.success(newStatus === 'closed' ? LANG.conv_closed : LANG.conv_reopened);
         }
     }
 
@@ -2706,7 +2709,7 @@ $pageIcon = 'chat-dots';
             document.getElementById('messagesContainer').innerHTML = '';
             updateTotalUnread();
         } else {
-            toastr.error('Erro ao deletar conversa.');
+            toastr.error(LANG.error_delete_conv);
         }
     }
 
@@ -2777,7 +2780,7 @@ $pageIcon = 'chat-dots';
         const data = await res.json();
         const el = document.getElementById('leadSearchResults');
         if (!data.leads || !data.leads.length) {
-            el.innerHTML = '<p style="font-size:12px;color:#9ca3af;padding:6px 0;">Nenhum lead encontrado.</p>';
+            el.innerHTML = `<p style="font-size:12px;color:#9ca3af;padding:6px 0;">${escHtml(LANG.no_lead_found)}</p>`;
             return;
         }
         el.innerHTML = data.leads.map(l => `
@@ -2802,17 +2805,17 @@ $pageIcon = 'chat-dots';
         });
         const data = await res.json();
         if (data.success) {
-            toastr.success(`Lead "${escapeHtml(lead.name)}" vinculado!`);
+            toastr.success(LANG.lead_linked.replace(':name', escapeHtml(lead.name)));
             hideLinkExistingLead();
             renderLeadPanel(lead);
         } else {
-            toastr.error('Erro ao vincular lead.');
+            toastr.error(LANG.error_link_lead);
         }
     }
 
     // ── Desvincular lead da conversa ──────────────────────────────────────
     async function unlinkCurrentLead() {
-        if (!confirm('Desvincular este lead da conversa?')) return;
+        if (!confirm(LANG.unlink_confirm)) return;
         const url = activeConvChannel === 'instagram'
             ? `${CHATS_BASE}/instagram-conversations/${activeConvId}/unlink-lead`
             : activeConvChannel === 'website'
@@ -2825,10 +2828,10 @@ $pageIcon = 'chat-dots';
         });
         const data = await res.json();
         if (data.success) {
-            toastr.success('Lead desvinculado.');
+            toastr.success(LANG.lead_unlinked);
             renderLeadPanel(null);
         } else {
-            toastr.error('Erro ao desvincular lead.');
+            toastr.error(LANG.error_unlink_lead);
         }
     }
 
@@ -2836,7 +2839,7 @@ $pageIcon = 'chat-dots';
         const sel = document.getElementById('createLeadPipeline');
         const stages = JSON.parse(sel.selectedOptions[0]?.dataset.stages || '[]');
         const stageSel = document.getElementById('createLeadStage');
-        stageSel.innerHTML = '<option value="">Selecionar estágio...</option>';
+        stageSel.innerHTML = `<option value="">${escHtml(LANG.select_stage)}</option>`;
         stages.forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.id;
@@ -2887,7 +2890,7 @@ $pageIcon = 'chat-dots';
         const stageSel = document.getElementById('stageSelect');
         const pipeline = PIPELINES.find(p => p.id == pipelineId);
 
-        stageSel.innerHTML = '<option value="">Selecionar estágio...</option>';
+        stageSel.innerHTML = `<option value="">${escHtml(LANG.select_stage)}</option>`;
 
         if (pipeline?.stages) {
             pipeline.stages.forEach(s => {
@@ -2942,15 +2945,15 @@ $pageIcon = 'chat-dots';
             });
             const data = await res.json();
             if (data.success !== false) {
-                toastr.success('Setor atualizado.');
+                toastr.success(LANG.dept_updated);
                 // Atualizar badge na sidebar
                 const el = document.querySelector(`.wa-conv-item[data-conv-id="${activeConvId}"]`);
                 if (el) el.dataset.departmentId = deptId || '';
             } else {
-                toastr.error(data.message || 'Erro ao atualizar setor.');
+                toastr.error(data.message || LANG.error_dept);
             }
         } catch (e) {
-            toastr.error('Erro de conexão.');
+            toastr.error(LANG.error_connection);
         }
     }
 
@@ -2991,10 +2994,10 @@ $pageIcon = 'chat-dots';
             const data = await res.json();
             if (data.success) {
                 updateAiAgentStatusBadge(agentId || null);
-                toastr.success(agentId ? 'Agente de IA ativado.' : 'Agente de IA removido.');
+                toastr.success(agentId ? LANG.ai_enabled : LANG.ai_removed);
             }
         } catch {
-            toastr.error('Erro ao salvar agente de IA.');
+            toastr.error(LANG.error_ai);
         }
     }
 
@@ -3002,10 +3005,10 @@ $pageIcon = 'chat-dots';
         const badge = document.getElementById('aiAgentStatus');
         if (!badge) return;
         if (agentId) {
-            badge.textContent = 'Ativo';
+            badge.textContent = LANG.ai_active;
             badge.style.color = '#16a34a';
         } else {
-            badge.textContent = 'Inativo';
+            badge.textContent = LANG.ai_inactive;
             badge.style.color = '#9ca3af';
         }
     }
@@ -3029,19 +3032,19 @@ $pageIcon = 'chat-dots';
             });
             const data = await res.json();
             if (data.success) {
-                toastr.success(flowId ? 'Fluxo de chatbot ativado.' : 'Chatbot desativado.');
+                toastr.success(flowId ? LANG.chatbot_enabled : LANG.chatbot_disabled);
                 const info = document.getElementById('chatbotVarsInfo');
                 if (info) {
                     if (flowId) {
                         info.style.display = 'block';
-                        info.textContent = 'Estado reiniciado. Próxima mensagem inicia o fluxo.';
+                        info.textContent = LANG.chatbot_reset;
                     } else {
                         info.style.display = 'none';
                     }
                 }
             }
         } catch {
-            toastr.error('Erro ao salvar fluxo de chatbot.');
+            toastr.error(LANG.error_chatbot);
         }
     }
 
@@ -3092,7 +3095,7 @@ $pageIcon = 'chat-dots';
         const data = await res.json();
         const c = data.conversation;
 
-        const cDisplayName = c.contact_name || (c.is_group ? 'Grupo' : c.phone);
+        const cDisplayName = c.contact_name || (c.is_group ? LANG.group : c.phone);
         // Actualiza header e detalhes
         document.getElementById('detailsName').textContent = cDisplayName;
         setPhoneDisplay(document.getElementById('detailsPhone'), c.phone);
@@ -3223,19 +3226,19 @@ $pageIcon = 'chat-dots';
         // Update picture attribute whenever we have fresh data
         if (conv.contact_picture) el.dataset.picture = conv.contact_picture;
 
-        const preview = conv.last_message_type === 'image'    ? '📷 Imagem'     :
-            conv.last_message_type === 'video'    ? '🎥 Vídeo'      :
-            conv.last_message_type === 'share'    ? '📷 Publicação' :
-            conv.last_message_type === 'audio'    ? '🎵 Áudio'      :
-            conv.last_message_type === 'document' ? '📎 Arquivo'    :
-            conv.last_message_type === 'event'    ? 'Ação realizada' :
-            conv.last_message_type === 'note'     ? '🔒 Nota'       :
+        const preview = conv.last_message_type === 'image'    ? LANG.preview_image    :
+            conv.last_message_type === 'video'    ? '🎥 Video'      :
+            conv.last_message_type === 'share'    ? LANG.preview_post  :
+            conv.last_message_type === 'audio'    ? LANG.preview_audio :
+            conv.last_message_type === 'document' ? LANG.preview_file  :
+            conv.last_message_type === 'event'    ? LANG.action_done   :
+            conv.last_message_type === 'note'     ? LANG.preview_note  :
             (conv.last_message_body || '').substring(0, 40);
 
         const channel = el.dataset.channel || 'whatsapp';
         const convDisplayName = conv.contact_name ||
             (channel === 'website' ? ('Visitante #' + (conv.phone || '').substring(0, 8)) :
-            (conv.is_group ? 'Grupo' : conv.phone));
+            (conv.is_group ? LANG.group : conv.phone));
         const initial = (convDisplayName || '?').charAt(0).toUpperCase();
         const pictureUrl = conv.contact_picture || el.dataset.picture || '';
         const avatarInner = pictureUrl
@@ -3304,7 +3307,7 @@ $pageIcon = 'chat-dots';
 
     function timeRelative(iso) {
         const diff = (Date.now() - new Date(iso)) / 1000;
-        if (diff < 60) return 'agora';
+        if (diff < 60) return LANG.now;
         if (diff < 3600) return Math.floor(diff / 60) + 'm';
         if (diff < 86400) return Math.floor(diff / 3600) + 'h';
         return new Date(iso).toLocaleDateString('pt-BR', {
@@ -3349,7 +3352,7 @@ $pageIcon = 'chat-dots';
         section.style.display = '';
 
         if (!suggestions.length) {
-            list.innerHTML = '<div style="font-size:11px;color:#9ca3af;padding:4px 0;">Nenhuma sugestão pendente.</div>';
+            list.innerHTML = `<div style="font-size:11px;color:#9ca3af;padding:4px 0;">${escHtml(LANG.no_suggestions)}</div>`;
             approveAllBtn.style.display = 'none';
             return;
         }
@@ -3397,7 +3400,7 @@ $pageIcon = 'chat-dots';
         })
         .then(r => r.json())
         .then(() => {
-            if (window.toastr) toastr.success('Sugestão aplicada!', '', { timeOut: 2000 });
+            if (window.toastr) toastr.success(LANG.suggestion_applied, '', { timeOut: 2000 });
             loadAnalystSuggestions(activeConvId);
             if (window.loadIntentSignals) loadIntentSignals();
         })
@@ -3428,7 +3431,7 @@ $pageIcon = 'chat-dots';
         })
         .then(r => r.json())
         .then(data => {
-            if (window.toastr) toastr.success(`${data.approved} sugestão(ões) aplicada(s)!`, '', { timeOut: 3000 });
+            if (window.toastr) toastr.success(LANG.suggestions_applied.replace(':count', data.approved), '', { timeOut: 3000 });
             loadAnalystSuggestions(activeConvId);
             if (window.loadIntentSignals) loadIntentSignals();
         })
@@ -3438,7 +3441,7 @@ $pageIcon = 'chat-dots';
     function triggerAnalysis() {
         if (!activeConvId) return;
         const btn = document.getElementById('analyzeBtn');
-        if (btn) { btn.textContent = '⏳ Analisando...'; btn.disabled = true; }
+        if (btn) { btn.textContent = LANG.analyzing; btn.disabled = true; }
         fetch(`${ANALYST_BASE}/${activeConvId}/analyze`, {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': ANALYST_CSRF, 'Accept': 'application/json' }
@@ -3450,7 +3453,7 @@ $pageIcon = 'chat-dots';
         })
         .catch(() => {})
         .finally(() => {
-            if (btn) { btn.textContent = 'Analisar ▶'; btn.disabled = false; }
+            if (btn) { btn.textContent = LANG.analyze; btn.disabled = false; }
         });
     }
 
@@ -3479,7 +3482,7 @@ $pageIcon = 'chat-dots';
         const list = document.getElementById('quickMsgList');
         _qmSelectedIdx = -1;
         if (!items.length) {
-            list.innerHTML = '<div style="padding:12px 14px;font-size:13px;color:#9ca3af;">Nenhuma mensagem encontrada</div>';
+            list.innerHTML = `<div style="padding:12px 14px;font-size:13px;color:#9ca3af;">${escHtml(LANG.no_messages_found)}</div>`;
             return;
         }
         list.innerHTML = items.map((m, i) => `
@@ -3573,7 +3576,7 @@ $pageIcon = 'chat-dots';
     function renderQmModalList() {
         const list = document.getElementById('qmList');
         if (!_quickMsgs.length) {
-            list.innerHTML = '<p style="text-align:center;color:#9ca3af;font-size:13px;padding:12px 0;">Nenhuma mensagem rápida cadastrada ainda.</p>';
+            list.innerHTML = `<p style="text-align:center;color:#9ca3af;font-size:13px;padding:12px 0;">${escHtml(LANG.qm_none)}</p>`;
             return;
         }
         list.innerHTML = _quickMsgs.map(m => `
@@ -3651,12 +3654,12 @@ $pageIcon = 'chat-dots';
             cancelQmForm();
             renderQmModalList();
         } catch {
-            alert('Erro ao salvar mensagem rápida.');
+            toastr.error(LANG.error_save_qm);
         }
     }
 
     async function deleteQm(id) {
-        if (!confirm('Excluir esta mensagem rápida?')) return;
+        if (!confirm(LANG.confirm_delete_qm)) return;
         try {
             const res = await fetch(`${QM_BASE}/${id}`, {
                 method: 'DELETE',
@@ -3667,7 +3670,7 @@ $pageIcon = 'chat-dots';
             _quickMsgs = _quickMsgs.filter(m => m.id !== id);
             renderQmModalList();
         } catch {
-            alert('Erro ao excluir mensagem rápida.');
+            toastr.error(LANG.error_delete_qm);
         }
     }
 

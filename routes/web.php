@@ -101,7 +101,7 @@ Route::get('/wa/{token}', [\App\Http\Controllers\Api\WebsiteWidgetController::cl
 | Rotas do Painel do Tenant
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'tenant'])->group(function () {
+Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
     // Onboarding (primeiro acesso)
     Route::get('onboarding',           [OnboardingController::class, 'show'])->name('onboarding.show');
     Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
@@ -374,6 +374,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::get('perfil',         [ProfileController::class, 'index'])->name('profile');
         Route::put('perfil',         [ProfileController::class, 'update'])->name('profile.update');
         Route::put('perfil/senha',   [ProfileController::class, 'updatePassword'])->name('profile.password');
+        Route::put('perfil/idioma', [ProfileController::class, 'updateLocale'])->name('profile.locale');
         Route::post('perfil/avatar',         [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
 
         // Admin only — escrita em configurações

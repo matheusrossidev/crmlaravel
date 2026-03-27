@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title       = 'CRM';
+    $title       = __('crm.title');
     $pageIcon    = 'kanban';
     $tagColorMap = [];
 @endphp
@@ -597,21 +597,21 @@
             <option value="{{ $p->id }}" {{ $pipeline?->id === $p->id ? 'selected' : '' }}>{{ $p->name }}</option>
             @endforeach
         </select>
-        <button class="topbar-btn hide-mobile" title="Filtros" id="btnToggleFilters" style="width:32px;height:32px;">
+        <button class="topbar-btn hide-mobile" title="{{ __('crm.filters') }}" id="btnToggleFilters" style="width:32px;height:32px;">
             <i class="bi bi-funnel{{ request()->hasAny(['source','date_from','date_to','campaign_id','tag']) ? '-fill' : '' }}"></i>
         </button>
-        <button class="topbar-btn hide-mobile" title="Exportar leads" onclick="exportarLeads()" style="width:32px;height:32px;">
+        <button class="topbar-btn hide-mobile" title="{{ __('crm.export_leads') }}" onclick="exportarLeads()" style="width:32px;height:32px;">
             <i class="bi bi-download"></i>
         </button>
-        <button class="topbar-btn hide-mobile" title="Importar leads" onclick="openImportModal()" style="width:32px;height:32px;" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
+        <button class="topbar-btn hide-mobile" title="{{ __('crm.import_leads') }}" onclick="openImportModal()" style="width:32px;height:32px;" {{ auth()->user()->isViewer() ? 'disabled' : '' }}>
             <i class="bi bi-upload"></i>
         </button>
         <button class="btn-primary-sm hide-mobile" id="btnNovoLead" style="padding:6px 14px;font-size:12px;" {{ auth()->user()->isViewer() ? 'disabled style=opacity:.5;pointer-events:none;' : '' }}>
-            <i class="bi bi-plus-lg"></i> Novo Lead
+            <i class="bi bi-plus-lg"></i> {{ __('crm.new_lead') }}
         </button>
         @else
         <button class="btn-primary-sm" onclick="openPipelineDrawer()" style="padding:6px 14px;font-size:12px;">
-            <i class="bi bi-plus-lg"></i> Criar funil
+            <i class="bi bi-plus-lg"></i> {{ __('crm.create_pipeline') }}
         </button>
         @endif
     </div>
@@ -624,14 +624,14 @@
     @endif
     <div class="kanban-filter-bar{{ request()->hasAny(['source','date_from','date_to','campaign_id','tag','responsible']) ? ' visible' : '' }}" id="filterBar">
         <select name="source" class="filter-control" onchange="this.form.submit()">
-            <option value="">Todas as origens</option>
+            <option value="">{{ __('crm.all_sources') }}</option>
             @foreach(['manual','api','facebook','google','instagram','whatsapp','indicacao','site'] as $src)
             <option value="{{ $src }}" {{ request('source') == $src ? 'selected' : '' }}>{{ ucfirst($src) }}</option>
             @endforeach
         </select>
 
         <select name="tag" class="filter-control" onchange="this.form.submit()">
-            <option value="">Todas as tags</option>
+            <option value="">{{ __('crm.all_tags') }}</option>
             @foreach($availableTags as $t)
             <option value="{{ $t->name }}" {{ request('tag') === $t->name ? 'selected' : '' }}>
                 {{ $t->name }}
@@ -639,14 +639,14 @@
             @endforeach
         </select>
 
-        <input type="date" name="date_from" class="filter-control" value="{{ request('date_from') }}" title="Data de">
-        <input type="date" name="date_to"   class="filter-control" value="{{ request('date_to') }}"   title="Data até">
+        <input type="date" name="date_from" class="filter-control" value="{{ request('date_from') }}" title="{{ __('crm.date_from') }}">
+        <input type="date" name="date_to"   class="filter-control" value="{{ request('date_to') }}"   title="{{ __('crm.date_to') }}">
 
         {{-- Multi-select: Responsável --}}
         @php $selectedResp = (array) request('responsible', []); @endphp
         <div class="resp-filter-wrap">
             <button type="button" class="filter-control resp-filter-btn" id="respDropBtn" onclick="toggleRespDrop(event)">
-                <i class="bi bi-person"></i> Responsável
+                <i class="bi bi-person"></i> {{ __('crm.responsible') }}
                 @if(count($selectedResp) > 0)
                 <span style="display:inline-flex;align-items:center;justify-content:center;
                              width:16px;height:16px;border-radius:50%;background:#3B82F6;
@@ -659,7 +659,7 @@
                 <label class="resp-option">
                     <input type="checkbox" name="responsible[]" value="ai"
                            {{ in_array('ai', $selectedResp) ? 'checked' : '' }}>
-                    <i class="bi bi-robot" style="color:#8b5cf6;"></i> Agente IA
+                    <i class="bi bi-robot" style="color:#8b5cf6;"></i> {{ __('crm.ai_agent') }}
                 </label>
                 @foreach($users as $u)
                 <label class="resp-option">
@@ -671,11 +671,11 @@
             </div>
         </div>
 
-        <button type="submit" class="btn-primary-sm" style="padding:6px 14px;">Aplicar</button>
+        <button type="submit" class="btn-primary-sm" style="padding:6px 14px;">{{ __('crm.apply') }}</button>
 
         @if(request()->hasAny(['source','date_from','date_to','campaign_id','tag','responsible']))
         <a href="{{ route('crm.kanban', request()->only('pipeline_id')) }}" class="filter-clear">
-            <i class="bi bi-x"></i> Limpar
+            <i class="bi bi-x"></i> {{ __('crm.clear') }}
         </a>
         @endif
     </div>
@@ -786,16 +786,16 @@
                         @endif
                         <div class="card-actions">
                             @if($lead->phone)
-                            <a href="tel:{{ $lead->phone }}" class="card-action-btn" onclick="event.stopPropagation();" title="Ligar"><i class="bi bi-telephone-fill"></i></a>
+                            <a href="tel:{{ $lead->phone }}" class="card-action-btn" onclick="event.stopPropagation();" title="{{ __('crm.call') }}"><i class="bi bi-telephone-fill"></i></a>
                             @endif
                             @if($convId)
-                            <a href="{{ route('chats.index') }}?open={{ $convId }}" class="card-action-btn wa-btn {{ $unread > 0 ? 'has-unread' : '' }}" onclick="event.stopPropagation();" title="Abrir conversa" style="position:relative;">
+                            <a href="{{ route('chats.index') }}?open={{ $convId }}" class="card-action-btn wa-btn {{ $unread > 0 ? 'has-unread' : '' }}" onclick="event.stopPropagation();" title="{{ __('crm.open_conversation') }}" style="position:relative;">
                                 <i class="bi bi-whatsapp"></i>
                                 @if($unread > 0)<span class="bubble-count">{{ $unread }}</span>@endif
                             </a>
                             @endif
                             @if($lead->email)
-                            <a href="mailto:{{ $lead->email }}" class="card-action-btn" onclick="event.stopPropagation();" title="Enviar email"><i class="bi bi-envelope-fill"></i></a>
+                            <a href="mailto:{{ $lead->email }}" class="card-action-btn" onclick="event.stopPropagation();" title="{{ __('crm.send_email') }}"><i class="bi bi-envelope-fill"></i></a>
                             @endif
                         </div>
                     </div>
@@ -814,7 +814,7 @@
                     $tkColor = $tkDays <= 1 ? '#ef4444' : ($tkDays <= 3 ? '#f59e0b' : '#10b981');
                     $tkIcons = ['call'=>'telephone','email'=>'envelope','task'=>'check2-square','visit'=>'geo-alt','whatsapp'=>'whatsapp','meeting'=>'camera-video'];
                     $tkIco = $tkIcons[$nearestTask->type] ?? 'check2-square';
-                    $tkRel = $tkDays < 0 ? abs($tkDays).'d atrás' : ($tkDays === 0 ? 'Hoje' : ($tkDays === 1 ? 'Amanhã' : $tkDays.'d'));
+                    $tkRel = $tkDays < 0 ? abs($tkDays).__('crm.days_ago') : ($tkDays === 0 ? __('crm.today') : ($tkDays === 1 ? __('crm.tomorrow') : $tkDays.'d'));
                     $tkSubj = \Illuminate\Support\Str::limit($nearestTask->subject, 22);
                 @endphp
                 <div class="card-task-bar" style="background:{{ $tkColor }}20;color:{{ $tkColor }};border:1px solid {{ $tkColor }}40;">
@@ -826,7 +826,7 @@
             </div>
             @endforeach
             @else
-            <div class="col-empty">Arraste leads aqui</div>
+            <div class="col-empty">{{ __('crm.drag_here') }}</div>
             @endif
 
         </div>
@@ -835,7 +835,7 @@
                 data-stage-id="{{ $stage['id'] }}"
                 data-pipeline-id="{{ $pipeline?->id }}">
             <i class="bi bi-plus"></i>
-            Adicionar lead
+            {{ __('crm.add_lead') }}
         </button>
 
     </div>
@@ -843,7 +843,7 @@
     @else
     <div style="padding:60px;text-align:center;color:#9ca3af;">
         <i class="bi bi-kanban" style="font-size:48px;opacity:.3;"></i>
-        <p style="margin-top:16px;">Nenhuma etapa configurada neste pipeline.</p>
+        <p style="margin-top:16px;">{{ __('crm.no_stages') }}</p>
     </div>
     @endif
 
@@ -856,17 +856,17 @@
 <div id="modalWon" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;align-items:center;justify-content:center;">
     <div style="background:#fff;border-radius:14px;padding:28px;width:380px;max-width:94vw;box-shadow:0 20px 60px rgba(0,0,0,.18);">
         <div style="font-size:16px;font-weight:700;color:#1a1d23;margin-bottom:8px;">
-            <i class="bi bi-trophy-fill" style="color:#10B981;margin-right:6px;"></i> Lead Ganho!
+            <i class="bi bi-trophy-fill" style="color:#10B981;margin-right:6px;"></i> {{ __('crm.won_title') }}
         </div>
         <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">
-            Informe o valor do negócio (opcional).
+            {{ __('crm.won_desc') }}
         </p>
-        <input type="number" id="wonValueInput" min="0" step="0.01" placeholder="Valor (ex: 1500.00)"
+        <input type="number" id="wonValueInput" min="0" step="0.01" placeholder="{{ __('crm.won_placeholder') }}"
                style="width:100%;padding:9px 12px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:13px;box-sizing:border-box;margin-bottom:16px;font-family:inherit;"
                onkeydown="if(event.key==='Enter') confirmWonModal()">
         <div style="display:flex;gap:8px;justify-content:flex-end;">
-            <button onclick="skipWonModal()" style="padding:8px 16px;border-radius:8px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;">Pular</button>
-            <button onclick="confirmWonModal()" style="padding:8px 20px;border-radius:8px;border:none;background:#10B981;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Confirmar</button>
+            <button onclick="skipWonModal()" style="padding:8px 16px;border-radius:8px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;">{{ __('crm.skip') }}</button>
+            <button onclick="confirmWonModal()" style="padding:8px 20px;border-radius:8px;border:none;background:#10B981;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">{{ __('crm.confirm') }}</button>
         </div>
     </div>
 </div>
@@ -875,21 +875,21 @@
 <div id="modalLost" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;align-items:center;justify-content:center;">
     <div style="background:#fff;border-radius:14px;padding:28px;width:380px;max-width:94vw;box-shadow:0 20px 60px rgba(0,0,0,.18);">
         <div style="font-size:16px;font-weight:700;color:#1a1d23;margin-bottom:8px;">
-            <i class="bi bi-x-circle-fill" style="color:#EF4444;margin-right:6px;"></i> Lead Perdido
+            <i class="bi bi-x-circle-fill" style="color:#EF4444;margin-right:6px;"></i> {{ __('crm.lost_title') }}
         </div>
         <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">
-            Selecione o motivo da perda (opcional).
+            {{ __('crm.lost_desc') }}
         </p>
         <select id="lostReasonSelect"
                 style="width:100%;padding:9px 12px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:13px;box-sizing:border-box;margin-bottom:16px;font-family:inherit;background:#fff;color:#374151;">
-            <option value="">Sem motivo</option>
+            <option value="">{{ __('crm.no_reason') }}</option>
             @foreach($lostReasons as $reason)
             <option value="{{ $reason->id }}">{{ $reason->name }}</option>
             @endforeach
         </select>
         <div style="display:flex;gap:8px;justify-content:flex-end;">
-            <button onclick="skipLostModal()" style="padding:8px 16px;border-radius:8px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;">Pular</button>
-            <button onclick="confirmLostModal()" style="padding:8px 20px;border-radius:8px;border:none;background:#EF4444;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Confirmar</button>
+            <button onclick="skipLostModal()" style="padding:8px 16px;border-radius:8px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;">{{ __('crm.skip') }}</button>
+            <button onclick="confirmLostModal()" style="padding:8px 20px;border-radius:8px;border:none;background:#EF4444;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">{{ __('crm.confirm') }}</button>
         </div>
     </div>
 </div>
@@ -899,11 +899,11 @@
 {{-- Empty state: nenhum funil criado --}}
 <div class="pipeline-empty-state">
     <i class="bi bi-diagram-3 es-icon"></i>
-    <h3>Nenhum funil configurado</h3>
-    <p>Crie seu primeiro funil de vendas para começar a organizar seus leads em etapas e acompanhar o progresso do seu negócio.</p>
+    <h3>{{ __('crm.no_pipeline') }}</h3>
+    <p>{{ __('crm.no_pipeline_desc') }}</p>
     <button class="btn-primary-sm" onclick="openPipelineDrawer()" style="font-size:14px;padding:10px 28px;gap:8px;">
         <i class="bi bi-plus-lg"></i>
-        Criar meu primeiro funil
+        {{ __('crm.create_first_pipeline') }}
     </button>
 </div>
 
@@ -914,7 +914,7 @@
 
 <aside id="pipelineDrawer">
     <div class="pd-header">
-        <span class="pd-title">Criar novo funil</span>
+        <span class="pd-title">{{ __('crm.create_new_pipeline') }}</span>
         <button class="pd-close-btn" onclick="closePipelineDrawer()">
             <i class="bi bi-x-lg"></i>
         </button>
@@ -922,12 +922,12 @@
 
     <div class="pd-body">
         <div class="pd-group">
-            <label for="pdPipelineName">Nome do funil</label>
-            <input type="text" id="pdPipelineName" class="pd-input" placeholder="Ex: Vendas 2025" autocomplete="off">
+            <label for="pdPipelineName">{{ __('crm.pipeline_name') }}</label>
+            <input type="text" id="pdPipelineName" class="pd-input" placeholder="{{ __('crm.pipeline_name_ph') }}" autocomplete="off">
         </div>
 
         <div class="pd-group">
-            <label for="pdPipelineColorText">Cor</label>
+            <label for="pdPipelineColorText">{{ __('crm.color') }}</label>
             <div class="pd-color-row">
                 <input type="color" id="pdPipelineColor" class="pd-color-pick" value="#0085f3">
                 <input type="text" id="pdPipelineColorText" class="pd-input" value="#0085f3" placeholder="#0085f3">
@@ -936,9 +936,9 @@
     </div>
 
     <div class="pd-footer">
-        <button class="pd-btn-cancel" onclick="closePipelineDrawer()">Cancelar</button>
+        <button class="pd-btn-cancel" onclick="closePipelineDrawer()">{{ __('crm.cancel') }}</button>
         <button class="pd-btn-save" id="pdBtnSave" onclick="savePipelineDrawer()">
-            <i class="bi bi-check-lg"></i> Criar funil
+            <i class="bi bi-check-lg"></i> {{ __('crm.create_pipeline_btn') }}
         </button>
     </div>
 </aside>
@@ -951,7 +951,7 @@
         <div id="importScreenUpload">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
                 <div>
-                    <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0 0 3px;">Importar Leads</h3>
+                    <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0 0 3px;">{{ __('crm.import_title') }}</h3>
                     <p id="importModalPipeline" style="font-size:12px;color:#9ca3af;margin:0;"></p>
                 </div>
                 <button onclick="closeImportModal()" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;line-height:1;padding:0;"><i class="bi bi-x-lg"></i></button>
@@ -961,31 +961,31 @@
             <div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:18px;display:flex;align-items:center;gap:12px;">
                 <i class="bi bi-file-earmark-spreadsheet" style="font-size:24px;color:#0ea5e9;flex-shrink:0;"></i>
                 <div style="flex:1;min-width:0;">
-                    <p style="font-size:12.5px;font-weight:600;color:#0369a1;margin:0 0 2px;">Planilha modelo</p>
-                    <p style="font-size:11.5px;color:#6b7280;margin:0;">Inclui as etapas do funil atual como referência</p>
+                    <p style="font-size:12.5px;font-weight:600;color:#0369a1;margin:0 0 2px;">{{ __('crm.template_title') }}</p>
+                    <p style="font-size:11.5px;color:#6b7280;margin:0;">{{ __('crm.template_desc') }}</p>
                 </div>
                 <a id="btnDownloadTemplate" href="#" class="btn-primary-sm" style="font-size:12px;padding:6px 14px;white-space:nowrap;text-decoration:none;">
-                    <i class="bi bi-download"></i> Baixar
+                    <i class="bi bi-download"></i> {{ __('crm.download') }}
                 </a>
             </div>
 
             {{-- File upload --}}
             <div style="margin-bottom:20px;">
-                <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Selecionar arquivo</label>
+                <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">{{ __('crm.select_file') }}</label>
                 <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv"
                        style="width:100%;padding:10px;border:1.5px dashed #d1d5db;border-radius:9px;font-size:13px;box-sizing:border-box;cursor:pointer;background:#fafafa;font-family:inherit;">
-                <p style="font-size:11px;color:#9ca3af;margin:5px 0 0;">Formatos: .xlsx, .xls, .csv — máximo 5 MB</p>
+                <p style="font-size:11px;color:#9ca3af;margin:5px 0 0;">{{ __('crm.file_formats') }}</p>
             </div>
 
             {{-- Actions --}}
             <div style="display:flex;gap:10px;justify-content:flex-end;">
                 <button onclick="closeImportModal()"
                         style="padding:9px 20px;border-radius:100px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;">
-                    Cancelar
+                    {{ __('crm.cancel') }}
                 </button>
                 <button id="btnImportPreview" onclick="submitPreview()"
                         style="padding:9px 24px;border-radius:100px;border:none;background:#0085f3;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
-                    <i class="bi bi-eye"></i> Pré-visualizar
+                    <i class="bi bi-eye"></i> {{ __('crm.preview') }}
                 </button>
             </div>
         </div>
@@ -994,7 +994,7 @@
         <div id="importScreenPreview" style="display:none;flex-direction:column;flex:1;min-height:0;">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;flex-shrink:0;">
                 <div>
-                    <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0 0 3px;">Pré-visualização</h3>
+                    <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0 0 3px;">{{ __('crm.preview_title') }}</h3>
                     <p id="importPreviewSummary" style="font-size:12px;color:#6b7280;margin:0;"></p>
                 </div>
                 <button onclick="closeImportModal()" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;line-height:1;padding:0;"><i class="bi bi-x-lg"></i></button>
@@ -1005,14 +1005,14 @@
                 <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
                     <thead style="position:sticky;top:0;background:#f8fafc;z-index:1;">
                         <tr>
-                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">Nome</th>
-                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">Telefone</th>
-                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">E-mail</th>
-                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">Valor</th>
-                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">Etapa</th>
-                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">Tags</th>
-                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">Origem</th>
-                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">Criado em</th>
+                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">{{ __('crm.col_name') }}</th>
+                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">{{ __('crm.col_phone') }}</th>
+                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">{{ __('crm.col_email') }}</th>
+                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">{{ __('crm.col_value') }}</th>
+                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">{{ __('crm.col_stage') }}</th>
+                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">{{ __('crm.col_tags') }}</th>
+                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">{{ __('crm.col_source') }}</th>
+                            <th style="padding:9px 12px;text-align:left;font-weight:700;color:#374151;border-bottom:1.5px solid #e8eaf0;white-space:nowrap;">{{ __('crm.col_created') }}</th>
                         </tr>
                     </thead>
                     <tbody id="importPreviewTbody"></tbody>
@@ -1023,11 +1023,11 @@
             <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-shrink:0;">
                 <button onclick="importGoBack()"
                         style="padding:9px 20px;border-radius:9px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
-                    <i class="bi bi-arrow-left"></i> Voltar
+                    <i class="bi bi-arrow-left"></i> {{ __('crm.back') }}
                 </button>
                 <button id="btnImportConfirm" onclick="confirmImport()"
                         style="padding:9px 24px;border-radius:9px;border:none;background:#10B981;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
-                    <i class="bi bi-check-circle"></i> Confirmar importação
+                    <i class="bi bi-check-circle"></i> {{ __('crm.confirm_import') }}
                 </button>
             </div>
         </div>
@@ -1035,7 +1035,7 @@
     </div>
 </div>
 
-<button class="fab-novo-lead" id="fabNovoLead" title="Novo Lead">
+<button class="fab-novo-lead" id="fabNovoLead" title="{{ __('crm.new_lead') }}">
     <i class="bi bi-plus-lg"></i>
 </button>
 
@@ -1044,6 +1044,8 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
+const LANG = @json(__('crm'));
+
 function formatBrPhone(phone) {
     let d = (phone || '').replace(/\D/g, '');
     if (d.startsWith('55') && d.length >= 12) d = d.slice(2);
@@ -1122,10 +1124,10 @@ function saveStageChange(leadId, stageId, pipId, extra = {}) {
         headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'), 'Accept': 'application/json' },
     }).done(res => {
         if (res.success) {
-            toastr.success('Lead movido!');
+            toastr.success(LANG.lead_moved);
         }
     }).fail(() => {
-        toastr.error('Erro ao mover lead. Recarregue a página.');
+        toastr.error(LANG.error_move_lead);
     });
 }
 
@@ -1268,15 +1270,15 @@ function updateCardInBoard(lead) {
 }
 
 const SOURCE_META = {
-    facebook:  { icon: 'bi-facebook',    color: '#1877F2', label: 'Facebook Ads' },
-    google:    { icon: 'bi-google',       color: '#4285F4', label: 'Google Ads' },
-    instagram: { icon: 'bi-instagram',   color: '#E1306C', label: 'Instagram' },
-    whatsapp:  { icon: 'bi-whatsapp',    color: '#25D366', label: 'WhatsApp' },
-    site:      { icon: 'bi-globe',       color: '#6366F1', label: 'Site' },
-    indicacao: { icon: 'bi-people-fill', color: '#F59E0B', label: 'Indicação' },
-    api:       { icon: 'bi-code-slash',  color: '#8B5CF6', label: 'API' },
-    manual:    { icon: 'bi-pencil',      color: '#6B7280', label: 'Manual' },
-    outro:     { icon: 'bi-three-dots',  color: '#9CA3AF', label: 'Outro' },
+    facebook:  { icon: 'bi-facebook',    color: '#1877F2', label: LANG.source_facebook },
+    google:    { icon: 'bi-google',       color: '#4285F4', label: LANG.source_google },
+    instagram: { icon: 'bi-instagram',   color: '#E1306C', label: LANG.source_instagram },
+    whatsapp:  { icon: 'bi-whatsapp',    color: '#25D366', label: LANG.source_whatsapp },
+    site:      { icon: 'bi-globe',       color: '#6366F1', label: LANG.source_site },
+    indicacao: { icon: 'bi-people-fill', color: '#F59E0B', label: LANG.source_indicacao },
+    api:       { icon: 'bi-code-slash',  color: '#8B5CF6', label: LANG.source_api },
+    manual:    { icon: 'bi-pencil',      color: '#6B7280', label: LANG.source_manual },
+    outro:     { icon: 'bi-three-dots',  color: '#9CA3AF', label: LANG.source_outro },
 };
 function renderSourceBadge(source, cls = 'source-badge') {
     const m = SOURCE_META[source] || SOURCE_META.outro;
@@ -1325,12 +1327,12 @@ function buildCard(lead) {
     const assigneeHtml = assignee ? `<div class="card-assignee" title="${escapeHtml(assignee)}">${getInitials(assignee)}</div>` : '';
 
     let actions = '';
-    if (lead.phone) actions += `<a href="tel:${lead.phone}" class="card-action-btn" onclick="event.stopPropagation();" title="Ligar"><i class="bi bi-telephone-fill"></i></a>`;
+    if (lead.phone) actions += `<a href="tel:${lead.phone}" class="card-action-btn" onclick="event.stopPropagation();" title="${escapeHtml(LANG.call)}"><i class="bi bi-telephone-fill"></i></a>`;
     if (lead.conversation_id) {
         const unread = lead.unread_count || 0;
-        actions += `<a href="/chats?open=${lead.conversation_id}" class="card-action-btn wa-btn${unread > 0 ? ' has-unread' : ''}" onclick="event.stopPropagation();" title="Abrir conversa" style="position:relative;"><i class="bi bi-whatsapp"></i>${unread > 0 ? `<span class="bubble-count">${unread}</span>` : ''}</a>`;
+        actions += `<a href="/chats?open=${lead.conversation_id}" class="card-action-btn wa-btn${unread > 0 ? ' has-unread' : ''}" onclick="event.stopPropagation();" title="${escapeHtml(LANG.open_conversation)}" style="position:relative;"><i class="bi bi-whatsapp"></i>${unread > 0 ? `<span class="bubble-count">${unread}</span>` : ''}</a>`;
     }
-    if (lead.email) actions += `<a href="mailto:${lead.email}" class="card-action-btn" onclick="event.stopPropagation();" title="Enviar email"><i class="bi bi-envelope-fill"></i></a>`;
+    if (lead.email) actions += `<a href="mailto:${lead.email}" class="card-action-btn" onclick="event.stopPropagation();" title="${escapeHtml(LANG.send_email)}"><i class="bi bi-envelope-fill"></i></a>`;
 
     const date = lead.created_at ? `<span class="card-date"><i class="bi bi-clock"></i>${escapeHtml(lead.created_at)}</span>` : '';
 
@@ -1344,7 +1346,7 @@ function buildCard(lead) {
         const cor = diff <= 1 ? '#ef4444' : diff <= 3 ? '#f59e0b' : '#10b981';
         const taskIcons = {call:'telephone',email:'envelope',task:'check2-square',visit:'geo-alt',whatsapp:'whatsapp',meeting:'camera-video'};
         const ico = taskIcons[lead.nearest_task.type] || 'check2-square';
-        const rel = diff < 0 ? Math.abs(diff) + 'd atrás' : diff === 0 ? 'Hoje' : diff === 1 ? 'Amanhã' : diff + 'd';
+        const rel = diff < 0 ? Math.abs(diff) + LANG.days_ago : diff === 0 ? LANG.today : diff === 1 ? LANG.tomorrow : diff + 'd';
         const subj = lead.nearest_task.subject.length > 22 ? lead.nearest_task.subject.substring(0, 22) + '…' : lead.nearest_task.subject;
         taskBar = `<div class="card-task-bar" style="background:${cor}20;color:${cor};border:1px solid ${cor}40;"><span class="ctb-left"><i class="bi bi-${ico}"></i> ${escapeHtml(subj)}</span><span class="ctb-right">${rel}</span></div>`;
     }
@@ -1386,7 +1388,7 @@ function pollKanban() {
                     updateCardInBoard(lead);
                 } else {
                     addCardToBoard(lead);
-                    toastr.info(`Novo lead: ${escapeHtml(lead.name)}`, '', { timeOut: 4000 });
+                    toastr.info(LANG.new_lead_toast.replace(':name', escapeHtml(lead.name)), '', { timeOut: 4000 });
                 }
             });
             if (res.server_time) _lastPollTime = res.server_time;
@@ -1437,7 +1439,7 @@ async function savePipelineDrawer() {
 
     const btn = document.getElementById('pdBtnSave');
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Criando…';
+    btn.innerHTML = `<i class="bi bi-hourglass-split"></i> ${LANG.creating}`;
 
     try {
         const res  = await fetch(CP_STORE_URL, {
@@ -1446,14 +1448,14 @@ async function savePipelineDrawer() {
             body: JSON.stringify({ name, color }),
         });
         const data = await res.json();
-        if (!res.ok || !data.success) throw new Error(data.message || 'Erro ao criar funil');
+        if (!res.ok || !data.success) throw new Error(data.message || LANG.error_create_pipeline);
 
         window.location.href = `${CP_CRM_URL}?pipeline_id=${data.pipeline.id}`;
 
     } catch (e) {
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-check-lg"></i> Criar funil';
-        toastr.error(e.message || 'Erro ao criar o funil. Tente novamente.');
+        btn.innerHTML = `<i class="bi bi-check-lg"></i> ${LANG.create_pipeline_btn}`;
+        toastr.error(e.message || LANG.error_create_pipeline);
     }
 }
 
@@ -1484,13 +1486,13 @@ function openImportModal() {
     _importToken      = null;
     const pipelineName = sel?.options[sel.selectedIndex]?.text || '';
 
-    document.getElementById('importModalPipeline').textContent = pipelineName ? `Funil: ${pipelineName}` : '';
+    document.getElementById('importModalPipeline').textContent = pipelineName ? LANG.pipeline_prefix.replace(':name', pipelineName) : '';
     document.getElementById('btnDownloadTemplate').href = `${KANBAN_TMPL_URL}?pipeline_id=${_importPipelineId}`;
     document.getElementById('importFileInput').value = '';
 
     const btn = document.getElementById('btnImportPreview');
     btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-eye"></i> Pré-visualizar';
+    btn.innerHTML = `<i class="bi bi-eye"></i> ${LANG.preview}`;
 
     document.getElementById('importScreenUpload').style.display  = '';
     document.getElementById('importScreenPreview').style.display = 'none';
@@ -1509,17 +1511,17 @@ function importGoBack() {
     document.getElementById('importScreenUpload').style.display  = '';
     const btn = document.getElementById('btnImportPreview');
     btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-eye"></i> Pré-visualizar';
+    btn.innerHTML = `<i class="bi bi-eye"></i> ${LANG.preview}`;
 }
 
 async function submitPreview() {
     const file = document.getElementById('importFileInput').files[0];
-    if (!file) { toastr.warning('Selecione um arquivo antes de pré-visualizar.'); return; }
-    if (!_importPipelineId) { toastr.error('Nenhum funil selecionado.'); return; }
+    if (!file) { toastr.warning(LANG.select_file_first); return; }
+    if (!_importPipelineId) { toastr.error(LANG.no_pipeline_selected); return; }
 
     const btn = document.getElementById('btnImportPreview');
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Analisando...';
+    btn.innerHTML = `<i class="bi bi-hourglass-split"></i> ${LANG.analyzing}`;
 
     const formData = new FormData();
     formData.append('file', file);
@@ -1529,13 +1531,13 @@ async function submitPreview() {
     try {
         const res  = await fetch(KANBAN_PREVIEW_URL, { method: 'POST', body: formData });
         const data = await res.json();
-        if (!data.success) throw new Error(data.message || 'Erro no servidor');
+        if (!data.success) throw new Error(data.message || LANG.error_analyze_file);
         _importToken = data.token;
         renderPreviewScreen(data);
     } catch (e) {
-        toastr.error('Erro ao analisar o arquivo. Verifique o formato e tente novamente.');
+        toastr.error(LANG.error_analyze_file);
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-eye"></i> Pré-visualizar';
+        btn.innerHTML = `<i class="bi bi-eye"></i> ${LANG.preview}`;
     }
 }
 
@@ -1590,16 +1592,16 @@ function renderPreviewScreen(data) {
 
     const confirmBtn = document.getElementById('btnImportConfirm');
     confirmBtn.disabled = false;
-    confirmBtn.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar importação';
+    confirmBtn.innerHTML = `<i class="bi bi-check-circle"></i> ${LANG.confirm_import}`;
 }
 
 async function confirmImport() {
-    if (!_importToken)      { toastr.error('Token ausente. Volte e tente novamente.'); return; }
-    if (!_importPipelineId) { toastr.error('Nenhum funil selecionado.'); return; }
+    if (!_importToken)      { toastr.error(LANG.token_missing); return; }
+    if (!_importPipelineId) { toastr.error(LANG.no_pipeline_selected); return; }
 
     const btn = document.getElementById('btnImportConfirm');
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Importando...';
+    btn.innerHTML = `<i class="bi bi-hourglass-split"></i> ${LANG.importing}`;
 
     const formData = new FormData();
     formData.append('token', _importToken);
@@ -1609,19 +1611,19 @@ async function confirmImport() {
     try {
         const res  = await fetch(KANBAN_IMPORT_URL, { method: 'POST', body: formData });
         const data = await res.json();
-        if (!data.success) throw new Error(data.message || 'Erro no servidor');
+        if (!data.success) throw new Error(data.message || LANG.error_import);
 
         toastr.success(
-            `${data.imported} lead${data.imported !== 1 ? 's' : ''} importado${data.imported !== 1 ? 's' : ''} com sucesso!` +
-            (data.skipped > 0 ? ` ${data.skipped} ignorado(s).` : ''),
+            LANG.import_success.replace(':count', data.imported) +
+            (data.skipped > 0 ? ' ' + LANG.import_skipped.replace(':count', data.skipped) : ''),
             '', { timeOut: 4000 }
         );
         closeImportModal();
         setTimeout(() => window.location.reload(), 1500);
     } catch (e) {
-        toastr.error(e.message || 'Erro ao importar. Tente novamente.');
+        toastr.error(e.message || LANG.error_import);
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar importação';
+        btn.innerHTML = `<i class="bi bi-check-circle"></i> ${LANG.confirm_import}`;
     }
 }
 

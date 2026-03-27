@@ -1,6 +1,6 @@
 @extends('tenant.layouts.app')
 @php
-    $title    = 'Campos Extras';
+    $title    = __('settings.cf_title');
     $pageIcon = 'sliders';
 @endphp
 
@@ -151,28 +151,28 @@
 
     <div class="cf-card">
         <div class="cf-card-header">
-            <h3><i class="bi bi-layout-text-window-sidebar" style="color:#3B82F6;"></i> Campos Personalizados</h3>
+            <h3><i class="bi bi-layout-text-window-sidebar" style="color:#3B82F6;"></i> {{ __('settings.cf_heading') }}</h3>
             <button class="btn-new" onclick="openDrawer()">
-                <i class="bi bi-plus-lg"></i> Novo campo
+                <i class="bi bi-plus-lg"></i> {{ __('settings.cf_new') }}
             </button>
         </div>
 
         @if($fields->isEmpty())
         <div class="empty-state">
             <i class="bi bi-layout-text-window-sidebar"></i>
-            <p style="font-weight:600;color:#374151;">Nenhum campo personalizado</p>
-            <p style="font-size:13px;">Campos extras aparecem no formulário de leads e na API.</p>
+            <p style="font-weight:600;color:#374151;">{{ __('settings.cf_no_fields') }}</p>
+            <p style="font-size:13px;">{{ __('settings.cf_no_fields_desc') }}</p>
         </div>
         @else
         <table class="cf-table" id="cfTable">
             <thead>
                 <tr>
-                    <th>Label</th>
-                    <th>Nome interno</th>
-                    <th>Tipo</th>
-                    <th>Obrigatório</th>
-                    <th>No card</th>
-                    <th>Status</th>
+                    <th>{{ __('settings.cf_col_label') }}</th>
+                    <th>{{ __('settings.cf_col_internal') }}</th>
+                    <th>{{ __('settings.cf_col_type') }}</th>
+                    <th>{{ __('settings.cf_col_required') }}</th>
+                    <th>{{ __('settings.cf_col_on_card') }}</th>
+                    <th>{{ __('settings.cf_col_status') }}</th>
                     <th style="width:80px;"></th>
                 </tr>
             </thead>
@@ -190,16 +190,16 @@
                     </td>
                     <td>
                         <span class="status-badge {{ $f->is_active ? 'status-active' : 'status-inactive' }}">
-                            {{ $f->is_active ? 'Ativo' : 'Inativo' }}
+                            {{ $f->is_active ? __('settings.cf_active') : __('settings.cf_inactive') }}
                         </span>
                     </td>
                     <td>
                         <div style="display:flex;gap:4px;">
-                            <button class="btn-icon" title="Editar"
+                            <button class="btn-icon" title="{{ __('settings.cf_edit') }}"
                                 onclick="editField({{ $f->id }}, {{ json_encode($f->label) }}, {{ json_encode($f->field_type) }}, {{ json_encode($f->options_json ?? []) }}, {{ $f->is_required ? 'true' : 'false' }}, {{ $f->show_on_card ? 'true' : 'false' }}, {{ $f->is_active ? 'true' : 'false' }}, {{ $f->sort_order }})">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn-icon danger" title="Excluir"
+                            <button class="btn-icon danger" title="{{ __('settings.cf_delete') }}"
                                 onclick="deleteField({{ $f->id }}, {{ json_encode($f->label) }})">
                                 <i class="bi bi-trash3"></i>
                             </button>
@@ -219,7 +219,7 @@
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
     <div class="drawer-header">
-        <span id="drawerTitle">Novo Campo</span>
+        <span id="drawerTitle">{{ __('settings.cf_new_title') }}</span>
         <button onclick="closeDrawer()" style="background:none;border:none;font-size:18px;color:#6b7280;cursor:pointer;">
             <i class="bi bi-x-lg"></i>
         </button>
@@ -228,56 +228,56 @@
         <input type="hidden" id="editFieldId">
 
         <div class="form-group">
-            <label>Label <span style="color:#EF4444;">*</span></label>
-            <input type="text" class="form-control" id="dLabel" placeholder="Ex: CPF, Empresa, Data de nascimento">
+            <label>{{ __('settings.cf_label') }} <span style="color:#EF4444;">*</span></label>
+            <input type="text" class="form-control" id="dLabel" placeholder="{{ __('settings.cf_label_ph') }}">
             <div class="form-error d-none" id="errLabel"></div>
         </div>
 
         <div class="form-group" id="typeGroup">
-            <label>Tipo de campo <span style="color:#EF4444;">*</span></label>
+            <label>{{ __('settings.cf_field_type') }} <span style="color:#EF4444;">*</span></label>
             <select class="form-control" id="dType" onchange="onTypeChange()">
-                <option value="text">Texto curto</option>
-                <option value="textarea">Texto longo</option>
-                <option value="number">Número</option>
-                <option value="currency">Moeda (R$)</option>
-                <option value="date">Data</option>
-                <option value="select">Seleção única</option>
-                <option value="multiselect">Seleção múltipla</option>
-                <option value="checkbox">Checkbox (Sim/Não)</option>
-                <option value="url">URL / Link</option>
-                <option value="phone">Telefone</option>
-                <option value="email">E-mail</option>
-                <option value="file">Arquivo (upload)</option>
+                <option value="text">{{ __('settings.cf_type_text') }}</option>
+                <option value="textarea">{{ __('settings.cf_type_textarea') }}</option>
+                <option value="number">{{ __('settings.cf_type_number') }}</option>
+                <option value="currency">{{ __('settings.cf_type_currency') }}</option>
+                <option value="date">{{ __('settings.cf_type_date') }}</option>
+                <option value="select">{{ __('settings.cf_type_select') }}</option>
+                <option value="multiselect">{{ __('settings.cf_type_multiselect') }}</option>
+                <option value="checkbox">{{ __('settings.cf_type_checkbox') }}</option>
+                <option value="url">{{ __('settings.cf_type_url') }}</option>
+                <option value="phone">{{ __('settings.cf_type_phone') }}</option>
+                <option value="email">{{ __('settings.cf_type_email') }}</option>
+                <option value="file">{{ __('settings.cf_type_file') }}</option>
             </select>
             <div class="type-hint" id="typeHint"></div>
         </div>
 
         <div class="form-group d-none" id="optionsGroup">
-            <label>Opções <small style="color:#9ca3af;">(uma por linha)</small></label>
+            <label>{{ __('settings.cf_options') }} <small style="color:#9ca3af;">({{ __('settings.cf_options_hint') }})</small></label>
             <textarea class="form-control" id="dOptions" rows="5"
-                      placeholder="Opção A&#10;Opção B&#10;Opção C"></textarea>
+                      placeholder="{{ __('settings.cf_options_ph') }}"></textarea>
             <div class="form-error d-none" id="errOptions"></div>
         </div>
 
         <div style="border-top:1px solid #f0f2f7;padding-top:14px;margin-top:4px;">
             <label class="check-row">
                 <input type="checkbox" id="dRequired">
-                <span>Campo obrigatório</span>
+                <span>{{ __('settings.cf_required') }}</span>
             </label>
             <label class="check-row">
                 <input type="checkbox" id="dShowOnCard">
-                <span>Mostrar em destaque no card do lead</span>
+                <span>{{ __('settings.cf_show_on_card') }}</span>
             </label>
             <label class="check-row">
                 <input type="checkbox" id="dActive" checked>
-                <span>Campo ativo</span>
+                <span>{{ __('settings.cf_field_active') }}</span>
             </label>
         </div>
     </div>
     <div class="drawer-footer">
-        <button class="btn-cancel" onclick="closeDrawer()">Cancelar</button>
+        <button class="btn-cancel" onclick="closeDrawer()">{{ __('settings.cf_cancel') }}</button>
         <button class="btn-save" id="btnSave" onclick="saveField()">
-            <i class="bi bi-check2"></i> Salvar
+            <i class="bi bi-check2"></i> {{ __('settings.cf_save') }}
         </button>
     </div>
 </div>
@@ -285,30 +285,31 @@
 
 @push('scripts')
 <script>
+const SLANG = @json(__('settings'));
 const storeUrl  = "{{ route('settings.custom-fields.store') }}";
 const updateUrl = (id) => `/configuracoes/campos-extras/${id}`;
 const deleteUrl = (id) => `/configuracoes/campos-extras/${id}`;
 const csrf      = document.querySelector('meta[name=csrf-token]').content;
 
 const typeHints = {
-    text: 'Campo de texto de uma linha.',
-    textarea: 'Campo de texto multi-linha.',
-    number: 'Aceita valores numéricos.',
-    currency: 'Valor monetário (decimal).',
-    date: 'Seletor de data.',
-    select: 'Menu suspenso, escolha uma opção.',
-    multiselect: 'Múltiplas opções podem ser selecionadas.',
-    checkbox: 'Verdadeiro ou falso.',
-    url: 'Link / endereço web.',
-    phone: 'Número de telefone.',
-    email: 'Endereço de e-mail.',
+    text: SLANG.cf_hint_text,
+    textarea: SLANG.cf_hint_textarea,
+    number: SLANG.cf_hint_number,
+    currency: SLANG.cf_hint_currency,
+    date: SLANG.cf_hint_date,
+    select: SLANG.cf_hint_select,
+    multiselect: SLANG.cf_hint_multiselect,
+    checkbox: SLANG.cf_hint_checkbox,
+    url: SLANG.cf_hint_url,
+    phone: SLANG.cf_hint_phone,
+    email: SLANG.cf_hint_email,
 };
 
 let editingId = null;
 
 function openDrawer() {
     editingId = null;
-    document.getElementById('drawerTitle').textContent = 'Novo Campo';
+    document.getElementById('drawerTitle').textContent = SLANG.cf_new_title;
     document.getElementById('editFieldId').value = '';
     document.getElementById('dLabel').value = '';
     document.getElementById('dType').value = 'text';
@@ -324,7 +325,7 @@ function openDrawer() {
 
 function editField(id, label, type, options, required, showOnCard, active) {
     editingId = id;
-    document.getElementById('drawerTitle').textContent = 'Editar Campo';
+    document.getElementById('drawerTitle').textContent = SLANG.cf_edit_title;
     document.getElementById('editFieldId').value = id;
     document.getElementById('dLabel').value = label;
     document.getElementById('dType').value = type;
@@ -384,7 +385,7 @@ async function saveField() {
         const data = await res.json();
 
         if ((res.status === 200 || res.status === 201) && data.success) {
-            toastr.success(isEdit ? 'Campo atualizado!' : 'Campo criado!');
+            toastr.success(isEdit ? SLANG.cf_updated : SLANG.cf_created);
             closeDrawer();
             setTimeout(() => location.reload(), 700);
         } else if (checkLimitReached(data)) {
@@ -395,17 +396,17 @@ async function saveField() {
                 if (el) { el.textContent = data.errors[f][0]; el.classList.remove('d-none'); }
             });
         } else {
-            toastr.error(data.message ?? 'Erro ao salvar campo.');
+            toastr.error(data.message ?? SLANG.cf_error_save);
         }
-    } catch { toastr.error('Erro de conexão.'); }
+    } catch { toastr.error(SLANG.cf_error_connection); }
     btn.disabled = false;
 }
 
 function deleteField(id, label) {
     confirmAction({
-        title: 'Excluir campo personalizado',
-        message: `Excluir o campo "${label}"? Todos os valores associados serão perdidos.`,
-        confirmText: 'Excluir',
+        title: SLANG.cf_delete_title,
+        message: SLANG.cf_delete_msg.replace(':label', label),
+        confirmText: SLANG.cf_delete,
         onConfirm: async () => {
             try {
                 const res  = await fetch(deleteUrl(id), {
@@ -414,13 +415,13 @@ function deleteField(id, label) {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    toastr.success('Campo excluído.');
+                    toastr.success(SLANG.cf_deleted);
                     const row = document.getElementById(`cf-row-${id}`);
                     if (row) row.remove();
                 } else {
-                    toastr.error(data.message ?? 'Erro ao excluir.');
+                    toastr.error(data.message ?? SLANG.cf_error_delete);
                 }
-            } catch { toastr.error('Erro de conexão.'); }
+            } catch { toastr.error(SLANG.cf_error_connection); }
         },
     });
 }

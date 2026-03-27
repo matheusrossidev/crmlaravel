@@ -1,0 +1,142 @@
+<?php
+
+return [
+    // Drawer header
+    'new_lead'          => 'Novo Lead',
+    'loading'           => 'Carregando...',
+    'created_at'        => 'Criado em :date',
+    'view_profile'      => 'Ver perfil completo',
+    'delete_lead'       => 'Excluir lead',
+    'close'             => 'Fechar',
+
+    // Sections
+    'basic_info'        => 'Informações Básicas',
+    'pipeline_stage'    => 'Pipeline & Etapa',
+    'deal'              => 'Negócio',
+    'notes'             => 'Notas',
+    'attachments'       => 'Anexos',
+    'products'          => 'Produtos',
+    'custom_fields'     => 'Campos Personalizados',
+    'advanced'          => 'Avançado',
+    'history'           => 'Histórico',
+    'scheduled_pending' => 'Agendamentos Pendentes',
+
+    // Fields
+    'name'              => 'Nome',
+    'name_placeholder'  => 'Nome do lead',
+    'phone'             => 'Telefone / WhatsApp',
+    'phone_placeholder' => '(11) 99999-9999',
+    'email'             => 'E-mail',
+    'email_placeholder' => 'email@exemplo.com',
+    'company'           => 'Empresa',
+    'company_placeholder' => 'Nome da empresa',
+    'birthday'          => 'Data de Nascimento',
+    'value'             => 'Valor (R$)',
+    'value_placeholder' => '0,00',
+    'tags'              => 'Tags',
+    'tags_placeholder'  => 'Digite e pressione Enter ou vírgula...',
+    'pipeline'          => 'Pipeline',
+    'select_pipeline'   => 'Selecione o pipeline',
+    'stage'             => 'Etapa',
+    'select_stage_first' => 'Selecione primeiro o pipeline',
+    'source'            => 'Origem',
+
+    // Source options
+    'source_manual'     => 'Manual',
+    'source_facebook'   => 'Facebook Ads',
+    'source_google'     => 'Google Ads',
+    'source_instagram'  => 'Instagram',
+    'source_whatsapp'   => 'WhatsApp',
+    'source_site'       => 'Site',
+    'source_indicacao'  => 'Indicação',
+    'source_outro'      => 'Outro',
+
+    // Notes
+    'note_placeholder'  => 'Escreva uma nota...',
+    'add_note'          => 'Adicionar Nota',
+    'delete_note_title' => 'Excluir nota',
+
+    // Attachments
+    'drop_files'        => 'Clique ou arraste arquivos',
+    'drop_desc'         => 'PDF, imagens, documentos — máx. 20 MB',
+    'open'              => 'Abrir',
+    'remove'            => 'Remover',
+
+    // Products
+    'add'               => 'Adicionar',
+    'product'           => 'Produto',
+    'qty'               => 'Qtd',
+    'link_product'      => 'Vincular',
+
+    // UTM
+    'utm_source'        => 'Fonte (Source)',
+    'utm_medium'        => 'Mídia (Medium)',
+    'utm_campaign'      => 'Campanha (Campaign)',
+    'utm_content'       => 'Conteúdo (Content)',
+    'utm_term'          => 'Termo (Term)',
+
+    // Scheduled
+    'schedule'          => 'Agendar',
+    'view_all'          => 'Ver todos',
+
+    // Actions
+    'cancel'            => 'Cancelar',
+    'save'              => 'Salvar',
+
+    // JS messages
+    'error_load'        => 'Erro ao carregar lead.',
+    'error_add_note'    => 'Erro ao adicionar nota.',
+    'confirm_delete_note' => 'Excluir esta nota?',
+    'error_delete_note' => 'Erro ao excluir nota.',
+    'file_too_large'    => 'Arquivo muito grande (máx. 20 MB).',
+    'save_first'        => 'Salve o lead antes de anexar arquivos.',
+    'file_attached'     => 'Arquivo anexado!',
+    'error_upload'      => 'Erro ao enviar.',
+    'error_connection'  => 'Erro de conexão.',
+    'confirm_delete_attach' => 'Remover este anexo?',
+    'attach_removed'    => 'Anexo removido.',
+    'error_remove_attach' => 'Erro ao remover anexo.',
+    'name_required'     => 'Nome é obrigatório',
+    'pipeline_required' => 'Selecione um pipeline',
+    'stage_required'    => 'Selecione uma etapa',
+    'lead_created'      => 'Lead criado!',
+    'lead_updated'      => 'Lead atualizado!',
+    'plan_limit'        => 'Limite do plano atingido.',
+    'confirm_delete'    => 'Tem certeza que deseja excluir este lead?',
+    'lead_deleted'      => 'Lead excluído.',
+    'error_delete'      => 'Erro ao excluir lead.',
+    'select_stage'      => 'Selecionar etapa',
+    'no_stages'         => 'Nenhuma etapa disponível',
+    'no_notes'          => 'Nenhuma nota ainda.',
+    'no_scheduled'      => 'Nenhum agendamento pendente.',
+    'file'              => 'Arquivo',
+    'select_product'    => 'Selecione um produto.',
+
+    // Contacts page (index)
+    'contacts_title'    => 'Contatos',
+    'search'            => 'Buscar...',
+    'responsible_filter' => 'Responsável',
+    'ai_agent_filter'   => 'Agente IA',
+    'export'            => 'Exportar',
+    'import'            => 'Importar',
+    'col_name'          => 'Nome',
+    'col_phone'         => 'Telefone',
+    'col_email'         => 'E-mail',
+    'col_stage'         => 'Etapa',
+    'col_value'         => 'Valor',
+    'col_source'        => 'Origem',
+    'col_campaign'      => 'Campanha',
+    'col_created'       => 'Cadastro',
+    'no_leads'          => 'Nenhum lead encontrado.',
+    'add_first_lead'    => 'Adicionar o primeiro lead',
+    'of_leads'          => 'de :total leads',
+    'import_title'      => 'Importar Leads',
+    'import_desc'       => 'Envie um arquivo <strong>.xlsx</strong> ou <strong>.csv</strong> com as colunas:',
+    'import_columns'    => 'nome, telefone, email, valor, origem',
+    'import_btn'        => 'Importar',
+    'importing'         => 'Importando...',
+    'import_success'    => ':imported lead(s) importado(s).',
+    'import_skipped'    => ':skipped ignorado(s).',
+    'import_error'      => 'Erro ao importar.',
+    'select_file_alert' => 'Selecione um arquivo.',
+];

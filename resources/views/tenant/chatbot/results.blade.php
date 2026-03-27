@@ -1,14 +1,14 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Resultados — ' . $flow->name;
+    $title    = __('chatbot.results_title') . ' — ' . $flow->name;
     $pageIcon = 'bar-chart-line';
 @endphp
 
 @section('topbar_actions')
 <div class="topbar-actions">
     <a href="{{ route('chatbot.flows.index') }}" class="btn-secondary-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;">
-        <i class="bi bi-arrow-left"></i> Voltar
+        <i class="bi bi-arrow-left"></i> {{ __('chatbot.results_back') }}
     </a>
 </div>
 @endsection
@@ -104,6 +104,8 @@
 
 @push('scripts')
 <script>
+const CBLANG = @json(__('chatbot'));
+
 function filterResults() {
     const q      = document.getElementById('resultSearch').value.toLowerCase();
     const status = document.getElementById('resultStatus').value;
@@ -149,14 +151,14 @@ function toggleTranscript(btn, convId, channel) {
                             const side = m.direction === 'outbound' || m.from_bot ? 'bot' : 'user';
                             return `<div class="transcript-msg ${side}">${escapeHtml(m.content || m.body || '')}</div>`;
                         }).join('')
-                        : '<span style="color:#9ca3af;font-size:12px;">Nenhuma mensagem encontrada.</span>'
+                        : '<span style="color:#9ca3af;font-size:12px;">' + CBLANG.results_no_messages + '</span>'
                     }
                 </div>
             </td>`;
             btn.closest('tr').after(tr);
         })
         .catch(() => {
-            if (typeof toastr !== 'undefined') toastr.error('Erro ao carregar conversa.');
+            if (typeof toastr !== 'undefined') toastr.error(CBLANG.results_load_error);
         })
         .finally(() => { btn.disabled = false; });
 }
@@ -181,7 +183,7 @@ function updateDeleteBtn() {
 async function deleteSelected() {
     const checks = document.querySelectorAll('.result-check:checked');
     if (!checks.length) return;
-    if (!confirm(`Excluir ${checks.length} resultado(s)? Esta ação não pode ser desfeita.`)) return;
+    if (!confirm(CBLANG.results_confirm_delete.replace(':count', checks.length))) return;
 
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
     const channel = '{{ $flow->channel }}';
@@ -209,7 +211,7 @@ async function deleteSelected() {
     }
 
     if (deleted > 0 && typeof toastr !== 'undefined') {
-        toastr.success(`${deleted} resultado(s) excluído(s).`);
+        toastr.success(CBLANG.results_deleted.replace(':count', deleted));
     }
     document.getElementById('selectAllCheck').checked = false;
     updateDeleteBtn();
@@ -251,20 +253,20 @@ function exportCSV() {
     <div class="results-kpi-row">
         <div class="results-kpi">
             <div class="results-kpi-value">{{ $totalCount }}</div>
-            <div class="results-kpi-label">Total de conversas</div>
+            <div class="results-kpi-label">{{ __('chatbot.results_total') }}</div>
         </div>
         <div class="results-kpi">
             <div class="results-kpi-value">{{ $rows->where('status', 'closed')->count() }}</div>
-            <div class="results-kpi-label">Finalizadas</div>
+            <div class="results-kpi-label">{{ __('chatbot.results_finished') }}</div>
         </div>
         <div class="results-kpi">
             <div class="results-kpi-value">{{ $rows->where('status', 'open')->count() }}</div>
-            <div class="results-kpi-label">Em andamento</div>
+            <div class="results-kpi-label">{{ __('chatbot.results_in_progress') }}</div>
         </div>
         @if($flow->channel === 'website')
         <div class="results-kpi">
             <div class="results-kpi-value">{{ $rows->whereNotNull('lead_id')->count() }}</div>
-            <div class="results-kpi-label">Leads criados</div>
+            <div class="results-kpi-label">{{ __('chatbot.results_leads_created') }}</div>
         </div>
         @endif
     </div>
@@ -272,20 +274,20 @@ function exportCSV() {
     {{-- Table card --}}
     <div class="results-card">
         <div class="results-card-header">
-            <h3><i class="bi bi-table" style="margin-right:6px;"></i> Respostas</h3>
+            <h3><i class="bi bi-table" style="margin-right:6px;"></i> {{ __('chatbot.results_table_title') }}</h3>
             <div class="results-filters">
-                <input type="text" id="resultSearch" placeholder="Buscar..." oninput="filterResults()">
+                <input type="text" id="resultSearch" placeholder="{{ __('chatbot.results_search_placeholder') }}" oninput="filterResults()">
                 <select id="resultStatus" onchange="filterResults()">
-                    <option value="">Todos status</option>
-                    <option value="open">Em andamento</option>
-                    <option value="closed">Finalizado</option>
+                    <option value="">{{ __('chatbot.results_filter_all') }}</option>
+                    <option value="open">{{ __('chatbot.results_filter_open') }}</option>
+                    <option value="closed">{{ __('chatbot.results_filter_closed') }}</option>
                 </select>
                 <button class="btn-export" onclick="exportCSV()">
-                    <i class="bi bi-download"></i> CSV
+                    <i class="bi bi-download"></i> {{ __('chatbot.results_csv') }}
                 </button>
                 <button id="btnDeleteSelected" onclick="deleteSelected()"
                         style="display:none;align-items:center;gap:5px;background:#fee2e2;color:#ef4444;border:1.5px solid #fecaca;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">
-                    <i class="bi bi-trash"></i> Excluir (<span class="delete-count">0</span>)
+                    <i class="bi bi-trash"></i> {{ __('chatbot.results_delete_selected') }} (<span class="delete-count">0</span>)
                 </button>
             </div>
         </div>
@@ -293,7 +295,7 @@ function exportCSV() {
         @if($rows->isEmpty())
             <div class="empty-results">
                 <i class="bi bi-inbox"></i>
-                <p>Nenhum resultado ainda. As respostas aparecem aqui quando visitantes interagem com o chatbot.</p>
+                <p>{{ __('chatbot.results_empty') }}</p>
             </div>
         @else
             <div class="results-table-wrap">
@@ -307,7 +309,7 @@ function exportCSV() {
                             @foreach($variableKeys as $vk)
                             <th>{{ ucfirst(str_replace('_', ' ', $vk)) }}</th>
                             @endforeach
-                            <th>Status</th>
+                            <th>{{ __('chatbot.results_status') }}</th>
                             <th class="col-actions"></th>
                         </tr>
                     </thead>
@@ -336,7 +338,7 @@ function exportCSV() {
                             {{-- Status --}}
                             <td>
                                 <span class="status-dot {{ $row['status'] }}"></span>
-                                {{ $row['status'] === 'closed' ? 'Finalizado' : 'Em andamento' }}
+                                {{ $row['status'] === 'closed' ? __('chatbot.results_status_closed') : __('chatbot.results_status_open') }}
                             </td>
 
                             {{-- Actions --}}
@@ -344,7 +346,7 @@ function exportCSV() {
                                 <button type="button"
                                         onclick="toggleTranscript(this, {{ $row['id'] }}, '{{ $flow->channel }}')"
                                         style="background:none;border:none;color:#3B82F6;cursor:pointer;font-size:12px;font-weight:600;padding:4px 8px;border-radius:6px;"
-                                        title="Ver conversa">
+                                        title="{{ __('chatbot.results_view_conversation') }}">
                                     <i class="bi bi-chat-text"></i>
                                 </button>
                             </td>

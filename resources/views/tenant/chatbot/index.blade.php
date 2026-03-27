@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Chatbot Builder';
+    $title    = __('chatbot.page_title');
     $pageIcon = 'diagram-3';
 @endphp
 
@@ -284,6 +284,7 @@
 @push('scripts')
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+const CBLANG = @json(__('chatbot'));
 
 // ── Fechar dropdowns ao clicar fora ──────────────────────────────────────────
 document.addEventListener('click', function(e) {
@@ -352,7 +353,7 @@ async function tcmCall(message) {
         data = await res.json();
     } catch (e) {
         tcmRemoveTyping(loadingId);
-        tcmAppendSystem('❌ Erro ao comunicar com o servidor.');
+        tcmAppendSystem(CBLANG.test_server_error);
         document.getElementById('tcmSendBtn').disabled = false;
         tcmBusy = false;
         return;
@@ -465,7 +466,7 @@ function toggleFlowActive(flowId, currentlyActive, btn) {
     })
     .catch(() => {
         btn.disabled = false;
-        if (typeof toastr !== 'undefined') toastr.error('Erro ao alterar status do fluxo.');
+        if (typeof toastr !== 'undefined') toastr.error(CBLANG.toast_toggle_error);
     });
 }
 
@@ -474,7 +475,7 @@ let _deleteFlowForm = null;
 
 function openFlowDeleteModal(form, name) {
     _deleteFlowForm = form;
-    document.getElementById('delFlowName').textContent = name;
+    document.getElementById('delFlowText').innerHTML = CBLANG.delete_modal_text.replace(':name', name);
     document.getElementById('delFlowModal').classList.add('open');
 }
 
@@ -504,16 +505,16 @@ function openEmbedModal(scriptUrl, widgetType, publicUrl) {
         el.value = divCode + '\n' + scriptTag;
         el.rows = 4;
         instructions.innerHTML = widgetType === 'page'
-            ? 'Para exibir o chatbot em <strong>página inteira</strong>, cole o código abaixo no <code>&lt;body&gt;</code> da página dedicada:'
-            : 'Para exibir o chatbot <strong>embutido na página</strong>, cole o código abaixo onde deseja que ele apareça:';
+            ? CBLANG.embed_modal_paste_fullpage
+            : CBLANG.embed_modal_paste_inline;
         divHint.style.display = 'block';
         divHint.innerHTML = widgetType === 'page'
-            ? '<i class="bi bi-info-circle"></i> O <code>&lt;div id="syncro-chat"&gt;</code> ocupará toda a tela. Ideal para uma página dedicada ao chat (ex: <code>/atendimento</code>).'
-            : '<i class="bi bi-info-circle"></i> O <code>&lt;div id="syncro-chat"&gt;</code> é o container do chatbot. Ajuste <code>width</code> e <code>height</code> conforme necessário.';
+            ? CBLANG.embed_modal_hint_fullpage
+            : CBLANG.embed_modal_hint_inline;
     } else {
         el.value = scriptTag;
         el.rows = 3;
-        instructions.innerHTML = 'Cole este código antes do <code>&lt;/body&gt;</code> do seu site. O widget flutuante aparecerá no canto inferior direito:';
+        instructions.innerHTML = CBLANG.embed_modal_bubble_hint;
         divHint.style.display = 'none';
     }
 
@@ -522,7 +523,7 @@ function openEmbedModal(scriptUrl, widgetType, publicUrl) {
 
 function copyFlowLink(url) {
     navigator.clipboard.writeText(url).then(function() {
-        if (typeof toastr !== 'undefined') toastr.success('Link copiado!');
+        if (typeof toastr !== 'undefined') toastr.success(CBLANG.toast_link_copied);
     });
 }
 
@@ -580,20 +581,20 @@ function closeWidgetTest() {
 
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
         <i class="bi bi-diagram-3" style="color:#3B82F6;font-size:16px;"></i>
-        <span style="font-size:15px;font-weight:700;color:#1a1d23;">Chatbot Builder</span>
+        <span style="font-size:15px;font-weight:700;color:#1a1d23;">{{ __('chatbot.page_title') }}</span>
         <a href="{{ route('chatbot.flows.onboarding') }}" class="btn-primary-sm" style="margin-left:auto;text-decoration:none;display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 14px;">
-            <i class="bi bi-plus-lg"></i> Novo Fluxo
+            <i class="bi bi-plus-lg"></i> {{ __('chatbot.new_flow') }}
         </a>
     </div>
 
     @if($flows->isEmpty())
         <div class="empty-state">
             <i class="bi bi-diagram-3"></i>
-            <h3>Nenhum fluxo criado ainda</h3>
+            <h3>{{ __('chatbot.empty_title') }}</h3>
             <p>
-                Crie um fluxo para atender seus contatos automaticamente no WhatsApp.<br>
+                {{ __('chatbot.empty_description') }}<br>
                 <a href="{{ route('chatbot.flows.onboarding') }}" style="color:#3B82F6;font-weight:600;">
-                    Criar primeiro fluxo →
+                    {{ __('chatbot.empty_cta') }}
                 </a>
             </p>
         </div>
@@ -611,11 +612,11 @@ function closeWidgetTest() {
                 <div style="display:flex;align-items:flex-start;gap:10px;">
                     <a href="{{ route('chatbot.flows.edit', $flow) }}" style="flex:1;min-width:0;text-decoration:none;color:inherit;">
                         <div class="flow-name" style="font-size:15px;margin-bottom:2px;">{{ $flow->name }}</div>
-                        <div style="font-size:11.5px;color:#9ca3af;">Última edição: {{ $flow->updated_at?->diffForHumans() }}</div>
+                        <div style="font-size:11.5px;color:#9ca3af;">{{ __('chatbot.last_edit') }} {{ $flow->updated_at?->diffForHumans() }}</div>
                     </a>
 
                     {{-- Toggle --}}
-                    <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;cursor:pointer;" title="{{ $flow->is_active ? 'Desativar' : 'Ativar' }}">
+                    <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;cursor:pointer;" title="{{ $flow->is_active ? __('chatbot.deactivate') : __('chatbot.activate') }}">
                         <input type="checkbox" {{ $flow->is_active ? 'checked' : '' }}
                                onchange="toggleFlowActive({{ $flow->id }}, {{ $flow->is_active ? 'true' : 'false' }}, this)"
                                style="opacity:0;width:0;height:0;">
@@ -630,29 +631,29 @@ function closeWidgetTest() {
                         </button>
                         <div class="flow-dropdown" style="display:none;position:absolute;right:0;top:36px;background:#fff;border:1px solid #e8eaf0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:180px;z-index:10;padding:6px 0;">
                             <a href="{{ route('chatbot.flows.edit', $flow) }}" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#374151;text-decoration:none;transition:background .1s;font-weight:500;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
-                                <i class="bi bi-pencil" style="font-size:12px;color:#6b7280;"></i> Editar
+                                <i class="bi bi-pencil" style="font-size:12px;color:#6b7280;"></i> {{ __('chatbot.dropdown_edit') }}
                             </a>
                             <a href="{{ route('chatbot.flows.results', $flow) }}" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#374151;text-decoration:none;transition:background .1s;font-weight:500;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
-                                <i class="bi bi-bar-chart-line" style="font-size:12px;color:#6b7280;"></i> Resultados
+                                <i class="bi bi-bar-chart-line" style="font-size:12px;color:#6b7280;"></i> {{ __('chatbot.dropdown_results') }}
                             </a>
                             @if($flow->website_token)
                             <button onclick="openWidgetTest('{{ $flow->website_token }}');this.closest('.flow-dropdown').classList.remove('show')" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#374151;background:none;border:none;width:100%;text-align:left;cursor:pointer;font-weight:500;font-family:inherit;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
-                                <i class="bi bi-play-circle" style="font-size:12px;color:#6b7280;"></i> Testar
+                                <i class="bi bi-play-circle" style="font-size:12px;color:#6b7280;"></i> {{ __('chatbot.dropdown_test') }}
                             </button>
                             @if($flow->slug)
                             <button onclick="copyFlowLink('{{ config('app.url') }}/chat/{{ auth()->user()->tenant->slug }}/{{ $flow->slug }}');this.closest('.flow-dropdown').classList.remove('show')" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#374151;background:none;border:none;width:100%;text-align:left;cursor:pointer;font-weight:500;font-family:inherit;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
-                                <i class="bi bi-link-45deg" style="font-size:12px;color:#6b7280;"></i> Link
+                                <i class="bi bi-link-45deg" style="font-size:12px;color:#6b7280;"></i> {{ __('chatbot.dropdown_link') }}
                             </button>
                             @endif
                             <button onclick="openEmbedModal('{{ config('app.url') }}/api/widget/{{ $flow->website_token }}.js', '{{ $flow->widget_type ?? 'bubble' }}', '{{ $flow->slug ? config('app.url') . '/chat/' . auth()->user()->tenant->slug . '/' . $flow->slug : '' }}');this.closest('.flow-dropdown').classList.remove('show')" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#374151;background:none;border:none;width:100%;text-align:left;cursor:pointer;font-weight:500;font-family:inherit;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
-                                <i class="bi bi-code-slash" style="font-size:12px;color:#6b7280;"></i> Embed
+                                <i class="bi bi-code-slash" style="font-size:12px;color:#6b7280;"></i> {{ __('chatbot.dropdown_embed') }}
                             </button>
                             @endif
                             <div style="height:1px;background:#f0f2f7;margin:4px 0;"></div>
                             <form method="POST" action="{{ route('chatbot.flows.destroy', $flow) }}">
                                 @csrf @method('DELETE')
                                 <button type="button" onclick="openFlowDeleteModal(this.closest('form'), '{{ addslashes($flow->name) }}')" style="display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:#ef4444;background:none;border:none;width:100%;text-align:left;cursor:pointer;font-weight:500;font-family:inherit;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background=''">
-                                    <i class="bi bi-trash3" style="font-size:12px;"></i> Excluir
+                                    <i class="bi bi-trash3" style="font-size:12px;"></i> {{ __('chatbot.dropdown_delete') }}
                                 </button>
                             </form>
                         </div>
@@ -662,27 +663,27 @@ function closeWidgetTest() {
                 {{-- Badges --}}
                 <div style="display:flex;flex-wrap:wrap;gap:6px;">
                     <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;{{ $flow->is_active ? 'background:#d1fae5;color:#065f46;' : 'background:#f3f4f6;color:#6b7280;' }}">
-                        <i class="bi bi-circle-fill" style="font-size:6px;"></i> {{ $flow->is_active ? 'Ativo' : 'Inativo' }}
+                        <i class="bi bi-circle-fill" style="font-size:6px;"></i> {{ $flow->is_active ? __('chatbot.badge_active') : __('chatbot.badge_inactive') }}
                     </span>
                     <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:#eff6ff;color:#2563eb;">
                         <i class="bi bi-{{ $channelIcon }}"></i> {{ $flow->channel === 'website' ? 'Website' : ($flow->channel === 'instagram' ? 'Instagram' : 'WhatsApp') }}
                     </span>
                     @if($flow->is_catch_all)
                     <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;">
-                        <i class="bi bi-star-fill" style="font-size:8px;"></i> Catch-all
+                        <i class="bi bi-star-fill" style="font-size:8px;"></i> {{ __('chatbot.badge_catch_all') }}
                     </span>
                     @endif
                 </div>
 
                 {{-- Métricas --}}
                 <div style="display:flex;gap:16px;font-size:12px;color:#6b7280;">
-                    <span><i class="bi bi-diagram-3" style="margin-right:3px;"></i> {{ $nodesCount }} {{ $nodesCount === 1 ? 'nó' : 'nós' }}</span>
-                    <span><i class="bi bi-people" style="margin-right:3px;"></i> {{ $leadsCount }} atendidos</span>
+                    <span><i class="bi bi-diagram-3" style="margin-right:3px;"></i> {{ $nodesCount }} {{ $nodesCount === 1 ? __('chatbot.nodes_singular') : __('chatbot.nodes_plural') }}</span>
+                    <span><i class="bi bi-people" style="margin-right:3px;"></i> {{ $leadsCount }} {{ __('chatbot.attended') }}</span>
                 </div>
 
                 {{-- Footer: criador + data --}}
                 <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #f0f2f7;font-size:11px;color:#9ca3af;">
-                    <span>Criado: {{ $flow->created_at?->diffForHumans() }}</span>
+                    <span>{{ __('chatbot.created') }} {{ $flow->created_at?->diffForHumans() }}</span>
                     <span>{{ $flow->created_at?->format('d/m/Y') }}</span>
                 </div>
             </div>
@@ -696,15 +697,15 @@ function closeWidgetTest() {
         <div class="tcm-header">
             <div class="tcm-header-icon"><i class="bi bi-robot"></i></div>
             <div class="tcm-header-info">
-                <h3 id="tcmTitle">Testando fluxo</h3>
-                <span>Simulação · nenhuma mensagem real enviada</span>
+                <h3 id="tcmTitle">{{ __('chatbot.test_title') }}</h3>
+                <span>{{ __('chatbot.test_subtitle') }}</span>
             </div>
-            <button class="tcm-header-btn" onclick="closeTestChat()" title="Fechar"><i class="bi bi-x-lg"></i></button>
+            <button class="tcm-header-btn" onclick="closeTestChat()" title=""><i class="bi bi-x-lg"></i></button>
         </div>
         <div id="tcmMessages" class="tcm-messages"></div>
         <div class="tcm-footer">
             <div class="tcm-input-row">
-                <textarea id="tcmInput" class="tcm-input" placeholder="Digite sua resposta…" rows="1"
+                <textarea id="tcmInput" class="tcm-input" placeholder="{{ __('chatbot.test_input_placeholder') }}" rows="1"
                     onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();tcmSend();}"></textarea>
                 <button id="tcmSendBtn" class="tcm-send" onclick="tcmSend()">
                     <i class="bi bi-send-fill"></i>
@@ -712,13 +713,13 @@ function closeWidgetTest() {
             </div>
             <div class="tcm-bottom-row">
                 <button class="tcm-restart" onclick="tcmRestart()">
-                    <i class="bi bi-arrow-counterclockwise"></i> Reiniciar
+                    <i class="bi bi-arrow-counterclockwise"></i> {{ __('chatbot.test_restart') }}
                 </button>
                 <span id="tcmDoneMsg" class="tcm-done-msg" style="display:none;">
-                    <i class="bi bi-check-circle"></i> Fluxo concluído
+                    <i class="bi bi-check-circle"></i> {{ __('chatbot.test_done') }}
                 </span>
             </div>
-            <div class="tcm-hint">Enter para enviar &middot; Shift+Enter para nova linha</div>
+            <div class="tcm-hint">{{ __('chatbot.test_hint') }}</div>
         </div>
     </div>
 
@@ -728,36 +729,36 @@ function closeWidgetTest() {
 <div id="idxEmbedModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
     <div style="background:#fff;border-radius:14px;padding:28px 32px;width:520px;max-width:94vw;box-shadow:0 20px 60px rgba(0,0,0,.18);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-            <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0;">Código de instalação</h3>
+            <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0;">{{ __('chatbot.embed_modal_title') }}</h3>
             <button onclick="document.getElementById('idxEmbedModal').style.display='none'" style="background:none;border:none;font-size:20px;color:#9ca3af;cursor:pointer;padding:4px;">&times;</button>
         </div>
 
         {{-- Link público --}}
         <div id="idxPublicLinkSection" style="display:none;margin-bottom:18px;padding:14px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;">
             <div style="font-size:12px;font-weight:700;color:#16a34a;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">
-                <i class="bi bi-link-45deg"></i> Link público
+                <i class="bi bi-link-45deg"></i> {{ __('chatbot.embed_public_link') }}
             </div>
             <div style="display:flex;gap:8px;align-items:center;">
                 <input type="text" id="idxPublicLinkUrl" readonly style="flex:1;border:1.5px solid #e8eaf0;border-radius:8px;padding:8px 12px;font-family:monospace;font-size:12px;color:#374151;background:#fff;">
                 <button onclick="copyPublicLink()" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
-                    <i class="bi bi-clipboard"></i> Copiar
+                    <i class="bi bi-clipboard"></i> {{ __('chatbot.embed_copy') }}
                 </button>
             </div>
-            <span id="idxPublicLinkCopied" style="font-size:11px;color:#16a34a;font-weight:600;display:none;margin-top:4px;"><i class="bi bi-check-circle"></i> Link copiado!</span>
-            <div style="font-size:11px;color:#6b7280;margin-top:6px;">Use este link em campanhas, redes sociais ou bio do Instagram. Não precisa ter site.</div>
+            <span id="idxPublicLinkCopied" style="font-size:11px;color:#16a34a;font-weight:600;display:none;margin-top:4px;"><i class="bi bi-check-circle"></i> {{ __('chatbot.embed_public_link_copied') }}</span>
+            <div style="font-size:11px;color:#6b7280;margin-top:6px;">{{ __('chatbot.embed_public_link_hint') }}</div>
         </div>
 
         <div style="font-size:12px;font-weight:700;color:#9ca3af;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">
-            <i class="bi bi-code-slash"></i> Código embed
+            <i class="bi bi-code-slash"></i> {{ __('chatbot.embed_code_label') }}
         </div>
-        <p id="idxEmbedInstructions" style="font-size:13.5px;color:#6b7280;margin:0 0 14px;">Cole este código antes do <code>&lt;/body&gt;</code> do seu site:</p>
+        <p id="idxEmbedInstructions" style="font-size:13.5px;color:#6b7280;margin:0 0 14px;">{!! __('chatbot.embed_modal_paste_before') !!}</p>
         <textarea id="idxEmbedCode" readonly rows="3" style="width:100%;border:1.5px solid #e8eaf0;border-radius:9px;padding:12px;font-family:monospace;font-size:12.5px;color:#374151;background:#f8fafc;resize:none;"></textarea>
         <div id="idxEmbedDivHint" style="display:none;margin-top:10px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:12px;color:#1e40af;line-height:1.5;"></div>
         <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
             <button onclick="copyIdxEmbed()" style="background:#0085f3;color:#fff;border:none;border-radius:9px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;">
-                <i class="bi bi-clipboard"></i> Copiar código
+                <i class="bi bi-clipboard"></i> {{ __('chatbot.embed_copy_button') }}
             </button>
-            <span id="idxEmbedCopied" style="font-size:12px;color:#16a34a;font-weight:600;display:none;"><i class="bi bi-check-circle"></i> Copiado!</span>
+            <span id="idxEmbedCopied" style="font-size:12px;color:#16a34a;font-weight:600;display:none;"><i class="bi bi-check-circle"></i> {{ __('chatbot.embed_copied') }}</span>
         </div>
     </div>
 </div>
@@ -766,16 +767,16 @@ function closeWidgetTest() {
 <div class="del-modal-overlay" id="delFlowModal">
     <div class="del-modal">
         <div class="del-modal-icon"><i class="bi bi-trash3-fill"></i></div>
-        <div class="del-modal-title">Excluir fluxo?</div>
-        <div class="del-modal-text">O fluxo <strong id="delFlowName"></strong> será removido permanentemente.<br>Esta ação não pode ser desfeita.</div>
+        <div class="del-modal-title">{{ __('chatbot.delete_modal_title') }}</div>
+        <div class="del-modal-text" id="delFlowText"></div>
         <div class="del-modal-footer">
-            <button class="btn-del-cancel" onclick="document.getElementById('delFlowModal').classList.remove('open')">Cancelar</button>
-            <button class="btn-del-confirm" onclick="_doDeleteFlow()">Excluir</button>
+            <button class="btn-del-cancel" onclick="document.getElementById('delFlowModal').classList.remove('open')">{{ __('chatbot.delete_modal_cancel') }}</button>
+            <button class="btn-del-confirm" onclick="_doDeleteFlow()">{{ __('chatbot.delete_modal_confirm') }}</button>
         </div>
     </div>
 </div>
 
-<a href="{{ route('chatbot.flows.onboarding') }}" class="chatbot-fab" aria-label="Novo Fluxo">
+<a href="{{ route('chatbot.flows.onboarding') }}" class="chatbot-fab" aria-label="{{ __('chatbot.new_flow') }}">
     <i class="bi bi-plus-lg"></i>
 </a>
 @endsection

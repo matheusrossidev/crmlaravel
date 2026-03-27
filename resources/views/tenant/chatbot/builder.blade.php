@@ -528,26 +528,26 @@
 
     {{-- Header --}}
     <div class="cb-header">
-        <a href="{{ route('chatbot.flows.index') }}" class="cb-back" title="Voltar">
+        <a href="{{ route('chatbot.flows.index') }}" class="cb-back" title="{{ __('chatbot.form_back') }}">
             <i class="bi bi-arrow-left"></i>
         </a>
         <input type="text" class="cb-name-input" id="cbName"
-            placeholder="Nome do fluxo..."
+            placeholder="{{ __('chatbot.builder_name_placeholder') }}"
             value="{{ $flow->name }}">
         <div class="cb-header-right">
             <span class="cb-status-badge {{ $flow->is_active ? 'active' : '' }}" id="cbStatusBadge" onclick="toggleActive()">
-                {{ $flow->is_active ? 'Ativo' : 'Inativo' }}
+                {{ $flow->is_active ? __('chatbot.builder_active') : __('chatbot.builder_inactive') }}
             </span>
             <button class="btn-cancel-sm" onclick="openTestWidget()">
-                <i class="bi bi-play-circle"></i> Testar
+                <i class="bi bi-play-circle"></i> {{ __('chatbot.builder_test') }}
             </button>
             @if($flow->channel === 'website' && $flow->website_token)
             <button class="btn-cancel-sm" onclick="showEmbedModal()">
-                <i class="bi bi-code-slash"></i> Embed
+                <i class="bi bi-code-slash"></i> {{ __('chatbot.builder_embed') }}
             </button>
             @endif
             <a href="{{ route('chatbot.flows.edit', ['flow' => $flow->id, 'settings' => 1]) }}" class="btn-cancel-sm">
-                <i class="bi bi-gear"></i> Config
+                <i class="bi bi-gear"></i> {{ __('chatbot.builder_config') }}
             </a>
             <button class="btn-cancel-sm" onclick="zoomOut()" title="Zoom out">
                 <i class="bi bi-dash-lg"></i>
@@ -559,7 +559,7 @@
                 <i class="bi bi-fullscreen"></i>
             </button>
             <button class="btn-primary-sm" onclick="saveFlow()">
-                <i class="bi bi-check2"></i> Salvar
+                <i class="bi bi-check2"></i> {{ __('chatbot.builder_save') }}
             </button>
         </div>
     </div>
@@ -570,46 +570,46 @@
         {{-- Sidebar --}}
         <div class="cb-sidebar">
             <div class="cb-sidebar-section">
-                <div class="cb-sidebar-section-title">Blocos</div>
+                <div class="cb-sidebar-section-title">{{ __('chatbot.sidebar_blocks') }}</div>
                 <div class="cb-block-item message" onclick="addStepToRoot('message')">
-                    <span class="cb-block-icon"><i class="bi bi-chat-dots"></i></span>Mensagem
+                    <span class="cb-block-icon"><i class="bi bi-chat-dots"></i></span>{{ __('chatbot.sidebar_message') }}
                 </div>
                 <div class="cb-block-item input" onclick="addStepToRoot('input')">
-                    <span class="cb-block-icon"><i class="bi bi-input-cursor-text"></i></span>Pergunta
+                    <span class="cb-block-icon"><i class="bi bi-input-cursor-text"></i></span>{{ __('chatbot.sidebar_input') }}
                 </div>
                 <div class="cb-block-item condition" onclick="addStepToRoot('condition')">
-                    <span class="cb-block-icon"><i class="bi bi-question-diamond"></i></span>Condição
+                    <span class="cb-block-icon"><i class="bi bi-question-diamond"></i></span>{{ __('chatbot.sidebar_condition') }}
                 </div>
                 <div class="cb-block-item action" onclick="addStepToRoot('action')">
-                    <span class="cb-block-icon"><i class="bi bi-lightning"></i></span>Ação
+                    <span class="cb-block-icon"><i class="bi bi-lightning"></i></span>{{ __('chatbot.sidebar_action') }}
                 </div>
                 <div class="cb-block-item delay" onclick="addStepToRoot('delay')">
-                    <span class="cb-block-icon"><i class="bi bi-hourglass-split"></i></span>Aguardar
+                    <span class="cb-block-icon"><i class="bi bi-hourglass-split"></i></span>{{ __('chatbot.sidebar_delay') }}
                 </div>
                 <div class="cb-block-item end" onclick="addStepToRoot('end')">
-                    <span class="cb-block-icon"><i class="bi bi-stop-circle"></i></span>Fim
+                    <span class="cb-block-icon"><i class="bi bi-stop-circle"></i></span>{{ __('chatbot.sidebar_end') }}
                 </div>
                 <div class="cb-block-item cards" onclick="addStepToRoot('cards')">
-                    <span class="cb-block-icon"><i class="bi bi-card-heading"></i></span>Cards
+                    <span class="cb-block-icon"><i class="bi bi-card-heading"></i></span>{{ __('chatbot.sidebar_cards') }}
                 </div>
             </div>
 
             <div class="cb-sidebar-divider"></div>
 
             <div class="cb-sidebar-section">
-                <div class="cb-sidebar-section-title">Config</div>
+                <div class="cb-sidebar-section-title">{{ __('chatbot.sidebar_config') }}</div>
                 <div class="cb-block-item" onclick="showVarsModal()" style="color:#374151">
-                    <span class="cb-block-icon" style="background:#f3f4f6;color:#6b7280"><i class="bi bi-braces"></i></span>Variáveis
+                    <span class="cb-block-icon" style="background:#f3f4f6;color:#6b7280"><i class="bi bi-braces"></i></span>{{ __('chatbot.sidebar_variables') }}
                 </div>
                 <div style="padding:10px 12px;">
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;color:#374151;font-weight:600;">
                         <input type="checkbox" id="catchAllToggle" {{ $flow->is_catch_all ? 'checked' : '' }}
                             onchange="toggleCatchAll(this.checked)"
                             style="width:16px;height:16px;accent-color:#0085f3;">
-                        Fluxo padrão (catch-all)
+                        {{ __('chatbot.sidebar_catch_all') }}
                     </label>
                     <div style="font-size:11px;color:#9ca3af;margin-top:4px;line-height:1.4;">
-                        Ativa quando nenhuma keyword corresponder. Apenas 1 por tenant.
+                        {{ __('chatbot.sidebar_catch_all_hint') }}
                     </div>
                 </div>
             </div>
@@ -617,9 +617,9 @@
             <div class="cb-sidebar-divider"></div>
 
             <div class="cb-sidebar-section">
-                <div class="cb-sidebar-section-title">Modelos</div>
+                <div class="cb-sidebar-section-title">{{ __('chatbot.sidebar_templates') }}</div>
                 <div class="cb-block-item" onclick="showTemplatesModal()" style="color:#15803d">
-                    <span class="cb-block-icon" style="background:#f0fdf4;color:#15803d"><i class="bi bi-lightning"></i></span>Usar modelo
+                    <span class="cb-block-icon" style="background:#f0fdf4;color:#15803d"><i class="bi bi-lightning"></i></span>{{ __('chatbot.sidebar_use_template') }}
                 </div>
             </div>
         </div>
@@ -651,17 +651,17 @@
     <div class="modal-dialog modal-sm">
         <div class="modal-content" style="border-radius:14px;border:1.5px solid #e8eaf0;">
             <div class="modal-header" style="border-bottom:1px solid #f0f2f7;padding:14px 18px;">
-                <h6 style="font-size:14px;font-weight:700;color:#1a1d23;margin:0;">Variáveis do fluxo</h6>
+                <h6 style="font-size:14px;font-weight:700;color:#1a1d23;margin:0;">{{ __('chatbot.vars_modal_title') }}</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="font-size:11px;"></button>
             </div>
             <div class="modal-body" style="padding:14px 18px;">
                 <ul class="cb-vars-list" id="varsList"></ul>
                 <div style="display:flex;gap:6px;margin-top:10px;">
-                    <input type="text" id="newVarName" class="form-control" placeholder="nome_variavel" style="border:1.5px solid #e8eaf0;border-radius:8px;padding:7px 11px;font-size:13px;">
+                    <input type="text" id="newVarName" class="form-control" placeholder="{{ __('chatbot.vars_placeholder') }}" style="border:1.5px solid #e8eaf0;border-radius:8px;padding:7px 11px;font-size:13px;">
                     <button class="btn-primary-sm" onclick="addVariable()" style="padding:7px 14px;font-size:12px;">+</button>
                 </div>
                 <div style="margin-top:10px;font-size:11px;color:#9ca3af;">
-                    Variáveis de sistema: <code>$contact_name</code>, <code>$contact_email</code>, <code>$contact_phone</code>, <code>$lead_exists</code>
+                    {{ __('chatbot.vars_system_label') }} <code>$contact_name</code>, <code>$contact_email</code>, <code>$contact_phone</code>, <code>$lead_exists</code>
                 </div>
             </div>
         </div>
@@ -673,16 +673,16 @@
 <div id="embedModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
     <div style="background:#fff;border-radius:14px;padding:28px 32px;width:520px;max-width:94vw;box-shadow:0 20px 60px rgba(0,0,0,.18);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-            <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0;">Código de instalação</h3>
+            <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0;">{{ __('chatbot.builder_embed_title') }}</h3>
             <button onclick="document.getElementById('embedModal').style.display='none'" style="background:none;border:none;font-size:20px;color:#9ca3af;cursor:pointer;padding:4px;">&times;</button>
         </div>
-        <p style="font-size:13.5px;color:#6b7280;margin:0 0 14px;">Cole este código antes do <code>&lt;/body&gt;</code> do seu site:</p>
+        <p style="font-size:13.5px;color:#6b7280;margin:0 0 14px;">{!! __('chatbot.builder_embed_paste') !!}</p>
         <textarea id="embedCode" readonly rows="3" style="width:100%;border:1.5px solid #e8eaf0;border-radius:9px;padding:12px;font-family:monospace;font-size:12.5px;color:#374151;background:#f8fafc;resize:none;">{{ '<script src="' . config('app.url') . '/api/widget/' . $flow->website_token . '.js"></' . 'script>' }}</textarea>
         <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
             <button onclick="copyEmbed()" class="btn-primary-sm" style="padding:9px 20px;font-size:13px;">
-                <i class="bi bi-clipboard"></i> Copiar código
+                <i class="bi bi-clipboard"></i> {{ __('chatbot.builder_embed_copy') }}
             </button>
-            <span id="embedCopied" style="font-size:12px;color:#16a34a;font-weight:600;display:none;"><i class="bi bi-check-circle"></i> Copiado!</span>
+            <span id="embedCopied" style="font-size:12px;color:#16a34a;font-weight:600;display:none;"><i class="bi bi-check-circle"></i> {{ __('chatbot.builder_embed_copied') }}</span>
         </div>
     </div>
 </div>
@@ -692,17 +692,17 @@
 <div id="templatesModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
     <div style="background:#fff;border-radius:14px;padding:28px 32px;width:780px;max-width:94vw;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.18);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0;">
-            <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0;"><i class="bi bi-lightning" style="color:#0085f3;"></i> Modelos pré-prontos</h3>
+            <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0;"><i class="bi bi-lightning" style="color:#0085f3;"></i> {{ __('chatbot.tpl_modal_title') }}</h3>
             <button onclick="document.getElementById('templatesModal').style.display='none'" style="background:none;border:none;font-size:20px;color:#9ca3af;cursor:pointer;padding:4px;">&times;</button>
         </div>
-        <input type="text" id="tplSearch" placeholder="Buscar por nicho... ex: dentista, restaurante, academia" style="width:100%;border:1.5px solid #e8eaf0;border-radius:9px;padding:10px 14px;font-size:13.5px;color:#374151;outline:none;margin-bottom:16px;flex-shrink:0;font-family:inherit;" oninput="filterTemplates(this.value)">
+        <input type="text" id="tplSearch" placeholder="{{ __('chatbot.tpl_search_placeholder') }}" style="width:100%;border:1.5px solid #e8eaf0;border-radius:9px;padding:10px 14px;font-size:13.5px;color:#374151;outline:none;margin-bottom:16px;flex-shrink:0;font-family:inherit;" oninput="filterTemplates(this.value)">
         <div id="tplTabsWrap" style="position:relative;margin-bottom:14px;flex-shrink:0;">
             <button id="tplTabLeft" onclick="document.getElementById('tplCategoryTabs').scrollBy({left:-160,behavior:'smooth'})" style="display:none;position:absolute;left:0;top:0;bottom:0;z-index:2;width:32px;border:none;cursor:pointer;background:linear-gradient(90deg,#fff 60%,transparent);color:#374151;font-size:14px;padding:0;align-items:center;justify-content:center;"><i class="bi bi-chevron-left"></i></button>
             <div id="tplCategoryTabs" style="display:flex;gap:6px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none;-ms-overflow-style:none;"></div>
             <button id="tplTabRight" onclick="document.getElementById('tplCategoryTabs').scrollBy({left:160,behavior:'smooth'})" style="display:none;position:absolute;right:0;top:0;bottom:0;z-index:2;width:32px;border:none;cursor:pointer;background:linear-gradient(270deg,#fff 60%,transparent);color:#374151;font-size:14px;padding:0;align-items:center;justify-content:center;"><i class="bi bi-chevron-right"></i></button>
         </div>
         <div id="templatesGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;overflow-y:auto;flex:1;padding-right:4px;"></div>
-        <div id="tplEmpty" style="display:none;text-align:center;padding:40px 0;color:#9ca3af;font-size:13.5px;">Nenhum modelo encontrado para esta busca.</div>
+        <div id="tplEmpty" style="display:none;text-align:center;padding:40px 0;color:#9ca3af;font-size:13.5px;">{{ __('chatbot.tpl_empty') }}</div>
     </div>
 </div>
 
@@ -723,18 +723,19 @@
     const USERS     = {!! json_encode($users) !!};
     const CUSTOM_FIELDS = {!! json_encode($customFieldDefs) !!};
     const FLOW_CHANNEL  = "{{ $flow->channel }}";
+    const CBLANG = @json(__('chatbot'));
 
     let flowSteps     = {!! json_encode($flow->steps ?? []) !!} || [];
     let flowVariables = {!! json_encode($flow->variables ?? []) !!} || [];
 
     const NODE_TYPES = {
-        message:   { icon: 'bi-chat-dots',          label: 'Mensagem',  color: 'message' },
-        input:     { icon: 'bi-input-cursor-text',   label: 'Pergunta',  color: 'input' },
-        condition: { icon: 'bi-question-diamond',    label: 'Condição',  color: 'condition' },
-        action:    { icon: 'bi-lightning',            label: 'Ação',      color: 'action' },
-        delay:     { icon: 'bi-hourglass-split',      label: 'Aguardar',  color: 'delay' },
-        end:       { icon: 'bi-stop-circle',          label: 'Fim',       color: 'end' },
-        cards:     { icon: 'bi-card-heading',         label: 'Cards',     color: 'cards' },
+        message:   { icon: 'bi-chat-dots',          label: CBLANG.node_message,   color: 'message' },
+        input:     { icon: 'bi-input-cursor-text',   label: CBLANG.node_input,     color: 'input' },
+        condition: { icon: 'bi-question-diamond',    label: CBLANG.node_condition,  color: 'condition' },
+        action:    { icon: 'bi-lightning',            label: CBLANG.node_action,     color: 'action' },
+        delay:     { icon: 'bi-hourglass-split',      label: CBLANG.node_delay,      color: 'delay' },
+        end:       { icon: 'bi-stop-circle',          label: CBLANG.node_end,        color: 'end' },
+        cards:     { icon: 'bi-card-heading',         label: CBLANG.node_cards,      color: 'cards' },
     };
 
     let idCounter = 1;
@@ -804,7 +805,7 @@
         const bId = 'b' + Date.now().toString(36) + (idCounter++);
         const branch = {
             id: bId,
-            label: 'Opção ' + (step.branches.length + 1),
+            label: CBLANG.branch_option.replace(':number', step.branches.length + 1),
             keywords: [],
             steps: []
         };
@@ -842,8 +843,8 @@
                 <div class="cb-node-head">
                     <div class="cb-node-icon"><i class="bi bi-play-fill"></i></div>
                     <div class="cb-node-label">
-                        <div class="cb-node-type">Início</div>
-                        <div class="cb-node-name">Quando visitante envia mensagem</div>
+                        <div class="cb-node-type">${CBLANG.node_start}</div>
+                        <div class="cb-node-name">${CBLANG.node_start_desc}</div>
                     </div>
                 </div>
             </div>`;
@@ -860,7 +861,7 @@
         addBtnWrap.style.cssText = 'margin-top:8px;width:420px;align-self:center;';
         addBtnWrap.innerHTML = `
             <button class="cb-add-step" onclick="showAddMenu(this, [])">
-                <i class="bi bi-plus-lg"></i> Adicionar bloco
+                <i class="bi bi-plus-lg"></i> ${CBLANG.add_block}
             </button>`;
         container.appendChild(addBtnWrap);
     }
@@ -907,7 +908,7 @@
         html += `<div class="cb-node-type">${esc(info.label)}</div>`;
         html += `<div class="cb-node-name">${esc(getStepSummary(step))}</div>`;
         html += `</div>`;
-        html += `<button class="cb-node-remove" onclick="event.stopPropagation();cbRemoveStep(${pathStr}, ${index})" title="Remover"><i class="bi bi-x-lg"></i></button>`;
+        html += `<button class="cb-node-remove" onclick="event.stopPropagation();cbRemoveStep(${pathStr}, ${index})" title="${CBLANG.panel_remove}"><i class="bi bi-x-lg"></i></button>`;
         html += `</div>`;
 
         // Preview (compact — full form is in the drawer)
@@ -920,13 +921,13 @@
     function getStepSummary(step) {
         const c = step.config || {};
         switch (step.type) {
-            case 'message': return truncate(c.text, 40) || 'Mensagem vazia';
-            case 'input':   return truncate(c.text, 40) || 'Pergunta vazia';
-            case 'condition': return c.variable ? 'Se ' + c.variable + '...' : 'Condição vazia';
+            case 'message': return truncate(c.text, 40) || CBLANG.summary_empty_message;
+            case 'input':   return truncate(c.text, 40) || CBLANG.summary_empty_question;
+            case 'condition': return c.variable ? CBLANG.summary_condition_if.replace(':variable', c.variable) : CBLANG.summary_empty_condition;
             case 'action':  return getActionLabel(c);
-            case 'delay':   return (c.seconds || 3) + ' segundos';
-            case 'end':     return truncate(c.text, 40) || 'Finalizar';
-            case 'cards':   return (c.items || []).length + ' card(s)';
+            case 'delay':   return CBLANG.summary_seconds.replace(':count', c.seconds || 3);
+            case 'end':     return truncate(c.text, 40) || CBLANG.summary_finalize;
+            case 'cards':   return CBLANG.summary_cards_count.replace(':count', (c.items || []).length);
             default:        return step.type;
         }
     }
@@ -938,19 +939,19 @@
 
     function getActionLabel(c) {
         switch (c.type || '') {
-            case 'create_lead':        return 'Criar lead';
-            case 'change_stage':       return 'Mover para etapa';
-            case 'add_tag':            return 'Adicionar tag: ' + (c.value || '');
-            case 'remove_tag':         return 'Remover tag: ' + (c.value || '');
-            case 'save_variable':      return 'Salvar variável: ' + (c.variable || '');
-            case 'close_conversation': return 'Encerrar conversa';
-            case 'assign_human':       return 'Transferir para humano';
+            case 'create_lead':        return CBLANG.action_create_lead;
+            case 'change_stage':       return CBLANG.action_change_stage;
+            case 'add_tag':            return CBLANG.action_add_tag + ': ' + (c.value || '');
+            case 'remove_tag':         return CBLANG.action_remove_tag + ': ' + (c.value || '');
+            case 'save_variable':      return CBLANG.action_save_variable + ': ' + (c.variable || '');
+            case 'close_conversation': return CBLANG.action_close_conversation;
+            case 'assign_human':       return CBLANG.action_assign_human;
             case 'send_webhook':       return 'Webhook: ' + (c.url || '');
-            case 'set_custom_field':   return 'Campo: ' + (c.field_label || c.field_name || '');
+            case 'set_custom_field':   return CBLANG.action_field + ': ' + (c.field_label || c.field_name || '');
             case 'send_whatsapp':      return 'WhatsApp: ' + truncate(c.message || '', 30);
-            case 'create_task':        return 'Tarefa: ' + truncate(c.subject || '', 30);
-            case 'redirect':           return 'Redirect: ' + truncate(c.url || '', 30);
-            default:                   return c.type || 'Ação';
+            case 'create_task':        return CBLANG.action_task_subject.split(' ')[0] + ': ' + truncate(c.subject || '', 30);
+            case 'redirect':           return CBLANG.action_redirect + ': ' + truncate(c.url || '', 30);
+            default:                   return c.type || CBLANG.node_action;
         }
     }
 
@@ -960,7 +961,7 @@
         let html = '<div class="cb-node-preview">';
         switch (step.type) {
             case 'message':
-                if (c.image_url) html += '<div class="preview-badge"><i class="bi bi-image"></i> Imagem</div>';
+                if (c.image_url) html += '<div class="preview-badge"><i class="bi bi-image"></i> ' + CBLANG.preview_image + '</div>';
                 if (c.text) html += '<div>' + esc(truncate(c.text, 80)) + '</div>';
                 break;
             case 'input':
@@ -969,7 +970,7 @@
                 var branches = step.branches || c.branches || [];
                 if (branches.length) {
                     html += '<div class="branch-pills">';
-                    branches.forEach(function(b) { html += '<span class="branch-pill">' + esc(b.label || 'Opção') + '</span>'; });
+                    branches.forEach(function(b) { html += '<span class="branch-pill">' + esc(b.label || CBLANG.preview_option) + '</span>'; });
                     html += '</div>';
                 }
                 break;
@@ -980,11 +981,11 @@
                 html += '<div>' + esc(getActionLabel(c)) + '</div>';
                 break;
             case 'delay':
-                html += '<div><i class="bi bi-hourglass-split" style="color:#ec4899;margin-right:4px;"></i>' + (c.seconds || 3) + ' segundos</div>';
+                html += '<div><i class="bi bi-hourglass-split" style="color:#ec4899;margin-right:4px;"></i>' + CBLANG.summary_seconds.replace(':count', c.seconds || 3) + '</div>';
                 break;
             case 'end':
                 if (c.text) html += '<div>' + esc(truncate(c.text, 80)) + '</div>';
-                else html += '<div style="color:#9ca3af;">Finalizar conversa</div>';
+                else html += '<div style="color:#9ca3af;">' + CBLANG.summary_finalize_conversation + '</div>';
                 break;
             case 'cards':
                 html += '<div class="preview-badge"><i class="bi bi-card-heading"></i> ' + ((c.items || []).length) + ' card(s)</div>';
@@ -1018,8 +1019,8 @@
 
         // Move/delete buttons
         var moveHtml = '<div style="display:flex;gap:6px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #f0f2f7;">';
-        moveHtml += '<button class="btn-cancel-sm" onclick="cbMoveStep(' + pathStr + ',' + index + ',-1);openEditPanel(' + pathStr + ',' + Math.max(0, index - 1) + ')"><i class="bi bi-chevron-up"></i> Cima</button>';
-        moveHtml += '<button class="btn-cancel-sm" onclick="cbMoveStep(' + pathStr + ',' + index + ',1);openEditPanel(' + pathStr + ',' + (index + 1) + ')"><i class="bi bi-chevron-down"></i> Baixo</button>';
+        moveHtml += '<button class="btn-cancel-sm" onclick="cbMoveStep(' + pathStr + ',' + index + ',-1);openEditPanel(' + pathStr + ',' + Math.max(0, index - 1) + ')"><i class="bi bi-chevron-up"></i> ' + CBLANG.panel_move_up + '</button>';
+        moveHtml += '<button class="btn-cancel-sm" onclick="cbMoveStep(' + pathStr + ',' + index + ',1);openEditPanel(' + pathStr + ',' + (index + 1) + ')"><i class="bi bi-chevron-down"></i> ' + CBLANG.panel_move_down + '</button>';
         moveHtml += '<button class="btn-cancel-sm" style="margin-left:auto;color:#ef4444;" onclick="cbRemoveStep(' + pathStr + ',' + index + ');closeEditPanel()"><i class="bi bi-trash3"></i></button>';
         moveHtml += '</div>';
 
@@ -1030,16 +1031,16 @@
         var btnHtml = '';
         if ((step.type === 'input' || step.type === 'condition') && step.branches) {
             btnHtml += '<div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f2f7;">';
-            btnHtml += '<label style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px;">Botões</label>';
+            btnHtml += '<label style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px;">' + CBLANG.panel_buttons + '</label>';
             step.branches.forEach(function(b, bi) {
                 btnHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
                 btnHtml += '<div style="flex:1;background:#0085f3;color:#fff;padding:8px 14px;border-radius:8px;display:flex;align-items:center;justify-content:center;">';
-                btnHtml += '<input maxlength="24" value="' + esc(b.label || '') + '" onchange="cbUpdateBranch(' + pathStr + ',' + index + ',' + bi + ',\'label\',this.value)" style="background:transparent;border:none;color:#fff;text-align:center;width:100%;font-size:13px;font-weight:600;outline:none;font-family:inherit;" placeholder="Texto do botão">';
+                btnHtml += '<input maxlength="24" value="' + esc(b.label || '') + '" onchange="cbUpdateBranch(' + pathStr + ',' + index + ',' + bi + ',\'label\',this.value)" style="background:transparent;border:none;color:#fff;text-align:center;width:100%;font-size:13px;font-weight:600;outline:none;font-family:inherit;" placeholder="' + CBLANG.panel_button_placeholder + '">';
                 btnHtml += '</div>';
-                btnHtml += '<button onclick="cbRemoveBranch(' + pathStr + ',' + index + ',' + bi + ');openEditPanel(' + pathStr + ',' + index + ')" style="border:none;background:none;color:#d1d5db;cursor:pointer;font-size:14px;padding:4px;" title="Remover"><i class="bi bi-trash3"></i></button>';
+                btnHtml += '<button onclick="cbRemoveBranch(' + pathStr + ',' + index + ',' + bi + ');openEditPanel(' + pathStr + ',' + index + ')" style="border:none;background:none;color:#d1d5db;cursor:pointer;font-size:14px;padding:4px;" title="' + CBLANG.panel_remove + '"><i class="bi bi-trash3"></i></button>';
                 btnHtml += '</div>';
             });
-            btnHtml += '<button onclick="cbAddBranch(' + pathStr + ',' + index + ');openEditPanel(' + pathStr + ',' + index + ')" style="width:100%;padding:8px;border:1.5px dashed #d1d5db;border-radius:8px;background:transparent;color:#6b7280;font-size:12px;font-weight:600;cursor:pointer;margin-top:4px;" onmouseover="this.style.borderColor=\'#0085f3\';this.style.color=\'#0085f3\'" onmouseout="this.style.borderColor=\'#d1d5db\';this.style.color=\'#6b7280\'"><i class="bi bi-plus-lg" style="margin-right:4px;"></i> Adicionar botão</button>';
+            btnHtml += '<button onclick="cbAddBranch(' + pathStr + ',' + index + ');openEditPanel(' + pathStr + ',' + index + ')" style="width:100%;padding:8px;border:1.5px dashed #d1d5db;border-radius:8px;background:transparent;color:#6b7280;font-size:12px;font-weight:600;cursor:pointer;margin-top:4px;" onmouseover="this.style.borderColor=\'#0085f3\';this.style.color=\'#0085f3\'" onmouseout="this.style.borderColor=\'#d1d5db\';this.style.color=\'#6b7280\'"><i class="bi bi-plus-lg" style="margin-right:4px;"></i> ' + CBLANG.panel_add_button + '</button>';
             btnHtml += '</div>';
         }
 
@@ -1072,36 +1073,36 @@
 
         switch (step.type) {
             case 'message':
-                html += '<label>Texto da mensagem</label>';
-                html += '<div class="cb-editable" contenteditable="true" id="msg-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="text" data-placeholder="Digite a mensagem...">' + textToHtml(c.text || '') + '</div>';
+                html += '<label>' + CBLANG.msg_text_label + '</label>';
+                html += '<div class="cb-editable" contenteditable="true" id="msg-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="text" data-placeholder="' + CBLANG.msg_text_placeholder + '">' + textToHtml(c.text || '') + '</div>';
                 html += renderVarHint('msg-' + step.id);
                 html += renderImageArea(step, path, index);
                 break;
 
             case 'input':
-                html += '<label>Pergunta para o visitante</label>';
-                html += '<div class="cb-editable" contenteditable="true" id="inp-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="text" data-placeholder="Digite a pergunta...">' + textToHtml(c.text || '') + '</div>';
+                html += '<label>' + CBLANG.input_question_label + '</label>';
+                html += '<div class="cb-editable" contenteditable="true" id="inp-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="text" data-placeholder="' + CBLANG.input_question_placeholder + '">' + textToHtml(c.text || '') + '</div>';
                 html += renderVarHint('inp-' + step.id);
                 var hideSave = c.field_type === 'buttons' ? 'display:none' : '';
                 var stepUid  = step.id;
                 html += '<div class="row-pair" style="margin-top:8px;">';
-                html += '<div><label>Tipo do campo</label>';
+                html += '<div><label>' + CBLANG.input_field_type + '</label>';
                 html += '<select class="form-select" onchange="var v=this.value; cbUpdateConfig(' + pathStr + ', ' + index + ', \'field_type\', v); if(v===\'buttons\'){ cbToggleButtons(' + pathStr + ', ' + index + ', true); } else { cbToggleButtons(' + pathStr + ', ' + index + ', false); } var h=v===\'buttons\'; document.getElementById(\'save-wrap-' + stepUid + '\').style.display=h?\'none\':\'\'; document.getElementById(\'chk-wrap-' + stepUid + '\').style.display=h?\'none\':\'\';">';
                 var fieldTypes = [
-                    { value: 'text',    label: 'Texto livre' },
-                    { value: 'name',    label: 'Nome' },
-                    { value: 'email',   label: 'E-mail' },
-                    { value: 'phone',   label: 'Telefone' },
-                    { value: 'number',  label: 'Número' },
-                    { value: 'buttons', label: 'Botões de resposta rápida' },
+                    { value: 'text',    label: CBLANG.field_type_text },
+                    { value: 'name',    label: CBLANG.field_type_name },
+                    { value: 'email',   label: CBLANG.field_type_email },
+                    { value: 'phone',   label: CBLANG.field_type_phone },
+                    { value: 'number',  label: CBLANG.field_type_number },
+                    { value: 'buttons', label: CBLANG.field_type_buttons },
                 ];
                 fieldTypes.forEach(function(t) {
                     html += '<option value="' + t.value + '" ' + (c.field_type === t.value ? 'selected' : '') + '>' + t.label + '</option>';
                 });
                 html += '</select></div>';
-                html += '<div id="save-wrap-' + stepUid + '" style="' + hideSave + '"><label>Salvar em</label>';
+                html += '<div id="save-wrap-' + stepUid + '" style="' + hideSave + '"><label>' + CBLANG.input_save_to + '</label>';
                 html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'save_to\', this.value)">';
-                html += '<option value="">Não salvar</option>';
+                html += '<option value="">' + CBLANG.input_save_none + '</option>';
                 flowVariables.forEach(function(v) {
                     var name = v.name || v;
                     html += '<option value="' + esc(name) + '" ' + (c.save_to === name ? 'selected' : '') + '>' + esc(name) + '</option>';
@@ -1109,14 +1110,14 @@
                 html += '</select></div>';
                 html += '</div>';
                 html += '<div id="chk-wrap-' + stepUid + '" style="' + hideSave + '">';
-                html += '<label class="cb-checkbox"><input type="checkbox" ' + (c.show_buttons ? 'checked' : '') + ' onchange="cbToggleButtons(' + pathStr + ', ' + index + ', this.checked)"> Exibir botões de resposta rápida</label>';
+                html += '<label class="cb-checkbox"><input type="checkbox" ' + (c.show_buttons ? 'checked' : '') + ' onchange="cbToggleButtons(' + pathStr + ', ' + index + ', this.checked)"> ' + CBLANG.input_show_buttons + '</label>';
                 html += '</div>';
                 break;
 
             case 'condition':
-                html += '<label>Variável a verificar</label>';
+                html += '<label>' + CBLANG.condition_variable_label + '</label>';
                 html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'variable\', this.value)">';
-                html += '<option value="">Selecione...</option>';
+                html += '<option value="">' + CBLANG.condition_select + '</option>';
                 ['$contact_name', '$contact_email', '$contact_phone', '$lead_exists'].forEach(function(v) {
                     html += '<option value="' + v + '" ' + (c.variable === v ? 'selected' : '') + '>' + v + '</option>';
                 });
@@ -1126,7 +1127,7 @@
                 });
                 html += '</select>';
                 html += '<div style="margin-top:8px;padding:8px 10px;background:#fef9c3;border-radius:6px;font-size:11px;color:#92400e;line-height:1.4;">';
-                html += '<i class="bi bi-info-circle" style="margin-right:4px;"></i> Cada ramificação abaixo define uma condição. Ex: <strong>"Se ' + esc(c.variable || 'variável') + ' for igual a X, faça..."</strong>';
+                html += '<i class="bi bi-info-circle" style="margin-right:4px;"></i> ' + CBLANG.condition_hint.replace(':variable', esc(c.variable || CBLANG.action_variable));
                 html += '</div>';
                 break;
 
@@ -1135,13 +1136,13 @@
                 break;
 
             case 'delay':
-                html += '<label>Segundos de espera</label>';
+                html += '<label>' + CBLANG.delay_seconds_label + '</label>';
                 html += '<input type="number" class="form-control" min="1" max="300" value="' + (c.seconds || 3) + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'seconds\', parseInt(this.value))">';
                 break;
 
             case 'end':
-                html += '<label>Mensagem de encerramento (opcional)</label>';
-                html += '<div class="cb-editable" contenteditable="true" id="end-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="text" data-placeholder="Mensagem de encerramento...">' + textToHtml(c.text || '') + '</div>';
+                html += '<label>' + CBLANG.end_message_label + '</label>';
+                html += '<div class="cb-editable" contenteditable="true" id="end-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="text" data-placeholder="' + CBLANG.end_message_placeholder + '">' + textToHtml(c.text || '') + '</div>';
                 html += renderVarHint('end-' + step.id);
                 break;
 
@@ -1151,30 +1152,30 @@
                     html += '<div style="border:1px solid #e8eaf0;border-radius:8px;padding:10px;margin-bottom:8px;background:#fafafa;">';
                     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
                     html += '<span style="font-size:11px;font-weight:700;color:#6b7280;">CARD ' + (i + 1) + '</span>';
-                    html += '<button onclick="cbRemoveCard(' + pathStr + ',' + index + ',' + i + ')" style="border:none;background:none;cursor:pointer;color:#ef4444;font-size:12px;padding:0 4px;">Remover</button>';
+                    html += '<button onclick="cbRemoveCard(' + pathStr + ',' + index + ',' + i + ')" style="border:none;background:none;cursor:pointer;color:#ef4444;font-size:12px;padding:0 4px;">' + CBLANG.card_remove + '</button>';
                     html += '</div>';
-                    html += '<input class="form-control" placeholder="Título" value="' + esc(item.title || '') + '" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'title\',this.value)" style="margin-bottom:4px;">';
-                    html += '<textarea class="form-control" placeholder="Descrição" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'description\',this.value)" style="margin-bottom:4px;min-height:38px;">' + esc(item.description || '') + '</textarea>';
+                    html += '<input class="form-control" placeholder="' + CBLANG.card_title_placeholder + '" value="' + esc(item.title || '') + '" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'title\',this.value)" style="margin-bottom:4px;">';
+                    html += '<textarea class="form-control" placeholder="' + CBLANG.card_description_placeholder + '" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'description\',this.value)" style="margin-bottom:4px;min-height:38px;">' + esc(item.description || '') + '</textarea>';
                     if (item.image_url) {
                         html += '<div style="position:relative;margin-bottom:4px;">';
                         html += '<img src="' + esc(item.image_url) + '" style="width:100%;max-height:120px;object-fit:cover;border-radius:6px;border:1px solid #e8eaf0;">';
-                        html += '<button onclick="cbRemoveCardImage(' + pathStr + ',' + index + ',' + i + ')" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;" title="Remover imagem">&times;</button>';
+                        html += '<button onclick="cbRemoveCardImage(' + pathStr + ',' + index + ',' + i + ')" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;" title="' + CBLANG.panel_remove + '">&times;</button>';
                         html += '</div>';
                     } else {
-                        html += '<button onclick="cbUploadCardImage(' + pathStr + ',' + index + ',' + i + ')" style="width:100%;padding:10px;margin-bottom:4px;border:1.5px dashed #d1d5db;border-radius:6px;background:#f9fafb;color:#6b7280;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:border-color .15s;" onmouseover="this.style.borderColor=\'#0085f3\'" onmouseout="this.style.borderColor=\'#d1d5db\'"><i class="bi bi-image" style="font-size:14px;"></i> Enviar imagem</button>';
+                        html += '<button onclick="cbUploadCardImage(' + pathStr + ',' + index + ',' + i + ')" style="width:100%;padding:10px;margin-bottom:4px;border:1.5px dashed #d1d5db;border-radius:6px;background:#f9fafb;color:#6b7280;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:border-color .15s;" onmouseover="this.style.borderColor=\'#0085f3\'" onmouseout="this.style.borderColor=\'#d1d5db\'"><i class="bi bi-image" style="font-size:14px;"></i> ' + CBLANG.msg_upload_image + '</button>';
                     }
                     html += '<div style="display:flex;gap:6px;margin-top:2px;">';
-                    html += '<input class="form-control" placeholder="Texto do botão (opcional)" value="' + esc(item.button_label || '') + '" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'button_label\',this.value)">';
+                    html += '<input class="form-control" placeholder="' + CBLANG.card_button_placeholder + '" value="' + esc(item.button_label || '') + '" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'button_label\',this.value)">';
                     html += '<select class="form-select" style="max-width:140px;" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'button_action\',this.value);renderFlow();">';
-                    html += '<option value="reply"' + (ba === 'reply' ? ' selected' : '') + '>Continuar fluxo</option>';
-                    html += '<option value="url"' + (ba === 'url' ? ' selected' : '') + '>Abrir link</option>';
+                    html += '<option value="reply"' + (ba === 'reply' ? ' selected' : '') + '>' + CBLANG.card_button_action_reply + '</option>';
+                    html += '<option value="url"' + (ba === 'url' ? ' selected' : '') + '>' + CBLANG.card_button_action_url + '</option>';
                     html += '</select>';
-                    html += '<input class="form-control" placeholder="' + (ba === 'url' ? 'URL' : 'Valor enviado') + '" value="' + esc(ba === 'url' ? (item.button_url || '') : (item.button_value || '')) + '" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'' + (ba === 'url' ? 'button_url' : 'button_value') + '\',this.value)">';
+                    html += '<input class="form-control" placeholder="' + (ba === 'url' ? CBLANG.card_url_placeholder : CBLANG.card_value_placeholder) + '" value="' + esc(ba === 'url' ? (item.button_url || '') : (item.button_value || '')) + '" onchange="cbUpdateCardItem(' + pathStr + ',' + index + ',' + i + ',\'' + (ba === 'url' ? 'button_url' : 'button_value') + '\',this.value)">';
                     html += '</div>';
                     html += '</div>';
                 });
                 html += '<button style="width:100%;background:#eff6ff;color:#0085f3;border:1.5px solid #bfdbfe;border-radius:8px;font-size:12px;font-weight:600;padding:7px;cursor:pointer;margin-top:2px;" onclick="cbAddCard(' + pathStr + ',' + index + ')">';
-                html += '<i class="bi bi-plus-lg"></i> Adicionar card</button>';
+                html += '<i class="bi bi-plus-lg"></i> ' + CBLANG.card_add + '</button>';
                 break;
         }
 
@@ -1234,9 +1235,9 @@
         });
         if (allVars.length === 0) return '';
         var html = '<div class="cb-var-hint">';
-        html += '<span class="cb-var-hint-label"><i class="bi bi-braces"></i> Variáveis:</span> ';
+        html += '<span class="cb-var-hint-label"><i class="bi bi-braces"></i> ' + CBLANG.vars_hint_label + '</span> ';
         allVars.forEach(function(name) {
-            html += '<button type="button" class="cb-var-tag" onclick="cbInsertVar(\'' + esc(editableId) + '\', \'' + esc(name) + '\')" title="Inserir ' + _LB + esc(name) + _RB + '">' + _LB + esc(name) + _RB + '</button> ';
+            html += '<button type="button" class="cb-var-tag" onclick="cbInsertVar(\'' + esc(editableId) + '\', \'' + esc(name) + '\')" title="' + CBLANG.vars_insert_title + ' ' + _LB + esc(name) + _RB + '">' + _LB + esc(name) + _RB + '</button> ';
         });
         html += '</div>';
         return html;
@@ -1280,11 +1281,11 @@
         const c = step.config || {};
         let html = '<div class="cb-image-area" onclick="cbUploadImage(' + pathStr + ', ' + index + ', this)">';
         if (c.image_url) {
-            html += '<img src="' + esc(c.image_url) + '" alt="Imagem">';
-            html += '<div style="margin-top:6px;font-size:11px;color:#6b7280;">Clique para trocar a imagem</div>';
+            html += '<img src="' + esc(c.image_url) + '" alt="' + CBLANG.preview_image + '">';
+            html += '<div style="margin-top:6px;font-size:11px;color:#6b7280;">' + CBLANG.msg_click_to_change_image + '</div>';
         } else {
             html += '<i class="bi bi-image" style="font-size:20px;display:block;margin-bottom:4px;"></i>';
-            html += 'Clique para adicionar imagem';
+            html += CBLANG.msg_click_to_add_image;
         }
         html += '</div>';
         return html;
@@ -1295,21 +1296,21 @@
         const c = step.config || {};
         let html = '';
 
-        html += '<label>Tipo da ação</label>';
+        html += '<label>' + CBLANG.action_type_label + '</label>';
         html += '<select class="form-select" onchange="cbUpdateActionType(' + pathStr + ', ' + index + ', this.value)">';
         var actionTypes = [
-            ['create_lead', 'Criar lead'],
-            ['change_stage', 'Mover para etapa'],
-            ['add_tag', 'Adicionar tag'],
-            ['remove_tag', 'Remover tag'],
-            ['save_variable', 'Salvar variável'],
-            ['close_conversation', 'Encerrar conversa'],
-            ['assign_human', 'Transferir para humano'],
-            ['send_webhook', 'Enviar webhook'],
-            ['set_custom_field', 'Preencher campo personalizado'],
-            ['send_whatsapp', 'Enviar WhatsApp'],
-            ['create_task', 'Criar tarefa'],
-            ['redirect', 'Redirecionar (URL)'],
+            ['create_lead', CBLANG.action_create_lead],
+            ['change_stage', CBLANG.action_change_stage],
+            ['add_tag', CBLANG.action_add_tag],
+            ['remove_tag', CBLANG.action_remove_tag],
+            ['save_variable', CBLANG.action_save_variable],
+            ['close_conversation', CBLANG.action_close_conversation],
+            ['assign_human', CBLANG.action_assign_human],
+            ['send_webhook', CBLANG.action_send_webhook],
+            ['set_custom_field', CBLANG.action_set_custom_field],
+            ['send_whatsapp', CBLANG.action_send_whatsapp],
+            ['create_task', CBLANG.action_create_task],
+            ['redirect', CBLANG.action_redirect],
         ];
         actionTypes.forEach(function(at) {
             if (at[0] === 'redirect' && FLOW_CHANNEL !== 'website') return;
@@ -1321,7 +1322,7 @@
             case 'create_lead':
                 var varOpts = function(field) {
                     var h = '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'' + field + '\', this.value)">';
-                    h += '<option value="">Selecione variável...</option>';
+                    h += '<option value="">' + CBLANG.action_select_variable + '</option>';
                     ['$contact_name', '$contact_email', '$contact_phone'].forEach(function(v) {
                         h += '<option value="' + v + '" ' + (c[field] === v ? 'selected' : '') + '>' + v + '</option>';
                     });
@@ -1333,13 +1334,13 @@
                     return h;
                 };
                 html += '<div class="row-pair" style="margin-top:8px;">';
-                html += '<div><label>Nome</label>' + varOpts('name_var') + '</div>';
-                html += '<div><label>Email</label>' + varOpts('email_var') + '</div>';
+                html += '<div><label>' + CBLANG.action_name + '</label>' + varOpts('name_var') + '</div>';
+                html += '<div><label>' + CBLANG.action_email + '</label>' + varOpts('email_var') + '</div>';
                 html += '</div>';
                 html += '<div class="row-pair" style="margin-top:8px;">';
-                html += '<div><label>Telefone</label>' + varOpts('phone_var') + '</div>';
-                html += '<div><label>Etapa</label><select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'stage_id\', parseInt(this.value))">';
-                html += '<option value="">Selecione...</option>';
+                html += '<div><label>' + CBLANG.action_phone + '</label>' + varOpts('phone_var') + '</div>';
+                html += '<div><label>' + CBLANG.action_stage + '</label><select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'stage_id\', parseInt(this.value))">';
+                html += '<option value="">' + CBLANG.condition_select + '</option>';
                 PIPELINES.forEach(function(p) {
                     p.stages.forEach(function(s) {
                         html += '<option value="' + s.id + '" ' + (c.stage_id == s.id ? 'selected' : '') + '>' + esc(p.name) + ' \u2192 ' + esc(s.name) + '</option>';
@@ -1348,9 +1349,9 @@
                 html += '</select></div></div>';
                 break;
             case 'change_stage':
-                html += '<label style="margin-top:8px;">Etapa destino</label>';
+                html += '<label style="margin-top:8px;">' + CBLANG.action_target_stage + '</label>';
                 html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'stage_id\', parseInt(this.value))">';
-                html += '<option value="">Selecione...</option>';
+                html += '<option value="">' + CBLANG.condition_select + '</option>';
                 PIPELINES.forEach(function(p) {
                     p.stages.forEach(function(s) {
                         html += '<option value="' + s.id + '" ' + (c.stage_id == s.id ? 'selected' : '') + '>' + esc(p.name) + ' → ' + esc(s.name) + '</option>';
@@ -1360,9 +1361,9 @@
                 break;
             case 'add_tag':
             case 'remove_tag':
-                html += '<label style="margin-top:8px;">Tag</label>';
+                html += '<label style="margin-top:8px;">' + CBLANG.action_tag + '</label>';
                 html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'value\', this.value)">';
-                html += '<option value="">Selecione...</option>';
+                html += '<option value="">' + CBLANG.condition_select + '</option>';
                 TAGS.forEach(function(t) {
                     html += '<option value="' + esc(t) + '" ' + (c.value === t ? 'selected' : '') + '>' + esc(t) + '</option>';
                 });
@@ -1370,47 +1371,47 @@
                 break;
             case 'save_variable':
                 html += '<div class="row-pair" style="margin-top:8px;">';
-                html += '<div><label>Variável</label><input class="form-control" value="' + esc(c.variable || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'variable\', this.value)"></div>';
-                html += '<div><label>Valor</label><input class="form-control" value="' + esc(c.value || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'value\', this.value)"></div>';
+                html += '<div><label>' + CBLANG.action_variable + '</label><input class="form-control" value="' + esc(c.variable || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'variable\', this.value)"></div>';
+                html += '<div><label>' + CBLANG.action_value + '</label><input class="form-control" value="' + esc(c.value || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'value\', this.value)"></div>';
                 html += '</div>';
                 break;
             case 'send_webhook':
                 html += '<div class="row-pair" style="margin-top:8px;">';
-                html += '<div style="flex:0 0 120px;"><label>Método</label><select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'http_method\', this.value)">';
+                html += '<div style="flex:0 0 120px;"><label>' + CBLANG.action_method + '</label><select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'http_method\', this.value)">';
                 ['POST', 'GET', 'PUT', 'DELETE', 'PATCH'].forEach(function(m) {
                     html += '<option value="' + m + '" ' + ((c.http_method || 'POST') === m ? 'selected' : '') + '>' + m + '</option>';
                 });
                 html += '</select></div>';
-                html += '<div><label>URL</label><input class="form-control" value="' + esc(c.url || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'url\', this.value)" placeholder="https://..."></div>';
+                html += '<div><label>' + CBLANG.action_url + '</label><input class="form-control" value="' + esc(c.url || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'url\', this.value)" placeholder="https://..."></div>';
                 html += '</div>';
                 if ((c.http_method || 'POST') !== 'GET') {
-                    html += '<label style="margin-top:8px;">JSON Body</label>';
+                    html += '<label style="margin-top:8px;">' + CBLANG.action_json_body + '</label>';
                     html += '<div class="cb-editable" contenteditable="true" id="wh-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="json_body" data-placeholder=\'{"nome": "valor"}\'>' + textToHtml(c.json_body || '') + '</div>';
                     html += renderVarHint('wh-' + step.id);
                 }
                 break;
             case 'set_custom_field':
-                html += '<label style="margin-top:8px;">Campo</label>';
+                html += '<label style="margin-top:8px;">' + CBLANG.action_field + '</label>';
                 html += '<select class="form-select" onchange="cbUpdateCustomField(' + pathStr + ', ' + index + ', this.value)">';
-                html += '<option value="">Selecione...</option>';
+                html += '<option value="">' + CBLANG.condition_select + '</option>';
                 CUSTOM_FIELDS.forEach(function(f) {
                     html += '<option value="' + esc(f.name) + '" ' + (c.field_name === f.name ? 'selected' : '') + '>' + esc(f.label) + '</option>';
                 });
                 html += '</select>';
-                html += '<label style="margin-top:8px;">Valor</label>';
+                html += '<label style="margin-top:8px;">' + CBLANG.action_field_value + '</label>';
                 html += '<input class="form-control" value="' + esc(c.field_value || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'field_value\', this.value)">';
                 break;
             case 'send_whatsapp':
-                html += '<label style="margin-top:8px;">Destino</label>';
+                html += '<label style="margin-top:8px;">' + CBLANG.action_destination + '</label>';
                 html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'phone_mode\', this.value); renderFlow();">';
-                html += '<option value="variable" ' + ((c.phone_mode || 'variable') === 'variable' ? 'selected' : '') + '>Variável do fluxo</option>';
-                html += '<option value="custom" ' + (c.phone_mode === 'custom' ? 'selected' : '') + '>Número fixo</option>';
+                html += '<option value="variable" ' + ((c.phone_mode || 'variable') === 'variable' ? 'selected' : '') + '>' + CBLANG.action_phone_mode_variable + '</option>';
+                html += '<option value="custom" ' + (c.phone_mode === 'custom' ? 'selected' : '') + '>' + CBLANG.action_phone_mode_custom + '</option>';
                 html += '</select>';
                 if (c.phone_mode === 'custom') {
-                    html += '<label style="margin-top:8px;">Número (com DDD)</label>';
+                    html += '<label style="margin-top:8px;">' + CBLANG.action_phone_number + '</label>';
                     html += '<input class="form-control" value="' + esc(c.custom_phone || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'custom_phone\', this.value)" placeholder="5511999999999">';
                 } else {
-                    html += '<label style="margin-top:8px;">Variável com telefone</label>';
+                    html += '<label style="margin-top:8px;">' + CBLANG.action_phone_variable + '</label>';
                     html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'phone_var\', this.value)">';
                     html += '<option value="$contact_phone" ' + ((c.phone_var || '$contact_phone') === '$contact_phone' ? 'selected' : '') + '>$contact_phone</option>';
                     flowVariables.forEach(function(fv) {
@@ -1419,57 +1420,57 @@
                     });
                     html += '</select>';
                 }
-                html += '<label style="margin-top:8px;">Mensagem</label>';
-                html += '<div class="cb-editable" contenteditable="true" id="wa-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="message" data-placeholder="Olá @{{nome}}, obrigado pelo contato!">' + textToHtml(c.message || '') + '</div>';
+                html += '<label style="margin-top:8px;">' + CBLANG.action_wa_message + '</label>';
+                html += '<div class="cb-editable" contenteditable="true" id="wa-' + step.id + '" data-path="' + pathStr + '" data-index="' + index + '" data-field="message" data-placeholder="' + CBLANG.msg_text_placeholder + '">' + textToHtml(c.message || '') + '</div>';
                 html += renderVarHint('wa-' + step.id);
-                html += '<p style="font-size:11px;color:#9ca3af;margin-top:6px;"><i class="bi bi-info-circle"></i> Enviada pela instância WhatsApp conectada.</p>';
+                html += '<p style="font-size:11px;color:#9ca3af;margin-top:6px;"><i class="bi bi-info-circle"></i> ' + CBLANG.action_wa_hint + '</p>';
                 break;
             case 'create_task':
-                html += '<label style="margin-top:8px;">Assunto da tarefa</label>';
-                html += '<input class="form-control" value="' + esc(c.subject || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'subject\', this.value)" placeholder="Ligar para @{{nome}}">';
-                html += '<label style="margin-top:8px;">Descrição</label>';
-                html += '<textarea class="form-control" rows="2" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'description\', this.value)" placeholder="Detalhes da tarefa...">' + esc(c.description || '') + '</textarea>';
+                html += '<label style="margin-top:8px;">' + CBLANG.action_task_subject + '</label>';
+                html += '<input class="form-control" value="' + esc(c.subject || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'subject\', this.value)" placeholder="' + CBLANG.action_task_subject_placeholder + '">';
+                html += '<label style="margin-top:8px;">' + CBLANG.action_task_description + '</label>';
+                html += '<textarea class="form-control" rows="2" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'description\', this.value)" placeholder="' + CBLANG.action_task_desc_placeholder + '">' + esc(c.description || '') + '</textarea>';
                 html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
-                html += '<div><label style="margin-top:8px;">Tipo</label>';
+                html += '<div><label style="margin-top:8px;">' + CBLANG.action_task_type + '</label>';
                 html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'task_type\', this.value)">';
-                var _ttypes = [['call','Ligar'],['email','Email'],['task','Tarefa'],['visit','Visita'],['whatsapp','WhatsApp'],['meeting','Reunião']];
+                var _ttypes = [['call',CBLANG.task_type_call],['email',CBLANG.task_type_email],['task',CBLANG.task_type_task],['visit',CBLANG.task_type_visit],['whatsapp',CBLANG.task_type_whatsapp],['meeting',CBLANG.task_type_meeting]];
                 _ttypes.forEach(function(tt){ html += '<option value="'+tt[0]+'" '+((c.task_type||'task')===tt[0]?'selected':'')+'>'+tt[1]+'</option>'; });
                 html += '</select></div>';
-                html += '<div><label style="margin-top:8px;">Prioridade</label>';
+                html += '<div><label style="margin-top:8px;">' + CBLANG.action_task_priority + '</label>';
                 html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'priority\', this.value)">';
-                [['low','Baixa'],['medium','Média'],['high','Alta']].forEach(function(p){ html += '<option value="'+p[0]+'" '+((c.priority||'medium')===p[0]?'selected':'')+'>'+p[1]+'</option>'; });
+                [['low',CBLANG.priority_low],['medium',CBLANG.priority_medium],['high',CBLANG.priority_high]].forEach(function(p){ html += '<option value="'+p[0]+'" '+((c.priority||'medium')===p[0]?'selected':'')+'>'+p[1]+'</option>'; });
                 html += '</select></div></div>';
                 html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
-                html += '<div><label style="margin-top:8px;">Prazo (dias)</label>';
+                html += '<div><label style="margin-top:8px;">' + CBLANG.action_task_due_days + '</label>';
                 html += '<input type="number" class="form-control" min="0" max="365" value="' + (c.due_date_offset || 0) + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'due_date_offset\', parseInt(this.value))"></div>';
-                html += '<div><label style="margin-top:8px;">Horário</label>';
+                html += '<div><label style="margin-top:8px;">' + CBLANG.action_task_due_time + '</label>';
                 html += '<input type="time" class="form-control" value="' + esc(c.due_time || '09:00') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'due_time\', this.value)"></div>';
                 html += '</div>';
-                html += '<label style="margin-top:8px;">Atribuir a</label>';
+                html += '<label style="margin-top:8px;">' + CBLANG.action_task_assign_to + '</label>';
                 html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'assigned_to_mode\', this.value); renderFlow();">';
-                html += '<option value="automatic" ' + ((c.assigned_to_mode || 'automatic') === 'automatic' ? 'selected' : '') + '>Automático (responsável do lead)</option>';
-                html += '<option value="user" ' + (c.assigned_to_mode === 'user' ? 'selected' : '') + '>Usuário específico</option>';
+                html += '<option value="automatic" ' + ((c.assigned_to_mode || 'automatic') === 'automatic' ? 'selected' : '') + '>' + CBLANG.action_task_assign_auto + '</option>';
+                html += '<option value="user" ' + (c.assigned_to_mode === 'user' ? 'selected' : '') + '>' + CBLANG.action_task_assign_user + '</option>';
                 html += '</select>';
                 if (c.assigned_to_mode === 'user') {
-                    html += '<label style="margin-top:8px;">Usuário</label>';
+                    html += '<label style="margin-top:8px;">' + CBLANG.action_task_user + '</label>';
                     html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'assigned_to_user_id\', parseInt(this.value))">';
-                    html += '<option value="">Selecione...</option>';
+                    html += '<option value="">' + CBLANG.condition_select + '</option>';
                     (window.chatbotBuilderData.users || []).forEach(function(u) {
                         html += '<option value="' + u.id + '" ' + (c.assigned_to_user_id == u.id ? 'selected' : '') + '>' + esc(u.name) + '</option>';
                     });
                     html += '</select>';
                 }
-                html += '<p style="font-size:11px;color:#9ca3af;margin-top:6px;"><i class="bi bi-info-circle"></i> Cria uma tarefa vinculada ao lead da conversa.</p>';
+                html += '<p style="font-size:11px;color:#9ca3af;margin-top:6px;"><i class="bi bi-info-circle"></i> ' + CBLANG.action_task_hint + '</p>';
                 break;
             case 'redirect':
-                html += '<label style="margin-top:8px;">URL de destino</label>';
+                html += '<label style="margin-top:8px;">' + CBLANG.action_redirect_url + '</label>';
                 html += '<input class="form-control" value="' + esc(c.url || '') + '" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'url\', this.value)" placeholder="https://seusite.com/obrigado">';
-                html += '<label style="margin-top:8px;">Abrir em</label>';
+                html += '<label style="margin-top:8px;">' + CBLANG.action_redirect_open_in + '</label>';
                 html += '<select class="form-select" onchange="cbUpdateConfig(' + pathStr + ', ' + index + ', \'target\', this.value)">';
-                html += '<option value="_blank" ' + ((c.target || '_blank') === '_blank' ? 'selected' : '') + '>Nova aba</option>';
-                html += '<option value="_self" ' + (c.target === '_self' ? 'selected' : '') + '>Mesma aba</option>';
+                html += '<option value="_blank" ' + ((c.target || '_blank') === '_blank' ? 'selected' : '') + '>' + CBLANG.action_redirect_new_tab + '</option>';
+                html += '<option value="_self" ' + (c.target === '_self' ? 'selected' : '') + '>' + CBLANG.action_redirect_same_tab + '</option>';
                 html += '</select>';
-                html += '<p style="font-size:11px;color:#9ca3af;margin-top:6px;"><i class="bi bi-info-circle"></i> Redireciona o visitante para a URL informada.</p>';
+                html += '<p style="font-size:11px;color:#9ca3af;margin-top:6px;"><i class="bi bi-info-circle"></i> ' + CBLANG.action_redirect_hint + '</p>';
                 break;
         }
 
@@ -1507,8 +1508,8 @@
 
             // Header
             html += '<div class="cb-branch-header">';
-            html += '<input class="cb-branch-label-input" maxlength="24" placeholder="Máx. 24 caracteres" value="' + esc(b.label || 'Opção ' + (bi + 1)) + '" onchange="cbUpdateBranch(' + pathStr + ', ' + index + ', ' + bi + ', \'label\', this.value)">';
-            html += '<button class="cb-branch-remove" onclick="cbRemoveBranch(' + pathStr + ', ' + index + ', ' + bi + ')" title="Remover opção"><i class="bi bi-x-lg"></i></button>';
+            html += '<input class="cb-branch-label-input" maxlength="24" placeholder="' + CBLANG.branch_max_chars + '" value="' + esc(b.label || CBLANG.branch_option.replace(':number', bi + 1)) + '" onchange="cbUpdateBranch(' + pathStr + ', ' + index + ', ' + bi + ', \'label\', this.value)">';
+            html += '<button class="cb-branch-remove" onclick="cbRemoveBranch(' + pathStr + ', ' + index + ', ' + bi + ')" title="' + CBLANG.branch_remove + '"><i class="bi bi-x-lg"></i></button>';
             html += '</div>';
 
             // Config
@@ -1517,17 +1518,17 @@
                 // Keywords auto-sync com label — campo oculto
             } else if (step.type === 'condition') {
                 var varLabel = (step.config && step.config.variable) || 'variável';
-                var opLabel = {equals:'igual a',not_equals:'diferente de',contains:'contém',starts_with:'começa com',ends_with:'termina com',gt:'maior que',lt:'menor que'}[b.operator] || '...';
+                var opLabel = {equals:CBLANG.op_sentence_equals,not_equals:CBLANG.op_sentence_not_equals,contains:CBLANG.op_sentence_contains,starts_with:CBLANG.op_sentence_starts_with,ends_with:CBLANG.op_sentence_ends_with,gt:CBLANG.op_sentence_gt,lt:CBLANG.op_sentence_lt}[b.operator] || '...';
                 var valLabel = b.value || '...';
-                html += '<div style="font-size:11px;color:#6b7280;margin-bottom:6px;font-style:italic;">Se <strong>' + esc(varLabel) + '</strong> ' + esc(opLabel) + ' <strong>' + esc(valLabel) + '</strong></div>';
+                html += '<div style="font-size:11px;color:#6b7280;margin-bottom:6px;font-style:italic;">' + CBLANG.branch_condition_sentence.replace(':variable', esc(varLabel)).replace(':operator', esc(opLabel)).replace(':value', esc(valLabel)) + '</div>';
                 html += '<div class="row-pair">';
-                html += '<div><label>Operador</label><select class="form-select" onchange="cbUpdateBranch(' + pathStr + ', ' + index + ', ' + bi + ', \'operator\', this.value)">';
-                var ops = { equals: 'Igual a', not_equals: 'Diferente', contains: 'Contém', starts_with: 'Começa com', ends_with: 'Termina com', gt: 'Maior que', lt: 'Menor que' };
+                html += '<div><label>' + CBLANG.branch_operator + '</label><select class="form-select" onchange="cbUpdateBranch(' + pathStr + ', ' + index + ', ' + bi + ', \'operator\', this.value)">';
+                var ops = { equals: CBLANG.op_equals, not_equals: CBLANG.op_not_equals, contains: CBLANG.op_contains, starts_with: CBLANG.op_starts_with, ends_with: CBLANG.op_ends_with, gt: CBLANG.op_gt, lt: CBLANG.op_lt };
                 Object.keys(ops).forEach(function(op) {
                     html += '<option value="' + op + '" ' + (b.operator === op ? 'selected' : '') + '>' + ops[op] + '</option>';
                 });
                 html += '</select></div>';
-                html += '<div><label>Valor</label><input class="form-control" value="' + esc(b.value || '') + '" onchange="cbUpdateBranch(' + pathStr + ', ' + index + ', ' + bi + ', \'value\', this.value)"></div>';
+                html += '<div><label>' + CBLANG.branch_value + '</label><input class="form-control" value="' + esc(b.value || '') + '" onchange="cbUpdateBranch(' + pathStr + ', ' + index + ', ' + bi + ', \'value\', this.value)"></div>';
                 html += '</div>';
             }
             html += '</div>';
@@ -1545,13 +1546,13 @@
         const defPathStr = JSON.stringify(defPath).replace(/"/g, '&quot;');
 
         html += '<div class="cb-branch-col default">';
-        html += '<div class="cb-branch-header"><span class="cb-branch-label-input" style="color:#9ca3af;font-weight:600;">Padrão</span></div>';
-        html += '<div class="cb-branch-config"><label style="color:#b0b0b0;font-size:10px;">Quando nenhuma opção corresponder</label></div>';
+        html += '<div class="cb-branch-header"><span class="cb-branch-label-input" style="color:#9ca3af;font-weight:600;">' + CBLANG.branch_default + '</span></div>';
+        html += '<div class="cb-branch-config"><label style="color:#b0b0b0;font-size:10px;">' + CBLANG.branch_default_hint + '</label></div>';
         html += '<div class="cb-branch-body" id="branch-' + step.id + '-default"></div>';
         html += '</div>';
 
         // Add branch button
-        html += '<div class="cb-add-branch-col" onclick="cbAddBranch(' + pathStr + ', ' + index + ')" title="Adicionar opção">+</div>';
+        html += '<div class="cb-add-branch-col" onclick="cbAddBranch(' + pathStr + ', ' + index + ')" title="' + CBLANG.branch_add + '">+</div>';
 
         html += '</div>'; // .cb-branches
         html += '</div>'; // .cb-branches-wrapper
@@ -1607,7 +1608,7 @@
             const addBtn = document.createElement('button');
             addBtn.className = 'cb-add-step';
             addBtn.style.marginTop = '8px';
-            addBtn.innerHTML = '<i class="bi bi-plus-lg"></i> Adicionar';
+            addBtn.innerHTML = '<i class="bi bi-plus-lg"></i> ' + CBLANG.add_step;
             addBtn.onclick = function() { showAddMenu(addBtn, branchPath); };
             container.appendChild(addBtn);
 
@@ -1650,7 +1651,7 @@
         const addBtn = document.createElement('button');
         addBtn.className = 'cb-add-step';
         addBtn.style.marginTop = '8px';
-        addBtn.innerHTML = '<i class="bi bi-plus-lg"></i> Adicionar';
+        addBtn.innerHTML = '<i class="bi bi-plus-lg"></i> ' + CBLANG.add_step;
         addBtn.onclick = function() { showAddMenu(addBtn, defPath); };
         defContainer.appendChild(addBtn);
 
@@ -1831,7 +1832,7 @@
         step.config.show_buttons = enabled;
         if (enabled) {
             if (!step.branches || !step.branches.length) {
-                step.branches = [{ id: 'b' + Date.now().toString(36) + (idCounter++), label: 'Opção 1', keywords: [], steps: [] }];
+                step.branches = [{ id: 'b' + Date.now().toString(36) + (idCounter++), label: CBLANG.branch_option.replace(':number', 1), keywords: [], steps: [] }];
             }
             if (!step.default_branch) step.default_branch = { steps: [] };
         } else {
@@ -1899,13 +1900,13 @@
         menu.style.cssText = 'position:absolute;z-index:100;background:#fff;border:1.5px solid #e8eaf0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:6px 0;min-width:180px;';
 
         var types = [
-            ['message', 'bi-chat-dots', 'Mensagem'],
-            ['input', 'bi-input-cursor-text', 'Pergunta'],
-            ['condition', 'bi-question-diamond', 'Condição'],
-            ['action', 'bi-lightning', 'Ação'],
-            ['delay', 'bi-hourglass-split', 'Aguardar'],
-            ['cards', 'bi-card-heading', 'Cards'],
-            ['end', 'bi-stop-circle', 'Fim'],
+            ['message', 'bi-chat-dots', CBLANG.node_message],
+            ['input', 'bi-input-cursor-text', CBLANG.node_input],
+            ['condition', 'bi-question-diamond', CBLANG.node_condition],
+            ['action', 'bi-lightning', CBLANG.node_action],
+            ['delay', 'bi-hourglass-split', CBLANG.node_delay],
+            ['cards', 'bi-card-heading', CBLANG.node_cards],
+            ['end', 'bi-stop-circle', CBLANG.node_end],
         ];
 
         types.forEach(function(t) {
@@ -1961,7 +1962,7 @@
             })
             .catch(function(err) {
                 console.error('Upload error:', err);
-                toastr.error('Erro ao enviar imagem');
+                toastr.error(CBLANG.toast_upload_error);
             });
         };
         input.click();
@@ -1991,7 +1992,7 @@
             })
             .catch(function(err) {
                 console.error('Card image upload error:', err);
-                toastr.error('Erro ao enviar imagem');
+                toastr.error(CBLANG.toast_upload_error);
             });
         };
         input.click();
@@ -2013,10 +2014,10 @@
             var badge = document.getElementById('cbStatusBadge');
             if (data.is_active) {
                 badge.classList.add('active');
-                badge.textContent = 'Ativo';
+                badge.textContent = CBLANG.builder_active;
             } else {
                 badge.classList.remove('active');
-                badge.textContent = 'Inativo';
+                badge.textContent = CBLANG.builder_inactive;
             }
         });
     };
@@ -2037,16 +2038,16 @@
                 is_catch_all: checked ? '1' : '0',
             }),
         }).then(function() {
-            toastr.success(checked ? 'Fluxo definido como catch-all' : 'Catch-all desativado');
+            toastr.success(checked ? CBLANG.toast_catch_all_on : CBLANG.toast_catch_all_off);
         }).catch(function() {
-            toastr.error('Erro ao atualizar');
+            toastr.error(CBLANG.toast_update_error);
         });
     };
 
     window.saveFlow = function(silent) {
         var name = document.getElementById('cbName').value.trim();
         if (!name) {
-            if (!silent) toastr.warning('Informe o nome do fluxo');
+            if (!silent) toastr.warning(CBLANG.toast_name_required);
             return Promise.resolve();
         }
 
@@ -2066,14 +2067,14 @@
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.success) {
-                if (!silent) toastr.success('Fluxo salvo com sucesso!');
+                if (!silent) toastr.success(CBLANG.toast_flow_saved);
             } else {
-                toastr.error(data.message || 'Erro ao salvar');
+                toastr.error(data.message || CBLANG.toast_save_error);
             }
         })
         .catch(function(err) {
             console.error('Save error:', err);
-            toastr.error('Erro ao salvar fluxo');
+            toastr.error(CBLANG.toast_save_flow_error);
         });
     };
 
@@ -2097,7 +2098,7 @@
         var name = input.value.trim().replace(/[^a-zA-Z0-9_]/g, '');
         if (!name) return;
         if (flowVariables.some(function(v) { return (v.name || v) === name; })) {
-            toastr.warning('Variável já existe');
+            toastr.warning(CBLANG.toast_var_exists);
             return;
         }
         flowVariables.push({ name: name, default: '' });
@@ -2679,10 +2680,10 @@
     ];
 
     // ── Categories & Search ──
-    var _tplActiveCategory = 'Todos';
+    var _tplActiveCategory = CBLANG.tpl_category_all;
 
     function getTemplateCategories() {
-        var cats = ['Todos'];
+        var cats = [CBLANG.tpl_category_all];
         BOT_TEMPLATES.forEach(function(t) {
             if (cats.indexOf(t.category) === -1) cats.push(t.category);
         });
@@ -2721,7 +2722,7 @@
         var q = (searchText || '').toLowerCase().trim();
 
         var filtered = BOT_TEMPLATES.filter(function(tpl) {
-            if (_tplActiveCategory !== 'Todos' && tpl.category !== _tplActiveCategory) return false;
+            if (_tplActiveCategory !== CBLANG.tpl_category_all && tpl.category !== _tplActiveCategory) return false;
             if (!q) return true;
             var haystack = (tpl.name + ' ' + tpl.description + ' ' + (tpl.tags || '') + ' ' + tpl.category).toLowerCase();
             return haystack.indexOf(q) !== -1;
@@ -2742,7 +2743,7 @@
                     '<span style="font-size:11px;color:#9ca3af;">' + tpl.category + '</span></div>' +
                 '</div>' +
                 '<p style="font-size:12px;color:#6b7280;margin:0 0 8px;line-height:1.4;">' + tpl.description + '</p>' +
-                '<div style="font-size:11px;color:#b0b5bf;">' + tpl.steps.length + ' nos · ' + (tpl.variables ? tpl.variables.length : 0) + ' variaveis</div>';
+                '<div style="font-size:11px;color:#b0b5bf;">' + tpl.steps.length + ' ' + CBLANG.tpl_nodes + ' · ' + (tpl.variables ? tpl.variables.length : 0) + ' ' + CBLANG.tpl_variables + '</div>';
             card.onclick = function() { loadTemplate(tpl); };
             grid.appendChild(card);
         });
@@ -2774,7 +2775,7 @@
         if (!modal) return;
         var search = document.getElementById('tplSearch');
         if (search) search.value = '';
-        _tplActiveCategory = 'Todos';
+        _tplActiveCategory = CBLANG.tpl_category_all;
         renderTemplateTabs();
         renderTemplateGrid('');
         modal.style.display = 'flex';
@@ -2783,7 +2784,7 @@
 
     function loadTemplate(tpl) {
         var hasSteps = flowSteps.length > 0;
-        if (hasSteps && !confirm('Isso vai substituir todos os nós atuais. Deseja continuar?')) return;
+        if (hasSteps && !confirm(CBLANG.tpl_confirm_replace)) return;
 
         // Deep-clone steps with fresh IDs
         var newSteps = JSON.parse(JSON.stringify(tpl.steps));
@@ -2799,7 +2800,7 @@
 
         document.getElementById('templatesModal').style.display = 'none';
         renderFlow();
-        toastr.success('Modelo "' + tpl.name + '" carregado!');
+        toastr.success(CBLANG.tpl_loaded.replace(':name', tpl.name));
     }
 
     function assignFreshIds(steps) {
