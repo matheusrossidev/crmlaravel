@@ -8,9 +8,6 @@
 @if($calendarConnected)
 @section('topbar_actions')
 <div class="topbar-actions" style="gap:8px;">
-    <button class="btn-outline-sm" onclick="openCalendarSelector()" title="{{ __('calendar.select_calendars') }}">
-        <i class="bi bi-collection"></i> {{ __('calendar.calendars_btn') }}
-    </button>
     <button class="btn-primary-sm cal-hide-mobile" onclick="openCreateModal()">
         <i class="bi bi-plus-lg"></i> {{ __('calendar.new_event') }}
     </button>
@@ -21,44 +18,284 @@
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
 <style>
-/* ── Main calendar wrapper ───────────────────────────────────────────────── */
-.cal-main {
+/* ══════════════════════════════════════════════════════════════════════════
+   2-Column Layout: Sidebar + Main
+   ══════════════════════════════════════════════════════════════════════════ */
+.cal-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+/* ── Left Sidebar ─────────────────────────────────────────────────────── */
+.cal-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.cal-sidebar-card {
     background: #fff;
     border: 1.5px solid #e8eaf0;
-    border-radius: 16px;
-    padding: 24px 28px 28px;
+    border-radius: 14px;
+    padding: 16px;
+}
+
+/* ── Mini Calendar ────────────────────────────────────────────────────── */
+.mini-cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.mini-cal-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1d23;
+    text-transform: capitalize;
+}
+.mini-cal-nav {
+    display: flex;
+    gap: 4px;
+}
+.mini-cal-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid #e2e6ed;
+    background: #fff;
+    color: #6b7280;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .15s;
+}
+.mini-cal-nav-btn:hover { background: #f3f4f6; color: #374151; }
+
+/* Mini FC overrides */
+#miniCalendar {
+    font-size: 12px;
+}
+#miniCalendar .fc-toolbar.fc-header-toolbar { display: none !important; }
+#miniCalendar .fc-scrollgrid { border: none !important; }
+#miniCalendar .fc-scrollgrid td,
+#miniCalendar .fc-scrollgrid th { border: none !important; }
+#miniCalendar .fc-scrollgrid-section-header > * { border-bottom: none; }
+#miniCalendar .fc-col-header-cell {
+    background: transparent;
+    padding: 0;
+}
+#miniCalendar .fc-col-header-cell-cushion {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 4px 0;
+}
+#miniCalendar .fc-daygrid-day {
+    border: none !important;
+    cursor: pointer;
+}
+#miniCalendar .fc-daygrid-day:hover {
+    background: #f3f4f6;
+    border-radius: 50%;
+}
+#miniCalendar .fc-daygrid-day-frame {
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 0;
+}
+#miniCalendar .fc-daygrid-day-top {
+    flex-direction: row;
+    justify-content: center;
+    padding: 0;
+}
+#miniCalendar .fc-daygrid-day-number {
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+    text-decoration: none;
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+#miniCalendar .fc-daygrid-day.fc-day-other .fc-daygrid-day-number {
+    color: #d1d5db;
+    font-weight: 400;
+}
+#miniCalendar .fc-daygrid-day.fc-day-today {
+    background: transparent !important;
+}
+#miniCalendar .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+    background: #0085f3;
+    color: #fff !important;
+    font-weight: 700;
+}
+#miniCalendar .fc-daygrid-day.mini-cal-selected .fc-daygrid-day-number {
+    background: #eff6ff;
+    color: #0085f3 !important;
+    font-weight: 700;
+}
+#miniCalendar .fc-daygrid-event-harness { display: none !important; }
+#miniCalendar .fc-daygrid-more-link { display: none !important; }
+/* Event dot indicator */
+#miniCalendar .fc-daygrid-day.has-events .fc-daygrid-day-number::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #0085f3;
+}
+#miniCalendar .fc-daygrid-day-frame {
+    position: relative;
+}
+#miniCalendar .fc {
+    --fc-border-color: transparent;
+    --fc-today-bg-color: transparent;
+    --fc-neutral-bg-color: transparent;
+}
+
+/* ── Sidebar Filters ──────────────────────────────────────────────────── */
+.cal-filter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+.cal-filter-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1d23;
+}
+.cal-filter-clear {
+    font-size: 12px;
+    font-weight: 600;
+    color: #0085f3;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    transition: color .15s;
+}
+.cal-filter-clear:hover { color: #0070d1; }
+
+.cal-filter-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    margin-bottom: 8px;
+}
+
+.cal-filter-calendars {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.cal-filter-cal-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    cursor: pointer;
+    font-size: 13px;
+    color: #374151;
+    font-weight: 500;
+}
+.cal-filter-cal-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    accent-color: #0085f3;
+    flex-shrink: 0;
+}
+.cal-filter-cal-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.cal-filter-cal-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cal-filter-search {
+    width: 100%;
+    padding: 8px 12px 8px 32px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #1a1d23;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color .15s;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%239ca3af' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.44 1.158a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z'/%3E%3C/svg%3E") 10px center no-repeat;
+}
+.cal-filter-search:focus { border-color: #0085f3; }
+.cal-filter-search::placeholder { color: #9ca3af; }
+
+/* Loading spinner for sidebar calendars */
+.cal-filter-loading {
+    text-align: center;
+    padding: 12px 0;
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+/* ── Right Main Area ──────────────────────────────────────────────────── */
+.cal-main {
+    flex: 1;
+    min-width: 0;
+    background: #fff;
+    border: 1.5px solid #e8eaf0;
+    border-radius: 14px;
+    padding: 20px 24px 24px;
     min-height: 600px;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   FullCalendar — Slothui Overrides
+   FullCalendar — Overrides
    ══════════════════════════════════════════════════════════════════════════ */
-
 .fc {
     --fc-border-color: #f0f1f4;
     --fc-today-bg-color: transparent;
     --fc-neutral-bg-color: transparent;
 }
-
-/* ── Custom Toolbar (replaces FC toolbar) ────────────────────────────────── */
 .fc .fc-toolbar.fc-header-toolbar { display: none !important; }
 
-.sloth-toolbar {
+/* ── Custom Toolbar ───────────────────────────────────────────────────── */
+.cal-toolbar {
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 24px;
+    gap: 12px;
+    margin-bottom: 20px;
     flex-wrap: wrap;
 }
-.sloth-title {
-    font-size: 26px;
-    font-weight: 800;
-    color: #1a1d23;
-    letter-spacing: -.03em;
-    line-height: 1.2;
-    white-space: nowrap;
-}
-.sloth-today-btn {
+.cal-today-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -73,21 +310,98 @@
     transition: all .15s;
     white-space: nowrap;
 }
-.sloth-today-btn:hover { background: #f7f9fc; border-color: #d1d5db; }
-.sloth-today-btn .dot {
+.cal-today-btn:hover { background: #f7f9fc; border-color: #d1d5db; }
+.cal-today-btn .dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
     background: #22c55e;
     flex-shrink: 0;
 }
-.sloth-nav-btn {
+.cal-nav-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
+    border: 1.5px solid #e2e6ed;
+    background: #fff;
+    color: #6b7280;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all .15s;
+    flex-shrink: 0;
+}
+.cal-nav-btn:hover { background: #f3f4f6; color: #374151; border-color: #d1d5db; }
+.cal-toolbar-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1d23;
+    white-space: nowrap;
+}
+.cal-toolbar-spacer { flex: 1; }
+.cal-view-dropdown {
+    position: relative;
+    display: inline-block;
+}
+.cal-view-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    border: 1.5px solid #e2e6ed;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    background: #fff;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+}
+.cal-view-btn:hover { background: #f7f9fc; border-color: #d1d5db; }
+.cal-view-btn i { font-size: 15px; color: #0085f3; }
+.cal-view-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    background: #fff;
+    border: 1.5px solid #e8eaf0;
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.1);
+    min-width: 140px;
+    z-index: 20;
+    padding: 4px;
+    animation: popIn .12s ease;
+}
+.cal-view-menu.open { display: block; }
+.cal-view-option {
+    display: block;
+    width: 100%;
+    padding: 8px 14px;
+    border: none;
+    background: none;
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    border-radius: 7px;
+    text-align: left;
+    transition: background .12s;
+}
+.cal-view-option:hover { background: #f3f4f6; }
+.cal-view-option.active { color: #0085f3; font-weight: 600; background: #eff6ff; }
+
+/* Mobile sidebar toggle */
+.cal-sidebar-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
     border: 1.5px solid #e2e6ed;
     background: #fff;
     color: #6b7280;
@@ -96,35 +410,9 @@
     transition: all .15s;
     flex-shrink: 0;
 }
-.sloth-nav-btn:hover { background: #f3f4f6; color: #374151; border-color: #d1d5db; }
-.sloth-spacer { flex: 1; }
-.sloth-view-group {
-    display: inline-flex;
-    background: #f3f5f8;
-    border-radius: 12px;
-    padding: 4px;
-    gap: 2px;
-}
-.sloth-view-btn {
-    padding: 7px 18px;
-    border: none;
-    border-radius: 9px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #6b7280;
-    background: transparent;
-    cursor: pointer;
-    transition: all .15s;
-    white-space: nowrap;
-}
-.sloth-view-btn:hover { color: #374151; background: rgba(0,0,0,.03); }
-.sloth-view-btn.active {
-    background: #fff;
-    color: #1a1d23;
-    box-shadow: 0 1px 4px rgba(0,0,0,.08);
-}
+.cal-sidebar-toggle:hover { background: #f3f4f6; color: #374151; }
 
-/* ── Column headers ──────────────────────────────────────────────────────── */
+/* ── Column headers ──────────────────────────────────────────────────── */
 .fc .fc-col-header-cell {
     background: transparent;
     border: none !important;
@@ -140,7 +428,39 @@
     letter-spacing: .01em;
 }
 
-/* ── Day cells ───────────────────────────────────────────────────────────── */
+/* Custom day header: number + weekday */
+.cal-day-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 0;
+    text-decoration: none;
+}
+.cal-day-header-num {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1d23;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    line-height: 1;
+}
+.cal-day-header-num.is-today {
+    background: #0085f3;
+    color: #fff !important;
+}
+.cal-day-header-weekday {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+}
+
+/* ── Day cells ────────────────────────────────────────────────────────── */
 .fc .fc-daygrid-day {
     transition: background .12s;
     border-color: #f0f1f4 !important;
@@ -150,8 +470,6 @@
     min-height: 100px;
     padding: 4px;
 }
-
-/* ── Day numbers ─────────────────────────────────────────────────────────── */
 .fc .fc-daygrid-day-top {
     flex-direction: row;
     padding: 6px 8px 2px;
@@ -167,13 +485,11 @@
     color: #d1d5db;
     font-weight: 400;
 }
-
-/* ── Today ───────────────────────────────────────────────────────────────── */
 .fc .fc-daygrid-day.fc-day-today {
     background: transparent !important;
 }
 .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
-    background: #3b82f6;
+    background: #0085f3;
     color: #fff !important;
     border-radius: 50%;
     width: 30px;
@@ -186,7 +502,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Events — Slothui colored pill blocks
+   Events — colored pill blocks
    ══════════════════════════════════════════════════════════════════════════ */
 .fc .fc-event {
     border: none !important;
@@ -203,22 +519,17 @@
     opacity: .88;
     transform: scale(1.015);
 }
-.fc .fc-daygrid-event-harness {
-    margin: 1px 3px;
-}
+.fc .fc-daygrid-event-harness { margin: 1px 3px; }
 .fc .fc-daygrid-block-event .fc-event-time {
     font-weight: 500 !important;
     opacity: .9;
     padding-right: 3px;
     font-size: 11px !important;
 }
-.fc .fc-daygrid-block-event .fc-event-title {
-    font-weight: 600 !important;
-}
-/* Force block display — hide dot style */
+.fc .fc-daygrid-block-event .fc-event-title { font-weight: 600 !important; }
 .fc .fc-daygrid-dot-event { display: none !important; }
 
-/* All-day events — faixa fina estilo Google Calendar */
+/* All-day events */
 .fc .fc-daygrid-event.fc-allday-custom {
     padding: 1px 8px !important;
     font-size: 11px !important;
@@ -233,14 +544,12 @@
     font-weight: 600 !important;
     font-size: 11px !important;
 }
-.fc .fc-daygrid-event.fc-allday-custom .fc-event-time {
-    display: none !important;
-}
+.fc .fc-daygrid-event.fc-allday-custom .fc-event-time { display: none !important; }
 
 .fc a { text-decoration: none !important; }
 .fc a:hover { color: inherit; }
 
-/* ── More events link ────────────────────────────────────────────────────── */
+/* ── More events link ─────────────────────────────────────────────────── */
 .fc .fc-daygrid-more-link {
     font-size: 11.5px;
     font-weight: 700;
@@ -250,20 +559,21 @@
 }
 .fc .fc-daygrid-more-link:hover { background: #eef2ff; }
 
-/* ── Time grid ───────────────────────────────────────────────────────────── */
-.fc .fc-timegrid-slot { height: 52px; }
+/* ── Time grid ────────────────────────────────────────────────────────── */
+.fc .fc-timegrid-slot { height: 40px; }
 .fc .fc-timegrid-slot-label-cushion {
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 500;
     color: #9ca3af;
 }
 .fc .fc-timegrid-event {
-    border-radius: 10px !important;
-    border-left: 4px solid rgba(0,0,0,.12) !important;
+    border-radius: 8px !important;
+    border-left: none !important;
+    overflow: hidden;
 }
 .fc .fc-timegrid-event .fc-event-main {
     padding: 6px 10px;
-    font-size: 12.5px;
+    font-size: 12px;
 }
 .fc .fc-timegrid-event .fc-event-time {
     font-size: 11px;
@@ -271,7 +581,38 @@
     opacity: .85;
 }
 
-/* ── Now indicator ───────────────────────────────────────────────────────── */
+/* Custom event content */
+.cal-event-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    line-height: 1.3;
+    overflow: hidden;
+}
+.cal-event-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cal-event-desc {
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255,255,255,.85);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cal-event-time {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255,255,255,.75);
+    margin-top: 2px;
+}
+
+/* ── Now indicator ────────────────────────────────────────────────────── */
 .fc .fc-timegrid-now-indicator-line {
     border-color: #ef4444;
     border-width: 2px;
@@ -281,18 +622,18 @@
     border-bottom-color: #ef4444;
 }
 
-/* ── Grid borders ────────────────────────────────────────────────────────── */
+/* ── Grid borders ─────────────────────────────────────────────────────── */
 .fc .fc-scrollgrid { border: none !important; }
 .fc .fc-scrollgrid td,
-.fc .fc-scrollgrid th {
-    border-color: #f0f1f4 !important;
-}
+.fc .fc-scrollgrid th { border-color: #f0f1f4 !important; }
 .fc table { border-collapse: collapse; }
-.fc .fc-scrollgrid-section-header > * {
-    border-bottom: 2px solid #eef0f4;
-}
+.fc .fc-scrollgrid-section-header > * { border-bottom: 2px solid #eef0f4; }
 
-/* ── Event Popup ─────────────────────────────────────────────────────────── */
+/* Hide allDay slot in timeGrid views */
+.fc .fc-timegrid .fc-daygrid-body { display: none !important; }
+.fc .fc-timegrid-divider { display: none !important; }
+
+/* ── Event Popup ──────────────────────────────────────────────────────── */
 .ev-popup {
     position: fixed;
     z-index: 1060;
@@ -334,7 +675,7 @@
 }
 .ev-popup-row i { color: #9ca3af; margin-top: 2px; flex-shrink: 0; font-size: 14px; }
 
-/* ── Drawer inputs ───────────────────────────────────────────────────────── */
+/* ── Drawer inputs ────────────────────────────────────────────────────── */
 .cal-inp {
     width: 100%;
     padding: 10px 14px;
@@ -349,14 +690,9 @@
     background: #fff;
 }
 .cal-inp:focus { border-color: #0085f3; box-shadow: 0 0 0 3px rgba(0,133,243,.1); }
-@media (max-width: 520px) {
-    .cal-datetime-grid { grid-template-columns: 1fr !important; }
-    .cal-inp[type="datetime-local"] { font-size: 13px; }
-}
 
-/* ── FAB for mobile ── */
+/* ── FAB ── */
 .cal-fab {
-    display: none;
     position: fixed;
     bottom: 24px;
     right: 24px;
@@ -369,6 +705,7 @@
     font-size: 22px;
     cursor: pointer;
     z-index: 100;
+    display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 16px rgba(0,133,243,.35);
@@ -376,99 +713,64 @@
 }
 .cal-fab:hover { transform: scale(1.06); box-shadow: 0 6px 24px rgba(0,133,243,.45); }
 
-/* ── Mobile ── */
+/* ── Mobile overlay for sidebar ── */
+.cal-sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.35);
+    z-index: 1039;
+}
+.cal-sidebar-overlay.open { display: block; }
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+    .cal-layout { flex-direction: column; gap: 0; }
+    .cal-sidebar {
+        position: fixed;
+        top: 0; left: 0;
+        width: 280px;
+        height: 100vh;
+        z-index: 1040;
+        background: #fff;
+        padding: 16px;
+        gap: 12px;
+        overflow-y: auto;
+        transform: translateX(-100%);
+        transition: transform .25s cubic-bezier(.4,0,.2,1);
+        box-shadow: 4px 0 32px rgba(0,0,0,.12);
+    }
+    .cal-sidebar.open { transform: translateX(0); }
+    .cal-sidebar-card {
+        border: none;
+        padding: 0;
+        border-radius: 0;
+    }
+    .cal-sidebar-toggle { display: flex; }
     .cal-main {
         padding: 16px 14px 18px;
         border-radius: 14px;
     }
-    .sloth-toolbar {
-        gap: 10px;
-        margin-bottom: 16px;
-    }
-    .sloth-title { font-size: 20px; }
-    .sloth-today-btn { padding: 5px 12px; font-size: 12px; }
-    .sloth-nav-btn { width: 32px; height: 32px; font-size: 14px; }
-    .sloth-view-btn { padding: 5px 12px; font-size: 12px; }
-    .fc .fc-daygrid-day-frame { min-height: 65px; }
-    .fc .fc-col-header-cell-cushion { font-size: 11px; padding: 6px 4px; }
-    .cal-fab { display: flex; }
+    .cal-toolbar { gap: 8px; margin-bottom: 14px; }
+    .cal-toolbar-title { font-size: 14px; }
+    .cal-today-btn { padding: 5px 12px; font-size: 12px; }
+    .cal-nav-btn { width: 30px; height: 30px; font-size: 13px; }
     .cal-hide-mobile { display: none !important; }
     .ev-popup { width: calc(100vw - 32px); left: 16px !important; right: 16px; }
+    .fc .fc-daygrid-day-frame { min-height: 65px; }
+    .fc .fc-col-header-cell-cushion { font-size: 11px; padding: 6px 4px; }
 }
 @media (max-width: 480px) {
     .cal-main { padding: 12px 10px 14px; }
     #calDrawer { width: 100vw !important; }
-    .sloth-title { font-size: 18px; }
-    .sloth-view-group { display: none; }
-    .sloth-view-mobile {
-        display: flex !important;
-        width: 100%;
-        order: 10;
-    }
+    .cal-toolbar-title { font-size: 13px; }
+    .cal-datetime-grid { grid-template-columns: 1fr !important; }
+    .cal-inp[type="datetime-local"] { font-size: 13px; }
     .fc .fc-col-header-cell-cushion { font-size: 10px; padding: 4px 2px; }
     .fc .fc-daygrid-day-number { font-size: 12px; }
     .fc .fc-daygrid-day-frame { min-height: 50px; }
-}
-/* Mobile view selector — hidden on desktop */
-.sloth-view-mobile {
-    display: none;
-    background: #f3f5f8;
-    border-radius: 12px;
-    padding: 4px;
-    gap: 2px;
-}
-.sloth-view-mobile .sloth-view-btn {
-    flex: 1;
-    text-align: center;
-}
-
-/* ── Calendar Selector Modal ────────────────────────────────────────────── */
-.cal-selector-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,.35); z-index: 1070;
-}
-.cal-selector-overlay.open { display: block; }
-.cal-selector-modal {
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    background: #fff; border-radius: 16px; width: 440px; max-width: calc(100vw - 32px);
-    max-height: 80vh; z-index: 1071;
-    box-shadow: 0 16px 64px rgba(0,0,0,.18);
-    display: none; flex-direction: column;
-    animation: popIn .15s cubic-bezier(.4,0,.2,1);
-}
-.cal-selector-modal.open { display: flex; }
-.cal-selector-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 18px 22px; border-bottom: 1px solid #f0f2f7;
-}
-.cal-selector-header h3 { font-size: 15px; font-weight: 700; color: #1a1d23; margin: 0; }
-.cal-selector-body { flex: 1; overflow-y: auto; padding: 16px 22px; }
-.cal-selector-item {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 0; border-bottom: 1px solid #f7f8fa;
-}
-.cal-selector-item:last-child { border-bottom: none; }
-.cal-selector-dot {
-    width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
-}
-.cal-selector-name { flex: 1; font-size: 13px; font-weight: 500; color: #374151; }
-.cal-selector-badges { display: flex; gap: 6px; align-items: center; }
-.cal-selector-default {
-    font-size: 10px; font-weight: 600; color: #0085f3; background: #eff6ff;
-    border: 1px solid #bfdbfe; border-radius: 10px; padding: 2px 8px;
-    cursor: pointer; white-space: nowrap;
-}
-.cal-selector-default.active { background: #0085f3; color: #fff; border-color: #0085f3; }
-.cal-selector-check {
-    width: 18px; height: 18px; border-radius: 5px; cursor: pointer; accent-color: #0085f3;
-}
-.cal-selector-footer {
-    display: flex; align-items: center; justify-content: flex-end; gap: 10px;
-    padding: 14px 22px; border-top: 1px solid #f0f2f7;
-}
-.cal-selector-loading {
-    text-align: center; padding: 32px 0; color: #9ca3af; font-size: 13px;
+    .cal-day-header-num { font-size: 16px; width: 28px; height: 28px; }
+    .cal-day-header-weekday { font-size: 9px; }
 }
 </style>
 @endpush
@@ -477,8 +779,8 @@
 <div class="page-container">
 
     @if(! $calendarConnected)
-    {{-- ── Empty State — Google Calendar não conectado ──────────────────── --}}
-    <div class="cal-main" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:500px;text-align:center;padding:60px 24px;">
+    {{-- ── Empty State — Google Calendar not connected ────────────────────── --}}
+    <div style="background:#fff;border:1.5px solid #e8eaf0;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:500px;text-align:center;padding:60px 24px;">
         <div style="width:80px;height:80px;border-radius:20px;background:#eff6ff;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
             <i class="bi bi-calendar3" style="font-size:36px;color:#0085f3;"></i>
         </div>
@@ -495,55 +797,85 @@
         </p>
     </div>
     @else
-    {{-- ── Main Calendar ───────────────────────────────────────────────── --}}
-    <div class="cal-main">
+    {{-- ── 2-Column Layout ────────────────────────────────────────────────── --}}
+    <div class="cal-layout">
 
-        {{-- Custom Slothui Toolbar --}}
-        <div class="sloth-toolbar">
-            <span class="sloth-title" id="slothTitle"></span>
-            <button class="sloth-today-btn" onclick="goToday()">
-                <span class="dot"></span> {{ __('calendar.today') }}
-            </button>
-            <button class="sloth-nav-btn" onclick="goPrev()"><i class="bi bi-chevron-left"></i></button>
-            <button class="sloth-nav-btn" onclick="goNext()"><i class="bi bi-chevron-right"></i></button>
-            <span class="sloth-spacer"></span>
-            <div class="sloth-view-group" id="viewGroup">
-                <button class="sloth-view-btn active" data-view="dayGridMonth" onclick="switchView(this)">{{ __('calendar.month') }}</button>
-                <button class="sloth-view-btn" data-view="timeGridWeek" onclick="switchView(this)">{{ __('calendar.week') }}</button>
-                <button class="sloth-view-btn" data-view="timeGridDay" onclick="switchView(this)">{{ __('calendar.day') }}</button>
+        {{-- ── Left Sidebar ───────────────────────────────────────────────── --}}
+        <div class="cal-sidebar" id="calSidebar">
+
+            {{-- Mini Calendar --}}
+            <div class="cal-sidebar-card">
+                <div class="mini-cal-header">
+                    <span class="mini-cal-title" id="miniCalTitle"></span>
+                    <div class="mini-cal-nav">
+                        <button class="mini-cal-nav-btn" onclick="miniCalPrev()"><i class="bi bi-chevron-left"></i></button>
+                        <button class="mini-cal-nav-btn" onclick="miniCalNext()"><i class="bi bi-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div id="miniCalendar"></div>
+            </div>
+
+            {{-- Filters --}}
+            <div class="cal-sidebar-card">
+                <div class="cal-filter-header">
+                    <span class="cal-filter-title" id="lblFilters">{{ __('calendar.filters') }}</span>
+                    <button class="cal-filter-clear" onclick="clearFilters()">{{ __('calendar.clear_filters') }}</button>
+                </div>
+
+                {{-- Calendar checkboxes --}}
+                <div class="cal-filter-label" id="lblCalFilter">{{ __('calendar.calendar_label_filter') }}</div>
+                <div class="cal-filter-calendars" id="sidebarCalList">
+                    <div class="cal-filter-loading"><i class="bi bi-arrow-repeat"></i> {{ __('calendar.loading_calendars') }}</div>
+                </div>
+
+                {{-- Search --}}
+                <div class="cal-filter-label">{{ __('calendar.search_ph') }}</div>
+                <input type="text" class="cal-filter-search" id="calSearchInput"
+                       placeholder="{{ __('calendar.search_ph') }}"
+                       oninput="filterEventsBySearch()">
             </div>
         </div>
 
-        {{-- Mobile view selector --}}
-        <div class="sloth-view-mobile" id="viewGroupMobile">
-            <button class="sloth-view-btn active" data-view="dayGridMonth" onclick="switchView(this)">{{ __('calendar.month') }}</button>
-            <button class="sloth-view-btn" data-view="timeGridWeek" onclick="switchView(this)">{{ __('calendar.week') }}</button>
-            <button class="sloth-view-btn" data-view="timeGridDay" onclick="switchView(this)">{{ __('calendar.day') }}</button>
-        </div>
+        {{-- Mobile sidebar overlay --}}
+        <div class="cal-sidebar-overlay" id="calSidebarOverlay" onclick="closeSidebar()"></div>
 
-        <div id="calendar"></div>
+        {{-- ── Right Main Area ────────────────────────────────────────────── --}}
+        <div class="cal-main">
+
+            {{-- Toolbar --}}
+            <div class="cal-toolbar">
+                <button class="cal-sidebar-toggle" onclick="toggleSidebar()" title="Menu">
+                    <i class="bi bi-list"></i>
+                </button>
+                <button class="cal-today-btn" onclick="goToday()">
+                    <span class="dot"></span> {{ __('calendar.today') }}
+                </button>
+                <button class="cal-nav-btn" onclick="goPrev()"><i class="bi bi-chevron-left"></i></button>
+                <button class="cal-nav-btn" onclick="goNext()"><i class="bi bi-chevron-right"></i></button>
+                <span class="cal-toolbar-title" id="calToolbarTitle"></span>
+                <span class="cal-toolbar-spacer"></span>
+                <div class="cal-view-dropdown" id="viewDropdown">
+                    <button class="cal-view-btn" onclick="toggleViewMenu()">
+                        <i class="bi bi-calendar3"></i>
+                        <span id="viewBtnLabel">{{ __('calendar.week') }}</span>
+                        <i class="bi bi-chevron-down" style="font-size:11px;"></i>
+                    </button>
+                    <div class="cal-view-menu" id="viewMenu">
+                        <button class="cal-view-option" data-view="timeGridDay" onclick="switchView(this)">{{ __('calendar.day') }}</button>
+                        <button class="cal-view-option active" data-view="timeGridWeek" onclick="switchView(this)">{{ __('calendar.week') }}</button>
+                        <button class="cal-view-option" data-view="dayGridMonth" onclick="switchView(this)">{{ __('calendar.month') }}</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="calendar"></div>
+        </div>
     </div>
     @endif
 </div>
 
 @if($calendarConnected)
-{{-- ── Calendar Selector Modal ───────────────────────────────────────── --}}
-<div class="cal-selector-overlay" id="calSelectorOverlay" onclick="closeCalendarSelector()"></div>
-<div class="cal-selector-modal" id="calSelectorModal">
-    <div class="cal-selector-header">
-        <h3><i class="bi bi-collection" style="margin-right:6px;color:#0085f3"></i>{{ __('calendar.select_calendars_title') }}</h3>
-        <button onclick="closeCalendarSelector()" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:20px;line-height:1;padding:4px;">x</button>
-    </div>
-    <div class="cal-selector-body" id="calSelectorBody">
-        <div class="cal-selector-loading"><i class="bi bi-arrow-repeat"></i> {{ __('calendar.loading_calendars') }}</div>
-    </div>
-    <div class="cal-selector-footer">
-        <button onclick="closeCalendarSelector()" style="padding:8px 18px;background:#f1f5f9;border:1px solid #e2e8f0;color:#374151;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">{{ __('calendar.cancel') }}</button>
-        <button onclick="saveCalendarPrefs()" id="btnSaveCalPrefs" style="padding:8px 20px;background:#0085f3;border:none;color:#fff;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">{{ __('calendar.save') }}</button>
-    </div>
-</div>
-
-{{-- ── FAB mobile ─────────────────────────────────────────────────────── --}}
+{{-- ── FAB ─────────────────────────────────────────────────────────────── --}}
 <button class="cal-fab" onclick="openCreateModal()">
     <i class="bi bi-plus-lg"></i>
 </button>
@@ -562,14 +894,14 @@
     <div id="popupBody"></div>
 </div>
 
-{{-- ── Overlay do drawer ────────────────────────────────────────────────── --}}
+{{-- ── Overlay do drawer ──────────────────────────────────────────────── --}}
 <div id="calDrawerOverlay" onclick="closeCalDrawer()" style="
     display:none; position:fixed; inset:0;
     background:rgba(0,0,0,.35); z-index:1049;
     transition:opacity .25s;
 "></div>
 
-{{-- ── Drawer de evento ─────────────────────────────────────────────────── --}}
+{{-- ── Drawer de evento ───────────────────────────────────────────────── --}}
 <aside id="calDrawer" style="
     position:fixed; top:0; right:0;
     width:480px; max-width:100vw; height:100vh;
@@ -689,6 +1021,12 @@
 'use strict';
 
 const LANG = @json(__('calendar'));
+// Add new keys if missing from lang files
+if (!LANG.filters)              LANG.filters = '{{ __("calendar.filters") }}';
+if (!LANG.clear_filters)        LANG.clear_filters = '{{ __("calendar.clear_filters") }}';
+if (!LANG.search_ph)            LANG.search_ph = '{{ __("calendar.search_ph") }}';
+if (!LANG.calendar_label_filter) LANG.calendar_label_filter = '{{ __("calendar.calendar_label_filter") }}';
+
 const CSRF = document.querySelector('meta[name=csrf-token]')?.content;
 const ROUTES = {
     events:      '{{ route('calendar.events') }}',
@@ -699,51 +1037,253 @@ const ROUTES = {
     preferences: '{{ route('calendar.preferences') }}',
 };
 
-// ── Slothui Color palette (vibrant) ──────────────────────────────────────
+// ── Color palette ────────────────────────────────────────────────────────
 const PALETTE = ['#6366f1','#22c55e','#f59e0b','#3b82f6','#ef4444','#8b5cf6','#14b8a6','#f97316','#ec4899','#06b6d4'];
-const calendarColorMap = {}; // calendarId → color (populated from API or hash)
+const calendarColorMap = {};
 function eventColor(str) {
-    // Prefer calendar-level color if available
     if (str && calendarColorMap[str]) return calendarColorMap[str];
     let h = 0;
     for (let i = 0; i < (str || '').length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
     return PALETTE[Math.abs(h) % PALETTE.length];
 }
 
-// ── State ─────────────────────────────────────────────────────────────────
+// ── State ────────────────────────────────────────────────────────────────
 let calendar;
+let miniCal;
 let currentEventId  = null;
 let popupEvent      = null;
 let calAttendees    = [];
+let searchFilter    = '';
+let allFetchedEvents = []; // cache for search filtering
 
-// ── PT-BR helpers ─────────────────────────────────────────────────────────
+// ── PT-BR helpers ────────────────────────────────────────────────────────
 const MONTHS_LONG  = LANG.months;
 const WDAYS_SHORT  = LANG.weekdays_short;
-// ── Custom toolbar controls ──────────────────────────────────────────────
+
+// ── Toolbar title ────────────────────────────────────────────────────────
 function updateTitle() {
-    const d = calendar.getDate();
-    document.getElementById('slothTitle').textContent =
-        MONTHS_LONG[d.getMonth()] + ' ' + d.getFullYear();
+    const view = calendar.view;
+    const d    = calendar.getDate();
+    let title  = '';
+
+    if (view.type === 'timeGridWeek') {
+        const start = view.activeStart;
+        const end   = new Date(view.activeEnd);
+        end.setDate(end.getDate() - 1);
+        const p = n => String(n).padStart(2, '0');
+        if (start.getMonth() === end.getMonth()) {
+            title = `${p(start.getDate())} - ${p(end.getDate())} ${MONTHS_LONG[start.getMonth()].substring(0,3)} ${start.getFullYear()}`;
+        } else {
+            title = `${p(start.getDate())} ${MONTHS_LONG[start.getMonth()].substring(0,3)} - ${p(end.getDate())} ${MONTHS_LONG[end.getMonth()].substring(0,3)} ${start.getFullYear()}`;
+        }
+    } else if (view.type === 'timeGridDay') {
+        const p = n => String(n).padStart(2, '0');
+        title = `${p(d.getDate())} ${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
+    } else {
+        title = MONTHS_LONG[d.getMonth()] + ' ' + d.getFullYear();
+    }
+
+    document.getElementById('calToolbarTitle').textContent = title;
 }
 
-function goToday() { calendar.today(); updateTitle(); }
-function goPrev()  { calendar.prev();  updateTitle(); }
-function goNext()  { calendar.next();  updateTitle(); }
+function goToday() {
+    calendar.today();
+    updateTitle();
+    syncMiniCal();
+}
+function goPrev() {
+    calendar.prev();
+    updateTitle();
+    syncMiniCal();
+}
+function goNext() {
+    calendar.next();
+    updateTitle();
+    syncMiniCal();
+}
 
 function switchView(btn) {
     const view = btn.dataset.view;
     calendar.changeView(view);
-    // Update both desktop & mobile button groups
-    document.querySelectorAll('.sloth-view-btn').forEach(b => {
+    // Update dropdown
+    document.querySelectorAll('.cal-view-option').forEach(b => {
         b.classList.toggle('active', b.dataset.view === view);
     });
+    // Update label
+    document.getElementById('viewBtnLabel').textContent = btn.textContent.trim();
+    closeViewMenu();
     updateTitle();
 }
 
-// ── FullCalendar Init ─────────────────────────────────────────────────────
+function toggleViewMenu() {
+    document.getElementById('viewMenu').classList.toggle('open');
+}
+function closeViewMenu() {
+    document.getElementById('viewMenu').classList.remove('open');
+}
+
+// ── Sidebar toggle (mobile) ─────────────────────────────────────────────
+function toggleSidebar() {
+    document.getElementById('calSidebar').classList.toggle('open');
+    document.getElementById('calSidebarOverlay').classList.toggle('open');
+    document.body.style.overflow = document.getElementById('calSidebar').classList.contains('open') ? 'hidden' : '';
+}
+function closeSidebar() {
+    document.getElementById('calSidebar').classList.remove('open');
+    document.getElementById('calSidebarOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+// ── Mini Calendar ────────────────────────────────────────────────────────
+function initMiniCal() {
+    miniCal = new FullCalendar.Calendar(document.getElementById('miniCalendar'), {
+        initialView: 'dayGridMonth',
+        headerToolbar: false,
+        locale: 'pt-br',
+        firstDay: 0,
+        height: 'auto',
+        fixedWeekCount: false,
+        dayMaxEvents: 0,
+        dayCellDidMount(info) {
+            // We mark days with events later via updateMiniCalDots()
+        },
+        dateClick(info) {
+            // Navigate main calendar to that day's week
+            calendar.gotoDate(info.dateStr);
+            if (window.innerWidth <= 480) {
+                calendar.changeView('timeGridDay');
+                document.querySelectorAll('.cal-view-option').forEach(b => {
+                    b.classList.toggle('active', b.dataset.view === 'timeGridDay');
+                });
+                document.getElementById('viewBtnLabel').textContent = LANG.day;
+            } else if (calendar.view.type === 'dayGridMonth') {
+                calendar.changeView('timeGridWeek');
+                document.querySelectorAll('.cal-view-option').forEach(b => {
+                    b.classList.toggle('active', b.dataset.view === 'timeGridWeek');
+                });
+                document.getElementById('viewBtnLabel').textContent = LANG.week;
+            }
+            updateTitle();
+            // Highlight selected day
+            document.querySelectorAll('#miniCalendar .mini-cal-selected').forEach(el => el.classList.remove('mini-cal-selected'));
+            info.dayEl.classList.add('mini-cal-selected');
+            closeSidebar();
+        },
+    });
+    miniCal.render();
+    updateMiniCalTitle();
+}
+
+function updateMiniCalTitle() {
+    if (!miniCal) return;
+    const d = miniCal.getDate();
+    const el = document.getElementById('miniCalTitle');
+    if (el) el.textContent = MONTHS_LONG[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function miniCalPrev() {
+    miniCal.prev();
+    updateMiniCalTitle();
+}
+function miniCalNext() {
+    miniCal.next();
+    updateMiniCalTitle();
+}
+
+function syncMiniCal() {
+    if (!miniCal) return;
+    miniCal.gotoDate(calendar.getDate());
+    updateMiniCalTitle();
+}
+
+function updateMiniCalDots() {
+    // Mark days that have events
+    if (!miniCal) return;
+    document.querySelectorAll('#miniCalendar .fc-daygrid-day').forEach(dayEl => {
+        dayEl.classList.remove('has-events');
+    });
+    allFetchedEvents.forEach(ev => {
+        const start = new Date(ev.start);
+        const dateStr = start.getFullYear() + '-' +
+            String(start.getMonth()+1).padStart(2,'0') + '-' +
+            String(start.getDate()).padStart(2,'0');
+        const dayEl = document.querySelector(`#miniCalendar .fc-daygrid-day[data-date="${dateStr}"]`);
+        if (dayEl) dayEl.classList.add('has-events');
+    });
+}
+
+// ── Search filter ────────────────────────────────────────────────────────
+function filterEventsBySearch() {
+    searchFilter = (document.getElementById('calSearchInput')?.value || '').trim().toLowerCase();
+    calendar.refetchEvents();
+}
+
+function clearFilters() {
+    // Reset search
+    const searchEl = document.getElementById('calSearchInput');
+    if (searchEl) searchEl.value = '';
+    searchFilter = '';
+
+    // Check all calendars
+    document.querySelectorAll('#sidebarCalList input[type="checkbox"]').forEach(cb => {
+        if (!cb.checked) {
+            cb.checked = true;
+            toggleCalVisible(cb);
+        }
+    });
+
+    calendar.refetchEvents();
+}
+
+// ── Custom day header renderer ───────────────────────────────────────────
+function renderDayHeader(arg) {
+    const date = arg.date;
+    const isToday = isSameDay(date, new Date());
+    const num = date.getDate();
+    const weekday = WDAYS_SHORT[date.getDay()];
+    const el = document.createElement('div');
+    el.className = 'cal-day-header';
+    el.innerHTML = `
+        <span class="cal-day-header-num ${isToday ? 'is-today' : ''}">${num}</span>
+        <span class="cal-day-header-weekday">${weekday}</span>
+    `;
+    return { domNodes: [el] };
+}
+
+function isSameDay(a, b) {
+    return a.getFullYear() === b.getFullYear() &&
+           a.getMonth() === b.getMonth() &&
+           a.getDate() === b.getDate();
+}
+
+// ── Custom event content renderer ────────────────────────────────────────
+function renderEventContent(arg) {
+    const ev = arg.event;
+    const p = n => String(n).padStart(2, '0');
+    let timeStr = '';
+    if (ev.start) {
+        timeStr = `${p(ev.start.getHours())}:${p(ev.start.getMinutes())}`;
+        if (ev.end) timeStr += ` - ${p(ev.end.getHours())}:${p(ev.end.getMinutes())}`;
+    }
+    const desc = ev.extendedProps?.description || '';
+
+    const el = document.createElement('div');
+    el.className = 'cal-event-content';
+    el.innerHTML = `
+        <span class="cal-event-title">${esc(ev.title || LANG.no_title)}</span>
+        ${desc ? `<span class="cal-event-desc">${esc(desc.substring(0, 60))}</span>` : ''}
+        ${timeStr ? `<span class="cal-event-time">${timeStr}</span>` : ''}
+    `;
+    return { domNodes: [el] };
+}
+
+// ── FullCalendar Init ────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+    // Default to timeGridDay on very small screens
+    const defaultView = window.innerWidth <= 480 ? 'timeGridDay' : 'timeGridWeek';
+
     calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-        initialView:  'dayGridMonth',
+        initialView:  defaultView,
         headerToolbar: false,
         locale:     'pt-br',
         allDayText: LANG.all_day,
@@ -756,6 +1296,27 @@ document.addEventListener('DOMContentLoaded', () => {
         eventDisplay: 'block',
         dayMaxEvents: 3,
         moreLinkText: LANG.more,
+
+        slotMinTime: '07:00:00',
+        slotMaxTime: '22:00:00',
+        slotDuration: '00:15:00',
+
+        dayHeaderContent: function(arg) {
+            const viewType = calendar ? calendar.view.type : defaultView;
+            if (viewType === 'timeGridWeek' || viewType === 'timeGridDay') {
+                return renderDayHeader(arg);
+            }
+            // For month view, return default text
+            return arg.text;
+        },
+
+        eventContent: function(arg) {
+            const viewType = calendar ? calendar.view.type : defaultView;
+            if (viewType === 'timeGridWeek' || viewType === 'timeGridDay') {
+                return renderEventContent(arg);
+            }
+            return undefined; // default rendering for month
+        },
 
         eventClassNames(arg) {
             return arg.event.allDay ? ['fc-allday-custom'] : [];
@@ -772,7 +1333,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     fail(data.error);
                     return;
                 }
-                const colored = data.map(e => {
+
+                allFetchedEvents = data;
+                updateMiniCalDots();
+
+                let filtered = data;
+                // Apply search filter
+                if (searchFilter) {
+                    filtered = filtered.filter(e =>
+                        (e.title || '').toLowerCase().includes(searchFilter) ||
+                        (e.description || '').toLowerCase().includes(searchFilter)
+                    );
+                }
+
+                const colored = filtered.map(e => {
                     const color = eventColor(e.calendarId || e.id || e.title || '');
                     return {
                         ...e,
@@ -809,19 +1383,35 @@ document.addEventListener('DOMContentLoaded', () => {
     calendar.render();
     updateTitle();
 
+    // Set initial active view option
+    document.querySelectorAll('.cal-view-option').forEach(b => {
+        b.classList.toggle('active', b.dataset.view === defaultView);
+        if (b.dataset.view === defaultView) {
+            document.getElementById('viewBtnLabel').textContent = b.textContent.trim();
+        }
+    });
+
+    // Init mini calendar
+    initMiniCal();
+
+    // Load sidebar calendars
+    loadSidebarCalendars();
+
+    // Close view dropdown on outside click
     document.addEventListener('click', e => {
         if (!document.getElementById('evPopup').contains(e.target)) closePopup();
+        if (!document.getElementById('viewDropdown').contains(e.target)) closeViewMenu();
     });
 
     document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') { closeCalDrawer(); closePopup(); }
+        if (e.key === 'Escape') { closeCalDrawer(); closePopup(); closeViewMenu(); closeSidebar(); }
     });
 });
 
-// ── Event Popup ───────────────────────────────────────────────────────────
+// ── Event Popup ──────────────────────────────────────────────────────────
 function showPopup(event, jsEvent) {
     popupEvent = event;
-    const color = eventColor(event.id || event.title || '');
+    const color = eventColor(event.extendedProps?.calendarId || event.id || event.title || '');
     document.getElementById('popupDot').style.background = color;
     document.getElementById('popupTitle').textContent = event.title || LANG.no_title;
 
@@ -887,7 +1477,7 @@ function esc(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// ── Drawer helpers ────────────────────────────────────────────────────────
+// ── Drawer helpers ───────────────────────────────────────────────────────
 function openCalDrawer() {
     document.getElementById('calDrawerOverlay').style.display = 'block';
     document.getElementById('calDrawer').style.transform = 'translateX(0)';
@@ -900,10 +1490,9 @@ function closeCalDrawer() {
     document.body.style.overflow = '';
 }
 
-// Alias para compatibilidade com chamadas existentes
 function closeModal() { closeCalDrawer(); }
 
-// ── Create / Edit ─────────────────────────────────────────────────────────
+// ── Create / Edit ────────────────────────────────────────────────────────
 function openCreateModal(start, end) {
     currentEventId = null;
     calAttendees   = [];
@@ -941,7 +1530,7 @@ function openEditModal(event) {
     openCalDrawer();
 }
 
-// ── Attendees ─────────────────────────────────────────────────────────────
+// ── Attendees ────────────────────────────────────────────────────────────
 function addCalAttendee() {
     const input = document.getElementById('calAttendeeInput');
     const email = input.value.trim();
@@ -974,11 +1563,11 @@ function renderAttendeeTags() {
     `).join('');
 }
 
-// ── Error helpers ─────────────────────────────────────────────────────────
+// ── Error helpers ────────────────────────────────────────────────────────
 function hideErr()    { const e = document.getElementById('calError'); e.style.display = 'none'; e.textContent = ''; }
 function showErr(msg) { const e = document.getElementById('calError'); e.textContent = msg; e.style.display = 'block'; }
 
-// ── Save ──────────────────────────────────────────────────────────────────
+// ── Save ─────────────────────────────────────────────────────────────────
 async function saveEvent() {
     const title = document.getElementById('calTitle').value.trim();
     const start = document.getElementById('calStart').value;
@@ -1015,7 +1604,7 @@ async function saveEvent() {
     btn.disabled = false; btn.textContent = LANG.save;
 }
 
-// ── Delete ────────────────────────────────────────────────────────────────
+// ── Delete ───────────────────────────────────────────────────────────────
 function deleteEvent() {
     if (!currentEventId) return;
     confirmAction({
@@ -1035,7 +1624,7 @@ function deleteEvent() {
     });
 }
 
-// ── Drag/resize update ────────────────────────────────────────────────────
+// ── Drag/resize update ───────────────────────────────────────────────────
 async function patchDates(event) {
     try {
         await fetch(ROUTES.update(event.id), {
@@ -1046,7 +1635,7 @@ async function patchDates(event) {
     } catch { calendar.refetchEvents(); }
 }
 
-// ── Date utils ────────────────────────────────────────────────────────────
+// ── Date utils ───────────────────────────────────────────────────────────
 function toDTL(iso) {
     if (!iso) return '';
     const d = new Date(iso);
@@ -1057,69 +1646,52 @@ function toISO(dtl) { return new Date(dtl).toISOString(); }
 function addHour(iso) { const d = new Date(iso); d.setHours(d.getHours()+1); return d.toISOString(); }
 
 // ══════════════════════════════════════════════════════════════════════════
-// Calendar Selector (multi-agenda)
+// Calendar Selector (sidebar checkboxes)
 // ══════════════════════════════════════════════════════════════════════════
 let availableCalendars = [];
 let selectedVisibleIds = {!! json_encode($calendarVisibleIds) !!};
 let selectedDefaultId  = {!! json_encode($calendarDefaultId) !!};
 
-function openCalendarSelector() {
-    document.getElementById('calSelectorOverlay').classList.add('open');
-    document.getElementById('calSelectorModal').classList.add('open');
-    loadCalendarList();
-}
-
-function closeCalendarSelector() {
-    document.getElementById('calSelectorOverlay').classList.remove('open');
-    document.getElementById('calSelectorModal').classList.remove('open');
-}
-
-async function loadCalendarList() {
-    const body = document.getElementById('calSelectorBody');
-    body.innerHTML = `<div class="cal-selector-loading"><i class="bi bi-arrow-repeat"></i> ${esc(LANG.loading_calendars)}</div>`;
+async function loadSidebarCalendars() {
+    const container = document.getElementById('sidebarCalList');
+    if (!container) return;
+    container.innerHTML = `<div class="cal-filter-loading"><i class="bi bi-arrow-repeat"></i> ${esc(LANG.loading_calendars)}</div>`;
 
     try {
         const res  = await fetch(ROUTES.calendars, { headers: { Accept: 'application/json', 'X-CSRF-TOKEN': CSRF } });
         const data = await res.json();
-        if (data.error) { body.innerHTML = `<div class="cal-selector-loading" style="color:#ef4444">${esc(data.error)}</div>`; return; }
+        if (data.error) {
+            container.innerHTML = `<div class="cal-filter-loading" style="color:#ef4444">${esc(data.error)}</div>`;
+            return;
+        }
 
         availableCalendars = data;
-        // Build color map from Google-provided colors
         data.forEach(c => { calendarColorMap[c.id] = c.backgroundColor || eventColor(c.id); });
 
-        renderCalendarList();
+        renderSidebarCalendars();
     } catch {
-        body.innerHTML = `<div class="cal-selector-loading" style="color:#ef4444">${esc(LANG.error_load_calendars)}</div>`;
+        container.innerHTML = `<div class="cal-filter-loading" style="color:#ef4444">${esc(LANG.error_load_calendars || 'Error')}</div>`;
     }
 }
 
-function renderCalendarList() {
-    const body = document.getElementById('calSelectorBody');
+function renderSidebarCalendars() {
+    const container = document.getElementById('sidebarCalList');
     if (!availableCalendars.length) {
-        body.innerHTML = `<div class="cal-selector-loading">${esc(LANG.no_calendars)}</div>`;
+        container.innerHTML = `<div class="cal-filter-loading">${esc(LANG.no_calendars || 'No calendars')}</div>`;
         return;
     }
 
-    body.innerHTML = availableCalendars.map(c => {
-        const checked  = selectedVisibleIds.includes(c.id) ? 'checked' : '';
-        const isDefault = selectedDefaultId === c.id;
-        const color    = calendarColorMap[c.id] || eventColor(c.id);
-        const label    = c.summary + (c.primary ? ` (${LANG.primary})` : '');
+    container.innerHTML = availableCalendars.map(c => {
+        const checked = selectedVisibleIds.includes(c.id) ? 'checked' : '';
+        const color   = calendarColorMap[c.id] || eventColor(c.id);
+        const label   = c.summary + (c.primary ? ` (${LANG.primary || 'primary'})` : '');
         return `
-        <div class="cal-selector-item">
-            <input type="checkbox" class="cal-selector-check" value="${esc(c.id)}" ${checked}
+        <label class="cal-filter-cal-item">
+            <input type="checkbox" value="${esc(c.id)}" ${checked}
                    onchange="toggleCalVisible(this)">
-            <div class="cal-selector-dot" style="background:${color}"></div>
-            <div class="cal-selector-name">${esc(label)}</div>
-            <div class="cal-selector-badges">
-                <span class="cal-selector-default ${isDefault ? 'active' : ''}"
-                      onclick="setDefaultCalendar('${esc(c.id)}')"
-                      data-cal-id="${esc(c.id)}"
-                      title="${esc(LANG.default_title)}">
-                    ${isDefault ? '&#10003; ' + esc(LANG.default) : esc(LANG.set_default)}
-                </span>
-            </div>
-        </div>`;
+            <span class="cal-filter-cal-dot" style="background:${color}"></span>
+            <span class="cal-filter-cal-name">${esc(label)}</span>
+        </label>`;
     }).join('');
 }
 
@@ -1129,23 +1701,20 @@ function toggleCalVisible(checkbox) {
         if (!selectedVisibleIds.includes(id)) selectedVisibleIds.push(id);
     } else {
         selectedVisibleIds = selectedVisibleIds.filter(v => v !== id);
-        // If unchecking the default, reset default to first visible or primary
         if (selectedDefaultId === id && selectedVisibleIds.length) {
             selectedDefaultId = selectedVisibleIds[0];
-            renderCalendarList();
         }
     }
+    // Auto-save preferences and refetch
+    saveCalendarPrefs();
 }
 
 function setDefaultCalendar(id) {
     selectedDefaultId = id;
-    // Also ensure it's visible
     if (!selectedVisibleIds.includes(id)) {
         selectedVisibleIds.push(id);
-        const cb = document.querySelector(`.cal-selector-check[value="${CSS.escape(id)}"]`);
-        if (cb) cb.checked = true;
     }
-    renderCalendarList();
+    saveCalendarPrefs();
 }
 
 async function saveCalendarPrefs() {
@@ -1153,9 +1722,6 @@ async function saveCalendarPrefs() {
         toastr.warning(LANG.select_at_least_one);
         return;
     }
-
-    const btn = document.getElementById('btnSaveCalPrefs');
-    btn.disabled = true; btn.textContent = LANG.saving;
 
     try {
         const res = await fetch(ROUTES.preferences, {
@@ -1165,17 +1731,16 @@ async function saveCalendarPrefs() {
         });
         const data = await res.json();
         if (data.success) {
-            closeCalendarSelector();
             calendar.refetchEvents();
-            toastr.success(LANG.prefs_saved);
-        } else {
-            toastr.error(data.message || LANG.error_save_prefs);
         }
     } catch {
-        toastr.error(LANG.error_connection);
+        // silent fail for auto-save
     }
-    btn.disabled = false; btn.textContent = LANG.save;
 }
+
+// Legacy alias for any code that may call these
+function openCalendarSelector() { toggleSidebar(); }
+function closeCalendarSelector() { closeSidebar(); }
 </script>
 @endpush
 @endif

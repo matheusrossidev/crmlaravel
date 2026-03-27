@@ -1157,7 +1157,13 @@ function loadDmMessages(auto) {
             type:    m.type ?? 'text',
             text:    m.text ?? '',
             url:     m.url  ?? '',
-            buttons: m.buttons ?? [],
+            // Migrar botões do formato antigo (strings) para o novo (objetos)
+            buttons: (m.buttons ?? []).map((btn, i) => {
+                if (typeof btn === 'string') {
+                    return { type: 'postback', title: btn, payload: 'BTN_' + i };
+                }
+                return { type: btn.type || 'postback', title: btn.title || '', url: btn.url || '', payload: btn.payload || '' };
+            }),
         }));
     } else if (auto && auto.dm_message) {
         dmBlocks = [{ type: 'text', text: auto.dm_message, url: '', buttons: [] }];
@@ -1224,17 +1230,14 @@ function renderDmBuilder() {
                 </div>
                 <div class="dm-buttons-section">
                     <div class="dm-buttons-label">
-                        <i class="bi bi-hand-index"></i> ${escHtml(IGLANG.dm_buttons_label)} <span class="text-muted">${escHtml(IGLANG.dm_buttons_optional)}</span>
+                        <i class="bi bi-hand-index"></i> ${escHtml(IGLANG.dm_buttons_label)} <span class="text-muted">(${escHtml(IGLANG.dm_btn_max_3)})</span>
                     </div>
-                    <div class="dm-buttons-chips" id="dmBtnChips-${idx}"></div>
-                    <div class="dm-btn-input-wrap">
-                        <input type="text" class="form-control" id="dmBtnInput-${idx}"
-                               placeholder="${escHtml(IGLANG.dm_btn_placeholder)}"
-                               maxlength="20"
-                               onkeydown="if(event.key==='Enter'){event.preventDefault();addButton(${idx});}">
+                    <div class="dm-buttons-list" id="dmBtnList-${idx}"></div>
+                    <div class="dm-btn-add-wrap" id="dmBtnAddWrap-${idx}">
                         <button type="button" class="dm-add-btn" onclick="addButton(${idx})"
-                                style="white-space:nowrap;">${escHtml(IGLANG.dm_btn_add)}</button>
+                                style="white-space:nowrap;"><i class="bi bi-plus-circle"></i> ${escHtml(IGLANG.dm_btn_add)}</button>
                     </div>
+                    <div class="dm-btn-preview" id="dmBtnPreview-${idx}"></div>
                 </div>`;
         }
         container.appendChild(div);
@@ -1264,45 +1267,83 @@ function renderDmBuilder() {
                 }
             }
             // Renderizar botões existentes
-            renderButtonChips(idx);
+            renderButtonList(idx);
         }
     });
 }
 
-// ── Quick Reply Buttons ──────────────────────────────────────────────────
+// ── Button Template Buttons (max 3, web_url or postback) ─────────────────
 function addButton(idx) {
-    const input = document.getElementById(`dmBtnInput-${idx}`);
-    const text = input.value.trim();
-    if (!text) return;
     if (!dmBlocks[idx].buttons) dmBlocks[idx].buttons = [];
-    if (dmBlocks[idx].buttons.length >= 13) {
+    if (dmBlocks[idx].buttons.length >= 3) {
         toastr.warning(IGLANG.toastr_max_buttons);
         return;
     }
-    dmBlocks[idx].buttons.push(text.substring(0, 20));
-    input.value = '';
-    renderButtonChips(idx);
+    dmBlocks[idx].buttons.push({ type: 'postback', title: '', payload: '' });
+    renderButtonList(idx);
 }
 
 function removeButton(blockIdx, btnIdx) {
     dmBlocks[blockIdx].buttons.splice(btnIdx, 1);
-    renderButtonChips(blockIdx);
+    renderButtonList(blockIdx);
 }
 
-function renderButtonChips(idx) {
-    const container = document.getElementById(`dmBtnChips-${idx}`);
+function updateButtonField(blockIdx, btnIdx, field, value) {
+    if (!dmBlocks[blockIdx].buttons[btnIdx]) return;
+    dmBlocks[blockIdx].buttons[btnIdx][field] = value;
+    // Se mudou o tipo, limpar campos condicionais
+    if (field === 'type') {
+        dmBlocks[blockIdx].buttons[btnIdx].url = '';
+        dmBlocks[blockIdx].buttons[btnIdx].payload = '';
+        renderButtonList(blockIdx);
+    }
+    renderButtonPreview(blockIdx);
+}
+
+function renderButtonList(idx) {
+    const container = document.getElementById(`dmBtnList-${idx}`);
+    const addWrap   = document.getElementById(`dmBtnAddWrap-${idx}`);
     if (!container) return;
     const btns = dmBlocks[idx].buttons || [];
-    container.innerHTML = btns.map((btn, bi) =>
-        `<span class="kw-chip">${escHtml(btn)}<button type="button" onclick="removeButton(${idx},${bi})">×</button></span>`
-    ).join('');
-    // Atualizar preview dos botões
+
+    container.innerHTML = btns.map((btn, bi) => {
+        const isUrl = btn.type === 'web_url';
+        return `<div class="dm-btn-row" style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
+            <select class="form-select form-select-sm" style="width:110px;flex-shrink:0;"
+                    onchange="updateButtonField(${idx},${bi},'type',this.value)">
+                <option value="postback" ${!isUrl?'selected':''}>Postback</option>
+                <option value="web_url" ${isUrl?'selected':''}>URL</option>
+            </select>
+            <input type="text" class="form-control form-control-sm" style="flex:1;min-width:100px;"
+                   placeholder="${escHtml(IGLANG.dm_btn_title_ph)}" maxlength="20"
+                   value="${escHtml(btn.title||'')}"
+                   oninput="updateButtonField(${idx},${bi},'title',this.value)">
+            ${isUrl ? `<input type="url" class="form-control form-control-sm" style="flex:1;min-width:140px;"
+                   placeholder="https://..." value="${escHtml(btn.url||'')}"
+                   oninput="updateButtonField(${idx},${bi},'url',this.value)">` :
+                `<input type="text" class="form-control form-control-sm" style="flex:1;min-width:100px;"
+                   placeholder="Payload (ex: SALES)" value="${escHtml(btn.payload||'')}"
+                   oninput="updateButtonField(${idx},${bi},'payload',this.value)">`}
+            <button type="button" class="btn btn-sm btn-outline-danger" style="flex-shrink:0;"
+                    onclick="removeButton(${idx},${bi})" title="${escHtml(IGLANG.dm_btn_remove||'Remover')}">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>`;
+    }).join('');
+
+    // Esconder botão + se já tem 3
+    if (addWrap) addWrap.style.display = btns.length >= 3 ? 'none' : '';
+    renderButtonPreview(idx);
+}
+
+function renderButtonPreview(idx) {
     const preview = document.getElementById(`dmBtnPreview-${idx}`);
-    if (preview) {
-        preview.innerHTML = btns.map(btn =>
-            `<span class="dm-btn-preview-pill">${escHtml(btn)}</span>`
-        ).join('');
-    }
+    if (!preview) return;
+    const btns = dmBlocks[idx].buttons || [];
+    preview.innerHTML = btns.filter(b => b.title).map(btn => {
+        const icon = btn.type === 'web_url' ? '<i class="bi bi-box-arrow-up-right" style="font-size:10px;margin-right:3px;"></i>' : '';
+        return `<span class="dm-btn-preview-pill">${icon}${escHtml(btn.title)}</span>`;
+    }).join('');
 }
 
 function updateImgPreview(idx) {
@@ -1329,7 +1370,20 @@ function serializeDmMessages() {
             const text = el ? getEditorText(el).trim() : b.text.trim();
             if (!text) return null;
             const obj = { type: 'text', text };
-            if (b.buttons && b.buttons.length > 0) obj.buttons = b.buttons;
+            // Serializar botões no formato Button Template (objetos com type/title/url|payload)
+            if (b.buttons && b.buttons.length > 0) {
+                obj.buttons = b.buttons
+                    .filter(btn => btn.title && btn.title.trim())
+                    .map(btn => {
+                        const base = { type: btn.type || 'postback', title: btn.title.trim().substring(0, 20) };
+                        if (base.type === 'web_url') {
+                            base.url = (btn.url || '').trim();
+                        } else {
+                            base.payload = (btn.payload || '').trim() || 'BTN_' + Math.random().toString(36).substr(2, 5);
+                        }
+                        return base;
+                    });
+            }
             return obj;
         })
         .filter(Boolean);

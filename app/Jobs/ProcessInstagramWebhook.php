@@ -119,7 +119,21 @@ class ProcessInstagramWebhook implements ShouldQueue
         $senderId    = $messaging['sender']['id'] ?? null;
         $recipientId = $messaging['recipient']['id'] ?? null;
         $messageData = $messaging['message'] ?? null;
+        $postback    = $messaging['postback'] ?? null;
         $timestamp   = $messaging['timestamp'] ?? null;
+
+        // Button Template postback: tratar como mensagem de texto (o título do botão)
+        if ($postback && $senderId && ! $messageData) {
+            $messageData = [
+                'mid'  => $postback['mid'] ?? ('postback_' . $senderId . '_' . ($timestamp ?? time())),
+                'text' => $postback['title'] ?? $postback['payload'] ?? '',
+            ];
+            Log::channel('instagram')->info('Postback recebido como mensagem', [
+                'sender_id' => $senderId,
+                'title'     => $postback['title'] ?? null,
+                'payload'   => $postback['payload'] ?? null,
+            ]);
+        }
 
         if (! $senderId || ! $messageData) {
             return;
@@ -641,7 +655,8 @@ class ProcessInstagramWebhook implements ShouldQueue
             if (! empty($automation->dm_messages)) {
                 // A 1ª mensagem de texto usa Private Reply (recipient.comment_id) para
                 // abrir a janela de conversa. Mensagens subsequentes usam recipient.id.
-                // Private Reply só suporta texto puro (sem imagem, sem quick_replies).
+                // Private Reply só suporta texto puro (sem imagem, sem botões).
+                // Se o 1º bloco tem botões, enviamos Private Reply (texto) + Button Template (botões) logo em seguida.
                 $firstSent = false;
 
                 foreach ($automation->dm_messages as $msg) {
@@ -649,9 +664,17 @@ class ProcessInstagramWebhook implements ShouldQueue
                         $type = $msg['type'] ?? '';
 
                         if (! $firstSent && $type === 'text' && ! empty($msg['text'])) {
-                            // Private Reply: abre janela de DM via comment_id
+                            // Private Reply: abre janela de DM via comment_id (texto puro)
                             $service->sendPrivateReply($commentId, $msg['text']);
                             $firstSent = true;
+
+                            // Se o 1º bloco tem botões, enviar Button Template logo em seguida
+                            $buttons = $msg['buttons'] ?? [];
+                            if (! empty($buttons)) {
+                                usleep(500000); // 0.5s para garantir que a janela abriu
+                                $formatted = $this->formatButtonsForTemplate($buttons);
+                                $service->sendButtonTemplate($fromId, $msg['text'], $formatted);
+                            }
                         } elseif ($type === 'image' && ! empty($msg['url'])) {
                             if (! $firstSent) {
                                 // 1º bloco é imagem — enviar texto genérico como Private Reply antes
@@ -663,7 +686,8 @@ class ProcessInstagramWebhook implements ShouldQueue
                             // Mensagens subsequentes: DM regular (janela já aberta)
                             $buttons = $msg['buttons'] ?? [];
                             if (! empty($buttons)) {
-                                $service->sendMessageWithButtons($fromId, $msg['text'], $buttons);
+                                $formatted = $this->formatButtonsForTemplate($buttons);
+                                $service->sendButtonTemplate($fromId, $msg['text'], $formatted);
                             } else {
                                 $service->sendMessage($fromId, $msg['text']);
                             }
@@ -703,6 +727,48 @@ class ProcessInstagramWebhook implements ShouldQueue
                 }
             }
         }
+    }
+
+    /**
+     * Convert button definitions to the Meta Button Template format.
+     * Supports both legacy (string[]) and new (object[]) formats.
+     * Max 3 buttons per template.
+     *
+     * @param  array  $buttons  ['title'] or [['type'=>'postback','title'=>'...','payload'=>'...'], ...]
+     * @return array  Formatted buttons for sendButtonTemplate()
+     */
+    private function formatButtonsForTemplate(array $buttons): array
+    {
+        $formatted = array_map(function (mixed $btn, int $i): array {
+            // Legacy format: plain string → convert to postback
+            if (is_string($btn)) {
+                return [
+                    'type'    => 'postback',
+                    'title'   => mb_substr($btn, 0, 20),
+                    'payload' => 'BTN_' . $i,
+                ];
+            }
+
+            // New format: already an object with type/title/url|payload
+            $type  = $btn['type'] ?? 'postback';
+            $title = mb_substr($btn['title'] ?? '', 0, 20);
+
+            if ($type === 'web_url') {
+                return [
+                    'type'  => 'web_url',
+                    'title' => $title,
+                    'url'   => $btn['url'] ?? '',
+                ];
+            }
+
+            return [
+                'type'    => 'postback',
+                'title'   => $title,
+                'payload' => $btn['payload'] ?? 'BTN_' . $i,
+            ];
+        }, $buttons, array_keys($buttons));
+
+        return array_slice($formatted, 0, 3);
     }
 
     private function matchesKeywords(string $text, InstagramAutomation $automation): bool

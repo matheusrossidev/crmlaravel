@@ -80,10 +80,13 @@ return [
     'dm_preview_label'       => 'Prévia Instagram DM',
     'dm_preview_placeholder' => 'Prévia aparecerá aqui...',
 
-    // Quick Reply Buttons
-    'dm_buttons_label'       => 'Quick Reply Buttons',
-    'dm_buttons_optional'    => '(opcional, max. 13)',
+    // Button Template Buttons
+    'dm_buttons_label'       => 'Botoes',
+    'dm_buttons_optional'    => '(opcional)',
+    'dm_btn_max_3'           => 'max. 3 botoes',
     'dm_btn_placeholder'     => 'Texto do botao (max. 20 chars)',
+    'dm_btn_title_ph'        => 'Titulo do botao',
+    'dm_btn_remove'          => 'Remover',
     'dm_btn_add'             => '+ Botao',
 
     // Drawer footer
@@ -104,5 +107,5 @@ return [
     'alert_action_required'      => 'Defina pelo menos uma ação: resposta ao comentário ou DM.',
     'alert_error_save'           => 'Erro ao salvar.',
     'alert_error_save_detail'    => 'Erro ao salvar: :message',
-    'toastr_max_buttons'         => 'Maximo de 13 botoes por mensagem.',
+    'toastr_max_buttons'         => 'Maximo de 3 botoes por mensagem (Button Template).',
 ];

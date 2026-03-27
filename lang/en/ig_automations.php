@@ -80,10 +80,13 @@ return [
     'dm_preview_label'       => 'Instagram DM Preview',
     'dm_preview_placeholder' => 'Preview will appear here...',
 
-    // Quick Reply Buttons
-    'dm_buttons_label'       => 'Quick Reply Buttons',
-    'dm_buttons_optional'    => '(optional, max. 13)',
+    // Button Template Buttons
+    'dm_buttons_label'       => 'Buttons',
+    'dm_buttons_optional'    => '(optional)',
+    'dm_btn_max_3'           => 'max. 3 buttons',
     'dm_btn_placeholder'     => 'Button text (max. 20 chars)',
+    'dm_btn_title_ph'        => 'Button title',
+    'dm_btn_remove'          => 'Remove',
     'dm_btn_add'             => '+ Button',
 
     // Drawer footer
@@ -104,5 +107,5 @@ return [
     'alert_action_required'      => 'Define at least one action: comment reply or DM.',
     'alert_error_save'           => 'Error saving.',
     'alert_error_save_detail'    => 'Error saving: :message',
-    'toastr_max_buttons'         => 'Maximum of 13 buttons per message.',
+    'toastr_max_buttons'         => 'Maximum of 3 buttons per message (Button Template).',
 ];

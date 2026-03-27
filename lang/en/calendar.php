@@ -76,6 +76,12 @@ return [
     'all_day'             => 'All day',
     'more'                => 'more',
 
+    // Sidebar filters
+    'filters'              => 'Filters',
+    'clear_filters'        => 'Clear filters',
+    'search_ph'            => 'Search event...',
+    'calendar_label_filter' => 'Calendar',
+
     // Months & days
     'months' => ['January','February','March','April','May','June','July','August','September','October','November','December'],
     'weekdays_short' => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],

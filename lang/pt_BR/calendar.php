@@ -76,6 +76,12 @@ return [
     'all_day'             => 'Dia inteiro',
     'more'                => 'mais',
 
+    // Sidebar filters
+    'filters'              => 'Filtros',
+    'clear_filters'        => 'Limpar filtros',
+    'search_ph'            => 'Buscar evento...',
+    'calendar_label_filter' => 'Calendário',
+
     // Months & days
     'months' => ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'],
     'weekdays_short' => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],

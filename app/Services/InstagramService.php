@@ -75,6 +75,28 @@ class InstagramService
     }
 
     /**
+     * Send a Button Template DM (up to 3 buttons: web_url or postback).
+     * Each button: ['type' => 'web_url'|'postback', 'title' => '...', 'url' => '...' | 'payload' => '...']
+     * @see https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/messaging-api/button-template/
+     */
+    public function sendButtonTemplate(string $igsid, string $text, array $buttons): array
+    {
+        return $this->post('/me/messages', [
+            'recipient' => ['id' => $igsid],
+            'message'   => [
+                'attachment' => [
+                    'type'    => 'template',
+                    'payload' => [
+                        'template_type' => 'button',
+                        'text'          => mb_substr($text, 0, 640),
+                        'buttons'       => array_slice($buttons, 0, 3),
+                    ],
+                ],
+            ],
+        ]);
+    }
+
+    /**
      * Send a Private Reply DM triggered by a comment.
      * Uses recipient.comment_id instead of recipient.id — required by Instagram
      * when the user has NOT messaged the page first (comment-triggered automations).
