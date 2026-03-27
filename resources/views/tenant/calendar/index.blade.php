@@ -1386,6 +1386,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateMiniCalDots();
 
                 let filtered = data;
+                // Filter by visible calendars (sidebar checkboxes)
+                if (selectedVisibleIds && selectedVisibleIds.length > 0) {
+                    filtered = filtered.filter(e =>
+                        !e.calendarId || selectedVisibleIds.includes(e.calendarId)
+                    );
+                }
                 // Apply search filter
                 if (searchFilter) {
                     filtered = filtered.filter(e =>
@@ -1762,7 +1768,8 @@ function toggleCalVisible(checkbox) {
             selectedDefaultId = selectedVisibleIds[0];
         }
     }
-    // Auto-save preferences and refetch
+    // Refetch immediately with new filter, then save to server
+    if (calendar) calendar.refetchEvents();
     saveCalendarPrefs();
 }
 
