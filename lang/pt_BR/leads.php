@@ -215,6 +215,21 @@ return [
     'no'                    => 'Não',
     'system'                => 'Sistema',
 
+    // Show page — contacts
+    'contacts_section'      => 'Contatos da Empresa',
+    'add_contact'           => 'Adicionar contato',
+    'contact_name'          => 'Nome',
+    'contact_role'          => 'Cargo / Função',
+    'contact_phone'         => 'Telefone',
+    'contact_email'         => 'E-mail',
+    'no_contacts'           => 'Nenhum contato adicionado.',
+    'contact_added'         => 'Contato adicionado.',
+    'contact_updated'       => 'Contato atualizado.',
+    'contact_deleted'       => 'Contato excluído.',
+    'role_placeholder'      => 'Ex: Diretor, Marketing, Financeiro',
+    'delete_contact_title'  => 'Excluir contato?',
+    'delete_contact_msg'    => 'O contato será removido permanentemente.',
+
     // Show page — schedule modal
     'quick_message_template' => 'Modelo de mensagem rápida (opcional)',
     'select_template'       => '— Selecionar modelo —',

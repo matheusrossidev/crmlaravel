@@ -439,6 +439,29 @@ $pageIcon = 'person-badge';
     margin: 2px 3px 2px 0;
 }
 
+/* ── Contacts section ── */
+.lp-add-contact-btn { background:none; border:none; color:#0085f3; cursor:pointer; font-size:16px; padding:0; line-height:1; }
+.lp-add-contact-btn:hover { color:#0070d1; }
+.lp-contact-card { padding:10px 0; border-bottom:1px solid #f0f2f7; }
+.lp-contact-card:last-child { border-bottom:none; }
+.lp-contact-name { font-size:13px; font-weight:600; color:#1a1d23; }
+.lp-contact-role { font-size:11px; color:#6b7280; margin-left:6px; font-weight:500; }
+.lp-contact-detail { font-size:12px; color:#374151; display:flex; align-items:center; gap:4px; margin-top:3px; }
+.lp-contact-detail i { font-size:11px; color:#9ca3af; }
+.lp-contact-actions { display:flex; gap:4px; margin-top:4px; }
+.lp-contact-actions button { background:none; border:none; cursor:pointer; font-size:12px; color:#9ca3af; padding:2px 4px; border-radius:4px; }
+.lp-contact-actions button:hover { color:#374151; background:#f3f4f6; }
+.lp-contact-actions button.lp-contact-del:hover { color:#ef4444; background:#fef2f2; }
+.lp-contact-form { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
+.lp-contact-form input { font-size:13px; padding:7px 10px; border:1.5px solid #e8eaf0; border-radius:8px; outline:none; color:#1a1d23; }
+.lp-contact-form input:focus { border-color:#0085f3; }
+.lp-contact-form-btns { display:flex; gap:6px; }
+.lp-contact-form-btns button { font-size:12px; font-weight:600; padding:6px 14px; border-radius:8px; border:none; cursor:pointer; }
+.lp-contact-form-btns .btn-save-contact { background:#0085f3; color:#fff; }
+.lp-contact-form-btns .btn-save-contact:hover { background:#0070d1; }
+.lp-contact-form-btns .btn-cancel-contact { background:#f3f4f6; color:#6b7280; }
+.lp-contact-form-btns .btn-cancel-contact:hover { background:#e5e7eb; }
+
 .stage-badge {
     display: inline-flex;
     align-items: center;
@@ -1296,6 +1319,36 @@ $pageIcon = 'person-badge';
         </div>
         @endif
 
+        {{-- Contatos da Empresa --}}
+        <div class="lp-info-section">
+            <div class="lp-info-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                {{ __('leads.contacts_section') }}
+                <button class="lp-add-contact-btn" onclick="toggleContactForm()" title="{{ __('leads.add_contact') }}">
+                    <i class="bi bi-plus-circle"></i>
+                </button>
+            </div>
+
+            {{-- Add / Edit contact form (hidden by default) --}}
+            <div id="addContactForm" class="lp-contact-form" style="display:none;">
+                <input type="hidden" id="editContactId" value="">
+                <input type="text" id="contactName" placeholder="{{ __('leads.contact_name') }}">
+                <input type="text" id="contactRole" placeholder="{{ __('leads.role_placeholder') }}">
+                <input type="text" id="contactPhone" placeholder="{{ __('leads.contact_phone') }}">
+                <input type="text" id="contactEmail" placeholder="{{ __('leads.contact_email') }}">
+                <div class="lp-contact-form-btns">
+                    <button class="btn-save-contact" onclick="saveContact()">{{ __('leads.save') }}</button>
+                    <button class="btn-cancel-contact" onclick="toggleContactForm(false)">{{ __('leads.cancel') }}</button>
+                </div>
+            </div>
+
+            {{-- Contact list --}}
+            <div id="contactsList">
+                <div style="text-align:center;padding:8px 0;color:#d1d5db;font-size:12px;">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+            </div>
+        </div>
+
         {{-- Campos personalizados --}}
         @php $customFields = $lead->custom_fields; @endphp
         @if(!empty($customFields))
@@ -1900,5 +1953,146 @@ function openLeadTaskModal() {
 function openLeadTaskDrawer() {
     window.location.href = @json(route('tasks.index')) + '?open_modal=1&lead_id={{ $lead->id }}&lead_name=' + encodeURIComponent(@json($lead->name));
 }
+
+// ── Contacts ─────────────────────────────────────────────────────────
+const CONTACTS_URL = '{{ route("leads.contacts.index", $lead->id) }}';
+let editingContactId = null;
+
+function loadContacts() {
+    fetch(CONTACTS_URL, { headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content } })
+        .then(r => r.json())
+        .then(contacts => {
+            const el = document.getElementById('contactsList');
+            if (!contacts.length) {
+                el.innerHTML = `<div style="text-align:center;padding:8px 0;color:#d1d5db;font-size:12px;">${LLANG.no_contacts}</div>`;
+                return;
+            }
+            el.innerHTML = contacts.map(c => {
+                let html = `<div class="lp-contact-card" data-contact-id="${c.id}">`;
+                html += `<div><span class="lp-contact-name">${escapeHtml(c.name)}</span>`;
+                if (c.role) html += `<span class="lp-contact-role">${escapeHtml(c.role)}</span>`;
+                html += `</div>`;
+                if (c.phone) {
+                    html += `<div class="lp-contact-detail">
+                        <i class="bi bi-telephone"></i> ${escapeHtml(c.phone)}
+                        <button class="lp-copy-btn" onclick="copyToClipboard('${escapeHtml(c.phone)}', this)" title="Copy" style="width:20px;height:20px;font-size:10px;">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>`;
+                }
+                if (c.email) {
+                    html += `<div class="lp-contact-detail">
+                        <i class="bi bi-envelope"></i> ${escapeHtml(c.email)}
+                        <button class="lp-copy-btn" onclick="copyToClipboard('${escapeHtml(c.email)}', this)" title="Copy" style="width:20px;height:20px;font-size:10px;">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>`;
+                }
+                html += `<div class="lp-contact-actions">
+                    <button onclick="editContact(${c.id})" title="${LLANG.edit || 'Edit'}"><i class="bi bi-pencil"></i></button>
+                    <button class="lp-contact-del" onclick="deleteContact(${c.id})" title="${LLANG.delete_contact_title}"><i class="bi bi-trash3"></i></button>
+                </div>`;
+                html += `</div>`;
+                return html;
+            }).join('');
+        })
+        .catch(() => {});
+}
+
+function toggleContactForm(show) {
+    const form = document.getElementById('addContactForm');
+    if (typeof show === 'undefined') show = form.style.display === 'none';
+    if (show) {
+        form.style.display = 'flex';
+    } else {
+        form.style.display = 'none';
+        clearContactForm();
+    }
+}
+
+function clearContactForm() {
+    document.getElementById('editContactId').value = '';
+    document.getElementById('contactName').value = '';
+    document.getElementById('contactRole').value = '';
+    document.getElementById('contactPhone').value = '';
+    document.getElementById('contactEmail').value = '';
+    editingContactId = null;
+}
+
+function saveContact() {
+    const name  = document.getElementById('contactName').value.trim();
+    const role  = document.getElementById('contactRole').value.trim();
+    const phone = document.getElementById('contactPhone').value.trim();
+    const email = document.getElementById('contactEmail').value.trim();
+
+    if (!name) { document.getElementById('contactName').focus(); return; }
+
+    const payload = { name, role, phone, email };
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+    if (editingContactId) {
+        fetch(CONTACTS_URL + '/' + editingContactId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (typeof toastr !== 'undefined') toastr.success(LLANG.contact_updated);
+            toggleContactForm(false);
+            loadContacts();
+        })
+        .catch(() => { if (typeof toastr !== 'undefined') toastr.error(LLANG.error_prefix + 'update'); });
+    } else {
+        fetch(CONTACTS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (typeof toastr !== 'undefined') toastr.success(LLANG.contact_added);
+            toggleContactForm(false);
+            loadContacts();
+        })
+        .catch(() => { if (typeof toastr !== 'undefined') toastr.error(LLANG.error_prefix + 'create'); });
+    }
+}
+
+function editContact(id) {
+    const card = document.querySelector(`.lp-contact-card[data-contact-id="${id}"]`);
+    if (!card) return;
+
+    fetch(CONTACTS_URL, { headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content } })
+        .then(r => r.json())
+        .then(contacts => {
+            const c = contacts.find(x => x.id === id);
+            if (!c) return;
+            editingContactId = id;
+            document.getElementById('editContactId').value = id;
+            document.getElementById('contactName').value = c.name || '';
+            document.getElementById('contactRole').value = c.role || '';
+            document.getElementById('contactPhone').value = c.phone || '';
+            document.getElementById('contactEmail').value = c.email || '';
+            toggleContactForm(true);
+        });
+}
+
+function deleteContact(id) {
+    if (!confirm(LLANG.delete_contact_title)) return;
+    fetch(CONTACTS_URL + '/' + id, {
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+    })
+    .then(r => r.json())
+    .then(() => {
+        if (typeof toastr !== 'undefined') toastr.success(LLANG.contact_deleted);
+        loadContacts();
+    })
+    .catch(() => { if (typeof toastr !== 'undefined') toastr.error(LLANG.error_prefix + 'delete'); });
+}
+
+// Load contacts on page ready
+document.addEventListener('DOMContentLoaded', loadContacts);
 </script>
 @endpush

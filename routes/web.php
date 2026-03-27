@@ -198,6 +198,12 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
         Route::post('/contatos/{lead}/notas', [LeadController::class, 'addNote'])->name('leads.notes.store');
         Route::delete('/contatos/{lead}/notas/{note}', [LeadController::class, 'deleteNote'])->name('leads.notes.destroy');
 
+        // Lead contacts (people)
+        Route::get('/contatos/{lead}/contacts', [LeadController::class, 'leadContacts'])->name('leads.contacts.index');
+        Route::post('/contatos/{lead}/contacts', [LeadController::class, 'storeContact'])->name('leads.contacts.store');
+        Route::put('/contatos/{lead}/contacts/{contact}', [LeadController::class, 'updateContact'])->name('leads.contacts.update');
+        Route::delete('/contatos/{lead}/contacts/{contact}', [LeadController::class, 'destroyContact'])->name('leads.contacts.destroy');
+
         // Lead attachments
         Route::post('/contatos/{lead}/anexos', [LeadController::class, 'uploadAttachment'])->name('leads.attachments.store');
         Route::delete('/contatos/{lead}/anexos/{attachment}', [LeadController::class, 'deleteAttachment'])->name('leads.attachments.destroy');

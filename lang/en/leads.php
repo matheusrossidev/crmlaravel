@@ -215,6 +215,21 @@ return [
     'no'                    => 'No',
     'system'                => 'System',
 
+    // Show page — contacts
+    'contacts_section'      => 'Company Contacts',
+    'add_contact'           => 'Add contact',
+    'contact_name'          => 'Name',
+    'contact_role'          => 'Role / Position',
+    'contact_phone'         => 'Phone',
+    'contact_email'         => 'Email',
+    'no_contacts'           => 'No contacts added.',
+    'contact_added'         => 'Contact added.',
+    'contact_updated'       => 'Contact updated.',
+    'contact_deleted'       => 'Contact deleted.',
+    'role_placeholder'      => 'E.g.: Director, Marketing, Finance',
+    'delete_contact_title'  => 'Delete contact?',
+    'delete_contact_msg'    => 'The contact will be permanently removed.',
+
     // Show page — schedule modal
     'quick_message_template' => 'Quick message template (optional)',
     'select_template'       => '— Select template —',

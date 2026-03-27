@@ -13,6 +13,7 @@ use App\Models\InstagramConversation;
 use App\Models\Lead;
 use App\Models\LeadEvent;
 use App\Models\LeadAttachment;
+use App\Models\LeadContact;
 use App\Models\LeadNote;
 use App\Services\PlanLimitChecker;
 use App\Models\LostSale;
@@ -677,5 +678,55 @@ class LeadController extends Controller
                 array_merge($valueData, ['tenant_id' => $lead->tenant_id])
             );
         }
+    }
+
+    // ── Lead Contacts ────────────────────────────────────────────────────────
+
+    public function storeContact(Request $request, Lead $lead): JsonResponse
+    {
+        $data = $request->validate([
+            'name'  => 'required|string|max:191',
+            'role'  => 'nullable|string|max:100',
+            'phone' => 'nullable|string|max:30',
+            'email' => 'nullable|email|max:191',
+        ]);
+
+        $contact = $lead->contacts()->create(array_merge($data, [
+            'tenant_id' => $lead->tenant_id,
+        ]));
+
+        return response()->json([
+            'success' => true,
+            'contact' => $contact,
+        ]);
+    }
+
+    public function updateContact(Request $request, Lead $lead, LeadContact $contact): JsonResponse
+    {
+        $data = $request->validate([
+            'name'  => 'required|string|max:191',
+            'role'  => 'nullable|string|max:100',
+            'phone' => 'nullable|string|max:30',
+            'email' => 'nullable|email|max:191',
+        ]);
+
+        $contact->update($data);
+
+        return response()->json([
+            'success' => true,
+            'contact' => $contact->fresh(),
+        ]);
+    }
+
+    public function destroyContact(Lead $lead, LeadContact $contact): JsonResponse
+    {
+        $contact->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    public function leadContacts(Lead $lead): JsonResponse
+    {
+        return response()->json($lead->contacts()->orderBy('name')->get());
     }
 }
