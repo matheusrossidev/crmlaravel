@@ -38,7 +38,9 @@ class WhatsappController extends Controller
     {
         $allInstances  = WhatsappInstance::orderBy('id')->get();
         $instance      = $allInstances->first();
-        $connected     = $allInstances->where('status', 'connected')->isNotEmpty();
+        $waConnected   = $allInstances->where('status', 'connected')->isNotEmpty();
+        $igConnected   = InstagramInstance::where('status', 'connected')->exists();
+        $connected     = $waConnected || $igConnected;
         $instanceCount = $allInstances->count();
 
         $conversations   = [];
