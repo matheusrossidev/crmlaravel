@@ -236,6 +236,18 @@
         transition: background .15s;
     }
     .shw-suggestion-pill:hover { background: #dbeafe; }
+    .shw-suggestions-fixed {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 8px 16px;
+        border-top: 1px solid #f0f2f7;
+        flex-shrink: 0;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .shw-suggestions-fixed::-webkit-scrollbar { display: none; }
+    .shw-suggestions-fixed:empty { display: none; }
 
     /* Bot message row */
     .shw-msg-row-bot {
@@ -405,6 +417,9 @@
     <!-- Messages -->
     <div class="shw-messages" id="shwMessages"></div>
 
+    <!-- Quick Suggestions (always visible above input) -->
+    <div class="shw-suggestions-fixed" id="shwSuggestionsFixed"></div>
+
     <!-- Input -->
     <div class="shw-input-bar">
         <input type="text"
@@ -522,18 +537,18 @@
         });
         div.innerHTML =
             '<div class="shw-welcome-head">' +
-                '<img src="' + ROBOT_IMG + '" style="width:28px;height:28px;border-radius:6px;"> <span>' + escHtml(welcomeData.title) + '</span>' +
+                '<img src="' + ROBOT_IMG + '" style="width:28px;height:28px;border-radius:6px;object-fit:contain;"> <span>' + escHtml(welcomeData.title) + '</span>' +
             '</div>' +
             '<p>' + escHtml(welcomeData.text) + '</p>' +
             '<ul>' + itemsHtml + '</ul>';
         msgArea.appendChild(div);
     }
 
-    /* ── Suggestions ── */
+    /* ── Suggestions (fixed above input) ── */
     function renderSuggestions() {
-        const row = document.createElement('div');
-        row.className = 'shw-suggestions';
-        row.id = 'shwSuggestions';
+        const row = document.getElementById('shwSuggestionsFixed');
+        if (!row) return;
+        row.innerHTML = '';
         suggestions.forEach(function(text) {
             const pill = document.createElement('button');
             pill.className = 'shw-suggestion-pill';
@@ -544,7 +559,6 @@
             });
             row.appendChild(pill);
         });
-        msgArea.appendChild(row);
     }
 
     /* ── Send ── */
@@ -557,10 +571,6 @@
         appendUserBubble(text);
         messages.push({ role: 'user', content: text });
         saveMessages();
-
-        // Remove suggestions after first user message
-        const sugEl = document.getElementById('shwSuggestions');
-        if (sugEl) sugEl.remove();
 
         setProcessing(true);
         showTyping();
@@ -585,9 +595,10 @@
         .then(function(data) {
             hideTyping();
             const reply = data.reply || data.message || ERROR_MSG;
-            appendBotBubble(reply);
-            messages.push({ role: 'assistant', content: reply });
-            saveMessages();
+            typewriterBotBubble(reply, function() {
+                messages.push({ role: 'assistant', content: reply });
+                saveMessages();
+            });
         })
         .catch(function() {
             hideTyping();
@@ -647,6 +658,36 @@
             '<div class="shw-msg-bot">' + parseMd(text) + '</div>';
         msgArea.appendChild(row);
         scrollToBottom();
+    }
+
+    function typewriterBotBubble(text, onDone) {
+        const row = document.createElement('div');
+        row.className = 'shw-msg-row-bot';
+        const bubble = document.createElement('div');
+        bubble.className = 'shw-msg-bot';
+        row.innerHTML = '<img src="' + SOPHIA_IMG + '" alt="Sophia" class="shw-msg-avatar">';
+        row.appendChild(bubble);
+        msgArea.appendChild(row);
+
+        const finalHtml = parseMd(text);
+        const chars = text.split('');
+        let idx = 0;
+        const speed = Math.max(8, Math.min(25, 1500 / chars.length));
+
+        function typeNext() {
+            if (idx < chars.length) {
+                idx += Math.ceil(Math.random() * 3);
+                if (idx > chars.length) idx = chars.length;
+                bubble.innerHTML = parseMd(text.substring(0, idx));
+                scrollToBottom();
+                setTimeout(typeNext, speed);
+            } else {
+                bubble.innerHTML = finalHtml;
+                scrollToBottom();
+                if (onDone) onDone();
+            }
+        }
+        typeNext();
     }
 
     /* ── Simple markdown parser ── */
