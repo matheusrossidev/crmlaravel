@@ -425,6 +425,7 @@
     const CSRF_TOKEN  = '{{ csrf_token() }}';
     const CHAT_URL    = '{{ route("help.chat") }}';
     const SOPHIA_IMG  = '{{ asset("images/avatars/sophia-ai-agent.jpeg") }}';
+    const ROBOT_IMG   = '{{ asset("images/avatars/robot.gif") }}';
     const TYPING_TEXT = @json($typingText);
     const ERROR_MSG   = @json($errorMsg);
 
@@ -521,7 +522,7 @@
         });
         div.innerHTML =
             '<div class="shw-welcome-head">' +
-                '<img src="/images/avatars/robot.gif" style="width:28px;height:28px;border-radius:6px;"> <span>' + escHtml(welcomeData.title) + '</span>' +
+                '<img src="' + ROBOT_IMG + '" style="width:28px;height:28px;border-radius:6px;"> <span>' + escHtml(welcomeData.title) + '</span>' +
             '</div>' +
             '<p>' + escHtml(welcomeData.text) + '</p>' +
             '<ul>' + itemsHtml + '</ul>';
