@@ -383,6 +383,20 @@
         <span class="tool-badge" style="background:#faf5ff;color:#8B5CF6;">Demo</span>
     </div>
 
+    {{-- 17. Zerar Tokens IA --}}
+    <div class="tool-card" onclick="openTool('reset-ai-tokens')">
+        <div class="tool-card-header">
+            <div class="tool-icon" style="background:#fef3c7;">
+                <i class="bi bi-cpu" style="color:#d97706;"></i>
+            </div>
+            <div class="tool-info">
+                <h6>Zerar Tokens de IA</h6>
+                <p>Remove os logs de uso de tokens do mês atual e reseta o flag <code>ai_tokens_exhausted</code> do tenant.</p>
+            </div>
+        </div>
+        <span class="tool-badge" style="background:#fef3c7;color:#d97706;">IA</span>
+    </div>
+
 </div>
 
 {{-- ── MODAL ──────────────────────────────────────────────────────────────── --}}

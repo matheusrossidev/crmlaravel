@@ -516,6 +516,7 @@ class AiAgentController extends Controller
             'enable_tags_tool'     => (bool) $agent->enable_tags_tool,
             'enable_intent_notify' => (bool) $agent->enable_intent_notify,
             'enable_calendar_tool' => (bool) $agent->enable_calendar_tool,
+            'language'             => $agent->language ?? 'pt-BR',
         ]);
     }
 

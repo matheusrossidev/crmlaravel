@@ -41,6 +41,12 @@ async def health() -> dict:
 @app.post("/chat", response_model=AgentResponse)
 async def chat(req: ChatRequest) -> AgentResponse:
     try:
+        # Inject language into stored config so _build_instructions can use it
+        stored = get_agent_config(req.agent_id)
+        if stored and req.language:
+            stored["language"] = req.language
+            store_agent_config(req.agent_id, stored)
+
         agent = get_or_create_agent(
             agent_id=req.agent_id,
             tenant_id=req.tenant_id,

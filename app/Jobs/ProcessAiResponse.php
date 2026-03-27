@@ -956,6 +956,7 @@ class ProcessAiResponse implements ShouldQueue
             'lead_notes'      => $notesCtx,
             'products'        => $productsCtx,
             'lead_products'   => $leadProductsCtx,
+            'language'        => $agent->language ?? 'pt-BR',
         ]);
 
         // Flatten nested payload in actions to match the existing PHP action executor format.

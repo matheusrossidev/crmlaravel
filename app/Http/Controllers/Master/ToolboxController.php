@@ -48,6 +48,7 @@ class ToolboxController extends Controller
         'resolve-lid-conversations',
         'import-asaas-payments',
         'generate-demo-data',
+        'reset-ai-tokens',
     ];
 
     public function index(): View
@@ -1412,6 +1413,42 @@ class ToolboxController extends Controller
         ]);
 
         return array_merge($lead->toArray(), ['_utmCount' => $utmCount]);
+    }
+
+    private function resetAiTokens(Request $request): JsonResponse
+    {
+        $tenantId = $request->input('tenant_id');
+        if (! $tenantId) {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] Selecione uma empresa.']]);
+        }
+
+        $tenant = Tenant::find($tenantId);
+        if (! $tenant) {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] Empresa não encontrada.']]);
+        }
+
+        $lines = [];
+
+        // Zerar logs do mês atual
+        $startOfMonth = Carbon::now()->startOfMonth();
+        $deleted = DB::table('ai_usage_logs')
+            ->where('tenant_id', $tenantId)
+            ->where('created_at', '>=', $startOfMonth)
+            ->delete();
+
+        $lines[] = "[OK] {$deleted} registros de uso de tokens removidos (mês atual).";
+
+        // Limpar flag de tokens esgotados
+        if ($tenant->ai_tokens_exhausted) {
+            $tenant->update(['ai_tokens_exhausted' => false]);
+            $lines[] = "[OK] Flag ai_tokens_exhausted resetado para false.";
+        } else {
+            $lines[] = "[INFO] Flag ai_tokens_exhausted já era false.";
+        }
+
+        $lines[] = "[DONE] Tokens de IA zerados para: {$tenant->name}";
+
+        return response()->json(['success' => true, 'lines' => $lines]);
     }
 
     private function removeAccents(string $str): string

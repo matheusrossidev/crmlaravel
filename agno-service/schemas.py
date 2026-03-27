@@ -23,6 +23,7 @@ class ChatRequest(BaseModel):
     lead_notes: list[dict[str, Any]] = []
     products: list[dict[str, Any]] = []
     lead_products: list[dict[str, Any]] = []
+    language: str = "pt-BR"
 
 
 class AgentAction(BaseModel):
@@ -59,6 +60,7 @@ class ConfigureRequest(BaseModel):
     enable_tags_tool: bool = False
     enable_intent_notify: bool = False
     enable_calendar_tool: bool = False
+    language: str = "pt-BR"
 
 
 class IndexFileRequest(BaseModel):

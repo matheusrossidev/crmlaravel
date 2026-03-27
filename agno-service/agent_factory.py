@@ -138,6 +138,14 @@ def _build_instructions(
     behavior = config.get("behavior", "")
     max_len = config.get("max_message_length", 150)
     kb = config.get("knowledge_base_text", "")
+    language = config.get("language", "pt-BR")
+
+    lang_names = {
+        "pt-BR": "Português (Brasil)",
+        "en-US": "English",
+        "es-ES": "Español",
+    }
+    lang_name = lang_names.get(language, language)
 
     style_desc = {
         "formal": "Tom formal e profissional.",
@@ -147,7 +155,9 @@ def _build_instructions(
         "technical": "Tom técnico e preciso.",
     }.get(style, "Tom profissional.")
 
-    sections = [f"""Você é {name}, assistente de {company or "nossa empresa"} atendendo pelo WhatsApp.
+    sections = [f"""⚠️ LANGUAGE RULE: You MUST respond ONLY in {lang_name}. Every single message must be written in {lang_name}. This overrides any other instruction about language.
+
+Você é {name}, assistente de {company or "nossa empresa"} atendendo pelo WhatsApp.
 {'Setor: ' + industry + '.' if industry else ''}
 Objetivo: {objective}
 {style_desc}
