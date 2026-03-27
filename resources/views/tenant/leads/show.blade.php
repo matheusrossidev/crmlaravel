@@ -409,6 +409,24 @@ $pageIcon = 'person-badge';
 .lp-info-val a:hover { text-decoration: underline; }
 .lp-info-empty { color: #d1d5db; }
 
+.lp-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: none;
+    background: #f1f5f9;
+    color: #6b7280;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    flex-shrink: 0;
+    transition: all .15s;
+}
+.lp-copy-btn:hover { background: #e2e8f0; color: #374151; }
+.lp-copy-btn.copied { background: #dcfce7; color: #16a34a; }
+
 .lp-tag-chip {
     display: inline-flex;
     align-items: center;
@@ -1178,11 +1196,14 @@ $pageIcon = 'person-badge';
 
             <div class="lp-info-row">
                 <div class="lp-info-icon"><i class="bi bi-telephone"></i></div>
-                <div class="lp-info-val">
+                <div class="lp-info-val" style="display:flex;align-items:center;gap:6px;">
                     @if($lead->phone)
                     <a href="https://wa.me/{{ preg_replace('/\D/', '', $lead->phone) }}" target="_blank">
                         {{ $lead->phone }}
                     </a>
+                    <button class="lp-copy-btn" onclick="copyToClipboard('{{ $lead->phone }}', this)" title="Copiar">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
                     @else
                     <span class="lp-info-empty">—</span>
                     @endif
@@ -1191,9 +1212,12 @@ $pageIcon = 'person-badge';
 
             <div class="lp-info-row">
                 <div class="lp-info-icon"><i class="bi bi-envelope"></i></div>
-                <div class="lp-info-val">
+                <div class="lp-info-val" style="display:flex;align-items:center;gap:6px;">
                     @if($lead->email)
                     <a href="mailto:{{ $lead->email }}">{{ $lead->email }}</a>
+                    <button class="lp-copy-btn" onclick="copyToClipboard('{{ $lead->email }}', this)" title="Copiar">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
                     @else
                     <span class="lp-info-empty">—</span>
                     @endif
@@ -1473,6 +1497,18 @@ $pageIcon = 'person-badge';
 @push('scripts')
 <script>
 const LLANG = @json(__('leads'));
+
+function copyToClipboard(text, btn) {
+    navigator.clipboard.writeText(text).then(function() {
+        btn.classList.add('copied');
+        btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+        setTimeout(function() {
+            btn.classList.remove('copied');
+            btn.innerHTML = '<i class="bi bi-clipboard"></i>';
+        }, 1500);
+    });
+}
+
 // Constantes que o drawer precisa (PIPELINES_DATA, CF_DEFS, LEAD_TAGS, LEAD_NOTE_STORE, LEAD_NOTE_DEL são definidas pelo drawer)
 const LEAD_SHOW  = '{{ route('leads.show',    ['lead' => '__ID__']) }}';
 const LEAD_STORE = '{{ route('leads.store') }}';
