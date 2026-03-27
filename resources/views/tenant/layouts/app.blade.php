@@ -1521,5 +1521,7 @@ document.getElementById('limitReachedModal').addEventListener('click', function(
 })();
 </script>
 
+@include('tenant.layouts._help_widget')
+
 </body>
 </html>

@@ -46,6 +46,7 @@ use App\Http\Controllers\Tenant\MasterNotificationReadController;
 use App\Http\Controllers\Tenant\ScheduledMessageController;
 use App\Http\Controllers\Tenant\InstagramAutomationController;
 use App\Http\Controllers\Tenant\DepartmentController;
+use App\Http\Controllers\Tenant\HelpChatController;
 use App\Http\Controllers\Tenant\NotificationController;
 use App\Http\Controllers\Tenant\NotificationPreferenceController;
 use App\Http\Controllers\Tenant\PushSubscriptionController;
@@ -103,6 +104,9 @@ Route::get('/wa/{token}', [\App\Http\Controllers\Api\WebsiteWidgetController::cl
 */
 Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
     // Onboarding (primeiro acesso)
+    // Help assistant (Sophia)
+    Route::post('help-chat', [HelpChatController::class, 'chat'])->name('help.chat');
+
     Route::get('onboarding',           [OnboardingController::class, 'show'])->name('onboarding.show');
     Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
     Route::post('onboarding/skip',     [OnboardingController::class, 'skip'])->name('onboarding.skip');
