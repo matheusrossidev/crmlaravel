@@ -82,8 +82,11 @@ class InstagramAutomationController extends Controller
             'dm_messages.*.type'     => 'required_with:dm_messages|in:text,image',
             'dm_messages.*.text'     => 'nullable|string|max:1000',
             'dm_messages.*.url'      => 'nullable|url',
-            'dm_messages.*.buttons'  => 'nullable|array|max:13',
-            'dm_messages.*.buttons.*' => 'string|max:20',
+            'dm_messages.*.buttons'          => 'nullable|array|max:3',
+            'dm_messages.*.buttons.*.type'   => 'required|in:postback,web_url',
+            'dm_messages.*.buttons.*.title'  => 'required|string|max:20',
+            'dm_messages.*.buttons.*.url'    => 'nullable|url',
+            'dm_messages.*.buttons.*.payload'=> 'nullable|string|max:100',
         ]);
 
         if (empty($data['reply_comment']) && empty($data['dm_message']) && empty($data['dm_messages'])) {
@@ -135,8 +138,11 @@ class InstagramAutomationController extends Controller
             'dm_messages.*.type'     => 'required_with:dm_messages|in:text,image',
             'dm_messages.*.text'     => 'nullable|string|max:1000',
             'dm_messages.*.url'      => 'nullable|url',
-            'dm_messages.*.buttons'  => 'nullable|array|max:13',
-            'dm_messages.*.buttons.*' => 'string|max:20',
+            'dm_messages.*.buttons'          => 'nullable|array|max:3',
+            'dm_messages.*.buttons.*.type'   => 'required|in:postback,web_url',
+            'dm_messages.*.buttons.*.title'  => 'required|string|max:20',
+            'dm_messages.*.buttons.*.url'    => 'nullable|url',
+            'dm_messages.*.buttons.*.payload'=> 'nullable|string|max:100',
         ]);
 
         if (empty($data['reply_comment']) && empty($data['dm_message']) && empty($data['dm_messages'])) {
