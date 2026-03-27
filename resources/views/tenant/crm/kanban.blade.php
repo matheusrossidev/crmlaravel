@@ -702,9 +702,7 @@
                 @endif
             </div>
             <div class="col-header-right">
-                @if($stage['total_value'] > 0)
-                <span class="col-value">{{ __('common.currency') }} {{ number_format($stage['total_value'], 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</span>
-                @endif
+                <span class="col-value" data-stage-value="{{ $stage['id'] }}" @if($stage['total_value'] <= 0) style="display:none" @endif>{{ __('common.currency') }} {{ number_format($stage['total_value'], 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</span>
                 <span class="col-count" data-count="{{ $stage['id'] }}">{{ $stage['count'] }}</span>
             </div>
         </div>
@@ -1125,6 +1123,7 @@ function saveStageChange(leadId, stageId, pipId, extra = {}) {
     }).done(res => {
         if (res.success) {
             toastr.success(LANG.lead_moved);
+            recalcColumnValues();
         }
     }).fail(() => {
         toastr.error(LANG.error_move_lead);
@@ -1151,6 +1150,11 @@ function confirmWonModal() {
     const value = document.getElementById('wonValueInput').value;
     document.getElementById('modalWon').style.display = 'none';
     if (_wonPending) {
+        // Atualizar data-lead-value do card para recalcular totais corretamente
+        if (value) {
+            const card = document.querySelector(`.lead-card[data-lead-id="${_wonPending.leadId}"]`);
+            if (card) card.dataset.leadValue = parseFloat(value);
+        }
         const extra = value ? { value: parseFloat(value) } : {};
         saveStageChange(_wonPending.leadId, _wonPending.stageId, _wonPending.pipId, extra);
         _wonPending = null;
@@ -1188,6 +1192,26 @@ function updateCount(stageId, delta) {
     const el = document.querySelector(`[data-count="${stageId}"]`);
     if (!el) return;
     el.textContent = Math.max(0, parseInt(el.textContent) + delta);
+}
+
+function recalcColumnValues() {
+    document.querySelectorAll('.sortable-zone').forEach(zone => {
+        const stageId = zone.dataset.stageId;
+        let total = 0;
+        zone.querySelectorAll('.lead-card').forEach(card => {
+            const v = parseFloat(card.dataset.leadValue || '0');
+            if (v > 0) total += v;
+        });
+        const valEl = document.querySelector(`[data-stage-value="${stageId}"]`);
+        if (valEl) {
+            if (total > 0) {
+                valEl.textContent = (window.CURRENCY || 'R$') + ' ' + total.toLocaleString(document.documentElement.lang || 'pt-BR', { maximumFractionDigits: 0 });
+                valEl.style.display = '';
+            } else {
+                valEl.style.display = 'none';
+            }
+        }
+    });
 }
 
 // ── Abrir drawer ao clicar no card (ou no nome) ───────────────────────────
