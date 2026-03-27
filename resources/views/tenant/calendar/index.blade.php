@@ -21,26 +21,34 @@
 /* ══════════════════════════════════════════════════════════════════════════
    2-Column Layout: Sidebar + Main
    ══════════════════════════════════════════════════════════════════════════ */
+.page-container { padding: 0 !important; max-width: none !important; }
 .cal-layout {
     display: flex;
-    gap: 20px;
-    align-items: flex-start;
+    height: calc(100vh - 56px);
+    overflow: hidden;
 }
 
 /* ── Left Sidebar ─────────────────────────────────────────────────────── */
 .cal-sidebar {
     width: 280px;
     flex-shrink: 0;
+    height: 100%;
+    overflow-y: auto;
+    padding: 0;
+    background: #fff;
+    border-right: 1px solid #e8eaf0;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 0;
 }
 .cal-sidebar-card {
     background: #fff;
-    border: 1.5px solid #e8eaf0;
-    border-radius: 14px;
-    padding: 16px;
+    border: none;
+    border-bottom: 1px solid #f0f1f4;
+    border-radius: 0;
+    padding: 16px 16px;
 }
+.cal-sidebar-card:last-child { border-bottom: none; }
 
 /* ── Mini Calendar ────────────────────────────────────────────────────── */
 .mini-cal-header {
@@ -271,11 +279,12 @@
     flex: 1;
     min-width: 0;
     background: #fff;
-    border: 1.5px solid #e8eaf0;
-    border-radius: 14px;
-    padding: 20px 24px 24px;
-    min-height: 600px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-left: 1px solid #e8eaf0;
 }
+#calendar { flex: 1; min-height: 0; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    FullCalendar — Overrides
@@ -292,7 +301,9 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 20px;
+    padding: 12px 20px;
+    border-bottom: 1px solid #e8eaf0;
+    flex-shrink: 0;
     flex-wrap: wrap;
 }
 .cal-today-btn {
@@ -560,20 +571,40 @@
 .fc .fc-daygrid-more-link:hover { background: #eef2ff; }
 
 /* ── Time grid ────────────────────────────────────────────────────────── */
-.fc .fc-timegrid-slot { height: 40px; }
+.fc .fc-timegrid-slot { height: 48px; }
 .fc .fc-timegrid-slot-label-cushion {
     font-size: 11px;
     font-weight: 500;
     color: #9ca3af;
 }
 .fc .fc-timegrid-event {
-    border-radius: 8px !important;
-    border-left: none !important;
+    border: none !important;
+    border-left: 4px solid var(--ev-color, #0085f3) !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
     overflow: hidden;
 }
 .fc .fc-timegrid-event .fc-event-main {
-    padding: 6px 10px;
+    color: #1a1d23 !important;
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+}
+.fc .fc-timegrid-event .ev-card-name {
+    font-weight: 600;
     font-size: 12px;
+    color: #1a1d23;
+    line-height: 1.3;
+    margin-bottom: 1px;
+}
+.fc .fc-timegrid-event .ev-card-desc {
+    font-size: 11px;
+    color: #4b5563;
+    line-height: 1.3;
+}
+.fc .fc-timegrid-event .ev-card-time {
+    font-size: 10px;
+    color: #6b7280;
+    margin-top: 2px;
 }
 .fc .fc-timegrid-event .fc-event-time {
     font-size: 11px;
@@ -597,6 +628,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.fc-timegrid-event .cal-event-title {
+    color: #1a1d23;
+    font-weight: 600;
+}
 .cal-event-desc {
     font-size: 11px;
     font-weight: 400;
@@ -605,11 +640,17 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.fc-timegrid-event .cal-event-desc {
+    color: #4b5563;
+}
 .cal-event-time {
     font-size: 10px;
     font-weight: 500;
     color: rgba(255,255,255,.75);
     margin-top: 2px;
+}
+.fc-timegrid-event .cal-event-time {
+    color: #6b7280;
 }
 
 /* ── Now indicator ────────────────────────────────────────────────────── */
@@ -725,7 +766,7 @@
 
 /* ── Responsive ───────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-    .cal-layout { flex-direction: column; gap: 0; }
+    .cal-layout { flex-direction: column; gap: 0; height: 100vh; }
     .cal-sidebar {
         position: fixed;
         top: 0; left: 0;
@@ -739,6 +780,7 @@
         transform: translateX(-100%);
         transition: transform .25s cubic-bezier(.4,0,.2,1);
         box-shadow: 4px 0 32px rgba(0,0,0,.12);
+        border-right: none;
     }
     .cal-sidebar.open { transform: translateX(0); }
     .cal-sidebar-card {
@@ -748,10 +790,9 @@
     }
     .cal-sidebar-toggle { display: flex; }
     .cal-main {
-        padding: 16px 14px 18px;
-        border-radius: 14px;
+        border-left: none;
     }
-    .cal-toolbar { gap: 8px; margin-bottom: 14px; }
+    .cal-toolbar { gap: 8px; padding: 10px 14px; }
     .cal-toolbar-title { font-size: 14px; }
     .cal-today-btn { padding: 5px 12px; font-size: 12px; }
     .cal-nav-btn { width: 30px; height: 30px; font-size: 13px; }
@@ -761,7 +802,7 @@
     .fc .fc-col-header-cell-cushion { font-size: 11px; padding: 6px 4px; }
 }
 @media (max-width: 480px) {
-    .cal-main { padding: 12px 10px 14px; }
+    .cal-main { }
     #calDrawer { width: 100vw !important; }
     .cal-toolbar-title { font-size: 13px; }
     .cal-datetime-grid { grid-template-columns: 1fr !important; }
@@ -1291,7 +1332,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         editable:    true,
         selectable:  true,
-        height:      'auto',
+        height:      '100%',
         nowIndicator: true,
         eventDisplay: 'block',
         dayMaxEvents: 3,
@@ -1299,7 +1340,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         slotMinTime: '07:00:00',
         slotMaxTime: '22:00:00',
-        slotDuration: '00:15:00',
+        slotDuration: '00:30:00',
 
         dayHeaderContent: function(arg) {
             const viewType = calendar ? calendar.view.type : defaultView;
@@ -1320,6 +1361,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         eventClassNames(arg) {
             return arg.event.allDay ? ['fc-allday-custom'] : [];
+        },
+
+        eventDidMount(info) {
+            const color = info.event.backgroundColor || '#0085f3';
+            info.el.style.setProperty('--ev-color', color);
+            info.el.style.background = color + '1A';
+            info.el.style.borderLeft = '4px solid ' + color;
         },
 
         events(info, ok, fail) {
@@ -1355,7 +1403,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         textColor:       '#fff',
                     };
                 });
-                ok(colored);
+
+                // Dedup: remove duplicate events (same title + same start time)
+                const seen = new Set();
+                const deduped = colored.filter(e => {
+                    const key = (e.title || '') + '|' + (e.start || '');
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+                ok(deduped);
             })
             .catch(err => {
                 toastr.error(LANG.error_google_connect, LANG.calendar_label);
