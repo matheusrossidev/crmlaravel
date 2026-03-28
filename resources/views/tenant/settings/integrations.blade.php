@@ -119,6 +119,66 @@
         box-shadow: 0 24px 60px rgba(0,0,0,.18);
     }
 
+    /* QR modal — layout horizontal 2 colunas */
+    #waQrModal .wa-modal {
+        max-width: 720px;
+        display: flex;
+        gap: 32px;
+        text-align: left;
+        padding: 36px;
+    }
+
+    .wa-modal-left {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .wa-modal-left h4 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1a1d23;
+        margin: 0 0 6px;
+    }
+
+    .wa-modal-left .wa-subtitle {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0 0 20px;
+    }
+
+    .wa-modal-left label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #1a1d23;
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    .wa-modal-left input[type="text"] {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 13px;
+        color: #374151;
+        outline: none;
+        transition: border-color .15s;
+        box-sizing: border-box;
+    }
+
+    .wa-modal-left input[type="text"]:focus { border-color: #25D366; }
+    .wa-modal-left input[type="text"]:read-only { background: #f9fafb; color: #9ca3af; cursor: default; }
+
+    .wa-modal-right {
+        width: 260px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
     .wa-modal h4 {
         font-size: 18px;
         font-weight: 700;
@@ -174,7 +234,7 @@
     .wa-qr-area {
         width: 220px;
         height: 220px;
-        margin: 0 auto 16px;
+        margin: 0 0 12px;
         border: 1.5px solid #e5e7eb;
         border-radius: 12px;
         display: flex;
@@ -185,10 +245,21 @@
 
     .wa-qr-area img { width: 100%; height: 100%; object-fit: contain; }
 
+    .wa-qr-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        color: #c9cdd5;
+    }
+
+    .wa-qr-placeholder i { font-size: 48px; }
+    .wa-qr-placeholder span { font-size: 12px; color: #9ca3af; }
+
     #waQrStatus {
         font-size: 13px;
         color: #6b7280;
-        margin-bottom: 20px;
+        text-align: center;
     }
 
     #waQrStatus.connected { color: #10B981; font-weight: 600; }
@@ -207,6 +278,41 @@
     }
 
     .btn-wa-cancel:hover { background: #f4f6fb; }
+
+    .btn-wa-generate {
+        padding: 10px 24px;
+        background: #25D366;
+        color: #fff;
+        border: none;
+        border-radius: 100px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .15s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-wa-generate:hover { background: #1fb855; }
+    .btn-wa-generate:disabled { opacity: .6; cursor: not-allowed; }
+
+    .wa-modal-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: auto;
+        padding-top: 16px;
+    }
+
+    @media (max-width: 640px) {
+        #waQrModal .wa-modal {
+            flex-direction: column;
+            max-width: 420px;
+            gap: 20px;
+        }
+        .wa-modal-right { width: 100%; }
+        .wa-qr-area { margin: 0 auto 12px; }
+    }
 
     .integration-title {
         flex: 1;
@@ -733,23 +839,40 @@
 {{-- ─── Modal QR WhatsApp ──────────────────────────────────────────── --}}
 <div id="waQrModal" class="wa-modal-overlay">
     <div class="wa-modal">
-        <h4><i class="bi bi-whatsapp" style="color:#25D366;margin-right:6px;"></i>{{ __('integrations.qr_title') }}</h4>
-        <p>{{ __('integrations.qr_subtitle') }}</p>
+        {{-- Coluna esquerda: info + input --}}
+        <div class="wa-modal-left">
+            <h4><i class="bi bi-whatsapp" style="color:#25D366;margin-right:6px;"></i>{{ __('integrations.qr_title') }}</h4>
+            <p class="wa-subtitle">{{ __('integrations.qr_subtitle') }}</p>
 
-        <ol class="wa-steps">
-            <li>{!! __('integrations.qr_step_1') !!}</li>
-            <li>{!! __('integrations.qr_step_2') !!}</li>
-            <li>{!! __('integrations.qr_step_3') !!}</li>
-            <li>{!! __('integrations.qr_step_4') !!}</li>
-        </ol>
+            <label for="waLabelInput">{{ __('integrations.wa_label_field') }}</label>
+            <input type="text" id="waLabelInput" placeholder="{{ __('integrations.wa_label_placeholder') }}" maxlength="60">
+            <p style="font-size:11.5px;color:#9ca3af;margin:6px 0 18px;">{{ __('integrations.wa_label_hint') }}</p>
 
-        <div class="wa-qr-area" id="waQrArea">
-            <i class="bi bi-arrow-clockwise spin" style="font-size:36px;color:#9ca3af;"></i>
+            <ol class="wa-steps">
+                <li>{!! __('integrations.qr_step_1') !!}</li>
+                <li>{!! __('integrations.qr_step_2') !!}</li>
+                <li>{!! __('integrations.qr_step_3') !!}</li>
+                <li>{!! __('integrations.qr_step_4') !!}</li>
+            </ol>
+
+            <div class="wa-modal-actions" id="waModalActions">
+                <button class="btn-wa-cancel" onclick="closeWaModal()">{{ __('integrations.qr_cancel') }}</button>
+                <button class="btn-wa-generate" id="btnWaGenerate" onclick="generateWaQr()">
+                    <i class="bi bi-qr-code"></i> {{ __('integrations.wa_generate_qr') }}
+                </button>
+            </div>
         </div>
 
-        <p id="waQrStatus">{{ __('integrations.qr_waiting') }}</p>
-
-        <button class="btn-wa-cancel" onclick="closeWaModal()">{{ __('integrations.qr_cancel') }}</button>
+        {{-- Coluna direita: QR code --}}
+        <div class="wa-modal-right">
+            <div class="wa-qr-area" id="waQrArea">
+                <div class="wa-qr-placeholder">
+                    <i class="bi bi-qr-code-scan"></i>
+                    <span>{{ __('integrations.wa_qr_placeholder') }}</span>
+                </div>
+            </div>
+            <p id="waQrStatus"></p>
+        </div>
     </div>
 </div>
 
@@ -838,46 +961,99 @@ const IG_DISCONNECT_URL   = @json(route('settings.integrations.instagram.disconn
 let waQrPollInterval = null;
 let waQrNullCount    = 0;
 let waCurrentInstanceId = null;
+let waConnected      = false;
 
 // ── WhatsApp ──────────────────────────────────────────────────────────────────
 
-async function startWhatsappConnect(btn) {
+function startWhatsappConnect(btn) {
+    // Abre o modal primeiro — POST só acontece ao clicar "Gerar QR"
+    waConnected = false;
+    waCurrentInstanceId = null;
+    document.getElementById('waLabelInput').value = '';
+    document.getElementById('waLabelInput').readOnly = false;
+    resetWaModalUi();
+    document.getElementById('waQrModal').classList.add('open');
+}
+
+function resetWaModalUi() {
+    // Reset QR area to placeholder
+    document.getElementById('waQrArea').innerHTML =
+        '<div class="wa-qr-placeholder"><i class="bi bi-qr-code-scan"></i><span>' + (ILANG.wa_qr_placeholder || 'QR Code') + '</span></div>';
+    document.getElementById('waQrStatus').textContent = '';
+    document.getElementById('waQrStatus').className = '';
+
+    // Reset actions: cancelar + gerar QR
+    const actions = document.getElementById('waModalActions');
+    actions.innerHTML =
+        '<button class="btn-wa-cancel" onclick="closeWaModal()">' + ILANG.qr_cancel + '</button>' +
+        '<button class="btn-wa-generate" id="btnWaGenerate" onclick="generateWaQr()">' +
+        '<i class="bi bi-qr-code"></i> ' + (ILANG.wa_generate_qr || 'Gerar QR Code') + '</button>';
+
+    // Remove retry button if exists
+    const retry = document.getElementById('btnWaRetry');
+    if (retry) retry.remove();
+}
+
+async function generateWaQr() {
+    const btn = document.getElementById('btnWaGenerate');
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> ' + ILANG.import_connecting;
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> ' + (ILANG.import_connecting || 'Conectando...');
+
+    const label = document.getElementById('waLabelInput').value.trim();
 
     try {
-        const res  = await fetch(WA_CONNECT_URL, {
+        const res = await fetch(WA_CONNECT_URL, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ label: '' }),
+            body: JSON.stringify({ label }),
         });
         const data = await res.json();
 
         if (data.success) {
             waCurrentInstanceId = data.instance_id;
-            openWaModal(data.instance_id);
+            document.getElementById('waLabelInput').readOnly = true;
+
+            // Trocar botões: só cancelar enquanto polling
+            const actions = document.getElementById('waModalActions');
+            actions.innerHTML = '<button class="btn-wa-cancel" onclick="closeWaModal()">' + ILANG.qr_cancel + '</button>';
+
+            // Iniciar polling QR
+            document.getElementById('waQrArea').innerHTML = '<i class="bi bi-arrow-clockwise spin" style="font-size:36px;color:#9ca3af;"></i>';
+            document.getElementById('waQrStatus').textContent = ILANG.qr_waiting;
+            waQrNullCount = 0;
+            clearInterval(waQrPollInterval);
+            pollWaQr();
+            waQrPollInterval = setInterval(pollWaQr, 3000);
         } else {
             toastr.error(data.message || ILANG.toast_connect_error);
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-plus-lg"></i> ' + ILANG.wa_add_number;
+            btn.innerHTML = '<i class="bi bi-qr-code"></i> ' + (ILANG.wa_generate_qr || 'Gerar QR Code');
         }
     } catch (e) {
         toastr.error(ILANG.toast_conn_error);
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-plus-lg"></i> ' + ILANG.wa_add_number;
+        btn.innerHTML = '<i class="bi bi-qr-code"></i> ' + (ILANG.wa_generate_qr || 'Gerar QR Code');
     }
 }
 
 function openWaModal(instanceId) {
+    // Usado pelo reconnect — já tem instância, vai direto pro QR
+    waConnected = false;
     waCurrentInstanceId = instanceId;
+    document.getElementById('waLabelInput').value = '';
+    document.getElementById('waLabelInput').readOnly = true;
     document.getElementById('waQrModal').classList.add('open');
+
+    const actions = document.getElementById('waModalActions');
+    actions.innerHTML = '<button class="btn-wa-cancel" onclick="closeWaModal()">' + ILANG.qr_cancel + '</button>';
+
+    document.getElementById('waQrArea').innerHTML = '<i class="bi bi-arrow-clockwise spin" style="font-size:36px;color:#9ca3af;"></i>';
     document.getElementById('waQrStatus').textContent = ILANG.qr_waiting;
     document.getElementById('waQrStatus').className = '';
-    document.getElementById('waQrArea').innerHTML = '<i class="bi bi-arrow-clockwise spin" style="font-size:36px;color:#9ca3af;"></i>';
 
     waQrNullCount = 0;
     clearInterval(waQrPollInterval);
@@ -900,11 +1076,19 @@ async function pollWaQr() {
 
         if (data.status === 'connected') {
             clearInterval(waQrPollInterval);
+            waConnected = true;
             document.getElementById('waQrArea').innerHTML = '<i class="bi bi-check-circle-fill" style="font-size:64px;color:#25D366;"></i>';
             const st = document.getElementById('waQrStatus');
             st.textContent = ILANG.qr_connected;
             st.className = 'connected';
-            setTimeout(() => location.reload(), 1800);
+
+            // Trocar ações: só botão fechar
+            const actions = document.getElementById('waModalActions');
+            actions.innerHTML = '<button class="btn-wa-generate" onclick="closeWaModal(); location.reload();">' +
+                '<i class="bi bi-check-lg"></i> ' + (ILANG.qr_close || 'Fechar') + '</button>';
+
+            // Auto-reload em 2.5s caso não feche manualmente
+            setTimeout(() => location.reload(), 2500);
         } else if (data.qr_base64) {
             waQrNullCount = 0;
             document.getElementById('waQrArea').innerHTML = `<img src="data:image/png;base64,${data.qr_base64}" alt="QR Code">`;
@@ -915,16 +1099,20 @@ async function pollWaQr() {
                 '<i class="bi bi-x-circle-fill" style="font-size:48px;color:#ef4444;margin-bottom:12px;display:block;"></i>';
             const st = document.getElementById('waQrStatus');
             st.textContent = ILANG.qr_expired;
+            st.className = 'error';
             if (!document.getElementById('btnWaRetry')) {
                 st.insertAdjacentHTML('afterend',
-                    '<button id="btnWaRetry" style="margin-top:12px;padding:8px 20px;background:#25D366;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;">'
+                    '<button id="btnWaRetry" style="margin-top:12px;padding:8px 20px;background:#25D366;color:#fff;border:none;border-radius:100px;cursor:pointer;font-weight:600;">'
                     + '<i class="bi bi-arrow-clockwise"></i> ' + ILANG.qr_retry + '</button>');
                 document.getElementById('btnWaRetry').addEventListener('click', async () => {
                     document.getElementById('btnWaRetry').remove();
                     document.getElementById('waQrArea').innerHTML = '<i class="bi bi-arrow-clockwise spin" style="font-size:36px;color:#9ca3af;"></i>';
                     document.getElementById('waQrStatus').textContent = ILANG.qr_waiting;
+                    document.getElementById('waQrStatus').className = '';
                     waQrNullCount = 0;
-                    openWaModal(waCurrentInstanceId);
+                    clearInterval(waQrPollInterval);
+                    pollWaQr();
+                    waQrPollInterval = setInterval(pollWaQr, 3000);
                 });
             }
         }

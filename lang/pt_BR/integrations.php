@@ -102,6 +102,12 @@ return [
     'qr_expired' => 'QR Code expirado ou sessão falhou.',
     'qr_retry' => 'Tentar novamente',
     'qr_cancel' => 'Cancelar',
+    'qr_close' => 'Fechar',
+    'wa_label_field' => 'Nome do número',
+    'wa_label_placeholder' => 'Ex: Comercial, Suporte, Vendas...',
+    'wa_label_hint' => 'Dê um nome para identificar este número no sistema.',
+    'wa_generate_qr' => 'Gerar QR Code',
+    'wa_qr_placeholder' => 'Clique em "Gerar QR Code" para começar',
 
     // Import Modal
     'import_title' => 'Importar Mensagens',

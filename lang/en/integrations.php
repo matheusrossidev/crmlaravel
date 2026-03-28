@@ -102,6 +102,12 @@ return [
     'qr_expired' => 'QR Code expired or session failed.',
     'qr_retry' => 'Try again',
     'qr_cancel' => 'Cancel',
+    'qr_close' => 'Close',
+    'wa_label_field' => 'Number name',
+    'wa_label_placeholder' => 'E.g.: Sales, Support, Marketing...',
+    'wa_label_hint' => 'Give this number a name to identify it in the system.',
+    'wa_generate_qr' => 'Generate QR Code',
+    'wa_qr_placeholder' => 'Click "Generate QR Code" to start',
 
     // Import Modal
     'import_title' => 'Import Messages',
