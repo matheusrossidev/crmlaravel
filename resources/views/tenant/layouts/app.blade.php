@@ -296,6 +296,55 @@
         .notif-item.unread { background: #eff6ff; }
         .notif-item.unread:hover { background: #CDDEF6; }
 
+        /* Notification Drawer */
+        .notif-drawer-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.3); z-index: 9000;
+        }
+        .notif-drawer-overlay.open { display: block; }
+        .notif-drawer {
+            position: fixed; top: 0; right: -400px; width: 400px; height: 100vh;
+            background: #fff; z-index: 9001;
+            box-shadow: -4px 0 24px rgba(0,0,0,.1);
+            display: flex; flex-direction: column;
+            transition: right .25s cubic-bezier(.4,0,.2,1);
+        }
+        .notif-drawer.open { right: 0; }
+        .notif-drawer-header {
+            padding: 16px 20px; border-bottom: 1px solid #f0f2f7;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .notif-drawer-body {
+            flex: 1; overflow-y: auto; padding: 0;
+        }
+        .notif-empty {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; height: 200px;
+            color: #9ca3af; font-size: 13px;
+        }
+        .nd-item {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 14px 20px; border-bottom: 1px solid #f7f8fa;
+            cursor: pointer; transition: background .15s;
+        }
+        .nd-item:hover { background: #f9fafb; }
+        .nd-item.unread { background: #f0f7ff; }
+        .nd-item.unread:hover { background: #e0efff; }
+        .nd-icon {
+            width: 32px; height: 32px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; flex-shrink: 0;
+        }
+        .nd-content { flex: 1; min-width: 0; }
+        .nd-title { font-size: 13px; font-weight: 600; color: #1a1d23; margin-bottom: 2px; }
+        .nd-body { font-size: 12.5px; color: #6b7280; line-height: 1.4; }
+        .nd-time { font-size: 11px; color: #9ca3af; margin-top: 3px; }
+
+        @media (max-width: 480px) {
+            .notif-drawer { width: 100%; right: -100%; }
+        }
+
         .btn-primary-sm {
             display: inline-flex;
             align-items: center;
@@ -913,24 +962,10 @@
             @endif
 
             {{-- Notification bell --}}
-            <div class="dropdown">
-                <button class="topbar-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside"
-                        id="notif-bell-btn" title="Notificações">
-                    <i class="bi bi-bell"></i>
-                    <span class="badge-num d-none" id="notif-badge-num"></span>
-                </button>
-                <div class="dropdown-menu dropdown-menu-end shadow" id="notif-panel"
-                     style="width:340px;max-height:420px;overflow-y:auto;border-radius:12px;padding:0;">
-                    <div style="padding:12px 16px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1;">
-                        <span style="font-weight:700;font-size:13px;">Notificações</span>
-                        <button onclick="markAllIntentRead()" type="button" class="btn btn-link btn-sm p-0"
-                                style="font-size:11px;text-decoration:none;color:#677489;">Marcar todas lidas</button>
-                    </div>
-                    <div id="notif-list">
-                        <div style="padding:24px;text-align:center;color:#97A3B7;font-size:12px;">Nenhuma notificação</div>
-                    </div>
-                </div>
-            </div>
+            <button class="topbar-btn" id="notif-bell-btn" onclick="toggleNotifDrawer()" title="Notificações">
+                <i class="bi bi-bell"></i>
+                <span class="badge-num d-none" id="notif-badge-num"></span>
+            </button>
 
             {{-- User avatar dropdown --}}
             <div class="dropdown">
@@ -1197,280 +1232,138 @@ document.addEventListener('click', function (e) {
 </script>
 
 <script>
-// ── Notification Bell (Intent Signals + AI Analyst) ──────────────────────────
+// ── Notification Drawer ──────────────────────────────────────────────────────
 (function () {
-    const LIST_URL      = '{{ route("ai.intent-signals.list") }}';
-    const READ_ALL      = '{{ route("ai.intent-signals.read-all") }}';
-    const ANALYST_URL   = '{{ route("analyst.pending-count") }}';
-    const MASTER_URL    = '{{ route("master-notifications.index") }}';
     const NOTIF_RECENT  = '{{ route("notifications.recent") }}';
     const NOTIF_READ    = '{{ route("notifications.read", ["id" => "__ID__"]) }}';
     const NOTIF_READALL = '{{ route("notifications.read-all") }}';
     const CSRF          = '{{ csrf_token() }}';
-    const ICONS         = { buy: '\uD83D\uDED2', schedule: '\uD83D\uDCC5', close: '\uD83E\uDD1D', interest: '\u2B50' };
-    const CONV_BASE     = '{{ rtrim(url("/"), "/") }}';
-    let _masterNotifs   = [];
-
-    const NOTIF_TYPE_ICONS = {
+    const TYPE_ICONS = {
         new_lead: 'bi-person-plus-fill',
         lead_assigned: 'bi-person-check',
         lead_stage_changed: 'bi-arrow-right-circle',
-        whatsapp_message: 'bi-whatsapp',
         whatsapp_assigned: 'bi-chat-left-dots',
         ai_intent: 'bi-lightbulb',
         campaign_completed: 'bi-megaphone',
         system: 'bi-info-circle',
     };
-    const NOTIF_TYPE_COLORS = {
+    const TYPE_COLORS = {
         new_lead: '#10b981',
         lead_assigned: '#3b82f6',
         lead_stage_changed: '#8b5cf6',
-        whatsapp_message: '#25D366',
         whatsapp_assigned: '#0085f3',
         ai_intent: '#f59e0b',
         campaign_completed: '#ec4899',
         system: '#6b7280',
     };
+    const TYPE_BG = {
+        new_lead: '#ecfdf5',
+        lead_assigned: '#eff6ff',
+        lead_stage_changed: '#f5f3ff',
+        whatsapp_assigned: '#eff6ff',
+        ai_intent: '#fffbeb',
+        campaign_completed: '#fdf2f8',
+        system: '#f3f4f6',
+    };
 
     function updateBadge(count) {
-        const num = document.getElementById('notif-badge-num');
-        if (!num) return;
-        if (count > 0) {
-            num.classList.remove('d-none');
-            num.textContent = count > 99 ? '99+' : count;
-        } else {
-            num.classList.add('d-none');
-        }
+        ['notif-badge-num', 'notif-drawer-badge'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (count > 0) { el.classList.remove('d-none'); el.textContent = count > 99 ? '99+' : count; }
+            else { el.classList.add('d-none'); }
+        });
     }
 
-    function renderList(signals, analystItems, masterItems, laravelNotifs) {
-        const el = document.getElementById('notif-list');
-        if (!el) return;
-
-        const lastReadId = parseInt(localStorage.getItem('mn_last_read') || '0');
-        const MASTER_TYPE_ICONS = { info: 'bi-info-circle-fill', warning: 'bi-exclamation-triangle-fill', alert: 'bi-exclamation-octagon-fill' };
-        const MASTER_TYPE_COLORS = { info: '#3b82f6', warning: '#f59e0b', alert: '#ef4444' };
-        const masterHtml = (masterItems && masterItems.length) ? [
-            `<div style="padding:6px 16px 4px;font-size:10px;font-weight:700;color:#677489;letter-spacing:.5px;background:#f8fafc;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;gap:5px;"><i class="bi bi-megaphone-fill"></i> AVISOS DO SISTEMA</div>`,
-            ...masterItems.map(n => {
-                const unread = n.id > lastReadId ? 'unread' : '';
-                const iconClass = MASTER_TYPE_ICONS[n.type] || 'bi-info-circle-fill';
-                const iconColor = MASTER_TYPE_COLORS[n.type] || '#3b82f6';
-                const ts = new Date(n.created_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit' });
-                return `<div class="notif-item ${unread}" style="padding:10px 16px;border-bottom:1px solid #f3f4f6;">
-                          <div style="display:flex;align-items:flex-start;gap:10px;">
-                            <i class="bi ${iconClass}" style="font-size:16px;flex-shrink:0;margin-top:2px;color:${iconColor};"></i>
-                            <div style="flex:1;min-width:0;">
-                              <div style="font-size:12px;font-weight:600;color:#1a1d23;margin-bottom:2px;">${n.title}</div>
-                              <div style="font-size:11px;color:#677489;line-height:1.4;">${n.body}</div>
-                              <div style="font-size:10px;color:#97A3B7;margin-top:3px;">${ts}</div>
-                            </div>
-                          </div>
-                        </div>`;
-            })
-        ].join('') : '';
-
-        const intentHtml = (signals && signals.length) ? signals.map(s => {
-            const icon    = ICONS[s.intent_type] || '\u2B50';
-            const unread  = !s.read_at ? 'unread' : '';
-            const convBtn = s.conversation_id
-                ? `<a href="${CONV_BASE}/whatsapp?conv=${s.conversation_id}"
-                      class="btn btn-link btn-sm p-0" style="font-size:11px;text-decoration:none;flex-shrink:0;"
-                      onclick="event.stopPropagation()">Ver</a>`
-                : '';
-            return `<div class="notif-item ${unread}" data-id="${s.id}"
-                        style="padding:10px 16px;border-bottom:1px solid #f3f4f6;cursor:pointer;"
-                        onclick="markIntentRead(${s.id}, this)">
-                      <div style="display:flex;align-items:flex-start;gap:10px;">
-                        <span style="font-size:18px;flex-shrink:0;margin-top:1px;">${icon}</span>
-                        <div style="flex:1;min-width:0;">
-                          <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.contact_name}</div>
-                          <div style="font-size:11px;color:#677489;margin:2px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${s.context}</div>
-                          <div style="font-size:10px;color:#97A3B7;">${s.time_ago}</div>
-                        </div>
-                        ${convBtn}
-                      </div>
-                    </div>`;
-        }).join('') : '';
-
-        const TYPE_ICONS_BELL = { stage_change: '\uD83D\uDCCA', add_tag: '\uD83C\uDFF7\uFE0F', add_note: '\uD83D\uDCDD', fill_field: '\uD83D\uDCCB', update_lead: '\u270F\uFE0F' };
-        const analystHtml = (analystItems && analystItems.length) ? [
-            `<div style="padding:6px 16px 4px;font-size:10px;font-weight:700;color:#10b981;letter-spacing:.5px;background:#f0fdf4;border-bottom:1px solid #bbf7d0;">\uD83E\uDD16 SUGESTÕES DA IA</div>`,
-            ...analystItems.map(s => {
-                const icon = TYPE_ICONS_BELL[s.type] || '\uD83E\uDD16';
-                const convLink = s.conversation_id
-                    ? `<a href="${CONV_BASE}/chats?open=${s.conversation_id}" style="font-size:11px;color:#10b981;text-decoration:none;flex-shrink:0;" onclick="event.stopPropagation()">Ver</a>`
-                    : '';
-                return `<div style="padding:8px 16px;border-bottom:1px solid #f3f4f6;">
-                          <div style="display:flex;align-items:flex-start;gap:8px;">
-                            <span style="font-size:16px;flex-shrink:0;">${icon}</span>
-                            <div style="flex:1;min-width:0;">
-                              <div style="font-size:12px;font-weight:600;color:#065f46;">${s.lead_name}</div>
-                              <div style="font-size:11px;color:#677489;">${s.type_label}</div>
-                              <div style="font-size:10px;color:#97A3B7;">${s.time_ago}</div>
-                            </div>
-                            ${convLink}
-                          </div>
-                        </div>`;
-            })
-        ].join('') : '';
-
-        // Laravel notifications (new_lead, lead_assigned, stage_changed, etc.)
-        const laravelHtml = (laravelNotifs && laravelNotifs.length) ? laravelNotifs.map(n => {
-            const iconClass = NOTIF_TYPE_ICONS[n.type] || 'bi-bell';
-            const iconColor = NOTIF_TYPE_COLORS[n.type] || '#6b7280';
-            const unread = !n.read ? 'unread' : '';
-            const urlAttr = n.url ? `onclick="markNotifRead('${n.id}');window.location='${n.url}';"` : `onclick="markNotifRead('${n.id}', this)"`;
-            return `<div class="notif-item ${unread}" style="padding:10px 16px;border-bottom:1px solid #f3f4f6;cursor:pointer;" ${urlAttr}>
-                      <div style="display:flex;align-items:flex-start;gap:10px;">
-                        <i class="bi ${iconClass}" style="font-size:16px;flex-shrink:0;margin-top:2px;color:${iconColor};"></i>
-                        <div style="flex:1;min-width:0;">
-                          <div style="font-size:12px;font-weight:600;color:#1a1d23;">${n.title}</div>
-                          <div style="font-size:11px;color:#677489;line-height:1.4;">${n.body}</div>
-                          <div style="font-size:10px;color:#97A3B7;margin-top:2px;">${n.created_at}</div>
-                        </div>
-                      </div>
-                    </div>`;
-        }).join('') : '';
-
-        if (!intentHtml && !analystHtml && !masterHtml && !laravelHtml) {
-            el.innerHTML = '<div style="padding:24px;text-align:center;color:#97A3B7;font-size:12px;">Nenhuma notificação</div>';
+    function renderDrawer(notifications) {
+        const body = document.getElementById('notifDrawerBody');
+        const empty = document.getElementById('notifEmpty');
+        if (!notifications || !notifications.length) {
+            body.innerHTML = '';
+            body.appendChild(empty);
+            empty.style.display = '';
             return;
         }
-
-        el.innerHTML = masterHtml + laravelHtml + analystHtml + intentHtml;
+        empty.style.display = 'none';
+        body.innerHTML = notifications.map(n => {
+            const icon = TYPE_ICONS[n.type] || 'bi-bell';
+            const color = TYPE_COLORS[n.type] || '#6b7280';
+            const bg = TYPE_BG[n.type] || '#f3f4f6';
+            const unread = !n.read ? 'unread' : '';
+            return `<div class="nd-item ${unread}" onclick="notifClick('${n.id}', ${n.url ? "'" + n.url + "'" : 'null'})">
+                <div class="nd-icon" style="background:${bg};color:${color};"><i class="bi ${icon}"></i></div>
+                <div class="nd-content">
+                    <div class="nd-title">${n.title}</div>
+                    <div class="nd-body">${n.body}</div>
+                    <div class="nd-time">${n.created_at}</div>
+                </div>
+            </div>`;
+        }).join('');
     }
 
-    window.loadIntentSignals = function () {
-        Promise.all([
-            fetch(LIST_URL,      { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => ({ signals: [], unread_count: 0 })),
-            fetch(ANALYST_URL,   { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => ({ count: 0, recent: [] })),
-            fetch(MASTER_URL,    { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => ({ notifications: [] })),
-            fetch(NOTIF_RECENT,  { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => ({ notifications: [], unread_count: 0 })),
-        ]).then(([intentData, analystData, masterData, notifData]) => {
-            _masterNotifs = masterData.notifications || [];
-            const lastReadId = parseInt(localStorage.getItem('mn_last_read') || '0');
-            const masterUnread = _masterNotifs.filter(n => n.id > lastReadId).length;
-            const laravelUnread = notifData.unread_count || 0;
-            const total = (intentData.unread_count || 0) + (analystData.count || 0) + masterUnread + laravelUnread;
-            updateBadge(total);
-            renderList(intentData.signals || [], analystData.recent || [], _masterNotifs, notifData.notifications || []);
-        });
+    window.loadNotifications = function () {
+        fetch(NOTIF_RECENT, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(r => r.json())
+            .then(data => {
+                updateBadge(data.unread_count || 0);
+                renderDrawer(data.notifications || []);
+            })
+            .catch(() => {});
     };
 
-    window.markIntentRead = function (id, el) {
-        fetch(`/ia/sinais/${id}/lida`, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
-        }).then(() => {
-            el.classList.remove('unread');
-            loadIntentSignals();
-        }).catch(() => {});
+    window.toggleNotifDrawer = function () {
+        const drawer = document.getElementById('notifDrawer');
+        const overlay = document.getElementById('notifDrawerOverlay');
+        const isOpen = drawer.classList.contains('open');
+        if (isOpen) {
+            closeNotifDrawer();
+        } else {
+            drawer.classList.add('open');
+            overlay.classList.add('open');
+            loadNotifications();
+        }
     };
 
-    window.markAllIntentRead = function () {
-        Promise.all([
-            fetch(READ_ALL, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'X-Requested-With': 'XMLHttpRequest' } }),
-            fetch(NOTIF_READALL, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'X-Requested-With': 'XMLHttpRequest' } }),
-        ]).then(() => loadIntentSignals()).catch(() => {});
+    window.closeNotifDrawer = function () {
+        document.getElementById('notifDrawer').classList.remove('open');
+        document.getElementById('notifDrawerOverlay').classList.remove('open');
     };
 
-    window.markNotifRead = function (id, el) {
+    window.notifClick = function (id, url) {
         fetch(NOTIF_READ.replace('__ID__', id), {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
         }).then(() => {
-            if (el) el.classList.remove('unread');
-            loadIntentSignals();
+            loadNotifications();
+            if (url) window.location.href = url;
         }).catch(() => {});
     };
 
-    // Carregar ao iniciar
-    loadIntentSignals();
+    window.markAllNotifsRead = function () {
+        fetch(NOTIF_READALL, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+        }).then(() => loadNotifications()).catch(() => {});
+    };
 
-    // Escutar evento em tempo real via WebSocket
+    // Load badge on page load
+    loadNotifications();
+
+    // Real-time via WebSocket
     document.addEventListener('DOMContentLoaded', function () {
         if (window.Echo) {
-            const channel = window.Echo.private('tenant.{{ auth()->user()->tenant_id }}');
-
-            channel.listen('.ai.intent', function (data) {
-                const icon = ICONS[data.intent_type] || '\u2B50';
-                if (window.toastr) {
-                    toastr.info(
-                        `${icon} <b>${data.contact_name}</b>: ${data.context}`,
-                        'Sinal de Intenção',
-                        { timeOut: 8000, closeButton: true, progressBar: true, escapeHtml: false }
-                    );
-                }
-                if (window.NotifManager) {
-                    window.NotifManager.notify(
-                        'Sinal de Intenção',
-                        (data.contact_name || '') + ': ' + (data.context || ''),
-                        data.conversation_id ? '/chats?conv=' + data.conversation_id : null,
-                        'ai_intent',
-                        'notification-chime'
-                    );
-                }
-                loadIntentSignals();
-            });
-
-            // ── Laravel Notifications via broadcast (canal do usuário) ──
             const userChannel = window.Echo.private('App.Models.User.{{ auth()->id() }}');
             userChannel.notification(function (notif) {
                 if (window.toastr) {
                     toastr.info(
                         '<b>' + (notif.title || 'Notificação') + '</b><br><small>' + (notif.body || '') + '</small>',
-                        'Notificação',
+                        '',
                         { timeOut: 8000, closeButton: true, progressBar: true, escapeHtml: false }
                     );
                 }
-                if (window.NotifManager) {
-                    window.NotifManager.notify(
-                        notif.title || 'Notificação',
-                        notif.body || '',
-                        notif.url || null,
-                        notif.notification_type || 'master_notification',
-                        null
-                    );
-                }
-            });
-
-            channel.listen('.master.notification', function (data) {
-                if (window.toastr) {
-                    const typeMap = {
-                        info:    { fn: 'info',    title: 'Notificação' },
-                        warning: { fn: 'warning', title: 'Aviso' },
-                        alert:   { fn: 'error',   title: 'Alerta Importante' },
-                    };
-                    const t = typeMap[data.type] || typeMap.info;
-                    toastr[t.fn](
-                        `<b>${data.title}</b><br><small>${data.body}</small>`,
-                        t.title,
-                        { timeOut: 12000, closeButton: true, progressBar: true, escapeHtml: false }
-                    );
-                }
-                if (window.NotifManager) {
-                    window.NotifManager.notify(
-                        data.title || 'Notificação',
-                        data.body || '',
-                        null,
-                        'master_notification',
-                        'alert'
-                    );
-                }
-                loadIntentSignals();
+                loadNotifications();
             });
         }
-
-        // Ao abrir o sino, marcar master notifications como lidas
-        document.getElementById('notif-bell-btn')?.addEventListener('click', function () {
-            if (_masterNotifs.length) {
-                const maxId = Math.max(..._masterNotifs.map(n => n.id));
-                localStorage.setItem('mn_last_read', maxId);
-                // Recalcular badge sem unread do master
-                setTimeout(loadIntentSignals, 50);
-            }
-        });
     });
 })();
 </script>
@@ -1580,6 +1473,31 @@ document.getElementById('limitReachedModal').addEventListener('click', function(
     window.addEventListener('appinstalled',function(){b.style.display='none';dp=null;});
 })();
 </script>
+
+{{-- Notification Drawer --}}
+<div class="notif-drawer-overlay" id="notifDrawerOverlay" onclick="closeNotifDrawer()"></div>
+<div class="notif-drawer" id="notifDrawer">
+    <div class="notif-drawer-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:15px;font-weight:700;color:#1a1d23;">{{ __('common.notifications') }}</span>
+            <span class="badge-num d-none" id="notif-drawer-badge" style="position:static;font-size:11px;"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <button onclick="markAllNotifsRead()" style="font-size:12px;color:#0085f3;background:none;border:none;cursor:pointer;font-weight:600;font-family:inherit;">
+                {{ __('common.mark_all_read') }}
+            </button>
+            <button onclick="closeNotifDrawer()" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;padding:2px;">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    </div>
+    <div class="notif-drawer-body" id="notifDrawerBody">
+        <div class="notif-empty" id="notifEmpty">
+            <i class="bi bi-bell" style="font-size:32px;color:#d1d5db;display:block;margin-bottom:8px;"></i>
+            <span>{{ __('common.no_notifications') }}</span>
+        </div>
+    </div>
+</div>
 
 @include('tenant.layouts._help_widget')
 

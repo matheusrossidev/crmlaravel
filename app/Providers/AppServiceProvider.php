@@ -62,25 +62,9 @@ class AppServiceProvider extends ServiceProvider
 
     private function registerNotificationListeners(): void
     {
-        // WhatsApp inbound message → push notification to tenant users
-        Event::listen(WhatsappMessageCreated::class, function (WhatsappMessageCreated $event): void {
-            if ($event->message->direction !== 'inbound') {
-                return;
-            }
-
-            $conversation = $event->message->conversation;
-            $contactName = $conversation?->contact_name ?? $conversation?->phone ?? 'Contato';
-
-            app(NotificationDispatcher::class)->dispatch(
-                'whatsapp_message',
-                [
-                    'contact_name' => $contactName,
-                    'message_preview' => $event->message->body ?? '',
-                    'url' => '/chats?conv=' . $event->message->conversation_id,
-                ],
-                $event->tenantId,
-            );
-        });
+        // WhatsApp inbound message → notification disabled (too noisy for bell)
+        // Kept as comment for future re-enabling with filtering
+        // Event::listen(WhatsappMessageCreated::class, function (WhatsappMessageCreated $event): void { ... });
 
         // AI intent signal → push notification
         Event::listen(AiIntentDetected::class, function (AiIntentDetected $event): void {

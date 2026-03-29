@@ -32,7 +32,7 @@
         width: 60px;
         height: 60px;
         border-radius: 50%;
-        z-index: 9998;
+        z-index: 200;
         cursor: pointer;
         border: none;
         background: none;
@@ -88,7 +88,7 @@
         position: fixed;
         inset: 0;
         background: rgba(0,0,0,.3);
-        z-index: 9998;
+        z-index: 200;
         opacity: 0;
         visibility: hidden;
         transition: opacity .3s ease, visibility .3s ease;
@@ -108,7 +108,7 @@
         min-width: 380px;
         max-width: 480px;
         background: #fff;
-        z-index: 9999;
+        z-index: 201;
         display: flex;
         flex-direction: column;
         box-shadow: -8px 0 32px rgba(0,0,0,.12);
