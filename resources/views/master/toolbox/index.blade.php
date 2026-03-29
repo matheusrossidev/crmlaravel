@@ -586,6 +586,14 @@ var USERS   = <?php echo json_encode($users->toArray()); ?>;
                 { name: 'with_tags',  label: 'Criar tags demo',      type: 'checkbox' },
             ],
         },
+        'reset-ai-tokens': {
+            label: 'Zerar Tokens de IA',
+            iconHtml: '<i class="bi bi-cpu" style="color:#d97706;"></i>',
+            iconBg: '#fef3c7',
+            params: [
+                { name: 'tenant_id', label: 'Tenant', type: 'select-tenant', required: true },
+            ],
+        },
     };
 
     let _currentTool = null;

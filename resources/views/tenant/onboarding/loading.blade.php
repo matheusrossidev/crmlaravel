@@ -16,73 +16,100 @@
             min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
             background: #f8fafc;
+            padding: 24px;
         }
 
-        .loading-container {
-            width: 100%; max-width: 520px; padding: 32px; text-align: center;
+        .loading-card {
+            width: 100%; max-width: 640px;
+            background: #fff;
+            border: 1.5px solid #e8eaf0;
+            border-radius: 14px;
+            padding: 40px 44px 36px;
         }
 
-        .loading-logo { margin-bottom: 32px; }
-        .loading-logo img { height: 32px; }
+        .loading-logo { margin-bottom: 28px; }
+        .loading-logo img { height: 30px; }
 
         .loading-title {
             font-size: 22px; font-weight: 700; color: #1a1d23; margin-bottom: 6px;
         }
         .loading-subtitle {
-            font-size: 14px; color: #6b7280; margin-bottom: 36px;
+            font-size: 14px; color: #6b7280; margin-bottom: 28px;
         }
 
         /* Progress bar */
         .progress-bar-wrap {
-            background: #e8eaf0; border-radius: 100px; height: 8px;
-            overflow: hidden; margin-bottom: 32px;
+            background: #e8eaf0; border-radius: 100px; height: 6px;
+            overflow: hidden; margin-bottom: 28px;
         }
         .progress-bar-fill {
             height: 100%; background: #0085f3; border-radius: 100px;
-            transition: width .5s ease; width: 0%;
+            transition: width .6s ease; width: 0%;
         }
 
-        /* Steps list */
-        .step-list { text-align: left; margin-bottom: 32px; }
+        /* Steps list — items start hidden, appear with animation */
+        .step-list {
+            text-align: left; margin-bottom: 28px;
+            min-height: 48px;
+        }
 
         .step-item {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px 16px; border-radius: 10px; margin-bottom: 6px;
-            transition: all .3s;
+            display: flex; align-items: center; gap: 14px;
+            padding: 13px 16px; border-radius: 10px; margin-bottom: 4px;
+            transition: all .35s ease;
+            animation: slideIn .35s ease-out;
         }
-        .step-item.pending { color: #9ca3af; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
         .step-item.processing {
-            background: #eff6ff; color: #0085f3; font-weight: 600;
+            background: #eff6ff; color: #0070d1; font-weight: 600;
+            border: 1.5px solid #bfdbfe;
         }
         .step-item.done {
-            background: #f0fdf4; color: #059669;
+            background: transparent; color: #059669;
+            border: 1.5px solid transparent;
         }
 
         .step-icon {
-            width: 28px; height: 28px; border-radius: 50%;
+            width: 30px; height: 30px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 13px; flex-shrink: 0;
+            font-size: 14px; flex-shrink: 0;
         }
-        .step-item.pending .step-icon { background: #f3f4f6; color: #9ca3af; }
         .step-item.processing .step-icon { background: #0085f3; color: #fff; }
-        .step-item.done .step-icon { background: #059669; color: #fff; }
+        .step-item.done .step-icon { background: #dcfce7; color: #059669; }
 
-        .step-label { font-size: 13.5px; }
+        .step-label { font-size: 14px; }
 
         @keyframes spin { to { transform: rotate(360deg); } }
-        .spin { animation: spin 1s linear infinite; }
+        .spin { animation: spin 1s linear infinite; display: inline-block; }
 
-        /* Stat quote */
+        /* Quote block */
         .stat-quote {
-            font-size: 13px; color: #9ca3af; font-style: italic;
-            padding: 16px; background: #fff; border: 1px solid #e8eaf0;
-            border-radius: 12px; line-height: 1.5;
-            transition: opacity .3s;
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 16px 20px;
+            background: #f8fafc;
+            border-left: 3px solid #0085f3;
+            border-radius: 0 10px 10px 0;
+            transition: opacity .4s ease;
+        }
+        .stat-quote-icon {
+            font-size: 18px; color: #0085f3; flex-shrink: 0; margin-top: 1px;
+        }
+        .stat-quote-text {
+            font-size: 13.5px; color: #374151; line-height: 1.55; font-style: italic;
+        }
+
+        @media (max-width: 500px) {
+            .loading-card { padding: 28px 20px 24px; }
         }
     </style>
 </head>
 <body>
-<div class="loading-container">
+<div class="loading-card">
     <div class="loading-logo">
         <img src="{{ asset('images/logo-dark.png') }}" alt="Syncro" onerror="this.style.display='none'">
     </div>
@@ -95,48 +122,31 @@
     </div>
 
     <div class="step-list" id="stepList">
-        <div class="step-item pending" data-step="analyzing">
-            <div class="step-icon"><i class="bi bi-circle"></i></div>
-            <span class="step-label">{{ __('onboarding.loading_step_1') }}</span>
-        </div>
-        <div class="step-item pending" data-step="pipeline">
-            <div class="step-icon"><i class="bi bi-circle"></i></div>
-            <span class="step-label">{{ __('onboarding.loading_step_2') }}</span>
-        </div>
-        <div class="step-item pending" data-step="sequences">
-            <div class="step-icon"><i class="bi bi-circle"></i></div>
-            <span class="step-label">{{ __('onboarding.loading_step_3') }}</span>
-        </div>
-        <div class="step-item pending" data-step="automations">
-            <div class="step-icon"><i class="bi bi-circle"></i></div>
-            <span class="step-label">{{ __('onboarding.loading_step_4') }}</span>
-        </div>
-        <div class="step-item pending" data-step="scoring">
-            <div class="step-icon"><i class="bi bi-circle"></i></div>
-            <span class="step-label">{{ __('onboarding.loading_step_5') }}</span>
-        </div>
-        <div class="step-item pending" data-step="ai_agent">
-            <div class="step-icon"><i class="bi bi-circle"></i></div>
-            <span class="step-label">{{ __('onboarding.loading_step_6') }}</span>
-        </div>
-        <div class="step-item pending" data-step="quick_messages">
-            <div class="step-icon"><i class="bi bi-circle"></i></div>
-            <span class="step-label">{{ __('onboarding.loading_step_7') }}</span>
-        </div>
-        <div class="step-item pending" data-step="config">
-            <div class="step-icon"><i class="bi bi-circle"></i></div>
-            <span class="step-label">{{ __('onboarding.loading_step_8') }}</span>
-        </div>
+        {{-- Steps are added dynamically by JS --}}
     </div>
 
-    <div class="stat-quote" id="statQuote">{{ __('onboarding.stat_1') }}</div>
+    <div class="stat-quote" id="statQuote">
+        <div class="stat-quote-icon"><i class="bi bi-lightbulb"></i></div>
+        <div class="stat-quote-text" id="statQuoteText">{{ __('onboarding.stat_1') }}</div>
+    </div>
 </div>
 
 <script>
 const GENERATE_URL = '{{ route("onboarding.generate") }}';
 const RESULT_URL   = '{{ route("onboarding.result") }}';
 const CSRF_TOKEN   = '{{ csrf_token() }}';
-const STEPS_ORDER  = ['analyzing', 'pipeline', 'sequences', 'automations', 'scoring', 'ai_agent', 'quick_messages', 'config'];
+
+const STEP_LABELS = [
+    @json(__('onboarding.loading_step_1')),
+    @json(__('onboarding.loading_step_2')),
+    @json(__('onboarding.loading_step_3')),
+    @json(__('onboarding.loading_step_4')),
+    @json(__('onboarding.loading_step_5')),
+    @json(__('onboarding.loading_step_6')),
+    @json(__('onboarding.loading_step_7')),
+    @json(__('onboarding.loading_step_8')),
+];
+
 const STATS = [
     @json(__('onboarding.stat_1')),
     @json(__('onboarding.stat_2')),
@@ -145,62 +155,73 @@ const STATS = [
 ];
 
 let currentStatIdx = 0;
-let visualStep = 0;
+let visualStep = -1;
 let visualTimer = null;
 let generateDone = false;
+const listEl = document.getElementById('stepList');
 
 function advanceVisual() {
-    if (visualStep >= STEPS_ORDER.length) {
+    visualStep++;
+
+    if (visualStep >= STEP_LABELS.length) {
         clearInterval(visualTimer);
+        // If done, redirect
+        if (generateDone) {
+            document.getElementById('progressBar').style.width = '100%';
+            setTimeout(() => window.location.href = RESULT_URL, 800);
+        }
         return;
     }
 
-    const pct = Math.round(((visualStep + 1) / STEPS_ORDER.length) * 100);
+    const pct = Math.round(((visualStep + 1) / STEP_LABELS.length) * 100);
     document.getElementById('progressBar').style.width = pct + '%';
 
-    STEPS_ORDER.forEach((stepName, i) => {
-        const el = document.querySelector(`[data-step="${stepName}"]`);
-        if (!el) return;
-
-        if (i < visualStep) {
-            el.className = 'step-item done';
-            el.querySelector('.step-icon').innerHTML = '<i class="bi bi-check-lg"></i>';
-        } else if (i === visualStep) {
-            el.className = 'step-item processing';
-            el.querySelector('.step-icon').innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
-        } else {
-            el.className = 'step-item pending';
-            el.querySelector('.step-icon').innerHTML = '<i class="bi bi-circle"></i>';
+    // Mark previous step as done
+    if (visualStep > 0) {
+        const prev = listEl.children[visualStep - 1];
+        if (prev) {
+            prev.className = 'step-item done';
+            prev.querySelector('.step-icon').innerHTML = '<i class="bi bi-check-lg"></i>';
         }
-    });
-
-    // Rotate stat
-    if (visualStep > 0 && visualStep % 2 === 0 && currentStatIdx < STATS.length - 1) {
-        currentStatIdx++;
-        document.getElementById('statQuote').textContent = STATS[currentStatIdx];
     }
 
-    visualStep++;
+    // Add new step (appears with animation)
+    const item = document.createElement('div');
+    item.className = 'step-item processing';
+    item.innerHTML = `
+        <div class="step-icon"><i class="bi bi-arrow-clockwise spin"></i></div>
+        <span class="step-label">${STEP_LABELS[visualStep]}</span>
+    `;
+    listEl.appendChild(item);
 
-    // If generate is done and we've shown all steps, redirect
-    if (generateDone && visualStep >= STEPS_ORDER.length) {
-        clearInterval(visualTimer);
-        document.getElementById('progressBar').style.width = '100%';
-        // Mark all as done
-        STEPS_ORDER.forEach(s => {
-            const el = document.querySelector(`[data-step="${s}"]`);
-            if (el) {
-                el.className = 'step-item done';
-                el.querySelector('.step-icon').innerHTML = '<i class="bi bi-check-lg"></i>';
-            }
-        });
-        setTimeout(() => window.location.href = RESULT_URL, 800);
+    // Scroll into view if list gets long
+    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Rotate stat quote
+    if (visualStep > 0 && visualStep % 2 === 0 && currentStatIdx < STATS.length - 1) {
+        currentStatIdx++;
+        const quoteText = document.getElementById('statQuoteText');
+        quoteText.style.opacity = '0';
+        setTimeout(() => {
+            quoteText.textContent = STATS[currentStatIdx];
+            quoteText.style.opacity = '1';
+        }, 300);
+    }
+
+    // If this was the last step and generate is done
+    if (generateDone && visualStep === STEP_LABELS.length - 1) {
+        setTimeout(() => {
+            item.className = 'step-item done';
+            item.querySelector('.step-icon').innerHTML = '<i class="bi bi-check-lg"></i>';
+            document.getElementById('progressBar').style.width = '100%';
+            setTimeout(() => window.location.href = RESULT_URL, 800);
+        }, 1500);
     }
 }
 
-// Start visual animation (advance every 2.5s)
-visualTimer = setInterval(advanceVisual, 2500);
+// Start visual animation — first item immediately, then every 2.5s
 advanceVisual();
+visualTimer = setInterval(advanceVisual, 2500);
 
 // Fire the POST to generate CRM
 const answers = JSON.parse(sessionStorage.getItem('onboarding_answers') || '{}');
@@ -225,27 +246,24 @@ if (answers.company_name) {
         generateDone = true;
         sessionStorage.removeItem('onboarding_answers');
 
-        // If visual is already past all steps, redirect immediately
-        if (visualStep >= STEPS_ORDER.length) {
+        // If visual already past all steps, finish immediately
+        if (visualStep >= STEP_LABELS.length - 1) {
+            clearInterval(visualTimer);
+            // Mark last as done
+            const last = listEl.lastElementChild;
+            if (last) {
+                last.className = 'step-item done';
+                last.querySelector('.step-icon').innerHTML = '<i class="bi bi-check-lg"></i>';
+            }
             document.getElementById('progressBar').style.width = '100%';
-            STEPS_ORDER.forEach(s => {
-                const el = document.querySelector(`[data-step="${s}"]`);
-                if (el) {
-                    el.className = 'step-item done';
-                    el.querySelector('.step-icon').innerHTML = '<i class="bi bi-check-lg"></i>';
-                }
-            });
             setTimeout(() => window.location.href = RESULT_URL, 800);
         }
-        // Otherwise, visualTimer will handle the redirect when it catches up
     })
     .catch(err => {
         console.error('Generate failed:', err);
         generateDone = true;
-        // Still redirect — onboarding marked as done on server even on error
     });
 } else {
-    // No answers in session — redirect to result or dashboard
     window.location.href = RESULT_URL;
 }
 </script>

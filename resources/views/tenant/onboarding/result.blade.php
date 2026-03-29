@@ -8,242 +8,255 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
-            background: #f8fafc;
-            padding: 48px 24px;
-        }
-
-        .result-container { max-width: 680px; margin: 0 auto; }
-
-        .result-header { text-align: center; margin-bottom: 36px; }
-        .result-logo { margin-bottom: 24px; }
-        .result-logo img { height: 32px; }
-        .result-title { font-size: 28px; font-weight: 700; color: #1a1d23; margin-bottom: 6px; }
-        .result-subtitle { font-size: 15px; color: #6b7280; }
-
-        /* Cards grid */
-        .result-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-            margin-bottom: 32px;
-        }
-
-        .result-card {
-            background: #fff; border: 1.5px solid #e8eaf0; border-radius: 14px;
-            padding: 18px 20px;
-        }
-        .result-card-header {
-            display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
-        }
-        .result-card-icon {
-            width: 36px; height: 36px; border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 16px; flex-shrink: 0;
+            background: #f8fafc;
+            padding: 24px;
+            opacity: 0;
+            transition: opacity .4s ease;
         }
-        .result-card-icon.pipeline { background: #eff6ff; color: #0085f3; }
-        .result-card-icon.sequences { background: #f0fdf4; color: #16a34a; }
-        .result-card-icon.automations { background: #fef3c7; color: #d97706; }
-        .result-card-icon.scoring { background: #fce7f3; color: #db2777; }
-        .result-card-icon.agent { background: #f5f3ff; color: #7c3aed; }
-        .result-card-icon.messages { background: #ecfdf5; color: #059669; }
-        .result-card-icon.tags { background: #eff6ff; color: #3b82f6; }
-        .result-card-icon.reasons { background: #fef2f2; color: #ef4444; }
+        body.visible { opacity: 1; }
 
-        .result-card-title { font-size: 13px; font-weight: 700; color: #1a1d23; }
-        .result-card-count { font-size: 12px; color: #6b7280; }
-
-        .result-pills {
-            display: flex; flex-wrap: wrap; gap: 5px;
-        }
-        .result-pill {
-            padding: 3px 10px; background: #f3f4f6; border-radius: 100px;
-            font-size: 11.5px; color: #374151; font-weight: 500;
+        .result-wrap {
+            width: 100%; max-width: 520px; text-align: center;
         }
 
-        .result-status {
-            display: inline-flex; align-items: center; gap: 4px;
-            padding: 3px 10px; background: #ecfdf5; color: #059669;
-            border-radius: 100px; font-size: 11.5px; font-weight: 600;
+        /* ── Zona 1: Celebração ── */
+        .lottie-container {
+            width: 200px; height: 200px; margin: 0 auto 8px;
         }
 
-        /* CTA */
-        .result-cta { text-align: center; }
+        .result-title {
+            font-size: 28px; font-weight: 600; color: #1a1d23;
+            opacity: 0; transform: translateY(16px);
+            transition: opacity .5s ease, transform .5s ease;
+        }
+        .result-title.show { opacity: 1; transform: translateY(0); }
+
+        .result-subtitle {
+            font-size: 15px; color: #6b7280; margin-top: 6px;
+            opacity: 0; transition: opacity .5s ease .3s;
+        }
+        .result-subtitle.show { opacity: 1; }
+
+        /* ── Zona 2: Checklist ── */
+        .checklist-section {
+            margin-top: 36px; text-align: left;
+            opacity: 0; transform: translateY(12px);
+            transition: opacity .4s ease, transform .4s ease;
+        }
+        .checklist-section.show { opacity: 1; transform: translateY(0); }
+
+        .checklist-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .checklist-title {
+            font-size: 14px; font-weight: 700; color: #1a1d23;
+        }
+        .checklist-progress {
+            font-size: 12px; font-weight: 600; color: #0085f3;
+        }
+        .checklist-bar {
+            background: #e8eaf0; border-radius: 100px; height: 5px;
+            overflow: hidden; margin-bottom: 18px;
+        }
+        .checklist-bar-fill {
+            height: 100%; background: #0085f3; border-radius: 100px;
+            transition: width .8s ease;
+        }
+
+        /* Items */
+        .check-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 14px; border-radius: 10px;
+            margin-bottom: 4px;
+            opacity: 0; transform: translateY(8px);
+            transition: opacity .3s ease, transform .3s ease, background .15s;
+        }
+        .check-item.show { opacity: 1; transform: translateY(0); }
+        .check-item:hover { background: #f9fafb; }
+
+        .check-icon {
+            width: 24px; height: 24px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; flex-shrink: 0;
+            transition: all .3s ease;
+        }
+        .check-icon.done {
+            background: #dcfce7; color: #059669;
+            transform: scale(0);
+        }
+        .check-icon.done.pop { transform: scale(1); }
+        .check-icon.pending {
+            background: #f3f4f6; color: #d1d5db;
+            border: 1.5px solid #e5e7eb;
+        }
+
+        .check-text {
+            flex: 1; font-size: 13.5px; color: #374151; font-weight: 500;
+        }
+        .check-item.is-done .check-text { color: #6b7280; }
+
+        .check-action {
+            font-size: 12.5px; font-weight: 600; color: #0085f3;
+            text-decoration: none; display: flex; align-items: center; gap: 3px;
+            white-space: nowrap; transition: color .15s;
+        }
+        .check-action:hover { color: #0070d1; }
+
+        /* ── Zona 3: CTA ── */
+        .cta-section {
+            margin-top: 32px; text-align: center;
+            opacity: 0; transition: opacity .4s ease;
+        }
+        .cta-section.show { opacity: 1; }
+
         .btn-go-crm {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 14px 36px; background: #0085f3; color: #fff;
-            border: none; border-radius: 9px; font-size: 15px; font-weight: 600;
-            cursor: pointer; text-decoration: none; transition: background .15s;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            width: 280px; height: 46px;
+            background: #0085f3; color: #fff;
+            border: none; border-radius: 9px;
+            font-size: 15px; font-weight: 600;
+            cursor: pointer; text-decoration: none;
             font-family: 'Inter', sans-serif;
+            transition: background .15s;
         }
         .btn-go-crm:hover { background: #0070d1; color: #fff; }
 
-        @media (max-width: 600px) {
-            .result-grid { grid-template-columns: 1fr; }
+        .cta-hint {
+            font-size: 12px; color: #9ca3af; margin-top: 10px;
+        }
+
+        @media (max-width: 500px) {
+            .result-title { font-size: 24px; }
+            .btn-go-crm { width: 100%; }
         }
     </style>
 </head>
 <body>
-<div class="result-container">
+<div class="result-wrap">
 
-    <div class="result-header">
-        <div class="result-logo">
-            <img src="{{ asset('images/logo-dark.png') }}" alt="Syncro" onerror="this.style.display='none'">
+    {{-- Zona 1 — Celebração --}}
+    <div class="lottie-container" id="lottieContainer"></div>
+    <h1 class="result-title" id="resultTitle">{{ __('onboarding.result_title_text') }}</h1>
+    <p class="result-subtitle" id="resultSubtitle">{{ __('onboarding.result_subtitle') }}</p>
+
+    {{-- Zona 2 — Checklist --}}
+    <div class="checklist-section" id="checklistSection">
+        <div class="checklist-header">
+            <span class="checklist-title">{{ __('onboarding.checklist_title') }}</span>
+            <span class="checklist-progress">3/8</span>
         </div>
-        <h1 class="result-title">{{ __('onboarding.result_title') }}</h1>
-        <p class="result-subtitle">{{ __('onboarding.result_subtitle') }}</p>
+        <div class="checklist-bar">
+            <div class="checklist-bar-fill" id="checklistBar" style="width:0%;"></div>
+        </div>
+
+        {{-- Done items --}}
+        <div class="check-item is-done" data-delay="0">
+            <div class="check-icon done" id="check1"><i class="bi bi-check-lg"></i></div>
+            <span class="check-text">{{ __('onboarding.check_account') }}</span>
+        </div>
+        <div class="check-item is-done" data-delay="200">
+            <div class="check-icon done" id="check2"><i class="bi bi-check-lg"></i></div>
+            <span class="check-text">{{ __('onboarding.check_crm_configured') }}</span>
+        </div>
+        <div class="check-item is-done" data-delay="400">
+            <div class="check-icon done" id="check3"><i class="bi bi-check-lg"></i></div>
+            <span class="check-text">{{ __('onboarding.check_automations') }}</span>
+        </div>
+
+        {{-- Pending items --}}
+        <div class="check-item" data-delay="560">
+            <div class="check-icon pending"><i class="bi bi-circle"></i></div>
+            <span class="check-text">{{ __('onboarding.check_whatsapp') }}</span>
+            <a href="{{ route('settings.integrations.index') }}" class="check-action">{{ __('onboarding.action_connect') }} <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="check-item" data-delay="640">
+            <div class="check-icon pending"><i class="bi bi-circle"></i></div>
+            <span class="check-text">{{ __('onboarding.check_first_lead') }}</span>
+            <a href="{{ route('leads.index') }}" class="check-action">{{ __('onboarding.action_add') }} <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="check-item" data-delay="720">
+            <div class="check-icon pending"><i class="bi bi-circle"></i></div>
+            <span class="check-text">{{ __('onboarding.check_first_message') }}</span>
+            <a href="{{ route('chats.index') }}" class="check-action">{{ __('onboarding.action_open_chat') }} <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="check-item" data-delay="800">
+            <div class="check-icon pending"><i class="bi bi-circle"></i></div>
+            <span class="check-text">{{ __('onboarding.check_invite') }}</span>
+            <a href="{{ route('settings.users') }}" class="check-action">{{ __('onboarding.action_invite') }} <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="check-item" data-delay="880">
+            <div class="check-icon pending"><i class="bi bi-circle"></i></div>
+            <span class="check-text">{{ __('onboarding.check_import') }}</span>
+            <a href="{{ route('leads.index') }}" class="check-action">{{ __('onboarding.action_import') }} <i class="bi bi-arrow-right"></i></a>
+        </div>
     </div>
 
-    <div class="result-grid">
-        {{-- Pipeline --}}
-        @if(!empty($result['pipeline']['stages']))
-        <div class="result-card">
-            <div class="result-card-header">
-                <div class="result-card-icon pipeline"><i class="bi bi-funnel"></i></div>
-                <div>
-                    <div class="result-card-title">{{ __('onboarding.result_pipeline') }}</div>
-                    <div class="result-card-count">{{ $result['pipeline']['stages_count'] ?? 0 }} {{ __('leads.stages') }}</div>
-                </div>
-            </div>
-            <div class="result-pills">
-                @foreach(($result['pipeline']['stages'] ?? []) as $stage)
-                <span class="result-pill">{{ $stage }}</span>
-                @endforeach
-            </div>
-        </div>
-        @endif
-
-        {{-- Sequences --}}
-        @if(!empty($result['sequences']))
-        <div class="result-card">
-            <div class="result-card-header">
-                <div class="result-card-icon sequences"><i class="bi bi-arrow-repeat"></i></div>
-                <div>
-                    <div class="result-card-title">{{ __('onboarding.result_sequences') }}</div>
-                    <div class="result-card-count">{{ count($result['sequences']) }} {{ __('sequences.nav_title') }}</div>
-                </div>
-            </div>
-            <div class="result-pills">
-                @foreach($result['sequences'] as $seq)
-                <span class="result-pill">{{ $seq['name'] }}</span>
-                @endforeach
-            </div>
-        </div>
-        @endif
-
-        {{-- Automations --}}
-        @if(!empty($result['automations']))
-        <div class="result-card">
-            <div class="result-card-header">
-                <div class="result-card-icon automations"><i class="bi bi-lightning"></i></div>
-                <div>
-                    <div class="result-card-title">{{ __('onboarding.result_automations') }}</div>
-                    <div class="result-card-count">{{ count($result['automations']) }}</div>
-                </div>
-            </div>
-            <div class="result-pills">
-                @foreach($result['automations'] as $auto)
-                <span class="result-pill">{{ $auto['name'] }}</span>
-                @endforeach
-            </div>
-        </div>
-        @endif
-
-        {{-- Scoring --}}
-        @if(!empty($result['scoring']))
-        <div class="result-card">
-            <div class="result-card-header">
-                <div class="result-card-icon scoring"><i class="bi bi-speedometer2"></i></div>
-                <div>
-                    <div class="result-card-title">{{ __('onboarding.result_scoring') }}</div>
-                    <div class="result-card-count">{{ count($result['scoring']) }}</div>
-                </div>
-            </div>
-            <div class="result-pills">
-                @foreach(array_slice($result['scoring'], 0, 4) as $rule)
-                <span class="result-pill">{{ $rule['name'] }}</span>
-                @endforeach
-            </div>
-        </div>
-        @endif
-
-        {{-- AI Agent --}}
-        @if(!empty($result['ai_agent']['name']))
-        <div class="result-card">
-            <div class="result-card-header">
-                <div class="result-card-icon agent"><i class="bi bi-robot"></i></div>
-                <div>
-                    <div class="result-card-title">{{ __('onboarding.result_ai_agent') }}</div>
-                    <div class="result-card-count">{{ $result['ai_agent']['name'] }}</div>
-                </div>
-            </div>
-            <span class="result-status"><i class="bi bi-check-circle-fill"></i> {{ __('onboarding.result_ready') }}</span>
-        </div>
-        @endif
-
-        {{-- Quick Messages --}}
-        @if(!empty($result['quick_messages']))
-        <div class="result-card">
-            <div class="result-card-header">
-                <div class="result-card-icon messages"><i class="bi bi-chat-dots"></i></div>
-                <div>
-                    <div class="result-card-title">{{ __('onboarding.result_quick_messages') }}</div>
-                    <div class="result-card-count">{{ count($result['quick_messages']) }}</div>
-                </div>
-            </div>
-            <div class="result-pills">
-                @foreach(array_slice($result['quick_messages'], 0, 4) as $msg)
-                <span class="result-pill">{{ $msg['title'] }}</span>
-                @endforeach
-            </div>
-        </div>
-        @endif
-
-        {{-- Tags --}}
-        @if(!empty($result['tags']))
-        <div class="result-card">
-            <div class="result-card-header">
-                <div class="result-card-icon tags"><i class="bi bi-tags"></i></div>
-                <div>
-                    <div class="result-card-title">{{ __('onboarding.result_tags') }}</div>
-                    <div class="result-card-count">{{ count($result['tags']) }}</div>
-                </div>
-            </div>
-            <div class="result-pills">
-                @foreach(array_slice($result['tags'], 0, 6) as $tag)
-                <span class="result-pill">{{ $tag }}</span>
-                @endforeach
-            </div>
-        </div>
-        @endif
-
-        {{-- Loss Reasons --}}
-        @if(!empty($result['loss_reasons']))
-        <div class="result-card">
-            <div class="result-card-header">
-                <div class="result-card-icon reasons"><i class="bi bi-x-circle"></i></div>
-                <div>
-                    <div class="result-card-title">{{ __('onboarding.result_loss_reasons') }}</div>
-                    <div class="result-card-count">{{ count($result['loss_reasons']) }}</div>
-                </div>
-            </div>
-            <div class="result-pills">
-                @foreach(array_slice($result['loss_reasons'], 0, 4) as $reason)
-                <span class="result-pill">{{ $reason }}</span>
-                @endforeach
-            </div>
-        </div>
-        @endif
-    </div>
-
-    <div class="result-cta">
+    {{-- Zona 3 — CTA --}}
+    <div class="cta-section" id="ctaSection">
         <a href="{{ route('dashboard') }}" class="btn-go-crm">
             {{ __('onboarding.result_go_crm') }} <i class="bi bi-arrow-right"></i>
         </a>
+        <p class="cta-hint">{{ __('onboarding.result_hint') }}</p>
     </div>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 0ms — fade in body
+    document.body.classList.add('visible');
+
+    // 150ms — title
+    setTimeout(() => document.getElementById('resultTitle').classList.add('show'), 150);
+
+    // 300ms — subtitle
+    setTimeout(() => document.getElementById('resultSubtitle').classList.add('show'), 300);
+
+    // 500ms — Lottie
+    setTimeout(() => {
+        lottie.loadAnimation({
+            container: document.getElementById('lottieContainer'),
+            renderer: 'svg',
+            loop: false,
+            autoplay: true,
+            path: '{{ asset("images/lotties/check-onboarding.json") }}'
+        });
+    }, 500);
+
+    // 800ms — checklist section
+    setTimeout(() => {
+        document.getElementById('checklistSection').classList.add('show');
+        document.getElementById('checklistBar').style.width = '37.5%'; // 3/8
+    }, 800);
+
+    // 900ms+ — cascade items
+    const items = document.querySelectorAll('.check-item');
+    items.forEach((item, i) => {
+        const delay = 900 + (i * 80);
+        setTimeout(() => item.classList.add('show'), delay);
+    });
+
+    // Animate green checks (done items) — pop effect
+    const doneChecks = [
+        { el: document.getElementById('check1'), delay: 1000 },
+        { el: document.getElementById('check2'), delay: 1200 },
+        { el: document.getElementById('check3'), delay: 1400 },
+    ];
+    doneChecks.forEach(({ el, delay }) => {
+        setTimeout(() => el.classList.add('pop'), delay);
+    });
+
+    // CTA — after checklist finishes animating
+    setTimeout(() => document.getElementById('ctaSection').classList.add('show'), 1800);
+});
+</script>
 </body>
 </html>

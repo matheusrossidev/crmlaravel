@@ -92,7 +92,7 @@ return [
     'team_mid'   => '6 a 15',
     'team_large' => '+15',
 
-    'summary_title' => 'Com base nas suas respostas, a IA vai gerar:',
+    'summary_title' => 'Com base nas suas respostas, vamos gerar:',
     'summary_items' => 'Pipeline personalizado, 2 sequências de nutrição, 3 automações, 5 regras de score, agente de IA configurado e 8 mensagens rápidas.',
 
     'generate_button' => 'Preparar meu CRM',
@@ -123,14 +123,14 @@ return [
 
     // ── Loading page ──
     'loading_title'    => 'Preparando seu CRM...',
-    'loading_subtitle' => 'A IA está analisando seu negócio e criando tudo personalizado.',
+    'loading_subtitle' => 'Estamos configurando tudo com base nas suas respostas.',
 
-    'loading_step_1' => 'Analisando seu negócio e segmento',
+    'loading_step_1' => 'Analisando seu negócio',
     'loading_step_2' => 'Criando pipeline personalizado',
     'loading_step_3' => 'Escrevendo sequências de nutrição',
     'loading_step_4' => 'Configurando automações de follow-up',
     'loading_step_5' => 'Definindo regras de lead scoring',
-    'loading_step_6' => 'Configurando agente de IA',
+    'loading_step_6' => 'Configurando atendimento automático',
     'loading_step_7' => 'Criando mensagens rápidas',
     'loading_step_8' => 'Finalizando configurações',
 
@@ -140,17 +140,26 @@ return [
     'stat_4' => 'Respostas em menos de 5 minutos convertem 21x mais.',
 
     // ── Result page ──
-    'result_title'    => 'Tudo pronto! 🎉',
-    'result_subtitle' => 'Seu CRM foi configurado com inteligência artificial.',
-    'result_go_crm'   => 'Ir para o CRM',
+    'result_title'      => 'Tudo pronto!',
+    'result_title_text' => 'Seu CRM está pronto!',
+    'result_subtitle'   => 'Tudo foi configurado com nosso algoritmo. Agora é com você.',
+    'result_go_crm'     => 'Ir para o CRM',
+    'result_hint'       => 'Você pode ajustar tudo isso depois em Configurações.',
 
-    'result_pipeline'       => 'Pipeline',
-    'result_sequences'      => 'Sequências',
-    'result_automations'    => 'Automações',
-    'result_scoring'        => 'Regras de Score',
-    'result_ai_agent'       => 'Agente de IA',
-    'result_quick_messages' => 'Mensagens Rápidas',
-    'result_tags'           => 'Tags',
-    'result_loss_reasons'   => 'Motivos de Perda',
-    'result_ready'          => 'Pronto para usar',
+    // Checklist
+    'checklist_title'       => 'Por onde começar',
+    'check_account'         => 'Conta criada',
+    'check_crm_configured'  => 'CRM configurado',
+    'check_automations'     => 'Automações e sequências ativadas',
+    'check_whatsapp'        => 'Conectar o WhatsApp',
+    'check_first_lead'      => 'Adicionar o primeiro lead',
+    'check_first_message'   => 'Enviar primeira mensagem',
+    'check_invite'          => 'Convidar um colega de equipe',
+    'check_import'          => 'Importar lista de leads',
+
+    'action_connect'   => 'Conectar',
+    'action_add'       => 'Adicionar',
+    'action_open_chat' => 'Abrir chat',
+    'action_invite'    => 'Convidar',
+    'action_import'    => 'Importar',
 ];
