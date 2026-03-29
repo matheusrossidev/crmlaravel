@@ -27,8 +27,11 @@
         }
 
         /* ── Zona 1: Celebração ── */
+        .result-logo { margin-bottom: 16px; }
+        .result-logo img { height: 30px; }
+
         .lottie-container {
-            width: 200px; height: 200px; margin: 0 auto 8px;
+            width: 120px; height: 120px; margin: 0 auto 8px;
         }
 
         .result-title {
@@ -60,7 +63,8 @@
             font-size: 14px; font-weight: 700; color: #1a1d23;
         }
         .checklist-progress {
-            font-size: 12px; font-weight: 600; color: #0085f3;
+            font-size: 12.5px; font-weight: 700; color: #0085f3;
+            background: #eff6ff; padding: 2px 10px; border-radius: 100px;
         }
         .checklist-bar {
             background: #e8eaf0; border-radius: 100px; height: 5px;
@@ -141,6 +145,11 @@
 </head>
 <body>
 <div class="result-wrap">
+
+    {{-- Logo --}}
+    <div class="result-logo">
+        <img src="{{ asset('images/logo.png') }}" alt="Syncro" onerror="this.style.display='none'">
+    </div>
 
     {{-- Zona 1 — Celebração --}}
     <div class="lottie-container" id="lottieContainer"></div>

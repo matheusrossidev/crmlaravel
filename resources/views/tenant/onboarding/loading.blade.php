@@ -111,7 +111,7 @@
 <body>
 <div class="loading-card">
     <div class="loading-logo">
-        <img src="{{ asset('images/logo-dark.png') }}" alt="Syncro" onerror="this.style.display='none'">
+        <img src="{{ asset('images/logo.png') }}" alt="Syncro" onerror="this.style.display='none'">
     </div>
 
     <h1 class="loading-title">{{ __('onboarding.loading_title') }}</h1>

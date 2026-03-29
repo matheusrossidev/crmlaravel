@@ -146,15 +146,11 @@ class OnboardingController extends Controller
         $tenant = auth()->user()->tenant;
 
         if ($tenant && $tenant->onboarding_completed_at === null) {
-            return redirect()->route('onboarding');
+            return redirect()->route('onboarding.show');
         }
-
-        $cacheKey = "onboarding:result:{$tenant->id}";
-        $result   = Cache::get($cacheKey, []);
 
         return view('tenant.onboarding.result', [
             'tenant' => $tenant,
-            'result' => $result,
         ]);
     }
 }
