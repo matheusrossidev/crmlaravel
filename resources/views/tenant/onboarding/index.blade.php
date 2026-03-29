@@ -384,6 +384,7 @@
         }
 
         @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { animation: spin 1s linear infinite; display: inline-block; }
 
         /* ── Steps ── */
         .onb-step { display: none; }
@@ -565,6 +566,7 @@
                 <div class="onb-dot" data-dot="2"></div>
                 <div class="onb-dot" data-dot="3"></div>
                 <div class="onb-dot" data-dot="4"></div>
+                <div class="onb-dot" data-dot="5"></div>
             </div>
 
             <!-- Error alert -->
@@ -574,7 +576,7 @@
             <!-- STEP 1: Nome da empresa + logo -->
             <!-- ─────────────────────────────────────────────── -->
             <div class="onb-step active fade-in" id="step1">
-                <div class="onb-step-label">{{ __('onboarding.step_1_of_4') }}</div>
+                <div class="onb-step-label">{{ __('onboarding.step_1_of_5') }}</div>
                 <h1 class="onb-title">{{ __('onboarding.step1_title') }}</h1>
                 <p class="onb-subtitle">{{ __('onboarding.step1_subtitle') }}</p>
 
@@ -614,7 +616,7 @@
             <!-- STEP 2: Nicho de mercado -->
             <!-- ─────────────────────────────────────────────── -->
             <div class="onb-step" id="step2">
-                <div class="onb-step-label">{{ __('onboarding.step_2_of_4') }}</div>
+                <div class="onb-step-label">{{ __('onboarding.step_2_of_5') }}</div>
                 <h1 class="onb-title">{{ __('onboarding.step2_title') }}</h1>
                 <p class="onb-subtitle">{{ __('onboarding.step2_subtitle') }}</p>
 
@@ -701,26 +703,60 @@
             </div>
 
             <!-- ─────────────────────────────────────────────── -->
-            <!-- STEP 3: Foto de perfil -->
+            <!-- STEP 3: Canais de entrada -->
             <!-- ─────────────────────────────────────────────── -->
             <div class="onb-step" id="step3">
-                <div class="onb-step-label">{{ __('onboarding.step_3_of_4') }}</div>
-                <h1 class="onb-title">{{ __('onboarding.step3_title') }}</h1>
-                <p class="onb-subtitle">{{ __('onboarding.step3_subtitle') }}</p>
+                <div class="onb-step-label">{{ __('onboarding.step_3_of_5') }}</div>
+                <h1 class="onb-title">{{ __('onboarding.step2_title') }}</h1>
+                <p class="onb-subtitle">{{ __('onboarding.step2_subtitle') }}</p>
 
-                <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
-                    <div class="upload-zone" id="avatarZone" style="width:160px;height:160px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;">
-                        <input type="file" id="avatarInput" accept="image/*" onchange="handleAvatarUpload(this)" style="border-radius:50%;">
-                        <img id="avatarPreview" class="upload-preview avatar-preview" alt="Preview" style="width:100%;height:100%;border-radius:50%;display:none;">
-                        <div id="avatarPlaceholder" style="text-align:center;padding:16px;">
-                            <div style="font-size:40px;color:#9CA3AF;margin-bottom:4px;"><i class="bi bi-person-circle"></i></div>
-                            @php
-                                $avatarParts = explode('|', __('onboarding.avatar_click'));
-                            @endphp
-                            <p style="font-size:12px;color:#9CA3AF;">{{ $avatarParts[0] }}<br>{{ $avatarParts[1] ?? '' }}</p>
+                <div class="niche-grid" id="channelsGrid">
+                    <div class="niche-card" data-channel="whatsapp" onclick="toggleChannel(this)">
+                        <div class="niche-card-icon" style="color:#25D366;"><i class="bi bi-whatsapp"></i></div>
+                        <div class="niche-card-body">
+                            <div class="niche-card-name">{{ __('onboarding.channel_whatsapp') }}</div>
                         </div>
+                        <div class="niche-check"><i class="bi bi-check"></i></div>
                     </div>
-                    <p style="font-size:13px;color:#6B7280;text-align:center;">{{ __('onboarding.avatar_hint') }}</p>
+                    <div class="niche-card" data-channel="instagram" onclick="toggleChannel(this)">
+                        <div class="niche-card-icon" style="color:#E1306C;"><i class="bi bi-instagram"></i></div>
+                        <div class="niche-card-body">
+                            <div class="niche-card-name">{{ __('onboarding.channel_instagram') }}</div>
+                        </div>
+                        <div class="niche-check"><i class="bi bi-check"></i></div>
+                    </div>
+                    <div class="niche-card" data-channel="facebook_ads" onclick="toggleChannel(this)">
+                        <div class="niche-card-icon" style="color:#1877F2;"><i class="bi bi-facebook"></i></div>
+                        <div class="niche-card-body">
+                            <div class="niche-card-name">{{ __('onboarding.channel_facebook_ads') }}</div>
+                        </div>
+                        <div class="niche-check"><i class="bi bi-check"></i></div>
+                    </div>
+                    <div class="niche-card" data-channel="google_ads" onclick="toggleChannel(this)">
+                        <div class="niche-card-icon" style="color:#EA4335;"><i class="bi bi-google"></i></div>
+                        <div class="niche-card-body">
+                            <div class="niche-card-name">{{ __('onboarding.channel_google_ads') }}</div>
+                        </div>
+                        <div class="niche-check"><i class="bi bi-check"></i></div>
+                    </div>
+                    <div class="niche-card" data-channel="site" onclick="toggleChannel(this)">
+                        <div class="niche-card-icon"><i class="bi bi-globe"></i></div>
+                        <div class="niche-card-body">
+                            <div class="niche-card-name">{{ __('onboarding.channel_site') }}</div>
+                        </div>
+                        <div class="niche-check"><i class="bi bi-check"></i></div>
+                    </div>
+                    <div class="niche-card" data-channel="indicacao" onclick="toggleChannel(this)">
+                        <div class="niche-card-icon"><i class="bi bi-people"></i></div>
+                        <div class="niche-card-body">
+                            <div class="niche-card-name">{{ __('onboarding.channel_indicacao') }}</div>
+                        </div>
+                        <div class="niche-check"><i class="bi bi-check"></i></div>
+                    </div>
+                </div>
+
+                <div id="channelWarning" style="display:none;background:#FEF3C7;border:1px solid #FDE68A;border-radius:10px;padding:10px 14px;font-size:13px;color:#92400E;margin-top:12px;">
+                    <i class="bi bi-exclamation-triangle" style="margin-right:4px;"></i> {{ __('onboarding.channel_warning_no_whatsapp') }}
                 </div>
 
                 <div class="onb-nav">
@@ -732,34 +768,111 @@
             </div>
 
             <!-- ─────────────────────────────────────────────── -->
-            <!-- STEP 4: Preview e finalizar -->
+            <!-- STEP 4: Maior dificuldade -->
             <!-- ─────────────────────────────────────────────── -->
             <div class="onb-step" id="step4">
-                <div class="onb-step-label">{{ __('onboarding.step_4_of_4') }}</div>
+                <div class="onb-step-label">{{ __('onboarding.step_4_of_5') }}</div>
                 <h1 class="onb-title">{{ __('onboarding.step4_title') }}</h1>
                 <p class="onb-subtitle">{{ __('onboarding.step4_subtitle') }}</p>
 
-                <div class="preview-block">
-                    <div class="preview-block-title"><i class="bi bi-funnel" style="margin-right:6px;color:#3B82F6;"></i>{{ __('onboarding.preview_pipeline') }}</div>
-                    <div id="previewPipelineName" style="font-size:14px;font-weight:600;color:#111827;margin-bottom:10px;"></div>
-                    <div class="preview-stages" id="previewStages"></div>
+                <div style="display:flex;flex-direction:column;gap:10px;" id="difficultyGrid">
+                    <div class="niche-card" data-difficulty="followup" onclick="toggleDifficulty(this)" style="width:100%;">
+                        <div class="niche-card-icon"><i class="bi bi-alarm"></i></div>
+                        <div class="niche-card-body">
+                            <div class="niche-card-name">{{ __('onboarding.difficulty_followup') }}</div>
+                        </div>
+                        <div class="niche-check"><i class="bi bi-check"></i></div>
+                    </div>
+                    <div class="niche-card" data-difficulty="disappear" onclick="toggleDifficulty(this)" style="width:100%;">
+                        <div class="niche-card-icon"><i class="bi bi-person-dash"></i></div>
+                        <div class="niche-card-body">
+                            <div class="niche-card-name">{{ __('onboarding.difficulty_disappear') }}</div>
+                        </div>
+                        <div class="niche-check"><i class="bi bi-check"></i></div>
+                    </div>
+                    <div class="niche-card" data-difficulty="priority" onclick="toggleDifficulty(this)" style="width:100%;">
+                        <div class="niche-card-icon"><i class="bi bi-sort-down"></i></div>
+                        <div class="niche-card-body">
+                            <div class="niche-card-name">{{ __('onboarding.difficulty_priority') }}</div>
+                        </div>
+                        <div class="niche-check"><i class="bi bi-check"></i></div>
+                    </div>
+                    <div class="niche-card" data-difficulty="slow" onclick="toggleDifficulty(this)" style="width:100%;">
+                        <div class="niche-card-icon"><i class="bi bi-hourglass-split"></i></div>
+                        <div class="niche-card-body">
+                            <div class="niche-card-name">{{ __('onboarding.difficulty_slow') }}</div>
+                        </div>
+                        <div class="niche-check"><i class="bi bi-check"></i></div>
+                    </div>
+                    <div class="niche-card" data-difficulty="team" onclick="toggleDifficulty(this)" style="width:100%;">
+                        <div class="niche-card-icon"><i class="bi bi-people"></i></div>
+                        <div class="niche-card-body">
+                            <div class="niche-card-name">{{ __('onboarding.difficulty_team') }}</div>
+                        </div>
+                        <div class="niche-check"><i class="bi bi-check"></i></div>
+                    </div>
                 </div>
 
-                <div class="preview-block">
-                    <div class="preview-block-title"><i class="bi bi-tags" style="margin-right:6px;color:#3B82F6;"></i>{{ __('onboarding.preview_tags') }}</div>
-                    <div class="preview-tags" id="previewTags"></div>
+                <div class="onb-nav">
+                    <button class="btn-back" onclick="goBack()"><i class="bi bi-arrow-left"></i> {{ __('onboarding.back') }}</button>
+                    <button class="btn-next" onclick="goNext()">
+                        {{ __('onboarding.continue') }} <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ─────────────────────────────────────────────── -->
+            <!-- STEP 5: Equipe + Resumo + Gerar -->
+            <!-- ─────────────────────────────────────────────── -->
+            <div class="onb-step" id="step5">
+                <div class="onb-step-label">{{ __('onboarding.step_5_of_5') }}</div>
+                <h1 class="onb-title">{{ __('onboarding.step5_title') }}</h1>
+                <p class="onb-subtitle">{{ __('onboarding.step5_subtitle') }}</p>
+
+                <div class="niche-grid" id="teamGrid">
+                    <div class="niche-card" data-team="solo" onclick="selectTeam(this)">
+                        <div class="niche-card-icon"><i class="bi bi-person"></i></div>
+                        <div class="niche-card-body">
+                            <div class="niche-card-name">{{ __('onboarding.team_solo') }}</div>
+                        </div>
+                        <div class="niche-check"><i class="bi bi-check"></i></div>
+                    </div>
+                    <div class="niche-card" data-team="small" onclick="selectTeam(this)">
+                        <div class="niche-card-icon"><i class="bi bi-people"></i></div>
+                        <div class="niche-card-body">
+                            <div class="niche-card-name">{{ __('onboarding.team_small') }}</div>
+                        </div>
+                        <div class="niche-check"><i class="bi bi-check"></i></div>
+                    </div>
+                    <div class="niche-card" data-team="mid" onclick="selectTeam(this)">
+                        <div class="niche-card-icon"><i class="bi bi-people-fill"></i></div>
+                        <div class="niche-card-body">
+                            <div class="niche-card-name">{{ __('onboarding.team_mid') }}</div>
+                        </div>
+                        <div class="niche-check"><i class="bi bi-check"></i></div>
+                    </div>
+                    <div class="niche-card" data-team="large" onclick="selectTeam(this)">
+                        <div class="niche-card-icon"><i class="bi bi-building"></i></div>
+                        <div class="niche-card-body">
+                            <div class="niche-card-name">{{ __('onboarding.team_large') }}</div>
+                        </div>
+                        <div class="niche-check"><i class="bi bi-check"></i></div>
+                    </div>
                 </div>
 
-                <div class="preview-block">
-                    <div class="preview-block-title"><i class="bi bi-x-circle" style="margin-right:6px;color:#3B82F6;"></i>{{ __('onboarding.preview_loss_reasons') }}</div>
-                    <div id="previewLossReasons" style="display:flex;flex-direction:column;gap:4px;"></div>
+                {{-- Summary box --}}
+                <div style="background:#F0F7FF;border:1.5px solid #BFDBFE;border-radius:12px;padding:16px 18px;margin-top:20px;">
+                    <div style="font-size:13px;font-weight:600;color:#1a1d23;margin-bottom:6px;">
+                        <i class="bi bi-stars" style="color:#0085f3;margin-right:4px;"></i> {{ __('onboarding.summary_title') }}
+                    </div>
+                    <p style="font-size:13px;color:#374151;line-height:1.6;margin:0;">{{ __('onboarding.summary_items') }}</p>
                 </div>
 
                 <div class="onb-nav">
                     <button class="btn-back" onclick="goBack()"><i class="bi bi-arrow-left"></i> {{ __('onboarding.back') }}</button>
                     <button class="btn-next" id="btnFinish" onclick="submitOnboarding()">
                         <span class="spinner" id="submitSpinner"></span>
-                        <span id="btnFinishText">{{ __('onboarding.finish_button') }} <i class="bi bi-rocket-takeoff"></i></span>
+                        <span id="btnFinishText">{{ __('onboarding.generate_button') }} <i class="bi bi-arrow-right"></i></span>
                     </button>
                 </div>
             </div>
@@ -903,11 +1016,37 @@ const NICHE_DATA = {
     },
 };
 
-let currentStep    = 1;
-const totalSteps   = 4;
-let selectedNiche  = null;
-let logoFile       = null;
-let avatarFile     = null;
+let currentStep      = 1;
+const totalSteps     = 5;
+let selectedNiche    = null;
+let logoFile         = null;
+let selectedChannels    = [];
+let selectedDifficulties = [];
+let selectedTeam        = null;
+
+function toggleChannel(card) {
+    card.classList.toggle('selected');
+    selectedChannels = [];
+    document.querySelectorAll('#channelsGrid .niche-card.selected').forEach(c => {
+        selectedChannels.push(c.dataset.channel);
+    });
+    const warn = document.getElementById('channelWarning');
+    warn.style.display = selectedChannels.length > 0 && !selectedChannels.includes('whatsapp') ? '' : 'none';
+}
+
+function toggleDifficulty(card) {
+    card.classList.toggle('selected');
+    selectedDifficulties = [];
+    document.querySelectorAll('#difficultyGrid .niche-card.selected').forEach(c => {
+        selectedDifficulties.push(c.dataset.difficulty);
+    });
+}
+
+function selectTeam(card) {
+    selectedTeam = card.dataset.team;
+    document.querySelectorAll('#teamGrid .niche-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+}
 
 function goNext() {
     hideError();
@@ -926,7 +1065,20 @@ function goNext() {
             showError(OBLANG.error_select_niche);
             return;
         }
-        buildPreview(selectedNiche);
+    }
+
+    if (currentStep === 3) {
+        if (selectedChannels.length === 0) {
+            showError(OBLANG.error_select_channel || 'Selecione pelo menos um canal.');
+            return;
+        }
+    }
+
+    if (currentStep === 4) {
+        if (selectedDifficulties.length === 0) {
+            showError(OBLANG.error_difficulty || 'Selecione pelo menos uma dificuldade.');
+            return;
+        }
     }
 
     if (currentStep >= totalSteps) return;
@@ -962,7 +1114,7 @@ function updateDots() {
 
 function selectNiche(key) {
     selectedNiche = key;
-    document.querySelectorAll('.niche-card').forEach(card => {
+    document.querySelectorAll('.niche-card[data-niche]').forEach(card => {
         card.classList.toggle('selected', card.dataset.niche === key);
     });
 }
@@ -980,69 +1132,55 @@ function handleLogoUpload(input) {
     reader.readAsDataURL(logoFile);
 }
 
-function handleAvatarUpload(input) {
-    if (!input.files[0]) return;
-    avatarFile = input.files[0];
-    const reader = new FileReader();
-    reader.onload = e => {
-        const preview = document.getElementById('avatarPreview');
-        preview.src = e.target.result;
-        preview.style.display = 'block';
-        document.getElementById('avatarPlaceholder').style.display = 'none';
-    };
-    reader.readAsDataURL(avatarFile);
-}
-
-function buildPreview(niche) {
-    const data = NICHE_DATA[niche] || NICHE_DATA['outro'];
-
-    document.getElementById('previewPipelineName').textContent = data.pipeline_name;
-
-    const stagesEl = document.getElementById('previewStages');
-    stagesEl.innerHTML = data.stages.map(s =>
-        `<div class="preview-stage">
-            <span class="preview-stage-dot" style="background:${s.color}"></span>
-            <span>${s.name}</span>
-        </div>`
-    ).join('');
-
-    const tagsEl = document.getElementById('previewTags');
-    tagsEl.innerHTML = data.tags.map(t =>
-        `<span class="preview-tag">${t}</span>`
-    ).join('');
-
-    const lossEl = document.getElementById('previewLossReasons');
-    lossEl.innerHTML = data.loss_reasons.map(r =>
-        `<div style="font-size:13px;color:#6B7280;display:flex;align-items:center;gap:6px;">
-            <i class="bi bi-dash" style="color:#D1D5DB;"></i>${r}
-        </div>`
-    ).join('');
-}
-
 async function submitOnboarding() {
+    if (!selectedTeam) {
+        showError(OBLANG.error_team_size || 'Selecione o tamanho da equipe.');
+        return;
+    }
+
+    // Save answers to sessionStorage and redirect to loading page
+    const answers = {
+        company_name: document.getElementById('companyName').value.trim(),
+        niche: selectedNiche || 'outro',
+        channels: selectedChannels,
+        sales_process: selectedNiche || 'outro',
+        difficulty: selectedDifficulties.join(',') || 'followup',
+        team_size: selectedTeam || 'solo',
+    };
+    sessionStorage.setItem('onboarding_answers', JSON.stringify(answers));
+    if (logoFile) {
+        // Can't store file in sessionStorage, upload separately
+        sessionStorage.setItem('onboarding_has_logo', '1');
+    }
+
+    // Redirect to full-screen loading page
+    window.location.href = '{{ route("onboarding.loading") }}';
+    return;
+
     const btn     = document.getElementById('btnFinish');
     const spinner = document.getElementById('submitSpinner');
     const btnText = document.getElementById('btnFinishText');
-
     const resetBtn = () => {
         btn.disabled          = false;
         spinner.style.display = 'none';
         btnText.style.display = '';
     };
-
     btn.disabled          = true;
     spinner.style.display = 'block';
     btnText.style.display = 'none';
 
     try {
         const formData = new FormData();
-        formData.append('_token',       document.querySelector('meta[name="csrf-token"]').content);
-        formData.append('company_name', document.getElementById('companyName').value.trim());
-        formData.append('niche',        selectedNiche || 'outro');
-        if (logoFile)   formData.append('logo',   logoFile);
-        if (avatarFile) formData.append('avatar', avatarFile);
+        formData.append('_token',         document.querySelector('meta[name="csrf-token"]').content);
+        formData.append('company_name',   document.getElementById('companyName').value.trim());
+        formData.append('niche',          selectedNiche || 'outro');
+        formData.append('sales_process',  selectedNiche || 'outro');
+        formData.append('difficulty',     selectedDifficulties.join(',') || 'followup');
+        formData.append('team_size',      selectedTeam || 'solo');
+        selectedChannels.forEach(ch => formData.append('channels[]', ch));
+        if (logoFile) formData.append('logo', logoFile);
 
-        const resp = await fetch('{{ route('onboarding.complete') }}', {
+        const resp = await fetch('{{ route('onboarding.generate') }}', {
             method:  'POST',
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             body:    formData,
@@ -1063,7 +1201,7 @@ async function submitOnboarding() {
         }
 
         if (json.success) {
-            window.location.href = json.redirect;
+            window.location.href = json.redirect || '{{ route('onboarding.loading') }}';
         } else {
             const msgs = json.errors
                 ? Object.values(json.errors).flat().join(' ')

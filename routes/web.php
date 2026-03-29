@@ -109,9 +109,12 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
     // Help assistant (Sophia)
     Route::post('help-chat', [HelpChatController::class, 'chat'])->name('help.chat');
 
-    Route::get('onboarding',           [OnboardingController::class, 'show'])->name('onboarding.show');
-    Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
-    Route::post('onboarding/skip',     [OnboardingController::class, 'skip'])->name('onboarding.skip');
+    Route::get('onboarding',             [OnboardingController::class, 'show'])->name('onboarding.show');
+    Route::post('onboarding/generate',  [OnboardingController::class, 'generate'])->name('onboarding.generate');
+    Route::get('onboarding/loading',    [OnboardingController::class, 'loading'])->name('onboarding.loading');
+    Route::get('onboarding/progress',   [OnboardingController::class, 'progress'])->name('onboarding.progress');
+    Route::get('onboarding/result',     [OnboardingController::class, 'result'])->name('onboarding.result');
+    Route::post('onboarding/skip',      [OnboardingController::class, 'skip'])->name('onboarding.skip');
 
     // Cobrança / Checkout (admin only)
     Route::get('cobranca/checkout', [BillingController::class, 'showCheckout'])->name('billing.checkout');

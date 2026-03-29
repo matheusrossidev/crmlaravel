@@ -5,14 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
-use App\Models\LostSaleReason;
-use App\Models\Pipeline;
-use App\Models\PipelineStage;
-use App\Models\Tenant;
-use App\Models\WhatsappTag;
+use App\Jobs\GenerateCRMFromAI;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -43,214 +40,121 @@ class OnboardingController extends Controller
         return redirect()->route('dashboard');
     }
 
-    public function complete(Request $request): JsonResponse
+    /**
+     * Receive wizard answers and dispatch AI generation job.
+     */
+    public function generate(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'company_name' => 'required|string|max:150',
-            'niche'        => 'required|string|max:80',
-            'logo'         => 'nullable|image|max:10240',
-            'avatar'       => 'nullable|image|max:10240',
+            'company_name'  => 'required|string|max:150',
+            'niche'         => 'required|string|max:50',
+            'channels'      => 'required|array|min:1',
+            'channels.*'    => 'string|max:30',
+            'sales_process' => 'required|string|max:500',
+            'difficulty'    => 'required|string|max:50',
+            'team_size'     => 'required|string|max:20',
         ]);
 
         $user   = auth()->user();
         $tenant = $user->tenant;
 
-        try {
-            // 1. Atualizar nome da empresa
-            $tenant->update(['name' => $data['company_name']]);
-
-            // 2. Upload logo
-            if ($request->hasFile('logo')) {
-                $file     = $request->file('logo');
-                $filename = $tenant->id . '.' . $file->extension();
-                Storage::disk('public')->putFileAs('workspace-logos', $file, $filename);
-                $tenant->update(['logo' => Storage::disk('public')->url('workspace-logos/' . $filename)]);
-            }
-
-            // 3. Upload avatar do usuário
-            if ($request->hasFile('avatar')) {
-                $file     = $request->file('avatar');
-                $filename = $user->id . '.' . $file->extension();
-                Storage::disk('public')->putFileAs('avatars', $file, $filename);
-                $user->update(['avatar' => Storage::disk('public')->url('avatars/' . $filename)]);
-            }
-
-            // 4. Criar pipeline + etapas + tags + motivos com base no nicho
-            $this->seedNicheData($tenant, $data['niche']);
-
-            // 5. Marcar onboarding como concluído
-            $tenant->update(['onboarding_completed_at' => now()]);
-
-        } catch (\Throwable $e) {
-            \Log::error('OnboardingController::complete falhou', [
-                'tenant_id' => $tenant->id,
-                'niche'     => $data['niche'],
-                'error'     => $e->getMessage(),
-                'trace'     => $e->getTraceAsString(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao salvar: ' . $e->getMessage(),
-            ], 500);
+        // Upload logo if present
+        if ($request->hasFile('logo')) {
+            $file     = $request->file('logo');
+            $filename = $tenant->id . '.' . $file->extension();
+            Storage::disk('public')->putFileAs('workspace-logos', $file, $filename);
+            $tenant->update(['logo' => Storage::disk('public')->url('workspace-logos/' . $filename)]);
         }
 
-        return response()->json(['success' => true, 'redirect' => route('dashboard')]);
+        // Update company name
+        $tenant->update(['name' => $data['company_name']]);
+
+        // Store answers for the AI job
+        $answers = [
+            'niche'         => $data['niche'],
+            'channels'      => $data['channels'],
+            'sales_process' => $data['sales_process'],
+            'difficulty'    => $data['difficulty'],
+            'team_size'     => $data['team_size'],
+            'locale'        => $tenant->locale ?? 'pt_BR',
+        ];
+
+        // Reset progress cache
+        $cacheKey = "onboarding:progress:{$tenant->id}";
+        Cache::put($cacheKey, [
+            'status'    => 'processing',
+            'completed' => [],
+            'total'     => 8,
+            'error'     => null,
+        ], 600);
+
+        // Dispatch AI generation job
+        $ranSync = false;
+        try {
+            GenerateCRMFromAI::dispatch($tenant, $answers);
+        } catch (\Throwable) {
+            // Redis not available (local dev) — run synchronously
+            GenerateCRMFromAI::dispatchSync($tenant, $answers);
+            $ranSync = true;
+        }
+
+        return response()->json([
+            'success'  => true,
+            'redirect' => $ranSync ? route('onboarding.result') : route('onboarding.loading'),
+        ]);
     }
 
-    private function seedNicheData(Tenant $tenant, string $niche): void
+    /**
+     * Loading page — shows progress while AI generates.
+     */
+    public function loading(): View|RedirectResponse
     {
-        $templates = $this->getNicheTemplates();
-        $template  = $templates[$niche] ?? $templates['outro'];
+        $tenant = auth()->user()->tenant;
 
-        // Pipeline com etapas
-        $pipeline = Pipeline::create([
-            'tenant_id'  => $tenant->id,
-            'name'       => $template['pipeline_name'],
-            'color'      => '#3B82F6',
-            'is_default' => true,
-            'sort_order' => 1,
+        if ($tenant && $tenant->onboarding_completed_at !== null) {
+            return redirect()->route('dashboard');
+        }
+
+        return view('tenant.onboarding.loading', [
+            'tenant' => $tenant,
+        ]);
+    }
+
+    /**
+     * Poll progress from cache (called by JS on loading page).
+     */
+    public function progress(): JsonResponse
+    {
+        $tenant   = auth()->user()->tenant;
+        $cacheKey = "onboarding:progress:{$tenant->id}";
+
+        $progress = Cache::get($cacheKey, [
+            'status'    => 'pending',
+            'completed' => [],
+            'total'     => 8,
+            'error'     => null,
         ]);
 
-        foreach ($template['stages'] as $i => $stage) {
-            PipelineStage::create([
-                'pipeline_id' => $pipeline->id,
-                'name'        => $stage['name'],
-                'color'       => $stage['color'],
-                'position'    => $i + 1,
-                'is_won'      => $stage['is_won']  ?? false,
-                'is_lost'     => $stage['is_lost'] ?? false,
-            ]);
-        }
-
-        // Tags WhatsApp
-        $tagColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
-        foreach ($template['tags'] as $i => $tagName) {
-            WhatsappTag::create([
-                'tenant_id'  => $tenant->id,
-                'name'       => $tagName,
-                'color'      => $tagColors[$i % count($tagColors)],
-                'sort_order' => $i + 1,
-            ]);
-        }
-
-        // Motivos de perda
-        foreach ($template['loss_reasons'] as $i => $reason) {
-            LostSaleReason::create([
-                'tenant_id'  => $tenant->id,
-                'name'       => $reason,
-                'sort_order' => $i + 1,
-                'is_active'  => true,
-            ]);
-        }
+        return response()->json($progress);
     }
 
-    private function getNicheTemplates(): array
+    /**
+     * Result page — shows what was generated.
+     */
+    public function result(): View|RedirectResponse
     {
-        return [
-            'imobiliario' => [
-                'pipeline_name' => 'Funil Imobiliário',
-                'stages'        => [
-                    ['name' => 'Novo Lead',        'color' => '#6B7280'],
-                    ['name' => 'Visita Agendada',  'color' => '#3B82F6'],
-                    ['name' => 'Proposta Enviada', 'color' => '#F59E0B'],
-                    ['name' => 'Negociação',       'color' => '#8B5CF6'],
-                    ['name' => 'Fechado',          'color' => '#10B981', 'is_won'  => true],
-                    ['name' => 'Perdido',          'color' => '#EF4444', 'is_lost' => true],
-                ],
-                'tags'         => ['Comprador', 'Locatário', 'Investidor', 'Urgente', 'Alto Padrão'],
-                'loss_reasons' => ['Preço alto', 'Não encontrou o imóvel ideal', 'Financiamento negado', 'Comprou com outro corretor', 'Sem interesse'],
-            ],
-            'estetica' => [
-                'pipeline_name' => 'Agendamentos',
-                'stages'        => [
-                    ['name' => 'Lead Novo',          'color' => '#6B7280'],
-                    ['name' => 'Consulta Agendada',  'color' => '#3B82F6'],
-                    ['name' => 'Consulta Realizada', 'color' => '#F59E0B'],
-                    ['name' => 'Proposta Enviada',   'color' => '#8B5CF6'],
-                    ['name' => 'Fechado',            'color' => '#10B981', 'is_won'  => true],
-                    ['name' => 'Perdido',            'color' => '#EF4444', 'is_lost' => true],
-                ],
-                'tags'         => ['Facial', 'Corporal', 'Capilar', 'Retorno', 'Novo Cliente'],
-                'loss_reasons' => ['Preço alto', 'Sem tempo', 'Optou por outra clínica', 'Não respondeu', 'Mudou de ideia'],
-            ],
-            'educacao' => [
-                'pipeline_name' => 'Matrículas',
-                'stages'        => [
-                    ['name' => 'Interessado',        'color' => '#6B7280'],
-                    ['name' => 'Apresentação Feita', 'color' => '#3B82F6'],
-                    ['name' => 'Proposta Enviada',   'color' => '#F59E0B'],
-                    ['name' => 'Matriculado',        'color' => '#10B981', 'is_won'  => true],
-                    ['name' => 'Desistiu',           'color' => '#EF4444', 'is_lost' => true],
-                ],
-                'tags'         => ['Curso Online', 'Presencial', 'Bolsa', 'Graduação', 'Pós-Graduação'],
-                'loss_reasons' => ['Preço alto', 'Sem tempo', 'Optou por outro curso', 'Não respondeu', 'Não passou no processo'],
-            ],
-            'saude' => [
-                'pipeline_name' => 'Pacientes',
-                'stages'        => [
-                    ['name' => 'Primeiro Contato',       'color' => '#6B7280'],
-                    ['name' => 'Consulta Agendada',      'color' => '#3B82F6'],
-                    ['name' => 'Avaliação Realizada',    'color' => '#F59E0B'],
-                    ['name' => 'Proposta de Tratamento', 'color' => '#8B5CF6'],
-                    ['name' => 'Em Tratamento',          'color' => '#10B981', 'is_won'  => true],
-                    ['name' => 'Perdido',                'color' => '#EF4444', 'is_lost' => true],
-                ],
-                'tags'         => ['Plano de Saúde', 'Particular', 'Urgente', 'Retorno', 'Novo Paciente'],
-                'loss_reasons' => ['Plano não aceito', 'Preço alto', 'Optou por outra clínica', 'Não respondeu', 'Falta de transporte'],
-            ],
-            'varejo' => [
-                'pipeline_name' => 'Vendas',
-                'stages'        => [
-                    ['name' => 'Carrinho Abandonado',  'color' => '#6B7280'],
-                    ['name' => 'Interesse Confirmado', 'color' => '#3B82F6'],
-                    ['name' => 'Pedido Realizado',     'color' => '#F59E0B'],
-                    ['name' => 'Em Processamento',     'color' => '#8B5CF6'],
-                    ['name' => 'Entregue',             'color' => '#10B981', 'is_won'  => true],
-                    ['name' => 'Devolvido',            'color' => '#EF4444', 'is_lost' => true],
-                ],
-                'tags'         => ['Cliente Novo', 'Recorrente', 'VIP', 'Atacado', 'Promoção'],
-                'loss_reasons' => ['Preço alto', 'Frete caro', 'Produto indisponível', 'Optou por concorrente', 'Desistiu no checkout'],
-            ],
-            'b2b' => [
-                'pipeline_name' => 'Oportunidades B2B',
-                'stages'        => [
-                    ['name' => 'Prospecção',   'color' => '#6B7280'],
-                    ['name' => 'Qualificação', 'color' => '#3B82F6'],
-                    ['name' => 'Proposta',     'color' => '#F59E0B'],
-                    ['name' => 'Negociação',   'color' => '#8B5CF6'],
-                    ['name' => 'Fechado',      'color' => '#10B981', 'is_won'  => true],
-                    ['name' => 'Perdido',      'color' => '#EF4444', 'is_lost' => true],
-                ],
-                'tags'         => ['Pequena Empresa', 'Média Empresa', 'Grande Empresa', 'Urgente', 'Parceria'],
-                'loss_reasons' => ['Preço alto', 'Sem orçamento', 'Optou por concorrente', 'Projeto cancelado', 'Timing errado'],
-            ],
-            'tecnologia' => [
-                'pipeline_name' => 'Demo e Vendas SaaS',
-                'stages'        => [
-                    ['name' => 'Lead Novo',      'color' => '#6B7280'],
-                    ['name' => 'Demo Agendada',  'color' => '#3B82F6'],
-                    ['name' => 'Demo Realizada', 'color' => '#F59E0B'],
-                    ['name' => 'Trial Ativo',    'color' => '#8B5CF6'],
-                    ['name' => 'Fechado',        'color' => '#10B981', 'is_won'  => true],
-                    ['name' => 'Churned',        'color' => '#EF4444', 'is_lost' => true],
-                ],
-                'tags'         => ['Startup', 'Corporativo', 'Trial', 'Demo Solicitada', 'Enterprise'],
-                'loss_reasons' => ['Sem budget', 'Optou por concorrente', 'Feature não disponível', 'Projeto pausado', 'Saiu do trial sem converter'],
-            ],
-            'outro' => [
-                'pipeline_name' => 'Funil de Vendas',
-                'stages'        => [
-                    ['name' => 'Novo Lead',        'color' => '#6B7280'],
-                    ['name' => 'Em Contato',       'color' => '#3B82F6'],
-                    ['name' => 'Proposta Enviada', 'color' => '#F59E0B'],
-                    ['name' => 'Negociação',       'color' => '#8B5CF6'],
-                    ['name' => 'Fechado',          'color' => '#10B981', 'is_won'  => true],
-                    ['name' => 'Perdido',          'color' => '#EF4444', 'is_lost' => true],
-                ],
-                'tags'         => ['Quente', 'Morno', 'Frio', 'Prioritário', 'Retorno'],
-                'loss_reasons' => ['Preço alto', 'Sem interesse', 'Sem retorno', 'Optou por concorrente', 'Timing errado'],
-            ],
-        ];
+        $tenant = auth()->user()->tenant;
+
+        if ($tenant && $tenant->onboarding_completed_at === null) {
+            return redirect()->route('onboarding');
+        }
+
+        $cacheKey = "onboarding:result:{$tenant->id}";
+        $result   = Cache::get($cacheKey, []);
+
+        return view('tenant.onboarding.result', [
+            'tenant' => $tenant,
+            'result' => $result,
+        ]);
     }
 }
