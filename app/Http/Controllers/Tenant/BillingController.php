@@ -90,12 +90,19 @@ class BillingController extends Controller
         ));
     }
 
-    public function showCheckout(): View|RedirectResponse
+    public function showCheckout(Request $request): View|RedirectResponse
     {
         $tenant = activeTenant();
 
         if ($tenant->hasActiveSubscription()) {
             return redirect()->route('dashboard');
+        }
+
+        // Auto-correct billing_provider based on locale (only if no active subscription)
+        $expectedProvider = ($tenant->locale ?? 'pt_BR') === 'en' ? 'stripe' : 'asaas';
+        if (($tenant->billing_provider ?? 'asaas') !== $expectedProvider
+            && !$tenant->asaas_subscription_id && !$tenant->stripe_subscription_id) {
+            $tenant->update(['billing_provider' => $expectedProvider]);
         }
 
         $plan = PlanDefinition::where('name', $tenant->plan)->first();
@@ -112,7 +119,12 @@ class BillingController extends Controller
                 ->get();
         }
 
-        return view('tenant.billing.checkout', compact('tenant', 'plan', 'plans'));
+        // Pre-selected plan from billing page (skip plan selection step)
+        $preSelectedPlan = $request->query('plan')
+            ? $plans->firstWhere('name', $request->query('plan'))
+            : null;
+
+        return view('tenant.billing.checkout', compact('tenant', 'plan', 'plans', 'preSelectedPlan'));
     }
 
     public function subscribe(Request $request): JsonResponse

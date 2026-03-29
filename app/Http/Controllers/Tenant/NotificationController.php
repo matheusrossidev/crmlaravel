@@ -44,4 +44,30 @@ class NotificationController extends Controller
 
         return response()->json(['count' => $count]);
     }
+
+    public function recent(): JsonResponse
+    {
+        $user = auth()->user();
+
+        $notifications = $user->notifications()
+            ->latest()
+            ->limit(15)
+            ->get()
+            ->map(fn ($n) => [
+                'id'        => $n->id,
+                'type'      => $n->data['notification_type'] ?? 'system',
+                'title'     => $n->data['title'] ?? '',
+                'body'      => $n->data['body'] ?? '',
+                'url'       => $n->data['url'] ?? null,
+                'read'      => $n->read_at !== null,
+                'created_at' => $n->created_at->diffForHumans(),
+            ]);
+
+        $unreadCount = $user->unreadNotifications()->count();
+
+        return response()->json([
+            'notifications' => $notifications,
+            'unread_count'  => $unreadCount,
+        ]);
+    }
 }

@@ -407,6 +407,17 @@ class WhatsappController extends Controller
         $userId = $request->input('user_id');
         $conversation->update(['assigned_user_id' => $userId ?: null]);
 
+        // Notificação: conversa atribuída
+        if ($userId && (int) $userId !== auth()->id()) {
+            try {
+                (new \App\Services\NotificationDispatcher())->dispatch('whatsapp_assigned', [
+                    'contact_name' => $conversation->contact_name ?? $conversation->phone,
+                    'assigned_by'  => auth()->user()->name,
+                    'url'          => route('chats.index') . '?open=' . $conversation->id,
+                ], activeTenantId(), targetUserId: (int) $userId);
+            } catch (\Throwable) {}
+        }
+
         return response()->json(['success' => true]);
     }
 

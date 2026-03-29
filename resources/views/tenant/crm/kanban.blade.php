@@ -255,6 +255,15 @@
         color: #9ca3af;
     }
 
+    .card-score {
+        display: inline-flex; align-items: center; gap: 2px;
+        padding: 1px 7px; border-radius: 100px; font-size: 10.5px; font-weight: 700;
+        line-height: 18px;
+    }
+    .card-score.hot  { background: #ecfdf5; color: #059669; }
+    .card-score.warm { background: #fffbeb; color: #d97706; }
+    .card-score.cold { background: #f3f4f6; color: #9ca3af; }
+
     /* Bubble WhatsApp */
     .card-bubble {
         display: flex;
@@ -724,6 +733,7 @@
                 $assigneeAvatar = $lead->assignedTo?->avatar;
                 $convId = $lead->whatsappConversation?->id;
                 $unread = $lead->whatsappConversation?->unread_count ?? 0;
+                $inSequence = $lead->activeSequence !== null;
             @endphp
             <div class="lead-card"
                  data-lead-id="{{ $lead->id }}"
@@ -804,10 +814,21 @@
                             @endif
                         </div>
                     </div>
-                    <span class="card-date">
-                        <i class="bi bi-clock"></i>
-                        {{ $lead->created_at?->diffForHumans(null, true, true) }}
-                    </span>
+                    <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+                        @if($inSequence)
+                        <span class="card-score" style="background:#eff6ff;color:#0085f3;" title="{{ __('sequences.badge_active') }}"><i class="bi bi-arrow-repeat" style="font-size:9px;"></i></span>
+                        @endif
+                        @if($lead->score > 0)
+                        @php
+                            $scoreCls = $lead->score >= 70 ? 'hot' : ($lead->score >= 30 ? 'warm' : 'cold');
+                        @endphp
+                        <span class="card-score {{ $scoreCls }}"><i class="bi bi-lightning-fill" style="font-size:9px;"></i> {{ $lead->score }}</span>
+                        @endif
+                        <span class="card-date">
+                            <i class="bi bi-clock"></i>
+                            {{ $lead->created_at?->diffForHumans(null, true, true) }}
+                        </span>
+                    </div>
                 </div>
 
                 @php
@@ -1370,6 +1391,14 @@ function buildCard(lead) {
 
     const date = lead.created_at ? `<span class="card-date"><i class="bi bi-clock"></i>${escapeHtml(lead.created_at)}</span>` : '';
 
+    const scoreVal = lead.score || 0;
+    const scoreBadge = scoreVal > 0
+        ? `<span class="card-score ${scoreVal >= 70 ? 'hot' : scoreVal >= 30 ? 'warm' : 'cold'}"><i class="bi bi-lightning-fill" style="font-size:9px;"></i> ${scoreVal}</span>`
+        : '';
+    const seqBadge = lead.in_sequence
+        ? `<span class="card-score" style="background:#eff6ff;color:#0085f3;" title="Em sequência"><i class="bi bi-arrow-repeat" style="font-size:9px;"></i></span>`
+        : '';
+
     const tagsBlock = hasTags ? `<div class="card-tags" style="margin-bottom:2px;">${tagsHtml}</div>` : '';
 
     // Task bar
@@ -1397,7 +1426,11 @@ function buildCard(lead) {
                 ${assigneeHtml}
                 <div class="card-actions">${actions}</div>
             </div>
-            ${date}
+            <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+                ${seqBadge}
+                ${scoreBadge}
+                ${date}
+            </div>
         </div>
         ${taskBar}
     </div>`;

@@ -676,10 +676,10 @@
             ->get(['id', 'name', 'logo'])
         : collect();
 
-    $crmActive = request()->routeIs('crm*', 'leads*', 'calendar.*', 'tasks*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.lost-reasons*', 'settings.tags*');
-    $autoActive = request()->routeIs('chatbot.flows.*', 'ai.agents.*', 'ai.intent-signals.*', 'settings.automations*', 'settings.ig-automations.*');
+    $crmActive = request()->routeIs('crm*', 'leads*', 'calendar.*', 'tasks*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.lost-reasons*', 'settings.tags*', 'settings.scoring*');
+    $autoActive = request()->routeIs('chatbot.flows.*', 'ai.agents.*', 'ai.intent-signals.*', 'settings.automations*', 'settings.sequences*', 'settings.ig-automations.*');
     $reportActive = request()->routeIs('reports*', 'campaigns*');
-    $settingsActive = (request()->routeIs('settings.*') && !request()->routeIs('settings.automations*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.lost-reasons*', 'settings.tags*', 'settings.ig-automations.*')) || request()->routeIs('billing.*');
+    $settingsActive = (request()->routeIs('settings.*') && !request()->routeIs('settings.automations*', 'settings.sequences*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.lost-reasons*', 'settings.tags*', 'settings.scoring*', 'settings.ig-automations.*')) || request()->routeIs('billing.*');
     $igConnected = \App\Models\InstagramInstance::where('status', 'connected')->exists();
 @endphp
 
@@ -798,6 +798,9 @@
                     <a href="{{ route('settings.tags') }}" class="nm-dd-item {{ request()->routeIs('settings.tags*') ? 'active' : '' }}">
                         <i class="bi bi-tags"></i> {{ __('nav.tags') }}
                     </a>
+                    <a href="{{ route('settings.scoring') }}" class="nm-dd-item {{ request()->routeIs('settings.scoring*') ? 'active' : '' }}">
+                        <i class="bi bi-speedometer2"></i> {{ __('nav.lead_scoring') }}
+                    </a>
                 </div>
             </div>
 
@@ -815,6 +818,9 @@
                     </a>
                     <a href="{{ route('settings.automations') }}" class="nm-dd-item {{ request()->routeIs('settings.automations*') ? 'active' : '' }}">
                         <i class="bi bi-lightning"></i> {{ __('nav.automations') }}
+                    </a>
+                    <a href="{{ route('settings.sequences') }}" class="nm-dd-item {{ request()->routeIs('settings.sequences*') ? 'active' : '' }}">
+                        <i class="bi bi-arrow-repeat"></i> {{ __('sequences.nav_title') }}
                     </a>
                     @if($igConnected)
                     <a href="{{ route('settings.ig-automations.index') }}" class="nm-dd-item {{ request()->routeIs('settings.ig-automations.*') ? 'active' : '' }}">
@@ -1197,10 +1203,34 @@ document.addEventListener('click', function (e) {
     const READ_ALL      = '{{ route("ai.intent-signals.read-all") }}';
     const ANALYST_URL   = '{{ route("analyst.pending-count") }}';
     const MASTER_URL    = '{{ route("master-notifications.index") }}';
+    const NOTIF_RECENT  = '{{ route("notifications.recent") }}';
+    const NOTIF_READ    = '{{ route("notifications.read", ["id" => "__ID__"]) }}';
+    const NOTIF_READALL = '{{ route("notifications.read-all") }}';
     const CSRF          = '{{ csrf_token() }}';
     const ICONS         = { buy: '\uD83D\uDED2', schedule: '\uD83D\uDCC5', close: '\uD83E\uDD1D', interest: '\u2B50' };
     const CONV_BASE     = '{{ rtrim(url("/"), "/") }}';
     let _masterNotifs   = [];
+
+    const NOTIF_TYPE_ICONS = {
+        new_lead: 'bi-person-plus-fill',
+        lead_assigned: 'bi-person-check',
+        lead_stage_changed: 'bi-arrow-right-circle',
+        whatsapp_message: 'bi-whatsapp',
+        whatsapp_assigned: 'bi-chat-left-dots',
+        ai_intent: 'bi-lightbulb',
+        campaign_completed: 'bi-megaphone',
+        system: 'bi-info-circle',
+    };
+    const NOTIF_TYPE_COLORS = {
+        new_lead: '#10b981',
+        lead_assigned: '#3b82f6',
+        lead_stage_changed: '#8b5cf6',
+        whatsapp_message: '#25D366',
+        whatsapp_assigned: '#0085f3',
+        ai_intent: '#f59e0b',
+        campaign_completed: '#ec4899',
+        system: '#6b7280',
+    };
 
     function updateBadge(count) {
         const num = document.getElementById('notif-badge-num');
@@ -1213,7 +1243,7 @@ document.addEventListener('click', function (e) {
         }
     }
 
-    function renderList(signals, analystItems, masterItems) {
+    function renderList(signals, analystItems, masterItems, laravelNotifs) {
         const el = document.getElementById('notif-list');
         if (!el) return;
 
@@ -1285,26 +1315,46 @@ document.addEventListener('click', function (e) {
             })
         ].join('') : '';
 
-        if (!intentHtml && !analystHtml && !masterHtml) {
+        // Laravel notifications (new_lead, lead_assigned, stage_changed, etc.)
+        const laravelHtml = (laravelNotifs && laravelNotifs.length) ? laravelNotifs.map(n => {
+            const iconClass = NOTIF_TYPE_ICONS[n.type] || 'bi-bell';
+            const iconColor = NOTIF_TYPE_COLORS[n.type] || '#6b7280';
+            const unread = !n.read ? 'unread' : '';
+            const urlAttr = n.url ? `onclick="markNotifRead('${n.id}');window.location='${n.url}';"` : `onclick="markNotifRead('${n.id}', this)"`;
+            return `<div class="notif-item ${unread}" style="padding:10px 16px;border-bottom:1px solid #f3f4f6;cursor:pointer;" ${urlAttr}>
+                      <div style="display:flex;align-items:flex-start;gap:10px;">
+                        <i class="bi ${iconClass}" style="font-size:16px;flex-shrink:0;margin-top:2px;color:${iconColor};"></i>
+                        <div style="flex:1;min-width:0;">
+                          <div style="font-size:12px;font-weight:600;color:#1a1d23;">${n.title}</div>
+                          <div style="font-size:11px;color:#677489;line-height:1.4;">${n.body}</div>
+                          <div style="font-size:10px;color:#97A3B7;margin-top:2px;">${n.created_at}</div>
+                        </div>
+                      </div>
+                    </div>`;
+        }).join('') : '';
+
+        if (!intentHtml && !analystHtml && !masterHtml && !laravelHtml) {
             el.innerHTML = '<div style="padding:24px;text-align:center;color:#97A3B7;font-size:12px;">Nenhuma notificação</div>';
             return;
         }
 
-        el.innerHTML = masterHtml + analystHtml + intentHtml;
+        el.innerHTML = masterHtml + laravelHtml + analystHtml + intentHtml;
     }
 
     window.loadIntentSignals = function () {
         Promise.all([
-            fetch(LIST_URL,    { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => ({ signals: [], unread_count: 0 })),
-            fetch(ANALYST_URL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => ({ count: 0, recent: [] })),
-            fetch(MASTER_URL,  { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => ({ notifications: [] })),
-        ]).then(([intentData, analystData, masterData]) => {
+            fetch(LIST_URL,      { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => ({ signals: [], unread_count: 0 })),
+            fetch(ANALYST_URL,   { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => ({ count: 0, recent: [] })),
+            fetch(MASTER_URL,    { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => ({ notifications: [] })),
+            fetch(NOTIF_RECENT,  { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => ({ notifications: [], unread_count: 0 })),
+        ]).then(([intentData, analystData, masterData, notifData]) => {
             _masterNotifs = masterData.notifications || [];
             const lastReadId = parseInt(localStorage.getItem('mn_last_read') || '0');
             const masterUnread = _masterNotifs.filter(n => n.id > lastReadId).length;
-            const total = (intentData.unread_count || 0) + (analystData.count || 0) + masterUnread;
+            const laravelUnread = notifData.unread_count || 0;
+            const total = (intentData.unread_count || 0) + (analystData.count || 0) + masterUnread + laravelUnread;
             updateBadge(total);
-            renderList(intentData.signals || [], analystData.recent || [], _masterNotifs);
+            renderList(intentData.signals || [], analystData.recent || [], _masterNotifs, notifData.notifications || []);
         });
     };
 
@@ -1319,10 +1369,20 @@ document.addEventListener('click', function (e) {
     };
 
     window.markAllIntentRead = function () {
-        fetch(READ_ALL, {
+        Promise.all([
+            fetch(READ_ALL, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'X-Requested-With': 'XMLHttpRequest' } }),
+            fetch(NOTIF_READALL, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'X-Requested-With': 'XMLHttpRequest' } }),
+        ]).then(() => loadIntentSignals()).catch(() => {});
+    };
+
+    window.markNotifRead = function (id, el) {
+        fetch(NOTIF_READ.replace('__ID__', id), {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
-        }).then(() => loadIntentSignals()).catch(() => {});
+        }).then(() => {
+            if (el) el.classList.remove('unread');
+            loadIntentSignals();
+        }).catch(() => {});
     };
 
     // Carregar ao iniciar

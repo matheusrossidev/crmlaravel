@@ -170,6 +170,14 @@ class LeadController extends Controller
             ]);
         } catch (\Throwable) {}
 
+        // Notificação: novo lead
+        try {
+            (new \App\Services\NotificationDispatcher())->dispatch('new_lead', [
+                'lead_name' => $lead->name,
+                'url'       => route('leads.index', ['lead' => $lead->id]),
+            ], activeTenantId(), excludeUserId: auth()->id());
+        } catch (\Throwable) {}
+
         $lead->load(['stage', 'pipeline', 'campaign', 'assignedTo']);
 
         return response()->json(['success' => true, 'lead' => $this->formatLead($lead)]);
@@ -182,7 +190,7 @@ class LeadController extends Controller
             return redirect()->route('leads.index', ['lead' => $lead->id]);
         }
 
-        $lead->load(['stage', 'pipeline', 'assignedTo', 'events.performedBy', 'customFieldValues.fieldDefinition', 'leadNotes.author', 'attachments.uploader']);
+        $lead->load(['stage', 'pipeline', 'assignedTo', 'events.performedBy', 'customFieldValues.fieldDefinition', 'leadNotes.author', 'attachments.uploader', 'activeSequence.sequence.steps']);
 
         $allowedIds = auth()->user()->allowedPipelineIds();
         $pipelines = Pipeline::with('stages')
@@ -243,6 +251,7 @@ class LeadController extends Controller
             'events.performedBy',
             'customFieldValues.fieldDefinition',
             'attachments.uploader',
+            'activeSequence.sequence.steps',
         ]);
 
         $waConversation = WhatsappConversation::where('lead_id', $lead->id)
@@ -298,7 +307,8 @@ class LeadController extends Controller
             'birthday'    => 'nullable|date',
         ]);
 
-        $oldStageId = $lead->stage_id;
+        $oldStageId    = $lead->stage_id;
+        $oldAssignedTo = $lead->assigned_to;
         $lead->update($data);
 
         $this->saveCustomFields($lead, $request->input('custom_fields', []));
@@ -347,6 +357,18 @@ class LeadController extends Controller
                 'performed_by' => auth()->id(),
                 'created_at'   => now(),
             ]);
+        }
+
+        // Notificação: lead atribuído a outro usuário
+        $newAssignedTo = $lead->assigned_to;
+        if ($newAssignedTo && $newAssignedTo !== $oldAssignedTo) {
+            try {
+                (new \App\Services\NotificationDispatcher())->dispatch('lead_assigned', [
+                    'lead_name'   => $lead->name,
+                    'assigned_by' => auth()->user()->name,
+                    'url'         => route('leads.index', ['lead' => $lead->id]),
+                ], activeTenantId(), targetUserId: $newAssignedTo);
+            } catch (\Throwable) {}
         }
 
         $lead->load(['stage', 'pipeline', 'campaign', 'assignedTo']);
@@ -490,6 +512,14 @@ class LeadController extends Controller
             'utm_content'   => $lead->utm_content,
             'utm_term'      => $lead->utm_term,
             'contact_picture_url' => $lead->whatsappConversation?->contact_picture_url,
+            'active_sequence'     => $lead->activeSequence ? [
+                'id'            => $lead->activeSequence->id,
+                'name'          => $lead->activeSequence->sequence?->name,
+                'current_step'  => $lead->activeSequence->current_step_position,
+                'total_steps'   => $lead->activeSequence->sequence?->steps?->count() ?? 0,
+                'status'        => $lead->activeSequence->status,
+            ] : null,
+            'score'               => $lead->score ?? 0,
         ];
 
         if ($withNotes) {

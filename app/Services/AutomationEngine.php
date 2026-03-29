@@ -21,6 +21,13 @@ use Illuminate\Support\Facades\Log;
 
 class AutomationEngine
 {
+    private static array $scoringMap = [
+        'message_received'    => 'message_received',
+        'lead_created'        => 'profile_complete',
+        'lead_stage_changed'  => null, // handled specially
+        'lead_won'            => 'lead_won',
+        'lead_lost'           => 'lead_lost',
+    ];
     /**
      * Dispara automações para um determinado trigger_type.
      *
@@ -71,6 +78,48 @@ class AutomationEngine
                     'error'         => $e->getMessage(),
                 ]);
             }
+        }
+
+        // ── Lead Scoring ────────────────────────────────────────────────
+        $this->evaluateScoring($triggerType, $context);
+    }
+
+    private function evaluateScoring(string $triggerType, array $context): void
+    {
+        $lead = $context['lead'] ?? null;
+        if (! $lead instanceof Lead) {
+            return;
+        }
+
+        try {
+            $scorer = new LeadScoringService();
+
+            // Map trigger to scoring event(s)
+            if ($triggerType === 'lead_stage_changed') {
+                $stageOldId = $context['stage_old_id'] ?? null;
+                $stageNew   = $context['stage_new'] ?? null;
+                if ($stageNew && $stageOldId) {
+                    $oldPos = PipelineStage::withoutGlobalScope('tenant')->find($stageOldId)?->position ?? 0;
+                    $newPos = $stageNew->position ?? 0;
+                    $scorer->evaluate($lead, $newPos > $oldPos ? 'stage_advanced' : 'stage_regressed', $context);
+                }
+            } elseif ($triggerType === 'message_received') {
+                $scorer->evaluate($lead, 'message_received', $context);
+
+                // Check for media
+                $msg = $context['message'] ?? null;
+                if ($msg && in_array($msg->type ?? '', ['image', 'video', 'audio', 'document'])) {
+                    $scorer->evaluate($lead, 'message_sent_media', $context);
+                }
+            } elseif (isset(self::$scoringMap[$triggerType])) {
+                $scorer->evaluate($lead, self::$scoringMap[$triggerType], $context);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('LeadScoring: evaluation failed in AutomationEngine', [
+                'trigger' => $triggerType,
+                'lead_id' => $lead->id,
+                'error'   => $e->getMessage(),
+            ]);
         }
     }
 
@@ -207,6 +256,7 @@ class AutomationEngine
             'set_utm_params'                => $this->actionSetUtmParams($config, $ctx),
             'transfer_to_department'        => $this->actionTransferToDepartment($config, $ctx),
             'create_task'                   => $this->actionCreateTask($config, $ctx),
+            'enroll_sequence'               => $this->actionEnrollSequence($config, $ctx),
             default               => null,
         };
     }
@@ -297,7 +347,17 @@ class AutomationEngine
         if (! $lead || empty($config['user_id'])) {
             return;
         }
-        Lead::withoutGlobalScope('tenant')->where('id', $lead->id)->update(['assigned_to' => (int) $config['user_id']]);
+        $userId = (int) $config['user_id'];
+        Lead::withoutGlobalScope('tenant')->where('id', $lead->id)->update(['assigned_to' => $userId]);
+
+        // Notificação: lead atribuído via automação
+        try {
+            (new NotificationDispatcher())->dispatch('lead_assigned', [
+                'lead_name'   => $lead->name,
+                'assigned_by' => 'Automação',
+                'url'         => route('leads.index', ['lead' => $lead->id]),
+            ], $ctx['tenant_id'], targetUserId: $userId);
+        } catch (\Throwable) {}
     }
 
     private function actionAddNote(array $config, array $ctx): void
@@ -615,6 +675,24 @@ class AutomationEngine
             'instagram_conversation_id' => $conv instanceof InstagramConversation ? $conv->id : null,
             'assigned_to'               => $assignedTo,
         ]);
+    }
+
+    private function actionEnrollSequence(array $config, array $ctx): void
+    {
+        $lead = $this->resolveLead($ctx);
+        if (! $lead || empty($config['sequence_id'])) {
+            return;
+        }
+
+        $sequence = \App\Models\NurtureSequence::withoutGlobalScope('tenant')
+            ->where('id', $config['sequence_id'])
+            ->where('tenant_id', $lead->tenant_id)
+            ->where('is_active', true)
+            ->first();
+
+        if ($sequence) {
+            (new NurtureSequenceService())->enroll($lead, $sequence);
+        }
     }
 
     /**

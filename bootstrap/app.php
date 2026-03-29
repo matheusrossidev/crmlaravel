@@ -51,6 +51,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('whatsapp:send-scheduled')->everyMinute()->withoutOverlapping();
         $schedule->command('automations:process-date-triggers')->dailyAt('08:00');
         $schedule->command('automations:process-recurring')->hourly()->withoutOverlapping();
+        $schedule->command('scoring:decay')->dailyAt('09:00');
+        $schedule->command('sequences:process')->everyMinute()->withoutOverlapping();
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

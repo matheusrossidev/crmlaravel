@@ -127,6 +127,13 @@ class WhatsappMessageController extends Controller
         // Atualizar última mensagem da conversa
         if ($type !== 'note') {
             $conversation->update(['last_message_at' => now()]);
+
+            // Exit nurture sequences — human takeover
+            if ($conversation->lead_id) {
+                try {
+                    (new \App\Services\NurtureSequenceService())->exitAllForLead($conversation->lead_id, 'human_takeover');
+                } catch (\Throwable) {}
+            }
         }
 
         return response()->json([

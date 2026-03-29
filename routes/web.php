@@ -47,6 +47,8 @@ use App\Http\Controllers\Tenant\ScheduledMessageController;
 use App\Http\Controllers\Tenant\InstagramAutomationController;
 use App\Http\Controllers\Tenant\DepartmentController;
 use App\Http\Controllers\Tenant\HelpChatController;
+use App\Http\Controllers\Tenant\LeadScoringController;
+use App\Http\Controllers\Tenant\NurtureSequenceController;
 use App\Http\Controllers\Tenant\NotificationController;
 use App\Http\Controllers\Tenant\NotificationPreferenceController;
 use App\Http\Controllers\Tenant\PushSubscriptionController;
@@ -334,6 +336,7 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
     Route::post('/notificacoes/{id}/lida',    [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notificacoes/marcar-todas', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     Route::get ('/notificacoes/nao-lidas',    [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::get ('/notificacoes/recentes',    [NotificationController::class, 'recent'])->name('notifications.recent');
     Route::post  ('/push-subscriptions',      [PushSubscriptionController::class, 'store'])->name('push.store');
     Route::delete('/push-subscriptions',      [PushSubscriptionController::class, 'destroy'])->name('push.destroy');
 
@@ -380,6 +383,7 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
         Route::get('cobranca', [BillingController::class, 'index'])->name('billing');
         Route::get('departamentos',     [DepartmentController::class, 'index'])->name('departments');
         Route::get('automacoes',        [AutomationController::class, 'index'])->name('automations');
+        Route::get('scoring',           [LeadScoringController::class, 'index'])->name('scoring');
         Route::get('campos-extras',     [CustomFieldController::class, 'index'])->name('custom-fields');
         Route::get('produtos',          [ProductController::class, 'index'])->name('products');
         Route::get('api-keys',          [ApiKeyController::class, 'index'])->name('api-keys');
@@ -407,6 +411,11 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::post('motivos-perda', [LostSaleReasonController::class, 'store'])->name('lost-reasons.store');
             Route::put('motivos-perda/{reason}', [LostSaleReasonController::class, 'update'])->name('lost-reasons.update');
             Route::delete('motivos-perda/{reason}', [LostSaleReasonController::class, 'destroy'])->name('lost-reasons.destroy');
+
+            // Lead Scoring
+            Route::post('scoring', [LeadScoringController::class, 'store'])->name('scoring.store');
+            Route::put('scoring/{rule}', [LeadScoringController::class, 'update'])->name('scoring.update');
+            Route::delete('scoring/{rule}', [LeadScoringController::class, 'destroy'])->name('scoring.destroy');
 
             // API Keys
             Route::post('api-keys',             [ApiKeyController::class, 'store'])->name('api-keys.store');
@@ -459,6 +468,17 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::put('automacoes/{automation}',           [AutomationController::class, 'update'])->name('automations.update');
             Route::delete('automacoes/{automation}',        [AutomationController::class, 'destroy'])->name('automations.destroy');
             Route::patch('automacoes/{automation}/toggle',  [AutomationController::class, 'toggle'])->name('automations.toggle');
+
+            // Sequências de Nutrição
+            Route::get('sequencias',                          [NurtureSequenceController::class, 'index'])->name('sequences');
+            Route::get('sequencias/criar',                    [NurtureSequenceController::class, 'create'])->name('sequences.create');
+            Route::get('sequencias/{sequence}/editar',        [NurtureSequenceController::class, 'edit'])->name('sequences.edit');
+            Route::post('sequencias',                         [NurtureSequenceController::class, 'store'])->name('sequences.store');
+            Route::put('sequencias/{sequence}',               [NurtureSequenceController::class, 'update'])->name('sequences.update');
+            Route::delete('sequencias/{sequence}',            [NurtureSequenceController::class, 'destroy'])->name('sequences.destroy');
+            Route::patch('sequencias/{sequence}/toggle',      [NurtureSequenceController::class, 'toggle'])->name('sequences.toggle');
+            Route::post('sequencias/{sequence}/enroll',       [NurtureSequenceController::class, 'enroll'])->name('sequences.enroll');
+            Route::delete('sequencias/{sequence}/unenroll',   [NurtureSequenceController::class, 'unenroll'])->name('sequences.unenroll');
         });
     });
 

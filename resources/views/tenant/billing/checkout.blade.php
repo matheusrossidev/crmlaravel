@@ -515,6 +515,20 @@ function selectPlan(card) {
     document.getElementById('ccPrice').textContent = CURRENCY + ' ' + selectedPrice;
 }
 
+// ── Pre-selected plan (from billing page) ──
+@if($preSelectedPlan)
+(function() {
+    const preCard = document.querySelector('.plan-card[data-plan-name="{{ $preSelectedPlan->name }}"]');
+    if (preCard) {
+        selectPlan(preCard);
+        if (!IS_STRIPE) {
+            currentIdx = 1;
+            updateUI();
+        }
+    }
+})();
+@endif
+
 // ── Validation ──
 function setErr(id, show, msg) {
     const el = document.getElementById(id);

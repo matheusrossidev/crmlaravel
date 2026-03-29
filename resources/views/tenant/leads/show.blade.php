@@ -61,6 +61,69 @@ $pageIcon = 'person-badge';
     flex-wrap: wrap;
 }
 
+.lp-hero-score {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+/* ── Sequence Banner ── */
+.lp-seq-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f0fdf4;
+    border: 1.5px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 14px 20px;
+    margin-bottom: 16px;
+}
+.lp-seq-banner-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.lp-seq-banner-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #dcfce7;
+    color: #16a34a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+.lp-seq-banner-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #1a1d23;
+}
+.lp-seq-banner-step {
+    font-size: 12px;
+    color: #16a34a;
+    font-weight: 500;
+}
+.lp-seq-banner-link {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #16a34a;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: color .15s;
+    white-space: nowrap;
+}
+.lp-seq-banner-link:hover { color: #059669; }
+
+/* Collapsible UTM */
+.lp-utm-body { overflow: hidden; transition: max-height .25s ease; max-height: 500px; }
+.lp-utm-body.collapsed { max-height: 0; }
+
+/* Sidebar multi-card spacing */
+.lp-info-card + .lp-info-card { margin-top: 12px; }
+
 /* ── Step indicator ── */
 .lp-steps-wrap {
     background: #fff;
@@ -372,8 +435,6 @@ $pageIcon = 'person-badge';
     border: 1px solid #e8eaf0;
     border-radius: 14px;
     overflow: hidden;
-    position: sticky;
-    top: 80px;
 }
 .lp-info-section {
     padding: 18px 20px;
@@ -717,7 +778,7 @@ $pageIcon = 'person-badge';
 {{-- ── Hero ── --}}
 <div class="lp-hero">
     <div class="lp-avatar">{{ strtoupper(substr($lead->name, 0, 1)) }}</div>
-    <div class="lp-hero-info">
+    <div class="lp-hero-info" style="flex:1;">
         <h1 class="lp-hero-name">{{ $lead->name }}</h1>
         <div class="lp-hero-meta">
             @if($lead->stage)
@@ -729,13 +790,35 @@ $pageIcon = 'person-badge';
             @if($lead->source)
             <span class="source-pill">{{ $lead->source }}</span>
             @endif
-            @if($lead->pipeline)
-            <span><i class="bi bi-diagram-3" style="margin-right:3px;"></i>{{ $lead->pipeline->name }}</span>
+            @if($lead->assignedTo)
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+                <i class="bi bi-person-fill" style="font-size:12px;"></i>{{ Str::limit($lead->assignedTo->name, 18) }}
+            </span>
             @endif
             <span style="color:#d1d5db;">|</span>
             <span>{{ __('leads.created_ago', ['time' => $lead->created_at->diffForHumans()]) }}</span>
         </div>
     </div>
+    @if($lead->score > 0)
+    @php
+        $sCls = $lead->score >= 70 ? 'hot' : ($lead->score >= 30 ? 'warm' : 'cold');
+        $sColorMap = ['hot' => '#059669', 'warm' => '#d97706', 'cold' => '#9ca3af'];
+        $sLabelMap = ['hot' => __('scoring.score_high') . ' 🔥', 'warm' => __('scoring.score_medium'), 'cold' => __('scoring.score_low')];
+        $sBgMap = ['hot' => '#ecfdf5', 'warm' => '#fffbeb', 'cold' => '#f3f4f6'];
+    @endphp
+    <div class="lp-hero-score">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:80px;">
+                <div style="background:#f3f4f6;border-radius:100px;height:6px;overflow:hidden;">
+                    <div style="width:{{ min(100, $lead->score) }}%;height:100%;background:{{ $sColorMap[$sCls] }};border-radius:100px;"></div>
+                </div>
+            </div>
+            <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:100px;font-size:13px;font-weight:700;background:{{ $sBgMap[$sCls] }};color:{{ $sColorMap[$sCls] }};white-space:nowrap;">
+                <i class="bi bi-lightning-fill" style="font-size:11px;"></i> {{ $lead->score }} · {{ $sLabelMap[$sCls] }}
+            </span>
+        </div>
+    </div>
+    @endif
 </div>
 
 {{-- ── Step Indicator ── --}}
@@ -775,22 +858,38 @@ $pageIcon = 'person-badge';
 </div>
 @endif
 
+{{-- ── Sequence Banner ── --}}
+@php
+    $activeSeq = $lead->activeSequence;
+@endphp
+@if($activeSeq && $activeSeq->sequence)
+<div class="lp-seq-banner">
+    <div class="lp-seq-banner-left">
+        <div class="lp-seq-banner-icon"><i class="bi bi-arrow-repeat"></i></div>
+        <div>
+            <div class="lp-seq-banner-name">{{ $activeSeq->sequence->name }}</div>
+            <div class="lp-seq-banner-step">{{ __('sequences.badge_step', ['current' => $activeSeq->current_step_position, 'total' => $activeSeq->sequence->steps->count()]) }}</div>
+        </div>
+    </div>
+    <a href="{{ route('settings.sequences.edit', $activeSeq->sequence) }}" class="lp-seq-banner-link">
+        Ver sequência <i class="bi bi-arrow-right"></i>
+    </a>
+</div>
+@endif
+
 {{-- ── Main grid ── --}}
 <div class="lp-grid">
 
     {{-- ── Left: Tabs ── --}}
     <div class="lp-card">
         <div class="lp-tabs-nav">
-            <button class="lp-tab-btn active" data-tab="notes">
+            <button class="lp-tab-btn active" data-tab="timeline">
+                <i class="bi bi-clock-history"></i> {{ __('leads.history') }}
+            </button>
+            <button class="lp-tab-btn" data-tab="notes">
                 <i class="bi bi-journal-text"></i> {{ __('leads.notes') }}
                 @if($lead->leadNotes->count() > 0)
                 <span style="background:#eff6ff;color:#3b82f6;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">{{ $lead->leadNotes->count() }}</span>
-                @endif
-            </button>
-            <button class="lp-tab-btn" data-tab="history">
-                <i class="bi bi-clock-history"></i> {{ __('leads.history') }}
-                @if($lead->events->count() > 0)
-                <span style="background:#f0fdf4;color:#10b981;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">{{ $lead->events->count() }}</span>
                 @endif
             </button>
             @if($waConversation)
@@ -827,8 +926,86 @@ $pageIcon = 'person-badge';
             </button>
         </div>
 
+        {{-- ── Tab: Histórico (unified feed) ── --}}
+        <div class="lp-tab-panel active" id="tab-timeline">
+            {{-- Timeline feed --}}
+            <div class="lp-timeline" id="timelineFeed" style="padding:16px 20px;">
+                @php
+                    // Merge events + notes + score logs into unified timeline
+                    $timelineItems = collect();
+
+                    // Events
+                    foreach ($lead->events as $evt) {
+                        $evtIcons = [
+                            'created' => ['bi-plus-circle-fill', '#10b981'],
+                            'updated' => ['bi-pencil-fill', '#6b7280'],
+                            'stage_changed' => ['bi-arrow-right-circle-fill', '#8b5cf6'],
+                            'assigned' => ['bi-person-check', '#3b82f6'],
+                            'note_added' => ['bi-journal-text', '#f59e0b'],
+                            'sale_won' => ['bi-trophy-fill', '#10b981'],
+                            'sale_lost' => ['bi-x-circle-fill', '#ef4444'],
+                            'score_updated' => ['bi-lightning-fill', '#d97706'],
+                        ];
+                        $iconData = $evtIcons[$evt->event_type] ?? ['bi-circle-fill', '#9ca3af'];
+                        $timelineItems->push([
+                            'date' => $evt->created_at,
+                            'icon' => $iconData[0],
+                            'color' => $iconData[1],
+                            'text' => $evt->description,
+                            'meta' => ($evt->performedBy?->name ?? 'Sistema') . ' · ' . $evt->created_at?->diffForHumans(),
+                            'type' => 'event',
+                        ]);
+                    }
+
+                    // Notes
+                    foreach ($lead->leadNotes as $note) {
+                        $timelineItems->push([
+                            'date' => $note->created_at,
+                            'icon' => 'bi-sticky-fill',
+                            'color' => '#f59e0b',
+                            'text' => Str::limit($note->body, 120),
+                            'meta' => ($note->author?->name ?? 'Sistema') . ' · ' . $note->created_at?->diffForHumans(),
+                            'type' => 'note',
+                        ]);
+                    }
+
+                    // Score logs
+                    foreach ($lead->scoreLogs->take(10) as $sl) {
+                        $pts = $sl->points >= 0 ? '+' . $sl->points : (string) $sl->points;
+                        $timelineItems->push([
+                            'date' => $sl->created_at,
+                            'icon' => 'bi-lightning-fill',
+                            'color' => $sl->points >= 0 ? '#059669' : '#ef4444',
+                            'text' => $pts . ' pts — ' . $sl->reason,
+                            'meta' => $sl->created_at?->diffForHumans(),
+                            'type' => 'score',
+                        ]);
+                    }
+
+                    $timelineItems = $timelineItems->sortByDesc('date')->take(30);
+                @endphp
+
+                @forelse($timelineItems as $item)
+                <div class="lp-timeline-item">
+                    <div class="lp-tl-icon" style="color:{{ $item['color'] }};background:{{ $item['color'] }}15;">
+                        <i class="bi {{ $item['icon'] }}"></i>
+                    </div>
+                    <div class="lp-tl-body">
+                        <div class="lp-tl-desc">{{ $item['text'] }}</div>
+                        <div class="lp-tl-meta">{{ $item['meta'] }}</div>
+                    </div>
+                </div>
+                @empty
+                <div style="text-align:center;padding:32px;color:#9ca3af;font-size:13px;">
+                    <i class="bi bi-activity" style="font-size:28px;display:block;margin-bottom:8px;color:#d1d5db;"></i>
+                    Nenhuma atividade registrada
+                </div>
+                @endforelse
+            </div>
+        </div>
+
         {{-- ── Tab: Notas ── --}}
-        <div class="lp-tab-panel active" id="tab-notes">
+        <div class="lp-tab-panel" id="tab-notes">
             <div id="notesContainer">
                 @forelse($lead->leadNotes as $note)
                 <div class="lp-note-card" id="note-{{ $note->id }}">
@@ -1211,6 +1388,7 @@ $pageIcon = 'person-badge';
     </div>{{-- end left col --}}
 
     {{-- ── Right: Info card ── --}}
+    {{-- Card 1 — Contato & Negócio --}}
     <div class="lp-info-card">
 
         {{-- Contato --}}
@@ -1326,6 +1504,54 @@ $pageIcon = 'person-badge';
         </div>
         @endif
 
+        {{-- UTM & Rastreamento (colapsável) --}}
+    @if($lead->utm_source || $lead->utm_medium || $lead->utm_campaign || $lead->utm_term || $lead->utm_content || $lead->fbclid || $lead->gclid)
+        <div class="lp-info-section" style="cursor:pointer;" onclick="this.nextElementSibling.classList.toggle('collapsed');">
+            <div class="lp-info-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                {{ __('leads.utm_section') }}
+                <i class="bi bi-chevron-down" style="font-size:12px;color:#9ca3af;transition:transform .2s;"></i>
+            </div>
+        </div>
+        <div class="lp-utm-body collapsed">
+            @if($lead->utm_source)
+            <div class="lp-info-row" style="padding:4px 18px;">
+                <span class="source-pill" style="font-size:11px;">utm_source: {{ $lead->utm_source }}</span>
+            </div>
+            @endif
+            @if($lead->utm_medium)
+            <div class="lp-info-row" style="padding:4px 18px;">
+                <span class="source-pill" style="font-size:11px;background:#f3f4f6;color:#374151;">utm_medium: {{ $lead->utm_medium }}</span>
+            </div>
+            @endif
+            @if($lead->utm_campaign)
+            <div class="lp-info-row" style="padding:4px 18px;">
+                <span class="source-pill" style="font-size:11px;background:#eff6ff;color:#2563eb;">utm_campaign: {{ $lead->utm_campaign }}</span>
+            </div>
+            @endif
+            @if($lead->utm_term)
+            <div class="lp-info-row" style="padding:4px 18px;">
+                <span class="source-pill" style="font-size:11px;background:#f3f4f6;color:#374151;">utm_term: {{ $lead->utm_term }}</span>
+            </div>
+            @endif
+            @if($lead->utm_content)
+            <div class="lp-info-row" style="padding:4px 18px;">
+                <span class="source-pill" style="font-size:11px;background:#f3f4f6;color:#374151;">utm_content: {{ $lead->utm_content }}</span>
+            </div>
+            @endif
+            @if($lead->fbclid)
+            <div class="lp-info-row" style="padding:4px 18px;">
+                <span style="font-size:10.5px;color:#9ca3af;">fbclid: {{ Str::limit($lead->fbclid, 30) }}</span>
+            </div>
+            @endif
+            @if($lead->gclid)
+            <div class="lp-info-row" style="padding:4px 18px;">
+                <span style="font-size:10.5px;color:#9ca3af;">gclid: {{ Str::limit($lead->gclid, 30) }}</span>
+            </div>
+            @endif
+            <div style="height:8px;"></div>
+        </div>
+    @endif
+
         {{-- Contatos da Empresa --}}
         <div class="lp-info-section">
             <div class="lp-info-section-title" style="display:flex;justify-content:space-between;align-items:center;">
@@ -1403,83 +1629,6 @@ $pageIcon = 'person-badge';
                 </div>
             </div>
         </div>
-
-        {{-- UTM & Tracking --}}
-        @if($lead->utm_source || $lead->utm_medium || $lead->utm_campaign || $lead->utm_term || $lead->utm_content || $lead->fbclid || $lead->gclid)
-        <div class="lp-info-section">
-            <div class="lp-info-section-title">{{ __('leads.utm_section') }}</div>
-
-            @if($lead->utm_source)
-            <div class="lp-info-row">
-                <div class="lp-info-icon"><i class="bi bi-link-45deg"></i></div>
-                <div class="lp-info-val">
-                    <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:1px;">utm_source</div>
-                    <span class="source-pill">{{ $lead->utm_source }}</span>
-                </div>
-            </div>
-            @endif
-
-            @if($lead->utm_medium)
-            <div class="lp-info-row">
-                <div class="lp-info-icon"><i class="bi bi-broadcast"></i></div>
-                <div class="lp-info-val">
-                    <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:1px;">utm_medium</div>
-                    {{ $lead->utm_medium }}
-                </div>
-            </div>
-            @endif
-
-            @if($lead->utm_campaign)
-            <div class="lp-info-row">
-                <div class="lp-info-icon"><i class="bi bi-megaphone"></i></div>
-                <div class="lp-info-val">
-                    <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:1px;">utm_campaign</div>
-                    {{ $lead->utm_campaign }}
-                </div>
-            </div>
-            @endif
-
-            @if($lead->utm_term)
-            <div class="lp-info-row">
-                <div class="lp-info-icon"><i class="bi bi-search"></i></div>
-                <div class="lp-info-val">
-                    <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:1px;">utm_term</div>
-                    {{ $lead->utm_term }}
-                </div>
-            </div>
-            @endif
-
-            @if($lead->utm_content)
-            <div class="lp-info-row">
-                <div class="lp-info-icon"><i class="bi bi-file-text"></i></div>
-                <div class="lp-info-val">
-                    <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:1px;">utm_content</div>
-                    {{ $lead->utm_content }}
-                </div>
-            </div>
-            @endif
-
-            @if($lead->fbclid)
-            <div class="lp-info-row">
-                <div class="lp-info-icon"><i class="bi bi-facebook"></i></div>
-                <div class="lp-info-val">
-                    <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:1px;">fbclid</div>
-                    <span style="font-size:11px;word-break:break-all;color:#6b7280;">{{ Str::limit($lead->fbclid, 40) }}</span>
-                </div>
-            </div>
-            @endif
-
-            @if($lead->gclid)
-            <div class="lp-info-row">
-                <div class="lp-info-icon"><i class="bi bi-google"></i></div>
-                <div class="lp-info-val">
-                    <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:1px;">gclid</div>
-                    <span style="font-size:11px;word-break:break-all;color:#6b7280;">{{ Str::limit($lead->gclid, 40) }}</span>
-                </div>
-            </div>
-            @endif
-        </div>
-        @endif
 
     </div>{{-- end info card --}}
 

@@ -13,6 +13,7 @@ return [
     'custom_fields'  => 'Campos Extras',
     'lost_reasons'   => 'Motivos de Perda',
     'tags'           => 'Tags',
+    'lead_scoring'   => 'Lead Scoring',
     'automation'     => 'Automação',
     'chatbot'        => 'Chatbot',
     'ai_agents'      => 'Agentes de IA',

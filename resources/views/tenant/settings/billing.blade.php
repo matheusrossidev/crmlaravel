@@ -529,7 +529,7 @@
                         @endif
                     </div>
                     <div class="other-plan-right">
-                        <a href="{{ route('billing.checkout') }}" class="btn-upgrade">
+                        <a href="{{ route('billing.checkout', ['plan' => $p->name]) }}" class="btn-upgrade">
                             {{ $opPrice > $bPlanPrice ? __('settings.billing_upgrade') : __('settings.billing_select') }}
                         </a>
                     </div>

@@ -296,6 +296,7 @@
                     <th>{{ __('leads.col_email') }}</th>
                     <th>{{ __('leads.col_stage') }}</th>
                     <th>{{ __('leads.col_value') }}</th>
+                    <th style="text-align:center;">{{ __('scoring.score_label') }}</th>
                     <th>{{ __('leads.col_source') }}</th>
                     <th>{{ __('leads.col_campaign') }}</th>
                     <th>{{ __('leads.col_created') }}</th>
@@ -355,13 +356,26 @@
                     <td class="value-cell">
                         {{ $lead->value ? __('common.currency') . ' ' . number_format((float)$lead->value, 2, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}
                     </td>
+                    <td style="text-align:center;">
+                        @if($lead->score > 0)
+                        @php
+                            $sCls = $lead->score >= 70 ? 'hot' : ($lead->score >= 30 ? 'warm' : 'cold');
+                            $sColors = ['hot' => ['#ecfdf5','#059669'], 'warm' => ['#fffbeb','#d97706'], 'cold' => ['#f3f4f6','#9ca3af']];
+                        @endphp
+                        <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 10px;border-radius:100px;font-size:12px;font-weight:700;background:{{ $sColors[$sCls][0] }};color:{{ $sColors[$sCls][1] }};">
+                            <i class="bi bi-lightning-fill" style="font-size:10px;"></i> {{ $lead->score }}
+                        </span>
+                        @else
+                        <span style="color:#d1d5db;">—</span>
+                        @endif
+                    </td>
                     <td><span class="source-pill">{{ $lead->source ?? 'manual' }}</span></td>
                     <td>{{ $lead->campaign?->name ?? '—' }}</td>
                     <td style="white-space:nowrap;color:#9ca3af;">{{ $lead->created_at->format('d/m/Y') }}</td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8">
+                    <td colspan="9">
                         <div class="empty-table">
                             <div><i class="bi bi-people"></i></div>
                             <p>{{ __('leads.no_leads') }}<br>

@@ -53,7 +53,7 @@ class KanbanController extends Controller
         if ($pipeline) {
             $stages = $pipeline->stages->map(function (PipelineStage $stage) use ($request) {
                 $query = Lead::where('stage_id', $stage->id)
-                    ->with(['assignedTo', 'customFieldValues.fieldDefinition', 'whatsappConversation.aiAgent'])
+                    ->with(['assignedTo', 'customFieldValues.fieldDefinition', 'whatsappConversation.aiAgent', 'activeSequence'])
                     ->orderByDesc('created_at');
 
                 if ($source = $request->get('source')) {
@@ -276,6 +276,17 @@ class KanbanController extends Controller
                     $engine->run('lead_lost', $baseCtx);
                 }
             } catch (\Throwable) {}
+
+            // Notificação: lead mudou de etapa (para o assigned_to)
+            if ($lead->assigned_to && $lead->assigned_to !== auth()->id()) {
+                try {
+                    (new \App\Services\NotificationDispatcher())->dispatch('lead_stage_changed', [
+                        'lead_name'  => $lead->name,
+                        'stage_name' => $newStage?->name ?? '',
+                        'url'        => route('leads.index', ['lead' => $lead->id]),
+                    ], activeTenantId(), targetUserId: $lead->assigned_to);
+                } catch (\Throwable) {}
+            }
         }
 
         return response()->json(['success' => true, 'lead_id' => $lead->id]);
@@ -452,7 +463,7 @@ class KanbanController extends Controller
 
         $sinceDate = Carbon::createFromTimestamp($since);
 
-        $leads = Lead::with(['campaign', 'assignedTo', 'customFieldValues.fieldDefinition', 'stage', 'whatsappConversation.aiAgent'])
+        $leads = Lead::with(['campaign', 'assignedTo', 'customFieldValues.fieldDefinition', 'stage', 'whatsappConversation.aiAgent', 'activeSequence'])
             ->whereHas('stage', fn ($q) => $q->where('pipeline_id', $pipelineId))
             ->where(fn ($q) => $q
                 ->where('created_at', '>', $sinceDate)
@@ -508,6 +519,8 @@ class KanbanController extends Controller
             'conversation_id'      => $lead->whatsappConversation?->id,
             'unread_count'         => $lead->whatsappConversation?->unread_count ?? 0,
             'contact_picture_url'  => $lead->whatsappConversation?->contact_picture_url,
+            'score'                => $lead->score ?? 0,
+            'in_sequence'          => $lead->activeSequence !== null,
             'created_at'           => $lead->created_at?->diffForHumans(null, true, true),
             'nearest_task'         => $nearestTask,
         ];

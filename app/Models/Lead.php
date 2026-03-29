@@ -21,15 +21,18 @@ class Lead extends Model
         'instagram_username', 'exclude_from_pipeline',
         'utm_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid',
         'birthday',
+        'score', 'score_updated_at',
     ];
 
     protected $casts = [
         'tags'                  => 'array',
         'exclude_from_pipeline' => 'boolean',
-        'value'      => 'decimal:2',
-        'birthday'   => 'date',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'value'            => 'decimal:2',
+        'birthday'         => 'date',
+        'score'            => 'integer',
+        'score_updated_at' => 'datetime',
+        'created_at'       => 'datetime',
+        'updated_at'       => 'datetime',
     ];
 
     public function pipeline(): BelongsTo
@@ -105,6 +108,16 @@ class Lead extends Model
     public function contacts(): HasMany
     {
         return $this->hasMany(LeadContact::class);
+    }
+
+    public function scoreLogs(): HasMany
+    {
+        return $this->hasMany(LeadScoreLog::class)->orderByDesc('created_at');
+    }
+
+    public function activeSequence(): HasOne
+    {
+        return $this->hasOne(LeadSequence::class)->where('status', 'active');
     }
 
     public function getCustomFieldsAttribute(): array

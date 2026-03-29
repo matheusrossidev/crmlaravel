@@ -11,6 +11,7 @@ use App\Notifications\LeadAssignedNotification;
 use App\Notifications\NewLeadNotification;
 use App\Notifications\SystemNotification;
 use App\Notifications\WhatsappConversationAssignedNotification;
+use App\Notifications\LeadStageChangedNotification;
 use App\Notifications\WhatsappMessageNotification;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
@@ -108,6 +109,11 @@ class NotificationDispatcher
             ),
             'campaign_completed' => new CampaignCompletedNotification(
                 $data['campaign_name'] ?? 'Campanha',
+                $data['url'] ?? null,
+            ),
+            'lead_stage_changed' => new LeadStageChangedNotification(
+                $data['lead_name'] ?? 'Lead',
+                $data['stage_name'] ?? '',
                 $data['url'] ?? null,
             ),
             'master_notification' => new SystemNotification(

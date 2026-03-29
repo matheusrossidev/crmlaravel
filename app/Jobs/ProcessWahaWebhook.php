@@ -689,6 +689,14 @@ class ProcessWahaWebhook implements ShouldQueue
                             'conversation' => $conversation,
                         ]);
                     } catch (\Throwable) {}
+
+                    // Notificação: novo lead via WhatsApp
+                    try {
+                        (new \App\Services\NotificationDispatcher())->dispatch('new_lead', [
+                            'lead_name' => $lead->name,
+                            'url'       => route('chats.index') . '?open=' . $conversation->id,
+                        ], $instance->tenant_id);
+                    } catch (\Throwable) {}
                 }
             } else {
                 Log::channel('whatsapp')->warning('Lead não criado — tenant sem pipeline configurado', ['phone' => $phone]);
@@ -901,6 +909,13 @@ class ProcessWahaWebhook implements ShouldQueue
                     'conversation' => $conversation,
                     'lead'         => $leadForEngine,
                 ]);
+            } catch (\Throwable) {}
+        }
+
+        // Exit nurture sequences on inbound message (lead replied)
+        if (! $isFromMe && ! $isGroup && $conversation->lead_id) {
+            try {
+                (new \App\Services\NurtureSequenceService())->exitAllForLead($conversation->lead_id, 'replied');
             } catch (\Throwable) {}
         }
     }

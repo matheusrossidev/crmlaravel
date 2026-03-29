@@ -13,6 +13,7 @@ return [
     'custom_fields'  => 'Custom Fields',
     'lost_reasons'   => 'Lost Reasons',
     'tags'           => 'Tags',
+    'lead_scoring'   => 'Lead Scoring',
     'automation'     => 'Automation',
     'chatbot'        => 'Chatbot',
     'ai_agents'      => 'AI Agents',

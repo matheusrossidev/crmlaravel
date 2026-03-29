@@ -141,6 +141,23 @@
                 </div>
             </div>
 
+            {{-- Sequência ativa + Score --}}
+            <div id="sequenceBadge" style="display:none;margin-top:14px;">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <div id="seqBadgeInner" style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:#eff6ff;border-radius:10px;flex:1;min-width:0;">
+                        <i class="bi bi-arrow-repeat" style="color:#0085f3;font-size:15px;flex-shrink:0;"></i>
+                        <div style="min-width:0;">
+                            <div id="seqBadgeName" style="font-size:12.5px;font-weight:600;color:#1a1d23;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                            <div id="seqBadgeStep" style="font-size:11.5px;color:#6b7280;"></div>
+                        </div>
+                    </div>
+                    <div id="scoreBadgeDrawer" style="display:none;align-items:center;gap:4px;padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:700;">
+                        <i class="bi bi-lightning-fill" style="font-size:11px;"></i>
+                        <span id="scoreBadgeVal"></span>
+                    </div>
+                </div>
+            </div>
+
             {{-- Notas (múltiplas — só em modo edição) --}}
             <div id="notesSection" style="display:none;margin-top:18px;">
                 <div class="drawer-section-label">{{ __('leads.notes') }}</div>
@@ -824,6 +841,40 @@ function populateDrawer(res) {
 
     // Agendamentos
     loadDrawerScheduled(lead.id);
+
+    // Sequência ativa
+    const seqBadge = document.getElementById('sequenceBadge');
+    const seq = lead.active_sequence;
+    if (seq && seq.status === 'active') {
+        document.getElementById('seqBadgeName').textContent = seq.name || 'Sequência';
+        document.getElementById('seqBadgeStep').textContent = `Step ${seq.current_step}/${seq.total_steps}`;
+        seqBadge.style.display = '';
+    } else {
+        seqBadge.style.display = 'none';
+    }
+
+    // Score badge no drawer
+    const scoreBadge = document.getElementById('scoreBadgeDrawer');
+    const scoreVal = lead.score || 0;
+    if (scoreVal > 0) {
+        const cls = scoreVal >= 70 ? ['#ecfdf5','#059669'] : scoreVal >= 30 ? ['#fffbeb','#d97706'] : ['#f3f4f6','#9ca3af'];
+        scoreBadge.style.display = 'flex';
+        scoreBadge.style.background = cls[0];
+        scoreBadge.style.color = cls[1];
+        document.getElementById('scoreBadgeVal').textContent = scoreVal;
+        // Show sequence badge container even if no sequence (for score alone)
+        seqBadge.style.display = '';
+        if (!seq || seq.status !== 'active') {
+            document.getElementById('seqBadgeInner').style.display = 'none';
+        } else {
+            document.getElementById('seqBadgeInner').style.display = 'flex';
+        }
+    } else {
+        scoreBadge.style.display = 'none';
+        if (!seq || seq.status !== 'active') {
+            seqBadge.style.display = 'none';
+        }
+    }
 }
 
 // ── Carregar etapas no select quando pipeline muda ────────────────────────
@@ -1187,6 +1238,8 @@ function resetDrawerForm() {
     document.getElementById('customFieldsContainer').innerHTML = '';
     document.getElementById('attachmentsSection').style.display = 'none';
     document.getElementById('attachmentsList').innerHTML = '';
+    document.getElementById('sequenceBadge').style.display = 'none';
+    document.getElementById('scoreBadgeDrawer').style.display = 'none';
     document.getElementById('productsSection').style.display = 'none';
     document.getElementById('productsList').innerHTML = '';
     document.getElementById('productsTotal').style.display = 'none';
