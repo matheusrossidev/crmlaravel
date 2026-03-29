@@ -141,12 +141,13 @@ class OnboardingController extends Controller
     /**
      * Result page — shows what was generated.
      */
-    public function result(): View|RedirectResponse
+    public function result(): View
     {
         $tenant = auth()->user()->tenant;
 
+        // Mark onboarding as complete if not already (safety net)
         if ($tenant && $tenant->onboarding_completed_at === null) {
-            return redirect()->route('onboarding.show');
+            $tenant->update(['onboarding_completed_at' => now()]);
         }
 
         return view('tenant.onboarding.result', [
