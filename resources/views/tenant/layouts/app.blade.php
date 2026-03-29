@@ -904,7 +904,7 @@
             <div class="trial-widget" title="Seu período de teste termina em {{ $__trialDays }} dias">
                 <div class="trial-widget-text">
                     <i class="bi bi-clock-history"></i>
-                    <span>Trial: <strong>{{ $__trialDays }} {{ $__trialDays === 1 ? 'dia' : 'dias' }}</strong></span>
+                    <span>Trial: <strong>{{ $__trialDays }} {{ trans_choice('common.days_count', $__trialDays) }}</strong></span>
                 </div>
                 <div class="trial-widget-bar">
                     <div class="trial-widget-bar-fill" style="width:{{ $__trialPct }}%"></div>
@@ -969,7 +969,7 @@
     @if($__showTrial ?? false)
     <div class="trial-mobile-banner">
         <i class="bi bi-clock-history"></i>
-        <span>Trial: {{ $__trialDays }} {{ $__trialDays === 1 ? 'dia' : 'dias' }} restantes</span>
+        <span>Trial: {{ $__trialDays }} {{ trans_choice('common.days_count', $__trialDays) }}</span>
         <div class="trial-mobile-bar">
             <div class="trial-mobile-bar-fill" style="width:{{ $__trialPct }}%"></div>
         </div>

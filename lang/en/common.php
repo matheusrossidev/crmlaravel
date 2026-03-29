@@ -35,6 +35,7 @@ return [
     'decimal_sep'      => '.',
     'thousands_sep'    => ',',
     'per_month'        => '/mo',
+    'days_count'       => '{1} day|[2,*] days',
     'language'         => 'Language',
     'portuguese'       => 'Português (Brasil)',
     'english'          => 'English',
