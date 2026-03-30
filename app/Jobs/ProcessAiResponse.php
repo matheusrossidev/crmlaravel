@@ -949,6 +949,17 @@ class ProcessAiResponse implements ShouldQueue
             }
         } catch (\Throwable) {}
 
+        // Agent media files (screenshots, catalogs, etc.)
+        $agentMediaCtx = [];
+        try {
+            $agentMediaCtx = $agent->mediaFiles()->get()->map(fn ($m) => [
+                'id'          => $m->id,
+                'name'        => $m->original_name,
+                'description' => $m->description ?? $m->original_name,
+                'type'        => str_starts_with($m->mime_type, 'image/') ? 'imagem' : 'documento',
+            ])->toArray();
+        } catch (\Throwable) {}
+
         $agnoResult = app(AgnoService::class)->chat([
             'agent_id'        => $agent->id,
             'tenant_id'       => $agent->tenant_id,
@@ -965,6 +976,7 @@ class ProcessAiResponse implements ShouldQueue
             'lead_notes'      => $notesCtx,
             'products'        => $productsCtx,
             'lead_products'   => $leadProductsCtx,
+            'available_media' => $agentMediaCtx,
             'language'        => $agent->language ?? 'pt-BR',
         ]);
 

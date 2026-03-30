@@ -23,6 +23,7 @@ class ChatRequest(BaseModel):
     lead_notes: list[dict[str, Any]] = []
     products: list[dict[str, Any]] = []
     lead_products: list[dict[str, Any]] = []
+    available_media: list[dict[str, Any]] = []
     language: str = "pt-BR"
 
 

@@ -60,6 +60,7 @@ async def chat(req: ChatRequest) -> AgentResponse:
             lead_notes=req.lead_notes if req.lead_notes else None,
             products=req.products if req.products else None,
             lead_products=req.lead_products if req.lead_products else None,
+            available_media=req.available_media if req.available_media else None,
         )
 
         # Build input with conversation history for context

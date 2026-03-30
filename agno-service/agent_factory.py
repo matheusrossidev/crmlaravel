@@ -54,6 +54,7 @@ def get_or_create_agent(
     lead_notes: list[dict] | None = None,
     products: list[dict] | None = None,
     lead_products: list[dict] | None = None,
+    available_media: list[dict] | None = None,
 ) -> Agent:
     """Return a cached Agent, creating it on first call or after config update."""
 
@@ -79,6 +80,7 @@ def get_or_create_agent(
         lead_notes or [],
         products or [],
         lead_products or [],
+        available_media or [],
     )
 
     agent = Agent(
@@ -128,6 +130,7 @@ def _build_instructions(
     lead_notes: list[dict] | None = None,
     products: list[dict] | None = None,
     lead_products: list[dict] | None = None,
+    available_media: list[dict] | None = None,
 ) -> str:
     name = config.get("name", "Assistente")
     objective = config.get("objective", "ajudar clientes")
@@ -309,6 +312,21 @@ PRODUTOS VINCULADOS AO LEAD
 {chr(10).join(lp_lines)}
 TOTAL: {gt_str}""")
 
+    # ── Agent media (images, documents uploaded by admin) ────────────
+    if available_media:
+        media_lines = []
+        for m in available_media:
+            media_lines.append(f"  media_id {m['id']}: {m['name']} — {m.get('description', m['name'])} ({m.get('type', 'arquivo')})")
+        sections.append(f"""
+═══════════════════════════════════════
+MÍDIAS DISPONÍVEIS PARA ENVIO
+═══════════════════════════════════════
+{chr(10).join(media_lines)}
+
+Quando o contato pedir prints, fotos, imagens ou exemplos visuais, envie a mídia correspondente.
+Para enviar: {{"type": "send_media", "media_id": <id>}}
+SEMPRE envie a mídia quando relevante. NÃO diga que não pode enviar imagens.""")
+
     # ── Actions instructions ─────────────────────────────────────────
     sections.append(f"""
 ═══════════════════════════════════════
@@ -322,6 +340,7 @@ Inclua ações em "actions" quando necessário. O sistema PHP as executará.
 - create_note: registrar observação estratégica. {{"type": "create_note", "payload": {{"body": "Cliente pediu proposta por email"}}}}
 - update_custom_field: preencher campo personalizado. {{"type": "update_custom_field", "payload": {{"field": "interesse", "value": "premium"}}}}
 - assign_human: transferir para humano. {{"type": "assign_human", "payload": {{}}}}
+- send_media: enviar mídia do agente (prints, fotos, catálogos). {{"type": "send_media", "media_id": 42}}
 - send_product_media: enviar foto/vídeo de produto. {{"type": "send_product_media", "payload": {{"product_id": 1, "media_id": 42}}}}
 - add_product_to_lead: vincular produto ao lead. {{"type": "add_product_to_lead", "payload": {{"product_id": 1, "quantity": 2}}}}
 - remove_product_from_lead: remover produto do lead. {{"type": "remove_product_from_lead", "payload": {{"product_id": 1}}}}
