@@ -542,6 +542,16 @@
 
 @section('content')
 
+<div class="page-container" style="padding-bottom:0;">
+    <div style="margin-bottom:20px;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#97A3B7;margin-bottom:4px;">{{ __('nav.reports') ?? 'RELATÓRIOS' }}</div>
+        <div>
+            <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('reports.title') ?? 'Indicadores' }}</h1>
+            <p style="font-size:13.5px;color:#677489;margin:0;">Analise o desempenho de vendas e conversão.</p>
+        </div>
+    </div>
+</div>
+
 {{-- ── Barra de filtros (full width) ─────────────────────────────────── --}}
 <div class="report-filter-wrap">
     <form method="GET" action="{{ route('reports.index') }}" id="reportFilterForm">

@@ -253,12 +253,14 @@
 @section('content')
 <div class="page-container">
 
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:8px;">
-            <i class="bi bi-people" style="color:#3B82F6;font-size:16px;"></i>
-            <span style="font-size:15px;font-weight:700;color:#1a1d23;">{{ __('leads.contacts_title') }}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;">
+    <div style="margin-bottom:20px;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#97A3B7;margin-bottom:4px;">CRM</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div>
+                <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('leads.contacts_title') }}</h1>
+                <p style="font-size:13.5px;color:#677489;margin:0;">Gerencie seus leads e contatos.</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <form method="GET" action="{{ route('leads.index') }}" id="filterForm" style="display:flex;align-items:center;gap:6px;">
                 <div style="position:relative;">
                     <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:13px;"></i>

@@ -84,7 +84,8 @@ class LeadController extends Controller
         $stages  = PipelineStage::whereHas('pipeline', fn ($q) => $q->where('tenant_id', activeTenantId()))
             ->orderBy('position')
             ->get();
-        $pipelines = Pipeline::when($allowedPipelineIds, fn ($q) => $q->whereIn('id', $allowedPipelineIds))
+        $pipelines = Pipeline::with('stages')
+            ->when($allowedPipelineIds, fn ($q) => $q->whereIn('id', $allowedPipelineIds))
             ->orderBy('sort_order')->get();
         // Lista de origens distintas para filtro
         $sources = Lead::distinct()->pluck('source')->filter()->sort()->values();

@@ -9,6 +9,8 @@ return [
     'calendar'       => 'Agenda',
     'tasks'          => 'Tarefas',
     'lists'          => 'Listas',
+    'goals'          => 'Metas',
+    'nps'            => 'NPS',
     'pipelines'      => 'Pipelines',
     'products'       => 'Produtos',
     'custom_fields'  => 'Campos Extras',

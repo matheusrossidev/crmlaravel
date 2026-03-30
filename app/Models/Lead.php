@@ -23,11 +23,14 @@ class Lead extends Model
         'utm_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid',
         'birthday',
         'score', 'score_updated_at',
+        'opted_out', 'opted_out_at', 'opted_out_reason',
     ];
 
     protected $casts = [
         'tags'                  => 'array',
         'exclude_from_pipeline' => 'boolean',
+        'opted_out'             => 'boolean',
+        'opted_out_at'          => 'datetime',
         'value'            => 'decimal:2',
         'birthday'         => 'date',
         'score'            => 'integer',

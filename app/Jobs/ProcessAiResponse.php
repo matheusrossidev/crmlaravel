@@ -103,6 +103,15 @@ class ProcessAiResponse implements ShouldQueue
             return;
         }
 
+        // ── Verificar opt-out do lead ─────────────────────────────────────────
+        if ($conv->lead_id) {
+            $lead = \App\Models\Lead::withoutGlobalScope('tenant')->find($conv->lead_id);
+            if ($lead && $lead->opted_out) {
+                Log::channel('whatsapp')->info('AI job: lead em opt-out, ignorando', ['lead_id' => $lead->id]);
+                return;
+            }
+        }
+
         $agent = $conv->aiAgent;
         if (! $agent || ! $agent->is_active) {
             Log::channel('whatsapp')->info('AI job: agente inativo ou removido', [

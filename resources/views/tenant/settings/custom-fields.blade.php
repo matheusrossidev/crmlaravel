@@ -149,13 +149,20 @@
 @section('content')
 <div class="page-container">
 
-    <div class="cf-card">
-        <div class="cf-card-header">
-            <h3><i class="bi bi-layout-text-window-sidebar" style="color:#3B82F6;"></i> {{ __('settings.cf_heading') }}</h3>
-            <button class="btn-new" onclick="openDrawer()">
+    <div style="margin-bottom:20px;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#97A3B7;margin-bottom:4px;">CRM</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div>
+                <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('settings.cf_heading') }}</h1>
+                <p style="font-size:13.5px;color:#677489;margin:0;">Crie campos personalizados para seus leads.</p>
+            </div>
+            <button class="btn-primary-sm" onclick="openDrawer()">
                 <i class="bi bi-plus-lg"></i> {{ __('settings.cf_new') }}
             </button>
         </div>
+    </div>
+
+    <div class="cf-card">
 
         @if($fields->isEmpty())
         <div class="empty-state">

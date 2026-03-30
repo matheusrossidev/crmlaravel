@@ -81,6 +81,11 @@ Route::middleware(['locale'])->group(function () {
     Route::post('/2fa/challenge', [\App\Http\Controllers\Auth\TwoFactorController::class, 'verifyChallenge'])->name('2fa.verify');
 });
 
+// Survey público (sem auth — UUID identifica tudo)
+Route::get('/s/{uuid}', [\App\Http\Controllers\SurveyPublicController::class, 'showByUuid'])->name('survey.show');
+Route::post('/s/{uuid}', [\App\Http\Controllers\SurveyPublicController::class, 'answer'])->name('survey.answer');
+Route::get('/pesquisa/{slug}', [\App\Http\Controllers\SurveyPublicController::class, 'showBySlug'])->name('survey.slug');
+
 // Verificação de email e cadastro pendente (sem middleware guest para evitar loop)
 Route::get('/verify-email/{token}', [AuthController::class, 'verifyEmail'])->name('verify.email');
 Route::get('/cadastro-pendente', fn() => view('auth.pending'))->middleware('locale')->name('register.pending');
@@ -200,6 +205,23 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
         Route::delete('/{list}',                 'destroy')->name('destroy');
         Route::post('/{list}/members',           'addMembers')->name('members.add');
         Route::delete('/{list}/members/{lead}',  'removeMember')->name('members.remove');
+    });
+
+    // NPS / Pesquisas de Satisfação
+    Route::prefix('nps')->name('nps.')->controller(\App\Http\Controllers\Tenant\NpsSurveyController::class)->group(function () {
+        Route::get('/',              'index')->name('index');
+        Route::post('/',             'store')->name('store');
+        Route::put('/{survey}',      'update')->name('update');
+        Route::delete('/{survey}',   'destroy')->name('destroy');
+        Route::post('/{survey}/send', 'sendBulk')->name('send');
+    });
+
+    // Metas de Vendas
+    Route::prefix('metas')->name('goals.')->controller(\App\Http\Controllers\Tenant\SalesGoalController::class)->group(function () {
+        Route::get('/',            'index')->name('index');
+        Route::post('/',           'store')->name('store');
+        Route::put('/{goal}',      'update')->name('update');
+        Route::delete('/{goal}',   'destroy')->name('destroy');
     });
 
     // Leads / Contatos — exportar e importar ANTES do {lead} wildcard

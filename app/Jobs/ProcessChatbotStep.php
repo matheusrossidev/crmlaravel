@@ -41,6 +41,14 @@ class ProcessChatbotStep
             return;
         }
 
+        // Verificar opt-out do lead
+        if ($conv->lead_id) {
+            $lead = \App\Models\Lead::withoutGlobalScope('tenant')->find($conv->lead_id);
+            if ($lead && $lead->opted_out) {
+                return;
+            }
+        }
+
         // Bloquear se tenant com serviço bloqueado (trial expirado, suspenso, etc.)
         $tenant = Tenant::find($conv->tenant_id);
         if ($tenant && $tenant->isServiceBlocked()) {

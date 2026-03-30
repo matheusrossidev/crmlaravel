@@ -130,14 +130,17 @@
 @section('content')
 <div class="page-container">
 
-    <div class="section-header">
-        <div>
-            <div class="section-title">{{ __('scoring.title') }}</div>
-            <div class="section-subtitle">{{ __('scoring.subtitle') }}</div>
+    <div style="margin-bottom:20px;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#97A3B7;margin-bottom:4px;">CRM</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div>
+                <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('scoring.title') }}</h1>
+                <p style="font-size:13.5px;color:#677489;margin:0;">{{ __('scoring.subtitle') }}</p>
+            </div>
+            <button class="btn-primary-sm" id="btnNewRule">
+                <i class="bi bi-plus-lg"></i> {{ __('scoring.new_rule') }}
+            </button>
         </div>
-        <button class="btn-primary-sm" id="btnNewRule">
-            <i class="bi bi-plus-lg"></i> {{ __('scoring.new_rule') }}
-        </button>
     </div>
 
     <div class="scoring-table-wrap">

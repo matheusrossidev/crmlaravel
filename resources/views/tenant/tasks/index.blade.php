@@ -164,11 +164,14 @@
 
 @section('content')
 <div class="page-container">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-        <i class="bi bi-check2-square" style="color:#3B82F6;font-size:16px;"></i>
-        <span style="font-size:15px;font-weight:700;color:#1a1d23;">{{ __('tasks.title') }}</span>
-        <div style="margin-left:auto;">
-            <button class="btn-primary-sm" onclick="openTaskDrawer()" style="display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 14px;">
+    <div style="margin-bottom:20px;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#97A3B7;margin-bottom:4px;">CRM</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div>
+                <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('tasks.title') }}</h1>
+                <p style="font-size:13.5px;color:#677489;margin:0;">Organize e acompanhe suas tarefas.</p>
+            </div>
+            <button class="btn-primary-sm" onclick="openTaskDrawer()">
                 <i class="bi bi-plus-lg"></i> {{ __('tasks.new_task') }}
             </button>
         </div>

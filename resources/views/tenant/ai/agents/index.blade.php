@@ -345,10 +345,14 @@
 @section('content')
 <div class="page-container">
 
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-        <i class="bi bi-robot" style="color:#3B82F6;font-size:16px;"></i>
-        <span style="font-size:15px;font-weight:700;color:#1a1d23;">{{ __('ai_agents.index_heading') }}</span>
-        <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+    <div style="margin-bottom:20px;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#97A3B7;margin-bottom:4px;">{{ __('nav.automation') ?? 'AUTOMAÇÃO' }}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div>
+                <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('ai_agents.index_heading') }}</h1>
+                <p style="font-size:13.5px;color:#677489;margin:0;">Configure agentes inteligentes para seu atendimento.</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
             @if(auth()->user()->tenant->ai_tokens_exhausted)
             <button onclick="openQuotaModal()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#fff7ed;color:#ea580c;border:1.5px solid #fed7aa;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;">
                 <i class="bi bi-exclamation-triangle-fill"></i> {{ __('ai_agents.tokens_exhausted_btn') }}

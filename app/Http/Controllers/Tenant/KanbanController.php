@@ -36,7 +36,8 @@ class KanbanController extends Controller
     {
         $allowedPipelineIds = auth()->user()->allowedPipelineIds();
 
-        $pipelines = Pipeline::when($allowedPipelineIds, fn ($q) => $q->whereIn('id', $allowedPipelineIds))
+        $pipelines = Pipeline::with('stages')
+            ->when($allowedPipelineIds, fn ($q) => $q->whereIn('id', $allowedPipelineIds))
             ->orderBy('sort_order')->get();
 
         $pipelineId = $request->get('pipeline_id');

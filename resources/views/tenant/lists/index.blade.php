@@ -78,16 +78,17 @@
 @section('content')
 <div class="page-container">
 
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
-        <div>
-            <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:700;color:#1a1d23;margin:0 0 4px;">
-                <i class="bi bi-list-check" style="color:#0085f3;"></i> Listas de Leads
-            </h1>
-            <p style="font-size:13px;color:#6b7280;margin:0;">Organize seus leads em listas estáticas ou dinâmicas.</p>
+    <div style="margin-bottom:20px;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#97A3B7;margin-bottom:4px;">CRM</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div>
+                <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">Listas de Leads</h1>
+                <p style="font-size:13.5px;color:#677489;margin:0;">Organize seus leads em listas estáticas ou dinâmicas.</p>
+            </div>
+            <button class="btn-primary-sm" onclick="openDrawer()">
+                <i class="bi bi-plus-lg"></i> Nova Lista
+            </button>
         </div>
-        <button class="btn-primary-sm" onclick="openDrawer()">
-            <i class="bi bi-plus-lg"></i> Nova Lista
-        </button>
     </div>
 
     <div class="content-card">

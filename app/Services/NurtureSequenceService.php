@@ -157,6 +157,11 @@ class NurtureSequenceService
 
     private function executeStep(NurtureSequenceStep $step, Lead $lead, ?WhatsappConversation $conv, LeadSequence $ls): void
     {
+        if ($lead->opted_out) {
+            $ls->markExited('opted_out');
+            return;
+        }
+
         match ($step->type) {
             'message'    => $this->executeMessage($step, $lead, $conv),
             'action'     => $this->executeAction($step, $lead),

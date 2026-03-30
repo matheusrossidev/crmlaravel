@@ -725,9 +725,9 @@
             ->get(['id', 'name', 'logo'])
         : collect();
 
-    $crmActive = request()->routeIs('crm*', 'leads*', 'lists*', 'calendar.*', 'tasks*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.lost-reasons*', 'settings.tags*', 'settings.scoring*');
+    $crmActive = request()->routeIs('crm*', 'leads*', 'lists*', 'goals*', 'calendar.*', 'tasks*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.lost-reasons*', 'settings.tags*', 'settings.scoring*');
     $autoActive = request()->routeIs('chatbot.flows.*', 'ai.agents.*', 'ai.intent-signals.*', 'settings.automations*', 'settings.sequences*', 'settings.ig-automations.*');
-    $reportActive = request()->routeIs('reports*', 'campaigns*');
+    $reportActive = request()->routeIs('reports*', 'campaigns*', 'nps*');
     $settingsActive = (request()->routeIs('settings.*') && !request()->routeIs('settings.automations*', 'settings.sequences*', 'settings.pipelines*', 'settings.products*', 'settings.custom-fields*', 'settings.lost-reasons*', 'settings.tags*', 'settings.scoring*', 'settings.ig-automations.*')) || request()->routeIs('billing.*');
     $igConnected = \App\Models\InstagramInstance::where('status', 'connected')->exists();
 @endphp
@@ -834,6 +834,9 @@
                     <a href="{{ route('lists.index') }}" class="nm-dd-item {{ request()->routeIs('lists*') ? 'active' : '' }}">
                         <i class="bi bi-list-check"></i> {{ __('nav.lists') ?? 'Listas' }}
                     </a>
+                    <a href="{{ route('goals.index') }}" class="nm-dd-item {{ request()->routeIs('goals*') ? 'active' : '' }}">
+                        <i class="bi bi-trophy"></i> {{ __('nav.goals') ?? 'Metas' }}
+                    </a>
                     <div class="nm-dd-sep"></div>
                     <a href="{{ route('settings.pipelines') }}" class="nm-dd-item {{ request()->routeIs('settings.pipelines*') ? 'active' : '' }}">
                         <i class="bi bi-funnel"></i> {{ __('nav.pipelines') }}
@@ -893,6 +896,9 @@
                     </a>
                     <a href="{{ route('campaigns.index') }}" class="nm-dd-item {{ request()->routeIs('campaigns*') ? 'active' : '' }}">
                         <i class="bi bi-megaphone"></i> {{ __('nav.campaigns') }}
+                    </a>
+                    <a href="{{ route('nps.index') }}" class="nm-dd-item {{ request()->routeIs('nps*') ? 'active' : '' }}">
+                        <i class="bi bi-emoji-smile"></i> {{ __('nav.nps') ?? 'NPS' }}
                     </a>
                 </div>
             </div>

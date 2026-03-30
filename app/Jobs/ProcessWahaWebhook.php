@@ -918,6 +918,41 @@ class ProcessWahaWebhook implements ShouldQueue
                 (new \App\Services\NurtureSequenceService())->exitAllForLead($conversation->lead_id, 'replied');
             } catch (\Throwable) {}
         }
+
+        // Opt-out keyword detection
+        if (! $isFromMe && ! $isGroup && $conversation->lead_id && $body) {
+            $optOutKeywords = ['sair', 'parar', 'stop', 'cancelar', 'não quero', 'nao quero', 'unsubscribe'];
+            $normalizedBody = mb_strtolower(trim($body));
+
+            if (in_array($normalizedBody, $optOutKeywords, true)) {
+                try {
+                    $lead = \App\Models\Lead::withoutGlobalScope('tenant')->find($conversation->lead_id);
+                    if ($lead && !$lead->opted_out) {
+                        $lead->update([
+                            'opted_out'        => true,
+                            'opted_out_at'     => now(),
+                            'opted_out_reason' => 'keyword',
+                        ]);
+
+                        // Send confirmation
+                        $waha = new \App\Services\WahaService($instance->session_name);
+                        $waha->sendText(
+                            $conversation->phone . '@c.us',
+                            'Você foi removido da nossa lista de contatos. Não enviaremos mais mensagens automáticas.'
+                        );
+
+                        // Pause active sequences
+                        (new \App\Services\NurtureSequenceService())->exitAllForLead($lead->id, 'opted_out');
+
+                        \Log::channel('whatsapp')->info("Opt-out keyword detected", [
+                            'lead_id' => $lead->id, 'keyword' => $normalizedBody,
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    \Log::channel('whatsapp')->warning("Opt-out processing failed", ['error' => $e->getMessage()]);
+                }
+            }
+        }
     }
 
     private function handleReaction(WhatsappInstance $instance): void
