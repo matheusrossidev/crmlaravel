@@ -89,7 +89,7 @@ class TenantMiddleware
         if ($tenant) {
             // Parceiro aguardando aprovação
             if ($tenant->status === 'pending_approval') {
-                if (!$request->routeIs('logout', 'account.pending-approval')) {
+                if (!$request->routeIs('logout', 'account.pending-approval', 'agency.access.exit')) {
                     return redirect()->route('account.pending-approval');
                 }
                 return $next($request);
@@ -98,7 +98,7 @@ class TenantMiddleware
             // Conta suspensa ou inativa → página de bloqueio
             if (in_array($tenant->status, ['suspended', 'inactive'], true)) {
                 // Permitir logout e rotas de billing para regularização
-                if ($request->routeIs('logout', 'billing.checkout', 'billing.subscribe')) {
+                if ($request->routeIs('logout', 'billing.checkout', 'billing.subscribe', 'agency.access.exit')) {
                     return $next($request);
                 }
                 return redirect()->route('account.suspended');
@@ -107,21 +107,21 @@ class TenantMiddleware
             if (!$tenant->isExemptFromBilling()) {
                 // Parceiro sem assinatura → forçar checkout exclusivo do plano parceiro
                 if ($tenant->isPartner() && $tenant->subscription_status === null) {
-                    if (!$request->routeIs('billing.checkout', 'billing.subscribe', 'logout', 'account.suspended')) {
+                    if (!$request->routeIs('billing.checkout', 'billing.subscribe', 'logout', 'account.suspended', 'agency.access.exit')) {
                         return redirect()->route('billing.checkout');
                     }
                 }
 
                 // Trial expirado sem assinatura ativa → redireciona para checkout
                 if ($tenant->isTrialExpired() && !$tenant->hasActiveSubscription()) {
-                    if (!$request->routeIs('billing.checkout', 'billing.subscribe', 'logout', 'account.suspended')) {
+                    if (!$request->routeIs('billing.checkout', 'billing.subscribe', 'logout', 'account.suspended', 'agency.access.exit')) {
                         return redirect()->route('billing.checkout');
                     }
                 }
 
                 // Assinatura overdue/inactive → redireciona para página de cobrança
                 if (in_array($tenant->subscription_status, ['overdue', 'inactive'], true)) {
-                    if (!$request->routeIs('billing.checkout', 'billing.subscribe', 'settings.billing', 'billing.cancel', 'logout')) {
+                    if (!$request->routeIs('billing.checkout', 'billing.subscribe', 'settings.billing', 'billing.cancel', 'logout', 'agency.access.exit')) {
                         return redirect()->route('settings.billing');
                     }
                 }

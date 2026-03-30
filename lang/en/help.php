@@ -14,8 +14,8 @@ return [
         'How to set up an AI agent?',
         'How to import contacts?',
         'How to create an automation?',
-        'How to use the Kanban pipeline?',
-        'How to generate reports?',
+        'How to create an NPS survey?',
+        'How to set sales goals?',
     ],
     'sections' => [
 
@@ -378,6 +378,178 @@ return [
                     'question' => 'What actions can I configure in automations?',
                     'keywords' => ['automation actions', 'actions', 'action', 'send message', 'move lead', 'add tag', 'webhook', 'notify', 'available actions'],
                     'answer' => 'Available actions include: send WhatsApp message, move lead to another stage, add/remove tags, assign conversation to user/department, assign AI agent, send webhook, create lead note, send notification, and update lead fields. You can combine multiple actions in a single automation.',
+                ],
+            ],
+        ],
+
+        // =====================================================================
+        // 13. LEAD LISTS
+        // =====================================================================
+        'lead_lists' => [
+            'title' => 'Lead Lists',
+            'articles' => [
+                [
+                    'question' => 'How to create a lead list?',
+                    'keywords' => ['list', 'lists', 'create list', 'new list', 'segment', 'segmentation', 'group leads', 'lead list', 'lead segment'],
+                    'answer' => 'Go to CRM > Lists and click "New List". Choose between static (you add leads manually) or dynamic (define filters and the list updates automatically). Lists are useful for segmenting leads for campaigns, bulk actions, or analysis.',
+                ],
+                [
+                    'question' => 'What is the difference between static and dynamic lists?',
+                    'keywords' => ['static', 'dynamic', 'list difference', 'list type', 'filter list', 'automatic list', 'smart list'],
+                    'answer' => 'Static list: you manually add and remove leads — the list only changes when you edit it. Dynamic list: you define conditions (stage, tag, source, value, date, etc.) and the system automatically includes all matching leads. Dynamic lists update themselves as leads change.',
+                ],
+                [
+                    'question' => 'What filters can I use in dynamic lists?',
+                    'keywords' => ['list filters', 'list conditions', 'list rules', 'criteria', 'filter leads', 'dynamic conditions'],
+                    'answer' => 'You can filter by: pipeline stage, pipeline, tag, source, assigned user, campaign, value, score, creation date, has email/phone, and has open conversation. Combine multiple filters to create precise segments. Use the "Preview" button to see how many leads match before saving.',
+                ],
+            ],
+        ],
+
+        // =====================================================================
+        // 14. SALES GOALS
+        // =====================================================================
+        'sales_goals' => [
+            'title' => 'Sales Goals',
+            'articles' => [
+                [
+                    'question' => 'How to create sales goals?',
+                    'keywords' => ['goal', 'goals', 'target', 'create goal', 'sales goal', 'sales target', 'quota', 'objective', 'team goals'],
+                    'answer' => 'Go to CRM > Goals and click "New Goal". Define the period (monthly or weekly), the assigned salesperson, and the target (number of sales or revenue amount). The system shows progress bars to track each team member\'s performance in real time.',
+                ],
+                [
+                    'question' => 'How to track goal progress?',
+                    'keywords' => ['goal progress', 'track goal', 'performance', 'ranking', 'goal results', 'sales performance', 'goal status'],
+                    'answer' => 'On the CRM > Goals page, you can see each salesperson\'s progress with visual bars showing the percentage achieved. Compare team performance side by side. Goals update automatically as sales are closed in the pipeline.',
+                ],
+            ],
+        ],
+
+        // =====================================================================
+        // 15. NPS / SATISFACTION SURVEYS
+        // =====================================================================
+        'nps' => [
+            'title' => 'NPS / Satisfaction Surveys',
+            'articles' => [
+                [
+                    'question' => 'How to create an NPS survey?',
+                    'keywords' => ['nps', 'survey', 'satisfaction', 'create survey', 'new survey', 'feedback', 'rating', 'customer satisfaction', 'net promoter'],
+                    'answer' => 'Go to CRM > NPS and click "New Survey". Define the title and thank-you message. Each survey generates a unique link that can be shared with customers. Customers respond with a score from 0 to 10 and can leave an optional comment.',
+                ],
+                [
+                    'question' => 'How to send NPS surveys to customers?',
+                    'keywords' => ['send survey', 'send nps', 'share survey', 'survey link', 'whatsapp survey', 'distribute survey'],
+                    'answer' => 'You have two options: 1) Copy the unique survey link and send it manually. 2) Use bulk send — select leads and send via WhatsApp automatically. You can also configure automatic sending when a sale is closed in the pipeline.',
+                ],
+                [
+                    'question' => 'How to analyze NPS results?',
+                    'keywords' => ['nps results', 'nps analysis', 'nps dashboard', 'nps metrics', 'promoters', 'detractors', 'nps score', 'nps report'],
+                    'answer' => 'On the CRM > NPS page, the dashboard shows: overall NPS score (-100 to +100), percentage of promoters (9-10), passives (7-8), and detractors (0-6), monthly trend, per-salesperson analysis, and recent comments. Use this data to identify areas for improvement.',
+                ],
+                [
+                    'question' => 'What does the NPS score mean?',
+                    'keywords' => ['nps score', 'what is nps', 'nps meaning', 'how nps works', 'calculate nps', 'interpret nps', 'understand nps'],
+                    'answer' => 'NPS (Net Promoter Score) ranges from -100 to +100. It is calculated by subtracting the percentage of detractors (0-6) from the percentage of promoters (9-10). Above 0 is positive, above 50 is excellent, above 75 is world-class. It is a global metric used to measure customer satisfaction and loyalty.',
+                ],
+            ],
+        ],
+
+        // =====================================================================
+        // 16. PRODUCTS
+        // =====================================================================
+        'products' => [
+            'title' => 'Products',
+            'articles' => [
+                [
+                    'question' => 'How to add products?',
+                    'keywords' => ['product', 'products', 'create product', 'add product', 'catalog', 'new product', 'product catalog'],
+                    'answer' => 'Go to Settings > Products and click "New Product". Fill in the name, description, price, SKU, and select a category. You can also upload product images and documents. Products are available for associating with leads and for AI agents to reference during conversations.',
+                ],
+                [
+                    'question' => 'How to associate products with a lead?',
+                    'keywords' => ['associate product', 'product lead', 'link product', 'add product lead', 'sell product', 'lead product'],
+                    'answer' => 'Open the lead detail panel and go to the "Products" tab. Click "Add Product", select from your catalog, set the quantity, and adjust the price if needed. This helps track which products each lead is interested in and calculate potential deal value.',
+                ],
+                [
+                    'question' => 'How to organize products into categories?',
+                    'keywords' => ['product category', 'categories', 'organize products', 'group products', 'product type', 'product organization'],
+                    'answer' => 'On the Products page (Settings > Products), you can create categories to organize your catalog. Click "New Category", define the name, and then associate products with it. Categories make it easier to search and organize when you have many products.',
+                ],
+            ],
+        ],
+
+        // =====================================================================
+        // 17. LEAD SCORING
+        // =====================================================================
+        'lead_scoring' => [
+            'title' => 'Lead Scoring',
+            'articles' => [
+                [
+                    'question' => 'What is lead scoring and how to configure it?',
+                    'keywords' => ['scoring', 'score', 'lead scoring', 'lead points', 'classification', 'prioritize leads', 'lead rating', 'lead rank'],
+                    'answer' => 'Lead scoring automatically assigns points to leads based on actions and characteristics, helping prioritize those most likely to close. Configure it in Settings > Scoring. Create rules like: "+10 points when VIP tag is added", "+5 when moved to Proposal stage". The score appears on the lead card in the Kanban and contacts list.',
+                ],
+                [
+                    'question' => 'What criteria can I use for scoring?',
+                    'keywords' => ['scoring criteria', 'scoring rules', 'scoring conditions', 'automatic scoring', 'point rules', 'score rules'],
+                    'answer' => 'You can create rules based on: pipeline stage changes, tag additions, field completion (email, phone), deal value, lead source, and other interactions. Each rule defines how many points are added (or removed) when the condition is met.',
+                ],
+            ],
+        ],
+
+        // =====================================================================
+        // 18. QUICK & SCHEDULED MESSAGES
+        // =====================================================================
+        'messages' => [
+            'title' => 'Quick & Scheduled Messages',
+            'articles' => [
+                [
+                    'question' => 'How to use quick messages in chat?',
+                    'keywords' => ['quick message', 'shortcut', 'message template', 'quick reply', 'canned response', 'quick messages', 'saved reply'],
+                    'answer' => 'Quick messages are reusable templates for common responses (greetings, pricing, FAQs). Access the Chats area and look for the Quick Messages option to create, edit, and organize your templates. During a conversation, use the shortcut to insert a message quickly without typing it all again.',
+                ],
+                [
+                    'question' => 'How to schedule a WhatsApp message?',
+                    'keywords' => ['schedule message', 'scheduled message', 'send later', 'schedule whatsapp', 'future message', 'timed message', 'delayed message'],
+                    'answer' => 'Open a lead\'s detail panel and go to the scheduled messages section. Click "Schedule Message", write the text, and set the date and time for sending. The system will send it automatically at the scheduled time. Ideal for follow-ups, reminders, and planned outreach.',
+                ],
+            ],
+        ],
+
+        // =====================================================================
+        // 19. PARTNER PROGRAM
+        // =====================================================================
+        'partners' => [
+            'title' => 'Partner Program',
+            'articles' => [
+                [
+                    'question' => 'How does the partner program work?',
+                    'keywords' => ['partner', 'agency', 'partnership', 'partner program', 'reseller', 'referral', 'agency partner', 'affiliate'],
+                    'answer' => 'The Partner Program allows agencies to register to manage client accounts. After registration and approval, the agency receives a unique referral code. Clients who sign up with this code are linked to the agency. The agency can view and access their clients\' accounts.',
+                ],
+                [
+                    'question' => 'How to access a client\'s account as a partner?',
+                    'keywords' => ['access client', 'impersonate', 'enter client account', 'view client', 'manage client', 'my clients', 'client access'],
+                    'answer' => 'Go to My Clients (/agencia/meus-clientes) to see all clients referred by your agency. Click "Access" to enter the client\'s account. You\'ll have view access to monitor progress. To return to your own account, click "Return to my account" on the top banner.',
+                ],
+                [
+                    'question' => 'How to link my account to a partner agency?',
+                    'keywords' => ['link agency', 'agency code', 'partner code', 'associate agency', 'referral code', 'connect agency'],
+                    'answer' => 'If you received a partner agency code, go to Settings and look for the option to link an agency code. Enter the code provided by the agency and confirm. Your account will be linked and the agency will be able to monitor your platform usage.',
+                ],
+            ],
+        ],
+
+        // =====================================================================
+        // 20. ONBOARDING
+        // =====================================================================
+        'onboarding' => [
+            'title' => 'Onboarding',
+            'articles' => [
+                [
+                    'question' => 'How does onboarding work?',
+                    'keywords' => ['onboarding', 'initial setup', 'wizard', 'setup', 'first time', 'setup assistant', 'getting started wizard'],
+                    'answer' => 'When you create a new account, you go through a guided onboarding wizard that sets up your CRM automatically. The system uses AI to understand your business type and generates customized pipelines, stages, tags, chatbot flows, and AI agent. You can skip the onboarding if you prefer manual setup.',
                 ],
             ],
         ],

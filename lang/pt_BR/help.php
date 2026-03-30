@@ -14,8 +14,8 @@ return [
         'Como configurar um agente de IA?',
         'Como importar contatos?',
         'Como criar uma automacao?',
-        'Como usar o pipeline Kanban?',
-        'Como gerar relatorios?',
+        'Como criar uma pesquisa NPS?',
+        'Como criar metas de vendas?',
     ],
     'sections' => [
 
@@ -378,6 +378,178 @@ return [
                     'question' => 'Quais acoes posso configurar nas automacoes?',
                     'keywords' => ['acoes automacao', 'acoes', 'acao', 'enviar mensagem', 'mover lead', 'adicionar tag', 'webhook', 'notificar', 'acoes disponiveis'],
                     'answer' => 'As acoes disponiveis incluem: enviar mensagem no WhatsApp, mover lead para outra etapa, adicionar/remover tags, atribuir conversa a usuario/departamento, atribuir agente de IA, enviar webhook, criar nota no lead, enviar notificacao e atualizar campos do lead. Voce pode combinar multiplas acoes em uma unica automacao.',
+                ],
+            ],
+        ],
+
+        // =====================================================================
+        // 13. LEAD LISTS
+        // =====================================================================
+        'lead_lists' => [
+            'title' => 'Listas de Leads',
+            'articles' => [
+                [
+                    'question' => 'Como criar uma lista de leads?',
+                    'keywords' => ['lista', 'listas', 'criar lista', 'nova lista', 'segmentar', 'segmentacao', 'agrupar leads', 'lista leads'],
+                    'answer' => 'Va em CRM > Listas e clique em "Nova Lista". Escolha entre lista estatica (voce adiciona leads manualmente) ou dinamica (define filtros e a lista atualiza automaticamente). Listas sao uteis para segmentar leads para campanhas, acoes em massa ou analise.',
+                ],
+                [
+                    'question' => 'Qual a diferenca entre lista estatica e dinamica?',
+                    'keywords' => ['estatica', 'dinamica', 'diferenca lista', 'tipo lista', 'filtro lista', 'lista automatica'],
+                    'answer' => 'Lista estatica: voce adiciona e remove leads manualmente — a lista so muda quando voce altera. Lista dinamica: voce define condicoes (etapa, tag, origem, valor, data etc.) e o sistema inclui automaticamente todos os leads que se encaixam. A lista dinamica se atualiza sozinha conforme os leads mudam.',
+                ],
+                [
+                    'question' => 'Quais filtros posso usar em listas dinamicas?',
+                    'keywords' => ['filtros lista', 'condicoes lista', 'regras lista', 'criterios', 'filtrar leads'],
+                    'answer' => 'Voce pode filtrar por: etapa do pipeline, pipeline, tag, origem, responsavel, campanha, valor, score, data de criacao, se tem email/telefone, e se tem conversa aberta. Combine multiplos filtros para criar segmentos precisos. Use o botao "Visualizar" para ver quantos leads atendem aos criterios antes de salvar.',
+                ],
+            ],
+        ],
+
+        // =====================================================================
+        // 14. SALES GOALS
+        // =====================================================================
+        'sales_goals' => [
+            'title' => 'Metas de Vendas',
+            'articles' => [
+                [
+                    'question' => 'Como criar metas de vendas?',
+                    'keywords' => ['meta', 'metas', 'objetivo', 'criar meta', 'meta vendas', 'goal', 'target', 'alvo', 'metas vendedores'],
+                    'answer' => 'Va em CRM > Metas e clique em "Nova Meta". Defina o periodo (mensal ou semanal), o vendedor responsavel e o objetivo (quantidade de vendas ou valor em receita). O sistema mostra barras de progresso para acompanhar o desempenho de cada membro da equipe em tempo real.',
+                ],
+                [
+                    'question' => 'Como acompanhar o progresso das metas?',
+                    'keywords' => ['progresso meta', 'acompanhar meta', 'desempenho', 'ranking', 'resultado meta', 'performance'],
+                    'answer' => 'Na pagina CRM > Metas, voce ve o progresso de cada vendedor com barras visuais mostrando a porcentagem atingida. Compare o desempenho da equipe lado a lado. As metas sao atualizadas automaticamente conforme as vendas sao fechadas no pipeline.',
+                ],
+            ],
+        ],
+
+        // =====================================================================
+        // 15. NPS / SATISFACTION SURVEYS
+        // =====================================================================
+        'nps' => [
+            'title' => 'Pesquisas de Satisfacao (NPS)',
+            'articles' => [
+                [
+                    'question' => 'Como criar uma pesquisa NPS?',
+                    'keywords' => ['nps', 'pesquisa', 'satisfacao', 'survey', 'criar pesquisa', 'nova pesquisa', 'feedback', 'avaliacao', 'nota cliente'],
+                    'answer' => 'Va em CRM > NPS e clique em "Nova Pesquisa". Defina o titulo e a mensagem de agradecimento. Cada pesquisa gera um link unico que pode ser compartilhado com os clientes. Os clientes respondem com uma nota de 0 a 10 e podem deixar um comentario opcional.',
+                ],
+                [
+                    'question' => 'Como enviar pesquisas NPS para clientes?',
+                    'keywords' => ['enviar pesquisa', 'enviar nps', 'compartilhar pesquisa', 'link pesquisa', 'whatsapp pesquisa', 'mandar pesquisa'],
+                    'answer' => 'Voce tem duas opcoes: 1) Copiar o link unico da pesquisa e enviar manualmente. 2) Usar o envio em massa — selecione leads e envie via WhatsApp automaticamente. Tambem e possivel configurar o envio automatico quando uma venda e fechada no pipeline.',
+                ],
+                [
+                    'question' => 'Como analisar os resultados do NPS?',
+                    'keywords' => ['resultado nps', 'analise nps', 'dashboard nps', 'metricas nps', 'promotores', 'detratores', 'score nps'],
+                    'answer' => 'Na pagina CRM > NPS, o dashboard mostra: score NPS geral (-100 a +100), percentual de promotores (9-10), neutros (7-8) e criticos (0-6), tendencia mensal, analise por vendedor e comentarios recentes. Use esses dados para identificar pontos de melhoria no atendimento.',
+                ],
+                [
+                    'question' => 'O que significa o score NPS?',
+                    'keywords' => ['score nps', 'o que e nps', 'nota nps', 'como funciona nps', 'calcular nps', 'interpretar nps'],
+                    'answer' => 'O NPS (Net Promoter Score) vai de -100 a +100. E calculado subtraindo o percentual de criticos (0-6) do percentual de promotores (9-10). Acima de 0 e positivo, acima de 50 e excelente, acima de 75 e de classe mundial. E uma metrica global usada para medir a satisfacao e lealdade dos clientes.',
+                ],
+            ],
+        ],
+
+        // =====================================================================
+        // 16. PRODUCTS
+        // =====================================================================
+        'products' => [
+            'title' => 'Produtos',
+            'articles' => [
+                [
+                    'question' => 'Como cadastrar produtos?',
+                    'keywords' => ['produto', 'produtos', 'criar produto', 'cadastrar produto', 'catalogo', 'novo produto', 'adicionar produto'],
+                    'answer' => 'Va em Configuracoes > Produtos e clique em "Novo Produto". Preencha nome, descricao, preco, SKU e selecione uma categoria. Voce tambem pode fazer upload de imagens e documentos do produto. Os produtos ficam disponiveis para associar a leads e para agentes de IA enviarem durante conversas.',
+                ],
+                [
+                    'question' => 'Como associar produtos a um lead?',
+                    'keywords' => ['associar produto', 'produto lead', 'vincular produto', 'adicionar produto lead', 'produto contato', 'vender produto'],
+                    'answer' => 'Abra o painel de detalhes do lead e va na aba "Produtos". Clique em "Adicionar Produto", selecione o produto do catalogo, defina a quantidade e, se necessario, ajuste o preco. Isso ajuda a rastrear quais produtos cada lead tem interesse e calcular o valor potencial do negocio.',
+                ],
+                [
+                    'question' => 'Como organizar produtos em categorias?',
+                    'keywords' => ['categoria produto', 'categorias', 'organizar produtos', 'agrupar produtos', 'tipo produto'],
+                    'answer' => 'Na pagina de Produtos (Configuracoes > Produtos), voce pode criar categorias para organizar seu catalogo. Clique em "Nova Categoria", defina o nome e depois associe produtos a ela. Categorias facilitam a busca e organizacao quando voce tem muitos produtos.',
+                ],
+            ],
+        ],
+
+        // =====================================================================
+        // 17. LEAD SCORING
+        // =====================================================================
+        'lead_scoring' => [
+            'title' => 'Lead Scoring',
+            'articles' => [
+                [
+                    'question' => 'O que e lead scoring e como configurar?',
+                    'keywords' => ['scoring', 'pontuacao', 'score', 'lead scoring', 'pontos lead', 'classificacao', 'priorizar leads', 'nota lead'],
+                    'answer' => 'Lead scoring atribui pontos automaticamente aos leads com base em acoes e caracteristicas, ajudando a priorizar quem tem mais chance de fechar. Configure em Configuracoes > Scoring. Crie regras como: "+10 pontos quando tag VIP e adicionada", "+5 quando muda para etapa Proposta". O score aparece no card do lead no Kanban e na lista de contatos.',
+                ],
+                [
+                    'question' => 'Quais criterios posso usar no scoring?',
+                    'keywords' => ['criterios scoring', 'regras scoring', 'condicoes scoring', 'pontuacao automatica', 'regras pontuacao'],
+                    'answer' => 'Voce pode criar regras baseadas em: mudanca de etapa no pipeline, adicao de tags, preenchimento de campos (email, telefone), valor do negocio, origem do lead, e outras interacoes. Cada regra define quantos pontos sao adicionados (ou removidos) quando a condicao e atendida.',
+                ],
+            ],
+        ],
+
+        // =====================================================================
+        // 18. QUICK & SCHEDULED MESSAGES
+        // =====================================================================
+        'messages' => [
+            'title' => 'Mensagens Rapidas e Agendadas',
+            'articles' => [
+                [
+                    'question' => 'Como usar mensagens rapidas no chat?',
+                    'keywords' => ['mensagem rapida', 'quick message', 'atalho', 'template mensagem', 'resposta rapida', 'mensagem pronta', 'mensagens rapidas'],
+                    'answer' => 'Mensagens rapidas sao templates reutilizaveis para respostas comuns (saudacao, precos, FAQ). Acesse a area de Chats e procure a opcao de Mensagens Rapidas para criar, editar e organizar seus templates. Durante uma conversa, use o atalho para inserir a mensagem rapidamente sem digitar tudo de novo.',
+                ],
+                [
+                    'question' => 'Como agendar uma mensagem no WhatsApp?',
+                    'keywords' => ['agendar mensagem', 'mensagem agendada', 'programar mensagem', 'enviar depois', 'schedule', 'agendar whatsapp', 'mensagem futura'],
+                    'answer' => 'Abra o painel de detalhes de um lead e va na secao de mensagens agendadas. Clique em "Agendar Mensagem", escreva o texto e defina a data e hora de envio. O sistema enviara automaticamente no horario programado. Ideal para follow-ups, lembretes e contatos planejados.',
+                ],
+            ],
+        ],
+
+        // =====================================================================
+        // 19. PARTNER PROGRAM
+        // =====================================================================
+        'partners' => [
+            'title' => 'Programa de Parceiros',
+            'articles' => [
+                [
+                    'question' => 'Como funciona o programa de parceiros?',
+                    'keywords' => ['parceiro', 'agencia', 'parceria', 'programa parceiros', 'partner', 'agency', 'revenda', 'indicacao'],
+                    'answer' => 'O Programa de Parceiros permite que agencias se cadastrem para gerenciar contas de clientes. Apos o cadastro e aprovacao, a agencia recebe um codigo exclusivo de indicacao. Clientes que se cadastram com esse codigo ficam vinculados a agencia. A agencia pode visualizar e acessar as contas dos seus clientes.',
+                ],
+                [
+                    'question' => 'Como acessar a conta de um cliente como parceiro?',
+                    'keywords' => ['acessar cliente', 'impersonar', 'entrar conta cliente', 'visualizar cliente', 'gerenciar cliente', 'meus clientes'],
+                    'answer' => 'Va em Meus Clientes (/agencia/meus-clientes) para ver todos os clientes indicados pela sua agencia. Clique em "Acessar" para entrar na conta do cliente. Voce tera acesso de visualizacao para acompanhar o andamento. Para voltar a sua conta, clique em "Voltar para minha conta" no banner superior.',
+                ],
+                [
+                    'question' => 'Como vincular minha conta a uma agencia parceira?',
+                    'keywords' => ['vincular agencia', 'codigo agencia', 'codigo parceiro', 'associar agencia', 'indicacao'],
+                    'answer' => 'Se voce recebeu um codigo de agencia parceira, va em Configuracoes e procure a opcao de vincular codigo de agencia. Insira o codigo fornecido pela agencia e confirme. Sua conta ficara vinculada e a agencia podera acompanhar seu uso da plataforma.',
+                ],
+            ],
+        ],
+
+        // =====================================================================
+        // 20. ONBOARDING
+        // =====================================================================
+        'onboarding' => [
+            'title' => 'Onboarding',
+            'articles' => [
+                [
+                    'question' => 'Como funciona o onboarding?',
+                    'keywords' => ['onboarding', 'configuracao inicial', 'wizard', 'setup', 'primeira vez', 'assistente configuracao'],
+                    'answer' => 'Ao criar uma conta nova, voce passa por um onboarding guiado que configura seu CRM automaticamente. O sistema usa IA para entender seu tipo de negocio e gera pipelines, etapas, tags, fluxo de chatbot e agente de IA personalizados. Voce pode pular o onboarding e configurar tudo manualmente se preferir.',
                 ],
             ],
         ],

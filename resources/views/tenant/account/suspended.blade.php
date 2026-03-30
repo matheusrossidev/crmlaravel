@@ -84,10 +84,20 @@
             Escolha um plano para continuar usando a plataforma.
         </p>
         <div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
-            <a href="{{ route('billing.checkout') }}" class="btn-checkout">
-                <i class="bi bi-credit-card"></i>
-                Escolher um plano
-            </a>
+            @if(session('impersonating_tenant_id'))
+                <form method="POST" action="{{ route('agency.access.exit') }}">
+                    @csrf
+                    <button type="submit" class="btn-checkout">
+                        <i class="bi bi-arrow-left"></i>
+                        Voltar para minha conta
+                    </button>
+                </form>
+            @else
+                <a href="{{ route('billing.checkout') }}" class="btn-checkout">
+                    <i class="bi bi-credit-card"></i>
+                    Escolher um plano
+                </a>
+            @endif
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="btn-logout">

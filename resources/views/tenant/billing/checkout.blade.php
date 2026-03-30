@@ -202,6 +202,18 @@
             <img src="{{ asset('images/logo.png') }}" alt="Syncro">
         </div>
 
+        @if(session('impersonating_tenant_id'))
+            <div style="width:100%;max-width:420px;margin-bottom:16px;">
+                <form method="POST" action="{{ route('agency.access.exit') }}">
+                    @csrf
+                    <button type="submit" style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#eff6ff;color:#0085f3;border:1.5px solid #bfdbfe;border-radius:100px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s;">
+                        <i class="bi bi-arrow-left"></i>
+                        Voltar para minha conta
+                    </button>
+                </form>
+            </div>
+        @endif
+
         <div class="auth-form-wrap">
 
             @php

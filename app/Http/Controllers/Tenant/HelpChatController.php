@@ -118,26 +118,31 @@ Syncro is a 360° marketing and CRM platform with: sales pipeline (Kanban), unif
 - **Chats** (/chats): Unified inbox for WhatsApp, Instagram, and Website conversations
 - **CRM > Pipeline** (/crm): Kanban board with drag-and-drop leads
 - **CRM > Contacts** (/contatos): Lead list with filters, import/export
+- **CRM > Lists** (/listas): Static and dynamic lead lists with filters
 - **CRM > Tasks** (/tarefas): Task management (call, email, visit, meeting, WhatsApp)
 - **CRM > Calendar** (/agenda): Google Calendar integration with weekly/daily view
-- **CRM > Products** (/configuracoes/produtos): Product catalog
+- **CRM > Goals** (/metas): Sales goals per user with progress tracking
+- **CRM > NPS** (/nps): Customer satisfaction surveys (NPS) with analytics
 - **Automation > Chatbot** (/chatbot/fluxos): Visual chatbot builder (nodes: message, question, condition, action, delay, end)
-- **Automation > AI Agents** (/ia/agentes): AI agents with knowledge base, tools, follow-up
+- **Automation > AI Agents** (/ia/agentes): AI agents with knowledge base, tools, follow-up, media
 - **Automation > Automations** (/configuracoes/automacoes): Trigger-based automations (message received, lead created, stage changed, etc.)
 - **Automation > Instagram Automations** (/configuracoes/instagram-automacoes): Instagram comment auto-reply + DM with button templates
 - **Reports > Reports** (/relatorios): Analytics with KPIs, charts, seller performance, sources
 - **Reports > Campaigns** (/campanhas): Campaign tracking with UTM, Facebook/Google Ads sync
 - **Settings > Profile** (/configuracoes/perfil): Personal info, password, avatar, language
-- **Settings > Notifications** (/configuracoes/notificacoes): Browser/push notification preferences
+- **Settings > Notifications** (/configuracoes/notificacoes): Browser/push notification preferences (email, push, sound, quiet hours)
 - **Settings > Users** (/configuracoes/usuarios): Team management (admin, manager, viewer roles)
 - **Settings > Integrations** (/configuracoes/integracoes): WhatsApp, Google Calendar, Instagram connections
 - **Settings > Departments** (/configuracoes/departamentos): Department creation with assignment strategies
 - **Settings > Billing** (/configuracoes/cobranca): Subscription management, token purchases
 - **Settings > Pipelines** (/configuracoes/pipelines): Pipeline and stage configuration
+- **Settings > Products** (/configuracoes/produtos): Product catalog with categories, images, prices
 - **Settings > Custom Fields** (/configuracoes/campos-extras): Custom field definitions
 - **Settings > Loss Reasons** (/configuracoes/motivos-perda): Loss reason management
 - **Settings > Tags** (/configuracoes/tags): Tag management with colors
+- **Settings > Lead Scoring** (/configuracoes/scoring): Automatic lead scoring rules
 - **Settings > API/Webhooks** (/configuracoes/api-keys): API key management + webhook builder
+- **Partner Portal** (/agencia/meus-clientes): Agency partner client management (for partner accounts)
 
 ## How to Create a Lead
 1. Go to [CRM > Contacts](/contatos)
@@ -172,6 +177,7 @@ Alternatively, leads are created automatically from WhatsApp/Instagram conversat
 - Create at [Automation > AI Agents](/ia/agentes)
 - Configure: name, objective (sales/support/general), communication style, language
 - Add knowledge base (text + file uploads)
+- Upload media files (images, documents) that the agent can send to customers when relevant
 - Enable tools: pipeline management, tags, intent detection, Google Calendar, products
 - Configure follow-up (auto-message when customer stops responding)
 - Test with the built-in chat simulator
@@ -213,8 +219,10 @@ Alternatively, leads are created automatically from WhatsApp/Instagram conversat
 - **Users**: Add team members with roles (Admin = full access, Manager = manages leads, Viewer = read-only)
 - **Departments**: Create departments with round-robin or least-busy assignment
 - **Pipelines**: Create multiple pipelines with custom stages
+- **Products**: Create product catalog with categories, prices, descriptions, and media (images/docs). Associate products to leads with quantity and custom price.
 - **Custom Fields**: Add custom fields (text, number, date, currency, select, multiselect, checkbox, URL, phone, email)
 - **Tags**: Create colored tags for organizing conversations and leads
+- **Lead Scoring**: Create automatic scoring rules that assign points to leads based on actions (stage change, tag added, field filled, etc.). Scores help prioritize leads.
 - **API Keys**: Generate API keys for external integrations + interactive webhook builder
 
 ## Billing
@@ -223,6 +231,67 @@ Alternatively, leads are created automatically from WhatsApp/Instagram conversat
 - Purchase AI token packages when quota is exhausted
 - Brazilian clients: Asaas (credit card + PIX)
 - International clients: Stripe (credit card)
+
+## Lead Lists
+- Create at [CRM > Lists](/listas)
+- **Static lists**: manually add/remove leads from a list
+- **Dynamic lists**: define filter conditions (stage, tag, source, pipeline, value, date, has conversation, etc.) and the list updates automatically
+- Use lists to segment your leads for campaigns, bulk actions, or analysis
+- Preview how many leads match before saving a dynamic list
+
+## Sales Goals (Metas)
+- Create at [CRM > Goals](/metas)
+- Set monthly/weekly sales targets per team member (number of sales or revenue)
+- Track progress with visual progress bars
+- Compare performance across the team
+- Goals help motivate the sales team and track individual performance
+
+## NPS / Satisfaction Surveys
+- Create at [CRM > NPS](/nps)
+- Build satisfaction surveys with NPS score (0-10) + optional comment
+- Share via unique link or send in bulk to leads via WhatsApp
+- Public survey page with emoji-based scoring (mobile-friendly)
+- Dashboard with NPS score, promoters/passives/detractors breakdown, monthly trend, per-vendor analysis
+- Surveys can be triggered automatically when a sale is closed
+
+## Quick Messages
+- Access via the chat inbox (WhatsApp conversations)
+- Create reusable message templates for common responses
+- Use shortcuts to insert quick messages while chatting
+- Saves time for repetitive answers (greetings, pricing, FAQs)
+
+## Scheduled Messages
+- Schedule WhatsApp messages to be sent at a specific date/time
+- Create from a lead's detail panel
+- System sends automatically at the scheduled time
+- Useful for follow-ups, reminders, and planned outreach
+
+## Products
+- Manage at [Settings > Products](/configuracoes/produtos)
+- Create products with name, description, price, SKU, and category
+- Upload product images and documents
+- Associate products to leads (with quantity and custom pricing)
+- AI agents can reference products and send product media during conversations
+
+## Partner Program
+- Agencies can register at [Partner Registration](/parceiros)
+- After approval, partners get a unique referral code
+- Partners can view their referred clients at [My Clients](/agencia/meus-clientes)
+- Partners can access (impersonate) their clients' accounts in read/view mode
+- To link an existing account to an agency, go to Settings and enter the agency code
+
+## Onboarding
+- New accounts go through a guided onboarding wizard
+- AI-powered: the system generates a customized CRM setup based on your business type
+- Creates pipelines, stages, tags, chatbot flows, and AI agent automatically
+- Can be skipped if you prefer manual setup
+
+## Notification Preferences
+- Configure at [Settings > Notifications](/configuracoes/notificacoes)
+- Choose which events trigger notifications (new message, new lead, deal closed, etc.)
+- Enable/disable browser push notifications
+- Configure sound preferences and quiet hours
+- Each team member can customize their own preferences
 PROMPT;
     }
 
