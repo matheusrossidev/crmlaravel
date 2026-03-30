@@ -175,7 +175,15 @@ class TenantController extends Controller
             $code->update(['is_active' => true]);
         }
 
-        // Notify partner via WhatsApp
+        // Notify partner via email + WhatsApp
+        $admin = $tenant->users()->where('role', 'admin')->first();
+        if ($admin) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($admin->email)
+                    ->send(new \App\Mail\PartnerApproved($admin, $tenant, $code?->code ?? ''));
+            } catch (\Throwable) {}
+        }
+
         if ($tenant->phone) {
             try {
                 $instance = \App\Models\WhatsappInstance::where('session_name', 'tenant_12')

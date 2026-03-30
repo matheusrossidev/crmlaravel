@@ -101,6 +101,23 @@ Route::middleware('auth')->group(function () {
     Route::view('/conta/em-analise', 'auth.pending-approval')->name('account.pending-approval');
 });
 
+// Email templates preview (dev only)
+if (app()->environment('local')) {
+    Route::get('/email-templates/{template}', function (string $template) {
+        $user   = \App\Models\User::first() ?? new \App\Models\User(['name' => 'João Silva', 'email' => 'joao@test.com']);
+        $tenant = \App\Models\Tenant::first() ?? new \App\Models\Tenant(['name' => 'Empresa Teste']);
+
+        return match ($template) {
+            'verify'           => view('emails.verify', ['user' => $user, 'verifyUrl' => url('/verify-email/abc123')]),
+            'welcome'          => view('emails.welcome', ['user' => $user, 'tenant' => $tenant, 'loginUrl' => route('login')]),
+            'reset-password'   => view('emails.reset-password', ['user' => $user, 'resetUrl' => url('/reset-password/abc123')]),
+            'verify-agency'    => view('emails.verify-agency', ['user' => $user, 'tenant' => $tenant, 'verifyUrl' => url('/verify-email/abc123')]),
+            'partner-approved' => view('emails.partner-approved', ['user' => $user, 'tenant' => $tenant, 'code' => 'DIGITALLABS-A3F2', 'loginUrl' => route('login')]),
+            default            => abort(404),
+        };
+    })->name('email.preview');
+}
+
 // Páginas públicas (sem autenticação)
 Route::view('/politica-de-privacidade', 'public.privacy')->name('privacy');
 Route::view('/termos-de-uso', 'public.terms')->name('terms');

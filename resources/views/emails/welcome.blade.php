@@ -4,124 +4,50 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bem-vindo à Syncro!</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:16px;color:#1f2937;">
+<body style="margin:0;padding:0;background:#f4f6fb;font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:16px;color:#1f2937;">
   <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
     <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e8eaf0;">
 
-        <!-- Header -->
+        <tr><td style="padding:28px 40px;border-bottom:1px solid #f0f2f7;"><img src="{{ url('/images/logo.png') }}" alt="Syncro" style="height:28px;width:auto;" /></td></tr>
+
+        <tr><td style="padding:15px 15px 0;">
+          <div style="border-radius:12px;overflow:hidden;height:220px;background:#f0f2f7;">
+            <img src="{{ url('/images/mocks/kanban.png') }}" alt="Syncro CRM" style="width:100%;height:220px;display:block;object-fit:cover;object-position:top;" />
+          </div>
+        </td></tr>
+
         <tr>
-          <td style="background:linear-gradient(135deg,#0085f3 0%,#006fd6 100%);padding:48px 40px 40px;text-align:center;">
-            <img src="{{ url('/images/logo-white.png') }}" alt="Syncro" style="height:44px;width:auto;display:block;margin:0 auto;" />
-            <div style="font-size:26px;font-weight:800;color:#fff;line-height:1.3;margin-top:20px;">Sua conta está ativa!</div>
-            <div style="color:#bfdbfe;font-size:15px;margin-top:8px;">Email confirmado com sucesso</div>
+          <td style="padding:40px 40px 32px;">
+            <h1 style="font-family:'DM Sans',sans-serif;font-size:24px;font-weight:700;color:#1a1d23;margin:0 0 16px;">Bem-vindo, {{ $user->name }}!</h1>
+            <p style="color:#677489;line-height:1.7;margin:0 0 28px;font-size:15px;">Sua conta na <strong style="color:#1a1d23;">{{ $tenant->name }}</strong> está ativa. Aqui estão os primeiros passos:</p>
+
+            @foreach([['1','Configure seu pipeline','Crie etapas para organizar seus leads.'],['2','Importe seus contatos','Suba uma planilha ou adicione manualmente.'],['3','Conecte seu WhatsApp','Responda seus clientes direto pelo painel.']] as $step)
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;"><tr><td style="background:#f8fafc;border:1px solid #e8eaf0;border-radius:12px;padding:14px 16px;"><table cellpadding="0" cellspacing="0" width="100%"><tr>
+              <td width="32" style="vertical-align:top;padding-right:12px;"><div style="background:#0085f3;color:#fff;font-weight:700;font-size:13px;width:26px;height:26px;border-radius:50%;text-align:center;line-height:26px;">{{ $step[0] }}</div></td>
+              <td><strong style="font-size:14px;color:#1a1d23;">{{ $step[1] }}</strong><br/><span style="font-size:13px;color:#677489;">{{ $step[2] }}</span></td>
+            </tr></table></td></tr></table>
+            @endforeach
+
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0 16px;"><tr><td align="center">
+              <a href="{{ $loginUrl }}" style="display:inline-block;background:#0085f3;color:#fff;text-decoration:none;font-family:'DM Sans',sans-serif;font-weight:600;font-size:15px;padding:14px 36px;border-radius:100px;">Acessar minha conta →</a>
+            </td></tr></table>
+
+            <p style="text-align:center;font-size:13px;color:#10B981;font-weight:600;margin:0 0 20px;">14 dias de teste grátis — sem cartão de crédito</p>
+            <hr style="border:none;border-top:1px solid #f0f2f7;margin:0 0 20px;" />
+            <p style="font-size:13px;color:#97A3B7;line-height:1.6;margin:0;text-align:center;">Dúvidas? <a href="mailto:suporte@syncro.chat" style="color:#0085f3;text-decoration:none;">suporte@syncro.chat</a></p>
           </td>
         </tr>
 
-        <!-- Body -->
-        <tr>
-          <td style="padding:40px;">
-            <p style="font-size:20px;font-weight:700;color:#111827;margin:0 0 12px;">Bem-vindo, {{ $user->name }}!</p>
-            <p style="color:#6b7280;line-height:1.6;margin:0 0 28px;">
-              Sua conta na empresa <strong>{{ $tenant->name }}</strong> foi ativada com sucesso.
-              Você tem acesso a todos os recursos da plataforma durante seu período de teste.
-            </p>
-
-            <!-- Steps -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;">
-              <tr>
-                <td style="background:#eff6ff;border:1px solid #dbeafe;border-radius:10px;padding:16px;">
-                  <table cellpadding="0" cellspacing="0" width="100%">
-                    <tr>
-                      <td width="36" style="vertical-align:top;padding-right:12px;">
-                        <div style="background:#0085f3;color:#fff;font-weight:700;font-size:14px;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;">1</div>
-                      </td>
-                      <td>
-                        <strong style="font-size:15px;color:#1f2937;">Configure seu pipeline de vendas</strong><br/>
-                        <span style="font-size:13px;color:#6b7280;line-height:1.5;">Crie etapas personalizadas para organizar seus leads.</span>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;">
-              <tr>
-                <td style="background:#eff6ff;border:1px solid #dbeafe;border-radius:10px;padding:16px;">
-                  <table cellpadding="0" cellspacing="0" width="100%">
-                    <tr>
-                      <td width="36" style="vertical-align:top;padding-right:12px;">
-                        <div style="background:#0085f3;color:#fff;font-weight:700;font-size:14px;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;">2</div>
-                      </td>
-                      <td>
-                        <strong style="font-size:15px;color:#1f2937;">Importe seus contatos</strong><br/>
-                        <span style="font-size:13px;color:#6b7280;line-height:1.5;">Suba uma planilha Excel ou adicione manualmente pelo CRM.</span>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
-              <tr>
-                <td style="background:#eff6ff;border:1px solid #dbeafe;border-radius:10px;padding:16px;">
-                  <table cellpadding="0" cellspacing="0" width="100%">
-                    <tr>
-                      <td width="36" style="vertical-align:top;padding-right:12px;">
-                        <div style="background:#0085f3;color:#fff;font-weight:700;font-size:14px;width:28px;height:28px;border-radius:50%;text-align:center;line-height:28px;">3</div>
-                      </td>
-                      <td>
-                        <strong style="font-size:15px;color:#1f2937;">Conecte seu WhatsApp</strong><br/>
-                        <span style="font-size:13px;color:#6b7280;line-height:1.5;">Integre o WhatsApp Business e responda diretamente no painel.</span>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-
-            <!-- CTA -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 12px;">
-              <tr><td align="center">
-                <a href="{{ $loginUrl }}" style="display:inline-block;background:#0085f3;color:#fff;text-decoration:none;font-weight:600;font-size:15px;padding:14px 40px;border-radius:8px;">
-                  Acessar minha conta
-                </a>
-              </td></tr>
-            </table>
-
-            <p style="text-align:center;font-size:13px;color:#059669;font-weight:600;margin:0 0 32px;">
-              14 dias de teste grátis — sem cartão de crédito
-            </p>
-
-            <hr style="border:none;border-top:1px solid #f3f4f6;margin:0 0 24px;" />
-
-            <div style="background:#f9fafb;border-radius:8px;padding:20px;text-align:center;">
-              <p style="font-size:14px;color:#6b7280;margin:0;">Ficou com alguma dúvida? Estamos aqui para ajudar.</p>
-              <p style="font-size:14px;color:#6b7280;margin:8px 0 0;">
-                Fale conosco em <a href="mailto:suporte@syncro.chat" style="color:#0085f3;font-weight:600;text-decoration:none;">suporte@syncro.chat</a>
-              </p>
-            </div>
-          </td>
-        </tr>
-
-        <!-- Footer -->
-        <tr>
-          <td style="padding:0 40px 36px;text-align:center;">
-            <p style="font-size:12px;color:#9ca3af;line-height:1.7;margin:0;">
-              Syncro Plataforma · Você está recebendo este email porque confirmou seu cadastro em
-              <a href="{{ config('app.url') }}" style="color:#9ca3af;text-decoration:underline;">app.syncro.chat</a>
-            </p>
-          </td>
-        </tr>
+        <tr><td style="padding:24px 40px;border-top:1px solid #f0f2f7;background:#f8fafc;"><table width="100%" cellpadding="0" cellspacing="0"><tr><td style="text-align:center;">
+          <img src="{{ url('/images/logo.png') }}" alt="Syncro" style="height:20px;width:auto;margin-bottom:12px;opacity:.5;" />
+          <p style="font-size:12px;color:#97A3B7;margin:0 0 6px;">Syncro CRM — Gestão de clientes e atendimento via WhatsApp</p>
+          <p style="font-size:11px;color:#c4c9d2;margin:0;">© {{ date('Y') }} Syncro · <a href="https://syncro.chat" style="color:#97A3B7;text-decoration:none;">syncro.chat</a></p>
+        </td></tr></table></td></tr>
 
       </table>
-
-      <p style="text-align:center;font-size:12px;color:#9ca3af;margin-top:20px;">
-        © {{ date('Y') }} Syncro. Todos os direitos reservados.
-      </p>
     </td></tr>
   </table>
 </body>
