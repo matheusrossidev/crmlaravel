@@ -308,7 +308,41 @@
                     <div class="meta-row">
                         <span class="meta-label">Status</span>
                         <span class="status-badge status-{{ $tenant->status }}">{{ ucfirst($tenant->status) }}</span>
+                        @if($tenant->status === 'pending_approval')
+                            <div style="display:flex;gap:6px;margin-left:8px;">
+                                <button onclick="approvePartner()" style="padding:4px 12px;background:#d1fae5;color:#065f46;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">
+                                    <i class="bi bi-check-lg"></i> Aprovar
+                                </button>
+                                <button onclick="rejectPartner()" style="padding:4px 12px;background:#fee2e2;color:#991b1b;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">
+                                    <i class="bi bi-x-lg"></i> Rejeitar
+                                </button>
+                            </div>
+                        @endif
                     </div>
+                    @if($tenant->segment)
+                    <div class="meta-row">
+                        <span class="meta-label">Segmento</span>
+                        <span class="meta-value">{{ $tenant->segment }}</span>
+                    </div>
+                    @endif
+                    @if($tenant->cnpj)
+                    <div class="meta-row">
+                        <span class="meta-label">CNPJ</span>
+                        <span class="meta-value" style="font-family:monospace;">{{ $tenant->cnpj }}</span>
+                    </div>
+                    @endif
+                    @if($tenant->website)
+                    <div class="meta-row">
+                        <span class="meta-label">Site</span>
+                        <span class="meta-value"><a href="{{ $tenant->website }}" target="_blank" style="color:#0085f3;text-decoration:none;">{{ $tenant->website }}</a></span>
+                    </div>
+                    @endif
+                    @if($tenant->city || $tenant->state)
+                    <div class="meta-row">
+                        <span class="meta-label">Localização</span>
+                        <span class="meta-value">{{ $tenant->city }}{{ $tenant->city && $tenant->state ? ' / ' : '' }}{{ $tenant->state }}</span>
+                    </div>
+                    @endif
                     @if($tenant->trial_ends_at)
                     <div class="meta-row">
                         <span class="meta-label">Trial até</span>
@@ -508,9 +542,27 @@
 
 @push('scripts')
 <script>
-const updateUrl = "{{ route('master.tenants.update', $tenant) }}";
-const deleteUrl = "{{ route('master.tenants.destroy', $tenant) }}";
-const indexUrl  = "{{ route('master.tenants') }}";
+const updateUrl  = "{{ route('master.tenants.update', $tenant) }}";
+const deleteUrl  = "{{ route('master.tenants.destroy', $tenant) }}";
+const indexUrl   = "{{ route('master.tenants') }}";
+const approveUrl = "{{ route('master.tenants.approve-partner', $tenant) }}";
+const rejectUrl  = "{{ route('master.tenants.reject-partner', $tenant) }}";
+
+async function approvePartner() {
+    if (!confirm('Aprovar este parceiro?')) return;
+    const res = await fetch(approveUrl, { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, Accept: 'application/json' } });
+    const data = await res.json();
+    if (data.success) { toastr.success(data.message); setTimeout(() => location.reload(), 1000); }
+    else toastr.error(data.message || 'Erro');
+}
+
+async function rejectPartner() {
+    if (!confirm('Rejeitar este parceiro?')) return;
+    const res = await fetch(rejectUrl, { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, Accept: 'application/json' } });
+    const data = await res.json();
+    if (data.success) { toastr.success(data.message); setTimeout(() => location.reload(), 1000); }
+    else toastr.error(data.message || 'Erro');
+}
 const csrf      = document.querySelector('meta[name=csrf-token]').content;
 
 async function updateTenant() {

@@ -160,4 +160,49 @@ class TenantController extends Controller
 
         return response()->json(['success' => true]);
     }
+
+    public function approvePartner(Tenant $tenant): JsonResponse
+    {
+        if ($tenant->status !== 'pending_approval') {
+            return response()->json(['success' => false, 'message' => 'Tenant não está pendente de aprovação.'], 422);
+        }
+
+        $tenant->update(['status' => 'partner']);
+
+        // Activate the partner code
+        $code = \App\Models\PartnerAgencyCode::where('tenant_id', $tenant->id)->first();
+        if ($code) {
+            $code->update(['is_active' => true]);
+        }
+
+        // Notify partner via WhatsApp
+        if ($tenant->phone) {
+            try {
+                $instance = \App\Models\WhatsappInstance::where('session_name', 'tenant_12')
+                    ->where('status', 'connected')->first();
+                if ($instance) {
+                    $waha = new \App\Services\WahaService($instance->session_name);
+                    $waha->sendText(
+                        preg_replace('/\D/', '', $tenant->phone) . '@c.us',
+                        "🎉 *Parabéns!* Seu cadastro como parceiro Syncro foi aprovado!\n\n"
+                        . "Seu código de parceiro: *{$code?->code}*\n\n"
+                        . "Acesse a plataforma e comece a indicar clientes."
+                    );
+                }
+            } catch (\Throwable) {}
+        }
+
+        return response()->json(['success' => true, 'message' => 'Parceiro aprovado com sucesso.']);
+    }
+
+    public function rejectPartner(Tenant $tenant): JsonResponse
+    {
+        if ($tenant->status !== 'pending_approval') {
+            return response()->json(['success' => false, 'message' => 'Tenant não está pendente de aprovação.'], 422);
+        }
+
+        $tenant->update(['status' => 'rejected']);
+
+        return response()->json(['success' => true, 'message' => 'Parceiro rejeitado.']);
+    }
 }

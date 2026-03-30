@@ -67,8 +67,8 @@ Route::middleware(['guest', 'locale'])->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->name('register.post')->middleware('throttle:register');
-    Route::get('/cadastro-agencia', [AgencyRegisterController::class, 'show'])->name('agency.register');
-    Route::post('/cadastro-agencia', [AgencyRegisterController::class, 'store'])->name('agency.register.store')->middleware('throttle:register');
+    Route::get('/parceiros', [AgencyRegisterController::class, 'show'])->name('agency.register');
+    Route::post('/parceiros', [AgencyRegisterController::class, 'store'])->name('agency.register.store')->middleware('throttle:register');
     Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
     Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email')->middleware('throttle:password-reset');
     Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
@@ -98,6 +98,7 @@ Route::post('/logout', [AuthController::class, 'logout'])
 Route::middleware('auth')->group(function () {
     Route::view('/conta/suspensa', 'tenant.account.suspended')->name('account.suspended');
     Route::view('/conta/trial-expirado', 'tenant.account.trial-expired')->name('trial.expired');
+    Route::view('/conta/em-analise', 'auth.pending-approval')->name('account.pending-approval');
 });
 
 // Páginas públicas (sem autenticação)
@@ -582,6 +583,8 @@ Route::middleware(['auth', 'super_admin', '2fa'])->prefix('master')->name('maste
     Route::get('empresas/{tenant}',    [MasterTenantController::class, 'show'])->name('tenants.show');
     Route::put('empresas/{tenant}',    [MasterTenantController::class, 'update'])->name('tenants.update');
     Route::delete('empresas/{tenant}', [MasterTenantController::class, 'destroy'])->name('tenants.destroy');
+    Route::post('empresas/{tenant}/approve-partner', [MasterTenantController::class, 'approvePartner'])->name('tenants.approve-partner');
+    Route::post('empresas/{tenant}/reject-partner',  [MasterTenantController::class, 'rejectPartner'])->name('tenants.reject-partner');
 
     // Usuários por tenant
     Route::post('empresas/{tenant}/usuarios',          [MasterUserController::class, 'store'])->name('tenants.users.store');

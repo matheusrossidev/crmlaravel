@@ -50,13 +50,18 @@ class MasterWhatsappNotifier
     public static function newAgencyRegistration(Tenant $tenant, User $user, string $code): void
     {
         $msg = "🤝 *NOVA AGÊNCIA PARCEIRA*\n"
-             . "━━━━━━━━━━━━━━━━━━\n\n"
+             . "━━━━━━━━━━━━━━━━━━\n"
+             . "⏳ *AGUARDANDO APROVAÇÃO*\n\n"
              . "🏢 *Agência:* {$tenant->name}\n"
              . "👤 *Nome:* {$user->name}\n"
              . "📧 *Email:* {$user->email}\n"
+             . "📱 *WhatsApp:* " . ($tenant->phone ?: 'N/I') . "\n"
              . "🔑 *Código:* {$code}\n"
-             . "📋 *Plano:* Partner\n\n"
-             . "📅 " . now()->format('d/m/Y H:i');
+             . ($tenant->cnpj ? "📄 *CNPJ:* {$tenant->cnpj}\n" : '')
+             . ($tenant->segment ? "🏷️ *Segmento:* {$tenant->segment}\n" : '')
+             . ($tenant->city ? "📍 *Local:* {$tenant->city}" . ($tenant->state ? "/{$tenant->state}" : '') . "\n" : '')
+             . ($tenant->website ? "🌐 *Site:* {$tenant->website}\n" : '')
+             . "\n📅 " . now()->format('d/m/Y H:i');
 
         self::send($msg);
     }

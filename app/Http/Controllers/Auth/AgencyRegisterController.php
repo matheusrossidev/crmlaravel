@@ -7,7 +7,6 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Mail\VerifyAgencyEmail;
 use App\Models\PartnerAgencyCode;
-use App\Models\PlanDefinition;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -18,63 +17,49 @@ use Illuminate\View\View;
 
 class AgencyRegisterController extends Controller
 {
-    public function show(Request $request): View|RedirectResponse
+    public function show(): View
     {
-        $code = $request->query('code', '');
-
-        if ($code) {
-            $agencyCode = PartnerAgencyCode::where('code', strtoupper($code))
-                ->where('is_active', true)
-                ->whereNull('tenant_id')
-                ->first();
-
-            if (!$agencyCode) {
-                return redirect()->route('agency.register')
-                    ->withErrors(['code' => 'Código inválido, inativo ou já utilizado.']);
-            }
-        }
-
-        return view('auth.register-agency', ['prefilledCode' => strtoupper($code)]);
+        return view('auth.register-partner');
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'agency_code'  => 'required|string|max:20',
             'tenant_name'  => 'required|string|max:255',
+            'cnpj'         => 'nullable|string|max:20',
             'name'         => 'required|string|max:255',
+            'phone'        => 'required|string|min:10|max:20',
+            'segment'      => 'required|string|max:50',
             'email'        => 'required|email|unique:users,email',
+            'website'      => 'nullable|string|max:191',
+            'city'         => 'nullable|string|max:100',
+            'state'        => 'nullable|string|max:2',
             'password'     => 'required|string|min:8|confirmed',
-        ], [
-            'agency_code.required' => 'O código de agência parceira é obrigatório.',
-            'tenant_name.required' => 'Informe o nome da agência.',
-            'name.required'        => 'Informe seu nome.',
-            'email.required'       => 'Informe seu e-mail.',
-            'email.email'          => 'Informe um e-mail válido.',
-            'email.unique'         => 'Este e-mail já está cadastrado.',
-            'password.required'    => 'Crie uma senha.',
-            'password.min'         => 'A senha deve ter pelo menos 8 caracteres.',
-            'password.confirmed'   => 'As senhas não conferem.',
+            'accept_terms' => 'accepted',
         ]);
-
-        $agencyCode = PartnerAgencyCode::where('code', strtoupper($data['agency_code']))
-            ->where('is_active', true)
-            ->whereNull('tenant_id')
-            ->first();
-
-        if (!$agencyCode) {
-            return back()->withInput()->withErrors([
-                'agency_code' => 'Código inválido, inativo ou já utilizado.',
-            ]);
-        }
 
         $token = Str::random(64);
 
+        // Auto-generate partner code from company name
+        $baseName = Str::upper(Str::slug($data['tenant_name'], ''));
+        $baseName = substr((string) preg_replace('/[^A-Z0-9]/', '', $baseName), 0, 15);
+        if (!$baseName) $baseName = 'PARTNER';
+        $code = $baseName . '-' . strtoupper(Str::random(4));
+        while (PartnerAgencyCode::where('code', $code)->exists()) {
+            $code = $baseName . '-' . strtoupper(Str::random(4));
+        }
+
         $tenant = Tenant::create([
-            'name'   => $data['tenant_name'],
-            'slug'   => Str::slug($data['tenant_name']) . '-' . Str::random(4),
-            'plan'   => 'partner',
-            'status' => 'partner',
+            'name'    => $data['tenant_name'],
+            'slug'    => Str::slug($data['tenant_name']) . '-' . Str::random(4),
+            'phone'   => preg_replace('/\D/', '', $data['phone']),
+            'cnpj'    => $data['cnpj'] ? preg_replace('/\D/', '', $data['cnpj']) : null,
+            'website' => $data['website'] ? (str_starts_with($data['website'], 'http') ? $data['website'] : 'https://' . $data['website']) : null,
+            'city'    => $data['city'] ?: null,
+            'state'   => $data['state'] ? strtoupper($data['state']) : null,
+            'segment' => $data['segment'],
+            'plan'    => 'partner',
+            'status'  => 'pending_approval',
         ]);
 
         $user = User::create([
@@ -87,8 +72,12 @@ class AgencyRegisterController extends Controller
             'verification_token' => $token,
         ]);
 
-        // Vincular código à agência
-        $agencyCode->update(['tenant_id' => $tenant->id]);
+        // Create partner code (inactive until approved)
+        PartnerAgencyCode::create([
+            'code'      => $code,
+            'tenant_id' => $tenant->id,
+            'is_active' => false,
+        ]);
 
         try {
             Mail::to($user->email)->send(new VerifyAgencyEmail($user, $tenant));
@@ -99,8 +88,8 @@ class AgencyRegisterController extends Controller
             ]);
         }
 
-        // Notifica grupo master via WhatsApp
-        \App\Services\MasterWhatsappNotifier::newAgencyRegistration($tenant, $user, strtoupper($data['agency_code']));
+        // Notify master group via WhatsApp
+        \App\Services\MasterWhatsappNotifier::newAgencyRegistration($tenant, $user, $code);
 
         return redirect()->route('register.pending')
             ->with('email', $user->email);

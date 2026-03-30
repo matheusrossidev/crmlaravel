@@ -87,6 +87,14 @@ class TenantMiddleware
             : $user->tenant;
 
         if ($tenant) {
+            // Parceiro aguardando aprovação
+            if ($tenant->status === 'pending_approval') {
+                if (!$request->routeIs('logout', 'account.pending-approval')) {
+                    return redirect()->route('account.pending-approval');
+                }
+                return $next($request);
+            }
+
             // Conta suspensa ou inativa → página de bloqueio
             if (in_array($tenant->status, ['suspended', 'inactive'], true)) {
                 // Permitir logout e rotas de billing para regularização
