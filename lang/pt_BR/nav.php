@@ -8,6 +8,7 @@ return [
     'contacts'       => 'Contatos',
     'calendar'       => 'Agenda',
     'tasks'          => 'Tarefas',
+    'lists'          => 'Listas',
     'pipelines'      => 'Pipelines',
     'products'       => 'Produtos',
     'custom_fields'  => 'Campos Extras',

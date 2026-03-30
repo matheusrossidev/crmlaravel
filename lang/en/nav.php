@@ -8,6 +8,7 @@ return [
     'contacts'       => 'Contacts',
     'calendar'       => 'Calendar',
     'tasks'          => 'Tasks',
+    'lists'          => 'Lists',
     'pipelines'      => 'Pipelines',
     'products'       => 'Products',
     'custom_fields'  => 'Custom Fields',

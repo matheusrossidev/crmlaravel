@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Models\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -108,6 +109,12 @@ class Lead extends Model
     public function contacts(): HasMany
     {
         return $this->hasMany(LeadContact::class);
+    }
+
+    public function lists(): BelongsToMany
+    {
+        return $this->belongsToMany(LeadList::class, 'lead_list_members')
+            ->withPivot('added_at', 'added_by');
     }
 
     public function scoreLogs(): HasMany

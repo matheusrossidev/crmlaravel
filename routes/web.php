@@ -189,6 +189,19 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
         Route::post('/crm/lead/{lead}/stage', [KanbanController::class, 'updateStage'])->name('crm.lead.stage');
     });
 
+    // Lead Lists
+    Route::prefix('listas')->name('lists.')->controller(\App\Http\Controllers\Tenant\LeadListController::class)->group(function () {
+        Route::get('/',                          'index')->name('index');
+        Route::post('/',                         'store')->name('store');
+        Route::post('/preview',                  'preview')->name('preview');
+        Route::get('/search-leads',              'searchLeads')->name('search-leads');
+        Route::get('/{list}',                    'show')->name('show');
+        Route::put('/{list}',                    'update')->name('update');
+        Route::delete('/{list}',                 'destroy')->name('destroy');
+        Route::post('/{list}/members',           'addMembers')->name('members.add');
+        Route::delete('/{list}/members/{lead}',  'removeMember')->name('members.remove');
+    });
+
     // Leads / Contatos — exportar e importar ANTES do {lead} wildcard
     Route::get('/contatos/exportar', [LeadController::class, 'export'])->name('leads.export');
 
