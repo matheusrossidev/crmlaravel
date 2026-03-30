@@ -524,6 +524,12 @@
                class="m-nm-item {{ request()->routeIs('master.notifications*') ? 'active' : '' }}">
                 <i class="bi bi-megaphone"></i> Notificações
             </a>
+
+            {{-- Customer Success --}}
+            <a href="{{ route('cs.index') }}"
+               class="m-nm-item" target="_blank">
+                <i class="bi bi-headset"></i> CS
+            </a>
         </div>
 
         {{-- Right side --}}
@@ -534,7 +540,7 @@
                 @endif
             </div>
 
-            <a href="{{ route('master.2fa.setup') }}" class="m-go-tenant" title="Autenticação em Dois Fatores" style="{{ auth()->user()->totp_enabled ? 'background:#d1fae5;border-color:#86efac;color:#065f46;' : '' }}">
+            <a href="{{ route('master.2fa.setup') }}" class="m-go-tenant" title="Autenticação em Dois Fatores (2FA)" style="{{ auth()->user()->totp_enabled ? 'background:#d1fae5;border-color:#86efac;color:#065f46;' : 'background:#fef2f2;border-color:#fecaca;color:#ef4444;' }}">
                 <i class="bi bi-shield-lock"></i>
             </a>
 

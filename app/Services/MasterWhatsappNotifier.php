@@ -37,6 +37,7 @@ class MasterWhatsappNotifier
              . "📋 *Plano:* Free (Trial {$trial} dias)\n"
              . "🌍 *Idioma:* {$locale}\n"
              . "💳 *Gateway:* {$gateway}\n"
+             . "📱 *WhatsApp:* " . ($tenant->phone ?: 'Não informado') . "\n"
              . "🔗 *Indicado por:* " . ($agencyName ?: 'Orgânico') . "\n\n"
              . "📅 " . now()->format('d/m/Y H:i');
 

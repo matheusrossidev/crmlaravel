@@ -50,6 +50,8 @@ class ToolboxController extends Controller
         'generate-demo-data',
         'reset-ai-tokens',
         'test-wa-notifications',
+        'create-cs-user',
+        'manage-cs-users',
     ];
 
     public function index(): View
@@ -1523,6 +1525,87 @@ class ToolboxController extends Controller
         $lines[] = '';
         $lines[] = "Grupo: 120363403276686046@g.us";
         $lines[] = "Instância: tenant_12";
+
+        return response()->json(['success' => true, 'lines' => $lines]);
+    }
+
+    private function createCsUser(Request $request): JsonResponse
+    {
+        $name     = trim($request->input('name', ''));
+        $email    = trim($request->input('email', ''));
+        $password = $request->input('password', '');
+
+        if (!$name || !$email || !$password) {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] Preencha todos os campos.']]);
+        }
+
+        if (strlen($password) < 8) {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] A senha deve ter pelo menos 8 caracteres.']]);
+        }
+
+        if (User::where('email', $email)->exists()) {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] Já existe um usuário com este email.']]);
+        }
+
+        $user = User::create([
+            'name'        => $name,
+            'email'       => $email,
+            'password'    => $password,
+            'is_cs_agent' => true,
+            'tenant_id'   => null,
+            'role'        => 'viewer',
+            'email_verified_at' => now(),
+        ]);
+
+        return response()->json(['success' => true, 'lines' => [
+            "[OK] Usuário CS criado com sucesso!",
+            "",
+            "Nome: {$user->name}",
+            "Email: {$user->email}",
+            "ID: {$user->id}",
+            "",
+            "O usuário pode fazer login em /login e será redirecionado automaticamente para o painel CS.",
+        ]]);
+    }
+
+    private function manageCsUsers(Request $request): JsonResponse
+    {
+        $action = $request->input('action', 'list');
+
+        if ($action === 'delete') {
+            $userId = (int) $request->input('user_id');
+            $user = User::where('is_cs_agent', true)->find($userId);
+
+            if (!$user) {
+                return response()->json(['success' => false, 'lines' => ['[ERRO] Usuário CS não encontrado.']]);
+            }
+
+            $name = $user->name;
+            $email = $user->email;
+            $user->delete();
+
+            return response()->json(['success' => true, 'lines' => [
+                "[OK] Usuário CS deletado!",
+                "Nome: {$name}",
+                "Email: {$email}",
+            ]]);
+        }
+
+        // List
+        $csUsers = User::where('is_cs_agent', true)->orderBy('name')->get(['id', 'name', 'email', 'last_login_at', 'created_at']);
+
+        if ($csUsers->isEmpty()) {
+            return response()->json(['success' => true, 'lines' => ['Nenhum usuário CS cadastrado.', '', 'Use a ferramenta "Criar Usuário CS" para criar um.']]);
+        }
+
+        $lines = ["Usuários CS cadastrados ({$csUsers->count()}):", ""];
+        foreach ($csUsers as $u) {
+            $lastLogin = $u->last_login_at ? $u->last_login_at->format('d/m/Y H:i') : 'Nunca';
+            $lines[] = "ID: {$u->id} | {$u->name} | {$u->email} | Último login: {$lastLogin}";
+        }
+
+        $lines[] = "";
+        $lines[] = "Para deletar, execute novamente com action=delete e user_id=<ID>.";
 
         return response()->json(['success' => true, 'lines' => $lines]);
     }

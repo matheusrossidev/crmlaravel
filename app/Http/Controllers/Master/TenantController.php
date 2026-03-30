@@ -19,7 +19,10 @@ class TenantController extends Controller
 {
     public function index(): View
     {
-        $tenants = Tenant::withCount(['users', 'leads'])
+        $tenants = Tenant::withCount([
+                'users',
+                'leads' => fn ($q) => $q->withoutGlobalScope('tenant'),
+            ])
             ->orderBy('name')
             ->paginate(20)
             ->withQueryString();

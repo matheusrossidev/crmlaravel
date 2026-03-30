@@ -9,6 +9,7 @@ use App\Http\Middleware\SuperAdminMiddleware;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\TenantMiddleware;
 use App\Http\Middleware\TwoFactorMiddleware;
+use App\Http\Middleware\CsAgentMiddleware;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -46,6 +47,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'          => RoleMiddleware::class,
             'plan.limit'    => CheckPlanLimit::class,
             '2fa'           => TwoFactorMiddleware::class,
+            'cs_agent'      => CsAgentMiddleware::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {

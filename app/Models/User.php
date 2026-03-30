@@ -19,7 +19,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'tenant_id', 'name', 'email', 'password', 'role',
-        'is_super_admin', 'avatar', 'last_login_at', 'dashboard_config',
+        'is_super_admin', 'is_cs_agent', 'avatar', 'last_login_at', 'dashboard_config',
         'notification_preferences',
         'email_verified_at', 'verification_token',
         'can_see_all_conversations',
@@ -37,6 +37,7 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
+            'is_cs_agent' => 'boolean',
             'can_see_all_conversations' => 'boolean',
             'dashboard_config' => 'array',
             'notification_preferences' => 'array',
@@ -86,6 +87,11 @@ class User extends Authenticatable
     public function isSuperAdmin(): bool
     {
         return (bool) $this->is_super_admin;
+    }
+
+    public function isCsAgent(): bool
+    {
+        return (bool) $this->is_cs_agent;
     }
 
     public function isAdmin(): bool

@@ -19,6 +19,17 @@ class TenantMiddleware
 
         $user = auth()->user();
 
+        // Super admin sem impersonação → redireciona para master
+        if ($user->isSuperAdmin() && !session('impersonating_tenant_id')) {
+            return redirect()->route('master.dashboard');
+        }
+
+        // CS agent → redireciona para painel CS
+        if ($user->isCsAgent()) {
+            return redirect()->route('cs.index');
+        }
+
+        // Super admin impersonando → permite acesso ao tenant
         if ($user->isSuperAdmin()) {
             return $next($request);
         }

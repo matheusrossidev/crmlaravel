@@ -191,6 +191,7 @@
             <thead>
                 <tr>
                     <th>Empresa</th>
+                    <th>WhatsApp</th>
                     <th>Status</th>
                     <th>Plano</th>
                     <th>Usuários</th>
@@ -206,6 +207,15 @@
                     <td>
                         <div style="font-weight:600;color:#1a1d23;">{{ $tenant->name }}</div>
                         <div style="font-size:11px;color:#9ca3af;">{{ $tenant->slug }}</div>
+                    </td>
+                    <td>
+                        @if($tenant->phone)
+                            <a href="https://wa.me/{{ preg_replace('/\D/', '', $tenant->phone) }}" target="_blank" title="{{ $tenant->phone }}" style="color:#25D366;text-decoration:none;font-size:13px;display:inline-flex;align-items:center;gap:4px;">
+                                <i class="bi bi-whatsapp"></i> {{ $tenant->phone }}
+                            </a>
+                        @else
+                            <span style="color:#9ca3af;font-size:12px;">—</span>
+                        @endif
                     </td>
                     <td>
                         <span class="status-badge status-{{ $tenant->status }}">

@@ -77,6 +77,44 @@ class DashboardController extends Controller
 
         $recentTenants = Tenant::orderByDesc('created_at')->limit(10)->get();
 
-        return view('master.dashboard', compact('stats', 'revenue', 'recentPayments', 'recentTenants', 'monthlyGrowth'));
+        // --- Crescimento de Receita: últimos 12 meses ---
+        $revenueGrowth = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $monthStart = now()->subMonths($i)->startOfMonth();
+            $monthEnd   = (clone $monthStart)->endOfMonth();
+            $label      = $monthStart->format('M/y');
+
+            $subscriptions = (float) PaymentLog::where('type', 'subscription')
+                ->where('status', 'confirmed')
+                ->whereBetween('paid_at', [$monthStart, $monthEnd])
+                ->sum('amount');
+
+            $tokens = (float) PaymentLog::where('type', 'token_increment')
+                ->where('status', 'confirmed')
+                ->whereBetween('paid_at', [$monthStart, $monthEnd])
+                ->sum('amount');
+
+            $revenueGrowth[] = [
+                'label'         => $label,
+                'subscriptions' => $subscriptions,
+                'tokens'        => $tokens,
+                'total'         => $subscriptions + $tokens,
+            ];
+        }
+
+        // Projeção: média dos últimos 3 meses
+        $last3 = array_slice($revenueGrowth, -4, 3);
+        $avgRevenue = count($last3) > 0 ? array_sum(array_column($last3, 'total')) / count($last3) : 0;
+        $projection = round($avgRevenue, 2);
+
+        // Variação mês anterior vs atual
+        $currentMonthRev = end($revenueGrowth)['total'] ?? 0;
+        $prevMonthRev    = $revenueGrowth[count($revenueGrowth) - 2]['total'] ?? 0;
+        $revenueDelta    = $prevMonthRev > 0 ? round((($currentMonthRev - $prevMonthRev) / $prevMonthRev) * 100, 1) : 0;
+
+        return view('master.dashboard', compact(
+            'stats', 'revenue', 'recentPayments', 'recentTenants',
+            'monthlyGrowth', 'revenueGrowth', 'projection', 'revenueDelta',
+        ));
     }
 }

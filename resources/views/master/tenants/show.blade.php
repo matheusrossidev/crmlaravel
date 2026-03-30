@@ -294,6 +294,18 @@
                         <span class="meta-value" style="font-family:monospace;font-size:12px;">{{ $tenant->slug }}</span>
                     </div>
                     <div class="meta-row">
+                        <span class="meta-label">WhatsApp</span>
+                        <span class="meta-value">
+                            @if($tenant->phone)
+                                <a href="https://wa.me/{{ preg_replace('/\D/', '', $tenant->phone) }}" target="_blank" style="color:#25D366;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+                                    <i class="bi bi-whatsapp"></i> {{ $tenant->phone }}
+                                </a>
+                            @else
+                                <span style="color:#9ca3af;">Não informado</span>
+                            @endif
+                        </span>
+                    </div>
+                    <div class="meta-row">
                         <span class="meta-label">Status</span>
                         <span class="status-badge status-{{ $tenant->status }}">{{ ucfirst($tenant->status) }}</span>
                     </div>

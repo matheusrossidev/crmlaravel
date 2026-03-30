@@ -397,7 +397,35 @@
         <span class="tool-badge" style="background:#d1fae5;color:#065f46;">WhatsApp</span>
     </div>
 
-    {{-- 18. Zerar Tokens IA --}}
+    {{-- 18. Criar Usuário CS --}}
+    <div class="tool-card" onclick="openTool('create-cs-user')">
+        <div class="tool-card-header">
+            <div class="tool-icon" style="background:#eff6ff;">
+                <i class="bi bi-headset" style="color:#0085f3;"></i>
+            </div>
+            <div class="tool-info">
+                <h6>Criar Usuário CS</h6>
+                <p>Cria um usuário do tipo Customer Success que tem acesso apenas ao painel CS (/cs).</p>
+            </div>
+        </div>
+        <span class="tool-badge badge-blue">Conta</span>
+    </div>
+
+    {{-- 19. Gerenciar Usuários CS --}}
+    <div class="tool-card" onclick="openTool('manage-cs-users')">
+        <div class="tool-card-header">
+            <div class="tool-icon" style="background:#eff6ff;">
+                <i class="bi bi-people-fill" style="color:#0085f3;"></i>
+            </div>
+            <div class="tool-info">
+                <h6>Gerenciar Usuários CS</h6>
+                <p>Lista todos os usuários do Customer Success e permite deletar por ID.</p>
+            </div>
+        </div>
+        <span class="tool-badge badge-blue">Conta</span>
+    </div>
+
+    {{-- 20. Zerar Tokens IA --}}
     <div class="tool-card" onclick="openTool('reset-ai-tokens')">
         <div class="tool-card-header">
             <div class="tool-icon" style="background:#fef3c7;">
@@ -598,6 +626,28 @@ var USERS   = <?php echo json_encode($users->toArray()); ?>;
                 { name: 'pct_lost',   label: '% leads perdidos',     type: 'text', value: '10', hint: 'Ex: 10 (cria perdas)' },
                 { name: 'with_utms',  label: 'Incluir UTMs/campanhas (60% dos leads)', type: 'checkbox' },
                 { name: 'with_tags',  label: 'Criar tags demo',      type: 'checkbox' },
+            ],
+        },
+        'manage-cs-users': {
+            label: 'Gerenciar Usuários CS',
+            iconHtml: '<i class="bi bi-people-fill" style="color:#0085f3;"></i>',
+            iconBg: '#eff6ff',
+            params: [
+                { name: 'action',  label: 'Ação', type: 'select-custom', required: true, options: [
+                    { value: 'list',   label: 'Listar todos os usuários CS' },
+                    { value: 'delete', label: 'Deletar usuário CS por ID' },
+                ]},
+                { name: 'user_id', label: 'ID do usuário (apenas para deletar)', type: 'text', required: false, hint: 'Liste primeiro para ver os IDs' },
+            ],
+        },
+        'create-cs-user': {
+            label: 'Criar Usuário CS',
+            iconHtml: '<i class="bi bi-headset" style="color:#0085f3;"></i>',
+            iconBg: '#eff6ff',
+            params: [
+                { name: 'name',     label: 'Nome completo', type: 'text', required: true },
+                { name: 'email',    label: 'Email', type: 'text', required: true },
+                { name: 'password', label: 'Senha', type: 'password', hint: 'Mínimo 8 caracteres', required: true },
             ],
         },
         'test-wa-notifications': {

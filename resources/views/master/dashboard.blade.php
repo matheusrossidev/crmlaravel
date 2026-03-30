@@ -4,80 +4,205 @@
     $pageIcon = 'grid-1x2';
 @endphp
 
+@push('styles')
+<style>
+    .stats-grid {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 20px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 2px;
+    }
+    .stats-grid::-webkit-scrollbar { display: none; }
+    .stat-card { min-width: 170px; flex-shrink: 0; flex: 1; }
+    .stat-card {
+        background: #fff;
+        border-radius: 14px;
+        padding: 16px 18px;
+        border: 1px solid #e8eaf0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .stat-card-top { display: flex; align-items: center; gap: 9px; }
+    .stat-icon {
+        width: 30px; height: 30px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 14px; flex-shrink: 0;
+    }
+    .stat-icon.blue   { background: #eff6ff; color: #007DFF; }
+    .stat-icon.green  { background: #f0fdf4; color: #10B981; }
+    .stat-icon.purple { background: #f5f3ff; color: #8B5CF6; }
+    .stat-icon.orange { background: #fffbeb; color: #F59E0B; }
+    .stat-icon.red    { background: #fef2f2; color: #EF4444; }
+    .stat-icon.teal   { background: #f0fdfa; color: #0d9488; }
+    .stat-label { font-size: 12px; color: #97A3B7; font-weight: 500; line-height: 1.3; }
+    .stat-value { font-size: 22px; font-weight: 700; color: #1a1d23; line-height: 1; }
+    .stat-sub { font-size: 11px; color: #97A3B7; margin-top: 2px; }
+    .trend-badge {
+        display: inline-flex; align-items: center; gap: 2px;
+        font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 99px;
+    }
+    .trend-badge.up   { background: #f0fdf4; color: #16a34a; }
+    .trend-badge.down { background: #fef2f2; color: #dc2626; }
+
+    .charts-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) {
+        .stats-grid { gap: 10px; }
+        .stat-card { min-width: 150px; padding: 14px; gap: 8px; }
+        .stat-value { font-size: 18px; }
+        .stat-label { font-size: 11px; }
+        .stat-icon { width: 26px; height: 26px; font-size: 12px; border-radius: 6px; }
+        .charts-row { gap: 14px; }
+    }
+</style>
+@endpush
+
 @section('content')
 
 {{-- Revenue Cards --}}
-<div class="m-stats" style="margin-bottom:12px;">
-    <div class="m-stat" style="border-left:3px solid #10B981;">
-        <div class="m-stat-label">MRR (Assinaturas)</div>
-        <div class="m-stat-value" style="color:#10B981;">R$ {{ number_format($revenue['mrr'], 2, ',', '.') }}</div>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-card-top">
+            <div class="stat-icon green"><i class="bi bi-cash-stack"></i></div>
+            <span class="stat-label">MRR (Assinaturas)</span>
+        </div>
+        <div class="stat-value">R$ {{ number_format($revenue['mrr'], 2, ',', '.') }}</div>
     </div>
-    <div class="m-stat" style="border-left:3px solid #8B5CF6;">
-        <div class="m-stat-label">Tokens este mês</div>
-        <div class="m-stat-value" style="color:#8B5CF6;">R$ {{ number_format($revenue['tokens_month'], 2, ',', '.') }}</div>
+    <div class="stat-card">
+        <div class="stat-card-top">
+            <div class="stat-icon purple"><i class="bi bi-coin"></i></div>
+            <span class="stat-label">Tokens este mês</span>
+        </div>
+        <div class="stat-value">R$ {{ number_format($revenue['tokens_month'], 2, ',', '.') }}</div>
     </div>
-    <div class="m-stat" style="border-left:3px solid #3B82F6;">
-        <div class="m-stat-label">Receita Total Mês</div>
-        <div class="m-stat-value" style="color:#3B82F6;">R$ {{ number_format($revenue['total_mrr'], 2, ',', '.') }}</div>
+    <div class="stat-card">
+        <div class="stat-card-top">
+            <div class="stat-icon blue"><i class="bi bi-wallet2"></i></div>
+            <span class="stat-label">Receita Total Mês</span>
+        </div>
+        <div>
+            <span class="stat-value">R$ {{ number_format($revenue['total_mrr'], 2, ',', '.') }}</span>
+            @if($revenueDelta != 0)
+                <span class="trend-badge {{ $revenueDelta >= 0 ? 'up' : 'down' }}">
+                    <i class="bi bi-arrow-{{ $revenueDelta >= 0 ? 'up' : 'down' }}-short"></i>
+                    {{ abs($revenueDelta) }}%
+                </span>
+            @endif
+        </div>
     </div>
-    <div class="m-stat" style="border-left:3px solid #F59E0B;">
-        <div class="m-stat-label">ARR Projetado</div>
-        <div class="m-stat-value" style="color:#F59E0B;">R$ {{ number_format($revenue['arr'], 2, ',', '.') }}</div>
+    <div class="stat-card">
+        <div class="stat-card-top">
+            <div class="stat-icon orange"><i class="bi bi-graph-up-arrow"></i></div>
+            <span class="stat-label">ARR Projetado</span>
+        </div>
+        <div class="stat-value">R$ {{ number_format($revenue['arr'], 2, ',', '.') }}</div>
     </div>
-    <div class="m-stat" style="border-left:3px solid #EF4444;">
-        <div class="m-stat-label">Churn este mês</div>
-        <div class="m-stat-value" style="color:#EF4444;">{{ $revenue['churn_month'] }}</div>
+    <div class="stat-card">
+        <div class="stat-card-top">
+            <div class="stat-icon red"><i class="bi bi-arrow-down-circle"></i></div>
+            <span class="stat-label">Churn este mês</span>
+        </div>
+        <div class="stat-value">{{ $revenue['churn_month'] }}</div>
     </div>
 </div>
 
 {{-- Tenant Stats --}}
-<div class="m-stats">
-    <div class="m-stat">
-        <div class="m-stat-label">Total de Empresas</div>
-        <div class="m-stat-value">{{ $stats['total'] }}</div>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-card-top">
+            <div class="stat-icon blue"><i class="bi bi-buildings"></i></div>
+            <span class="stat-label">Total de Empresas</span>
+        </div>
+        <div class="stat-value">{{ $stats['total'] }}</div>
     </div>
-    <div class="m-stat">
-        <div class="m-stat-label">Ativas</div>
-        <div class="m-stat-value" style="color:#10B981;">{{ $stats['active'] }}</div>
+    <div class="stat-card">
+        <div class="stat-card-top">
+            <div class="stat-icon green"><i class="bi bi-check-circle"></i></div>
+            <span class="stat-label">Ativas</span>
+        </div>
+        <div class="stat-value">{{ $stats['active'] }}</div>
     </div>
-    <div class="m-stat">
-        <div class="m-stat-label">Pagantes</div>
-        <div class="m-stat-value" style="color:#059669;">{{ $stats['paying'] }}</div>
+    <div class="stat-card">
+        <div class="stat-card-top">
+            <div class="stat-icon teal"><i class="bi bi-credit-card"></i></div>
+            <span class="stat-label">Pagantes</span>
+        </div>
+        <div class="stat-value">{{ $stats['paying'] }}</div>
     </div>
-    <div class="m-stat">
-        <div class="m-stat-label">Em Trial</div>
-        <div class="m-stat-value" style="color:#F59E0B;">{{ $stats['trial'] }}</div>
+    <div class="stat-card">
+        <div class="stat-card-top">
+            <div class="stat-icon orange"><i class="bi bi-hourglass-split"></i></div>
+            <span class="stat-label">Em Trial</span>
+        </div>
+        <div class="stat-value">{{ $stats['trial'] }}</div>
     </div>
-    <div class="m-stat">
-        <div class="m-stat-label">Parceiros</div>
-        <div class="m-stat-value" style="color:#8B5CF6;">{{ $stats['partner'] }}</div>
+    <div class="stat-card">
+        <div class="stat-card-top">
+            <div class="stat-icon purple"><i class="bi bi-people"></i></div>
+            <span class="stat-label">Parceiros</span>
+        </div>
+        <div class="stat-value">{{ $stats['partner'] }}</div>
     </div>
-    <div class="m-stat">
-        <div class="m-stat-label">Suspensas/Inativas</div>
-        <div class="m-stat-value" style="color:#EF4444;">{{ $stats['suspended'] }}</div>
+    <div class="stat-card">
+        <div class="stat-card-top">
+            <div class="stat-icon red"><i class="bi bi-x-circle"></i></div>
+            <span class="stat-label">Suspensas</span>
+        </div>
+        <div class="stat-value">{{ $stats['suspended'] }}</div>
     </div>
-    <div class="m-stat">
-        <div class="m-stat-label">Novas este mês</div>
-        <div class="m-stat-value" style="color:#3B82F6;">{{ $stats['new_month'] }}</div>
+    <div class="stat-card">
+        <div class="stat-card-top">
+            <div class="stat-icon blue"><i class="bi bi-plus-circle"></i></div>
+            <span class="stat-label">Novas este mês</span>
+        </div>
+        <div class="stat-value">{{ $stats['new_month'] }}</div>
     </div>
 </div>
 
-{{-- Gráfico: Crescimento de Usuários --}}
-<div class="m-card" style="margin-bottom:20px;">
-    <div class="m-card-header">
-        <div class="m-card-title">
-            <i class="bi bi-graph-up"></i>
-            Crescimento de Usuários
+{{-- Charts Row --}}
+<div class="charts-row">
+    {{-- Crescimento de Usuários --}}
+    <div class="m-card">
+        <div class="m-card-header" style="flex-wrap:wrap;gap:8px;">
+            <div class="m-card-title">
+                <i class="bi bi-graph-up"></i>
+                Crescimento de Usuários
+            </div>
+            <div style="display:flex;gap:4px;">
+                <button class="m-btn m-btn-ghost m-btn-sm growth-period" data-period="week" style="font-size:11px;padding:4px 10px;border-radius:6px;">1S</button>
+                <button class="m-btn m-btn-ghost m-btn-sm growth-period active" data-period="month" style="font-size:11px;padding:4px 10px;border-radius:6px;background:#0085f3;color:#fff;">1M</button>
+                <button class="m-btn m-btn-ghost m-btn-sm growth-period" data-period="3months" style="font-size:11px;padding:4px 10px;border-radius:6px;">3M</button>
+                <button class="m-btn m-btn-ghost m-btn-sm growth-period" data-period="6months" style="font-size:11px;padding:4px 10px;border-radius:6px;">6M</button>
+            </div>
         </div>
-        <div style="display:flex;gap:4px;">
-            <button class="m-btn m-btn-ghost m-btn-sm growth-period" data-period="week" style="font-size:11.5px;padding:4px 10px;border-radius:6px;">Semana</button>
-            <button class="m-btn m-btn-ghost m-btn-sm growth-period active" data-period="month" style="font-size:11.5px;padding:4px 10px;border-radius:6px;background:#0085f3;color:#fff;">Mês</button>
-            <button class="m-btn m-btn-ghost m-btn-sm growth-period" data-period="3months" style="font-size:11.5px;padding:4px 10px;border-radius:6px;">3 Meses</button>
-            <button class="m-btn m-btn-ghost m-btn-sm growth-period" data-period="6months" style="font-size:11.5px;padding:4px 10px;border-radius:6px;">6 Meses</button>
+        <div style="padding:16px 20px;">
+            <canvas id="growthChart" height="220"></canvas>
         </div>
     </div>
-    <div style="padding:16px 20px;background:#fff;border-radius:0 0 12px 12px;">
-        <canvas id="growthChart" height="80"></canvas>
+
+    {{-- Crescimento de Receita --}}
+    <div class="m-card">
+        <div class="m-card-header" style="flex-wrap:wrap;gap:8px;">
+            <div class="m-card-title">
+                <i class="bi bi-currency-dollar"></i>
+                Receita Mensal
+            </div>
+            <div style="font-size:12px;color:#6b7280;">
+                Projeção: <strong style="color:#0085f3;">R$ {{ number_format($projection, 2, ',', '.') }}</strong>/mês
+            </div>
+        </div>
+        <div style="padding:16px 20px;">
+            <canvas id="revenueChart" height="220"></canvas>
+        </div>
     </div>
 </div>
 
@@ -88,7 +213,7 @@
             <i class="bi bi-cash-stack"></i>
             Últimos Recebimentos
         </div>
-        <a href="{{ route('master.payments') }}" class="m-btn m-btn-ghost m-btn-sm">Ver todos</a>
+        <a href="{{ route('master.payments') }}" class="m-btn m-btn-ghost m-btn-sm" style="text-decoration:none;">Ver todos</a>
     </div>
     <div style="overflow-x:auto;">
         <table class="m-table">
@@ -126,21 +251,20 @@
     </div>
 </div>
 
-{{-- Recentes --}}
+{{-- Empresas Recentes --}}
 <div class="m-card">
     <div class="m-card-header">
         <div class="m-card-title">
             <i class="bi bi-building"></i>
             Empresas Recentes
         </div>
-        <a href="{{ route('master.tenants') }}" class="m-btn m-btn-ghost m-btn-sm">Ver todas</a>
+        <a href="{{ route('master.tenants') }}" class="m-btn m-btn-ghost m-btn-sm" style="text-decoration:none;">Ver todas</a>
     </div>
     <div style="overflow-x:auto;">
         <table class="m-table">
             <thead>
                 <tr>
                     <th>Empresa</th>
-                    <th>Slug</th>
                     <th>Plano</th>
                     <th>Status</th>
                     <th>Trial até</th>
@@ -153,55 +277,40 @@
                 <tr>
                     <td>
                         <div style="display:flex;align-items:center;gap:10px;">
-                            <div style="width:32px;height:32px;border-radius:8px;background:#2a84ef;
-                                        display:flex;align-items:center;justify-content:center;
-                                        color:#fff;font-weight:700;font-size:13px;overflow:hidden;flex-shrink:0;">
+                            <div style="width:32px;height:32px;border-radius:8px;background:#2a84ef;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;overflow:hidden;flex-shrink:0;">
                                 @if($t->logo)
-                                    <img src="{{ $t->logo }}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
+                                    <img src="{{ $t->logo }}" style="width:100%;height:100%;object-fit:cover;">
                                 @else
                                     {{ strtoupper(substr($t->name, 0, 1)) }}
                                 @endif
                             </div>
-                            <span style="font-weight:600;">{{ $t->name }}</span>
+                            <div>
+                                <div style="font-weight:600;">{{ $t->name }}</div>
+                                @if($t->phone)
+                                    <a href="https://wa.me/{{ preg_replace('/\D/', '', $t->phone) }}" target="_blank" style="font-size:11px;color:#25D366;text-decoration:none;"><i class="bi bi-whatsapp"></i> {{ $t->phone }}</a>
+                                @endif
+                            </div>
                         </div>
                     </td>
-                    <td style="color:#9ca3af;">{{ $t->slug }}</td>
-                    <td>
-                        <span class="m-badge" style="background:#EFF6FF;color:#1D4ED8;">{{ $t->plan }}</span>
-                    </td>
+                    <td><span class="m-badge" style="background:#EFF6FF;color:#1D4ED8;">{{ $t->plan }}</span></td>
                     <td>
                         @php
-                            $badgeClass = match($t->status) {
-                                'active'    => 'm-badge-active',
-                                'trial'     => 'm-badge-trial',
-                                'partner'   => 'm-badge-partner',
-                                'suspended' => 'm-badge-suspended',
-                                default     => 'm-badge-inactive',
-                            };
-                            $statusLabel = match($t->status) {
-                                'active'    => 'Ativo',
-                                'trial'     => 'Trial',
-                                'partner'   => 'Parceiro',
-                                'suspended' => 'Suspenso',
-                                'inactive'  => 'Inativo',
-                                default     => ucfirst($t->status),
-                            };
+                            $bc = match($t->status) { 'active' => 'm-badge-active', 'trial' => 'm-badge-trial', 'partner' => 'm-badge-partner', 'suspended' => 'm-badge-suspended', default => 'm-badge-inactive' };
+                            $sl = match($t->status) { 'active' => 'Ativo', 'trial' => 'Trial', 'partner' => 'Parceiro', 'suspended' => 'Suspenso', 'inactive' => 'Inativo', default => ucfirst($t->status) };
                         @endphp
-                        <span class="m-badge {{ $badgeClass }}">{{ $statusLabel }}</span>
+                        <span class="m-badge {{ $bc }}">{{ $sl }}</span>
                     </td>
-                    <td style="font-size:12.5px;color:#6b7280;">
-                        {{ $t->trial_ends_at ? $t->trial_ends_at->format('d/m/Y') : '—' }}
-                    </td>
+                    <td style="font-size:12.5px;color:#6b7280;">{{ $t->trial_ends_at ? $t->trial_ends_at->format('d/m/Y') : '—' }}</td>
                     <td style="font-size:12.5px;color:#6b7280;">{{ $t->created_at->format('d/m/Y') }}</td>
                     <td>
-                        <a href="{{ route('master.tenants.show', $t->id) }}" class="m-btn m-btn-ghost m-btn-sm">
+                        <a href="{{ route('master.tenants.show', $t->id) }}" class="m-btn m-btn-ghost m-btn-sm" style="text-decoration:none;">
                             <i class="bi bi-eye"></i>
                         </a>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" style="text-align:center;padding:32px;color:#9ca3af;">Nenhuma empresa cadastrada.</td>
+                    <td colspan="6" style="text-align:center;padding:32px;color:#9ca3af;">Nenhuma empresa cadastrada.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -215,8 +324,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
 (function(){
+    // ── Growth Chart ─────────────────────────────────────────────────
     const allData = @json($monthlyGrowth);
-    let chart = null;
+    let growthChart = null;
 
     function sliceData(period) {
         switch(period) {
@@ -228,124 +338,95 @@
         }
     }
 
-    function renderChart(period) {
+    function renderGrowthChart(period) {
         const data = sliceData(period);
-        if (chart) chart.destroy();
-
+        if (growthChart) growthChart.destroy();
         const ctx = document.getElementById('growthChart').getContext('2d');
 
-        const trialGrad = ctx.createLinearGradient(0, 0, 0, 280);
-        trialGrad.addColorStop(0, 'rgba(245,158,11,0.3)');
-        trialGrad.addColorStop(1, 'rgba(245,158,11,0.02)');
-
-        const payingGrad = ctx.createLinearGradient(0, 0, 0, 280);
-        payingGrad.addColorStop(0, 'rgba(0,133,243,0.3)');
-        payingGrad.addColorStop(1, 'rgba(0,133,243,0.02)');
-
-        const partnerGrad = ctx.createLinearGradient(0, 0, 0, 280);
-        partnerGrad.addColorStop(0, 'rgba(139,92,246,0.25)');
-        partnerGrad.addColorStop(1, 'rgba(139,92,246,0.02)');
-
-        chart = new Chart(ctx, {
+        growthChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: data.map(d => d.label),
                 datasets: [
-                    {
-                        label: 'Trial',
-                        data: data.map(d => d.trial),
-                        borderColor: '#F59E0B',
-                        backgroundColor: trialGrad,
-                        borderWidth: 2.5,
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#F59E0B',
-                        pointBorderWidth: 2,
-                        pointHoverRadius: 6,
-                    },
-                    {
-                        label: 'Pagantes',
-                        data: data.map(d => d.paying),
-                        borderColor: '#0085f3',
-                        backgroundColor: payingGrad,
-                        borderWidth: 2.5,
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#0085f3',
-                        pointBorderWidth: 2,
-                        pointHoverRadius: 6,
-                    },
-                    {
-                        label: 'Parceiros',
-                        data: data.map(d => d.partner),
-                        borderColor: '#8B5CF6',
-                        backgroundColor: partnerGrad,
-                        borderWidth: 2.5,
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#8B5CF6',
-                        pointBorderWidth: 2,
-                        pointHoverRadius: 6,
-                    }
+                    { label: 'Trial', data: data.map(d => d.trial), borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 2, fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#fff', pointBorderColor: '#F59E0B', pointBorderWidth: 2 },
+                    { label: 'Pagantes', data: data.map(d => d.paying), borderColor: '#0085f3', backgroundColor: 'rgba(0,133,243,0.1)', borderWidth: 2, fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#fff', pointBorderColor: '#0085f3', pointBorderWidth: 2 },
+                    { label: 'Parceiros', data: data.map(d => d.partner), borderColor: '#8B5CF6', backgroundColor: 'rgba(139,92,246,0.1)', borderWidth: 2, fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#fff', pointBorderColor: '#8B5CF6', pointBorderWidth: 2 },
                 ]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: true,
+                responsive: true, maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { usePointStyle: true, pointStyle: 'circle', padding: 20, font: { size: 12, family: "'DM Sans', sans-serif" } }
-                    },
-                    tooltip: {
-                        backgroundColor: '#1a1d23',
-                        titleFont: { size: 12, family: "'DM Sans', sans-serif" },
-                        bodyFont: { size: 12, family: "'DM Sans', sans-serif" },
-                        padding: 10,
-                        cornerRadius: 8,
-                        displayColors: true,
-                    }
+                    legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 16, font: { size: 11 } } },
+                    tooltip: { backgroundColor: '#1a1d23', cornerRadius: 8, padding: 10, titleFont: { size: 12 }, bodyFont: { size: 12 } }
                 },
                 scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: { font: { size: 11, family: "'DM Sans', sans-serif" }, color: '#9ca3af', maxRotation: 0 },
-                        border: { display: false }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        ticks: { stepSize: 1, font: { size: 11, family: "'DM Sans', sans-serif" }, color: '#9ca3af' },
-                        grid: { color: '#f3f4f6', drawBorder: false },
-                        border: { display: false }
-                    }
+                    x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#9ca3af', maxRotation: 0 }, border: { display: false } },
+                    y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 }, color: '#9ca3af' }, grid: { color: '#f3f4f6' }, border: { display: false } }
                 }
             }
         });
     }
 
-    // Period toggle buttons
     document.querySelectorAll('.growth-period').forEach(btn => {
         btn.addEventListener('click', function() {
-            document.querySelectorAll('.growth-period').forEach(b => {
-                b.style.background = '';
-                b.style.color = '';
-                b.classList.remove('active');
-            });
-            this.style.background = '#0085f3';
-            this.style.color = '#fff';
-            this.classList.add('active');
-            renderChart(this.dataset.period);
+            document.querySelectorAll('.growth-period').forEach(b => { b.style.background = ''; b.style.color = ''; });
+            this.style.background = '#0085f3'; this.style.color = '#fff';
+            renderGrowthChart(this.dataset.period);
         });
     });
+    renderGrowthChart('month');
 
-    renderChart('month');
+    // ── Revenue Chart ────────────────────────────────────────────────
+    const revData = @json($revenueGrowth);
+    const projection = {{ $projection }};
+
+    // Add projection as next month
+    const projLabel = 'Projeção';
+    const labels = revData.map(d => d.label).concat([projLabel]);
+    const subData = revData.map(d => d.subscriptions);
+    const tokData = revData.map(d => d.tokens);
+    const projSub = subData.length > 0 ? subData[subData.length - 1] : 0;
+    const projTok = projection - projSub > 0 ? projection - projSub : 0;
+
+    new Chart(document.getElementById('revenueChart'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Assinaturas',
+                    data: [...subData, projSub],
+                    backgroundColor: revData.map(() => 'rgba(0,133,243,0.7)').concat(['rgba(0,133,243,0.25)']),
+                    borderRadius: 4, borderSkipped: false,
+                },
+                {
+                    label: 'Tokens',
+                    data: [...tokData, projTok],
+                    backgroundColor: revData.map(() => 'rgba(139,92,246,0.6)').concat(['rgba(139,92,246,0.2)']),
+                    borderRadius: 4, borderSkipped: false,
+                },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'rect', padding: 16, font: { size: 11 } } },
+                tooltip: {
+                    backgroundColor: '#1a1d23', cornerRadius: 8, padding: 10,
+                    callbacks: { label: ctx => ctx.dataset.label + ': R$ ' + ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }
+                }
+            },
+            scales: {
+                x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 }, color: '#9ca3af', maxRotation: 45 }, border: { display: false } },
+                y: {
+                    stacked: true, beginAtZero: true,
+                    ticks: { font: { size: 10 }, color: '#9ca3af', callback: v => 'R$ ' + v.toLocaleString('pt-BR') },
+                    grid: { color: '#f3f4f6' }, border: { display: false }
+                }
+            }
+        }
+    });
 })();
 </script>
 @endpush

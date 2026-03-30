@@ -35,6 +35,8 @@ return [
     'continue'                  => 'Continuar',
     'your_name_label'           => 'Seu nome',
     'your_name_placeholder'     => 'João Silva',
+    'phone_label'               => 'WhatsApp',
+    'phone_placeholder'         => '(11) 99999-9999',
     'change_name'               => 'Alterar nome',
     'email_register_placeholder' => 'joao@empresa.com',
     'password_register_placeholder' => 'Mín. 8 chars, maiúscula e número',

@@ -349,6 +349,7 @@
                 {{-- Campos hidden (enviados no POST) --}}
                 <input type="hidden" name="tenant_name"            id="h-tenant">
                 <input type="hidden" name="name"                   id="h-name">
+                <input type="hidden" name="phone"                  id="h-phone">
                 <input type="hidden" name="email"                  id="h-email">
 
                 {{-- Etapa 1 — Empresa --}}
@@ -390,9 +391,25 @@
                                    class="form-control {{ $errors->has('name') ? 'is-invalid' : '' }}"
                                    placeholder="{{ __('auth.your_name_placeholder') }}"
                                    autocomplete="name"
-                                   onkeydown="if(event.key==='Enter'){event.preventDefault();goStep(3);}">
+                                   onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('d-phone').focus();}">
                         </div>
                         @error('name')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="form-group">
+                        <label for="d-phone">{{ __('auth.phone_label') ?? 'WhatsApp' }}</label>
+                        <div class="input-wrap">
+                            <i class="bi bi-whatsapp" style="color:#25D366;"></i>
+                            <input type="tel"
+                                   id="d-phone"
+                                   class="form-control {{ $errors->has('phone') ? 'is-invalid' : '' }}"
+                                   placeholder="{{ __('auth.phone_placeholder') ?? '(11) 99999-9999' }}"
+                                   autocomplete="tel"
+                                   maxlength="20"
+                                   onkeydown="if(event.key==='Enter'){event.preventDefault();goStep(3);}">
+                        </div>
+                        @error('phone')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
@@ -575,6 +592,10 @@
         document.getElementById('d-name').value = '{{ old('name') }}';
         document.getElementById('h-name').value  = '{{ old('name') }}';
     @endif
+    @if(old('phone'))
+        document.getElementById('d-phone').value = '{{ old('phone') }}';
+        document.getElementById('h-phone').value  = '{{ old('phone') }}';
+    @endif
     @if(old('email'))
         document.getElementById('d-email').value = '{{ old('email') }}';
         document.getElementById('h-email').value  = '{{ old('email') }}';
@@ -585,7 +606,7 @@
         goStep(4, true);
     @elseif($errors->has('email'))
         goStep(3, true);
-    @elseif($errors->has('name'))
+    @elseif($errors->has('name') || $errors->has('phone'))
         goStep(2, true);
     @elseif($errors->any())
         goStep(1, true);
@@ -609,6 +630,7 @@
             const v = document.getElementById('d-name').value.trim();
             document.getElementById('h-name').value = v;
             document.getElementById('chip-name-3').textContent = v;
+            document.getElementById('h-phone').value = document.getElementById('d-phone').value.trim();
         } else if (currentStep === 3) {
             const v = document.getElementById('d-email').value.trim();
             document.getElementById('h-email').value = v;
@@ -641,6 +663,8 @@
         } else if (n === 2) {
             const v = document.getElementById('d-name').value.trim();
             if (!v) { document.getElementById('d-name').focus(); return false; }
+            const ph = document.getElementById('d-phone').value.replace(/\D/g, '');
+            if (ph.length < 10) { document.getElementById('d-phone').focus(); return false; }
         } else if (n === 3) {
             const v = document.getElementById('d-email').value.trim();
             if (!v || !v.includes('@')) { document.getElementById('d-email').focus(); return false; }

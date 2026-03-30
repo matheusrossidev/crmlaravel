@@ -522,6 +522,13 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
 });
 
 // ── Master (super_admin only) ──────────────────────────────────────────────────
+// ── Customer Success ─────────────────────────────────────────────────────────
+Route::middleware(['auth', 'cs_agent'])->prefix('cs')->name('cs.')->group(function () {
+    Route::get('/',        [\App\Http\Controllers\Cs\CsDashboardController::class, 'index'])->name('index');
+    Route::get('/{tenant}', [\App\Http\Controllers\Cs\CsDashboardController::class, 'show'])->name('show');
+});
+
+// ── Master Admin ─────────────────────────────────────────────────────────────
 Route::middleware(['auth', 'super_admin', '2fa'])->prefix('master')->name('master.')->group(function () {
 
     // 2FA Setup

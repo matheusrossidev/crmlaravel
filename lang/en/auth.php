@@ -35,6 +35,8 @@ return [
     'continue'                  => 'Continue',
     'your_name_label'           => 'Your name',
     'your_name_placeholder'     => 'John Smith',
+    'phone_label'               => 'WhatsApp',
+    'phone_placeholder'         => '(11) 99999-9999',
     'change_name'               => 'Change name',
     'email_register_placeholder' => 'john@company.com',
     'password_register_placeholder' => 'Min. 8 chars, uppercase and number',

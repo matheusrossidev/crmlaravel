@@ -102,6 +102,10 @@ class AuthController extends Controller
             return redirect()->intended(route('master.dashboard'));
         }
 
+        if ($user->isCsAgent()) {
+            return redirect()->intended(route('cs.index'));
+        }
+
         return redirect()->intended(route('dashboard'));
     }
 
@@ -117,6 +121,7 @@ class AuthController extends Controller
             'name'         => 'required|string|max:255',
             'email'        => 'required|email|unique:users,email',
             'password'     => ['required', 'string', Password::min(8)->mixedCase()->numbers(), 'confirmed'],
+            'phone'        => 'required|string|min:10|max:20',
             'agency_code'  => 'nullable|string|max:20',
             'accept_terms' => 'accepted',
             'locale'       => 'nullable|string|in:pt_BR,en',
@@ -151,6 +156,7 @@ class AuthController extends Controller
 
         $tenant = Tenant::create([
             'name'                  => $data['tenant_name'],
+            'phone'                 => preg_replace('/\D/', '', $data['phone']),
             'slug'                  => Str::slug($data['tenant_name']) . '-' . Str::random(4),
             'plan'                  => 'free',
             'status'                => 'trial',
