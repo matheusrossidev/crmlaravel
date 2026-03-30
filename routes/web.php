@@ -75,6 +75,12 @@ Route::middleware(['guest', 'locale'])->group(function () {
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 });
 
+// 2FA Challenge (sem middleware guest nem auth — user ainda não está logado)
+Route::middleware(['locale'])->group(function () {
+    Route::get('/2fa/challenge', [\App\Http\Controllers\Auth\TwoFactorController::class, 'showChallenge'])->name('2fa.challenge');
+    Route::post('/2fa/challenge', [\App\Http\Controllers\Auth\TwoFactorController::class, 'verifyChallenge'])->name('2fa.verify');
+});
+
 // Verificação de email e cadastro pendente (sem middleware guest para evitar loop)
 Route::get('/verify-email/{token}', [AuthController::class, 'verifyEmail'])->name('verify.email');
 Route::get('/cadastro-pendente', fn() => view('auth.pending'))->middleware('locale')->name('register.pending');
@@ -516,7 +522,14 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
 });
 
 // ── Master (super_admin only) ──────────────────────────────────────────────────
-Route::middleware(['auth', 'super_admin'])->prefix('master')->name('master.')->group(function () {
+Route::middleware(['auth', 'super_admin', '2fa'])->prefix('master')->name('master.')->group(function () {
+
+    // 2FA Setup
+    Route::get('2fa/setup',          [\App\Http\Controllers\Auth\TwoFactorController::class, 'showSetup'])->name('2fa.setup');
+    Route::post('2fa/setup',         [\App\Http\Controllers\Auth\TwoFactorController::class, 'confirmSetup'])->name('2fa.confirm');
+    Route::post('2fa/disable',       [\App\Http\Controllers\Auth\TwoFactorController::class, 'disable'])->name('2fa.disable');
+    Route::get('2fa/backup-codes',   [\App\Http\Controllers\Auth\TwoFactorController::class, 'showBackupCodes'])->name('2fa.backup-codes');
+    Route::post('2fa/backup-codes',  [\App\Http\Controllers\Auth\TwoFactorController::class, 'regenerateBackupCodes'])->name('2fa.regenerate-codes');
 
     // Dashboard
     Route::get('',                                     [MasterDashboardController::class, 'index'])->name('dashboard');

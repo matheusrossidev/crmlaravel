@@ -8,6 +8,7 @@ use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SuperAdminMiddleware;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\TenantMiddleware;
+use App\Http\Middleware\TwoFactorMiddleware;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -44,6 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'agno_internal' => AgnoInternalMiddleware::class,
             'role'          => RoleMiddleware::class,
             'plan.limit'    => CheckPlanLimit::class,
+            '2fa'           => TwoFactorMiddleware::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {

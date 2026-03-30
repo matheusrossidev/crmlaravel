@@ -23,10 +23,11 @@ class User extends Authenticatable
         'notification_preferences',
         'email_verified_at', 'verification_token',
         'can_see_all_conversations',
+        'totp_secret', 'totp_enabled', 'totp_backup_codes',
     ];
 
     protected $hidden = [
-        'password', 'remember_token',
+        'password', 'remember_token', 'totp_secret', 'totp_backup_codes',
     ];
 
     protected function casts(): array
@@ -39,6 +40,9 @@ class User extends Authenticatable
             'can_see_all_conversations' => 'boolean',
             'dashboard_config' => 'array',
             'notification_preferences' => 'array',
+            'totp_enabled' => 'boolean',
+            'totp_secret' => 'encrypted',
+            'totp_backup_codes' => 'encrypted:array',
         ];
     }
 

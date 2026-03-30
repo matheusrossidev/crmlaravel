@@ -534,6 +534,10 @@
                 @endif
             </div>
 
+            <a href="{{ route('master.2fa.setup') }}" class="m-go-tenant" title="Autenticação em Dois Fatores" style="{{ auth()->user()->totp_enabled ? 'background:#d1fae5;border-color:#86efac;color:#065f46;' : '' }}">
+                <i class="bi bi-shield-lock"></i>
+            </a>
+
             <a href="{{ route('dashboard') }}" class="m-go-tenant" title="Ir para área do tenant">
                 <i class="bi bi-box-arrow-up-right"></i>
             </a>

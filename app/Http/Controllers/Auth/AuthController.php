@@ -83,6 +83,17 @@ class AuthController extends Controller
 
         RateLimiter::clear($throttleKey);
 
+        // 2FA check for super admin
+        if ($user->isSuperAdmin() && $user->totp_enabled) {
+            Auth::logout();
+            $request->session()->regenerate();
+            session([
+                '2fa:user_id'  => $user->id,
+                '2fa:remember' => $request->boolean('remember'),
+            ]);
+            return redirect('/2fa/challenge');
+        }
+
         $user->update(['last_login_at' => now()]);
 
         $request->session()->regenerate();
