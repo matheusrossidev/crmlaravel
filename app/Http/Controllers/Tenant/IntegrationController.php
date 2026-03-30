@@ -240,6 +240,26 @@ class IntegrationController extends Controller
         }
     }
 
+    /**
+     * Restart WAHA session (stop + start) to generate a new QR code after expiration.
+     */
+    public function restartWhatsapp(WhatsappInstance $instance): JsonResponse
+    {
+        try {
+            $waha = new WahaService($instance->session_name);
+            $waha->stopSession();
+            $waha->startSession();
+            $instance->update(['status' => 'qr']);
+
+            return response()->json(['success' => true]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao reiniciar sessão: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function getWhatsappQr(WhatsappInstance $instance): JsonResponse
     {
         $waha     = new WahaService($instance->session_name);

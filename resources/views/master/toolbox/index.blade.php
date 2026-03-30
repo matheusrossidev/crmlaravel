@@ -383,7 +383,21 @@
         <span class="tool-badge" style="background:#faf5ff;color:#8B5CF6;">Demo</span>
     </div>
 
-    {{-- 17. Zerar Tokens IA --}}
+    {{-- 17. Testar Notificações WA --}}
+    <div class="tool-card" onclick="openTool('test-wa-notifications')">
+        <div class="tool-card-header">
+            <div class="tool-icon" style="background:#d1fae5;">
+                <i class="bi bi-whatsapp" style="color:#25D366;"></i>
+            </div>
+            <div class="tool-info">
+                <h6>Testar Notificações WA</h6>
+                <p>Envia notificações de teste (cadastro, agência, pagamento, tokens, relatório semanal) no grupo master do WhatsApp.</p>
+            </div>
+        </div>
+        <span class="tool-badge" style="background:#d1fae5;color:#065f46;">WhatsApp</span>
+    </div>
+
+    {{-- 18. Zerar Tokens IA --}}
     <div class="tool-card" onclick="openTool('reset-ai-tokens')">
         <div class="tool-card-header">
             <div class="tool-icon" style="background:#fef3c7;">
@@ -586,6 +600,20 @@ var USERS   = <?php echo json_encode($users->toArray()); ?>;
                 { name: 'with_tags',  label: 'Criar tags demo',      type: 'checkbox' },
             ],
         },
+        'test-wa-notifications': {
+            label: 'Testar Notificações WA',
+            iconHtml: '<i class="bi bi-whatsapp" style="color:#25D366;"></i>',
+            iconBg: '#d1fae5',
+            params: [
+                { name: 'type', label: 'Tipo de notificação', type: 'select-custom', required: true, options: [
+                    { value: 'registration', label: 'Novo Cadastro (dados fake)' },
+                    { value: 'agency',       label: 'Nova Agência (dados fake)' },
+                    { value: 'payment',      label: 'Pagamento Confirmado (dados fake)' },
+                    { value: 'tokens',       label: 'Compra de Tokens (dados fake)' },
+                    { value: 'weekly',       label: 'Relatório Semanal (dados REAIS)' },
+                ]},
+            ],
+        },
         'reset-ai-tokens': {
             label: 'Zerar Tokens de IA',
             iconHtml: '<i class="bi bi-cpu" style="color:#d97706;"></i>',
@@ -649,7 +677,11 @@ var USERS   = <?php echo json_encode($users->toArray()); ?>;
         return params.map(function (p) {
             let input = '';
 
-            if (p.type === 'select-tenant') {
+            if (p.type === 'select-custom') {
+                const opts = (p.options || []).map(o => '<option value="' + o.value + '">' + esc(o.label) + '</option>').join('');
+                input = '<select id="param-' + p.name + '" name="' + p.name + '">' + opts + '</select>';
+
+            } else if (p.type === 'select-tenant') {
                 const req = p.required ? '' : '<option value="">— Todos os tenants —</option>';
                 const opts = TENANTS.map(t => '<option value="' + t.id + '">' + esc(t.name) + '</option>').join('');
                 input = '<select id="param-' + p.name + '" name="' + p.name + '">' + req + opts + '</select>';

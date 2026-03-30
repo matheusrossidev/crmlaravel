@@ -53,6 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('automations:process-recurring')->hourly()->withoutOverlapping();
         $schedule->command('scoring:decay')->dailyAt('09:00');
         $schedule->command('sequences:process')->everyMinute()->withoutOverlapping();
+        $schedule->command('master:weekly-report')->weeklyOn(5, '12:00'); // sexta ao meio-dia
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -99,6 +99,9 @@ class AgencyRegisterController extends Controller
             ]);
         }
 
+        // Notifica grupo master via WhatsApp
+        \App\Services\MasterWhatsappNotifier::newAgencyRegistration($tenant, $user, strtoupper($data['agency_code']));
+
         return redirect()->route('register.pending')
             ->with('email', $user->email);
     }

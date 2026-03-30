@@ -49,6 +49,7 @@ class ToolboxController extends Controller
         'import-asaas-payments',
         'generate-demo-data',
         'reset-ai-tokens',
+        'test-wa-notifications',
     ];
 
     public function index(): View
@@ -1447,6 +1448,81 @@ class ToolboxController extends Controller
         }
 
         $lines[] = "[DONE] Tokens de IA zerados para: {$tenant->name}";
+
+        return response()->json(['success' => true, 'lines' => $lines]);
+    }
+
+    private function testWaNotifications(Request $request): JsonResponse
+    {
+        $type  = $request->input('type', 'registration');
+        $lines = [];
+
+        $notifier = \App\Services\MasterWhatsappNotifier::class;
+
+        switch ($type) {
+            case 'registration':
+                $fakeTenant = new Tenant([
+                    'name'             => 'Empresa Teste LTDA',
+                    'plan'             => 'free',
+                    'status'           => 'trial',
+                    'trial_ends_at'    => now()->addDays(14),
+                    'locale'           => 'pt_BR',
+                    'billing_provider' => 'asaas',
+                    'billing_currency' => 'BRL',
+                ]);
+                $fakeUser = new User([
+                    'name'  => 'João da Silva',
+                    'email' => 'joao@empresa-teste.com',
+                ]);
+                $notifier::newRegistration($fakeTenant, $fakeUser, null);
+                $lines[] = '[OK] Notificação de NOVO CADASTRO enviada.';
+                break;
+
+            case 'agency':
+                $fakeTenant = new Tenant([
+                    'name'   => 'Agência Digital Pro',
+                    'plan'   => 'partner',
+                    'status' => 'partner',
+                ]);
+                $fakeUser = new User([
+                    'name'  => 'Maria Souza',
+                    'email' => 'maria@agenciadigitalpro.com',
+                ]);
+                $notifier::newAgencyRegistration($fakeTenant, $fakeUser, 'AGENCY2026');
+                $lines[] = '[OK] Notificação de NOVA AGÊNCIA enviada.';
+                break;
+
+            case 'payment':
+                $fakeTenant = new Tenant([
+                    'name'             => 'Tech Solutions ME',
+                    'plan'             => 'professional',
+                    'billing_currency' => 'BRL',
+                ]);
+                $notifier::paymentConfirmed($fakeTenant, 197.00, 'Asaas', 'pay_test_abc123');
+                $lines[] = '[OK] Notificação de PAGAMENTO CONFIRMADO enviada.';
+                break;
+
+            case 'tokens':
+                $fakeTenant = new Tenant([
+                    'name'             => 'Clínica Saúde+',
+                    'billing_currency' => 'BRL',
+                ]);
+                $notifier::tokenPurchase($fakeTenant, 50000, 49.90, 'Asaas');
+                $lines[] = '[OK] Notificação de COMPRA DE TOKENS enviada.';
+                break;
+
+            case 'weekly':
+                $notifier::weeklyReport();
+                $lines[] = '[OK] RELATÓRIO SEMANAL enviado (dados reais da plataforma).';
+                break;
+
+            default:
+                $lines[] = '[ERRO] Tipo de notificação inválido.';
+        }
+
+        $lines[] = '';
+        $lines[] = "Grupo: 120363403276686046@g.us";
+        $lines[] = "Instância: tenant_12";
 
         return response()->json(['success' => true, 'lines' => $lines]);
     }

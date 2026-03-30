@@ -46,97 +46,153 @@
             color: #1a1d23;
         }
 
-        /* ── SIDEBAR ─────────────────────────────────────────────────────── */
-        .m-sidebar {
+        /* ── NAVBAR ─────────────────────────────────────────────────────── */
+        .m-navbar {
             position: fixed;
-            top: 0; left: 0;
-            width: 230px;
-            height: 100vh;
-            background: #0f172a;
-            display: flex;
-            flex-direction: column;
+            top: 0; left: 0; right: 0;
+            height: 56px;
+            background: #fff;
+            border-bottom: 1px solid #e8eaf0;
             z-index: 100;
-            overflow-y: auto;
-            overflow-x: hidden;
-        }
-
-        .m-sidebar-logo {
-            padding: 16px 20px;
-            border-bottom: 1px solid rgba(255,255,255,.07);
             display: flex;
             align-items: center;
-            gap: 10px;
-            min-height: 64px;
         }
 
-        .m-sidebar-logo img { max-height: 32px; object-fit: contain; filter: brightness(0) invert(1); }
+        .m-navbar-inner {
+            width: 100%;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            height: 100%;
+        }
 
-        .m-sidebar-badge {
+        .m-navbar-logo {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+            margin-right: 6px;
+            text-decoration: none;
+        }
+        .m-navbar-logo img { height: 28px; }
+
+        .m-master-badge {
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            background: #1e3a5f;
+            background: #1e293b;
             color: #60a5fa;
             border-radius: 6px;
             font-size: 10px;
             font-weight: 700;
             padding: 3px 8px;
             letter-spacing: .5px;
+            flex-shrink: 0;
+            margin-right: 8px;
         }
 
-        /* Nav */
-        .m-nav { padding: 12px 0; flex: 1; }
-
-        .m-nav-group { padding: 16px 20px 4px; }
-
-        .m-nav-group-label {
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            color: rgba(255,255,255,.3);
-            text-transform: uppercase;
+        /* Hamburger (mobile) */
+        .m-navbar-hamburger {
+            display: none;
+            width: 36px; height: 36px;
+            border: 1px solid #e8eaf0;
+            border-radius: 9px;
+            background: #fff;
+            align-items: center;
+            justify-content: center;
+            color: #677489;
+            font-size: 18px;
+            cursor: pointer;
+            flex-shrink: 0;
         }
 
-        .m-nav-item {
+        /* Menu */
+        .m-navbar-menu {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 9px 20px;
-            font-size: 13.5px;
+            gap: 2px;
+            flex: 1;
+        }
+
+        .m-nm-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
             font-weight: 500;
-            color: rgba(255,255,255,.6);
+            color: #677489;
             text-decoration: none;
-            border-left: 3px solid transparent;
-            transition: color .15s, background .15s, border-color .15s;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-family: inherit;
+            transition: all .15s;
+            white-space: nowrap;
         }
+        .m-nm-item:hover { background: #f4f6fb; color: #007DFF; text-decoration: none; }
+        .m-nm-item.active { background: #eff6ff; color: #007DFF; font-weight: 600; }
+        .m-nm-item i { font-size: 15px; }
+        .m-nm-chev { font-size: 10px; margin-left: 2px; transition: transform .2s; }
 
-        .m-nav-item:hover {
-            background: rgba(255,255,255,.05);
-            color: #fff;
+        /* Dropdowns */
+        .m-nm-dropdown { position: relative; }
+        .m-nm-dropdown-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            background: #fff;
+            border: 1px solid #e8eaf0;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0,0,0,.1);
+            padding: 6px;
+            min-width: 210px;
+            z-index: 200;
         }
+        .m-nm-dropdown.open .m-nm-dropdown-menu { display: block; }
+        .m-nm-dropdown.open .m-nm-chev { transform: rotate(180deg); }
 
-        .m-nav-item.active {
-            background: rgba(59,130,246,.15);
-            border-left-color: #007DFF;
-            color: #93c5fd;
-        }
-
-        .m-nav-item i { font-size: 16px; flex-shrink: 0; }
-
-        /* Footer */
-        .m-sidebar-footer {
-            padding: 16px 20px;
-            border-top: 1px solid rgba(255,255,255,.07);
+        .m-nm-dd-item {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 7px;
+            font-size: 13px;
+            color: #374151;
+            text-decoration: none;
+            transition: all .1s;
+        }
+        .m-nm-dd-item:hover { background: #eff6ff; color: #007DFF; text-decoration: none; }
+        .m-nm-dd-item.active { background: #eff6ff; color: #007DFF; font-weight: 600; }
+        .m-nm-dd-item i { font-size: 14px; color: #9ca3af; width: 18px; text-align: center; }
+        .m-nm-dd-item:hover i, .m-nm-dd-item.active i { color: #007DFF; }
+
+        /* Right side */
+        .m-navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+            flex-shrink: 0;
         }
 
-        .m-user-avatar {
+        .m-navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .m-navbar-user-avatar {
             width: 34px;
             height: 34px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #007DFF, #0066FF);
+            background: #0f172a;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -147,67 +203,48 @@
             overflow: hidden;
         }
 
-        .m-user-info { flex: 1; min-width: 0; }
-        .m-user-name { font-size: 12.5px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .m-user-role { font-size: 11px; color: rgba(255,255,255,.4); }
-
-        /* ── TOPBAR ────────────────────────────────────────────────────────── */
-        .m-topbar {
-            position: fixed;
-            top: 0;
-            left: 230px;
-            right: 0;
-            height: 64px;
-            background: #fff;
-            border-bottom: 1px solid #e8eaf0;
-            display: flex;
-            align-items: center;
-            padding: 0 28px;
-            z-index: 90;
-            gap: 12px;
+        .m-navbar-user-name {
+            max-width: 120px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .m-topbar-title {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 16px;
-            font-weight: 700;
-            color: #1a1d23;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .m-topbar-title i { color: #007DFF; font-size: 18px; }
-
-        .m-topbar-spacer { flex: 1; }
-
-        .m-topbar-user {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #374151;
-        }
-
-        .m-topbar-user-avatar {
-            width: 34px;
-            height: 34px;
+        .m-navbar-logout {
+            width: 34px; height: 34px;
+            border: 1px solid #e8eaf0;
             border-radius: 9px;
-            background: linear-gradient(135deg, #007DFF, #0066FF);
+            background: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #fff;
-            font-size: 13px;
-            font-weight: 700;
-            overflow: hidden;
+            color: #677489;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all .15s;
         }
+        .m-navbar-logout:hover { background: #FEF2F2; color: #EF4444; border-color: #FECACA; }
+
+        /* Go-to-tenant button */
+        .m-go-tenant {
+            width: 34px; height: 34px;
+            border: 1px solid #e8eaf0;
+            border-radius: 9px;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #677489;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all .15s;
+            text-decoration: none;
+        }
+        .m-go-tenant:hover { background: #eff6ff; color: #007DFF; border-color: #bfdbfe; }
 
         /* ── MAIN ──────────────────────────────────────────────────────────── */
         .m-main {
-            margin-left: 230px;
-            padding-top: 64px;
+            padding-top: 56px;
             min-height: 100vh;
         }
 
@@ -265,8 +302,9 @@
         .m-stat-value { font-size: 26px; font-weight: 700; color: #1a1d23; }
 
         /* ── TABLE ─────────────────────────────────────────────────────────── */
+        .m-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .m-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-        .m-table th { padding: 10px 14px; text-align: left; font-size: 11.5px; font-weight: 600; color: #677489; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid #f0f2f7; }
+        .m-table th { padding: 10px 14px; text-align: left; font-size: 11.5px; font-weight: 600; color: #677489; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid #f0f2f7; white-space: nowrap; }
         .m-table td { padding: 12px 14px; color: #374151; border-bottom: 1px solid #f7f8fa; vertical-align: middle; }
         .m-table tr:last-child td { border-bottom: none; }
         .m-table tr:hover td { background: #f9fafb; }
@@ -299,137 +337,227 @@
             transition: background .15s, color .15s;
             text-decoration: none;
         }
-        .m-btn-primary { background: linear-gradient(148deg, #2C83FB 0%, #1970EA 100%); color: #fff; border-radius: 100px; }
-        .m-btn-primary:hover { background: #0066FF; color: #fff; }
+        .m-btn-primary { background: #0085f3; color: #fff; border-radius: 100px; }
+        .m-btn-primary:hover { background: #0070d1; color: #fff; }
         .m-btn-ghost { background: transparent; color: #677489; border: 1px solid #CDDEF6; border-radius: 100px; }
         .m-btn-ghost:hover { background: #f3f4f6; color: #374151; }
         .m-btn-danger { background: #FEE2E2; color: #DC2626; }
         .m-btn-danger:hover { background: #FECACA; }
         .m-btn-sm { padding: 5px 12px; font-size: 12px; }
+
+        /* ── RESPONSIVE ────────────────────────────────────────────────────── */
+        @media (max-width: 768px) {
+            .m-navbar-hamburger { display: flex; }
+
+            .m-navbar-menu {
+                display: none;
+                position: fixed;
+                top: 56px; left: 0; right: 0; bottom: 0;
+                background: #fff;
+                flex-direction: column;
+                padding: 12px 0 40px;
+                overflow-y: auto;
+                z-index: 150;
+                border-top: 1px solid #e8eaf0;
+                align-items: stretch;
+            }
+            .m-navbar-menu.open { display: flex; }
+
+            .m-navbar-menu .m-nm-item {
+                width: 100%;
+                justify-content: flex-start;
+                padding: 14px 24px;
+                border-radius: 0;
+                font-size: 15px;
+                font-weight: 500;
+                color: #1a1d23;
+                border-bottom: 1px solid #f0f2f7;
+            }
+            .m-navbar-menu .m-nm-item:hover { background: #f8fafc; }
+            .m-navbar-menu .m-nm-item.active { background: #fff; color: #0085f3; font-weight: 600; }
+            .m-navbar-menu .m-nm-chev {
+                margin-left: auto;
+                font-size: 14px;
+                color: #9ca3af;
+            }
+
+            .m-navbar-menu .m-nm-dropdown { width: 100%; }
+            .m-navbar-menu .m-nm-dropdown > .m-nm-item { width: 100%; }
+            .m-nm-dropdown-menu {
+                position: static;
+                box-shadow: none;
+                border: none;
+                border-radius: 0;
+                padding: 0;
+                min-width: unset;
+                background: #f8fafc;
+                border-bottom: 1px solid #f0f2f7;
+            }
+
+            .m-nm-dd-item {
+                padding: 14px 24px 14px 44px;
+                font-size: 14px;
+                border-radius: 0;
+            }
+            .m-nm-dd-item i { display: none; }
+
+            .m-navbar-user-name { display: none; }
+            .m-navbar-right .topbar-actions-area { display: none; }
+
+            .m-page { padding: 16px 14px; }
+
+            .m-stats { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+            .m-stat { padding: 14px 16px; }
+            .m-stat-value { font-size: 22px; }
+
+            .m-card-header { padding: 14px 16px; flex-wrap: wrap; }
+            .m-card-body { padding: 16px; }
+        }
+
+        @media (max-width: 480px) {
+            .m-page { padding: 12px 10px; }
+            .m-stats { grid-template-columns: repeat(2, 1fr); }
+            .m-stat-value { font-size: 20px; }
+        }
     </style>
 </head>
 <body>
 
-{{-- ===== SIDEBAR ===== --}}
-<aside class="m-sidebar">
-    <div class="m-sidebar-logo">
-        <img src="{{ asset('images/logo.png') }}" alt="Logo">
+@php
+    $isGestao = request()->routeIs('master.tenants*')
+             || request()->routeIs('master.payments*')
+             || request()->routeIs('master.plans*')
+             || request()->routeIs('master.agency-codes*')
+             || request()->routeIs('master.token-increments*')
+             || request()->routeIs('master.upsell*');
+
+    $isMonitor = request()->routeIs('master.usage*')
+              || request()->routeIs('master.logs*')
+              || request()->routeIs('master.system*')
+              || request()->routeIs('master.toolbox*');
+@endphp
+
+{{-- ===== NAVBAR ===== --}}
+<nav class="m-navbar">
+    <div class="m-navbar-inner">
+        <a href="{{ route('master.dashboard') }}" class="m-navbar-logo">
+            <img src="{{ asset('images/logo.png') }}" alt="Syncro">
+        </a>
+        <span class="m-master-badge"><i class="bi bi-shield-check" style="font-size:10px;"></i> MASTER</span>
+
+        <button class="m-navbar-hamburger" onclick="document.querySelector('.m-navbar-menu').classList.toggle('open'); this.querySelector('i').classList.toggle('bi-list'); this.querySelector('i').classList.toggle('bi-x-lg');">
+            <i class="bi bi-list"></i>
+        </button>
+
+        <div class="m-navbar-menu">
+            {{-- Dashboard --}}
+            <a href="{{ route('master.dashboard') }}"
+               class="m-nm-item {{ request()->routeIs('master.dashboard') ? 'active' : '' }}">
+                <i class="bi bi-grid-1x2"></i> Dashboard
+            </a>
+
+            {{-- Gestão --}}
+            <div class="m-nm-dropdown">
+                <button class="m-nm-item {{ $isGestao ? 'active' : '' }}" onclick="toggleMasterDropdown(this)">
+                    <i class="bi bi-briefcase"></i> Gestão
+                    <i class="bi bi-chevron-down m-nm-chev"></i>
+                </button>
+                <div class="m-nm-dropdown-menu">
+                    <a href="{{ route('master.tenants') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.tenants*') ? 'active' : '' }}">
+                        <i class="bi bi-building"></i> Empresas
+                    </a>
+                    <a href="{{ route('master.payments') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.payments*') ? 'active' : '' }}">
+                        <i class="bi bi-cash-stack"></i> Recebimentos
+                    </a>
+                    <a href="{{ route('master.plans') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.plans*') ? 'active' : '' }}">
+                        <i class="bi bi-layers"></i> Planos
+                    </a>
+                    <a href="{{ route('master.agency-codes.index') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.agency-codes*') ? 'active' : '' }}">
+                        <i class="bi bi-building-check"></i> Agências Parceiras
+                    </a>
+                    <a href="{{ route('master.token-increments') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.token-increments*') ? 'active' : '' }}">
+                        <i class="bi bi-coin"></i> Pacotes de Tokens
+                    </a>
+                    <a href="{{ route('master.upsell') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.upsell*') ? 'active' : '' }}">
+                        <i class="bi bi-rocket-takeoff"></i> Upsell
+                    </a>
+                </div>
+            </div>
+
+            {{-- Monitoramento --}}
+            <div class="m-nm-dropdown">
+                <button class="m-nm-item {{ $isMonitor ? 'active' : '' }}" onclick="toggleMasterDropdown(this)">
+                    <i class="bi bi-activity"></i> Monitoramento
+                    <i class="bi bi-chevron-down m-nm-chev"></i>
+                </button>
+                <div class="m-nm-dropdown-menu">
+                    <a href="{{ route('master.usage') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.usage*') ? 'active' : '' }}">
+                        <i class="bi bi-graph-up"></i> Uso / Tokens
+                    </a>
+                    <a href="{{ route('master.logs') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.logs*') ? 'active' : '' }}">
+                        <i class="bi bi-terminal"></i> Logs
+                    </a>
+                    <a href="{{ route('master.system') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.system*') ? 'active' : '' }}">
+                        <i class="bi bi-cpu"></i> Sistema
+                    </a>
+                    <a href="{{ route('master.toolbox') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.toolbox*') ? 'active' : '' }}">
+                        <i class="bi bi-tools"></i> Ferramentas
+                    </a>
+                    <a href="/pulse" target="_blank" class="m-nm-dd-item">
+                        <i class="bi bi-speedometer2"></i> Pulse
+                    </a>
+                </div>
+            </div>
+
+            {{-- Notificações --}}
+            <a href="{{ route('master.notifications') }}"
+               class="m-nm-item {{ request()->routeIs('master.notifications*') ? 'active' : '' }}">
+                <i class="bi bi-megaphone"></i> Notificações
+            </a>
+        </div>
+
+        {{-- Right side --}}
+        <div class="m-navbar-right">
+            <div class="topbar-actions-area" style="display:flex;align-items:center;gap:6px;">
+                @hasSection('topbar_actions')
+                    @yield('topbar_actions')
+                @endif
+            </div>
+
+            <a href="{{ route('dashboard') }}" class="m-go-tenant" title="Ir para área do tenant">
+                <i class="bi bi-box-arrow-up-right"></i>
+            </a>
+
+            <div class="m-navbar-user">
+                <div class="m-navbar-user-avatar">
+                    @if(auth()->user()->avatar)
+                        <img src="{{ auth()->user()->avatar }}" style="width:100%;height:100%;object-fit:cover;">
+                    @else
+                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                    @endif
+                </div>
+                <span class="m-navbar-user-name">{{ auth()->user()->name }}</span>
+            </div>
+
+            <form method="POST" action="{{ route('logout') }}" style="margin:0;">
+                @csrf
+                <button type="submit" class="m-navbar-logout" title="Sair">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
+            </form>
+        </div>
     </div>
-
-    <div class="m-nav">
-        <div class="m-nav-group">
-            <div class="m-nav-group-label">Visão Geral</div>
-        </div>
-        <a href="{{ route('master.dashboard') }}"
-           class="m-nav-item {{ request()->routeIs('master.dashboard') ? 'active' : '' }}">
-            <i class="bi bi-grid-1x2"></i> Dashboard
-        </a>
-
-        <div class="m-nav-group">
-            <div class="m-nav-group-label">Gestão</div>
-        </div>
-        <a href="{{ route('master.tenants') }}"
-           class="m-nav-item {{ request()->routeIs('master.tenants*') ? 'active' : '' }}">
-            <i class="bi bi-building"></i> Empresas
-        </a>
-        <a href="{{ route('master.payments') }}"
-           class="m-nav-item {{ request()->routeIs('master.payments*') ? 'active' : '' }}">
-            <i class="bi bi-cash-stack"></i> Recebimentos
-        </a>
-        <a href="{{ route('master.plans') }}"
-           class="m-nav-item {{ request()->routeIs('master.plans*') ? 'active' : '' }}">
-            <i class="bi bi-layers"></i> Planos
-        </a>
-        <a href="{{ route('master.agency-codes.index') }}"
-           class="m-nav-item {{ request()->routeIs('master.agency-codes*') ? 'active' : '' }}">
-            <i class="bi bi-building-check"></i> Agências Parceiras
-        </a>
-        <a href="{{ route('master.token-increments') }}"
-           class="m-nav-item {{ request()->routeIs('master.token-increments*') ? 'active' : '' }}">
-            <i class="bi bi-coin"></i> Pacotes de Tokens
-        </a>
-        <a href="{{ route('master.upsell') }}"
-           class="m-nav-item {{ request()->routeIs('master.upsell*') ? 'active' : '' }}">
-            <i class="bi bi-rocket-takeoff"></i> Upsell
-        </a>
-
-        <div class="m-nav-group">
-            <div class="m-nav-group-label">Monitoramento</div>
-        </div>
-        <a href="{{ route('master.usage') }}"
-           class="m-nav-item {{ request()->routeIs('master.usage*') ? 'active' : '' }}">
-            <i class="bi bi-graph-up"></i> Uso / Tokens
-        </a>
-        <a href="{{ route('master.logs') }}"
-           class="m-nav-item {{ request()->routeIs('master.logs*') ? 'active' : '' }}">
-            <i class="bi bi-terminal"></i> Logs
-        </a>
-        <a href="{{ route('master.system') }}"
-           class="m-nav-item {{ request()->routeIs('master.system*') ? 'active' : '' }}">
-            <i class="bi bi-cpu"></i> Sistema
-        </a>
-        <a href="{{ route('master.toolbox') }}"
-           class="m-nav-item {{ request()->routeIs('master.toolbox*') ? 'active' : '' }}">
-            <i class="bi bi-tools"></i> Ferramentas
-        </a>
-        <a href="/pulse" target="_blank"
-           class="m-nav-item">
-            <i class="bi bi-activity"></i> Pulse
-        </a>
-
-        <div class="m-nav-group">
-            <div class="m-nav-group-label">Comunicação</div>
-        </div>
-        <a href="{{ route('master.notifications') }}"
-           class="m-nav-item {{ request()->routeIs('master.notifications*') ? 'active' : '' }}">
-            <i class="bi bi-megaphone"></i> Notificações
-        </a>
-
-    </div>
-
-    <div class="m-sidebar-footer">
-        <div class="m-user-avatar">
-            @if(auth()->user()->avatar)
-                <img src="{{ auth()->user()->avatar }}" style="width:100%;height:100%;object-fit:cover;">
-            @else
-                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-            @endif
-        </div>
-        <div class="m-user-info">
-            <div class="m-user-name">{{ auth()->user()->name }}</div>
-            <div class="m-user-role">Super Admin</div>
-        </div>
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-            <button type="submit" title="Sair"
-                    style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);font-size:16px;padding:4px;">
-                <i class="bi bi-box-arrow-right"></i>
-            </button>
-        </form>
-    </div>
-</aside>
-
-{{-- ===== TOPBAR ===== --}}
-<header class="m-topbar">
-    <div class="m-topbar-title">
-        <i class="bi bi-{{ $pageIcon ?? 'shield-check' }}"></i>
-        {{ $title ?? 'Master Admin' }}
-    </div>
-    <div class="m-topbar-spacer"></div>
-    @hasSection('topbar_actions')
-        @yield('topbar_actions')
-    @endif
-    <div class="m-topbar-user">
-        <div class="m-topbar-user-avatar">
-            @if(auth()->user()->avatar)
-                <img src="{{ auth()->user()->avatar }}" style="width:100%;height:100%;object-fit:cover;">
-            @else
-                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-            @endif
-        </div>
-        {{ auth()->user()->name }}
-    </div>
-</header>
+</nav>
 
 {{-- ===== CONTEÚDO ===== --}}
 <main class="m-main">
@@ -444,6 +572,32 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script>
 toastr.options = { positionClass: 'toast-top-right', timeOut: 4000, progressBar: true, closeButton: true };
+</script>
+
+{{-- Dropdown + hamburger logic --}}
+<script>
+function toggleMasterDropdown(btn) {
+    const dd = btn.closest('.m-nm-dropdown');
+    const wasOpen = dd.classList.contains('open');
+
+    // Close all dropdowns
+    document.querySelectorAll('.m-nm-dropdown.open').forEach(d => d.classList.remove('open'));
+
+    if (!wasOpen) dd.classList.add('open');
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.m-nm-dropdown')) {
+        document.querySelectorAll('.m-nm-dropdown.open').forEach(d => d.classList.remove('open'));
+    }
+    if (!e.target.closest('.m-navbar-hamburger') && !e.target.closest('.m-navbar-menu')) {
+        const menu = document.querySelector('.m-navbar-menu');
+        if (menu) menu.classList.remove('open');
+        const icon = document.querySelector('.m-navbar-hamburger i');
+        if (icon) { icon.classList.remove('bi-x-lg'); icon.classList.add('bi-list'); }
+    }
+});
 </script>
 
 {{-- Confirm Modal --}}

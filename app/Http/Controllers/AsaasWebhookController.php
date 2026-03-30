@@ -109,6 +109,17 @@ class AsaasWebhookController extends Controller
             'paid_at'          => now(),
         ]);
 
+        // Notifica grupo master via WhatsApp
+        $tokenTenant = Tenant::withoutGlobalScope('tenant')->find($increment->tenant_id);
+        if ($tokenTenant) {
+            \App\Services\MasterWhatsappNotifier::tokenPurchase(
+                $tokenTenant,
+                (int) $increment->tokens_added,
+                (float) ($increment->price_paid ?? 0),
+                'Asaas',
+            );
+        }
+
         \Log::info('AsaasWebhook: incremento de tokens confirmado', [
             'increment_id' => $increment->id,
             'tenant_id'    => $increment->tenant_id,
@@ -137,6 +148,16 @@ class AsaasWebhookController extends Controller
                 'status'           => 'confirmed',
                 'paid_at'          => now(),
             ]);
+        }
+
+        // Notifica grupo master via WhatsApp
+        if ($paymentValue) {
+            \App\Services\MasterWhatsappNotifier::paymentConfirmed(
+                $tenant,
+                (float) $paymentValue,
+                'Asaas',
+                $paymentId,
+            );
         }
 
         \Log::info("AsaasWebhook: pagamento confirmado para tenant {$tenant->id}");

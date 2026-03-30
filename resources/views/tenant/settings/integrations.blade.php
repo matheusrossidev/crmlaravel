@@ -1040,7 +1040,7 @@ async function generateWaQr() {
     }
 }
 
-function openWaModal(instanceId) {
+async function openWaModal(instanceId) {
     // Usado pelo reconnect — já tem instância, vai direto pro QR
     waConnected = false;
     waCurrentInstanceId = instanceId;
@@ -1055,10 +1055,20 @@ function openWaModal(instanceId) {
     document.getElementById('waQrStatus').textContent = ILANG.qr_waiting;
     document.getElementById('waQrStatus').className = '';
 
+    // Restart WAHA session to ensure fresh QR generation
+    try {
+        await fetch(`${WA_BASE_URL}/${instanceId}/restart`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+        });
+    } catch (e) { /* continue to poll anyway */ }
+
     waQrNullCount = 0;
     clearInterval(waQrPollInterval);
-    pollWaQr();
-    waQrPollInterval = setInterval(pollWaQr, 3000);
+    setTimeout(() => { pollWaQr(); waQrPollInterval = setInterval(pollWaQr, 3000); }, 2000);
 }
 
 function closeWaModal() {
@@ -1105,14 +1115,29 @@ async function pollWaQr() {
                     '<button id="btnWaRetry" style="margin-top:12px;padding:8px 20px;background:#25D366;color:#fff;border:none;border-radius:100px;cursor:pointer;font-weight:600;">'
                     + '<i class="bi bi-arrow-clockwise"></i> ' + ILANG.qr_retry + '</button>');
                 document.getElementById('btnWaRetry').addEventListener('click', async () => {
-                    document.getElementById('btnWaRetry').remove();
+                    const retryBtn = document.getElementById('btnWaRetry');
+                    retryBtn.disabled = true;
+                    retryBtn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Reiniciando...';
                     document.getElementById('waQrArea').innerHTML = '<i class="bi bi-arrow-clockwise spin" style="font-size:36px;color:#9ca3af;"></i>';
                     document.getElementById('waQrStatus').textContent = ILANG.qr_waiting;
                     document.getElementById('waQrStatus').className = '';
+
+                    // Restart WAHA session (stop + start) to get a fresh QR
+                    try {
+                        await fetch(`${WA_BASE_URL}/${waCurrentInstanceId}/restart`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json',
+                            },
+                        });
+                    } catch (e) { /* continue to poll anyway */ }
+
+                    retryBtn.remove();
                     waQrNullCount = 0;
                     clearInterval(waQrPollInterval);
-                    pollWaQr();
-                    waQrPollInterval = setInterval(pollWaQr, 3000);
+                    // Small delay to let WAHA generate new QR
+                    setTimeout(() => { pollWaQr(); waQrPollInterval = setInterval(pollWaQr, 3000); }, 2000);
                 });
             }
         }

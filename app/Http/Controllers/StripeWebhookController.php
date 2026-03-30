@@ -98,6 +98,14 @@ class StripeWebhookController extends Controller
                 'paid_at'          => now(),
             ]);
 
+            // Notifica grupo master via WhatsApp
+            \App\Services\MasterWhatsappNotifier::paymentConfirmed(
+                $tenant,
+                ($session->amount_total ?? 0) / 100,
+                'Stripe',
+                $session->id ?? null,
+            );
+
             Log::info('Stripe: subscription ativada', [
                 'tenant_id'       => $tenant->id,
                 'plan'            => $planName,
@@ -134,6 +142,14 @@ class StripeWebhookController extends Controller
             'status'           => 'confirmed',
             'paid_at'          => now(),
         ]);
+
+        // Notifica grupo master via WhatsApp
+        \App\Services\MasterWhatsappNotifier::paymentConfirmed(
+            $tenant,
+            ($invoice->amount_paid ?? 0) / 100,
+            'Stripe',
+            $invoice->id ?? null,
+        );
 
         Log::info('Stripe: invoice paga', ['tenant_id' => $tenant->id, 'invoice_id' => $invoice->id]);
     }
@@ -202,6 +218,14 @@ class StripeWebhookController extends Controller
                 'status'           => 'confirmed',
                 'paid_at'          => now(),
             ]);
+
+            // Notifica grupo master via WhatsApp
+            \App\Services\MasterWhatsappNotifier::tokenPurchase(
+                $tenant,
+                (int) $increment->tokens_added,
+                (float) ($increment->price_paid ?? 0),
+                'Stripe',
+            );
 
             Log::info('Stripe: token increment pago', [
                 'tenant_id'    => $tenant->id,

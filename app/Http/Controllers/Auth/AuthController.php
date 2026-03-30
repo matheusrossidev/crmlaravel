@@ -200,6 +200,12 @@ class AuthController extends Controller
             }
         }
 
+        // Notifica grupo master via WhatsApp
+        $agencyName = $agencyCode?->tenant_id
+            ? Tenant::find($agencyCode->tenant_id)?->name
+            : null;
+        \App\Services\MasterWhatsappNotifier::newRegistration($tenant, $user, $agencyName);
+
         return redirect()->route('register.pending')
             ->with('email', $user->email);
     }
