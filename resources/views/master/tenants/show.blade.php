@@ -398,6 +398,10 @@
                                 @if($p->price_monthly > 0) — R$ {{ number_format($p->price_monthly, 2, ',', '.') }}/mês @endif
                             </option>
                             @endforeach
+                            @unless($plans->contains('name', 'partner'))
+                                <option value="partner" {{ $tenant->plan === 'partner' ? 'selected' : '' }}>Parceiro</option>
+                            @endunless
+                            <option value="unlimited" {{ $tenant->plan === 'unlimited' ? 'selected' : '' }}>Unlimited (Ilimitado)</option>
                         </select>
                     </div>
                     <div class="form-group">

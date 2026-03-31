@@ -26,7 +26,7 @@ class PlanLimitChecker
     public static function check(string $resource, ?Tenant $tenant = null): ?string
     {
         $tenant ??= auth()->user()?->tenant;
-        if (!$tenant) {
+        if (!$tenant || $tenant->plan === 'unlimited') {
             return null;
         }
 
@@ -55,12 +55,12 @@ class PlanLimitChecker
     public static function remaining(string $resource, ?Tenant $tenant = null): ?int
     {
         $tenant ??= auth()->user()?->tenant;
-        if (!$tenant) {
+        if (!$tenant || $tenant->plan === 'unlimited') {
             return null;
         }
 
         $config = self::getResourceConfig($resource, $tenant);
-        if (!$config || $config['max'] <= 0) {
+        if (!$config || $config['max'] === null || $config['max'] <= 0) {
             return null; // ilimitado
         }
 
@@ -111,7 +111,7 @@ class PlanLimitChecker
                 'label' => 'agentes de IA',
             ],
             'whatsapp_instances' => [
-                'max'   => $tenant->max_whatsapp_instances ?: 1,
+                'max'   => $tenant->max_whatsapp_instances > 0 ? $tenant->max_whatsapp_instances : null,
                 'count' => fn () => WhatsappInstance::where('tenant_id', $tenant->id)->count(),
                 'label' => 'números de WhatsApp',
             ],

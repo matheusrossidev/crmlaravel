@@ -114,8 +114,14 @@ class Tenant extends Model
         return $this->plan === 'partner' || $this->status === 'partner';
     }
 
+    public function isUnlimited(): bool
+    {
+        return $this->plan === 'unlimited';
+    }
+
     public function isExemptFromBilling(): bool
     {
+        if ($this->isUnlimited()) return true;
         if (! $this->isPartner()) return false;
 
         // Parceiro com assinatura ativa → sempre isento

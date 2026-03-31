@@ -118,9 +118,11 @@ class TenantController extends Controller
 
     public function update(Request $request, Tenant $tenant): JsonResponse
     {
+        $validPlans = \App\Models\PlanDefinition::pluck('name')->merge(['partner', 'unlimited'])->unique()->implode(',');
+
         $request->validate([
             'status'        => 'required|in:active,inactive,suspended,trial,partner',
-            'plan'          => 'required|in:free,starter,pro,enterprise,partner',
+            'plan'          => 'required|in:' . $validPlans,
             'trial_ends_at' => 'nullable|date',
             'max_users'                  => 'nullable|integer|min:0',
             'max_leads'                  => 'nullable|integer|min:0',

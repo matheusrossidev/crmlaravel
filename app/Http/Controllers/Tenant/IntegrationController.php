@@ -48,7 +48,7 @@ class IntegrationController extends Controller
             'google_ads'      => $s['integration_google_ads']      ?? false,
         ];
 
-        $maxWhatsappInstances    = $tenant->max_whatsapp_instances ?: 1;
+        $maxWhatsappInstances    = $tenant->max_whatsapp_instances > 0 ? $tenant->max_whatsapp_instances : null;
         $whatsappInstancesRemain = PlanLimitChecker::remaining('whatsapp_instances');
         $waButtons = WhatsappButton::orderBy('id')->get();
 
