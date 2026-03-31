@@ -489,20 +489,27 @@ class ChatbotFlowController extends Controller
     private function validatedFlow(Request $request): array
     {
         $data = $request->validate([
-            'name'             => 'required|string|max:100',
-            'channel'          => 'required|in:whatsapp,instagram,website',
-            'description'      => 'nullable|string|max:1000',
-            'is_active'        => 'boolean',
-            'is_catch_all'     => 'boolean',
-            'trigger_keywords' => 'nullable|string',
-            'variables'        => 'nullable|string',
-            'bot_name'         => 'nullable|string|max:100',
-            'bot_avatar'       => 'nullable|string|max:500',
-            'welcome_message'  => 'nullable|string|max:500',
-            'widget_type'      => 'nullable|in:bubble,inline',
-            'widget_color'     => 'nullable|string|max:10',
-            'slug'             => 'nullable|string|max:191',
+            'name'                    => 'required|string|max:100',
+            'channel'                 => 'required|in:whatsapp,instagram,website',
+            'description'             => 'nullable|string|max:1000',
+            'is_active'               => 'boolean',
+            'is_catch_all'            => 'boolean',
+            'trigger_keywords'        => 'nullable|string',
+            'trigger_type'            => 'nullable|in:keyword,instagram_comment',
+            'trigger_media_id'        => 'nullable|string|max:191',
+            'trigger_media_thumbnail' => 'nullable|string',
+            'trigger_media_caption'   => 'nullable|string',
+            'trigger_reply_comment'   => 'nullable|string|max:2200',
+            'variables'               => 'nullable|string',
+            'bot_name'                => 'nullable|string|max:100',
+            'bot_avatar'              => 'nullable|string|max:500',
+            'welcome_message'         => 'nullable|string|max:500',
+            'widget_type'             => 'nullable|in:bubble,inline',
+            'widget_color'            => 'nullable|string|max:10',
+            'slug'                    => 'nullable|string|max:191',
         ]);
+
+        $data['trigger_type'] = $data['trigger_type'] ?? 'keyword';
 
         // Converter campos JSON string → array
         if (isset($data['trigger_keywords']) && is_string($data['trigger_keywords'])) {

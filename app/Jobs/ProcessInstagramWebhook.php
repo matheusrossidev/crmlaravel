@@ -727,6 +727,129 @@ class ProcessInstagramWebhook implements ShouldQueue
                 }
             }
         }
+
+        // ── Chatbot Flow trigger from comments ──────────────────────────
+        $this->triggerChatbotFromComment($instance, $commentId, $commentText, $mediaId, $fromId);
+    }
+
+    /**
+     * Trigger a chatbot flow from an Instagram comment.
+     * The chatbot runs via DM (Private Reply opens the window, then ProcessChatbotStep handles the rest).
+     */
+    private function triggerChatbotFromComment(
+        InstagramInstance $instance,
+        string $commentId,
+        string $commentText,
+        ?string $mediaId,
+        string $fromId,
+    ): void {
+        $commentLower = strtolower(trim($commentText));
+
+        $flows = ChatbotFlow::withoutGlobalScope('tenant')
+            ->where('tenant_id', $instance->tenant_id)
+            ->where('channel', 'instagram')
+            ->where('trigger_type', 'instagram_comment')
+            ->where('is_active', true)
+            ->where(function ($q) use ($mediaId) {
+                $q->whereNull('trigger_media_id')->orWhere('trigger_media_id', $mediaId);
+            })
+            ->get();
+
+        foreach ($flows as $flow) {
+            $keywords = $flow->trigger_keywords ?? [];
+            if (!empty($keywords)) {
+                $matched = false;
+                foreach ($keywords as $kw) {
+                    if (str_contains($commentLower, strtolower(trim($kw)))) {
+                        $matched = true;
+                        break;
+                    }
+                }
+                if (!$matched) {
+                    continue;
+                }
+            }
+
+            Log::channel('instagram')->info('Chatbot flow acionado por comentário', [
+                'flow_id'    => $flow->id,
+                'comment_id' => $commentId,
+                'media_id'   => $mediaId,
+            ]);
+
+            try {
+                $service = new InstagramService(decrypt($instance->access_token));
+
+                // Reply on the comment (optional)
+                if ($flow->trigger_reply_comment) {
+                    try {
+                        $service->replyToComment($commentId, $flow->trigger_reply_comment);
+                    } catch (\Throwable $e) {
+                        Log::channel('instagram')->warning('Chatbot: falha ao responder comentário', ['error' => $e->getMessage()]);
+                    }
+                }
+
+                // Find or create conversation with the commenter
+                $conv = InstagramConversation::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $instance->tenant_id)
+                    ->where('igsid', $fromId)
+                    ->first();
+
+                if (!$conv) {
+                    $profile = [];
+                    try {
+                        $profile = $service->getProfile($fromId);
+                    } catch (\Throwable) {}
+
+                    $conv = InstagramConversation::withoutGlobalScope('tenant')->create([
+                        'tenant_id'        => $instance->tenant_id,
+                        'instance_id'      => $instance->id,
+                        'igsid'            => $fromId,
+                        'contact_name'     => $profile['name'] ?? 'Instagram User',
+                        'contact_username' => $profile['username'] ?? null,
+                        'status'           => 'open',
+                    ]);
+                }
+
+                // Skip if conversation already has an active chatbot or AI agent
+                if ($conv->chatbot_flow_id || $conv->ai_agent_id) {
+                    Log::channel('instagram')->debug('Chatbot comment: conversa já tem fluxo/agente ativo', ['conv_id' => $conv->id]);
+                    return;
+                }
+
+                // Send Private Reply to open DM window
+                $startNode = $flow->nodes()->where('is_start', true)->first();
+                $privateReplyText = $startNode?->config['message'] ?? $flow->welcome_message ?? '👋';
+
+                try {
+                    $service->sendPrivateReply($commentId, $privateReplyText);
+                } catch (\Throwable $e) {
+                    Log::channel('instagram')->warning('Chatbot: falha ao enviar Private Reply', ['error' => $e->getMessage()]);
+                    // Try regular DM as fallback
+                    $service->sendMessage($fromId, $privateReplyText);
+                }
+
+                // Set chatbot flow on the conversation
+                $conv->update([
+                    'chatbot_flow_id'    => $flow->id,
+                    'chatbot_node_id'    => $startNode?->id,
+                    'chatbot_variables'  => [],
+                    'status'             => 'open',
+                ]);
+
+                // Trigger the chatbot step processing
+                ProcessChatbotStep::dispatchSync($conv->id, $commentText, 'instagram');
+
+            } catch (\Throwable $e) {
+                Log::channel('instagram')->error('Chatbot comment trigger falhou', [
+                    'flow_id'    => $flow->id,
+                    'comment_id' => $commentId,
+                    'error'      => $e->getMessage(),
+                ]);
+            }
+
+            // Only trigger the first matching flow
+            return;
+        }
     }
 
     /**

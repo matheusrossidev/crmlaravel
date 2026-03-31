@@ -394,12 +394,85 @@
             {{-- Disparo --}}
             <div class="form-section-label">{{ __('chatbot.form_section_trigger') }}</div>
 
+            {{-- Trigger type (Instagram only) --}}
+            @php
+                $currentTriggerType = old('trigger_type', $flow->trigger_type ?? 'keyword');
+            @endphp
+            <div id="triggerTypeWrap" style="{{ $currentChannel === 'instagram' ? '' : 'display:none;' }}">
+                <div class="form-group">
+                    <label style="font-weight:600;margin-bottom:8px;display:block;">Tipo de gatilho</label>
+                    <div style="display:flex;gap:10px;">
+                        <label style="flex:1;cursor:pointer;">
+                            <input type="radio" name="trigger_type" value="keyword" {{ $currentTriggerType === 'keyword' ? 'checked' : '' }}
+                                   style="display:none;" onchange="toggleTriggerType()">
+                            <div class="trigger-type-card {{ $currentTriggerType === 'keyword' ? 'selected' : '' }}"
+                                 style="display:flex;align-items:center;gap:8px;padding:12px 14px;border:2px solid #e8eaf0;border-radius:10px;background:#fafafa;color:#6b7280;font-size:12.5px;font-weight:600;transition:all .15s;cursor:pointer;">
+                                <i class="bi bi-chat-dots" style="font-size:16px;"></i>
+                                <div>
+                                    <div style="color:#1a1d23;">Palavras-chave em DM</div>
+                                    <div style="font-weight:400;font-size:11px;margin-top:2px;">Dispara quando o lead envia DM com palavra-chave</div>
+                                </div>
+                            </div>
+                        </label>
+                        <label style="flex:1;cursor:pointer;">
+                            <input type="radio" name="trigger_type" value="instagram_comment" {{ $currentTriggerType === 'instagram_comment' ? 'checked' : '' }}
+                                   style="display:none;" onchange="toggleTriggerType()">
+                            <div class="trigger-type-card {{ $currentTriggerType === 'instagram_comment' ? 'selected' : '' }}"
+                                 style="display:flex;align-items:center;gap:8px;padding:12px 14px;border:2px solid #e8eaf0;border-radius:10px;background:#fafafa;color:#6b7280;font-size:12.5px;font-weight:600;transition:all .15s;cursor:pointer;">
+                                <i class="bi bi-chat-left-heart" style="font-size:16px;"></i>
+                                <div>
+                                    <div style="color:#1a1d23;">Comentou em publicação</div>
+                                    <div style="font-weight:400;font-size:11px;margin-top:2px;">Dispara quando comentam em post/reel com palavra-chave</div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Comment trigger settings (Instagram comment only) --}}
+            <div id="commentTriggerWrap" style="{{ ($currentChannel === 'instagram' && $currentTriggerType === 'instagram_comment') ? '' : 'display:none;' }}">
+                {{-- Post/Reel selector --}}
+                <div class="form-group">
+                    <label style="font-weight:600;">Publicação alvo</label>
+                    <div style="display:flex;gap:10px;margin-bottom:10px;">
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                            <input type="radio" name="comment_scope" value="all" {{ empty($flow->trigger_media_id) ? 'checked' : '' }}
+                                   onchange="toggleCommentScope()" style="accent-color:#0085f3;">
+                            Qualquer publicação
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                            <input type="radio" name="comment_scope" value="specific" {{ !empty($flow->trigger_media_id) ? 'checked' : '' }}
+                                   onchange="toggleCommentScope()" style="accent-color:#0085f3;">
+                            Post/Reel específico
+                        </label>
+                    </div>
+                    <div id="commentPostPicker" style="{{ !empty($flow->trigger_media_id) ? '' : 'display:none;' }}">
+                        <div id="commentPostGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;max-height:240px;overflow-y:auto;margin-bottom:10px;"></div>
+                        <button type="button" onclick="loadCommentPosts()" style="padding:6px 14px;background:#eff6ff;color:#0085f3;border:1.5px solid #bfdbfe;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
+                            <i class="bi bi-arrow-clockwise"></i> Carregar publicações
+                        </button>
+                    </div>
+                    <input type="hidden" name="trigger_media_id" id="triggerMediaId" value="{{ old('trigger_media_id', $flow->trigger_media_id ?? '') }}">
+                    <input type="hidden" name="trigger_media_thumbnail" id="triggerMediaThumb" value="{{ old('trigger_media_thumbnail', $flow->trigger_media_thumbnail ?? '') }}">
+                    <input type="hidden" name="trigger_media_caption" id="triggerMediaCaption" value="{{ old('trigger_media_caption', $flow->trigger_media_caption ?? '') }}">
+                </div>
+
+                {{-- Reply on comment --}}
+                <div class="form-group">
+                    <label>Resposta no comentário (opcional)</label>
+                    <textarea name="trigger_reply_comment" class="field-input" rows="2" maxlength="2200"
+                        placeholder="Ex: Obrigado pelo interesse! Vou te mandar mais informações no privado 😊">{{ old('trigger_reply_comment', $flow->trigger_reply_comment ?? '') }}</textarea>
+                    <div class="hint">Se preenchido, responde publicamente no comentário antes de enviar DM.</div>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label>{{ __('chatbot.form_trigger_keywords') }}</label>
                 <input type="text" name="trigger_keywords" class="field-input"
                     value="{{ old('trigger_keywords', $flow->trigger_keywords ? implode(', ', $flow->trigger_keywords) : '') }}"
                     placeholder="{{ __('chatbot.form_trigger_placeholder') }}">
-                <div class="hint">{{ __('chatbot.form_trigger_hint') }}</div>
+                <div class="hint" id="triggerKeywordsHint">{{ __('chatbot.form_trigger_hint') }}</div>
             </div>
 
             {{-- Variáveis --}}
@@ -468,10 +541,90 @@ function updateChatbotChannelCards() {
         card.classList.toggle('selected', card.dataset.channel === selected);
     });
     const isWebsite = selected === 'website';
+    const isInstagram = selected === 'instagram';
     const ws = document.getElementById('website-settings');
     const sf = document.getElementById('slug-field');
     if (ws) ws.style.display = isWebsite ? 'block' : 'none';
     if (sf) sf.style.display = isWebsite ? 'block' : 'none';
+
+    // Show/hide trigger type for Instagram
+    const ttw = document.getElementById('triggerTypeWrap');
+    if (ttw) ttw.style.display = isInstagram ? '' : 'none';
+    if (!isInstagram) {
+        // Reset to keyword when switching away from Instagram
+        const kwRadio = document.querySelector('input[name="trigger_type"][value="keyword"]');
+        if (kwRadio) kwRadio.checked = true;
+        const ctw = document.getElementById('commentTriggerWrap');
+        if (ctw) ctw.style.display = 'none';
+    }
+    toggleTriggerType();
+}
+
+function toggleTriggerType() {
+    const type = document.querySelector('input[name="trigger_type"]:checked')?.value || 'keyword';
+    document.querySelectorAll('.trigger-type-card').forEach(card => {
+        const radio = card.closest('label').querySelector('input');
+        card.style.borderColor = radio?.checked ? '#0085f3' : '#e8eaf0';
+        card.style.background = radio?.checked ? '#eff6ff' : '#fafafa';
+        card.style.color = radio?.checked ? '#0085f3' : '#6b7280';
+    });
+    const ctw = document.getElementById('commentTriggerWrap');
+    if (ctw) ctw.style.display = type === 'instagram_comment' ? '' : 'none';
+
+    // Update hint text
+    const hint = document.getElementById('triggerKeywordsHint');
+    if (hint) {
+        hint.textContent = type === 'instagram_comment'
+            ? 'Palavras no comentário que disparam o fluxo. Ex: quero, preço, link. Deixe vazio para disparar em qualquer comentário.'
+            : '{{ __("chatbot.form_trigger_hint") }}';
+    }
+}
+
+function toggleCommentScope() {
+    const scope = document.querySelector('input[name="comment_scope"]:checked')?.value;
+    const picker = document.getElementById('commentPostPicker');
+    if (picker) picker.style.display = scope === 'specific' ? '' : 'none';
+    if (scope === 'all') {
+        document.getElementById('triggerMediaId').value = '';
+        document.getElementById('triggerMediaThumb').value = '';
+        document.getElementById('triggerMediaCaption').value = '';
+    }
+}
+
+let _commentPostsLoaded = false;
+function loadCommentPosts(after) {
+    const grid = document.getElementById('commentPostGrid');
+    if (!after) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:16px;color:#9ca3af;font-size:12px;">Carregando...</div>'; }
+
+    const url = '{{ route("settings.ig-automations.posts") }}' + (after ? '?after=' + after : '');
+    window.API.get(url).then(res => {
+        if (!after) grid.innerHTML = '';
+        const preselectId = document.getElementById('triggerMediaId').value;
+        (res.data || []).forEach(post => {
+            const div = document.createElement('div');
+            div.style.cssText = 'position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:2px solid ' + (post.id === preselectId ? '#0085f3' : '#e8eaf0') + ';cursor:pointer;';
+            const img = post.thumbnail_url ? '<img src="' + post.thumbnail_url + '" style="width:100%;height:100%;object-fit:cover;" loading="lazy">' : '<div style="height:100%;display:flex;align-items:center;justify-content:center;background:#f3f4f6;color:#9ca3af;"><i class="bi bi-image"></i></div>';
+            const badge = post.media_type === 'REEL' ? '<span style="position:absolute;top:3px;left:3px;background:rgba(124,58,237,.85);color:#fff;font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;">Reel</span>' : '';
+            div.innerHTML = img + badge;
+            div.onclick = () => {
+                grid.querySelectorAll('div').forEach(d => d.style.borderColor = '#e8eaf0');
+                div.style.borderColor = '#0085f3';
+                document.getElementById('triggerMediaId').value = post.id;
+                document.getElementById('triggerMediaThumb').value = post.thumbnail_url || '';
+                document.getElementById('triggerMediaCaption').value = post.caption || '';
+            };
+            grid.appendChild(div);
+        });
+        if (res.next_cursor) {
+            const more = document.createElement('div');
+            more.style.cssText = 'grid-column:1/-1;text-align:center;';
+            more.innerHTML = '<button type="button" onclick="loadCommentPosts(\'' + res.next_cursor + '\');this.parentElement.remove();" style="padding:5px 14px;background:#eff6ff;color:#0085f3;border:1px solid #bfdbfe;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">Carregar mais</button>';
+            grid.appendChild(more);
+        }
+        _commentPostsLoaded = true;
+    }).catch(() => {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:16px;color:#ef4444;font-size:12px;">Erro ao carregar publicações. Verifique a conexão com Instagram.</div>';
+    });
 }
 
 function updateSlugPreview(val) {
