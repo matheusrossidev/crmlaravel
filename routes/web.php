@@ -236,10 +236,11 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
 
     // Metas de Vendas
     Route::prefix('metas')->name('goals.')->controller(\App\Http\Controllers\Tenant\SalesGoalController::class)->group(function () {
-        Route::get('/',            'index')->name('index');
-        Route::post('/',           'store')->name('store');
-        Route::put('/{goal}',      'update')->name('update');
-        Route::delete('/{goal}',   'destroy')->name('destroy');
+        Route::get('/',                  'index')->name('index');
+        Route::post('/',                 'store')->name('store');
+        Route::put('/{goal}',            'update')->name('update');
+        Route::delete('/{goal}',         'destroy')->name('destroy');
+        Route::get('/historico/{user?}', 'history')->name('history');
     });
 
     // Leads / Contatos — exportar e importar ANTES do {lead} wildcard
@@ -451,6 +452,8 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
         Route::get('produtos',          [ProductController::class, 'index'])->name('products');
         Route::get('api-keys',          [ApiKeyController::class, 'index'])->name('api-keys');
         Route::get('usuarios',          [UserController::class, 'index'])->name('users');
+        Route::get('auditoria',         [\App\Http\Controllers\Tenant\AuditLogController::class, 'index'])->name('audit-log');
+        Route::get('auditoria/{log}',   [\App\Http\Controllers\Tenant\AuditLogController::class, 'show'])->name('audit-log.show');
 
         // Perfil (todos podem editar o próprio perfil)
         Route::get('perfil',         [ProfileController::class, 'index'])->name('profile');

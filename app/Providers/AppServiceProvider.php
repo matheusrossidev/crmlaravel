@@ -7,6 +7,11 @@ namespace App\Providers;
 use App\Events\AiIntentDetected;
 use App\Events\MasterNotificationSent;
 use App\Events\WhatsappMessageCreated;
+use App\Listeners\LogAuthEvents;
+use Illuminate\Auth\Events\Failed as LoginFailed;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Auth\Events\PasswordReset;
 use App\Http\ViewComposers\UpsellBannerComposer;
 use App\Models\Lead;
 use App\Models\LostSale;
@@ -41,6 +46,13 @@ class AppServiceProvider extends ServiceProvider
         Lead::observe(LeadObserver::class);
         Sale::observe(SaleObserver::class);
         LostSale::observe(LostSaleObserver::class);
+
+        // Auth audit logging
+        $authListener = new LogAuthEvents();
+        Event::listen(Login::class, [$authListener, 'handleLogin']);
+        Event::listen(Logout::class, [$authListener, 'handleLogout']);
+        Event::listen(LoginFailed::class, [$authListener, 'handleFailed']);
+        Event::listen(PasswordReset::class, [$authListener, 'handlePasswordReset']);
 
         Gate::define('viewPulse', fn ($user) => $user->is_super_admin === true);
 
