@@ -202,18 +202,40 @@ class ProcessChatbotStep
         } elseif ($text !== '') {
             $branches = $node->config['branches'] ?? [];
 
-            // Instagram: enviar quick reply buttons se há branches
-            if ($this->channel === 'instagram' && ! empty($branches)) {
-                $buttons = [];
-                foreach ($branches as $branch) {
-                    $keywords = (array) ($branch['keywords'] ?? []);
-                    if (! empty($keywords)) {
-                        $buttons[] = mb_substr($keywords[0], 0, 20);
+            // Instagram: enviar buttons se há branches
+            if ($this->channel === 'instagram' && ! empty($branches) && $conv instanceof InstagramConversation) {
+                // Check if any branch has web_url type → use Button Template
+                $hasWebUrl = collect($branches)->contains(fn ($b) => ($b['button_type'] ?? 'postback') === 'web_url');
+
+                if ($hasWebUrl) {
+                    // Button Template: supports web_url + postback (max 3 buttons)
+                    $templateButtons = [];
+                    foreach (array_slice($branches, 0, 3) as $branch) {
+                        $label = mb_substr($branch['label'] ?? ($branch['keywords'][0] ?? 'Opção'), 0, 20);
+                        $type  = $branch['button_type'] ?? 'postback';
+                        if ($type === 'web_url' && !empty($branch['button_url'])) {
+                            $templateButtons[] = ['type' => 'web_url', 'title' => $label, 'url' => $branch['button_url']];
+                        } else {
+                            $templateButtons[] = ['type' => 'postback', 'title' => $label, 'payload' => 'BTN_' . $label];
+                        }
                     }
-                }
-                if (! empty($buttons) && $conv instanceof InstagramConversation) {
-                    $this->sendInstagramButtons($conv, $text, $buttons);
-                    return;
+                    if (!empty($templateButtons)) {
+                        $this->sendInstagramButtonTemplate($conv, $text, $templateButtons);
+                        return;
+                    }
+                } else {
+                    // Quick Replies: simple postback buttons
+                    $buttons = [];
+                    foreach ($branches as $branch) {
+                        $keywords = (array) ($branch['keywords'] ?? []);
+                        if (! empty($keywords)) {
+                            $buttons[] = mb_substr($keywords[0], 0, 20);
+                        }
+                    }
+                    if (! empty($buttons)) {
+                        $this->sendInstagramButtons($conv, $text, $buttons);
+                        return;
+                    }
                 }
             }
 
@@ -558,6 +580,26 @@ class ProcessChatbotStep
             sleep(self::DEFAULT_MESSAGE_DELAY);
         } catch (\Throwable $e) {
             Log::channel('instagram')->error('Chatbot: erro ao enviar buttons IG', [
+                'conversation_id' => $conv->id,
+                'error'           => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function sendInstagramButtonTemplate(InstagramConversation $conv, string $text, array $buttons): void
+    {
+        try {
+            $instance = $conv->instance;
+            if (! $instance) {
+                Log::channel('instagram')->warning('Chatbot: instância IG não encontrada para button template', ['conv' => $conv->id]);
+                return;
+            }
+
+            $service = new InstagramService(decrypt($instance->access_token));
+            $service->sendButtonTemplate($conv->igsid, $text, $buttons);
+            sleep(self::DEFAULT_MESSAGE_DELAY);
+        } catch (\Throwable $e) {
+            Log::channel('instagram')->error('Chatbot: erro ao enviar button template IG', [
                 'conversation_id' => $conv->id,
                 'error'           => $e->getMessage(),
             ]);

@@ -1564,7 +1564,21 @@
             // Config
             html += '<div class="cb-branch-config">';
             if (step.type === 'input') {
-                // Keywords auto-sync com label — campo oculto
+                // Instagram: button type selector (postback vs web_url)
+                if (FLOW_CHANNEL === 'instagram') {
+                    var btnType = b.button_type || 'postback';
+                    html += '<div style="margin-bottom:6px;">';
+                    html += '<label style="font-size:10px;color:#6b7280;display:block;margin-bottom:3px;">Tipo do botão</label>';
+                    html += '<select class="form-select" style="font-size:11px;padding:4px 8px;" onchange="cbUpdateBranch(' + pathStr + ', ' + index + ', ' + bi + ', \'button_type\', this.value); toggleBranchUrl(this);">';
+                    html += '<option value="postback" ' + (btnType === 'postback' ? 'selected' : '') + '>Resposta (avança fluxo)</option>';
+                    html += '<option value="web_url" ' + (btnType === 'web_url' ? 'selected' : '') + '>Link externo</option>';
+                    html += '</select>';
+                    html += '</div>';
+                    if (btnType === 'web_url') {
+                        html += '<div class="branch-url-field"><label style="font-size:10px;color:#6b7280;display:block;margin-bottom:3px;">URL</label>';
+                        html += '<input class="form-control" style="font-size:11px;padding:4px 8px;" placeholder="https://..." value="' + esc(b.button_url || '') + '" onchange="cbUpdateBranch(' + pathStr + ', ' + index + ', ' + bi + ', \'button_url\', this.value)"></div>';
+                    }
+                }
             } else if (step.type === 'condition') {
                 var varLabel = (step.config && step.config.variable) || 'variável';
                 var opLabel = {equals:CBLANG.op_sentence_equals,not_equals:CBLANG.op_sentence_not_equals,contains:CBLANG.op_sentence_contains,starts_with:CBLANG.op_sentence_starts_with,ends_with:CBLANG.op_sentence_ends_with,gt:CBLANG.op_sentence_gt,lt:CBLANG.op_sentence_lt}[b.operator] || '...';
@@ -2130,6 +2144,12 @@
             console.error('Save error:', err);
             toastr.error(CBLANG.toast_save_flow_error);
         });
+    };
+
+    // ── Toggle branch URL field (Instagram button type) ────────────
+    window.toggleBranchUrl = function(select) {
+        // Re-render to show/hide URL field
+        renderFlow();
     };
 
     // ── Sidebar trigger type (Instagram comment) ──────────────────
