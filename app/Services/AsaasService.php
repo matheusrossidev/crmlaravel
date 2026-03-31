@@ -98,6 +98,39 @@ class AsaasService
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Transfers (PIX payouts to partners)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Retrieve account balance.
+     * @return array { balance: float }
+     */
+    public function getBalance(): array
+    {
+        return $this->get('/finance/balance');
+    }
+
+    /**
+     * Create a PIX transfer to an external key.
+     * @param array $data { value, pixAddressKey, pixAddressKeyType, description?, externalReference? }
+     * pixAddressKeyType: CPF, CNPJ, EMAIL, PHONE, EVP
+     */
+    public function createPixTransfer(array $data): array
+    {
+        return $this->post('/transfers', array_merge([
+            'operationType' => 'PIX',
+        ], $data));
+    }
+
+    /**
+     * Get transfer status by ID.
+     */
+    public function getTransfer(string $transferId): array
+    {
+        return $this->get("/transfers/{$transferId}");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // Helpers HTTP
     // ─────────────────────────────────────────────────────────────────────────
 

@@ -82,6 +82,13 @@ class TenantMiddleware
             }
         }
 
+        // Parceiro logado (sem impersonação) → redireciona para portal do parceiro
+        if (!$impersonatingId && $user->tenant?->isPartner()) {
+            if (!$request->routeIs('partner.*', 'agency.*', 'logout', 'settings.profile*', 'settings.notifications*', 'settings.billing*', 'billing.*', 'account.*')) {
+                return redirect()->route('partner.dashboard');
+            }
+        }
+
         $tenant = $impersonatingId
             ? \App\Models\Tenant::withoutGlobalScope('tenant')->find($impersonatingId)
             : $user->tenant;
@@ -131,6 +138,7 @@ class TenantMiddleware
         // Onboarding obrigatório para admins na primeira vez
         if (
             $tenant &&
+            !$tenant->isPartner() &&
             $tenant->onboarding_completed_at === null &&
             ! $request->routeIs('onboarding.*') &&
             ! $request->routeIs('logout') &&

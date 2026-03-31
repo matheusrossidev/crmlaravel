@@ -739,63 +739,11 @@
             <img src="{{ asset('images/logo.png') }}" alt="Syncro" class="navbar-logo-img">
         </a>
 
-        {{-- Workspace selector (partner agencies) --}}
-        @if($isPartnerUser)
-        <div class="navbar-workspace" onclick="toggleWorkspaceDropdown(event)" title="{{ $activeTenant?->name ?? 'Minha Empresa' }}">
-            <div class="navbar-ws-avatar">
-                @if($activeTenant?->logo)
-                    <img src="{{ $activeTenant->logo }}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;" alt="">
-                @else
-                    {{ strtoupper(substr($activeTenant?->name ?? 'P', 0, 1)) }}
-                @endif
-            </div>
-            <span class="navbar-ws-name">{{ $activeTenant?->name ?? 'Minha Empresa' }}</span>
-            <i class="bi bi-chevron-expand navbar-ws-chev"></i>
-
-            <div class="workspace-dropdown" id="workspaceDropdown">
-                {{-- Própria conta --}}
-                <div class="workspace-dd-item {{ !$impersonatingId ? 'active' : '' }}"
-                     onclick="switchWorkspace(null)">
-                    <div class="workspace-dd-avatar" style="background:#7C3AED;">
-                        {{ strtoupper(substr($authTenant->name ?? 'P', 0, 1)) }}
-                    </div>
-                    <div style="min-width:0;">
-                        <div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                            {{ $authTenant->name }}
-                        </div>
-                        <div style="font-size:11px;color:#97A3B7;">Minha conta</div>
-                    </div>
-                    @if(!$impersonatingId)<i class="bi bi-check2" style="margin-left:auto;color:#7C3AED;"></i>@endif
-                </div>
-
-                @if($partnerClients->isNotEmpty())
-                <hr class="workspace-dd-divider">
-                <div style="padding:6px 14px 4px;font-size:10.5px;font-weight:700;color:#97A3B7;text-transform:uppercase;letter-spacing:.06em;">
-                    Clientes
-                </div>
-                @foreach($partnerClients as $client)
-                <div class="workspace-dd-item {{ (int)$impersonatingId === (int)$client->id ? 'active' : '' }}"
-                     onclick="switchWorkspace({{ $client->id }})">
-                    <div class="workspace-dd-avatar" style="background:#007DFF;">
-                        {{ strtoupper(substr($client->name, 0, 1)) }}
-                    </div>
-                    <div style="min-width:0;">
-                        <div style="font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                            {{ $client->name }}
-                        </div>
-                    </div>
-                    @if((int)$impersonatingId === (int)$client->id)
-                        <i class="bi bi-check2" style="margin-left:auto;color:#007DFF;"></i>
-                    @endif
-                </div>
-                @endforeach
-                @else
-                <hr class="workspace-dd-divider">
-                <div style="padding:12px 14px;font-size:12.5px;color:#97A3B7;text-align:center;">
-                    Nenhum cliente vinculado ainda.
-                </div>
-                @endif
-            </div>
+        {{-- Workspace indicator (only when impersonating) --}}
+        @if($isPartnerUser && $impersonatingId && $activeTenant)
+        <div style="display:flex;align-items:center;gap:8px;padding:4px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e;font-weight:600;">
+            <i class="bi bi-eye-fill"></i>
+            {{ $activeTenant->name }}
         </div>
         @endif
 
@@ -806,6 +754,26 @@
 
         {{-- Center: Menu items --}}
         <nav class="navbar-menu" id="navbarMenu">
+
+            @if(auth()->user()->tenant?->isPartner() && !session('impersonating_tenant_id'))
+            {{-- ══ PARTNER-ONLY NAV ══ --}}
+            <a href="{{ route('partner.dashboard') }}" class="nm-item {{ request()->routeIs('partner.dashboard') ? 'active' : '' }}">
+                <i class="bi bi-grid-1x2"></i> Dashboard
+            </a>
+            <a href="{{ route('agency.clients') }}" class="nm-item {{ request()->routeIs('agency.clients') ? 'active' : '' }}">
+                <i class="bi bi-people"></i> Meus Clientes
+            </a>
+            <a href="{{ route('partner.resources.index') }}" class="nm-item {{ request()->routeIs('partner.resources.*') ? 'active' : '' }}">
+                <i class="bi bi-folder2-open"></i> Recursos
+            </a>
+            <a href="{{ route('partner.courses.index') }}" class="nm-item {{ request()->routeIs('partner.courses.*', 'partner.lessons.*') ? 'active' : '' }}">
+                <i class="bi bi-mortarboard"></i> Cursos
+            </a>
+            <a href="{{ route('settings.profile') }}" class="nm-item {{ request()->routeIs('settings.profile*') ? 'active' : '' }}">
+                <i class="bi bi-person-gear"></i> Meu Perfil
+            </a>
+            @else
+            {{-- ══ REGULAR TENANT NAV ══ --}}
             <a href="{{ route('inicio') }}" class="nm-item {{ request()->routeIs('inicio', 'dashboard') ? 'active' : '' }}">
                 <i class="bi bi-house"></i> {{ __('nav.home') }}
             </a>
@@ -937,6 +905,9 @@
                     @endif
                 </div>
             </div>
+
+            @endif
+            {{-- ══ END REGULAR TENANT NAV ══ --}}
 
             {{-- Master (super_admin only) --}}
             @if(auth()->user()->isSuperAdmin())

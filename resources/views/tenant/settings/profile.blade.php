@@ -268,7 +268,8 @@
                 </div>
             </div>
 
-            {{-- Card: Agência Parceira --}}
+            {{-- Card: Agência Parceira (não mostra para parceiros) --}}
+            @if(!auth()->user()->tenant?->isPartner())
             @php $agencyTenant = auth()->user()->tenant?->referringAgency; @endphp
             <div class="profile-card">
                 <div class="profile-card-header">
@@ -299,6 +300,7 @@
                     @endif
                 </div>
             </div>
+            @endif
 
             {{-- Logo do Workspace (admin only) --}}
             @if(auth()->user()->isAdmin())

@@ -208,6 +208,11 @@ class AuthController extends Controller
                     Mail::to($agencyAdminUser->email)->send(
                         new AgencyReferralNotification($agencyAdminUser, $agencyTenant, $tenant, $totalClients)
                     );
+                    // In-app notification
+                    $agencyAdminUser->notify(new \App\Notifications\PartnerNotification(
+                        'Novo cliente indicado!',
+                        "{$tenant->name} se cadastrou com seu código. Total: {$totalClients} clientes.",
+                    ));
                 }
             } catch (\Throwable $e) {
                 \Log::warning('Falha ao notificar agência sobre novo cliente', [

@@ -1,4 +1,10 @@
 @php
+    $isPartnerOnly = auth()->user()->tenant?->isPartner() && !session('impersonating_tenant_id');
+    if ($isPartnerOnly) {
+        // Parceiro não vê tabs de configurações — só acessa perfil direto
+        return;
+    }
+
     $isAdmin = auth()->user()->isAdmin() || auth()->user()->isSuperAdmin();
     $igConnected = auth()->check() && \App\Models\InstagramInstance::where('status', 'connected')->exists();
 

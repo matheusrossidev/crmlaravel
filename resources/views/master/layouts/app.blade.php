@@ -345,6 +345,34 @@
         .m-btn-danger:hover { background: #FECACA; }
         .m-btn-sm { padding: 5px 12px; font-size: 12px; }
 
+        /* ── File inputs ── */
+        input[type="file"] {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px dashed #d1d5db;
+            border-radius: 10px;
+            font-size: 13px;
+            font-family: inherit;
+            color: #374151;
+            background: #fafbfc;
+            cursor: pointer;
+            transition: border-color .15s, background .15s;
+        }
+        input[type="file"]:hover { border-color: #0085f3; background: #eff6ff; }
+        input[type="file"]::file-selector-button {
+            padding: 6px 14px;
+            margin-right: 12px;
+            background: #0085f3;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        input[type="file"]::file-selector-button:hover { background: #0070d1; }
+
         /* ── RESPONSIVE ────────────────────────────────────────────────────── */
         @media (max-width: 768px) {
             .m-navbar-hamburger { display: flex; }
@@ -478,6 +506,22 @@
                     <a href="{{ route('master.agency-codes.index') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.agency-codes*') ? 'active' : '' }}">
                         <i class="bi bi-building-check"></i> Agências Parceiras
+                    </a>
+                    <a href="{{ route('master.partner-ranks.index') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.partner-ranks*') ? 'active' : '' }}">
+                        <i class="bi bi-award"></i> Ranks de Parceiros
+                    </a>
+                    <a href="{{ route('master.partner-commissions.index') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.partner-commissions*', 'master.partner-withdrawals*') ? 'active' : '' }}">
+                        <i class="bi bi-cash-coin"></i> Comissões / Saques
+                    </a>
+                    <a href="{{ route('master.partner-resources.index') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.partner-resources*') ? 'active' : '' }}">
+                        <i class="bi bi-folder2-open"></i> Recursos Parceiros
+                    </a>
+                    <a href="{{ route('master.partner-courses.index') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.partner-courses*') ? 'active' : '' }}">
+                        <i class="bi bi-mortarboard"></i> Cursos Parceiros
                     </a>
                     <a href="{{ route('master.token-increments') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.token-increments*') ? 'active' : '' }}">

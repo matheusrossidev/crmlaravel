@@ -86,6 +86,14 @@ Route::get('/s/{uuid}', [\App\Http\Controllers\SurveyPublicController::class, 's
 Route::post('/s/{uuid}', [\App\Http\Controllers\SurveyPublicController::class, 'answer'])->name('survey.answer');
 Route::get('/pesquisa/{slug}', [\App\Http\Controllers\SurveyPublicController::class, 'showBySlug'])->name('survey.slug');
 
+// Certificado público de parceiro
+Route::get('/certificado/{code}', function (string $code) {
+    $cert = \App\Models\PartnerCertificate::where('certificate_code', $code)
+        ->with(['tenant:id,name', 'course:id,title'])
+        ->firstOrFail();
+    return view('partner.certificate-public', compact('cert'));
+})->name('certificate.public');
+
 // Verificação de email e cadastro pendente (sem middleware guest para evitar loop)
 Route::get('/verify-email/{token}', [AuthController::class, 'verifyEmail'])->name('verify.email');
 Route::get('/cadastro-pendente', fn() => view('auth.pending'))->middleware('locale')->name('register.pending');
@@ -197,6 +205,16 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
     Route::post('/agencia/acessar/{tenant}',  [AgencyAccessController::class, 'enter'])->name('agency.access.enter');
     Route::post('/agencia/sair',              [AgencyAccessController::class, 'exit'])->name('agency.access.exit');
     Route::get('/agencia/meus-clientes',      [AgencyAccessController::class, 'clients'])->name('agency.clients');
+
+    // Portal do Parceiro
+    Route::get('/parceiro', [\App\Http\Controllers\Partner\PartnerDashboardController::class, 'index'])->name('partner.dashboard');
+    Route::get('/parceiro/recursos', [\App\Http\Controllers\Partner\PartnerResourceController::class, 'index'])->name('partner.resources.index');
+    Route::get('/parceiro/recursos/{slug}', [\App\Http\Controllers\Partner\PartnerResourceController::class, 'show'])->name('partner.resources.show');
+    Route::get('/parceiro/cursos', [\App\Http\Controllers\Partner\PartnerCourseController::class, 'index'])->name('partner.courses.index');
+    Route::get('/parceiro/cursos/{slug}', [\App\Http\Controllers\Partner\PartnerCourseController::class, 'show'])->name('partner.courses.show');
+    Route::post('/parceiro/aulas/{lesson}/concluir', [\App\Http\Controllers\Partner\PartnerCourseController::class, 'completeLesson'])->name('partner.lessons.complete');
+    Route::post('/parceiro/cursos/{course}/certificado', [\App\Http\Controllers\Partner\PartnerCourseController::class, 'issueCertificate'])->name('partner.courses.certificate');
+    Route::post('/parceiro/saque', [\App\Http\Controllers\Partner\PartnerWithdrawalController::class, 'store'])->name('partner.withdrawal.store');
 
     // Redireciona /configuracoes para perfil
     Route::get('/configuracoes', fn () => redirect()->route('settings.profile'));
@@ -623,6 +641,33 @@ Route::middleware(['auth', 'super_admin', '2fa'])->prefix('master')->name('maste
     Route::post('codigos-agencia/gerar',                               [MasterPartnerAgencyCodeController::class, 'generate'])->name('agency-codes.generate');
     Route::put('codigos-agencia/{partnerAgencyCode}',                  [MasterPartnerAgencyCodeController::class, 'update'])->name('agency-codes.update');
     Route::delete('codigos-agencia/{partnerAgencyCode}',               [MasterPartnerAgencyCodeController::class, 'destroy'])->name('agency-codes.destroy');
+
+    // Ranks de parceiros
+    Route::get('partner-ranks',               [\App\Http\Controllers\Master\PartnerRankController::class, 'index'])->name('partner-ranks.index');
+    Route::post('partner-ranks',              [\App\Http\Controllers\Master\PartnerRankController::class, 'store'])->name('partner-ranks.store');
+    Route::put('partner-ranks/{rank}',        [\App\Http\Controllers\Master\PartnerRankController::class, 'update'])->name('partner-ranks.update');
+    Route::delete('partner-ranks/{rank}',     [\App\Http\Controllers\Master\PartnerRankController::class, 'destroy'])->name('partner-ranks.destroy');
+
+    // Recursos para parceiros
+    Route::get('partner-recursos',                [\App\Http\Controllers\Master\PartnerResourceController::class, 'index'])->name('partner-resources.index');
+    Route::post('partner-recursos',               [\App\Http\Controllers\Master\PartnerResourceController::class, 'store'])->name('partner-resources.store');
+    Route::put('partner-recursos/{resource}',     [\App\Http\Controllers\Master\PartnerResourceController::class, 'update'])->name('partner-resources.update');
+    Route::delete('partner-recursos/{resource}',  [\App\Http\Controllers\Master\PartnerResourceController::class, 'destroy'])->name('partner-resources.destroy');
+
+    // Cursos para parceiros
+    Route::get('partner-cursos',                  [\App\Http\Controllers\Master\PartnerCourseController::class, 'index'])->name('partner-courses.index');
+    Route::post('partner-cursos',                 [\App\Http\Controllers\Master\PartnerCourseController::class, 'store'])->name('partner-courses.store');
+    Route::put('partner-cursos/{course}',         [\App\Http\Controllers\Master\PartnerCourseController::class, 'update'])->name('partner-courses.update');
+    Route::delete('partner-cursos/{course}',      [\App\Http\Controllers\Master\PartnerCourseController::class, 'destroy'])->name('partner-courses.destroy');
+    Route::post('partner-cursos/{course}/aulas',  [\App\Http\Controllers\Master\PartnerCourseController::class, 'storeLesson'])->name('partner-lessons.store');
+    Route::put('partner-aulas/{lesson}',          [\App\Http\Controllers\Master\PartnerCourseController::class, 'updateLesson'])->name('partner-lessons.update');
+    Route::delete('partner-aulas/{lesson}',       [\App\Http\Controllers\Master\PartnerCourseController::class, 'destroyLesson'])->name('partner-lessons.destroy');
+
+    // Comissões e saques de parceiros
+    Route::get('partner-comissoes',                         [\App\Http\Controllers\Master\PartnerCommissionController::class, 'index'])->name('partner-commissions.index');
+    Route::post('partner-saques/{withdrawal}/aprovar',      [\App\Http\Controllers\Master\PartnerCommissionController::class, 'approveWithdrawal'])->name('partner-withdrawals.approve');
+    Route::post('partner-saques/{withdrawal}/rejeitar',     [\App\Http\Controllers\Master\PartnerCommissionController::class, 'rejectWithdrawal'])->name('partner-withdrawals.reject');
+    Route::post('partner-saques/{withdrawal}/pago',         [\App\Http\Controllers\Master\PartnerCommissionController::class, 'markPaid'])->name('partner-withdrawals.paid');
 
     // Pacotes de incremento de tokens
     Route::get('token-incrementos',                                                [MasterTokenIncrementPlanController::class, 'index'])->name('token-increments');

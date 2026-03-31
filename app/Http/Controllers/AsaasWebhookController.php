@@ -51,6 +51,18 @@ class AsaasWebhookController extends Controller
             return;
         }
 
+        // ── Transfer events (partner withdrawals) ────────────────────
+        if (str_starts_with($event, 'TRANSFER_')) {
+            $this->handleTransferEvent($event, $payload);
+            return;
+        }
+
+        // ── Refund events (cancel partner commission) ────────────────
+        if (in_array($event, ['PAYMENT_REFUNDED', 'PAYMENT_CHARGEBACK_REQUESTED'], true)) {
+            $this->handlePaymentRefund($payload);
+            // Don't return — let it continue to handle subscription status too
+        }
+
         // Pagamentos de incremento de tokens identificados pelo externalReference
         $extRef = $payload['payment']['externalReference'] ?? '';
         if (
@@ -160,7 +172,51 @@ class AsaasWebhookController extends Controller
             );
         }
 
+        // Gera comissão para parceiro se tenant foi indicado
+        $this->generatePartnerCommission($tenant, $paymentValue, $paymentId);
+
         \Log::info("AsaasWebhook: pagamento confirmado para tenant {$tenant->id}");
+    }
+
+    private function generatePartnerCommission(Tenant $tenant, ?float $paymentValue, ?string $paymentId): void
+    {
+        if (!$paymentValue || $paymentValue <= 0 || !$tenant->referred_by_agency_id) {
+            return;
+        }
+
+        $partnerTenantId = $tenant->referred_by_agency_id;
+
+        // Avoid duplicate commission for same payment
+        if ($paymentId && \App\Models\PartnerCommission::where('asaas_payment_id', $paymentId)->exists()) {
+            return;
+        }
+
+        // Get partner rank to determine commission percentage
+        $activeClients = Tenant::withoutGlobalScope('tenant')
+            ->where('referred_by_agency_id', $partnerTenantId)
+            ->whereIn('status', ['active', 'partner', 'trial'])
+            ->count();
+
+        $rank = \App\Models\PartnerRank::forSalesCount($activeClients);
+        $commissionPct = $rank?->commission_pct ?? 0;
+
+        if ($commissionPct <= 0) {
+            return;
+        }
+
+        $commissionAmount = round($paymentValue * ($commissionPct / 100), 2);
+        $graceDays = 30; // carência antes de liberar
+
+        \App\Models\PartnerCommission::create([
+            'tenant_id'        => $partnerTenantId,
+            'client_tenant_id' => $tenant->id,
+            'asaas_payment_id' => $paymentId,
+            'amount'           => $commissionAmount,
+            'status'           => 'pending',
+            'available_at'     => now()->addDays($graceDays)->toDateString(),
+        ]);
+
+        \Log::info("PartnerCommission: R\${$commissionAmount} ({$commissionPct}%) para tenant {$partnerTenantId} de pagamento {$paymentId}");
     }
 
     private function handlePaymentOverdue(Tenant $tenant): void
@@ -187,5 +243,57 @@ class AsaasWebhookController extends Controller
             'status'              => 'suspended',
         ]);
         \Log::info("AsaasWebhook: assinatura inativada para tenant {$tenant->id}");
+    }
+
+    // ── Transfer webhook (partner withdrawals) ───────────────────────
+
+    private function handleTransferEvent(string $event, array $payload): void
+    {
+        $transferId = $payload['transfer']['id'] ?? null;
+        $extRef     = $payload['transfer']['externalReference'] ?? '';
+
+        if (!str_starts_with($extRef, 'withdrawal:')) {
+            return; // not a partner withdrawal
+        }
+
+        $withdrawalId = (int) str_replace('withdrawal:', '', $extRef);
+        $withdrawal = \App\Models\PartnerWithdrawal::find($withdrawalId);
+
+        if (!$withdrawal) {
+            \Log::warning("AsaasWebhook: withdrawal #{$withdrawalId} não encontrado para transfer {$transferId}");
+            return;
+        }
+
+        match ($event) {
+            'TRANSFER_DONE' => $withdrawal->update([
+                'status'  => 'paid',
+                'paid_at' => now(),
+            ]),
+            'TRANSFER_FAILED', 'TRANSFER_CANCELLED' => $withdrawal->update([
+                'status'          => 'approved', // volta para aprovado, pode tentar novamente
+                'rejected_reason' => "Transferência falhou: {$event}",
+            ]),
+            default => null,
+        };
+
+        \Log::info("AsaasWebhook: transfer {$event} para withdrawal #{$withdrawalId}");
+    }
+
+    // ── Payment refund (cancel partner commission) ───────────────────
+
+    private function handlePaymentRefund(array $payload): void
+    {
+        $paymentId = $payload['payment']['id'] ?? null;
+        if (!$paymentId) {
+            return;
+        }
+
+        $cancelled = \App\Models\PartnerCommission::where('asaas_payment_id', $paymentId)
+            ->whereIn('status', ['pending', 'available'])
+            ->update(['status' => 'cancelled']);
+
+        if ($cancelled > 0) {
+            \Log::info("AsaasWebhook: {$cancelled} comissão(ões) cancelada(s) por estorno do pagamento {$paymentId}");
+        }
     }
 }

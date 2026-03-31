@@ -60,6 +60,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('master:weekly-report')->weeklyOn(5, '12:00'); // sexta ao meio-dia
         $schedule->command('goals:process-recurrence')->dailyAt('00:05');
         $schedule->command('goals:check-alerts')->dailyAt('09:00');
+        $schedule->command('partners:release-commissions')->dailyAt('06:30');
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
