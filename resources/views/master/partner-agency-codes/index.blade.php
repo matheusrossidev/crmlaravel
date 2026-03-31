@@ -70,7 +70,7 @@
                     </td>
                     <td style="white-space:nowrap;">
                         <button class="m-btn m-btn-ghost m-btn-sm"
-                                onclick="editCode({{ $code->id }}, {{ json_encode(['description' => $code->description, 'is_active' => $code->is_active, 'tenant_id' => $code->tenant_id]) }})">
+                                onclick="editCode({{ $code->id }}, {{ json_encode(['code' => $code->code, 'description' => $code->description, 'is_active' => $code->is_active, 'tenant_id' => $code->tenant_id]) }})">
                             <i class="bi bi-pencil"></i>
                         </button>
                         @if(!$code->tenant_id)
@@ -181,13 +181,13 @@ function openNew() {
 
 function editCode(id, data) {
     document.getElementById('editingId').value = id;
-    document.getElementById('codeInput').value = '';
-    document.getElementById('codeInput').disabled = true;
+    document.getElementById('codeInput').value = data.code ?? '';
+    document.getElementById('codeInput').disabled = false;
     document.getElementById('descriptionInput').value = data.description ?? '';
     document.getElementById('isActiveInput').checked = data.is_active;
     document.getElementById('tenantIdInput').value = data.tenant_id ?? '';
     document.getElementById('tenantFieldWrap').style.display = '';
-    document.getElementById('codeFieldWrap').style.display = 'none';
+    document.getElementById('codeFieldWrap').style.display = '';
     document.getElementById('modalTitle').textContent = 'Editar Código';
     document.getElementById('submitBtn').textContent = 'Salvar';
     document.getElementById('codeModal').style.display = 'flex';

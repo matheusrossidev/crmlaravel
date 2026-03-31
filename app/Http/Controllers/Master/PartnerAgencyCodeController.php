@@ -55,9 +55,13 @@ class PartnerAgencyCodeController extends Controller
     public function update(Request $request, PartnerAgencyCode $partnerAgencyCode): JsonResponse
     {
         $data = $request->validate([
+            'code'        => 'nullable|string|max:20|regex:/^[A-Z0-9\-]+$/|unique:partner_agency_codes,code,' . $partnerAgencyCode->id,
             'description' => 'nullable|string|max:100',
             'is_active'   => 'nullable|boolean',
             'tenant_id'   => 'nullable|integer|exists:tenants,id',
+        ], [
+            'code.unique' => 'Este código já está em uso.',
+            'code.regex'  => 'O código deve conter apenas letras maiúsculas, números e hífens.',
         ]);
 
         $data['is_active'] = $request->boolean('is_active', true);
