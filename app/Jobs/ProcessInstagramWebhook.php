@@ -268,8 +268,8 @@ class ProcessInstagramWebhook implements ShouldQueue
         if (! $isFromMe) {
             $conversation->refresh();
 
-            // Se já tem chatbot ativo, processar próximo step
-            if ($conversation->chatbot_flow_id) {
+            // Se já tem chatbot ativo (flow + node), processar próximo step
+            if ($conversation->chatbot_flow_id && $conversation->chatbot_node_id) {
                 try {
                     (new ProcessChatbotStep($conversation->id, $body ?? '', 'instagram'))->handle();
                 } catch (\Throwable $e) {
@@ -811,7 +811,7 @@ class ProcessInstagramWebhook implements ShouldQueue
                 }
 
                 // Skip if conversation already has an active chatbot or AI agent
-                if ($conv->chatbot_flow_id || $conv->ai_agent_id) {
+                if (($conv->chatbot_flow_id && $conv->chatbot_node_id) || $conv->ai_agent_id) {
                     Log::channel('instagram')->debug('Chatbot comment: conversa já tem fluxo/agente ativo', ['conv_id' => $conv->id]);
                     return;
                 }

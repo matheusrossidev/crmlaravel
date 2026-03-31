@@ -731,7 +731,7 @@ class ProcessWahaWebhook implements ShouldQueue
         // Auto-trigger de chatbot: verifica keyword em QUALQUER mensagem inbound sem flow ativo.
         // DEVE ficar APÓS a atribuição de $body (acima) para comparar a mensagem correta.
         // Não ativar chatbot se a conversa já tem agente de IA — exclusividade mútua.
-        if (! $isFromMe && ! $isGroup && ! $conversation->chatbot_flow_id && ! $conversation->ai_agent_id) {
+        if (! $isFromMe && ! $isGroup && (! $conversation->chatbot_flow_id || ! $conversation->chatbot_node_id) && ! $conversation->ai_agent_id) {
             $msgBodyLower = strtolower($body ?? '');
             $activeFlow   = ChatbotFlow::withoutGlobalScope('tenant')
                 ->where('tenant_id', $instance->tenant_id)
@@ -866,7 +866,7 @@ class ProcessWahaWebhook implements ShouldQueue
         }
 
         // Executar chatbot — apenas para mensagens inbound em conversas com fluxo ativo
-        if (! $isFromMe && ! $isGroup && $conversation->chatbot_flow_id) {
+        if (! $isFromMe && ! $isGroup && $conversation->chatbot_flow_id && $conversation->chatbot_node_id) {
             try {
                 (new ProcessChatbotStep($conversation->id, $body ?? ''))->handle();
             } catch (\Throwable $e) {
@@ -881,7 +881,7 @@ class ProcessWahaWebhook implements ShouldQueue
         // Executar agente de IA — apenas para mensagens inbound sem chatbot ativo
         if (! $isFromMe && ! $isGroup
             && $conversation->ai_agent_id
-            && ! $conversation->chatbot_flow_id
+            && (! $conversation->chatbot_flow_id || ! $conversation->chatbot_node_id)
         ) {
             try {
                 // Incrementar versão atomicamente — serve como debounce quando o usuário

@@ -917,10 +917,11 @@ class ProcessChatbotStep
     private function clearFlow(WhatsappConversation|InstagramConversation $conv): void
     {
         $model = $this->getConversationModel();
+        // Keep chatbot_flow_id so conversation appears in results/analytics.
+        // Only clear node_id (stops processing) and variables.
         $model::withoutGlobalScope('tenant')
             ->where('id', $conv->id)
             ->update([
-                'chatbot_flow_id'    => null,
                 'chatbot_node_id'    => null,
                 'chatbot_variables'  => null,
             ]);
