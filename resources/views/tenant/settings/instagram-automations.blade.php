@@ -678,6 +678,13 @@ textarea.form-control { resize: vertical; min-height: 68px; }
                     <div class="ig-item-body">
                         <div class="ig-item-name">
                             {{ $auto->name ?: ($auto->media_id ? __('ig_automations.specific_post') : __('ig_automations.all_posts')) }}
+                            @if($auto->media_type === 'REEL')
+                                <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:#f3e8ff;color:#7c3aed;font-size:10px;font-weight:700;border-radius:99px;margin-left:6px;vertical-align:middle;"><i class="bi bi-play-circle-fill" style="font-size:10px;"></i> Reel</span>
+                            @elseif($auto->media_type === 'VIDEO')
+                                <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:#eff6ff;color:#2563eb;font-size:10px;font-weight:700;border-radius:99px;margin-left:6px;vertical-align:middle;"><i class="bi bi-camera-video-fill" style="font-size:10px;"></i> Video</span>
+                            @elseif($auto->media_type === 'CAROUSEL_ALBUM')
+                                <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:#f0fdf4;color:#16a34a;font-size:10px;font-weight:700;border-radius:99px;margin-left:6px;vertical-align:middle;"><i class="bi bi-images" style="font-size:10px;"></i> Carrossel</span>
+                            @endif
                         </div>
                         <div class="ig-item-meta">
                             {{ $auto->match_type === 'all' ? __('ig_automations.match_all') : __('ig_automations.match_any') }}
@@ -793,6 +800,7 @@ textarea.form-control { resize: vertical; min-height: 68px; }
             <input type="hidden" id="selectedMediaId" value="">
             <input type="hidden" id="selectedMediaThumb" value="">
             <input type="hidden" id="selectedMediaCaption" value="">
+            <input type="hidden" id="selectedMediaType" value="IMAGE">
         </div>
 
         {{-- Keywords --}}
@@ -902,6 +910,7 @@ function openModal(auto = null) {
     document.getElementById('selectedMediaId').value        = auto?.media_id ?? '';
     document.getElementById('selectedMediaThumb').value     = auto?.media_thumbnail_url ?? '';
     document.getElementById('selectedMediaCaption').value   = auto?.media_caption ?? '';
+    document.getElementById('selectedMediaType').value      = auto?.media_type ?? 'IMAGE';
     document.getElementById('replyComment').value = auto?.reply_comment ?? '';
     updateCount('replyComment', 'countReply', 2200);
 
@@ -981,6 +990,7 @@ function onScopeChange(value, preselectMediaId = null) {
     } else {
         wrap.style.display = 'none';
         document.getElementById('selectedMediaId').value = '';
+        document.getElementById('selectedMediaType').value = 'IMAGE';
     }
 }
 
@@ -1023,19 +1033,26 @@ function appendPostItem(post, preselectId = null) {
     div.dataset.id      = post.id;
     div.dataset.thumb   = post.thumbnail_url ?? '';
     div.dataset.caption = post.caption ?? '';
+    div.dataset.mediaType = post.media_type ?? 'IMAGE';
     div.title           = post.caption || '';
 
     const img = post.thumbnail_url
         ? `<img src="${escHtml(post.thumbnail_url)}" alt="" loading="lazy">`
         : `<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:18px;"><i class="bi bi-image"></i></div>`;
 
-    div.innerHTML = `${img}<div class="post-check"><i class="bi bi-check"></i></div>`;
+    const typeOverlay = post.media_type === 'REEL'
+        ? '<span style="position:absolute;top:6px;left:6px;background:rgba(124,58,237,.85);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;display:flex;align-items:center;gap:2px;"><i class="bi bi-play-circle-fill" style="font-size:9px;"></i> Reel</span>'
+        : (post.media_type === 'VIDEO' ? '<span style="position:absolute;top:6px;left:6px;background:rgba(0,0,0,.6);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;"><i class="bi bi-play-fill"></i></span>' : '');
+
+    div.style.position = 'relative';
+    div.innerHTML = `${img}${typeOverlay}<div class="post-check"><i class="bi bi-check"></i></div>`;
 
     if (post.id === preselectId) {
         div.classList.add('selected');
         document.getElementById('selectedMediaId').value      = post.id;
         document.getElementById('selectedMediaThumb').value   = post.thumbnail_url ?? '';
         document.getElementById('selectedMediaCaption').value = post.caption ?? '';
+        document.getElementById('selectedMediaType').value    = post.media_type ?? 'IMAGE';
     }
 
     div.onclick = () => selectPost(div, post);
@@ -1048,6 +1065,7 @@ function selectPost(el, post) {
     document.getElementById('selectedMediaId').value      = post.id;
     document.getElementById('selectedMediaThumb').value   = post.thumbnail_url ?? '';
     document.getElementById('selectedMediaCaption').value = post.caption ?? '';
+    document.getElementById('selectedMediaType').value    = post.media_type ?? 'IMAGE';
 }
 
 // ── Keyword chips ─────────────────────────────────────────────────────────
@@ -1404,6 +1422,7 @@ async function saveAutomation() {
         media_id:             scope === 'specific' ? (document.getElementById('selectedMediaId').value || null) : null,
         media_thumbnail_url:  scope === 'specific' ? (document.getElementById('selectedMediaThumb').value || null) : null,
         media_caption:        scope === 'specific' ? (document.getElementById('selectedMediaCaption').value || null) : null,
+        media_type:           scope === 'specific' ? (document.getElementById('selectedMediaType').value || 'IMAGE') : 'IMAGE',
         keywords,
         match_type:           document.querySelector('[name="matchType"]:checked').value,
         reply_comment:        reply || null,
@@ -1500,7 +1519,7 @@ function renderItem(auto, el) {
     el.innerHTML = `
         <div class="ig-item-thumb">${thumbHtml}</div>
         <div class="ig-item-body">
-            <div class="ig-item-name">${escHtml(auto.name || (auto.media_id ? IGLANG.specific_post : IGLANG.all_posts))}</div>
+            <div class="ig-item-name">${escHtml(auto.name || (auto.media_id ? IGLANG.specific_post : IGLANG.all_posts))}${auto.media_type === 'REEL' ? ' <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:#f3e8ff;color:#7c3aed;font-size:10px;font-weight:700;border-radius:99px;margin-left:6px;vertical-align:middle;"><i class="bi bi-play-circle-fill" style="font-size:10px;"></i> Reel</span>' : (auto.media_type === 'VIDEO' ? ' <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:#eff6ff;color:#2563eb;font-size:10px;font-weight:700;border-radius:99px;margin-left:6px;vertical-align:middle;"><i class="bi bi-camera-video-fill" style="font-size:10px;"></i> Video</span>' : '')}</div>
             <div class="ig-item-meta">${auto.match_type === 'all' ? IGLANG.match_all : IGLANG.match_any} &bull; ${IGLANG.keywords_count.replace(':count', auto.keywords?.length ?? 0)}</div>
             <div class="ig-chips">${kwChips}</div>
             <div class="ig-action-preview">${replyPrev}${dmPrev}</div>

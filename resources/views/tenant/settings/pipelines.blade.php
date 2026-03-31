@@ -227,6 +227,55 @@
         background: #eff6ff; transition: all .15s; width: 100%; margin-top: 4px;
     }
     .btn-add-stage-drawer:hover { background: #dbeafe; border-color: #93c5fd; }
+
+    /* ---- Required tasks per stage ---- */
+    .stage-req-toggle {
+        width: 26px; height: 26px; border-radius: 6px; border: 1px solid #e8eaf0;
+        background: #fff; color: #9ca3af; display: flex; align-items: center; justify-content: center;
+        cursor: pointer; font-size: 12px; flex-shrink: 0; transition: all .15s; position: relative;
+    }
+    .stage-req-toggle:hover { background: #eff6ff; color: #0085f3; border-color: #bfdbfe; }
+    .stage-req-toggle.has-reqs { color: #0085f3; border-color: #bfdbfe; background: #eff6ff; }
+    .stage-req-toggle .req-count {
+        position: absolute; top: -5px; right: -5px; width: 14px; height: 14px;
+        border-radius: 50%; background: #0085f3; color: #fff; font-size: 8px; font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .stage-req-panel {
+        display: none; padding: 10px 10px 10px 30px; background: #f8fafc;
+        border: 1px solid #e8eaf0; border-top: none; border-radius: 0 0 8px 8px;
+        margin-top: -7px; margin-bottom: 6px;
+    }
+    .stage-req-panel.open { display: block; }
+    .stage-req-panel .req-title {
+        font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase;
+        letter-spacing: .04em; margin-bottom: 8px;
+    }
+    .req-row {
+        display: flex; gap: 6px; align-items: center; margin-bottom: 6px;
+    }
+    .req-row input, .req-row select {
+        padding: 5px 8px; font-size: 12px; border: 1px solid #e5e7eb;
+        border-radius: 6px; background: #fff; color: #1a1d23;
+    }
+    .req-row input:focus, .req-row select:focus { outline: none; border-color: #0085f3; }
+    .req-row .req-subject { flex: 1; min-width: 0; }
+    .req-row .req-type { width: 90px; }
+    .req-row .req-priority { width: 80px; }
+    .req-row .req-days { width: 55px; text-align: center; }
+    .req-del {
+        width: 22px; height: 22px; border-radius: 5px; border: none;
+        background: transparent; color: #d1d5db; cursor: pointer; font-size: 11px;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .req-del:hover { color: #ef4444; background: #fee2e2; }
+    .btn-add-req {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 4px 10px; font-size: 11px; font-weight: 600; color: #0085f3;
+        cursor: pointer; border: 1px dashed #bfdbfe; border-radius: 6px;
+        background: #eff6ff; margin-top: 4px;
+    }
+    .btn-add-req:hover { background: #dbeafe; }
 </style>
 @endpush
 
@@ -277,6 +326,11 @@
                         <span class="stage-name">{{ $stage->name }}</span>
                         @if($stage->is_won)  <span class="stage-badge won-badge">{{ __('pipelines.won') }}</span>  @endif
                         @if($stage->is_lost) <span class="stage-badge lost-badge">{{ __('pipelines.lost') }}</span> @endif
+                        @if($stage->requiredTasks->isNotEmpty())
+                            <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:#eff6ff;color:#0085f3;font-size:10px;font-weight:600;border-radius:99px;" title="Atividades obrigatórias">
+                                <i class="bi bi-list-check" style="font-size:10px;"></i> {{ $stage->requiredTasks->count() }}
+                            </span>
+                        @endif
                         <div style="display:flex;gap:5px;">
                             <button class="btn-icon" onclick="openEditPipelineDrawer({{ $pipeline->id }})">
                                 <i class="bi bi-pencil"></i>
@@ -453,37 +507,128 @@ function addDrawerStageRow(data) {
     const color = (data && data.color) ? data.color : '#6366F1';
     const isWon = (data && data.is_won) ? true : false;
     const isLost = (data && data.is_lost) ? true : false;
+    const reqs = (data && data.required_tasks) ? data.required_tasks : [];
 
-    const li = document.createElement('li');
+    const wrapper = document.createElement('div');
+    wrapper.className = 'drawer-stage-wrapper';
+    wrapper.dataset.idx = idx;
+
+    const li = document.createElement('div');
     li.className = 'drawer-stage-row';
     li.dataset.stageId = stageId;
     li.dataset.idx = idx;
+
+    const reqCount = reqs.length;
     li.innerHTML = `
         <i class="bi bi-grip-vertical stage-drag-handle"></i>
         <input type="text" class="form-control" style="flex:1;min-width:0;" placeholder="${escapeHtml(PLANG.stage_name_ph)}" value="${escapeHtml(name)}" data-field="name">
         <input type="color" class="color-input" value="${color}" data-field="color">
         <label class="drawer-stage-checkbox" title="${escapeHtml(PLANG.won_title)}"><input type="checkbox" data-field="is_won" ${isWon ? 'checked' : ''}> ${PLANG.won_abbr}</label>
         <label class="drawer-stage-checkbox" title="${escapeHtml(PLANG.lost_title)}"><input type="checkbox" data-field="is_lost" ${isLost ? 'checked' : ''}> ${PLANG.lost_abbr}</label>
+        <button type="button" class="stage-req-toggle ${reqCount > 0 ? 'has-reqs' : ''}" onclick="toggleReqPanel(this)" title="Atividades obrigatórias">
+            <i class="bi bi-list-check"></i>
+            ${reqCount > 0 ? '<span class="req-count">' + reqCount + '</span>' : ''}
+        </button>
         <button type="button" class="drawer-stage-delete" onclick="removeDrawerStageRow(this)" title="${escapeHtml(PLANG.remove_stage)}"><i class="bi bi-trash"></i></button>
     `;
-    list.appendChild(li);
+
+    const panel = document.createElement('div');
+    panel.className = 'stage-req-panel';
+    panel.dataset.idx = idx;
+    panel.innerHTML = `
+        <div class="req-title"><i class="bi bi-list-check"></i> Atividades obrigatórias</div>
+        <div class="req-list"></div>
+        <button type="button" class="btn-add-req" onclick="addReqRow(this.closest('.stage-req-panel'))">
+            <i class="bi bi-plus"></i> Adicionar atividade
+        </button>
+    `;
+
+    wrapper.appendChild(li);
+    wrapper.appendChild(panel);
+    list.appendChild(wrapper);
+
+    // Populate existing requirements
+    reqs.forEach(r => addReqRow(panel, r));
 
     if (!list._sortable) {
         list._sortable = Sortable.create(list, {
             handle: '.stage-drag-handle',
             animation: 150,
+            draggable: '.drawer-stage-wrapper',
         });
     }
 }
 
+function toggleReqPanel(btn) {
+    const wrapper = btn.closest('.drawer-stage-wrapper');
+    const panel = wrapper.querySelector('.stage-req-panel');
+    panel.classList.toggle('open');
+}
+
+function addReqRow(panel, data) {
+    const rl = panel.querySelector('.req-list');
+    const div = document.createElement('div');
+    div.className = 'req-row';
+    div.innerHTML = `
+        <input type="text" class="req-subject" placeholder="Ex: Ligar para o lead" value="${escapeHtml((data && data.subject) || '')}" data-req="subject">
+        <select class="req-type" data-req="task_type">
+            <option value="call" ${data?.task_type === 'call' ? 'selected' : ''}>Ligar</option>
+            <option value="email" ${data?.task_type === 'email' ? 'selected' : ''}>Email</option>
+            <option value="task" ${(!data || data.task_type === 'task') ? 'selected' : ''}>Tarefa</option>
+            <option value="visit" ${data?.task_type === 'visit' ? 'selected' : ''}>Visita</option>
+            <option value="whatsapp" ${data?.task_type === 'whatsapp' ? 'selected' : ''}>WhatsApp</option>
+            <option value="meeting" ${data?.task_type === 'meeting' ? 'selected' : ''}>Reunião</option>
+        </select>
+        <select class="req-priority" data-req="priority">
+            <option value="low" ${data?.priority === 'low' ? 'selected' : ''}>Baixa</option>
+            <option value="medium" ${(!data || data.priority === 'medium') ? 'selected' : ''}>Média</option>
+            <option value="high" ${data?.priority === 'high' ? 'selected' : ''}>Alta</option>
+        </select>
+        <input type="number" class="req-days" min="0" max="365" value="${(data && data.due_date_offset != null) ? data.due_date_offset : 1}" data-req="due_date_offset" title="Prazo em dias">
+        <button type="button" class="req-del" onclick="this.closest('.req-row').remove();updateReqCount(this)"><i class="bi bi-x-lg"></i></button>
+    `;
+    rl.appendChild(div);
+    updateReqCount(div);
+}
+
+function updateReqCount(el) {
+    const wrapper = el.closest('.drawer-stage-wrapper');
+    if (!wrapper) return;
+    const count = wrapper.querySelectorAll('.req-row').length;
+    const toggle = wrapper.querySelector('.stage-req-toggle');
+    toggle.classList.toggle('has-reqs', count > 0);
+    const badge = toggle.querySelector('.req-count');
+    if (count > 0) {
+        if (badge) { badge.textContent = count; }
+        else { toggle.insertAdjacentHTML('beforeend', '<span class="req-count">' + count + '</span>'); }
+    } else if (badge) { badge.remove(); }
+}
+
+function getStageRequiredTasks(wrapper) {
+    const rows = wrapper.querySelectorAll('.req-row');
+    const tasks = [];
+    rows.forEach(row => {
+        const subject = row.querySelector('[data-req="subject"]').value.trim();
+        if (!subject) return;
+        tasks.push({
+            subject: subject,
+            task_type: row.querySelector('[data-req="task_type"]').value,
+            priority: row.querySelector('[data-req="priority"]').value,
+            due_date_offset: parseInt(row.querySelector('[data-req="due_date_offset"]').value) || 1,
+        });
+    });
+    return tasks;
+}
+
 function removeDrawerStageRow(btn) {
-    const row = btn.closest('.drawer-stage-row');
+    const wrapper = btn.closest('.drawer-stage-wrapper');
+    const row = wrapper.querySelector('.drawer-stage-row');
     const stageId = row.dataset.stageId;
     if (stageId) {
         row.dataset.deleted = 'true';
-        row.style.display = 'none';
+        wrapper.style.display = 'none';
     } else {
-        row.remove();
+        wrapper.remove();
     }
 }
 
@@ -581,11 +726,12 @@ async function saveDrawer() {
         const pipelineId = pipeData.pipeline.id;
 
         /* -- 2. Process stages -- */
-        const rows = [...document.querySelectorAll('#drawerStagesList .drawer-stage-row')];
+        const wrappers = [...document.querySelectorAll('#drawerStagesList .drawer-stage-wrapper')];
         const stageOrder = [];
 
-        for (let i = 0; i < rows.length; i++) {
-            const row = rows[i];
+        for (let i = 0; i < wrappers.length; i++) {
+            const wrapper = wrappers[i];
+            const row = wrapper.querySelector('.drawer-stage-row');
             const existingId = row.dataset.stageId;
             const deleted = row.dataset.deleted === 'true';
 
@@ -606,7 +752,8 @@ async function saveDrawer() {
 
             if (!stageName) continue; // skip empty rows
 
-            const payload = { name: stageName, color: stageColor, is_won: stageIsWon, is_lost: stageIsLost };
+            const reqTasks = getStageRequiredTasks(wrapper);
+            const payload = { name: stageName, color: stageColor, is_won: stageIsWon, is_lost: stageIsLost, required_tasks: reqTasks };
 
             if (existingId) {
                 // Update existing stage

@@ -13,6 +13,7 @@ use App\Models\LeadEvent;
 use App\Models\LostSale;
 use App\Models\PipelineStage;
 use App\Models\Sale;
+use App\Services\StageRequirementService;
 use App\Services\PlanLimitChecker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -119,6 +120,19 @@ class LeadController extends Controller
         ]);
 
         $oldStageId = $lead->stage_id;
+
+        if ($oldStageId !== (int) $data['stage_id']) {
+            $check = (new StageRequirementService())->canLeaveStage($lead, $oldStageId);
+            if (!$check['allowed']) {
+                return response()->json([
+                    'success'       => false,
+                    'blocked'       => true,
+                    'message'       => 'Complete mandatory tasks before moving the lead.',
+                    'pending_tasks' => $check['pending'],
+                ], 422);
+            }
+        }
+
         $lead->update($data);
 
         if ($oldStageId !== (int) $data['stage_id']) {
@@ -130,6 +144,10 @@ class LeadController extends Controller
                 'performed_by' => auth()->id(),
                 'created_at'   => now(),
             ]);
+
+            try {
+                (new StageRequirementService())->createRequiredTasks($lead->fresh(), $newStage);
+            } catch (\Throwable) {}
         }
 
         return response()->json(['success' => true, 'lead_id' => $lead->id]);
@@ -147,6 +165,17 @@ class LeadController extends Controller
 
         if (!$stage->is_won) {
             return response()->json(['message' => 'A etapa informada não é uma etapa de ganho.'], 422);
+        }
+
+        // Check mandatory tasks on current stage
+        $check = (new StageRequirementService())->canLeaveStage($lead);
+        if (!$check['allowed']) {
+            return response()->json([
+                'success'       => false,
+                'blocked'       => true,
+                'message'       => 'Complete mandatory tasks before marking as won.',
+                'pending_tasks' => $check['pending'],
+            ], 422);
         }
 
         $updateData = ['stage_id' => $stage->id, 'pipeline_id' => $stage->pipeline_id];
@@ -193,6 +222,17 @@ class LeadController extends Controller
 
         if (!$stage->is_lost) {
             return response()->json(['message' => 'A etapa informada não é uma etapa de perda.'], 422);
+        }
+
+        // Check mandatory tasks on current stage
+        $check = (new StageRequirementService())->canLeaveStage($lead);
+        if (!$check['allowed']) {
+            return response()->json([
+                'success'       => false,
+                'blocked'       => true,
+                'message'       => 'Complete mandatory tasks before marking as lost.',
+                'pending_tasks' => $check['pending'],
+            ], 422);
         }
 
         $lead->update(['stage_id' => $stage->id, 'pipeline_id' => $stage->pipeline_id]);

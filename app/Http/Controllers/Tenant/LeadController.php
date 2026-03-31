@@ -27,6 +27,7 @@ use App\Models\WhatsappConversation;
 use App\Models\WhatsappMessage;
 use App\Models\WhatsappQuickMessage;
 use App\Services\AutomationEngine;
+use App\Services\StageRequirementService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -310,6 +311,21 @@ class LeadController extends Controller
 
         $oldStageId    = $lead->stage_id;
         $oldAssignedTo = $lead->assigned_to;
+
+        // Check mandatory tasks before allowing stage exit
+        if ($oldStageId !== (int) $data['stage_id']) {
+            $reqService = new StageRequirementService();
+            $check = $reqService->canLeaveStage($lead, $oldStageId);
+            if (!$check['allowed']) {
+                return response()->json([
+                    'success'       => false,
+                    'blocked'       => true,
+                    'message'       => 'Complete as atividades obrigatórias antes de mover o lead.',
+                    'pending_tasks' => $check['pending'],
+                ], 422);
+            }
+        }
+
         $lead->update($data);
 
         $this->saveCustomFields($lead, $request->input('custom_fields', []));
@@ -350,6 +366,11 @@ class LeadController extends Controller
                     'error'   => $e->getMessage(),
                 ]);
             }
+
+            // Create mandatory tasks for the new stage
+            try {
+                (new StageRequirementService())->createRequiredTasks($lead->fresh(), $newStage);
+            } catch (\Throwable) {}
         } else {
             LeadEvent::create([
                 'lead_id'      => $lead->id,

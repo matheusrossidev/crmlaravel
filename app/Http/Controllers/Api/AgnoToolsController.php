@@ -12,6 +12,8 @@ use App\Models\Lead;
 use App\Models\WhatsappConversation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Models\PipelineStage;
+use App\Services\StageRequirementService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -32,7 +34,32 @@ class AgnoToolsController extends Controller
             ->where('tenant_id', $data['tenant_id'])
             ->firstOrFail();
 
+        $oldStageId = $lead->stage_id;
+
+        // Check mandatory tasks before allowing stage exit
+        if ($oldStageId !== (int) $data['stage_id']) {
+            $check = (new StageRequirementService())->canLeaveStage($lead, $oldStageId);
+            if (!$check['allowed']) {
+                return response()->json([
+                    'success'       => false,
+                    'blocked'       => true,
+                    'message'       => 'Mandatory tasks pending on current stage.',
+                    'pending_tasks' => $check['pending'],
+                ], 422);
+            }
+        }
+
         $lead->update(['stage_id' => $data['stage_id']]);
+
+        // Create mandatory tasks for the new stage
+        if ($oldStageId !== (int) $data['stage_id']) {
+            try {
+                $newStage = PipelineStage::find($data['stage_id']);
+                if ($newStage) {
+                    (new StageRequirementService())->createRequiredTasks($lead->fresh(), $newStage);
+                }
+            } catch (\Throwable) {}
+        }
 
         Log::channel('whatsapp')->info('Agno tool: lead movido de etapa', [
             'lead_id'  => $leadId,

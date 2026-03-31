@@ -23,6 +23,7 @@ use App\Models\WhatsappMessage;
 use App\Models\Task;
 use App\Models\WhatsappTag;
 use App\Services\AutomationEngine;
+use App\Services\StageRequirementService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -113,6 +114,9 @@ class KanbanController extends Controller
                     $leadCf[$lead->id] = $cf;
                 }
 
+                // Pre-compute mandatory task completion status
+                $reqStatus = (new StageRequirementService())->getCompletionStatusBatch($leads, $stage->id);
+
                 return [
                     'id'          => $stage->id,
                     'name'        => $stage->name,
@@ -121,6 +125,7 @@ class KanbanController extends Controller
                     'is_lost'     => $stage->is_lost,
                     'leads'       => $leads,
                     'lead_cf'     => $leadCf,
+                    'req_status'  => $reqStatus,
                     'count'       => $leads->count(),
                     'total_value' => (int) $leads->sum('value'),
                 ];
@@ -174,6 +179,20 @@ class KanbanController extends Controller
         ]);
 
         $oldStageId = $lead->stage_id;
+
+        // Check mandatory tasks before allowing stage exit
+        if ($oldStageId !== (int) $data['stage_id']) {
+            $reqService = new StageRequirementService();
+            $check = $reqService->canLeaveStage($lead, $oldStageId);
+            if (!$check['allowed']) {
+                return response()->json([
+                    'success'       => false,
+                    'blocked'       => true,
+                    'message'       => 'Complete as atividades obrigatórias antes de mover o lead.',
+                    'pending_tasks' => $check['pending'],
+                ], 422);
+            }
+        }
 
         $updateData = [
             'stage_id'    => $data['stage_id'],
@@ -276,6 +295,11 @@ class KanbanController extends Controller
                 if ($newStage?->is_lost) {
                     $engine->run('lead_lost', $baseCtx);
                 }
+            } catch (\Throwable) {}
+
+            // Create mandatory tasks for the new stage
+            try {
+                (new StageRequirementService())->createRequiredTasks($lead->fresh(), $newStage);
             } catch (\Throwable) {}
 
             // Notificação: lead mudou de etapa (para o assigned_to)

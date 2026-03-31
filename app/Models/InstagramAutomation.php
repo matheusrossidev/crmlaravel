@@ -19,6 +19,7 @@ class InstagramAutomation extends Model
         'media_id',
         'media_thumbnail_url',
         'media_caption',
+        'media_type',
         'keywords',
         'match_type',
         'reply_comment',

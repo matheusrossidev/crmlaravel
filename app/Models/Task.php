@@ -50,6 +50,7 @@ class Task extends Model
         'assigned_to',
         'created_by',
         'notes',
+        'stage_requirement_id',
     ];
 
     protected $casts = [
@@ -84,6 +85,11 @@ class Task extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function stageRequirement(): BelongsTo
+    {
+        return $this->belongsTo(StageRequiredTask::class, 'stage_requirement_id');
     }
 
     // ── Scopes ──────────────────────────────────────────────────────────

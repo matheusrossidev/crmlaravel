@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Pipeline;
 use App\Models\PipelineStage;
+use App\Models\StageRequiredTask;
 use App\Services\PlanLimitChecker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ class PipelineController extends Controller
 {
     public function index(): View
     {
-        $pipelines = Pipeline::with(['stages' => fn($q) => $q->orderBy('position')])->orderBy('sort_order')->get();
+        $pipelines = Pipeline::with(['stages' => fn($q) => $q->orderBy('position')->with('requiredTasks')])->orderBy('sort_order')->get();
 
         return view('tenant.settings.pipelines', compact('pipelines'));
     }
@@ -87,12 +88,35 @@ class PipelineController extends Controller
             'color'   => 'required|string|max:20',
             'is_won'  => 'boolean',
             'is_lost' => 'boolean',
+            'required_tasks'                    => 'nullable|array',
+            'required_tasks.*.subject'          => 'required|string|max:255',
+            'required_tasks.*.description'      => 'nullable|string|max:2000',
+            'required_tasks.*.task_type'        => 'nullable|in:call,email,task,visit,whatsapp,meeting',
+            'required_tasks.*.priority'         => 'nullable|in:low,medium,high',
+            'required_tasks.*.due_date_offset'  => 'nullable|integer|min:0|max:365',
         ]);
+
+        $reqTasks = $data['required_tasks'] ?? [];
+        unset($data['required_tasks']);
 
         $data['pipeline_id'] = $pipeline->id;
         $data['position']    = $pipeline->stages()->max('position') + 1;
 
         $stage = PipelineStage::create($data);
+
+        foreach ($reqTasks as $i => $rt) {
+            StageRequiredTask::create([
+                'pipeline_stage_id' => $stage->id,
+                'subject'           => $rt['subject'],
+                'description'       => $rt['description'] ?? null,
+                'task_type'         => $rt['task_type'] ?? 'task',
+                'priority'          => $rt['priority'] ?? 'medium',
+                'due_date_offset'   => $rt['due_date_offset'] ?? 1,
+                'sort_order'        => $i,
+            ]);
+        }
+
+        $stage->load('requiredTasks');
 
         return response()->json(['success' => true, 'stage' => $stage]);
     }
@@ -104,9 +128,35 @@ class PipelineController extends Controller
             'color'   => 'required|string|max:20',
             'is_won'  => 'boolean',
             'is_lost' => 'boolean',
+            'required_tasks'                    => 'nullable|array',
+            'required_tasks.*.subject'          => 'required|string|max:255',
+            'required_tasks.*.description'      => 'nullable|string|max:2000',
+            'required_tasks.*.task_type'        => 'nullable|in:call,email,task,visit,whatsapp,meeting',
+            'required_tasks.*.priority'         => 'nullable|in:low,medium,high',
+            'required_tasks.*.due_date_offset'  => 'nullable|integer|min:0|max:365',
         ]);
 
+        $reqTasks = $data['required_tasks'] ?? [];
+        unset($data['required_tasks']);
+
         $stage->update($data);
+
+        // Delete all + re-create (templates, no history to preserve)
+        $stage->requiredTasks()->delete();
+
+        foreach ($reqTasks as $i => $rt) {
+            StageRequiredTask::create([
+                'pipeline_stage_id' => $stage->id,
+                'subject'           => $rt['subject'],
+                'description'       => $rt['description'] ?? null,
+                'task_type'         => $rt['task_type'] ?? 'task',
+                'priority'          => $rt['priority'] ?? 'medium',
+                'due_date_offset'   => $rt['due_date_offset'] ?? 1,
+                'sort_order'        => $i,
+            ]);
+        }
+
+        $stage->load('requiredTasks');
 
         return response()->json(['success' => true, 'stage' => $stage]);
     }

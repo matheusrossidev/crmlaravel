@@ -31,4 +31,9 @@ class PipelineStage extends Model
     {
         return $this->hasMany(Lead::class, 'stage_id');
     }
+
+    public function requiredTasks(): HasMany
+    {
+        return $this->hasMany(StageRequiredTask::class, 'pipeline_stage_id')->orderBy('sort_order');
+    }
 }

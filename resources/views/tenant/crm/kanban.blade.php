@@ -263,6 +263,10 @@
     .card-score.hot  { background: #ecfdf5; color: #059669; }
     .card-score.warm { background: #fffbeb; color: #d97706; }
     .card-score.cold { background: #f3f4f6; color: #9ca3af; }
+    .card-req-badge { font-size:10px; font-weight:600; padding:2px 6px; border-radius:99px; display:inline-flex; align-items:center; gap:3px; }
+    .req-done    { background:#d1fae5; color:#059669; }
+    .req-partial { background:#fef3c7; color:#d97706; }
+    .req-none    { background:#fee2e2; color:#ef4444; }
 
     /* Bubble WhatsApp */
     .card-bubble {
@@ -824,6 +828,13 @@
                         @endphp
                         <span class="card-score {{ $scoreCls }}"><i class="bi bi-lightning-fill" style="font-size:9px;"></i> {{ $lead->score }}</span>
                         @endif
+                        @if(isset($stage['req_status'][$lead->id]) && $stage['req_status'][$lead->id]['total'] > 0)
+                        @php
+                            $rs = $stage['req_status'][$lead->id];
+                            $rsCls = $rs['completed'] === $rs['total'] ? 'req-done' : ($rs['completed'] > 0 ? 'req-partial' : 'req-none');
+                        @endphp
+                        <span class="card-req-badge {{ $rsCls }}" title="Atividades: {{ $rs['completed'] }}/{{ $rs['total'] }}"><i class="bi bi-list-check" style="font-size:9px;"></i> {{ $rs['completed'] }}/{{ $rs['total'] }}</span>
+                        @endif
                         <span class="card-date">
                             <i class="bi bi-clock"></i>
                             {{ $lead->created_at?->diffForHumans(null, true, true) }}
@@ -1153,8 +1164,16 @@ function saveStageChange(leadId, stageId, pipId, extra = {}) {
             toastr.success(LANG.lead_moved);
             recalcColumnValues();
         }
-    }).fail(() => {
-        toastr.error(LANG.error_move_lead);
+    }).fail(xhr => {
+        const data = xhr.responseJSON;
+        if (data && data.blocked) {
+            const tasks = (data.pending_tasks || []).join(', ');
+            toastr.warning(data.message + (tasks ? '<br><small>' + tasks + '</small>' : ''), '', { timeOut: 8000, allowHtml: true });
+            // Revert: reload to restore correct card positions
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            toastr.error(LANG.error_move_lead);
+        }
     });
 }
 

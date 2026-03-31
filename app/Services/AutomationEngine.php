@@ -330,6 +330,11 @@ class AutomationEngine
             'performed_by' => null,
             'created_at'   => now(),
         ]);
+
+        // Create mandatory tasks for the new stage (no validation — automations are admin-configured)
+        try {
+            (new StageRequirementService())->createRequiredTasks($lead->fresh(), $stage);
+        } catch (\Throwable) {}
     }
 
     private function actionSetLeadSource(array $config, array $ctx): void
