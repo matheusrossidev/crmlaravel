@@ -150,6 +150,16 @@
         background: none; border: none; color: #0085f3; cursor: pointer;
         font-size: 14px; padding: 0; line-height: 1;
     }
+    .lead-detail-card {
+        background: #f8fafc; border: 1px solid #e8eaf0; border-radius: 10px;
+        padding: 12px 14px; margin-top: 10px;
+    }
+    .lead-detail-row {
+        display: flex; align-items: center; gap: 8px;
+        font-size: 12px; color: #374151; padding: 3px 0;
+    }
+    .lead-detail-row i { color: #9ca3af; font-size: 13px; width: 16px; text-align: center; }
+    .lead-detail-row span { color: #6b7280; }
 
     @media (max-width: 640px) {
         .task-filters { flex-direction: column; align-items: stretch; }
@@ -272,6 +282,11 @@
                     <span id="tdLeadName"></span>
                     <button onclick="clearLeadSelection()" title="{{ __('tasks.remove') }}">&times;</button>
                 </span>
+                <div class="lead-detail-card" id="tdLeadDetails" style="display:none;">
+                    <div class="lead-detail-row" id="tdLeadPhone" style="display:none;"><i class="bi bi-telephone"></i> <span></span></div>
+                    <div class="lead-detail-row" id="tdLeadEmail" style="display:none;"><i class="bi bi-envelope"></i> <span></span></div>
+                    <div class="lead-detail-row" id="tdLeadCompany" style="display:none;"><i class="bi bi-building"></i> <span></span></div>
+                </div>
             </div>
             <div class="lead-search-wrap" id="tdLeadSearchWrap">
                 <input type="text" class="lead-search-input" id="tdLeadSearch" placeholder="{{ __('tasks.search_contact') }}" autocomplete="off">
@@ -333,7 +348,7 @@
                 ? '<span class="task-due" style="background:' + uc + '20;color:' + uc + ';">' +
                   (t.due_time ? t.due_time + ' ' : '') + t.due_date_fmt +
                   (t.is_overdue ? ' ' + TLANG.overdue_label : '') + '</span>' : '';
-            return '<div class="task-item' + (done ? ' completed' : '') + '" data-id="' + t.id + '">' +
+            return '<div class="task-item' + (done ? ' completed' : '') + '" data-id="' + t.id + '" onclick="editTask(' + t.id + ')">' +
                 '<div class="task-checkbox' + (done ? ' checked' : '') + '" onclick="event.stopPropagation();toggleTask(' + t.id + ')"></div>' +
                 '<div class="task-type-icon" style="background:' + uc + '15;color:' + uc + ';"><i class="bi ' + icon + '"></i></div>' +
                 '<div class="task-main">' +
@@ -384,7 +399,7 @@
         document.getElementById('tdLeadSearch').value = '';
 
         if (leadId && leadName) {
-            setLeadSelection(leadId, leadName);
+            setLeadSelection(leadId, leadName, '', '', '');
         } else {
             clearLeadSelection();
         }
@@ -403,17 +418,29 @@
     };
 
     // ── Lead search ─────────────────────────────────────────────────────
-    function setLeadSelection(id, name) {
+    function setLeadSelection(id, name, phone, email, company) {
         document.getElementById('tdLeadId').value = id;
         document.getElementById('tdLeadName').textContent = name;
         document.getElementById('tdLeadBadge').style.display = 'block';
         document.getElementById('tdLeadSearchWrap').style.display = 'none';
+
+        // Show lead details card
+        var details = document.getElementById('tdLeadDetails');
+        var hasAny = false;
+        ['Phone','Email','Company'].forEach(function(f) {
+            var val = f === 'Phone' ? phone : (f === 'Email' ? email : company);
+            var row = document.getElementById('tdLead' + f);
+            if (val) { row.querySelector('span').textContent = val; row.style.display = 'flex'; hasAny = true; }
+            else { row.style.display = 'none'; }
+        });
+        details.style.display = hasAny ? 'block' : 'none';
     }
 
     window.clearLeadSelection = function() {
         document.getElementById('tdLeadId').value = '';
         document.getElementById('tdLeadName').textContent = '';
         document.getElementById('tdLeadBadge').style.display = 'none';
+        document.getElementById('tdLeadDetails').style.display = 'none';
         document.getElementById('tdLeadSearchWrap').style.display = 'block';
         document.getElementById('tdLeadSearch').value = '';
     };
@@ -431,9 +458,11 @@
                     results.innerHTML = '<div class="lead-search-item" style="color:#9ca3af;">' + TLANG.no_contact_found + '</div>';
                 } else {
                     results.innerHTML = items.map(function(l) {
-                        const sub = [l.phone, l.email].filter(Boolean).join(' · ');
-                        return '<div class="lead-search-item" onclick="selectLead(' + l.id + ', \'' + window.escapeHtml(l.name).replace(/'/g, "\\'") + '\')">' +
+                        const sub = [l.phone, l.email, l.company].filter(Boolean).join(' · ');
+                        const esc = function(s) { return s ? window.escapeHtml(s).replace(/'/g, "\\'") : ''; };
+                        return '<div class="lead-search-item" onclick="selectLead(' + l.id + ', \'' + esc(l.name) + '\', \'' + esc(l.phone) + '\', \'' + esc(l.email) + '\', \'' + esc(l.company) + '\')">' +
                             window.escapeHtml(l.name) +
+                            (l.company ? ' <small style="color:#0085f3;">(' + window.escapeHtml(l.company) + ')</small>' : '') +
                             (sub ? '<br><small>' + window.escapeHtml(sub) + '</small>' : '') +
                         '</div>';
                     }).join('');
@@ -443,8 +472,8 @@
         }, 300);
     });
 
-    window.selectLead = function(id, name) {
-        setLeadSelection(id, name);
+    window.selectLead = function(id, name, phone, email, company) {
+        setLeadSelection(id, name, phone, email, company);
         document.getElementById('tdLeadResults').classList.remove('show');
     };
 
@@ -506,7 +535,7 @@
         document.getElementById('tdDueTime').value = t.due_time || '';
 
         if (t.lead_id && t.lead_name) {
-            setLeadSelection(t.lead_id, t.lead_name);
+            setLeadSelection(t.lead_id, t.lead_name, t.lead_phone || '', t.lead_email || '', t.lead_company || '');
         } else {
             clearLeadSelection();
         }

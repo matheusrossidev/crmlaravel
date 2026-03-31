@@ -22,6 +22,7 @@
     $settingsTabs[] = ['route' => 'settings.departments',        'match' => ['settings.departments*'],        'label' => __('settings.dept_title')];
     $settingsTabs[] = ['route' => 'settings.billing',            'match' => ['settings.billing*', 'billing.*'], 'label' => __('settings.billing_title')];
     $settingsTabs[] = ['route' => 'settings.api-keys',           'match' => ['settings.api-keys*'],           'label' => __('apikeys.page_title')];
+    $settingsTabs[] = ['route' => 'settings.pwa',               'match' => ['settings.pwa*'],                'label' => __('settings.pwa_title')];
 
     if ($isAdmin) {
         $settingsTabs[] = ['route' => 'settings.audit-log', 'match' => ['settings.audit-log*'], 'label' => 'Auditoria'];

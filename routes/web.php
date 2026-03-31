@@ -474,6 +474,7 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
         Route::get('produtos',          [ProductController::class, 'index'])->name('products');
         Route::get('api-keys',          [ApiKeyController::class, 'index'])->name('api-keys');
         Route::get('usuarios',          [UserController::class, 'index'])->name('users');
+        Route::get('instalar-app',       fn () => view('tenant.settings.pwa'))->name('pwa');
         Route::get('auditoria',         [\App\Http\Controllers\Tenant\AuditLogController::class, 'index'])->name('audit-log');
         Route::get('auditoria/{log}',   [\App\Http\Controllers\Tenant\AuditLogController::class, 'show'])->name('audit-log.show');
 

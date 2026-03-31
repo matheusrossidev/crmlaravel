@@ -30,7 +30,7 @@ class TaskController extends Controller
 
     public function data(Request $request): JsonResponse
     {
-        $query = Task::with(['lead:id,name', 'assignedTo:id,name', 'createdBy:id,name'])
+        $query = Task::with(['lead:id,name,phone,email,company', 'assignedTo:id,name', 'createdBy:id,name'])
             ->orderBy('due_date')
             ->orderBy('due_time');
 
@@ -120,14 +120,14 @@ class TaskController extends Controller
             ]);
         }
 
-        $task->load(['lead:id,name', 'assignedTo:id,name']);
+        $task->load(['lead:id,name,phone,email,company', 'assignedTo:id,name']);
 
         return response()->json(['success' => true, 'task' => $this->format($task)], 201);
     }
 
     public function show(Task $task): JsonResponse
     {
-        $task->load(['lead:id,name', 'assignedTo:id,name', 'createdBy:id,name']);
+        $task->load(['lead:id,name,phone,email,company', 'assignedTo:id,name', 'createdBy:id,name']);
 
         return response()->json(['task' => $this->format($task)]);
     }
@@ -159,7 +159,7 @@ class TaskController extends Controller
             $task->update(['completed_at' => null]);
         }
 
-        $task->load(['lead:id,name', 'assignedTo:id,name']);
+        $task->load(['lead:id,name,phone,email,company', 'assignedTo:id,name']);
 
         return response()->json(['success' => true, 'task' => $this->format($task)]);
     }
@@ -192,7 +192,7 @@ class TaskController extends Controller
             ]);
         }
 
-        $task->load(['lead:id,name', 'assignedTo:id,name']);
+        $task->load(['lead:id,name,phone,email,company', 'assignedTo:id,name']);
 
         return response()->json(['success' => true, 'task' => $this->format($task)]);
     }
@@ -203,18 +203,20 @@ class TaskController extends Controller
         $leads = Lead::where(function ($query) use ($q) {
                 $query->where('name', 'like', "%{$q}%")
                     ->orWhere('phone', 'like', "%{$q}%")
-                    ->orWhere('email', 'like', "%{$q}%");
+                    ->orWhere('email', 'like', "%{$q}%")
+                    ->orWhere('company', 'like', "%{$q}%");
             })
             ->orderBy('name')
             ->limit(20)
-            ->get(['id', 'name', 'phone', 'email']);
+            ->get(['id', 'name', 'phone', 'email', 'company']);
 
         return response()->json([
             'data' => $leads->map(fn (Lead $l) => [
-                'id'    => $l->id,
-                'name'  => $l->name,
-                'phone' => $l->phone,
-                'email' => $l->email,
+                'id'      => $l->id,
+                'name'    => $l->name,
+                'phone'   => $l->phone,
+                'email'   => $l->email,
+                'company' => $l->company,
             ]),
         ]);
     }
@@ -250,6 +252,9 @@ class TaskController extends Controller
             'urgency_color' => $task->urgencyColor(),
             'lead_id'      => $task->lead_id,
             'lead_name'    => $task->lead?->name,
+            'lead_phone'   => $task->lead?->phone,
+            'lead_email'   => $task->lead?->email,
+            'lead_company' => $task->lead?->company,
             'assigned_to'  => $task->assigned_to,
             'assigned_name' => $task->assignedTo?->name,
             'created_by'   => $task->createdBy?->name,

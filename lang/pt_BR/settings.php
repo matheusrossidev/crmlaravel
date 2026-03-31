@@ -366,4 +366,19 @@ return [
     'profile_locale_ok'     => 'Idioma atualizado!',
     'profile_locale_error'  => 'Erro ao atualizar idioma.',
     'profile_conn_error'    => 'Erro de conexão.',
+
+    // ── PWA / Instalar App ──────────────────────────────────────────
+    'pwa_title'             => 'Instalar App',
+    'pwa_install_app'       => 'Instalar Aplicativo',
+    'pwa_install_title'     => 'Instale o Syncro no seu dispositivo',
+    'pwa_install_desc'      => 'Acesse o Syncro como um aplicativo nativo, com atalho na sua área de trabalho e experiência em tela cheia. Funciona no computador e celular.',
+    'pwa_install_now'       => 'Instalar agora',
+    'pwa_already_installed' => 'Aplicativo já instalado',
+    'pwa_manual_hint'       => 'Use o menu do navegador para instalar o app manualmente.',
+    'pwa_how_to_install'    => 'Como instalar em cada dispositivo',
+    'pwa_chrome_steps'      => 'Clique no ícone de instalação na barra de endereço, ou vá em Menu (⋮) → "Instalar Syncro CRM".',
+    'pwa_android_steps'     => 'No Chrome, toque em Menu (⋮) → "Adicionar à tela inicial" → "Instalar".',
+    'pwa_ios_steps'         => 'No Safari, toque em Compartilhar → "Adicionar à Tela de Início".',
+    'pwa_safari_steps'      => 'No Safari 17+, vá em Arquivo → "Adicionar ao Dock".',
+    'pwa_install_success'   => 'App instalado com sucesso!',
 ];

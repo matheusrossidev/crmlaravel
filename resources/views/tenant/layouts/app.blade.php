@@ -898,6 +898,9 @@
                     <a href="{{ route('settings.api-keys') }}" class="nm-dd-item {{ request()->routeIs('settings.api-keys*') ? 'active' : '' }}">
                         <i class="bi bi-code-slash"></i> {{ __('nav.api_webhooks') }}
                     </a>
+                    <a href="{{ route('settings.pwa') }}" class="nm-dd-item {{ request()->routeIs('settings.pwa*') ? 'active' : '' }}">
+                        <i class="bi bi-download"></i> {{ __('settings.pwa_title') }}
+                    </a>
                     @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
                     <a href="{{ route('settings.audit-log') }}" class="nm-dd-item {{ request()->routeIs('settings.audit-log*') ? 'active' : '' }}">
                         <i class="bi bi-shield-check"></i> Auditoria
