@@ -740,6 +740,54 @@
                             <a href="{{ route('settings.integrations.index') }}" target="_blank" style="color:#0085f3;">{{ __('ai_agents.s6_calendar_integrations_link') }}</a>.
                         </div>
                     </div>
+
+                    {{-- Reminder Settings --}}
+                    <div style="margin-top:16px;padding-top:14px;border-top:1px solid #f0f2f7;">
+                        <label class="form-label fw-semibold" style="font-size:13px;">
+                            <i class="bi bi-bell" style="color:#0085f3;margin-right:4px;"></i> Lembretes via WhatsApp
+                        </label>
+                        <div class="form-text" style="font-size:11px;color:#9ca3af;margin-bottom:10px;">
+                            Quando o agente agenda um evento, lembretes são enviados automaticamente para o lead via WhatsApp antes do horário marcado.
+                        </div>
+
+                        @php
+                            $savedOffsets = old('reminder_offsets', $agent->reminder_offsets ?? [1440, 60]);
+                            if (is_string($savedOffsets)) $savedOffsets = json_decode($savedOffsets, true) ?? [1440, 60];
+                            $offsetOptions = [
+                                ['value' => 15, 'label' => '15 minutos antes'],
+                                ['value' => 30, 'label' => '30 minutos antes'],
+                                ['value' => 60, 'label' => '1 hora antes'],
+                                ['value' => 120, 'label' => '2 horas antes'],
+                                ['value' => 720, 'label' => '12 horas antes'],
+                                ['value' => 1440, 'label' => '1 dia antes'],
+                                ['value' => 2880, 'label' => '2 dias antes'],
+                            ];
+                        @endphp
+
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                            @foreach($offsetOptions as $opt)
+                                <label style="display:flex;align-items:center;gap:5px;padding:6px 12px;border:1.5px solid {{ in_array($opt['value'], $savedOffsets) ? '#0085f3' : '#e5e7eb' }};border-radius:8px;font-size:12px;font-weight:600;color:{{ in_array($opt['value'], $savedOffsets) ? '#0085f3' : '#6b7280' }};background:{{ in_array($opt['value'], $savedOffsets) ? '#eff6ff' : '#fff' }};cursor:pointer;transition:all .15s;">
+                                    <input type="checkbox" name="reminder_offsets[]" value="{{ $opt['value'] }}"
+                                           {{ in_array($opt['value'], $savedOffsets) ? 'checked' : '' }}
+                                           style="accent-color:#0085f3;">
+                                    {{ $opt['label'] }}
+                                </label>
+                            @endforeach
+                        </div>
+
+                        <div style="margin-top:12px;">
+                            <label class="form-label fw-semibold" style="font-size:13px;">Mensagem do lembrete</label>
+                            <textarea name="reminder_message_template"
+                                      class="form-control"
+                                      rows="3"
+                                      maxlength="1000"
+                                      placeholder="Olá {{lead_name}}! Lembrete: você tem {{event_title}} agendado(a) para {{event_date}} às {{event_time}}."
+                                      style="font-size:13px;resize:vertical;">{{ old('reminder_message_template', $agent->reminder_message_template ?? '') }}</textarea>
+                            <div class="form-text" style="font-size:11px;color:#9ca3af;margin-top:4px;">
+                                Placeholders: <code>@{{lead_name}}</code>, <code>@{{event_title}}</code>, <code>@{{event_date}}</code>, <code>@{{event_time}}</code>, <code>@{{event_location}}</code>. Deixe vazio para usar o template padrão.
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- Voice reply hidden (feature temporarily disabled from UI) --}}

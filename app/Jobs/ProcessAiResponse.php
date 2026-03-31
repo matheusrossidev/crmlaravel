@@ -25,6 +25,7 @@ use App\Models\WhatsappInstance;
 use App\Models\WhatsappMessage;
 use App\Services\AgnoService;
 use App\Services\AiAgentService;
+use App\Services\EventReminderService;
 use App\Services\GoogleCalendarService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -1476,6 +1477,26 @@ class ProcessAiResponse implements ShouldQueue
                         'ack'             => 'delivered',
                     ]);
 
+                    // Create WhatsApp reminders for the lead
+                    try {
+                        $agent = AiAgent::withoutGlobalScope('tenant')->find($conv->ai_agent_id);
+                        $offsets = $agent?->reminder_offsets ?? [1440, 60];
+                        (new EventReminderService())->createRemindersForEvent([
+                            'tenant_id'       => $conv->tenant_id,
+                            'lead_id'         => $lead?->id ?? $conv->lead_id,
+                            'conversation_id' => $conv->id,
+                            'ai_agent_id'     => $conv->ai_agent_id,
+                            'google_event_id' => $event['id'] ?? null,
+                            'event_title'     => $action['title'] ?? 'Evento',
+                            'event_starts_at' => \Carbon\Carbon::parse($startStr, config('app.timezone', 'America/Sao_Paulo')),
+                            'event_location'  => $action['location'] ?? '',
+                            'offsets'         => $offsets,
+                            'template'        => $agent?->reminder_message_template,
+                        ]);
+                    } catch (\Throwable $e) {
+                        Log::channel('whatsapp')->warning('Failed to create event reminders', ['error' => $e->getMessage()]);
+                    }
+
                     return $msg;
 
                 case 'calendar_reschedule':
@@ -1485,6 +1506,9 @@ class ProcessAiResponse implements ShouldQueue
                             'start' => $action['start'] ?? '',
                             'end'   => $action['end']   ?? '',
                         ]);
+                        if (!empty($action['start'])) {
+                            (new EventReminderService())->rescheduleReminders($eventId, $action['start']);
+                        }
                         Log::channel('whatsapp')->info('AI calendar: evento reagendado', [
                             'conversation_id' => $conv->id,
                             'event_id'        => $eventId,
@@ -1496,6 +1520,7 @@ class ProcessAiResponse implements ShouldQueue
                     $eventId = $action['event_id'] ?? '';
                     if ($eventId) {
                         $calendarService->deleteEvent($eventId);
+                        (new EventReminderService())->cancelRemindersForEvent($eventId);
                         Log::channel('whatsapp')->info('AI calendar: evento cancelado', [
                             'conversation_id' => $conv->id,
                             'event_id'        => $eventId,
@@ -1587,6 +1612,26 @@ class ProcessAiResponse implements ShouldQueue
                     $attendee = trim((string) ($action['attendees'] ?? ''));
                     $result   = "Evento criado com sucesso: \"{$action['title']}\" para {$dateFormatted}.";
                     if ($attendee) $result .= " Convite enviado para {$attendee}.";
+
+                    // Create WhatsApp reminders
+                    try {
+                        $agent = AiAgent::withoutGlobalScope('tenant')->find($conv->ai_agent_id);
+                        $offsets = $agent?->reminder_offsets ?? [1440, 60];
+                        (new EventReminderService())->createRemindersForEvent([
+                            'tenant_id'       => $conv->tenant_id,
+                            'lead_id'         => $lead?->id ?? $conv->lead_id,
+                            'conversation_id' => $conv->id,
+                            'ai_agent_id'     => $conv->ai_agent_id,
+                            'google_event_id' => $event['id'] ?? null,
+                            'event_title'     => $action['title'] ?? 'Evento',
+                            'event_starts_at' => \Carbon\Carbon::parse($startStr, config('app.timezone', 'America/Sao_Paulo')),
+                            'event_location'  => $action['location'] ?? '',
+                            'offsets'         => $offsets,
+                            'template'        => $agent?->reminder_message_template,
+                        ]);
+                        $result .= " Lembretes automáticos criados.";
+                    } catch (\Throwable) {}
+
                     return $result;
 
                 case 'calendar_reschedule':
@@ -1596,6 +1641,9 @@ class ProcessAiResponse implements ShouldQueue
                             'start' => $action['start'] ?? '',
                             'end'   => $action['end']   ?? '',
                         ]);
+                        if (!empty($action['start'])) {
+                            (new EventReminderService())->rescheduleReminders($eventId, $action['start']);
+                        }
                         $newDate = \Carbon\Carbon::parse($action['start'] ?? '')
                             ->setTimezone(config('app.timezone', 'America/Sao_Paulo'))
                             ->format('d/m/Y \à\s H:i');
@@ -1603,7 +1651,7 @@ class ProcessAiResponse implements ShouldQueue
                             'conversation_id' => $conv->id,
                             'event_id'        => $eventId,
                         ]);
-                        return "Evento reagendado com sucesso para {$newDate}.";
+                        return "Evento reagendado com sucesso para {$newDate}. Lembretes atualizados.";
                     }
                     return "Erro: event_id não informado para reagendamento.";
 
@@ -1611,11 +1659,12 @@ class ProcessAiResponse implements ShouldQueue
                     $eventId = $action['event_id'] ?? '';
                     if ($eventId) {
                         $calendarService->deleteEvent($eventId);
+                        (new EventReminderService())->cancelRemindersForEvent($eventId);
                         Log::channel('whatsapp')->info('AI calendar (loop): evento cancelado', [
                             'conversation_id' => $conv->id,
                             'event_id'        => $eventId,
                         ]);
-                        return "Evento cancelado com sucesso (id: {$eventId}).";
+                        return "Evento cancelado com sucesso (id: {$eventId}). Lembretes cancelados.";
                     }
                     return "Erro: event_id não informado para cancelamento.";
 
