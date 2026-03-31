@@ -4,14 +4,15 @@
 @push('styles')
 <style>
 /* ── Dark hero section ── */
-.page-container { padding: 0 !important; }
+.page-container { padding: 0 !important; overflow-x: hidden; }
 .ph-dark { background: linear-gradient(135deg, #0a0a1a 0%, #1a1040 40%, #2d1b69 70%, #0085f3 100%); border-radius: 0; padding: 24px 0 60px; margin: 0 0 24px; overflow: visible; position: relative; width: 100%; }
 .ph-dark::before { content: ''; position: absolute; top: -50%; right: -20%; width: 60%; height: 200%; background: radial-gradient(circle, rgba(99,102,241,.12) 0%, transparent 65%); pointer-events: none; }
 .ph-dark::after { content: ''; position: absolute; bottom: -30%; left: -10%; width: 40%; height: 130%; background: radial-gradient(circle, rgba(0,133,243,.08) 0%, transparent 60%); pointer-events: none; }
 
 /* Rank section inside dark */
 .ph-rank-section { padding: 0 36px 12px; position: relative; z-index: 1; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
-.ph-rank-img { width: 80px; height: 80px; border-radius: 18px; object-fit: cover; border: 3px solid rgba(255,255,255,.15); flex-shrink: 0; }
+.ph-rank-img { width: 150px; height: 150px; border-radius: 0; object-fit: contain; border: none; flex-shrink: 0; }
+@media (max-width: 480px) { .ph-rank-img { width: 80px; height: 80px; } }
 .ph-rank-ph { width: 80px; height: 80px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 36px; border: 3px solid rgba(255,255,255,.15); flex-shrink: 0; }
 .ph-rank-info { flex: 1; min-width: 200px; }
 .ph-rank-level { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 10px; border-radius: 99px; margin-bottom: 6px; letter-spacing: .06em; text-transform: uppercase; }
@@ -156,7 +157,7 @@
     <div class="ph-grid" style="padding:0 24px;margin-top:120px;">
         <div class="ph-card">
             <div class="ph-card-header"><h3><i class="bi bi-graph-up"></i> Evolução</h3></div>
-            <div class="ph-card-body"><canvas id="evoChart" height="240"></canvas></div>
+            <div class="ph-card-body"><canvas id="evoChart" height="300" style="max-height:300px;"></canvas></div>
         </div>
         <div class="ph-card">
             <div class="ph-card-header">
