@@ -21,9 +21,9 @@
 @section('content')
 <div class="page-container">
     <div style="margin-bottom:24px;">
-        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#97A3B7;margin-bottom:4px;">PORTAL DO PARCEIRO</div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#97A3B7;margin-bottom:4px;">{{ __('partner.portal_label') }}</div>
         <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">Recursos</h1>
-        <p style="font-size:13.5px;color:#677489;margin:0;">Materiais, guias e downloads para impulsionar suas vendas.</p>
+        <p style="font-size:13.5px;color:#677489;margin:0;">{{ __('partner.resources_desc') }}</p>
     </div>
 
     @if($categories->isNotEmpty())
@@ -38,8 +38,8 @@
     @if($resources->isEmpty())
         <div style="padding:60px;text-align:center;background:#fff;border:1.5px solid #e8eaf0;border-radius:14px;color:#97A3B7;">
             <i class="bi bi-folder2-open" style="font-size:40px;display:block;margin-bottom:10px;color:#d1d5db;"></i>
-            <p style="font-size:14px;font-weight:600;color:#374151;">Nenhum recurso disponível</p>
-            <p style="font-size:13px;">Novos materiais serão publicados em breve.</p>
+            <p style="font-size:14px;font-weight:600;color:#374151;">{{ __('partner.no_resources') }}</p>
+            <p style="font-size:13px;">{{ __('partner.resources_soon') }}</p>
         </div>
     @else
         <div class="res-grid" id="resGrid">

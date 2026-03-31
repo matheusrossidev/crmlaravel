@@ -56,7 +56,7 @@
 @section('content')
 <div class="res-page">
     <a href="{{ route('partner.resources.index') }}" class="res-back">
-        <i class="bi bi-arrow-left"></i> Voltar aos recursos
+        <i class="bi bi-arrow-left"></i> {{ __('partner.back_to_resources') }}
     </a>
 
     {{-- Cover --}}
@@ -115,8 +115,8 @@
             </div>
         @else
             <div class="res-dl-empty">
-                <div style="font-size:13px;color:#97A3B7;margin-bottom:4px;">Arquivos para download</div>
-                <div style="font-size:12px;color:#d1d5db;">Em breve novos materiais estarão disponíveis aqui.</div>
+                <div style="font-size:13px;color:#97A3B7;margin-bottom:4px;">{{ __('partner.download_files') }}</div>
+                <div style="font-size:12px;color:#d1d5db;">{{ __('partner.download_soon') }}</div>
                 <div class="res-dl-empty-items">
                     <div class="res-dl-placeholder">
                         <div class="icon"><i class="bi bi-file-earmark-pdf"></i></div>

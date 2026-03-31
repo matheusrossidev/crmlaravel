@@ -71,7 +71,7 @@
     {{-- ══ DARK HERO SECTION ══ --}}
     <div class="ph-dark">
         <div style="padding:0 36px 8px;position:relative;z-index:1;">
-            <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:#fff;margin:0;">Programa de Parceiros</h1>
+            <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:#fff;margin:0;">{{ __('partner.program_title') }}</h1>
         </div>
 
         {{-- Rank --}}
@@ -111,13 +111,13 @@
                         </div>
                     </div>
                 @elseif($currentRank)
-                    <div style="font-size:12px;color:#10B981;margin-top:6px;"><i class="bi bi-check-circle-fill"></i> Nível máximo atingido!</div>
+                    <div style="font-size:12px;color:#10B981;margin-top:6px;"><i class="bi bi-check-circle-fill"></i> {{ __('partner.max_rank_reached') }}</div>
                 @endif
             </div>
 
             @if($agencyCode)
-                <button class="ph-link-btn" onclick="navigator.clipboard.writeText('{{ url('/register?agency=' . $agencyCode->code) }}');toastr.success('Link copiado!');">
-                    <i class="bi bi-link-45deg"></i> Seu link de indicação
+                <button class="ph-link-btn" onclick="navigator.clipboard.writeText('{{ url('/register?agency=' . $agencyCode->code) }}');toastr.success('{{ __('partner.link_copied') }}');">
+                    <i class="bi bi-link-45deg"></i> {{ __('partner.your_referral_link') }}
                 </button>
             @endif
         </div>
@@ -127,27 +127,27 @@
             <div class="ph-kpi-dark">
                 <div class="ph-kpi-dark-icon"><i class="bi bi-people"></i></div>
                 <div class="ph-kpi-dark-val">{{ $activeClients }}</div>
-                <div class="ph-kpi-dark-label">Contas ativas</div>
+                <div class="ph-kpi-dark-label">{{ __('partner.active_accounts') }}</div>
             </div>
             <div class="ph-kpi-dark">
                 <div class="ph-kpi-dark-icon"><i class="bi bi-currency-dollar"></i></div>
                 <div class="ph-kpi-dark-val">R$ {{ number_format($totalCommission, 2, ',', '.') }}</div>
-                <div class="ph-kpi-dark-label">Comissão total</div>
+                <div class="ph-kpi-dark-label">{{ __('partner.total_commission') }}</div>
             </div>
             <div class="ph-kpi-dark">
                 <div class="ph-kpi-dark-icon"><i class="bi bi-box-arrow-up"></i></div>
                 <div class="ph-kpi-dark-val">R$ {{ number_format($totalWithdrawn, 2, ',', '.') }}</div>
-                <div class="ph-kpi-dark-label">Saques realizados</div>
+                <div class="ph-kpi-dark-label">{{ __('partner.withdrawals_done') }}</div>
             </div>
             <div class="ph-kpi-dark">
                 <div class="ph-kpi-dark-icon"><i class="bi bi-hourglass-split"></i></div>
                 <div class="ph-kpi-dark-val">R$ {{ number_format(max($totalCommission - $totalWithdrawn - $availableBalance, 0), 2, ',', '.') }}</div>
-                <div class="ph-kpi-dark-label">Saldo a liberar</div>
+                <div class="ph-kpi-dark-label">{{ __('partner.balance_pending') }}</div>
             </div>
             <div class="ph-kpi-dark">
                 <div class="ph-kpi-dark-icon" style="background:rgba(16,185,129,.15);color:#10B981;"><i class="bi bi-wallet2"></i></div>
                 <div class="ph-kpi-dark-val">R$ {{ number_format($availableBalance, 2, ',', '.') }}</div>
-                <div class="ph-kpi-dark-label">Saldo disponível</div>
+                <div class="ph-kpi-dark-label">{{ __('partner.balance_available') }}</div>
                 <button class="sacar-btn" onclick="document.getElementById('wdOverlay').style.display='flex';document.getElementById('wdDrawer').style.right='0';">Sacar</button>
             </div>
         </div>
@@ -156,12 +156,12 @@
     {{-- ══ CHART + CLIENTS ══ --}}
     <div class="ph-grid" style="padding:0 24px;margin-top:120px;">
         <div class="ph-card">
-            <div class="ph-card-header"><h3><i class="bi bi-graph-up"></i> Evolução</h3></div>
+            <div class="ph-card-header"><h3><i class="bi bi-graph-up"></i> {{ __('partner.evolution') }}</h3></div>
             <div class="ph-card-body"><canvas id="evoChart" height="300" style="max-height:300px;"></canvas></div>
         </div>
         <div class="ph-card">
             <div class="ph-card-header">
-                <h3><i class="bi bi-people"></i> Clientes indicados</h3>
+                <h3><i class="bi bi-people"></i> {{ __('partner.referred_clients') }}</h3>
                 <span style="font-size:12px;color:#97A3B7;">{{ $clients->count() }} total</span>
             </div>
             <div class="ph-card-body" style="max-height:380px;overflow-y:auto;padding-top:8px;">
@@ -183,7 +183,7 @@
                 @empty
                     <div style="text-align:center;padding:30px;color:#97A3B7;">
                         <i class="bi bi-people" style="font-size:24px;display:block;margin-bottom:6px;"></i>
-                        <p style="font-size:13px;margin:0;">Nenhum cliente indicado ainda.</p>
+                        <p style="font-size:13px;margin:0;">{{ __('partner.no_clients_yet') }}</p>
                     </div>
                 @endforelse
             </div>
@@ -195,12 +195,12 @@
 <div id="wdOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:5000;align-items:center;justify-content:center;" onclick="if(event.target===this){this.style.display='none';document.getElementById('wdDrawer').style.right='-520px';}"></div>
 <div id="wdDrawer" style="position:fixed;top:0;right:-520px;width:440px;height:100vh;background:#fff;z-index:5001;box-shadow:-4px 0 24px rgba(0,0,0,.1);display:flex;flex-direction:column;transition:right .25s cubic-bezier(.4,0,.2,1);">
     <div style="padding:18px 24px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;">
-        <h3 style="margin:0;font-size:16px;font-weight:700;color:#1a1d23;">Solicitar Saque</h3>
+        <h3 style="margin:0;font-size:16px;font-weight:700;color:#1a1d23;">{{ __('partner.request_withdrawal') }}</h3>
         <button onclick="document.getElementById('wdOverlay').style.display='none';document.getElementById('wdDrawer').style.right='-520px';" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;"><i class="bi bi-x-lg"></i></button>
     </div>
     <div style="flex:1;overflow-y:auto;padding:24px;">
         <div style="background:#ecfdf5;border:1px solid #d1fae5;border-radius:12px;padding:14px 18px;margin-bottom:20px;">
-            <div style="font-size:12px;color:#065f46;font-weight:600;">Saldo disponível</div>
+            <div style="font-size:12px;color:#065f46;font-weight:600;">{{ __('partner.balance_available') }}</div>
             <div style="font-size:22px;font-weight:800;color:#059669;">R$ {{ number_format($availableBalance, 2, ',', '.') }}</div>
         </div>
 
@@ -238,7 +238,7 @@
     </div>
     <div style="padding:16px 24px;border-top:1px solid #f0f2f7;display:flex;gap:10px;justify-content:flex-end;">
         <button onclick="document.getElementById('wdOverlay').style.display='none';document.getElementById('wdDrawer').style.right='-520px';" style="padding:9px 18px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Cancelar</button>
-        <button id="btnWithdraw" onclick="submitWithdrawal()" style="padding:9px 18px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;"><i class="bi bi-wallet2"></i> Solicitar Saque</button>
+        <button id="btnWithdraw" onclick="submitWithdrawal()" style="padding:9px 18px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;"><i class="bi bi-wallet2"></i> {{ __('partner.request_withdrawal') }}</button>
     </div>
 </div>
 @endsection

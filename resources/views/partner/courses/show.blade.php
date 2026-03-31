@@ -40,7 +40,7 @@
 <div class="page-container">
     <div style="margin-bottom:16px;">
         <a href="{{ route('partner.courses.index') }}" style="font-size:13px;color:#0085f3;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
-            <i class="bi bi-arrow-left"></i> Voltar aos cursos
+            <i class="bi bi-arrow-left"></i> {{ __('partner.back_to_courses') }}
         </a>
     </div>
 
@@ -65,7 +65,7 @@
                     <div class="cp-lesson-desc" id="activeDesc">{{ $course->lessons->first()?->description ?? $course->description }}</div>
                     @if($course->lessons->isNotEmpty())
                         <button id="btnComplete" onclick="completeLesson()" style="margin-top:14px;padding:8px 18px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
-                            <i class="bi bi-check-lg"></i> Marcar como concluída
+                            <i class="bi bi-check-lg"></i> {{ __('partner.mark_completed') }}
                         </button>
                     @endif
                 </div>
@@ -79,12 +79,12 @@
                         <div style="font-size:16px;font-weight:700;color:#1a1d23;margin-bottom:4px;">Certificado emitido!</div>
                         <div style="font-size:13px;color:#6b7280;margin-bottom:12px;">Código: <strong>{{ $certificate->certificate_code }}</strong></div>
                         <a href="{{ url('/certificado/' . $certificate->certificate_code) }}" target="_blank" style="font-size:13px;color:#0085f3;font-weight:600;text-decoration:none;">
-                            <i class="bi bi-box-arrow-up-right"></i> Ver certificado
+                            <i class="bi bi-box-arrow-up-right"></i> {{ __('partner.view_certificate') }}
                         </a>
                     @else
                         <i class="bi bi-award" style="font-size:36px;color:#f59e0b;display:block;margin-bottom:10px;"></i>
-                        <div style="font-size:16px;font-weight:700;color:#1a1d23;margin-bottom:4px;">Parabéns! Curso concluído!</div>
-                        <div style="font-size:13px;color:#6b7280;margin-bottom:14px;">Emita seu certificado agora.</div>
+                        <div style="font-size:16px;font-weight:700;color:#1a1d23;margin-bottom:4px;">{{ __('partner.congrats_completed') }}</div>
+                        <div style="font-size:13px;color:#6b7280;margin-bottom:14px;">{{ __('partner.issue_now') }}</div>
                         <button onclick="issueCert()" style="padding:10px 24px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">
                             <i class="bi bi-patch-check"></i> Emitir Certificado
                         </button>
@@ -147,7 +147,7 @@ async function completeLesson() {
     const r = await fetch(url, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, Accept: 'application/json' } });
     const d = await r.json();
     if (d.success) {
-        toastr.success('Aula concluída!');
+        toastr.success('{{ __('partner.lesson_completed') }}');
         // Mark as done visually
         const el = document.querySelector('.cp-lesson[data-id="' + activeLessonId + '"]');
         if (el) {
@@ -164,7 +164,7 @@ async function issueCert() {
     const url = '{{ route("partner.courses.certificate", $course->id) }}';
     const r = await fetch(url, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, Accept: 'application/json' } });
     const d = await r.json();
-    if (d.success) { toastr.success('Certificado emitido!'); setTimeout(() => location.reload(), 800); }
+    if (d.success) { toastr.success('{{ __('partner.cert_issued_success') }}'); setTimeout(() => location.reload(), 800); }
     else { toastr.error(d.message || 'Erro'); }
 }
 </script>

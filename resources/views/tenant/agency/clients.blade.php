@@ -116,9 +116,9 @@
 <div class="page-container">
 
     <div style="margin-bottom:20px;">
-        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#97A3B7;margin-bottom:4px;">PORTAL DO PARCEIRO</div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#97A3B7;margin-bottom:4px;">{{ __('partner.portal_label') }}</div>
         <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">Meus Clientes</h1>
-        <p style="font-size:13.5px;color:#677489;margin:0;">Empresas que se cadastraram com seu código de indicação.</p>
+        <p style="font-size:13.5px;color:#677489;margin:0;">{{ __('partner.my_clients_desc') }}</p>
     </div>
 
     <div class="clients-card">
@@ -141,8 +141,8 @@
         @if($clients->isEmpty())
         <div style="text-align:center;padding:56px 24px;">
             <i class="bi bi-building" style="font-size:44px;color:#d1d5db;display:block;margin-bottom:12px;"></i>
-            <p style="font-size:15px;font-weight:600;color:#374151;margin:0 0 6px;">Nenhum cliente ainda</p>
-            <p style="font-size:13px;color:#9ca3af;margin:0;">Compartilhe seu link de indicação para trazer clientes.</p>
+            <p style="font-size:15px;font-weight:600;color:#374151;margin:0 0 6px;">{{ __('partner.no_client_title') }}</p>
+            <p style="font-size:13px;color:#9ca3af;margin:0;">{{ __('partner.no_client_desc') }}</p>
         </div>
         @else
         <div style="overflow-x:auto;">

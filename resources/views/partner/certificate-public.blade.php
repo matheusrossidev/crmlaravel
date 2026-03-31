@@ -28,18 +28,18 @@
 
     <div class="cert-icon"><i class="bi bi-patch-check-fill"></i></div>
 
-    <div class="cert-label">Certificado de conclusão</div>
+    <div class="cert-label">{{ __('partner.cert_conclusion') }}</div>
     <div class="cert-name">{{ $cert->tenant?->name ?? 'Parceiro' }}</div>
     <div class="cert-course">{{ $cert->course?->title ?? 'Curso' }}</div>
 
     <div class="cert-meta">
-        Concluiu com sucesso o curso acima na plataforma Syncro.<br>
+        {{ __('partner.cert_success_text') }}<br>
         Emitido em {{ $cert->issued_at?->format('d/m/Y') }}.
     </div>
 
     <div class="cert-code">{{ $cert->certificate_code }}</div>
 
-    <div class="cert-badge"><i class="bi bi-shield-check"></i> Certificado verificado</div>
+    <div class="cert-badge"><i class="bi bi-shield-check"></i> {{ __('partner.cert_verified') }}</div>
 </div>
 </body>
 </html>

@@ -758,19 +758,19 @@
             @if(auth()->user()->tenant?->isPartner() && !session('impersonating_tenant_id'))
             {{-- ══ PARTNER-ONLY NAV ══ --}}
             <a href="{{ route('partner.dashboard') }}" class="nm-item {{ request()->routeIs('partner.dashboard') ? 'active' : '' }}">
-                <i class="bi bi-grid-1x2"></i> Dashboard
+                <i class="bi bi-grid-1x2"></i> {{ __('partner.nav_dashboard') }}
             </a>
             <a href="{{ route('agency.clients') }}" class="nm-item {{ request()->routeIs('agency.clients') ? 'active' : '' }}">
-                <i class="bi bi-people"></i> Meus Clientes
+                <i class="bi bi-people"></i> {{ __('partner.nav_my_clients') }}
             </a>
             <a href="{{ route('partner.resources.index') }}" class="nm-item {{ request()->routeIs('partner.resources.*') ? 'active' : '' }}">
-                <i class="bi bi-folder2-open"></i> Recursos
+                <i class="bi bi-folder2-open"></i> {{ __('partner.nav_resources') }}
             </a>
             <a href="{{ route('partner.courses.index') }}" class="nm-item {{ request()->routeIs('partner.courses.*', 'partner.lessons.*') ? 'active' : '' }}">
-                <i class="bi bi-mortarboard"></i> Cursos
+                <i class="bi bi-mortarboard"></i> {{ __('partner.nav_courses') }}
             </a>
             <a href="{{ route('settings.profile') }}" class="nm-item {{ request()->routeIs('settings.profile*') ? 'active' : '' }}">
-                <i class="bi bi-person-gear"></i> Meu Perfil
+                <i class="bi bi-person-gear"></i> {{ __('partner.nav_profile') }}
             </a>
             @else
             {{-- ══ REGULAR TENANT NAV ══ --}}
@@ -951,7 +951,7 @@
             <a href="{{ route('feedback.create', ['from' => request()->path()]) }}" target="_blank"
                style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(0,133,243,.1);color:#0085f3;border:1px solid rgba(0,133,243,.25);border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;transition:background .12s;white-space:nowrap;"
                onmouseover="this.style.background='rgba(0,133,243,.18)'" onmouseout="this.style.background='rgba(0,133,243,.1)'">
-                <i class="bi bi-lightbulb"></i> Sugira melhorias
+                <i class="bi bi-lightbulb"></i> {{ __('feedback.topbar_button') }}
             </a>
             @endif
 

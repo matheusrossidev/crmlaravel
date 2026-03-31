@@ -509,19 +509,19 @@
                     </a>
                     <a href="{{ route('master.partner-ranks.index') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.partner-ranks*') ? 'active' : '' }}">
-                        <i class="bi bi-award"></i> Ranks de Parceiros
+                        <i class="bi bi-award"></i> {{ __('master_partner.nav_ranks') }}
                     </a>
                     <a href="{{ route('master.partner-commissions.index') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.partner-commissions*', 'master.partner-withdrawals*') ? 'active' : '' }}">
-                        <i class="bi bi-cash-coin"></i> Comissões / Saques
+                        <i class="bi bi-cash-coin"></i> {{ __('master_partner.nav_commissions') }}
                     </a>
                     <a href="{{ route('master.partner-resources.index') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.partner-resources*') ? 'active' : '' }}">
-                        <i class="bi bi-folder2-open"></i> Recursos Parceiros
+                        <i class="bi bi-folder2-open"></i> {{ __('master_partner.nav_resources') }}
                     </a>
                     <a href="{{ route('master.partner-courses.index') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.partner-courses*') ? 'active' : '' }}">
-                        <i class="bi bi-mortarboard"></i> Cursos Parceiros
+                        <i class="bi bi-mortarboard"></i> {{ __('master_partner.nav_courses') }}
                     </a>
                     <a href="{{ route('master.token-increments') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.token-increments*') ? 'active' : '' }}">
@@ -573,7 +573,7 @@
             @php $__fbNewCount = \App\Models\Feedback::where('status', 'new')->count(); @endphp
             <a href="{{ route('master.feedbacks.index') }}"
                class="m-nm-item {{ request()->routeIs('master.feedbacks*') ? 'active' : '' }}">
-                <i class="bi bi-lightbulb"></i> Feedbacks
+                <i class="bi bi-lightbulb"></i> {{ __('master_partner.nav_feedbacks') }}
                 @if($__fbNewCount > 0)
                     <span style="background:#ef4444;color:#fff;padding:1px 7px;border-radius:99px;font-size:10px;margin-left:4px;">{{ $__fbNewCount }}</span>
                 @endif
