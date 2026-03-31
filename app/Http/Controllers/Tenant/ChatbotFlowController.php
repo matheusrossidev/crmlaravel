@@ -180,9 +180,14 @@ class ChatbotFlowController extends Controller
     public function saveGraph(Request $request, ChatbotFlow $flow): JsonResponse
     {
         $validated = $request->validate([
-            'steps'     => 'required|string',
-            'variables' => 'nullable|array',
-            'name'      => 'nullable|string|max:100',
+            'steps'                   => 'required|string',
+            'variables'               => 'nullable|array',
+            'name'                    => 'nullable|string|max:100',
+            'trigger_type'            => 'nullable|in:keyword,instagram_comment',
+            'trigger_media_id'        => 'nullable|string|max:191',
+            'trigger_media_thumbnail' => 'nullable|string',
+            'trigger_media_caption'   => 'nullable|string',
+            'trigger_reply_comment'   => 'nullable|string|max:2200',
         ]);
 
         $steps = json_decode($validated['steps'], true);
@@ -198,6 +203,15 @@ class ChatbotFlowController extends Controller
 
         if (! empty($validated['name'])) {
             $updateData['name'] = $validated['name'];
+        }
+
+        // Trigger type fields (Instagram comment trigger)
+        if (isset($validated['trigger_type'])) {
+            $updateData['trigger_type']            = $validated['trigger_type'];
+            $updateData['trigger_media_id']        = $validated['trigger_media_id'] ?? null;
+            $updateData['trigger_media_thumbnail'] = $validated['trigger_media_thumbnail'] ?? null;
+            $updateData['trigger_media_caption']    = $validated['trigger_media_caption'] ?? null;
+            $updateData['trigger_reply_comment']    = $validated['trigger_reply_comment'] ?? null;
         }
 
         $flow->update($updateData);

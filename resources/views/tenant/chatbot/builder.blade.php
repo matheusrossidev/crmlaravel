@@ -598,6 +598,42 @@
 
             <div class="cb-sidebar-section">
                 <div class="cb-sidebar-section-title">{{ __('chatbot.sidebar_config') }}</div>
+
+                {{-- Trigger type (Instagram only) --}}
+                @if($flow->channel === 'instagram')
+                <div style="padding:10px 12px;">
+                    <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">Gatilho</div>
+                    <select id="sidebarTriggerType" onchange="onSidebarTriggerTypeChange(this.value)"
+                            style="width:100%;padding:7px 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12px;color:#1a1d23;background:#fff;cursor:pointer;">
+                        <option value="keyword" {{ ($flow->trigger_type ?? 'keyword') === 'keyword' ? 'selected' : '' }}>Palavras-chave em DM</option>
+                        <option value="instagram_comment" {{ ($flow->trigger_type ?? '') === 'instagram_comment' ? 'selected' : '' }}>Comentou em publicação</option>
+                    </select>
+
+                    {{-- Comment-specific settings --}}
+                    <div id="sidebarCommentConfig" style="{{ ($flow->trigger_type ?? 'keyword') === 'instagram_comment' ? '' : 'display:none;' }}margin-top:10px;">
+                        <div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:4px;">Publicação</div>
+                        <select id="sidebarMediaScope" onchange="onSidebarMediaScopeChange(this.value)"
+                                style="width:100%;padding:6px 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:11px;background:#fff;margin-bottom:8px;">
+                            <option value="all" {{ empty($flow->trigger_media_id) ? 'selected' : '' }}>Qualquer publicação</option>
+                            <option value="specific" {{ !empty($flow->trigger_media_id) ? 'selected' : '' }}>Post/Reel específico</option>
+                        </select>
+                        <div id="sidebarPostPicker" style="{{ !empty($flow->trigger_media_id) ? '' : 'display:none;' }}">
+                            <div id="sidebarPostGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-height:160px;overflow-y:auto;margin-bottom:6px;"></div>
+                            <button type="button" onclick="loadSidebarPosts()" style="width:100%;padding:5px;background:#eff6ff;color:#0085f3;border:1px solid #bfdbfe;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;">
+                                <i class="bi bi-arrow-clockwise"></i> Carregar posts
+                            </button>
+                        </div>
+
+                        <div style="margin-top:8px;">
+                            <div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:4px;">Resposta no comentário</div>
+                            <textarea id="sidebarReplyComment" rows="2" maxlength="2200"
+                                      placeholder="Ex: Vou te mandar no privado!"
+                                      style="width:100%;padding:6px 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:11px;resize:vertical;box-sizing:border-box;">{{ $flow->trigger_reply_comment ?? '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
                 <div class="cb-block-item" onclick="showVarsModal()" style="color:#374151">
                     <span class="cb-block-icon" style="background:#f3f4f6;color:#6b7280"><i class="bi bi-braces"></i></span>{{ __('chatbot.sidebar_variables') }}
                 </div>
@@ -728,6 +764,13 @@
     let flowSteps     = {!! json_encode($flow->steps ?? []) !!} || [];
     let flowVariables = {!! json_encode($flow->variables ?? []) !!} || [];
 
+    // Trigger type for Instagram comment flows
+    let _currentTriggerType = @json($flow->trigger_type ?? 'keyword');
+    let _triggerMediaId     = @json($flow->trigger_media_id ?? '');
+    let _triggerMediaThumb  = @json($flow->trigger_media_thumbnail ?? '');
+    let _triggerMediaCaption = @json($flow->trigger_media_caption ?? '');
+    let _triggerReplyComment = @json($flow->trigger_reply_comment ?? '');
+
     const NODE_TYPES = {
         message:   { icon: 'bi-chat-dots',          label: CBLANG.node_message,   color: 'message' },
         input:     { icon: 'bi-input-cursor-text',   label: CBLANG.node_input,     color: 'input' },
@@ -837,14 +880,20 @@
         container.innerHTML = '';
 
         // Start node
+        const _triggerType = (typeof _currentTriggerType !== 'undefined') ? _currentTriggerType : 'keyword';
+        const _startDesc = _triggerType === 'instagram_comment'
+            ? 'Quando comentam em publicação'
+            : CBLANG.node_start_desc;
+        const _startIcon = _triggerType === 'instagram_comment' ? 'bi-chat-left-heart' : 'bi-play-fill';
+
         container.innerHTML += `
             <div class="cb-node start" data-step-id="_start" style="align-self:center;">
                 <div class="cb-node-bar"></div>
                 <div class="cb-node-head">
-                    <div class="cb-node-icon"><i class="bi bi-play-fill"></i></div>
+                    <div class="cb-node-icon"><i class="bi ${_startIcon}"></i></div>
                     <div class="cb-node-label">
                         <div class="cb-node-type">${CBLANG.node_start}</div>
-                        <div class="cb-node-name">${CBLANG.node_start_desc}</div>
+                        <div class="cb-node-name">${_startDesc}</div>
                     </div>
                 </div>
             </div>`;
@@ -2062,6 +2111,11 @@
                 steps: JSON.stringify(flowSteps),
                 variables: flowVariables,
                 name: name,
+                trigger_type: _currentTriggerType,
+                trigger_media_id: _triggerMediaId || null,
+                trigger_media_thumbnail: _triggerMediaThumb || null,
+                trigger_media_caption: _triggerMediaCaption || null,
+                trigger_reply_comment: _triggerReplyComment || null,
             }),
         })
         .then(function(r) { return r.json(); })
@@ -2077,6 +2131,58 @@
             toastr.error(CBLANG.toast_save_flow_error);
         });
     };
+
+    // ── Sidebar trigger type (Instagram comment) ──────────────────
+    window.onSidebarTriggerTypeChange = function(val) {
+        _currentTriggerType = val;
+        const panel = document.getElementById('sidebarCommentConfig');
+        if (panel) panel.style.display = val === 'instagram_comment' ? '' : 'none';
+        renderFlow();
+    };
+
+    window.onSidebarMediaScopeChange = function(val) {
+        const picker = document.getElementById('sidebarPostPicker');
+        if (picker) picker.style.display = val === 'specific' ? '' : 'none';
+        if (val === 'all') { _triggerMediaId = ''; _triggerMediaThumb = ''; _triggerMediaCaption = ''; }
+    };
+
+    window.loadSidebarPosts = function(after) {
+        const grid = document.getElementById('sidebarPostGrid');
+        if (!after) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:8px;color:#9ca3af;font-size:10px;">Carregando...</div>';
+        const url = '{{ route("settings.ig-automations.posts") }}' + (after ? '?after=' + after : '');
+        window.API.get(url).then(function(res) {
+            if (!after) grid.innerHTML = '';
+            (res.data || []).forEach(function(post) {
+                const div = document.createElement('div');
+                div.style.cssText = 'position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;border:2px solid ' + (post.id === _triggerMediaId ? '#0085f3' : '#e8eaf0') + ';cursor:pointer;';
+                const img = post.thumbnail_url ? '<img src="' + post.thumbnail_url + '" style="width:100%;height:100%;object-fit:cover;" loading="lazy">' : '<div style="height:100%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:12px;"><i class="bi bi-image"></i></div>';
+                const badge = post.media_type === 'REEL' ? '<span style="position:absolute;top:2px;left:2px;background:rgba(124,58,237,.85);color:#fff;font-size:7px;font-weight:700;padding:1px 4px;border-radius:2px;">Reel</span>' : '';
+                div.innerHTML = img + badge;
+                div.onclick = function() {
+                    grid.querySelectorAll('div').forEach(function(d) { d.style.borderColor = '#e8eaf0'; });
+                    div.style.borderColor = '#0085f3';
+                    _triggerMediaId = post.id;
+                    _triggerMediaThumb = post.thumbnail_url || '';
+                    _triggerMediaCaption = post.caption || '';
+                };
+                grid.appendChild(div);
+            });
+            if (res.next_cursor) {
+                const more = document.createElement('div');
+                more.style.cssText = 'grid-column:1/-1;text-align:center;';
+                more.innerHTML = '<button type="button" onclick="loadSidebarPosts(\'' + res.next_cursor + '\');this.parentElement.remove();" style="padding:3px 10px;background:#eff6ff;color:#0085f3;border:1px solid #bfdbfe;border-radius:4px;font-size:9px;font-weight:600;cursor:pointer;">Mais</button>';
+                grid.appendChild(more);
+            }
+        }).catch(function() {
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:8px;color:#ef4444;font-size:10px;">Erro ao carregar</div>';
+        });
+    };
+
+    // Sync sidebar reply comment textarea to variable
+    const _rcTextarea = document.getElementById('sidebarReplyComment');
+    if (_rcTextarea) {
+        _rcTextarea.addEventListener('input', function() { _triggerReplyComment = this.value; });
+    }
 
     // ── Variables modal ──────────────────────────────────────────────
     window.showVarsModal = function() {
