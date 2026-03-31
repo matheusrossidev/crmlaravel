@@ -840,21 +840,22 @@ textarea.form-control { resize: vertical; min-height: 68px; }
             <div class="char-count" id="countReply">0 / 2200</div>
         </div>
 
-        {{-- DM sequence builder --}}
+        {{-- DM message (single text) --}}
         <div class="form-group" style="margin-bottom:0;">
             <label>
                 <i class="bi bi-envelope-fill" style="color:#2a84ef;font-size:11px;"></i>
                 {{ __('ig_automations.label_send_dm') }}
                 <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">{{ __('ig_automations.label_send_dm_optional') }}</span>
             </label>
-            <div id="dmBuilder"></div>
-            <div class="dm-add-btns">
-                <button type="button" class="dm-add-btn" onclick="addDmBlock('text')">
-                    <i class="bi bi-chat-left-text"></i> {{ __('ig_automations.dm_block_text') }}
-                </button>
-                <button type="button" class="dm-add-btn" onclick="addDmBlock('image')">
-                    <i class="bi bi-image"></i> {{ __('ig_automations.dm_block_image') }}
-                </button>
+            <textarea id="dmSingleMessage" rows="3" maxlength="1000" class="ig-textarea"
+                      placeholder="Ex: Olá! Vi que você se interessou pelo nosso conteúdo 😊 Como posso te ajudar?"
+                      oninput="updateCount('dmSingleMessage','countDm',1000)"></textarea>
+            <div class="char-count" id="countDm">0 / 1000</div>
+            <div style="margin-top:8px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;display:flex;align-items:center;gap:8px;">
+                <i class="bi bi-info-circle" style="color:#0085f3;font-size:14px;flex-shrink:0;"></i>
+                <div style="font-size:11px;color:#374151;line-height:1.5;">
+                    Precisa de fluxo com perguntas, condições e ações? Use o <a href="{{ route('chatbot.flows.index') }}" style="color:#0085f3;font-weight:600;">Chatbot Builder</a> com o gatilho "Comentou em publicação".
+                </div>
             </div>
         </div>
     </div>
@@ -935,8 +936,8 @@ function closeModal() {
     document.getElementById('igDrawer').classList.remove('open');
     postsLoaded    = false;
     postNextCursor = null;
-    dmBlocks       = [];
-    document.getElementById('dmBuilder').innerHTML = '';
+    const dmEl = document.getElementById('dmSingleMessage');
+    if (dmEl) dmEl.value = '';
 }
 
 function editAuto(id) {
@@ -1170,25 +1171,18 @@ function updateDmPreview(idx, text) {
 }
 
 function loadDmMessages(auto) {
-    if (auto && auto.dm_messages && auto.dm_messages.length > 0) {
-        dmBlocks = auto.dm_messages.map(m => ({
-            type:    m.type ?? 'text',
-            text:    m.text ?? '',
-            url:     m.url  ?? '',
-            // Migrar botões do formato antigo (strings) para o novo (objetos)
-            buttons: (m.buttons ?? []).map((btn, i) => {
-                if (typeof btn === 'string') {
-                    return { type: 'postback', title: btn, payload: 'BTN_' + i };
-                }
-                return { type: btn.type || 'postback', title: btn.title || '', url: btn.url || '', payload: btn.payload || '' };
-            }),
-        }));
-    } else if (auto && auto.dm_message) {
-        dmBlocks = [{ type: 'text', text: auto.dm_message, url: '', buttons: [] }];
+    const el = document.getElementById('dmSingleMessage');
+    if (!el) return;
+    if (auto && auto.dm_message) {
+        el.value = auto.dm_message;
+    } else if (auto && auto.dm_messages && auto.dm_messages.length > 0) {
+        // Migrate: take first text block from old multi-block format
+        const first = auto.dm_messages.find(m => m.type === 'text' && m.text);
+        el.value = first ? first.text : '';
     } else {
-        dmBlocks = [];
+        el.value = '';
     }
-    renderDmBuilder();
+    updateCount('dmSingleMessage', 'countDm', 1000);
 }
 
 function addDmBlock(type) {
@@ -1410,9 +1404,9 @@ function serializeDmMessages() {
 // ── Save ──────────────────────────────────────────────────────────────────
 async function saveAutomation() {
     if (keywords.length === 0) { alert(IGLANG.alert_keyword_required); return; }
-    const reply      = document.getElementById('replyComment').value.trim();
-    const dmSerialized = serializeDmMessages();
-    if (!reply && dmSerialized.length === 0) { alert(IGLANG.alert_action_required); return; }
+    const reply    = document.getElementById('replyComment').value.trim();
+    const dmText   = (document.getElementById('dmSingleMessage')?.value || '').trim();
+    if (!reply && !dmText) { alert(IGLANG.alert_action_required); return; }
 
     const scope = document.querySelector('[name="postScope"]:checked').value;
     const id    = document.getElementById('editingId').value;
@@ -1426,7 +1420,8 @@ async function saveAutomation() {
         keywords,
         match_type:           document.querySelector('[name="matchType"]:checked').value,
         reply_comment:        reply || null,
-        dm_messages:          dmSerialized.length > 0 ? dmSerialized : null,
+        dm_message:           dmText || null,
+        dm_messages:          dmText ? [{ type: 'text', text: dmText }] : null,
     };
 
     const isEdit = !!id;
