@@ -208,6 +208,10 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
 
     // Portal do Parceiro
     Route::get('/parceiro', [\App\Http\Controllers\Partner\PartnerDashboardController::class, 'index'])->name('partner.dashboard');
+
+    // Feedback / Sugestões
+    Route::get('/sugestoes', [\App\Http\Controllers\Tenant\FeedbackController::class, 'create'])->name('feedback.create');
+    Route::post('/sugestoes', [\App\Http\Controllers\Tenant\FeedbackController::class, 'store'])->name('feedback.store');
     Route::get('/parceiro/recursos', [\App\Http\Controllers\Partner\PartnerResourceController::class, 'index'])->name('partner.resources.index');
     Route::get('/parceiro/recursos/{slug}', [\App\Http\Controllers\Partner\PartnerResourceController::class, 'show'])->name('partner.resources.show');
     Route::get('/parceiro/cursos', [\App\Http\Controllers\Partner\PartnerCourseController::class, 'index'])->name('partner.courses.index');
@@ -674,6 +678,11 @@ Route::middleware(['auth', 'super_admin', '2fa'])->prefix('master')->name('maste
     Route::post('token-incrementos',                                               [MasterTokenIncrementPlanController::class, 'store'])->name('token-increments.store');
     Route::put('token-incrementos/{tokenIncrementPlan}',                           [MasterTokenIncrementPlanController::class, 'update'])->name('token-increments.update');
     Route::delete('token-incrementos/{tokenIncrementPlan}',                        [MasterTokenIncrementPlanController::class, 'destroy'])->name('token-increments.destroy');
+
+    // Feedbacks dos clientes
+    Route::get('feedbacks',                    [\App\Http\Controllers\Master\FeedbackController::class, 'index'])->name('feedbacks.index');
+    Route::get('feedbacks/{feedback}',         [\App\Http\Controllers\Master\FeedbackController::class, 'show'])->name('feedbacks.show');
+    Route::put('feedbacks/{feedback}/status',  [\App\Http\Controllers\Master\FeedbackController::class, 'updateStatus'])->name('feedbacks.status');
 
     // Upsell Triggers
     Route::get('upsell',                               [MasterUpsellTriggerController::class, 'index'])->name('upsell');

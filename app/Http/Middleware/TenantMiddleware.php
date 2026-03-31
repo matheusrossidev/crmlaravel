@@ -84,7 +84,7 @@ class TenantMiddleware
 
         // Parceiro logado (sem impersonação) → redireciona para portal do parceiro
         if (!$impersonatingId && $user->tenant?->isPartner()) {
-            if (!$request->routeIs('partner.*', 'agency.*', 'logout', 'settings.profile*', 'settings.notifications*', 'settings.billing*', 'billing.*', 'account.*')) {
+            if (!$request->routeIs('partner.*', 'agency.*', 'logout', 'settings.profile*', 'settings.notifications*', 'settings.billing*', 'billing.*', 'account.*', 'feedback.*')) {
                 return redirect()->route('partner.dashboard');
             }
         }

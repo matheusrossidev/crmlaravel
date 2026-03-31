@@ -569,6 +569,16 @@
                 <i class="bi bi-megaphone"></i> Notificações
             </a>
 
+            {{-- Feedbacks --}}
+            @php $__fbNewCount = \App\Models\Feedback::where('status', 'new')->count(); @endphp
+            <a href="{{ route('master.feedbacks.index') }}"
+               class="m-nm-item {{ request()->routeIs('master.feedbacks*') ? 'active' : '' }}">
+                <i class="bi bi-lightbulb"></i> Feedbacks
+                @if($__fbNewCount > 0)
+                    <span style="background:#ef4444;color:#fff;padding:1px 7px;border-radius:99px;font-size:10px;margin-left:4px;">{{ $__fbNewCount }}</span>
+                @endif
+            </a>
+
             {{-- Customer Success --}}
             <a href="{{ route('cs.index') }}"
                class="m-nm-item" target="_blank">

@@ -23,8 +23,8 @@ class PartnerRankController extends Controller
     {
         $data = $request->validate([
             'name'           => 'required|string|max:50',
-            'min_sales'      => 'required|integer|min:0',
-            'commission_pct' => 'required|numeric|min:0|max:100',
+            'min_sales'      => 'nullable|integer|min:0',
+            'commission_pct' => 'nullable|numeric|min:0|max:100',
             'color'          => 'nullable|string|max:20',
             'sort_order'     => 'nullable|integer|min:0',
             'image'          => 'nullable|image|max:2048',
@@ -32,8 +32,8 @@ class PartnerRankController extends Controller
 
         $rank = PartnerRank::create([
             'name'           => $data['name'],
-            'min_sales'      => $data['min_sales'],
-            'commission_pct' => $data['commission_pct'],
+            'min_sales'      => $data['min_sales'] ?? 0,
+            'commission_pct' => $data['commission_pct'] ?? 0,
             'color'          => $data['color'] ?? '#6b7280',
             'sort_order'     => $data['sort_order'] ?? 0,
         ]);
@@ -50,8 +50,8 @@ class PartnerRankController extends Controller
     {
         $data = $request->validate([
             'name'           => 'required|string|max:50',
-            'min_sales'      => 'required|integer|min:0',
-            'commission_pct' => 'required|numeric|min:0|max:100',
+            'min_sales'      => 'nullable|integer|min:0',
+            'commission_pct' => 'nullable|numeric|min:0|max:100',
             'color'          => 'nullable|string|max:20',
             'sort_order'     => 'nullable|integer|min:0',
             'image'          => 'nullable|image|max:2048',
@@ -59,8 +59,8 @@ class PartnerRankController extends Controller
 
         $rank->update([
             'name'           => $data['name'],
-            'min_sales'      => $data['min_sales'],
-            'commission_pct' => $data['commission_pct'],
+            'min_sales'      => $data['min_sales'] ?? 0,
+            'commission_pct' => $data['commission_pct'] ?? 0,
             'color'          => $data['color'] ?? $rank->color,
             'sort_order'     => $data['sort_order'] ?? $rank->sort_order,
         ]);

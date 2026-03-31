@@ -946,6 +946,15 @@
             </div>
             @endif
 
+            {{-- Feedback button --}}
+            @if(!$isPartnerUser || $impersonatingId)
+            <a href="{{ route('feedback.create', ['from' => request()->path()]) }}" target="_blank"
+               style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(0,133,243,.1);color:#0085f3;border:1px solid rgba(0,133,243,.25);border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;transition:background .12s;white-space:nowrap;"
+               onmouseover="this.style.background='rgba(0,133,243,.18)'" onmouseout="this.style.background='rgba(0,133,243,.1)'">
+                <i class="bi bi-lightbulb"></i> Sugira melhorias
+            </a>
+            @endif
+
             {{-- Notification bell --}}
             <button class="topbar-btn" id="notif-bell-btn" onclick="toggleNotifDrawer()" title="Notificações">
                 <i class="bi bi-bell"></i>
