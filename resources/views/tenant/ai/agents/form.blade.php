@@ -781,7 +781,7 @@
                                       class="form-control"
                                       rows="3"
                                       maxlength="1000"
-                                      placeholder="Olá {{lead_name}}! Lembrete: você tem {{event_title}} agendado(a) para {{event_date}} às {{event_time}}."
+                                      placeholder="Olá @{{lead_name}}! Lembrete: você tem @{{event_title}} agendado(a) para @{{event_date}} às @{{event_time}}."
                                       style="font-size:13px;resize:vertical;">{{ old('reminder_message_template', $agent->reminder_message_template ?? '') }}</textarea>
                             <div class="form-text" style="font-size:11px;color:#9ca3af;margin-top:4px;">
                                 Placeholders: <code>@{{lead_name}}</code>, <code>@{{event_title}}</code>, <code>@{{event_date}}</code>, <code>@{{event_time}}</code>, <code>@{{event_location}}</code>. Deixe vazio para usar o template padrão.

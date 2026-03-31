@@ -193,7 +193,7 @@
 
 {{-- Withdrawal Drawer --}}
 <div id="wdOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:5000;align-items:center;justify-content:center;" onclick="if(event.target===this){this.style.display='none';document.getElementById('wdDrawer').style.right='-520px';}"></div>
-<div id="wdDrawer" style="position:fixed;top:0;right:-520px;width:440px;height:100vh;background:#fff;z-index:5001;box-shadow:-4px 0 24px rgba(0,0,0,.1);display:flex;flex-direction:column;transition:right .25s cubic-bezier(.4,0,.2,1);">
+<div id="wdDrawer" style="position:fixed;top:0;right:-520px;width:440px;max-width:100vw;height:100vh;height:100dvh;background:#fff;z-index:5001;box-shadow:-4px 0 24px rgba(0,0,0,.1);display:flex;flex-direction:column;transition:right .25s cubic-bezier(.4,0,.2,1);">
     <div style="padding:18px 24px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;">
         <h3 style="margin:0;font-size:16px;font-weight:700;color:#1a1d23;">{{ __('partner.request_withdrawal') }}</h3>
         <button onclick="document.getElementById('wdOverlay').style.display='none';document.getElementById('wdDrawer').style.right='-520px';" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;"><i class="bi bi-x-lg"></i></button>
@@ -236,7 +236,7 @@
             <input type="text" id="wdCpf" placeholder="000.000.000-00" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;">
         </div>
     </div>
-    <div style="padding:16px 24px;border-top:1px solid #f0f2f7;display:flex;gap:10px;justify-content:flex-end;">
+    <div style="padding:16px 24px;padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px));border-top:1px solid #f0f2f7;display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;">
         <button onclick="document.getElementById('wdOverlay').style.display='none';document.getElementById('wdDrawer').style.right='-520px';" style="padding:9px 18px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Cancelar</button>
         <button id="btnWithdraw" onclick="submitWithdrawal()" style="padding:9px 18px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;"><i class="bi bi-wallet2"></i> {{ __('partner.request_withdrawal') }}</button>
     </div>
