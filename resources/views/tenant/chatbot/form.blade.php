@@ -400,7 +400,7 @@
             @endphp
             <div id="triggerTypeWrap" style="{{ $currentChannel === 'instagram' ? '' : 'display:none;' }}">
                 <div class="form-group">
-                    <label style="font-weight:600;margin-bottom:8px;display:block;">Tipo de gatilho</label>
+                    <label style="font-weight:600;margin-bottom:8px;display:block;">{{ __('chatbot.trigger_type_label') }}</label>
                     <div style="display:flex;gap:10px;">
                         <label style="flex:1;cursor:pointer;">
                             <input type="radio" name="trigger_type" value="keyword" {{ $currentTriggerType === 'keyword' ? 'checked' : '' }}
@@ -409,8 +409,8 @@
                                  style="display:flex;align-items:center;gap:8px;padding:12px 14px;border:2px solid #e8eaf0;border-radius:10px;background:#fafafa;color:#6b7280;font-size:12.5px;font-weight:600;transition:all .15s;cursor:pointer;">
                                 <i class="bi bi-chat-dots" style="font-size:16px;"></i>
                                 <div>
-                                    <div style="color:#1a1d23;">Palavras-chave em DM</div>
-                                    <div style="font-weight:400;font-size:11px;margin-top:2px;">Dispara quando o lead envia DM com palavra-chave</div>
+                                    <div style="color:#1a1d23;">{{ __('chatbot.trigger_type_keyword') }}</div>
+                                    <div style="font-weight:400;font-size:11px;margin-top:2px;">{{ __('chatbot.trigger_type_keyword_desc') }}</div>
                                 </div>
                             </div>
                         </label>
@@ -421,8 +421,8 @@
                                  style="display:flex;align-items:center;gap:8px;padding:12px 14px;border:2px solid #e8eaf0;border-radius:10px;background:#fafafa;color:#6b7280;font-size:12.5px;font-weight:600;transition:all .15s;cursor:pointer;">
                                 <i class="bi bi-chat-left-heart" style="font-size:16px;"></i>
                                 <div>
-                                    <div style="color:#1a1d23;">Comentou em publicação</div>
-                                    <div style="font-weight:400;font-size:11px;margin-top:2px;">Dispara quando comentam em post/reel com palavra-chave</div>
+                                    <div style="color:#1a1d23;">{{ __('chatbot.trigger_type_comment') }}</div>
+                                    <div style="font-weight:400;font-size:11px;margin-top:2px;">{{ __('chatbot.trigger_type_comment_desc') }}</div>
                                 </div>
                             </div>
                         </label>
@@ -434,23 +434,23 @@
             <div id="commentTriggerWrap" style="{{ ($currentChannel === 'instagram' && $currentTriggerType === 'instagram_comment') ? '' : 'display:none;' }}">
                 {{-- Post/Reel selector --}}
                 <div class="form-group">
-                    <label style="font-weight:600;">Publicação alvo</label>
+                    <label style="font-weight:600;">{{ __('chatbot.trigger_post_label') }}</label>
                     <div style="display:flex;gap:10px;margin-bottom:10px;">
                         <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
                             <input type="radio" name="comment_scope" value="all" {{ empty($flow->trigger_media_id) ? 'checked' : '' }}
                                    onchange="toggleCommentScope()" style="accent-color:#0085f3;">
-                            Qualquer publicação
+                            {{ __('chatbot.trigger_post_any') }}
                         </label>
                         <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
                             <input type="radio" name="comment_scope" value="specific" {{ !empty($flow->trigger_media_id) ? 'checked' : '' }}
                                    onchange="toggleCommentScope()" style="accent-color:#0085f3;">
-                            Post/Reel específico
+                            {{ __('chatbot.trigger_post_specific') }}
                         </label>
                     </div>
                     <div id="commentPostPicker" style="{{ !empty($flow->trigger_media_id) ? '' : 'display:none;' }}">
                         <div id="commentPostGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;max-height:240px;overflow-y:auto;margin-bottom:10px;"></div>
                         <button type="button" onclick="loadCommentPosts()" style="padding:6px 14px;background:#eff6ff;color:#0085f3;border:1.5px solid #bfdbfe;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
-                            <i class="bi bi-arrow-clockwise"></i> Carregar publicações
+                            <i class="bi bi-arrow-clockwise"></i> {{ __('chatbot.trigger_load_posts') }}
                         </button>
                     </div>
                     <input type="hidden" name="trigger_media_id" id="triggerMediaId" value="{{ old('trigger_media_id', $flow->trigger_media_id ?? '') }}">
@@ -460,10 +460,10 @@
 
                 {{-- Reply on comment --}}
                 <div class="form-group">
-                    <label>Resposta no comentário (opcional)</label>
+                    <label>{{ __('chatbot.trigger_reply_comment') }}</label>
                     <textarea name="trigger_reply_comment" class="field-input" rows="2" maxlength="2200"
-                        placeholder="Ex: Obrigado pelo interesse! Vou te mandar mais informações no privado 😊">{{ old('trigger_reply_comment', $flow->trigger_reply_comment ?? '') }}</textarea>
-                    <div class="hint">Se preenchido, responde publicamente no comentário antes de enviar DM.</div>
+                        placeholder="{{ __('chatbot.trigger_reply_comment_ph') }}">{{ old('trigger_reply_comment', $flow->trigger_reply_comment ?? '') }}</textarea>
+                    <div class="hint">{{ __('chatbot.trigger_reply_comment_hint') }}</div>
                 </div>
             </div>
 

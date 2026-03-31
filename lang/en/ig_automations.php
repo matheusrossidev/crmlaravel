@@ -108,4 +108,10 @@ return [
     'alert_error_save'           => 'Error saving.',
     'alert_error_save_detail'    => 'Error saving: :message',
     'toastr_max_buttons'         => 'Maximum of 3 buttons per message (Button Template).',
+
+    // Simplified DM
+    'dm_single_placeholder'      => 'E.g.: Hi! I noticed you were interested in our content 😊 How can I help?',
+    'dm_chatbot_hint'            => 'Need a flow with questions, conditions and actions? Use the',
+    'dm_chatbot_link'            => 'Chatbot Builder',
+    'dm_chatbot_suffix'          => 'with the "Commented on post" trigger.',
 ];

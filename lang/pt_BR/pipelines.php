@@ -41,4 +41,18 @@ return [
     'error_delete'        => 'Não foi possível excluir.',
     'delete_stage_title'  => 'Excluir etapa',
     'delete_stage_msg'    => 'Tem certeza que deseja excluir esta etapa?',
+
+    // Stage required tasks
+    'req_title'           => 'Atividades obrigatórias',
+    'req_add'             => 'Adicionar atividade',
+    'req_subject_ph'      => 'Ex: Ligar para o lead',
+    'req_type_call'       => 'Ligar',
+    'req_type_email'      => 'Email',
+    'req_type_task'       => 'Tarefa',
+    'req_type_visit'      => 'Visita',
+    'req_type_whatsapp'   => 'WhatsApp',
+    'req_type_meeting'    => 'Reunião',
+    'req_priority_low'    => 'Baixa',
+    'req_priority_medium' => 'Média',
+    'req_priority_high'   => 'Alta',
 ];

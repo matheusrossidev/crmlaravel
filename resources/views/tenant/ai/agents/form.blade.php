@@ -744,23 +744,23 @@
                     {{-- Reminder Settings --}}
                     <div style="margin-top:16px;padding-top:14px;border-top:1px solid #f0f2f7;">
                         <label class="form-label fw-semibold" style="font-size:13px;">
-                            <i class="bi bi-bell" style="color:#0085f3;margin-right:4px;"></i> Lembretes via WhatsApp
+                            <i class="bi bi-bell" style="color:#0085f3;margin-right:4px;"></i> {{ __('ai_agents.reminder_title') }}
                         </label>
                         <div class="form-text" style="font-size:11px;color:#9ca3af;margin-bottom:10px;">
-                            Quando o agente agenda um evento, lembretes são enviados automaticamente para o lead via WhatsApp antes do horário marcado.
+                            {{ __('ai_agents.reminder_desc') }}
                         </div>
 
                         @php
                             $savedOffsets = old('reminder_offsets', $agent->reminder_offsets ?? [1440, 60]);
                             if (is_string($savedOffsets)) $savedOffsets = json_decode($savedOffsets, true) ?? [1440, 60];
                             $offsetOptions = [
-                                ['value' => 15, 'label' => '15 minutos antes'],
-                                ['value' => 30, 'label' => '30 minutos antes'],
-                                ['value' => 60, 'label' => '1 hora antes'],
-                                ['value' => 120, 'label' => '2 horas antes'],
-                                ['value' => 720, 'label' => '12 horas antes'],
-                                ['value' => 1440, 'label' => '1 dia antes'],
-                                ['value' => 2880, 'label' => '2 dias antes'],
+                                ['value' => 15, 'label' => __('ai_agents.reminder_15min')],
+                                ['value' => 30, 'label' => __('ai_agents.reminder_30min')],
+                                ['value' => 60, 'label' => __('ai_agents.reminder_1h')],
+                                ['value' => 120, 'label' => __('ai_agents.reminder_2h')],
+                                ['value' => 720, 'label' => __('ai_agents.reminder_12h')],
+                                ['value' => 1440, 'label' => __('ai_agents.reminder_1d')],
+                                ['value' => 2880, 'label' => __('ai_agents.reminder_2d')],
                             ];
                         @endphp
 
@@ -776,15 +776,15 @@
                         </div>
 
                         <div style="margin-top:12px;">
-                            <label class="form-label fw-semibold" style="font-size:13px;">Mensagem do lembrete</label>
+                            <label class="form-label fw-semibold" style="font-size:13px;">{{ __('ai_agents.reminder_template_label') }}</label>
                             <textarea name="reminder_message_template"
                                       class="form-control"
                                       rows="3"
                                       maxlength="1000"
-                                      placeholder="Olá @{{lead_name}}! Lembrete: você tem @{{event_title}} agendado(a) para @{{event_date}} às @{{event_time}}."
+                                      placeholder="{{ __('ai_agents.reminder_template_ph') }}"
                                       style="font-size:13px;resize:vertical;">{{ old('reminder_message_template', $agent->reminder_message_template ?? '') }}</textarea>
                             <div class="form-text" style="font-size:11px;color:#9ca3af;margin-top:4px;">
-                                Placeholders: <code>@{{lead_name}}</code>, <code>@{{event_title}}</code>, <code>@{{event_date}}</code>, <code>@{{event_time}}</code>, <code>@{{event_location}}</code>. Deixe vazio para usar o template padrão.
+                                {{ __('ai_agents.reminder_template_hint') }}
                             </div>
                         </div>
                     </div>

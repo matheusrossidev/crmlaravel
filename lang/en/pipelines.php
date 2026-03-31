@@ -41,4 +41,18 @@ return [
     'error_delete'        => 'Could not delete.',
     'delete_stage_title'  => 'Delete stage',
     'delete_stage_msg'    => 'Are you sure you want to delete this stage?',
+
+    // Stage required tasks
+    'req_title'           => 'Mandatory activities',
+    'req_add'             => 'Add activity',
+    'req_subject_ph'      => 'E.g.: Call the lead',
+    'req_type_call'       => 'Call',
+    'req_type_email'      => 'Email',
+    'req_type_task'       => 'Task',
+    'req_type_visit'      => 'Visit',
+    'req_type_whatsapp'   => 'WhatsApp',
+    'req_type_meeting'    => 'Meeting',
+    'req_priority_low'    => 'Low',
+    'req_priority_medium' => 'Medium',
+    'req_priority_high'   => 'High',
 ];

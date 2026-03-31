@@ -562,4 +562,18 @@ return [
     'config_next_step_text'        => 'After configuring the provider, go to',
     'config_next_step_link'        => 'Agents',
     'config_next_step_suffix'      => 'to create your first AI agent.',
+
+    // ── Reminders ───────────────────────────────────────────────────
+    'reminder_title'               => 'WhatsApp Reminders',
+    'reminder_desc'                => 'When the agent schedules an event, reminders are automatically sent to the lead via WhatsApp before the scheduled time.',
+    'reminder_15min'               => '15 minutes before',
+    'reminder_30min'               => '30 minutes before',
+    'reminder_1h'                  => '1 hour before',
+    'reminder_2h'                  => '2 hours before',
+    'reminder_12h'                 => '12 hours before',
+    'reminder_1d'                  => '1 day before',
+    'reminder_2d'                  => '2 days before',
+    'reminder_template_label'      => 'Reminder message',
+    'reminder_template_ph'         => 'Hi @{{lead_name}}! Reminder: you have @{{event_title}} scheduled for @{{event_date}} at @{{event_time}}.',
+    'reminder_template_hint'       => 'Placeholders: @{{lead_name}}, @{{event_title}}, @{{event_date}}, @{{event_time}}, @{{event_location}}. Leave empty to use default template.',
 ];

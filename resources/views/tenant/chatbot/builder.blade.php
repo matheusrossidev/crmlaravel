@@ -602,32 +602,32 @@
                 {{-- Trigger type (Instagram only) --}}
                 @if($flow->channel === 'instagram')
                 <div style="padding:10px 12px;">
-                    <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">Gatilho</div>
+                    <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">{{ __('chatbot.sidebar_trigger') }}</div>
                     <select id="sidebarTriggerType" onchange="onSidebarTriggerTypeChange(this.value)"
                             style="width:100%;padding:7px 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12px;color:#1a1d23;background:#fff;cursor:pointer;">
-                        <option value="keyword" {{ ($flow->trigger_type ?? 'keyword') === 'keyword' ? 'selected' : '' }}>Palavras-chave em DM</option>
-                        <option value="instagram_comment" {{ ($flow->trigger_type ?? '') === 'instagram_comment' ? 'selected' : '' }}>Comentou em publicação</option>
+                        <option value="keyword" {{ ($flow->trigger_type ?? 'keyword') === 'keyword' ? 'selected' : '' }}>{{ __('chatbot.sidebar_trigger_keyword') }}</option>
+                        <option value="instagram_comment" {{ ($flow->trigger_type ?? '') === 'instagram_comment' ? 'selected' : '' }}>{{ __('chatbot.sidebar_trigger_comment') }}</option>
                     </select>
 
                     {{-- Comment-specific settings --}}
                     <div id="sidebarCommentConfig" style="{{ ($flow->trigger_type ?? 'keyword') === 'instagram_comment' ? '' : 'display:none;' }}margin-top:10px;">
-                        <div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:4px;">Publicação</div>
+                        <div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:4px;">{{ __('chatbot.sidebar_post_label') }}</div>
                         <select id="sidebarMediaScope" onchange="onSidebarMediaScopeChange(this.value)"
                                 style="width:100%;padding:6px 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:11px;background:#fff;margin-bottom:8px;">
-                            <option value="all" {{ empty($flow->trigger_media_id) ? 'selected' : '' }}>Qualquer publicação</option>
-                            <option value="specific" {{ !empty($flow->trigger_media_id) ? 'selected' : '' }}>Post/Reel específico</option>
+                            <option value="all" {{ empty($flow->trigger_media_id) ? 'selected' : '' }}>{{ __('chatbot.sidebar_post_any') }}</option>
+                            <option value="specific" {{ !empty($flow->trigger_media_id) ? 'selected' : '' }}>{{ __('chatbot.sidebar_post_specific') }}</option>
                         </select>
                         <div id="sidebarPostPicker" style="{{ !empty($flow->trigger_media_id) ? '' : 'display:none;' }}">
                             <div id="sidebarPostGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-height:160px;overflow-y:auto;margin-bottom:6px;"></div>
                             <button type="button" onclick="loadSidebarPosts()" style="width:100%;padding:5px;background:#eff6ff;color:#0085f3;border:1px solid #bfdbfe;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;">
-                                <i class="bi bi-arrow-clockwise"></i> Carregar posts
+                                <i class="bi bi-arrow-clockwise"></i> {{ __('chatbot.sidebar_load_posts') }}
                             </button>
                         </div>
 
                         <div style="margin-top:8px;">
-                            <div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:4px;">Resposta no comentário</div>
+                            <div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:4px;">{{ __('chatbot.sidebar_reply_label') }}</div>
                             <textarea id="sidebarReplyComment" rows="2" maxlength="2200"
-                                      placeholder="Ex: Vou te mandar no privado!"
+                                      placeholder="{{ __('chatbot.sidebar_reply_ph') }}"
                                       style="width:100%;padding:6px 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:11px;resize:vertical;box-sizing:border-box;">{{ $flow->trigger_reply_comment ?? '' }}</textarea>
                         </div>
                     </div>
@@ -882,7 +882,7 @@
         // Start node
         const _triggerType = (typeof _currentTriggerType !== 'undefined') ? _currentTriggerType : 'keyword';
         const _startDesc = _triggerType === 'instagram_comment'
-            ? 'Quando comentam em publicação'
+            ? CBLANG.node_start_comment
             : CBLANG.node_start_desc;
         const _startIcon = _triggerType === 'instagram_comment' ? 'bi-chat-left-heart' : 'bi-play-fill';
 
@@ -1568,14 +1568,14 @@
                 if (FLOW_CHANNEL === 'instagram') {
                     var btnType = b.button_type || 'postback';
                     html += '<div style="margin-bottom:6px;">';
-                    html += '<label style="font-size:10px;color:#6b7280;display:block;margin-bottom:3px;">Tipo do botão</label>';
+                    html += '<label style="font-size:10px;color:#6b7280;display:block;margin-bottom:3px;">' + CBLANG.btn_type_label + '</label>';
                     html += '<select class="form-select" style="font-size:11px;padding:4px 8px;" onchange="cbUpdateBranch(' + pathStr + ', ' + index + ', ' + bi + ', \'button_type\', this.value); toggleBranchUrl(this);">';
-                    html += '<option value="postback" ' + (btnType === 'postback' ? 'selected' : '') + '>Resposta (avança fluxo)</option>';
-                    html += '<option value="web_url" ' + (btnType === 'web_url' ? 'selected' : '') + '>Link externo</option>';
+                    html += '<option value="postback" ' + (btnType === 'postback' ? 'selected' : '') + '>' + CBLANG.btn_type_postback + '</option>';
+                    html += '<option value="web_url" ' + (btnType === 'web_url' ? 'selected' : '') + '>' + CBLANG.btn_type_weburl + '</option>';
                     html += '</select>';
                     html += '</div>';
                     if (btnType === 'web_url') {
-                        html += '<div class="branch-url-field"><label style="font-size:10px;color:#6b7280;display:block;margin-bottom:3px;">URL</label>';
+                        html += '<div class="branch-url-field"><label style="font-size:10px;color:#6b7280;display:block;margin-bottom:3px;">' + CBLANG.btn_url_label + '</label>';
                         html += '<input class="form-control" style="font-size:11px;padding:4px 8px;" placeholder="https://..." value="' + esc(b.button_url || '') + '" onchange="cbUpdateBranch(' + pathStr + ', ' + index + ', ' + bi + ', \'button_url\', this.value)"></div>';
                     }
                 }
@@ -2168,7 +2168,7 @@
 
     window.loadSidebarPosts = function(after) {
         const grid = document.getElementById('sidebarPostGrid');
-        if (!after) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:8px;color:#9ca3af;font-size:10px;">Carregando...</div>';
+        if (!after) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:8px;color:#9ca3af;font-size:10px;">' + CBLANG.trigger_loading + '</div>';
         const url = '{{ route("settings.ig-automations.posts") }}' + (after ? '?after=' + after : '');
         window.API.get(url).then(function(res) {
             if (!after) grid.innerHTML = '';
@@ -2190,11 +2190,11 @@
             if (res.next_cursor) {
                 const more = document.createElement('div');
                 more.style.cssText = 'grid-column:1/-1;text-align:center;';
-                more.innerHTML = '<button type="button" onclick="loadSidebarPosts(\'' + res.next_cursor + '\');this.parentElement.remove();" style="padding:3px 10px;background:#eff6ff;color:#0085f3;border:1px solid #bfdbfe;border-radius:4px;font-size:9px;font-weight:600;cursor:pointer;">Mais</button>';
+                more.innerHTML = '<button type="button" onclick="loadSidebarPosts(\'' + res.next_cursor + '\');this.parentElement.remove();" style="padding:3px 10px;background:#eff6ff;color:#0085f3;border:1px solid #bfdbfe;border-radius:4px;font-size:9px;font-weight:600;cursor:pointer;">' + CBLANG.sidebar_load_more + '</button>';
                 grid.appendChild(more);
             }
         }).catch(function() {
-            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:8px;color:#ef4444;font-size:10px;">Erro ao carregar</div>';
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:8px;color:#ef4444;font-size:10px;">' + CBLANG.sidebar_load_error + '</div>';
         });
     };
 

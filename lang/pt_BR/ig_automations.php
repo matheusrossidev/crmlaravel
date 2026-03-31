@@ -108,4 +108,10 @@ return [
     'alert_error_save'           => 'Erro ao salvar.',
     'alert_error_save_detail'    => 'Erro ao salvar: :message',
     'toastr_max_buttons'         => 'Maximo de 3 botoes por mensagem (Button Template).',
+
+    // Simplified DM
+    'dm_single_placeholder'      => 'Ex: Olá! Vi que você se interessou pelo nosso conteúdo 😊 Como posso te ajudar?',
+    'dm_chatbot_hint'            => 'Precisa de fluxo com perguntas, condições e ações? Use o',
+    'dm_chatbot_link'            => 'Chatbot Builder',
+    'dm_chatbot_suffix'          => 'com o gatilho "Comentou em publicação".',
 ];

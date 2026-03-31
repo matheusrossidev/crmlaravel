@@ -327,7 +327,7 @@
                         @if($stage->is_won)  <span class="stage-badge won-badge">{{ __('pipelines.won') }}</span>  @endif
                         @if($stage->is_lost) <span class="stage-badge lost-badge">{{ __('pipelines.lost') }}</span> @endif
                         @if($stage->requiredTasks->isNotEmpty())
-                            <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:#eff6ff;color:#0085f3;font-size:10px;font-weight:600;border-radius:99px;" title="Atividades obrigatórias">
+                            <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:#eff6ff;color:#0085f3;font-size:10px;font-weight:600;border-radius:99px;" title="{{ __('pipelines.req_title') }}">
                                 <i class="bi bi-list-check" style="font-size:10px;"></i> {{ $stage->requiredTasks->count() }}
                             </span>
                         @endif
@@ -525,7 +525,7 @@ function addDrawerStageRow(data) {
         <input type="color" class="color-input" value="${color}" data-field="color">
         <label class="drawer-stage-checkbox" title="${escapeHtml(PLANG.won_title)}"><input type="checkbox" data-field="is_won" ${isWon ? 'checked' : ''}> ${PLANG.won_abbr}</label>
         <label class="drawer-stage-checkbox" title="${escapeHtml(PLANG.lost_title)}"><input type="checkbox" data-field="is_lost" ${isLost ? 'checked' : ''}> ${PLANG.lost_abbr}</label>
-        <button type="button" class="stage-req-toggle ${reqCount > 0 ? 'has-reqs' : ''}" onclick="toggleReqPanel(this)" title="Atividades obrigatórias">
+        <button type="button" class="stage-req-toggle ${reqCount > 0 ? 'has-reqs' : ''}" onclick="toggleReqPanel(this)" title="${PLANG.req_title}">
             <i class="bi bi-list-check"></i>
             ${reqCount > 0 ? '<span class="req-count">' + reqCount + '</span>' : ''}
         </button>
@@ -536,10 +536,10 @@ function addDrawerStageRow(data) {
     panel.className = 'stage-req-panel';
     panel.dataset.idx = idx;
     panel.innerHTML = `
-        <div class="req-title"><i class="bi bi-list-check"></i> Atividades obrigatórias</div>
+        <div class="req-title"><i class="bi bi-list-check"></i> ${PLANG.req_title}</div>
         <div class="req-list"></div>
         <button type="button" class="btn-add-req" onclick="addReqRow(this.closest('.stage-req-panel'))">
-            <i class="bi bi-plus"></i> Adicionar atividade
+            <i class="bi bi-plus"></i> ${PLANG.req_add}
         </button>
     `;
 
@@ -570,19 +570,19 @@ function addReqRow(panel, data) {
     const div = document.createElement('div');
     div.className = 'req-row';
     div.innerHTML = `
-        <input type="text" class="req-subject" placeholder="Ex: Ligar para o lead" value="${escapeHtml((data && data.subject) || '')}" data-req="subject">
+        <input type="text" class="req-subject" placeholder="${PLANG.req_subject_ph}" value="${escapeHtml((data && data.subject) || '')}" data-req="subject">
         <select class="req-type" data-req="task_type">
-            <option value="call" ${data?.task_type === 'call' ? 'selected' : ''}>Ligar</option>
-            <option value="email" ${data?.task_type === 'email' ? 'selected' : ''}>Email</option>
-            <option value="task" ${(!data || data.task_type === 'task') ? 'selected' : ''}>Tarefa</option>
-            <option value="visit" ${data?.task_type === 'visit' ? 'selected' : ''}>Visita</option>
-            <option value="whatsapp" ${data?.task_type === 'whatsapp' ? 'selected' : ''}>WhatsApp</option>
-            <option value="meeting" ${data?.task_type === 'meeting' ? 'selected' : ''}>Reunião</option>
+            <option value="call" ${data?.task_type === 'call' ? 'selected' : ''}>${PLANG.req_type_call}</option>
+            <option value="email" ${data?.task_type === 'email' ? 'selected' : ''}>${PLANG.req_type_email}</option>
+            <option value="task" ${(!data || data.task_type === 'task') ? 'selected' : ''}>${PLANG.req_type_task}</option>
+            <option value="visit" ${data?.task_type === 'visit' ? 'selected' : ''}>${PLANG.req_type_visit}</option>
+            <option value="whatsapp" ${data?.task_type === 'whatsapp' ? 'selected' : ''}>${PLANG.req_type_whatsapp}</option>
+            <option value="meeting" ${data?.task_type === 'meeting' ? 'selected' : ''}>${PLANG.req_type_meeting}</option>
         </select>
         <select class="req-priority" data-req="priority">
-            <option value="low" ${data?.priority === 'low' ? 'selected' : ''}>Baixa</option>
-            <option value="medium" ${(!data || data.priority === 'medium') ? 'selected' : ''}>Média</option>
-            <option value="high" ${data?.priority === 'high' ? 'selected' : ''}>Alta</option>
+            <option value="low" ${data?.priority === 'low' ? 'selected' : ''}>${PLANG.req_priority_low}</option>
+            <option value="medium" ${(!data || data.priority === 'medium') ? 'selected' : ''}>${PLANG.req_priority_medium}</option>
+            <option value="high" ${data?.priority === 'high' ? 'selected' : ''}>${PLANG.req_priority_high}</option>
         </select>
         <input type="number" class="req-days" min="0" max="365" value="${(data && data.due_date_offset != null) ? data.due_date_offset : 1}" data-req="due_date_offset" title="Prazo em dias">
         <button type="button" class="req-del" onclick="this.closest('.req-row').remove();updateReqCount(this)"><i class="bi bi-x-lg"></i></button>

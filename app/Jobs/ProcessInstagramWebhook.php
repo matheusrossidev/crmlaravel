@@ -329,13 +329,13 @@ class ProcessInstagramWebhook implements ShouldQueue
                 'igsid'    => $igsid,
                 'name'     => $profile['name'] ?? null,
                 'username' => $profile['username'] ?? null,
-                'has_pic'  => isset($profile['profile_pic']),
+                'has_pic'  => isset($profile['profile_picture_url']),
             ]);
 
             return [
                 'name'     => $profile['name']        ?? null,
                 'username' => $profile['username']    ?? null,
-                'picture'  => $profile['profile_pic'] ?? null,
+                'picture'  => $profile['profile_picture_url'] ?? null,
             ];
         } catch (\Throwable $e) {
             Log::channel('instagram')->warning('Exceção ao buscar perfil do contato', [
@@ -837,7 +837,7 @@ class ProcessInstagramWebhook implements ShouldQueue
                 ]);
 
                 // Trigger the chatbot step processing
-                ProcessChatbotStep::dispatchSync($conv->id, $commentText, 'instagram');
+                (new ProcessChatbotStep($conv->id, $commentText, 'instagram'))->handle();
 
             } catch (\Throwable $e) {
                 Log::channel('instagram')->error('Chatbot comment trigger falhou', [

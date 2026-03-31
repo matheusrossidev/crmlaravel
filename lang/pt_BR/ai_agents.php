@@ -562,4 +562,18 @@ return [
     'config_next_step_text'        => 'Após configurar o provedor, acesse',
     'config_next_step_link'        => 'Agentes',
     'config_next_step_suffix'      => 'para criar seu primeiro agente de IA.',
+
+    // ── Reminders ───────────────────────────────────────────────────
+    'reminder_title'               => 'Lembretes via WhatsApp',
+    'reminder_desc'                => 'Quando o agente agenda um evento, lembretes são enviados automaticamente para o lead via WhatsApp antes do horário marcado.',
+    'reminder_15min'               => '15 minutos antes',
+    'reminder_30min'               => '30 minutos antes',
+    'reminder_1h'                  => '1 hora antes',
+    'reminder_2h'                  => '2 horas antes',
+    'reminder_12h'                 => '12 horas antes',
+    'reminder_1d'                  => '1 dia antes',
+    'reminder_2d'                  => '2 dias antes',
+    'reminder_template_label'      => 'Mensagem do lembrete',
+    'reminder_template_ph'         => 'Olá @{{lead_name}}! Lembrete: você tem @{{event_title}} agendado(a) para @{{event_date}} às @{{event_time}}.',
+    'reminder_template_hint'       => 'Placeholders: @{{lead_name}}, @{{event_title}}, @{{event_date}}, @{{event_time}}, @{{event_location}}. Deixe vazio para usar o template padrão.',
 ];

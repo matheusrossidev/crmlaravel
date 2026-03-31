@@ -848,13 +848,13 @@ textarea.form-control { resize: vertical; min-height: 68px; }
                 <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af;">{{ __('ig_automations.label_send_dm_optional') }}</span>
             </label>
             <textarea id="dmSingleMessage" rows="3" maxlength="1000" class="ig-textarea"
-                      placeholder="Ex: Olá! Vi que você se interessou pelo nosso conteúdo 😊 Como posso te ajudar?"
+                      placeholder="{{ __('ig_automations.dm_single_placeholder') }}"
                       oninput="updateCount('dmSingleMessage','countDm',1000)"></textarea>
             <div class="char-count" id="countDm">0 / 1000</div>
             <div style="margin-top:8px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;display:flex;align-items:center;gap:8px;">
                 <i class="bi bi-info-circle" style="color:#0085f3;font-size:14px;flex-shrink:0;"></i>
                 <div style="font-size:11px;color:#374151;line-height:1.5;">
-                    Precisa de fluxo com perguntas, condições e ações? Use o <a href="{{ route('chatbot.flows.index') }}" style="color:#0085f3;font-weight:600;">Chatbot Builder</a> com o gatilho "Comentou em publicação".
+                    {{ __('ig_automations.dm_chatbot_hint') }} <a href="{{ route('chatbot.flows.index') }}" style="color:#0085f3;font-weight:600;">{{ __('ig_automations.dm_chatbot_link') }}</a> {{ __('ig_automations.dm_chatbot_suffix') }}
                 </div>
             </div>
         </div>

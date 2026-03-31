@@ -8,7 +8,9 @@ use App\Models\ChatbotFlowEdge;
 use App\Models\ChatbotFlowNode;
 use App\Models\CustomFieldDefinition;
 use App\Models\CustomFieldValue;
+use App\Models\ChatbotFlow;
 use App\Models\InstagramConversation;
+use App\Models\InstagramMessage;
 use App\Models\Lead;
 use App\Models\Task;
 use App\Models\Tenant;
@@ -494,6 +496,14 @@ class ProcessChatbotStep
         if ($text !== '') {
             $this->sendText($conv, $text);
         }
+
+        // Track completion
+        if ($conv->chatbot_flow_id) {
+            ChatbotFlow::withoutGlobalScope('tenant')
+                ->where('id', $conv->chatbot_flow_id)
+                ->increment('completions_count');
+        }
+
         Log::channel($this->logChannel())->info('Chatbot: fluxo concluído', [
             'conversation_id' => $conv->id,
             'flow_id'         => $conv->chatbot_flow_id,
@@ -533,6 +543,8 @@ class ProcessChatbotStep
 
             $service = new InstagramService(decrypt($instance->access_token));
             $service->sendMessage($conv->igsid, $text);
+
+            $this->saveInstagramOutbound($conv, $text);
             sleep(self::DEFAULT_MESSAGE_DELAY);
         } catch (\Throwable $e) {
             Log::channel('instagram')->error('Chatbot: erro ao enviar mensagem IG', [
@@ -577,6 +589,8 @@ class ProcessChatbotStep
 
             $service = new InstagramService(decrypt($instance->access_token));
             $service->sendMessageWithButtons($conv->igsid, $text, $buttons);
+
+            $this->saveInstagramOutbound($conv, $text);
             sleep(self::DEFAULT_MESSAGE_DELAY);
         } catch (\Throwable $e) {
             Log::channel('instagram')->error('Chatbot: erro ao enviar buttons IG', [
@@ -597,6 +611,8 @@ class ProcessChatbotStep
 
             $service = new InstagramService(decrypt($instance->access_token));
             $service->sendButtonTemplate($conv->igsid, $text, $buttons);
+
+            $this->saveInstagramOutbound($conv, $text);
             sleep(self::DEFAULT_MESSAGE_DELAY);
         } catch (\Throwable $e) {
             Log::channel('instagram')->error('Chatbot: erro ao enviar button template IG', [
@@ -604,6 +620,24 @@ class ProcessChatbotStep
                 'error'           => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Save outbound Instagram message to database (so it appears in inbox).
+     */
+    private function saveInstagramOutbound(InstagramConversation $conv, string $text): void
+    {
+        try {
+            InstagramMessage::withoutGlobalScope('tenant')->create([
+                'tenant_id'       => $conv->tenant_id,
+                'conversation_id' => $conv->id,
+                'direction'       => 'outbound',
+                'type'            => 'text',
+                'body'            => $text,
+                'ack'             => 'sent',
+                'sent_at'         => now(),
+            ]);
+        } catch (\Throwable) {}
     }
 
     // ── WhatsApp senders ─────────────────────────────────────────────────────
