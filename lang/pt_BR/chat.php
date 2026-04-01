@@ -166,4 +166,6 @@ return [
     'error_save_qm'     => 'Erro ao salvar mensagem rápida.',
     'confirm_delete_qm' => 'Excluir esta mensagem rápida?',
     'error_delete_qm'   => 'Erro ao excluir mensagem rápida.',
+    'schedule'           => 'Agendar',
+    'placeholder_schedule' => 'Mensagem para agendar...',
 ];

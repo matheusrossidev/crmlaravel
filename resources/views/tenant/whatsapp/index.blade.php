@@ -1306,8 +1306,21 @@ $pageIcon = 'chat-dots';
                 </button>
             </div>
 
+            {{-- Image preview bar --}}
+            <div id="imagePreviewBar" style="display:none;padding:10px 14px;background:#f8fafc;border-bottom:1px solid #e8eaf0;display:none;align-items:center;gap:10px;">
+                <img id="imagePreviewThumb" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid #e8eaf0;" alt="">
+                <div style="flex:1;min-width:0;">
+                    <div id="imagePreviewName" style="font-size:12px;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+                    <input id="imageCaption" type="text" placeholder="Adicionar legenda..." style="width:100%;margin-top:4px;padding:6px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmSendImage();}">
+                </div>
+                <button onclick="confirmSendImage()" style="background:#0085f3;color:#fff;border:none;border-radius:100px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;">
+                    <i class="bi bi-send"></i> Enviar
+                </button>
+                <button onclick="cancelImagePreview()" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:16px;padding:4px;" title="Cancelar">&times;</button>
+            </div>
+
             <div class="wa-compose-row" id="normalRow">
-                <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="sendImage(this)">
+                <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="previewImage(this)">
                 <input type="file" id="docInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.csv" style="display:none;" onchange="sendDocument(this)">
                 {{-- Botão "+" com menu de anexos --}}
                 <div style="position:relative;" id="attachMenuWrap">
@@ -1350,6 +1363,9 @@ $pageIcon = 'chat-dots';
                 <button class="wa-btn-send" id="btnSend" onclick="sendMessage()" title="{{ __('chat.send') }}">
                     <i class="bi bi-send"></i>
                 </button>
+            </div>
+            <div style="padding:0 14px 4px;text-align:right;">
+                <span style="font-size:10px;color:#c4c9d4;">Shift+Enter para nova linha</span>
             </div>
         </div>
         @endif
@@ -2475,12 +2491,36 @@ $pageIcon = 'chat-dots';
         }
     }
 
-    async function sendImage(input) {
-        if (!activeConvId || !input.files[0]) return;
+    // ── Image preview + caption before sending ──────────────────────────
+    let _pendingImageFile = null;
+
+    function previewImage(input) {
+        if (!input.files[0]) return;
+        _pendingImageFile = input.files[0];
+        const bar = document.getElementById('imagePreviewBar');
+        document.getElementById('imagePreviewThumb').src = URL.createObjectURL(_pendingImageFile);
+        document.getElementById('imagePreviewName').textContent = _pendingImageFile.name;
+        document.getElementById('imageCaption').value = '';
+        bar.style.display = 'flex';
+        document.getElementById('imageCaption').focus();
+        input.value = '';
+    }
+
+    function cancelImagePreview() {
+        _pendingImageFile = null;
+        document.getElementById('imagePreviewBar').style.display = 'none';
+    }
+
+    async function confirmSendImage() {
+        if (!activeConvId || !_pendingImageFile) return;
 
         const formData = new FormData();
         formData.append('type', 'image');
-        formData.append('file', input.files[0]);
+        formData.append('file', _pendingImageFile);
+        const caption = document.getElementById('imageCaption').value.trim();
+        if (caption) formData.append('caption', caption);
+
+        cancelImagePreview();
 
         const res = await fetch(`${convBaseUrl(activeConvId)}/messages`, {
             method: 'POST',
@@ -2497,8 +2537,6 @@ $pageIcon = 'chat-dots';
         } else {
             toastr.error(data.error || LANG.error_send_image);
         }
-
-        input.value = '';
     }
 
     async function sendDocument(input) {

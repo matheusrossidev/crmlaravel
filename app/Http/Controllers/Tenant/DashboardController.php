@@ -303,6 +303,18 @@ class DashboardController extends Controller
 
         $maxStageCount = collect($stagesWithCount)->max('count') ?: 1;
 
+        // Avg response time (last 7 days)
+        $avgResponseMinutes = (float) \App\Models\WhatsappConversation::whereNotNull('first_response_at')
+            ->whereNotNull('last_inbound_at')
+            ->where('last_inbound_at', '>=', now()->subDays(7))
+            ->selectRaw('AVG(TIMESTAMPDIFF(MINUTE, last_inbound_at, first_response_at)) as avg_min')
+            ->value('avg_min');
+        $avgResponseFormatted = $avgResponseMinutes > 0
+            ? ($avgResponseMinutes >= 60
+                ? round($avgResponseMinutes / 60, 1) . 'h'
+                : round($avgResponseMinutes) . 'min')
+            : '—';
+
         return compact(
             'leadsThisMonth', 'leadsTrend', 'totalSales', 'salesTrend',
             'leadsGanhos', 'leadsPerdidos', 'ticketMedio', 'conversionRate',
@@ -310,6 +322,7 @@ class DashboardController extends Controller
             'lostByReason', 'monthLabels', 'leadsPerMonth', 'salesPerMonth',
             'leadsBySource', 'dayLabels', 'leadsPerDay', 'leadsPerDayBySource',
             'stagesWithCount', 'pipeline', 'maxStageCount',
+            'avgResponseFormatted',
         );
     }
 }

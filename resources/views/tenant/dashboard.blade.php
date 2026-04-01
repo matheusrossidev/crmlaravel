@@ -3,13 +3,7 @@
 @php($title = __('nav.home'))
 @php($pageIcon = 'house')
 
-@section('topbar_actions')
-<div class="topbar-actions">
-    <button class="topbar-btn" onclick="openCustomize()" title="{{ __('dashboard.customize') }}">
-        <i class="bi bi-sliders"></i>
-    </button>
-</div>
-@endsection
+{{-- topbar_actions removido — customização de dashboard desativada --}}
 
 @push('styles')
 <style>
@@ -502,6 +496,20 @@
         @break
         @endswitch
     @endforeach
+
+        {{-- Tempo de Resposta (sempre visível, fora do switch) --}}
+        <div class="stat-card blue">
+            <div class="stat-card-top">
+                <div class="stat-icon blue"><i class="bi bi-stopwatch"></i></div>
+                <span class="stat-label">Tempo de Resposta</span>
+            </div>
+            <div class="stat-bottom">
+                <div class="stat-value-row">
+                    <span class="stat-value">{{ $avgResponseFormatted ?? '—' }}</span>
+                </div>
+                <span class="stat-sub">Média dos últimos 7 dias</span>
+            </div>
+        </div>
     </div>
 
     {{-- ── Funil de Vendas ──────────────────────────────────────────────── --}}

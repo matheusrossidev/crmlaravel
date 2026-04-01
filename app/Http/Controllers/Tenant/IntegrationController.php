@@ -524,9 +524,14 @@ class IntegrationController extends Controller
     {
         $tenant = activeTenant();
 
+        // Soft disconnect: mark as disconnected instead of deleting
+        // Deleting would cascade-delete ALL conversations and messages
         InstagramInstance::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenant->id)
-            ->delete();
+            ->update([
+                'status'       => 'disconnected',
+                'access_token' => null,
+            ]);
 
         return response()->json(['success' => true]);
     }

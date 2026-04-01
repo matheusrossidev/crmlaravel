@@ -843,6 +843,14 @@ class ProcessWahaWebhook implements ShouldQueue
         ];
         if (! $isFromMe) {
             $convUpdate['unread_count'] = \Illuminate\Support\Facades\DB::raw('unread_count + 1');
+            // Track response time: new inbound resets the timer
+            $convUpdate['last_inbound_at']    = now();
+            $convUpdate['first_response_at']  = null;
+        } else {
+            // Track response time: first outbound after inbound
+            if ($conversation->last_inbound_at && ! $conversation->first_response_at) {
+                $convUpdate['first_response_at'] = now();
+            }
         }
         // Se conversa já existia sem nome (ex: importada), atualizar com o nome resolvido
         if (! empty($contactName) && empty($conversation->contact_name)) {

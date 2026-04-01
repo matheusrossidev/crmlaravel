@@ -210,9 +210,20 @@ class WhatsappController extends Controller
                     'status' => $result['status'] ?? null,
                     'body'   => $result['body'] ?? null,
                 ]);
-                return response()->json([
-                    'error' => 'Falha ao enviar: ' . ($result['body'] ?? 'Erro desconhecido'),
-                ], 500);
+
+                // Parse Facebook error for user-friendly message
+                $errorBody = $result['body'] ?? '';
+                $friendlyMsg = 'Falha ao enviar mensagem.';
+                if (str_contains($errorBody, '"code":190') || str_contains($errorBody, 'OAuthException') || str_contains($errorBody, 'access token')) {
+                    $friendlyMsg = 'Sessão do Instagram expirada. Reconecte sua conta em Configurações > Integrações.';
+                    $instance->update(['status' => 'expired']);
+                } elseif (str_contains($errorBody, '"code":10')) {
+                    $friendlyMsg = 'Permissão negada pelo Instagram. Reconecte a conta com as permissões necessárias.';
+                } elseif (str_contains($errorBody, 'rate limit') || str_contains($errorBody, '"code":4')) {
+                    $friendlyMsg = 'Limite de envio do Instagram atingido. Tente novamente em alguns minutos.';
+                }
+
+                return response()->json(['error' => $friendlyMsg], 422);
             }
         } catch (\Throwable $e) {
             Log::channel('instagram')->error('Falha ao enviar mensagem', ['error' => $e->getMessage()]);

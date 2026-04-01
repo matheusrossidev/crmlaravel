@@ -198,6 +198,14 @@ $pageIcon = 'person-badge';
 @media (max-width: 900px) {
     .lp-grid { grid-template-columns: 1fr; }
 }
+@media (max-width: 768px) {
+    /* Activities split view: stack vertically on mobile */
+    #tab-activities > div { flex-direction: column !important; }
+    #tab-activities > div > div { width: 100% !important; border-right: none !important; border-bottom: 1px solid #f0f2f7; max-height: 300px !important; }
+    /* Tabs scroll */
+    .lp-tabs-nav { padding: 0 10px; }
+    .lp-tab-btn { padding: 10px 12px; font-size: 12px; white-space: nowrap; }
+}
 
 /* ── Tabs ── */
 .lp-card {

@@ -166,4 +166,6 @@ return [
     'error_save_qm'     => 'Error saving quick message.',
     'confirm_delete_qm' => 'Delete this quick message?',
     'error_delete_qm'   => 'Error deleting quick message.',
+    'schedule'           => 'Schedule',
+    'placeholder_schedule' => 'Message to schedule...',
 ];

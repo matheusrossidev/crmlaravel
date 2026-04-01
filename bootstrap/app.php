@@ -62,6 +62,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('goals:process-recurrence')->dailyAt('00:05');
         $schedule->command('goals:check-alerts')->dailyAt('09:00');
         $schedule->command('partners:release-commissions')->dailyAt('06:30');
+        $schedule->command('instagram:refresh-tokens')->dailyAt('03:00');
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
