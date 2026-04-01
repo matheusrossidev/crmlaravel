@@ -34,8 +34,8 @@
         transition: all .15s; cursor: pointer;
     }
     .task-item:hover { border-color: #bfdbfe; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
-    .task-item.completed { opacity: .55; }
-    .task-item.completed .task-subject { text-decoration: line-through; }
+    .task-item.completed { border-color: #10b981; box-shadow: 0 0 0 2px rgba(16,185,129,.15); }
+    .task-item.completed .task-subject { text-decoration: line-through; color: #6b7280; }
     .task-checkbox {
         width: 18px; height: 18px; border-radius: 50%; border: 2px solid #d1d5db;
         cursor: pointer; display: flex; align-items: center; justify-content: center;
