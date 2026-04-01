@@ -187,10 +187,16 @@
         </div>
     </div>
     <div class="task-filters">
-        <button class="task-tab active" data-status="">{{ __('tasks.all') }}</button>
-        <button class="task-tab" data-status="pending">{{ __('tasks.pending') }}</button>
-        <button class="task-tab" data-status="overdue">{{ __('tasks.overdue') }}</button>
-        <button class="task-tab" data-status="completed">{{ __('tasks.completed') }}</button>
+        <div style="position:relative;flex:1;max-width:260px;">
+            <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:13px;"></i>
+            <input type="text" id="filterSearch" placeholder="Buscar atividade..." style="width:100%;padding:7px 10px 7px 32px;font-size:12px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#374151;font-family:inherit;" oninput="loadTasks()">
+        </div>
+        <select class="task-filter-select" id="filterStatus">
+            <option value="">Status</option>
+            <option value="pending">Pendente</option>
+            <option value="overdue">Atrasado</option>
+            <option value="completed">Concluído</option>
+        </select>
         <select class="task-filter-select" id="filterType">
             <option value="">{{ __('tasks.type_filter') }}</option>
             @foreach($typeLabels as $key => $label)
@@ -207,7 +213,22 @@
             <input type="checkbox" id="myTasksToggle"> {{ __('tasks.my_tasks') }}
         </label>
     </div>
-    <div id="taskList" class="task-list"></div>
+    <div id="taskCounter" style="font-size:13px;color:#6b7280;margin-bottom:12px;"></div>
+    <div style="background:#fff;border:1.5px solid #e8eaf0;border-radius:14px;overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;" id="taskTable">
+            <thead>
+                <tr style="border-bottom:1px solid #f0f2f7;">
+                    <th style="width:44px;padding:10px 14px;text-align:center;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;background:#fafbfc;"></th>
+                    <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;background:#fafbfc;">Atividade</th>
+                    <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;background:#fafbfc;">Status</th>
+                    <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;background:#fafbfc;">Data e Hora</th>
+                    <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;background:#fafbfc;">Contato</th>
+                    <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;background:#fafbfc;">Responsável</th>
+                </tr>
+            </thead>
+            <tbody id="taskList"></tbody>
+        </table>
+    </div>
     <div id="taskEmpty" class="task-empty" style="display:none;">
         <i class="bi bi-check2-square"></i>
         <p>{{ __('tasks.no_tasks') }}</p>
@@ -327,6 +348,8 @@
         const assigned = document.getElementById('filterAssigned').value;
         if (assigned) params.set('assigned_to', assigned);
         if (document.getElementById('myTasksToggle').checked) params.set('my_tasks', '1');
+        const search = document.getElementById('filterSearch').value.trim();
+        if (search) params.set('search', search);
 
         window.API.get(DATA_URL + '?' + params.toString()).then(function(res) {
             _tasks = res.data || [];
@@ -337,48 +360,77 @@
     function renderTasks() {
         const list = document.getElementById('taskList');
         const empty = document.getElementById('taskEmpty');
-        if (!_tasks.length) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+        const counter = document.getElementById('taskCounter');
+        const table = document.getElementById('taskTable');
+
+        if (!_tasks.length) {
+            list.innerHTML = '';
+            empty.style.display = 'block';
+            table.style.display = 'none';
+            counter.textContent = '';
+            return;
+        }
         empty.style.display = 'none';
+        table.style.display = '';
+
+        // Counter
+        const leadIds = new Set(_tasks.filter(t => t.lead_id).map(t => t.lead_id));
+        counter.innerHTML = '<strong>' + _tasks.length + '</strong> atividade' + (_tasks.length !== 1 ? 's' : '') +
+            (leadIds.size > 0 ? ' de <strong>' + leadIds.size + '</strong> contato' + (leadIds.size !== 1 ? 's' : '') : '');
+
+        const statusLabels = { overdue: 'Atrasado', today: 'Hoje', pending: 'Em dia', completed: 'Concluído' };
+        const statusColors = { overdue: '#ef4444', today: '#f59e0b', pending: '#10b981', completed: '#10b981' };
+        const statusIcons  = { overdue: 'exclamation-triangle-fill', today: 'calendar-event', pending: 'calendar-check', completed: 'check-circle-fill' };
+        const PROFILE_URL = '{{ url("/contatos") }}';
 
         list.innerHTML = _tasks.map(function(t) {
             const done = t.status === 'completed';
             const icon = ICONS[t.type] || 'bi-check2-square';
             const uc = t.urgency_color;
-            const dueBadge = t.due_date_fmt
-                ? '<span class="task-due" style="background:' + uc + '20;color:' + uc + ';">' +
-                  (t.due_time ? t.due_time + ' ' : '') + t.due_date_fmt +
-                  (t.is_overdue ? ' ' + TLANG.overdue_label : '') + '</span>' : '';
-            return '<div class="task-item' + (done ? ' completed' : '') + '" data-id="' + t.id + '" onclick="editTask(' + t.id + ')">' +
-                '<div class="task-checkbox' + (done ? ' checked' : '') + '" onclick="event.stopPropagation();toggleTask(' + t.id + ')"></div>' +
-                '<div class="task-type-icon" style="background:' + uc + '15;color:' + uc + ';"><i class="bi ' + icon + '"></i></div>' +
-                '<div class="task-main">' +
-                    '<div class="task-subject">' + window.escapeHtml(t.subject) + '</div>' +
-                    '<div class="task-meta">' +
-                        '<span>' + window.escapeHtml(TYPES[t.type] || t.type) + '</span>' +
-                        (t.lead_name ? '<span><i class="bi bi-person"></i> ' + window.escapeHtml(t.lead_name) + '</span>' : '') +
-                        (t.assigned_name ? '<span><i class="bi bi-person-check"></i> ' + window.escapeHtml(t.assigned_name) + '</span>' : '') +
+
+            // Status logic
+            let statusKey = 'pending';
+            if (done) statusKey = 'completed';
+            else if (t.is_overdue) statusKey = 'overdue';
+            else if (t.due_date_fmt && t.due_date === new Date().toISOString().split('T')[0]) statusKey = 'today';
+
+            const sc = statusColors[statusKey];
+            const statusBadge = '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:' + sc + '15;color:' + sc + ';">' +
+                '<i class="bi bi-' + statusIcons[statusKey] + '" style="font-size:10px;"></i> ' + statusLabels[statusKey] + '</span>';
+
+            // Date formatted
+            const dateStr = t.due_date_fmt ? t.due_date_fmt + (t.due_time ? ' às ' + t.due_time : '') : '—';
+
+            // Contact
+            const contactHtml = t.lead_name
+                ? '<a href="' + PROFILE_URL + '/' + t.lead_id + '/perfil" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">' +
+                    '<div style="width:28px;height:28px;border-radius:50%;background:#eff6ff;color:#0085f3;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">' +
+                    window.escapeHtml((t.lead_name || '?').substring(0, 2).toUpperCase()) + '</div>' +
+                    '<span style="font-weight:500;">' + window.escapeHtml(t.lead_name) + '</span></a>'
+                : '<span style="color:#d1d5db;">—</span>';
+
+            return '<tr style="border-bottom:1px solid #f7f8fa;cursor:pointer;transition:background .1s;' + (done ? 'opacity:.6;' : '') + '" onclick="editTask(' + t.id + ')" onmouseenter="this.style.background=\'#f9fafb\'" onmouseleave="this.style.background=\'\'">' +
+                '<td style="padding:10px 14px;text-align:center;vertical-align:middle;">' +
+                    '<div class="task-checkbox' + (done ? ' checked' : '') + '" onclick="event.stopPropagation();toggleTask(' + t.id + ')"></div>' +
+                '</td>' +
+                '<td style="padding:10px 14px;vertical-align:middle;">' +
+                    '<div style="display:flex;align-items:center;gap:10px;">' +
+                        '<div style="width:28px;height:28px;border-radius:7px;background:' + uc + '15;color:' + uc + ';display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;"><i class="bi ' + icon + '"></i></div>' +
+                        '<span style="font-weight:600;color:' + (done ? '#9ca3af' : '#1a1d23') + ';' + (done ? 'text-decoration:line-through;' : '') + '">' + window.escapeHtml(t.subject) + '</span>' +
                     '</div>' +
-                '</div>' +
-                '<div class="task-right">' +
-                    '<span class="priority-badge priority-' + (t.priority || 'medium') + '">' + priorityLabels[t.priority || 'medium'] + '</span>' +
-                    dueBadge +
-                    '<div class="task-actions">' +
-                        '<button onclick="event.stopPropagation();editTask(' + t.id + ')" title="' + TLANG.edit + '"><i class="bi bi-pencil"></i></button>' +
-                        '<button onclick="event.stopPropagation();deleteTask(' + t.id + ')" title="' + TLANG.delete + '"><i class="bi bi-trash3"></i></button>' +
-                    '</div>' +
-                '</div>' +
-            '</div>';
+                '</td>' +
+                '<td style="padding:10px 14px;vertical-align:middle;">' + statusBadge + '</td>' +
+                '<td style="padding:10px 14px;vertical-align:middle;color:#6b7280;font-size:12.5px;white-space:nowrap;">' + dateStr + '</td>' +
+                '<td style="padding:10px 14px;vertical-align:middle;">' + contactHtml + '</td>' +
+                '<td style="padding:10px 14px;vertical-align:middle;font-size:12.5px;color:' + (t.assigned_name ? '#374151' : '#d1d5db') + ';">' + (t.assigned_name ? window.escapeHtml(t.assigned_name) : 'Sem dono') + '</td>' +
+            '</tr>';
         }).join('');
     }
 
-    // ── Tabs & filters ──────────────────────────────────────────────────
-    document.querySelectorAll('.task-tab').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.task-tab').forEach(function(b) { b.classList.remove('active'); });
-            btn.classList.add('active');
-            _currentStatus = btn.dataset.status;
-            loadTasks();
-        });
+    // ── Filters ─────────────────────────────────────────────────────────
+    document.getElementById('filterStatus').addEventListener('change', function() {
+        _currentStatus = this.value;
+        loadTasks();
     });
     document.getElementById('filterType').addEventListener('change', loadTasks);
     document.getElementById('filterAssigned').addEventListener('change', loadTasks);

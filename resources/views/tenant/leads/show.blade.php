@@ -883,7 +883,13 @@ $pageIcon = 'person-badge';
     {{-- ── Left: Tabs ── --}}
     <div class="lp-card">
         <div class="lp-tabs-nav">
-            <button class="lp-tab-btn active" data-tab="timeline">
+            <button class="lp-tab-btn active" data-tab="activities">
+                <i class="bi bi-list-task"></i> Atividades
+                @if(isset($pendingTasksCount) && $pendingTasksCount > 0)
+                <span style="background:#fef2f2;color:#ef4444;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">{{ $pendingTasksCount }}</span>
+                @endif
+            </button>
+            <button class="lp-tab-btn" data-tab="timeline">
                 <i class="bi bi-clock-history"></i> {{ __('leads.history') }}
             </button>
             <button class="lp-tab-btn" data-tab="notes">
@@ -918,16 +924,84 @@ $pageIcon = 'person-badge';
                 <span style="background:#fff7ed;color:#f59e0b;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">{{ $scheduledMessages->where('status', 'pending')->count() }}</span>
                 @endif
             </button>
-            <button class="lp-tab-btn" data-tab="tasks">
-                <i class="bi bi-check2-square"></i> {{ __('leads.tasks_tab') }}
-                @if(isset($pendingTasksCount) && $pendingTasksCount > 0)
-                <span style="background:#fef2f2;color:#ef4444;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">{{ $pendingTasksCount }}</span>
+            <button class="lp-tab-btn" data-tab="products">
+                <i class="bi bi-box-seam"></i> Produtos
+                @if($lead->products->count() > 0)
+                <span style="background:#f0fdf4;color:#059669;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">{{ $lead->products->count() }}</span>
                 @endif
             </button>
         </div>
 
+        {{-- ── Tab: Atividades (split view — tasks) ── --}}
+        <div class="lp-tab-panel active" id="tab-activities">
+            <div style="display:flex;min-height:300px;">
+                {{-- Left: task list --}}
+                <div style="width:50%;border-right:1px solid #f0f2f7;overflow-y:auto;max-height:500px;" id="actTaskList">
+                    <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f0f2f7;">
+                        <span style="font-size:13px;font-weight:600;color:#1a1d23;">Próximas atividades</span>
+                        <button onclick="openLeadTaskDrawer()" style="background:#0085f3;color:#fff;border:none;border-radius:100px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;">
+                            + Nova atividade
+                        </button>
+                    </div>
+                    @php
+                        $sortedTasks = $tasks->sortBy(fn($t) => $t->status === 'completed' ? 1 : 0)->sortBy('due_date');
+                        $taskIcons = ['call' => 'telephone', 'email' => 'envelope', 'task' => 'check2-square', 'visit' => 'geo-alt', 'whatsapp' => 'whatsapp', 'meeting' => 'camera-video'];
+                    @endphp
+                    @forelse($sortedTasks as $task)
+                        @php
+                            $isCompleted = $task->status === 'completed';
+                            $daysUntil = $task->due_date ? (int) now()->startOfDay()->diffInDays($task->due_date, false) : null;
+                            $isOverdue = !$isCompleted && $daysUntil !== null && $daysUntil < 0;
+                            $icon = $taskIcons[$task->type] ?? 'check2-square';
+                        @endphp
+                        <div class="act-task-row {{ $isCompleted ? 'completed' : '' }} {{ $isOverdue ? 'overdue' : '' }}" data-task-id="{{ $task->id }}" onclick="showTaskDetail({{ $task->id }})">
+                            <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;border-bottom:1px solid #f7f8fa;transition:background .1s;"
+                                 onmouseenter="this.style.background='#f8fafc'" onmouseleave="this.style.background=''">
+                                @if($daysUntil !== null && !$isCompleted)
+                                    <div style="min-width:32px;text-align:center;">
+                                        <div style="font-size:15px;font-weight:800;color:{{ $isOverdue ? '#ef4444' : ($daysUntil <= 1 ? '#f59e0b' : '#0085f3') }};">{{ abs($daysUntil) }}</div>
+                                        <div style="font-size:9px;font-weight:600;color:#9ca3af;">{{ $isOverdue ? 'ATRASO' : 'D' }}</div>
+                                    </div>
+                                @endif
+                                <i class="bi bi-{{ $icon }}" style="font-size:14px;color:{{ $isCompleted ? '#10b981' : '#9ca3af' }};"></i>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:13px;font-weight:500;color:{{ $isCompleted ? '#9ca3af' : '#1a1d23' }};{{ $isCompleted ? 'text-decoration:line-through;' : '' }}overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                        {{ $task->subject }}
+                                    </div>
+                                    <div style="font-size:11px;color:#9ca3af;">
+                                        {{ $task->due_date?->format('d/m') }}
+                                        @if($task->assignedTo) · {{ $task->assignedTo->name }} @endif
+                                    </div>
+                                </div>
+                                @if($isCompleted)
+                                    <i class="bi bi-check-circle-fill" style="color:#10b981;font-size:16px;"></i>
+                                @else
+                                    <div style="width:18px;height:18px;border:2px solid #d1d5db;border-radius:50%;flex-shrink:0;cursor:pointer;"
+                                         onclick="event.stopPropagation();toggleTaskComplete({{ $task->id }},this)"
+                                         onmouseenter="this.style.borderColor='#10b981'" onmouseleave="this.style.borderColor='#d1d5db'"></div>
+                                @endif
+                            </div>
+                        </div>
+                    @empty
+                        <div style="text-align:center;padding:40px 20px;color:#9ca3af;">
+                            <i class="bi bi-check2-all" style="font-size:28px;display:block;margin-bottom:8px;"></i>
+                            Nenhuma atividade pendente
+                        </div>
+                    @endforelse
+                </div>
+
+                {{-- Right: task detail --}}
+                <div style="width:50%;overflow-y:auto;max-height:500px;" id="actTaskDetail">
+                    <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#d1d5db;flex-direction:column;gap:8px;padding:40px;">
+                        <i class="bi bi-hand-index" style="font-size:28px;"></i>
+                        <span style="font-size:13px;">Selecione uma atividade</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- ── Tab: Histórico (unified feed) ── --}}
-        <div class="lp-tab-panel active" id="tab-timeline">
+        <div class="lp-tab-panel" id="tab-timeline">
             {{-- Timeline feed --}}
             <div class="lp-timeline" id="timelineFeed" style="padding:16px 20px;">
                 @php
@@ -1385,6 +1459,48 @@ $pageIcon = 'person-badge';
             </div>
         </div>
 
+        {{-- ── Tab: Produtos ── --}}
+        <div class="lp-tab-panel" id="tab-products">
+            <div style="padding:16px 20px;">
+                @if($lead->products->count() > 0)
+                    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                        <thead>
+                            <tr style="border-bottom:1px solid #f0f2f7;">
+                                <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;">Produto</th>
+                                <th style="text-align:center;padding:8px 10px;font-size:11px;font-weight:700;color:#9ca3af;">Qtd</th>
+                                <th style="text-align:right;padding:8px 10px;font-size:11px;font-weight:700;color:#9ca3af;">Preço Unit.</th>
+                                <th style="text-align:right;padding:8px 10px;font-size:11px;font-weight:700;color:#9ca3af;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($lead->products as $lp)
+                            <tr style="border-bottom:1px solid #f7f8fa;">
+                                <td style="padding:10px;">
+                                    <div style="font-weight:600;color:#1a1d23;">{{ $lp->product?->name ?? '—' }}</div>
+                                    @if($lp->product?->sku)<div style="font-size:11px;color:#9ca3af;">SKU: {{ $lp->product->sku }}</div>@endif
+                                </td>
+                                <td style="text-align:center;padding:10px;color:#374151;">{{ number_format($lp->quantity, 0) }}</td>
+                                <td style="text-align:right;padding:10px;color:#374151;">R$ {{ number_format($lp->unit_price, 2, ',', '.') }}</td>
+                                <td style="text-align:right;padding:10px;font-weight:600;color:#1a1d23;">R$ {{ number_format($lp->total, 2, ',', '.') }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                        <tfoot>
+                            <tr style="border-top:2px solid #e8eaf0;">
+                                <td colspan="3" style="padding:10px;text-align:right;font-size:13px;font-weight:700;color:#374151;">Total</td>
+                                <td style="padding:10px;text-align:right;font-size:15px;font-weight:800;color:#059669;">R$ {{ number_format($lead->products->sum('total'), 2, ',', '.') }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                @else
+                    <div style="text-align:center;padding:40px 20px;color:#9ca3af;">
+                        <i class="bi bi-box-seam" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px;"></i>
+                        Nenhum produto vinculado
+                    </div>
+                @endif
+            </div>
+        </div>
+
     </div>{{-- end left col --}}
 
     {{-- ── Right: Info card ── --}}
@@ -1613,6 +1729,48 @@ $pageIcon = 'person-badge';
         </div>
         @endif
 
+        {{-- Opt-out --}}
+        @if($lead->opted_out)
+        <div class="lp-info-section">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;">
+                <i class="bi bi-exclamation-triangle-fill" style="color:#dc2626;"></i>
+                <div>
+                    <div style="font-size:12px;font-weight:600;color:#dc2626;">Opted-out</div>
+                    @if($lead->opted_out_reason)<div style="font-size:11px;color:#9ca3af;">{{ $lead->opted_out_reason }}</div>@endif
+                </div>
+            </div>
+        </div>
+        @endif
+
+        {{-- Vendas --}}
+        @if($lead->sales->count() > 0 || $lead->lostSales->count() > 0)
+        <div class="lp-info-section">
+            <div class="lp-info-section-title">Vendas</div>
+            @foreach($lead->sales as $sale)
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;">
+                <div style="width:24px;height:24px;border-radius:50%;background:#f0fdf4;color:#10b981;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">
+                    <i class="bi bi-check-lg"></i>
+                </div>
+                <div style="flex:1;">
+                    <div style="font-size:12.5px;font-weight:600;color:#059669;">R$ {{ number_format((float) $sale->value, 2, ',', '.') }}</div>
+                    <div style="font-size:11px;color:#9ca3af;">{{ $sale->closed_at?->format('d/m/Y') }} · {{ $sale->closedBy?->name }}</div>
+                </div>
+            </div>
+            @endforeach
+            @foreach($lead->lostSales as $lost)
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;">
+                <div style="width:24px;height:24px;border-radius:50%;background:#fef2f2;color:#dc2626;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">
+                    <i class="bi bi-x-lg"></i>
+                </div>
+                <div style="flex:1;">
+                    <div style="font-size:12.5px;font-weight:600;color:#dc2626;">Perdida</div>
+                    <div style="font-size:11px;color:#9ca3af;">{{ $lost->lost_at?->format('d/m/Y') }} · {{ $lost->reason?->name }}</div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+
         {{-- Datas --}}
         <div class="lp-info-section">
             <div class="lp-info-section-title">{{ __('leads.dates_section') }}</div>
@@ -1638,6 +1796,76 @@ $pageIcon = 'person-badge';
 
 {{-- Drawer compartilhado (para edição) --}}
 @include('tenant.leads._drawer', ['pipelines' => $pipelines, 'customFieldDefs' => $cfDefs])
+
+{{-- Drawer para criar tarefa inline --}}
+<div id="newTaskOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;" onclick="closeNewTaskDrawer()"></div>
+<div id="newTaskDrawer" style="position:fixed;top:0;right:-440px;width:420px;max-width:100vw;height:100%;background:#fff;z-index:1001;box-shadow:-4px 0 20px rgba(0,0,0,.1);transition:right .3s;display:flex;flex-direction:column;">
+    <div style="padding:18px 22px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;">
+        <h4 style="margin:0;font-size:15px;font-weight:700;color:#1a1d23;display:flex;align-items:center;gap:8px;">
+            <i class="bi bi-plus-circle" style="color:#0085f3;"></i> Nova Atividade
+        </h4>
+        <button onclick="closeNewTaskDrawer()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#9ca3af;">&times;</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:18px 22px;">
+        <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">Assunto *</label>
+            <input id="ntSubject" type="text" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;" placeholder="Ex: Ligar para follow-up">
+        </div>
+        <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">Descrição</label>
+            <textarea id="ntDescription" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;min-height:60px;resize:vertical;" placeholder="Detalhes da atividade..."></textarea>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;">
+            <div style="flex:1;">
+                <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">Tipo *</label>
+                <select id="ntType" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;">
+                    <option value="call">Ligar</option>
+                    <option value="email">Email</option>
+                    <option value="task">Tarefa</option>
+                    <option value="visit">Visita</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="meeting">Reunião</option>
+                </select>
+            </div>
+            <div style="flex:1;">
+                <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">Prioridade</label>
+                <select id="ntPriority" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;">
+                    <option value="low">Baixa</option>
+                    <option value="medium" selected>Média</option>
+                    <option value="high">Alta</option>
+                </select>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;">
+            <div style="flex:1;">
+                <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">Data *</label>
+                <input id="ntDueDate" type="date" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;">
+            </div>
+            <div style="flex:1;">
+                <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">Hora</label>
+                <input id="ntDueTime" type="time" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;">
+            </div>
+        </div>
+        <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">Responsável</label>
+            <select id="ntAssignedTo" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;">
+                <option value="">Sem atribuição</option>
+                @foreach($users as $u)
+                <option value="{{ $u->id }}" {{ $u->id === auth()->id() ? 'selected' : '' }}>{{ $u->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">Observações</label>
+            <textarea id="ntNotes" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;min-height:50px;resize:vertical;" placeholder="Notas internas..."></textarea>
+        </div>
+    </div>
+    <div style="padding:14px 22px;border-top:1px solid #f0f2f7;">
+        <button onclick="saveNewTask()" style="width:100%;background:#0085f3;color:#fff;border:none;border-radius:100px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+            <i class="bi bi-check2"></i> Criar atividade
+        </button>
+    </div>
+</div>
 
 {{-- ── Modal: Agendar Mensagem ── --}}
 <div id="schedModal" class="sched-overlay" style="display:none;" onclick="if(event.target===this)closeScheduleModal()">
@@ -2102,12 +2330,131 @@ function toggleLeadTask(id) {
         .done(function() { location.reload(); });
 }
 
+// ── Activities split view ──────────────────────────────────────────────
+@php
+    $taskDataMap = [];
+    foreach ($tasks as $t) {
+        $taskDataMap[$t->id] = [
+            'id' => $t->id,
+            'subject' => $t->subject,
+            'description' => $t->description,
+            'type' => $t->type,
+            'status' => $t->status,
+            'priority' => $t->priority,
+            'due_date' => $t->due_date?->format('d/m/Y'),
+            'due_time' => $t->due_time ? substr($t->due_time, 0, 5) : null,
+            'completed_at' => $t->completed_at?->format('d/m/Y H:i'),
+            'assigned_to_name' => $t->assignedTo?->name,
+            'notes' => $t->notes,
+        ];
+    }
+@endphp
+const _taskData = {!! json_encode($taskDataMap) !!};
+
+const _taskTypeLabels = { call: 'Ligar', email: 'Email', task: 'Tarefa', visit: 'Visita', whatsapp: 'WhatsApp', meeting: 'Reunião' };
+const _taskPriorityLabels = { low: 'Baixa', medium: 'Média', high: 'Alta' };
+const _taskPriorityColors = { low: '#10b981', medium: '#f59e0b', high: '#ef4444' };
+
+function showTaskDetail(taskId) {
+    const t = _taskData[taskId];
+    if (!t) return;
+
+    // Highlight selected row
+    document.querySelectorAll('.act-task-row').forEach(r => r.style.background = '');
+    document.querySelector(`.act-task-row[data-task-id="${taskId}"]`)?.querySelectorAll('div')[0]?.closest('.act-task-row')?.querySelector('div')?.style && (
+        document.querySelector(`.act-task-row[data-task-id="${taskId}"] > div`).style.background = '#f0f4ff'
+    );
+
+    const panel = document.getElementById('actTaskDetail');
+    const priColor = _taskPriorityColors[t.priority] || '#6b7280';
+    panel.innerHTML = `
+        <div style="padding:20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                <h4 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0;">${escapeHtml(t.subject)}</h4>
+                <i class="bi bi-question-circle" style="color:#9ca3af;font-size:14px;cursor:help;" title="Clique na tarefa para ver detalhes"></i>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:#eff6ff;color:#0085f3;">
+                    ${_taskTypeLabels[t.type] || t.type}
+                </span>
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:${priColor}15;color:${priColor};">
+                    ${_taskPriorityLabels[t.priority] || t.priority}
+                </span>
+                ${t.status === 'completed' ? '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:#f0fdf4;color:#10b981;"><i class="bi bi-check-circle-fill"></i> Concluída</span>' : ''}
+            </div>
+            ${t.description ? `<div style="margin-bottom:16px;padding:12px;background:#f8fafc;border-radius:8px;font-size:13px;color:#374151;line-height:1.6;">${escapeHtml(t.description)}</div>` : ''}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+                <div><span style="color:#9ca3af;font-size:11px;display:block;margin-bottom:2px;">Data</span><strong>${t.due_date || '—'}${t.due_time ? ' às ' + t.due_time : ''}</strong></div>
+                <div><span style="color:#9ca3af;font-size:11px;display:block;margin-bottom:2px;">Responsável</span><strong>${t.assigned_to_name || 'Sem atribuição'}</strong></div>
+                ${t.completed_at ? `<div><span style="color:#9ca3af;font-size:11px;display:block;margin-bottom:2px;">Concluída em</span><strong>${t.completed_at}</strong></div>` : ''}
+                ${t.notes ? `<div style="grid-column:span 2;"><span style="color:#9ca3af;font-size:11px;display:block;margin-bottom:2px;">Observações</span><div style="color:#374151;">${escapeHtml(t.notes)}</div></div>` : ''}
+            </div>
+        </div>
+    `;
+}
+
+function toggleTaskComplete(taskId, el) {
+    fetch('{{ url("/tarefas") }}/' + taskId + '/toggle', {
+        method: 'PATCH',
+        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+    }).then(() => location.reload());
+}
+
+function escapeHtml(s) {
+    if (!s) return '';
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function openLeadTaskModal() {
     window.location.href = @json(route('tasks.index')) + '?open_modal=1&lead_id={{ $lead->id }}&lead_name=' + encodeURIComponent(@json($lead->name));
 }
 
 function openLeadTaskDrawer() {
-    window.location.href = @json(route('tasks.index')) + '?open_modal=1&lead_id={{ $lead->id }}&lead_name=' + encodeURIComponent(@json($lead->name));
+    document.getElementById('ntSubject').value = '';
+    document.getElementById('ntDescription').value = '';
+    document.getElementById('ntDueDate').value = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    document.getElementById('ntDueTime').value = '';
+    document.getElementById('ntNotes').value = '';
+    document.getElementById('newTaskOverlay').style.display = 'block';
+    setTimeout(() => { document.getElementById('newTaskDrawer').style.right = '0'; }, 10);
+}
+
+function closeNewTaskDrawer() {
+    document.getElementById('newTaskDrawer').style.right = '-440px';
+    setTimeout(() => { document.getElementById('newTaskOverlay').style.display = 'none'; }, 300);
+}
+
+async function saveNewTask() {
+    const subject = document.getElementById('ntSubject').value.trim();
+    const dueDate = document.getElementById('ntDueDate').value;
+    if (!subject) { toastr.warning('Informe o assunto.'); return; }
+    if (!dueDate) { toastr.warning('Informe a data.'); return; }
+
+    try {
+        const res = await fetch('{{ route("tasks.store") }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                subject: subject,
+                description: document.getElementById('ntDescription').value,
+                type: document.getElementById('ntType').value,
+                priority: document.getElementById('ntPriority').value,
+                due_date: dueDate,
+                due_time: document.getElementById('ntDueTime').value || null,
+                assigned_to: document.getElementById('ntAssignedTo').value || null,
+                notes: document.getElementById('ntNotes').value || null,
+                lead_id: {{ $lead->id }},
+            }),
+        });
+        const data = await res.json();
+        if (data.success || res.ok) {
+            toastr.success('Atividade criada!');
+            closeNewTaskDrawer();
+            setTimeout(() => location.reload(), 800);
+        } else {
+            toastr.error(data.message || 'Erro ao criar atividade.');
+        }
+    } catch { toastr.error('Erro de conexão.'); }
 }
 
 // ── Contacts ─────────────────────────────────────────────────────────

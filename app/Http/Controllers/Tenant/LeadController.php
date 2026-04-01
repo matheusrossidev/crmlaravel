@@ -254,6 +254,10 @@ class LeadController extends Controller
             'customFieldValues.fieldDefinition',
             'attachments.uploader',
             'activeSequence.sequence.steps',
+            'sales.closedBy',
+            'lostSales.reason',
+            'products.product',
+            'contacts',
         ]);
 
         $waConversation = WhatsappConversation::where('lead_id', $lead->id)

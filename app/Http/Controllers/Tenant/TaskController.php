@@ -66,6 +66,10 @@ class TaskController extends Controller
             $query->where('due_date', '<=', $request->date_to);
         }
 
+        if ($request->filled('search')) {
+            $query->where('subject', 'like', '%' . $request->search . '%');
+        }
+
         $tasks = $query->get()->map(fn (Task $t) => $this->format($t));
 
         return response()->json(['data' => $tasks]);
