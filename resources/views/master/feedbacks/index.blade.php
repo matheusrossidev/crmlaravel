@@ -27,6 +27,11 @@
 @endpush
 
 @section('content')
+<div class="m-section-header">
+    <div class="m-section-title">Feedbacks</div>
+    <div class="m-section-subtitle">Feedbacks enviados pelos usuários da plataforma</div>
+</div>
+
 <div class="m-card">
     <div class="m-card-header">
         <div class="m-card-title"><i class="bi bi-lightbulb"></i> Feedbacks dos Clientes @if($newCount > 0) <span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:99px;font-size:10px;margin-left:6px;">{{ $newCount }} novos</span> @endif</div>

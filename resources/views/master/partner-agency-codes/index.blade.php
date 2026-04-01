@@ -13,6 +13,11 @@
 
 @section('content')
 
+<div class="m-section-header">
+    <div class="m-section-title">Códigos de Agência</div>
+    <div class="m-section-subtitle">Gerencie os códigos de indicação dos parceiros</div>
+</div>
+
 <div class="m-card">
     <div class="m-card-header">
         <div class="m-card-title"><i class="bi bi-building-check"></i> Códigos de Parceiros</div>

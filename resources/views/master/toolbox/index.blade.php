@@ -153,6 +153,11 @@
 
 @section('content')
 
+<div class="m-section-header">
+    <div class="m-section-title">Ferramentas</div>
+    <div class="m-section-subtitle">Execute ferramentas de manutenção e diagnóstico</div>
+</div>
+
 <p style="margin: 0 0 20px; font-size: 13.5px; color: #6b7280;">
     Ferramentas administrativas para manutenção e diagnóstico do sistema. Todas as ações são executadas diretamente no servidor.
 </p>

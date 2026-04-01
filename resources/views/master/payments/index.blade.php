@@ -6,6 +6,11 @@
 
 @section('content')
 
+<div class="m-section-header">
+    <div class="m-section-title">Recebimentos</div>
+    <div class="m-section-subtitle">Histórico de pagamentos recebidos</div>
+</div>
+
 {{-- Stats --}}
 <div class="m-stats" style="margin-bottom:20px;">
     <div class="m-stat" style="border-left:3px solid #10B981;">

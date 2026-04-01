@@ -6,6 +6,11 @@
 @endsection
 
 @section('content')
+<div class="m-section-header">
+    <div class="m-section-title">Ranking de Parceiros</div>
+    <div class="m-section-subtitle">Configure os níveis e comissões dos parceiros</div>
+</div>
+
 <div class="m-card">
     <div class="m-card-header">
         <div class="m-card-title"><i class="bi bi-award"></i> Ranks de Parceiros</div>

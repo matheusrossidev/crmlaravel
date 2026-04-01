@@ -246,22 +246,28 @@
         .m-main {
             padding-top: 56px;
             min-height: 100vh;
+            background: #f4f6fb;
         }
 
         .m-page {
             padding: 28px;
         }
 
+        /* ── SECTION HEADERS (padrão tenant) ───────────────────────────────── */
+        .m-section-header { margin-bottom: 20px; }
+        .m-section-title { font-size: 18px; font-weight: 700; color: #1a1d23; font-family: 'Plus Jakarta Sans', sans-serif; }
+        .m-section-subtitle { font-size: 13px; color: #6b7280; margin-top: 2px; }
+
         /* ── CARDS ─────────────────────────────────────────────────────────── */
         .m-card {
             background: #fff;
             border-radius: 14px;
-            border: 1px solid #e8eaf0;
+            border: 1.5px solid #e8eaf0;
             overflow: hidden;
         }
 
         .m-card-header {
-            padding: 16px 22px;
+            padding: 16px 20px;
             border-bottom: 1px solid #f0f2f7;
             display: flex;
             align-items: center;
@@ -271,57 +277,73 @@
 
         .m-card-title {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 14px;
-            font-weight: 700;
+            font-size: 13.5px;
+            font-weight: 600;
             color: #1a1d23;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .m-card-title i { color: #007DFF; }
+        .m-card-title i { color: #0085f3; }
 
-        .m-card-body { padding: 22px; }
+        .m-card-body { padding: 18px 20px; }
 
         /* ── STAT CARDS ────────────────────────────────────────────────────── */
         .m-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 16px;
+            gap: 14px;
             margin-bottom: 24px;
         }
 
         .m-stat {
             background: #fff;
             border-radius: 14px;
-            border: 1px solid #e8eaf0;
-            padding: 18px 20px;
+            border: 1.5px solid #e8eaf0;
+            padding: 16px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .m-stat-label { font-size: 12px; color: #677489; font-weight: 500; margin-bottom: 6px; }
-        .m-stat-value { font-size: 26px; font-weight: 700; color: #1a1d23; }
+        .m-stat-icon {
+            width: 30px; height: 30px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; font-size: 14px;
+        }
+        .m-stat-icon.blue   { background: #eff6ff; color: #0085f3; }
+        .m-stat-icon.green  { background: #f0fdf4; color: #10B981; }
+        .m-stat-icon.purple { background: #f5f3ff; color: #8B5CF6; }
+        .m-stat-icon.orange { background: #fffbeb; color: #F59E0B; }
+        .m-stat-icon.red    { background: #fef2f2; color: #EF4444; }
+        .m-stat-icon.teal   { background: #f0fdfa; color: #0d9488; }
+
+        .m-stat-label { font-size: 12px; color: #97A3B7; font-weight: 500; }
+        .m-stat-value { font-size: 22px; font-weight: 700; color: #1a1d23; }
 
         /* ── TABLE ─────────────────────────────────────────────────────────── */
         .m-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .m-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-        .m-table th { padding: 10px 14px; text-align: left; font-size: 11.5px; font-weight: 600; color: #677489; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid #f0f2f7; white-space: nowrap; }
-        .m-table td { padding: 12px 14px; color: #374151; border-bottom: 1px solid #f7f8fa; vertical-align: middle; }
+        .m-table th { padding: 10px 20px; text-align: left; font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid #f0f2f7; white-space: nowrap; background: #fafbfc; }
+        .m-table td { padding: 13px 20px; color: #374151; border-bottom: 1px solid #f7f8fa; vertical-align: middle; }
         .m-table tr:last-child td { border-bottom: none; }
         .m-table tr:hover td { background: #f9fafb; }
 
         /* ── BADGES ────────────────────────────────────────────────────────── */
         .m-badge {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
             padding: 3px 10px;
             border-radius: 20px;
-            font-size: 11.5px;
+            font-size: 11px;
             font-weight: 600;
         }
-        .m-badge-active   { background: #D1FAE5; color: #065F46; }
-        .m-badge-trial    { background: #FEF3C7; color: #92400E; }
-        .m-badge-partner  { background: #EDE9FE; color: #5B21B6; }
-        .m-badge-inactive { background: #F3F4F6; color: #677489; }
-        .m-badge-suspended{ background: #FEE2E2; color: #991B1B; }
+        .m-badge-active   { background: #f0fdf4; color: #16a34a; }
+        .m-badge-trial    { background: #fff7ed; color: #c2410c; }
+        .m-badge-partner  { background: #f5f3ff; color: #7c3aed; }
+        .m-badge-inactive { background: #f3f4f6; color: #6b7280; }
+        .m-badge-suspended{ background: #fef2f2; color: #dc2626; }
 
         /* ── BUTTONS ──────────────────────────────────────────────────────── */
         .m-btn {
@@ -329,20 +351,23 @@
             align-items: center;
             gap: 6px;
             padding: 8px 16px;
-            border-radius: 9px;
+            border-radius: 100px;
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             border: none;
             transition: background .15s, color .15s;
             text-decoration: none;
+            white-space: nowrap;
         }
-        .m-btn-primary { background: #0085f3; color: #fff; border-radius: 100px; }
+        .m-btn-primary { background: #0085f3; color: #fff; }
         .m-btn-primary:hover { background: #0070d1; color: #fff; }
-        .m-btn-ghost { background: transparent; color: #677489; border: 1px solid #CDDEF6; border-radius: 100px; }
+        .m-btn-outline { background: #fff; color: #374151; border: 1.5px solid #e8eaf0; }
+        .m-btn-outline:hover { background: #f0f4ff; border-color: #bfdbfe; color: #0085f3; }
+        .m-btn-ghost { background: transparent; color: #677489; border: 1px solid #e8eaf0; }
         .m-btn-ghost:hover { background: #f3f4f6; color: #374151; }
-        .m-btn-danger { background: #FEE2E2; color: #DC2626; }
-        .m-btn-danger:hover { background: #FECACA; }
+        .m-btn-danger { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+        .m-btn-danger:hover { background: #fee2e2; }
         .m-btn-sm { padding: 5px 12px; font-size: 12px; }
 
         /* ── File inputs ── */
@@ -553,6 +578,13 @@
                         <i class="bi bi-rocket-takeoff"></i> Upsell
                     </a>
                     @endif
+                    <a href="{{ route('master.cs-agents') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.cs-agents*') ? 'active' : '' }}">
+                        <i class="bi bi-headset"></i> CS Agents
+                    </a>
+                    <a href="{{ route('cs.index') }}" class="m-nm-dd-item" target="_blank">
+                        <i class="bi bi-box-arrow-up-right"></i> Painel CS
+                    </a>
                 </div>
             </div>
 
@@ -620,12 +652,6 @@
                 <i class="bi bi-shield-lock"></i> Administradores
             </a>
             @endif
-
-            {{-- Customer Success --}}
-            <a href="{{ route('cs.index') }}"
-               class="m-nm-item" target="_blank">
-                <i class="bi bi-headset"></i> CS
-            </a>
         </div>
 
         {{-- Right side --}}

@@ -12,6 +12,11 @@
 
 @section('content')
 
+<div class="m-section-header">
+    <div class="m-section-title">Notificações</div>
+    <div class="m-section-subtitle">Envie notificações para os tenants</div>
+</div>
+
 {{-- Histórico --}}
 <div class="m-card">
     <div class="m-card-header">

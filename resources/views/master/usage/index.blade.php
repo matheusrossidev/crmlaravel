@@ -6,6 +6,11 @@
 
 @section('content')
 
+<div class="m-section-header">
+    <div class="m-section-title">Uso de Tokens</div>
+    <div class="m-section-subtitle">Monitore o consumo de tokens IA por empresa</div>
+</div>
+
 {{-- Stat header --}}
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px;">
     <div class="m-stat">

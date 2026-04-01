@@ -21,6 +21,11 @@
 @endpush
 
 @section('content')
+<div class="m-section-header">
+    <div class="m-section-title">Comissões e Saques</div>
+    <div class="m-section-subtitle">Gerencie comissões e solicitações de saque dos parceiros</div>
+</div>
+
 <div class="tab-btns">
     <button class="tab-btn active" onclick="switchTab('withdrawals', this)">Saques @if($pendingWithdrawals > 0)<span style="background:#ef4444;color:#fff;padding:1px 7px;border-radius:99px;font-size:10px;margin-left:4px;">{{ $pendingWithdrawals }}</span>@endif</button>
     <button class="tab-btn" onclick="switchTab('commissions', this)">Comissões</button>

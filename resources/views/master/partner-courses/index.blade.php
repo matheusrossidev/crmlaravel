@@ -6,6 +6,11 @@
 @endsection
 
 @section('content')
+<div class="m-section-header">
+    <div class="m-section-title">Cursos para Parceiros</div>
+    <div class="m-section-subtitle">Gerencie cursos e certificações do programa de parceiros</div>
+</div>
+
 @foreach($courses as $course)
 <div class="m-card" style="margin-bottom:16px;">
     <div class="m-card-header" style="display:flex;align-items:center;justify-content:space-between;">

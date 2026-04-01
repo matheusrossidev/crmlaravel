@@ -171,6 +171,11 @@
 @endpush
 
 @section('content')
+<div class="m-section-header">
+    <div class="m-section-title">Empresas</div>
+    <div class="m-section-subtitle">Gerencie todas as empresas da plataforma</div>
+</div>
+
 <div class="page-container">
 
     <div class="tenants-card">

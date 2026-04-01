@@ -6,6 +6,11 @@
 @endsection
 
 @section('content')
+<div class="m-section-header">
+    <div class="m-section-title">Recursos para Parceiros</div>
+    <div class="m-section-subtitle">Materiais de apoio para as agências parceiras</div>
+</div>
+
 <div class="m-card">
     <div class="m-card-header">
         <div class="m-card-title"><i class="bi bi-folder2-open"></i> Recursos para Parceiros</div>

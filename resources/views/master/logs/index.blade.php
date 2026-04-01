@@ -6,6 +6,11 @@
 
 @section('content')
 
+<div class="m-section-header">
+    <div class="m-section-title">Logs</div>
+    <div class="m-section-subtitle">Visualize os logs do sistema</div>
+</div>
+
 <div style="display:grid;grid-template-columns:280px 1fr;gap:20px;height:calc(100vh - 160px);">
 
     {{-- Sidebar de arquivos --}}

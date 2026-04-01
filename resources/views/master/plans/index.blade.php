@@ -12,6 +12,11 @@
 
 @section('content')
 
+<div class="m-section-header">
+    <div class="m-section-title">Planos</div>
+    <div class="m-section-subtitle">Gerencie os planos de assinatura</div>
+</div>
+
 <div class="m-card">
     <div class="m-card-header">
         <div class="m-card-title"><i class="bi bi-layers"></i> Definições de Planos</div>

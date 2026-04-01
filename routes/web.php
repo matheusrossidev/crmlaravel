@@ -724,6 +724,12 @@ Route::middleware(['auth', 'super_admin', '2fa'])->prefix('master')->name('maste
     Route::put ('administradores/{user}',       [\App\Http\Controllers\Master\MasterAdminController::class, 'update'])->name('admins.update');
     Route::delete('administradores/{user}',     [\App\Http\Controllers\Master\MasterAdminController::class, 'destroy'])->name('admins.destroy');
 
+    // Customer Success Agents
+    Route::get ('cs-agentes',           [\App\Http\Controllers\Master\CsAgentController::class, 'index'])->name('cs-agents');
+    Route::post('cs-agentes',           [\App\Http\Controllers\Master\CsAgentController::class, 'store'])->name('cs-agents.store');
+    Route::put ('cs-agentes/{user}',    [\App\Http\Controllers\Master\CsAgentController::class, 'update'])->name('cs-agents.update');
+    Route::delete('cs-agentes/{user}',  [\App\Http\Controllers\Master\CsAgentController::class, 'destroy'])->name('cs-agents.destroy');
+
 });
 // Configuração LLM (provider/api_key/model) via ENV: LLM_PROVIDER, LLM_API_KEY, LLM_MODEL
 

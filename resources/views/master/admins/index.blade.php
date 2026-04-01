@@ -63,10 +63,15 @@
 @endpush
 
 @section('content')
+<div class="m-section-header">
+    <div class="m-section-title">Administradores</div>
+    <div class="m-section-subtitle">Gerencie os administradores do painel master</div>
+</div>
+
 <div class="m-card">
-    <div class="m-card-header" style="display:flex;align-items:center;justify-content:space-between;">
-        <h3><i class="bi bi-shield-lock" style="color:#0085f3;"></i> Administradores Master ({{ $admins->count() }})</h3>
-        <button onclick="openDrawer()" style="background:#0085f3;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">
+    <div class="m-card-header">
+        <h3 class="m-card-title"><i class="bi bi-shield-lock"></i> Administradores Master ({{ $admins->count() }})</h3>
+        <button onclick="openDrawer()" class="m-btn m-btn-primary m-btn-sm">
             <i class="bi bi-plus-lg"></i> Novo Administrador
         </button>
     </div>

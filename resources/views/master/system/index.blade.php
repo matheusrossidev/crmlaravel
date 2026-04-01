@@ -6,6 +6,11 @@
 
 @section('content')
 
+<div class="m-section-header">
+    <div class="m-section-title">Sistema</div>
+    <div class="m-section-subtitle">Monitoramento do sistema e infraestrutura</div>
+</div>
+
 <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
     <div id="statusDot" style="width:10px;height:10px;border-radius:50%;background:#10B981;"></div>
     <span style="font-size:13px;color:#6b7280;">Atualização automática a cada <strong>10s</strong></span>

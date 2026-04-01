@@ -12,6 +12,11 @@
 
 @section('content')
 
+<div class="m-section-header">
+    <div class="m-section-title">Upsell Triggers</div>
+    <div class="m-section-subtitle">Configure gatilhos de upsell baseados no uso do plano</div>
+</div>
+
 {{-- Stats Cards --}}
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
     <div class="m-card" style="padding:20px;">
