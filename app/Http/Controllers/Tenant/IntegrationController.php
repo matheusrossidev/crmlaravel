@@ -555,6 +555,10 @@ class IntegrationController extends Controller
 
     public function storeWaButton(Request $request): JsonResponse
     {
+        if (WhatsappButton::count() >= 3) {
+            return response()->json(['success' => false, 'message' => 'Limite de 3 botões atingido.'], 422);
+        }
+
         $data = $request->validate([
             'phone_number'    => 'required|string|max:30',
             'default_message' => 'nullable|string|max:500',

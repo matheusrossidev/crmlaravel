@@ -708,8 +708,7 @@
         </div>
         @endif
 
-    {{-- ─── Botão WhatsApp (rastreamento de cliques) ──────────────────── --}}
-    @php $waBtn = $waButtons->first(); @endphp
+    {{-- ─── Botões WhatsApp (rastreamento de cliques) ──────────────────── --}}
     <div class="integration-card">
         <div class="integration-header">
             <div class="integration-logo" style="background:#dcfce7;color:#25D366;">
@@ -719,11 +718,9 @@
                 <h3>{{ __('integrations.wabtn_title') }}</h3>
                 <p>{{ __('integrations.wabtn_subtitle') }}</p>
             </div>
-            @if($waBtn && $waBtn->is_active)
-                <span class="conn-badge conn-active">{{ __('integrations.wabtn_active') }}</span>
-            @else
-                <span class="conn-badge conn-none">{{ __('integrations.wabtn_inactive') }}</span>
-            @endif
+            <span class="conn-badge {{ $waButtons->where('is_active', true)->count() > 0 ? 'conn-active' : 'conn-none' }}">
+                {{ $waButtons->count() }}/3
+            </span>
         </div>
         <div class="integration-body">
             <ul class="integration-features">
@@ -733,69 +730,84 @@
                 <li>{{ __('integrations.wabtn_feat_4') }}</li>
             </ul>
 
-            @if($waBtn)
-                @php
-                    $clicks7d = $waBtn->clicks()->where('clicked_at', '>=', now()->subDays(7))->count();
-                @endphp
-                <div class="conn-detail">
-                    <strong>{{ $waBtn->phone_number }}</strong><br>
-                    <span>{{ __('integrations.wabtn_clicks_7d', ['count' => $clicks7d]) }}</span>
+            {{-- Lista de botões existentes --}}
+            @forelse($waButtons as $waBtn)
+                @php $clicks7d = $waBtn->clicks()->where('clicked_at', '>=', now()->subDays(7))->count(); @endphp
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#f9fafb;border:1px solid #e8eaf0;border-radius:10px;margin-bottom:8px;">
+                    <div style="width:36px;height:36px;border-radius:8px;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="bi bi-whatsapp" style="color:#25D366;font-size:16px;"></i>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:13px;font-weight:600;color:#1a1d23;">{{ $waBtn->phone_number }}</div>
+                        <div style="font-size:11px;color:#9ca3af;">{{ $clicks7d }} cliques (7 dias) · {{ $waBtn->button_label }}</div>
+                    </div>
+                    <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;{{ $waBtn->is_active ? 'background:#ecfdf5;color:#059669;' : 'background:#f3f4f6;color:#6b7280;' }}">
+                        {{ $waBtn->is_active ? 'Ativo' : 'Inativo' }}
+                    </span>
+                    <button onclick="openWaBtnDrawer({{ $waBtn->id }})" style="background:none;border:none;color:#0085f3;cursor:pointer;font-size:14px;padding:4px;" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button onclick="deleteWaButton({{ $waBtn->id }}, '{{ $waBtn->phone_number }}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;padding:4px;" title="Remover">
+                        <i class="bi bi-trash3"></i>
+                    </button>
                 </div>
-            @else
+            @empty
                 <div class="conn-detail" style="color:#9ca3af;">{{ __('integrations.wabtn_no_button') }}</div>
-            @endif
+            @endforelse
 
+            @if($waButtons->count() < 3)
             <div class="integration-actions">
-                <button class="btn-connect" style="background:#25D366;" onclick="openWaBtnDrawer()">
-                    <i class="bi bi-{{ $waBtn ? 'gear' : 'plus-lg' }}"></i> {{ $waBtn ? __('integrations.wabtn_configure') : __('integrations.wabtn_create') }}
+                <button class="btn-connect" style="background:#25D366;" onclick="openWaBtnDrawer(null)">
+                    <i class="bi bi-plus-lg"></i> Adicionar botão ({{ $waButtons->count() }}/3)
                 </button>
-                @if($waBtn)
-                <button class="btn-disconnect" onclick="deleteWaButton()">
-                    <i class="bi bi-trash"></i> {{ __('integrations.wabtn_remove') }}
-                </button>
-                @endif
             </div>
+            @endif
         </div>
     </div>
 
     {{-- ─── Drawer Botão WhatsApp ──────────────────────────────────────── --}}
     <div id="waBtnOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;" onclick="closeWaBtnDrawer()"></div>
-    <div id="waBtnDrawer" style="position:fixed;top:0;right:-500px;width:480px;height:100%;background:#fff;z-index:301;box-shadow:-4px 0 20px rgba(0,0,0,0.1);transition:right .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;">
+    <div id="waBtnDrawer" style="position:fixed;top:0;right:-500px;width:480px;max-width:100vw;height:100%;background:#fff;z-index:301;box-shadow:-4px 0 20px rgba(0,0,0,0.1);transition:right .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;">
         <div style="padding:20px 24px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;">
-            <h4 style="margin:0;font-size:16px;font-weight:700;color:#1a1d23;">{{ __('integrations.wabtn_drawer_title') }}</h4>
+            <h4 id="waBtnDrawerTitle" style="margin:0;font-size:16px;font-weight:700;color:#1a1d23;">{{ __('integrations.wabtn_drawer_title') }}</h4>
             <button onclick="closeWaBtnDrawer()" style="background:none;border:none;font-size:20px;color:#9ca3af;cursor:pointer;padding:4px;"><i class="bi bi-x-lg"></i></button>
         </div>
         <div style="flex:1;overflow-y:auto;padding:20px 24px;">
+            <input type="hidden" id="waBtnEditId" value="">
             <div style="margin-bottom:14px;">
                 <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">{{ __('integrations.wabtn_phone') }}</label>
-                <input type="text" id="waBtnPhone" class="form-control" placeholder="{{ __('integrations.wabtn_phone_ph') }}" value="{{ $waBtn->phone_number ?? '' }}" style="font-size:13px;">
+                <input type="text" id="waBtnPhone" class="form-control" placeholder="{{ __('integrations.wabtn_phone_ph') }}" style="font-size:13px;">
             </div>
             <div style="margin-bottom:14px;">
                 <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">{{ __('integrations.wabtn_label') }}</label>
-                <input type="text" id="waBtnLabel" class="form-control" placeholder="{{ __('integrations.wabtn_label_ph') }}" value="{{ $waBtn->button_label ?? __('integrations.wabtn_label_ph') }}" style="font-size:13px;">
+                <input type="text" id="waBtnLabel" class="form-control" placeholder="{{ __('integrations.wabtn_label_ph') }}" style="font-size:13px;">
             </div>
             <div style="margin-bottom:14px;">
                 <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">{{ __('integrations.wabtn_message') }}</label>
-                <textarea id="waBtnMessage" class="form-control" rows="3" placeholder="{{ __('integrations.wabtn_message_ph') }}" style="font-size:13px;resize:vertical;">{{ $waBtn->default_message ?? __('integrations.wabtn_message_ph') }}</textarea>
+                <textarea id="waBtnMessage" class="form-control" rows="3" placeholder="{{ __('integrations.wabtn_message_ph') }}" style="font-size:13px;resize:vertical;"></textarea>
             </div>
-            <div style="margin-bottom:20px;display:flex;align-items:center;gap:8px;">
-                <input type="checkbox" id="waBtnFloating" {{ ($waBtn->show_floating ?? true) ? 'checked' : '' }} style="width:16px;height:16px;">
+            <div style="margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" id="waBtnFloating" checked style="width:16px;height:16px;">
                 <label for="waBtnFloating" style="font-size:12.5px;color:#374151;cursor:pointer;">{{ __('integrations.wabtn_floating') }}</label>
             </div>
+            <div style="margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" id="waBtnActive" checked style="width:16px;height:16px;">
+                <label for="waBtnActive" style="font-size:12.5px;color:#374151;cursor:pointer;">Botão ativo</label>
+            </div>
 
-            @if($waBtn)
-            <div style="padding-top:16px;border-top:1px solid #f0f2f7;">
+            {{-- Embed code (shown after save, populated by JS) --}}
+            <div id="waBtnEmbedSection" style="display:none;padding-top:16px;border-top:1px solid #f0f2f7;">
                 <label style="font-size:13px;font-weight:700;color:#1a1d23;display:block;margin-bottom:6px;"><i class="bi bi-code-slash"></i> {{ __('integrations.wabtn_embed') }}</label>
-                <p style="font-size:11.5px;color:#6b7280;margin-bottom:8px;">Cole antes do <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:10.5px;">&lt;/body&gt;</code> do seu site. Para botão inline: <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:10.5px;">&lt;div class="syncro-wa-inline"&gt;&lt;/div&gt;</code></p>
+                <p style="font-size:11.5px;color:#6b7280;margin-bottom:8px;">Cole antes do <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:10.5px;">&lt;/body&gt;</code> do seu site.</p>
                 <div style="position:relative;">
-                    <textarea id="waBtnEmbed" readonly onclick="this.select()" style="width:100%;height:50px;font-family:monospace;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 70px 10px 10px;resize:none;color:#334155;">&lt;script src="{{ rtrim(config('app.url'), '/') }}/api/widget/{{ $waBtn->website_token }}/wa-button.js"&gt;&lt;/script&gt;</textarea>
+                    <textarea id="waBtnEmbed" readonly onclick="this.select()" style="width:100%;height:50px;font-family:monospace;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 70px 10px 10px;resize:none;color:#334155;"></textarea>
                     <button onclick="navigator.clipboard.writeText(document.getElementById('waBtnEmbed').value.replace(/&lt;/g,'<').replace(/&gt;/g,'>'));toastr.success(ILANG.toast_copied)" style="position:absolute;top:8px;right:8px;background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="bi bi-clipboard"></i> {{ __('integrations.wabtn_copy') }}</button>
                 </div>
-            <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f2f7;">
+            <div id="waBtnTrackSection" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid #f0f2f7;">
                 <label style="font-size:13px;font-weight:700;color:#1a1d23;display:block;margin-bottom:6px;"><i class="bi bi-link-45deg"></i> {{ __('integrations.wabtn_tracking') }}</label>
                 <p style="font-size:11.5px;color:#6b7280;margin-bottom:8px;">{{ __('integrations.wabtn_tracking_hint') }}</p>
                 <div style="position:relative;">
-                    <input type="text" id="waBtnTrackLink" readonly onclick="this.select()" value="{{ rtrim(config('app.url'), '/') }}/wa/{{ $waBtn->website_token }}" style="width:100%;font-family:monospace;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 70px 10px 10px;color:#334155;">
+                    <input type="text" id="waBtnTrackLink" readonly onclick="this.select()" style="width:100%;font-family:monospace;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 70px 10px 10px;color:#334155;">
                     <button onclick="navigator.clipboard.writeText(document.getElementById('waBtnTrackLink').value);toastr.success(ILANG.toast_link_copied)" style="position:absolute;top:6px;right:8px;background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="bi bi-clipboard"></i> {{ __('integrations.wabtn_copy') }}</button>
                 </div>
                 <div style="margin-top:8px;padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;">
@@ -1493,13 +1505,38 @@ async function disconnectInstagram(btn) {
     });
 }
 
-// ── WhatsApp Button CRUD ──────────────────────────────────────────────
-var _waBtnId = {{ $waBtn->id ?? 'null' }};
+// ── WhatsApp Button CRUD (múltiplos — até 3) ─────────────────────────
+var _waButtons = {!! json_encode($waButtons->keyBy('id')->toArray()) !!};
+var _baseUrl = "{{ rtrim(config('app.url'), '/') }}";
 
-function openWaBtnDrawer() {
+function openWaBtnDrawer(btnId) {
+    var btn = btnId ? _waButtons[btnId] : null;
+    document.getElementById('waBtnEditId').value = btn ? btn.id : '';
+    document.getElementById('waBtnPhone').value = btn ? btn.phone_number : '';
+    document.getElementById('waBtnLabel').value = btn ? btn.button_label : '';
+    document.getElementById('waBtnMessage').value = btn ? btn.default_message : '';
+    document.getElementById('waBtnFloating').checked = btn ? !!btn.show_floating : true;
+    document.getElementById('waBtnActive').checked = btn ? !!btn.is_active : true;
+    document.getElementById('waBtnDrawerTitle').textContent = btn ? 'Editar botão' : 'Novo botão WhatsApp';
+
+    // Embed/tracking sections
+    var embedSec = document.getElementById('waBtnEmbedSection');
+    var trackSec = document.getElementById('waBtnTrackSection');
+    if (btn && btn.website_token) {
+        var embedCode = '<script src="' + _baseUrl + '/api/widget/' + btn.website_token + '/wa-button.js"><\/script>';
+        document.getElementById('waBtnEmbed').value = embedCode;
+        document.getElementById('waBtnTrackLink').value = _baseUrl + '/wa/' + btn.website_token;
+        embedSec.style.display = 'block';
+        trackSec.style.display = 'block';
+    } else {
+        embedSec.style.display = 'none';
+        trackSec.style.display = 'none';
+    }
+
     document.getElementById('waBtnOverlay').style.display = 'block';
     setTimeout(function(){ document.getElementById('waBtnDrawer').style.right = '0'; }, 10);
 }
+
 function closeWaBtnDrawer() {
     document.getElementById('waBtnDrawer').style.right = '-500px';
     setTimeout(function(){ document.getElementById('waBtnOverlay').style.display = 'none'; }, 300);
@@ -1509,33 +1546,43 @@ function saveWaButton() {
     var phone = document.getElementById('waBtnPhone').value.trim();
     if (!phone) { toastr.error(ILANG.toast_phone_required); return; }
 
+    var editId = document.getElementById('waBtnEditId').value;
     var data = {
         phone_number: phone,
         default_message: document.getElementById('waBtnMessage').value || ILANG.wabtn_message_ph,
         button_label: document.getElementById('waBtnLabel').value || ILANG.wabtn_label_ph,
         show_floating: document.getElementById('waBtnFloating').checked,
+        is_active: document.getElementById('waBtnActive').checked,
     };
 
-    if (_waBtnId) {
-        API.put("{{ route('settings.integrations.wa-button.store') }}/" + _waBtnId, data).done(function() {
+    if (editId) {
+        API.put("{{ route('settings.integrations.wa-button.store') }}/" + editId, data).done(function() {
             toastr.success(ILANG.toast_btn_updated);
             setTimeout(function(){ location.reload(); }, 800);
         });
     } else {
         API.post("{{ route('settings.integrations.wa-button.store') }}", data).done(function(r) {
             toastr.success(ILANG.toast_btn_created);
-            _waBtnId = r.button?.id;
             setTimeout(function(){ location.reload(); }, 800);
+        }).fail(function(xhr) {
+            var msg = xhr.responseJSON?.message || 'Erro ao criar botão.';
+            toastr.error(msg);
         });
     }
 }
 
-function deleteWaButton() {
-    if (!_waBtnId) return;
-    if (!confirm(ILANG.confirm_btn_remove)) return;
-    API.delete("{{ route('settings.integrations.wa-button.store') }}/" + _waBtnId).done(function() {
-        toastr.success(ILANG.toast_btn_removed);
-        setTimeout(function(){ location.reload(); }, 800);
+function deleteWaButton(btnId, phone) {
+    if (!btnId) return;
+    window.confirmAction({
+        title: 'Remover botão WhatsApp?',
+        message: 'O botão do número ' + phone + ' será removido permanentemente.',
+        confirmText: 'Remover',
+        onConfirm: function() {
+            API.delete("{{ route('settings.integrations.wa-button.store') }}/" + btnId).done(function() {
+                toastr.success(ILANG.toast_btn_removed);
+                setTimeout(function(){ location.reload(); }, 800);
+            });
+        }
     });
 }
 </script>
