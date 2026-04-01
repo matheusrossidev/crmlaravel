@@ -112,13 +112,8 @@ class User extends Authenticatable
         if ($module === 'dashboard') {
             return true;
         }
-        // Verifica permissão direta ou permissão pai (ex: "tenants" permite "tenants.view")
-        if (in_array($module, $allowed, true)) {
-            return true;
-        }
-        // Se pediu "tenants.edit", verifica se tem "tenants" (acesso total ao módulo)
-        $parent = explode('.', $module)[0] ?? '';
-        return $parent !== $module && in_array($parent, $allowed, true);
+        // Permissão direta: precisa ter exatamente o módulo no array
+        return in_array($module, $allowed, true);
     }
 
     public function isCsAgent(): bool

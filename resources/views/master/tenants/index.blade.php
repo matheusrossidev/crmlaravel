@@ -176,9 +176,11 @@
     <div class="tenants-card">
         <div class="tenants-card-header">
             <h3><i class="bi bi-buildings" style="color:#3B82F6;"></i> Empresas ({{ $tenants->total() }})</h3>
+            @if(auth()->user()->canAccessModule('tenants.create'))
             <button class="btn-new" onclick="openDrawer()">
                 <i class="bi bi-plus-lg"></i> Nova empresa
             </button>
+            @endif
         </div>
 
         @if($tenants->isEmpty())
@@ -248,10 +250,12 @@
                         <a href="{{ route('master.tenants.show', $tenant) }}" class="btn-icon" title="Ver / editar empresa" style="text-decoration:none;">
                             <i class="bi bi-pencil-square"></i>
                         </a>
+                        @if(auth()->user()->canAccessModule('tenants.delete'))
                         <button class="btn-icon danger" title="Excluir empresa" style="margin-left:6px;"
                             onclick="deleteTenant({{ $tenant->id }}, '{{ addslashes($tenant->name) }}')">
                             <i class="bi bi-trash3"></i>
                         </button>
+                        @endif
                     </td>
                 </tr>
                 @endforeach

@@ -96,6 +96,7 @@ class TenantController extends Controller
 
     public function show(Tenant $tenant): View
     {
+        $this->authorizeModule('tenants');
         $users = User::where('tenant_id', $tenant->id)
             ->orderBy('name')
             ->get();

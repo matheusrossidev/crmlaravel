@@ -536,13 +536,17 @@
                         @endif
                     </div>
 
+                    @if(auth()->user()->canAccessModule('tenants.edit'))
                     <button class="btn-save" id="btnUpdateTenant" onclick="updateTenant()">
                         <i class="bi bi-check2"></i> Salvar alterações
                     </button>
+                    @endif
 
+                    @if(auth()->user()->canAccessModule('tenants.delete'))
                     <button class="btn-danger" onclick="deleteTenant()">
                         <i class="bi bi-trash3"></i> Excluir empresa
                     </button>
+                    @endif
                 </div>
             </div>
         </div>
