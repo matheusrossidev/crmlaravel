@@ -162,9 +162,12 @@
             </div>
 
             @php
-                $groups = collect($availableModules)->groupBy(fn($m) => $m['group']);
+                $groupedModules = [];
+                foreach ($availableModules as $key => $mod) {
+                    $groupedModules[$mod['group']][$key] = $mod;
+                }
             @endphp
-            @foreach($groups as $groupName => $mods)
+            @foreach($groupedModules as $groupName => $mods)
                 <div class="adm-group-title">{{ $groupName }}</div>
                 @foreach($mods as $key => $mod)
                     <div class="adm-module">
