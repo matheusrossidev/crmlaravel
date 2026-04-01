@@ -12,8 +12,11 @@ use Illuminate\View\View;
 
 class PartnerRankController extends Controller
 {
+    use Traits\ChecksMasterPermission;
+
     public function index(): View
     {
+        $this->authorizeModule('partner_ranks');
         $ranks = PartnerRank::orderBy('sort_order')->orderBy('min_sales')->get();
 
         return view('master.partner-ranks.index', compact('ranks'));

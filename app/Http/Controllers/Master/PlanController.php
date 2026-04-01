@@ -12,8 +12,11 @@ use Illuminate\View\View;
 
 class PlanController extends Controller
 {
+    use Traits\ChecksMasterPermission;
+
     public function index(): View
     {
+        $this->authorizeModule('plans');
         $plans = PlanDefinition::orderBy('price_monthly')->get();
 
         return view('master.plans.index', compact('plans'));

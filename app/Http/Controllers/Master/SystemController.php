@@ -10,8 +10,11 @@ use Illuminate\View\View;
 
 class SystemController extends Controller
 {
+    use Traits\ChecksMasterPermission;
+
     public function index(): View
     {
+        $this->authorizeModule('system');
         return view('master.system.index');
     }
 

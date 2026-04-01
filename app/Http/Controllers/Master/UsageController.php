@@ -11,8 +11,11 @@ use Illuminate\View\View;
 
 class UsageController extends Controller
 {
+    use Traits\ChecksMasterPermission;
+
     public function index(): View
     {
+        $this->authorizeModule('usage');
         // Tokens por dia nos últimos 30 dias
         $daily = AiUsageLog::selectRaw('DATE(created_at) as day, SUM(tokens_total) as total')
             ->where('created_at', '>=', now()->subDays(30))

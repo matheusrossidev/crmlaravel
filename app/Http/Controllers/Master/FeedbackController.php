@@ -12,6 +12,7 @@ use Illuminate\View\View;
 
 class FeedbackController extends Controller
 {
+    use Traits\ChecksMasterPermission;
     private const TYPE_LABELS = [
         'new_feature' => 'Nova funcionalidade',
         'improvement' => 'Melhoria',
@@ -52,6 +53,8 @@ class FeedbackController extends Controller
 
     public function index(Request $request): View
     {
+        $this->authorizeModule('feedbacks');
+
         $query = Feedback::with(['user:id,name', 'tenant:id,name,plan'])
             ->orderByDesc('created_at');
 

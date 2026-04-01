@@ -11,8 +11,11 @@ use Illuminate\View\View;
 
 class PaymentController extends Controller
 {
+    use Traits\ChecksMasterPermission;
+
     public function index(Request $request): View
     {
+        $this->authorizeModule('payments');
         $now = now();
 
         $query = PaymentLog::with('tenant')->orderByDesc('paid_at');

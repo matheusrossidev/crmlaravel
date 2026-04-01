@@ -20,7 +20,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'tenant_id', 'name', 'email', 'password', 'role',
-        'is_super_admin', 'is_cs_agent', 'avatar', 'last_login_at', 'dashboard_config',
+        'is_super_admin', 'is_cs_agent', 'master_permissions', 'avatar', 'last_login_at', 'dashboard_config',
         'notification_preferences',
         'email_verified_at', 'verification_token',
         'can_see_all_conversations',
@@ -42,6 +42,7 @@ class User extends Authenticatable
             'can_see_all_conversations' => 'boolean',
             'dashboard_config' => 'array',
             'notification_preferences' => 'array',
+            'master_permissions' => 'array',
             'totp_enabled' => 'boolean',
             'totp_secret' => 'encrypted',
             'totp_backup_codes' => 'encrypted:array',
@@ -88,6 +89,36 @@ class User extends Authenticatable
     public function isSuperAdmin(): bool
     {
         return (bool) $this->is_super_admin;
+    }
+
+    /** Owner = super admin sem restrições (master_permissions null) */
+    public function isOwnerAdmin(): bool
+    {
+        return $this->is_super_admin && $this->master_permissions === null;
+    }
+
+    /** Verifica se o master pode acessar um módulo específico */
+    public function canAccessModule(string $module): bool
+    {
+        if (! $this->is_super_admin) {
+            return false;
+        }
+        // Owner (sem restrições) pode tudo
+        if ($this->master_permissions === null) {
+            return true;
+        }
+        $allowed = $this->master_permissions['modules'] ?? [];
+        // Dashboard sempre acessível
+        if ($module === 'dashboard') {
+            return true;
+        }
+        // Verifica permissão direta ou permissão pai (ex: "tenants" permite "tenants.view")
+        if (in_array($module, $allowed, true)) {
+            return true;
+        }
+        // Se pediu "tenants.edit", verifica se tem "tenants" (acesso total ao módulo)
+        $parent = explode('.', $module)[0] ?? '';
+        return $parent !== $module && in_array($parent, $allowed, true);
     }
 
     public function isCsAgent(): bool

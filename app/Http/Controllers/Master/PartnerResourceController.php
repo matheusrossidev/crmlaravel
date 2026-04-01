@@ -13,8 +13,11 @@ use Illuminate\View\View;
 
 class PartnerResourceController extends Controller
 {
+    use Traits\ChecksMasterPermission;
+
     public function index(): View
     {
+        $this->authorizeModule('partner_resources');
         $resources = PartnerResource::orderBy('sort_order')->orderByDesc('created_at')->get();
 
         return view('master.partner-resources.index', compact('resources'));

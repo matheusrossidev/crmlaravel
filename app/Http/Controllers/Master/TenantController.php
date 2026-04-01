@@ -17,8 +17,11 @@ use Illuminate\View\View;
 
 class TenantController extends Controller
 {
+    use Traits\ChecksMasterPermission;
+
     public function index(): View
     {
+        $this->authorizeModule('tenants');
         $tenants = Tenant::withCount([
                 'users',
                 'leads' => fn ($q) => $q->withoutGlobalScope('tenant'),
@@ -37,6 +40,7 @@ class TenantController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $this->authorizeModule('tenants.create');
         $planNames = PlanDefinition::where('is_active', true)->pluck('name')->toArray();
 
         $request->validate([
@@ -119,6 +123,7 @@ class TenantController extends Controller
 
     public function update(Request $request, Tenant $tenant): JsonResponse
     {
+        $this->authorizeModule('tenants.edit');
         $validPlans = \App\Models\PlanDefinition::pluck('name')->merge(['partner', 'unlimited'])->unique()->implode(',');
 
         $request->validate([
@@ -159,6 +164,7 @@ class TenantController extends Controller
 
     public function destroy(Tenant $tenant): JsonResponse
     {
+        $this->authorizeModule('tenants.delete');
         $tenant->delete();
 
         return response()->json(['success' => true]);

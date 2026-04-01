@@ -13,8 +13,11 @@ use Illuminate\View\View;
 
 class TokenIncrementPlanController extends Controller
 {
+    use Traits\ChecksMasterPermission;
+
     public function index(): View
     {
+        $this->authorizeModule('token_increments');
         $plans = TokenIncrementPlan::orderBy('tokens_amount')->get();
 
         return view('master.token-increment-plans.index', compact('plans'));

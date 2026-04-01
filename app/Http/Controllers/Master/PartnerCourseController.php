@@ -14,8 +14,11 @@ use Illuminate\View\View;
 
 class PartnerCourseController extends Controller
 {
+    use Traits\ChecksMasterPermission;
+
     public function index(): View
     {
+        $this->authorizeModule('partner_courses');
         $courses = PartnerCourse::with(['lessons' => fn ($q) => $q->orderBy('sort_order')])
             ->withCount('lessons')
             ->orderBy('sort_order')

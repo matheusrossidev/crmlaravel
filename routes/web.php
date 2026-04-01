@@ -718,6 +718,12 @@ Route::middleware(['auth', 'super_admin', '2fa'])->prefix('master')->name('maste
     Route::get ('ferramentas',        [MasterToolboxController::class, 'index'])->name('toolbox');
     Route::post('ferramentas/{tool}', [MasterToolboxController::class, 'run'])->name('toolbox.run');
 
+    // Administradores Master
+    Route::get ('administradores',              [\App\Http\Controllers\Master\MasterAdminController::class, 'index'])->name('admins');
+    Route::post('administradores',              [\App\Http\Controllers\Master\MasterAdminController::class, 'store'])->name('admins.store');
+    Route::put ('administradores/{user}',       [\App\Http\Controllers\Master\MasterAdminController::class, 'update'])->name('admins.update');
+    Route::delete('administradores/{user}',     [\App\Http\Controllers\Master\MasterAdminController::class, 'destroy'])->name('admins.destroy');
+
 });
 // Configuração LLM (provider/api_key/model) via ENV: LLM_PROVIDER, LLM_API_KEY, LLM_MODEL
 

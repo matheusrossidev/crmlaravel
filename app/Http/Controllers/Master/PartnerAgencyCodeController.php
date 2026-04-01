@@ -14,8 +14,11 @@ use Illuminate\View\View;
 
 class PartnerAgencyCodeController extends Controller
 {
+    use Traits\ChecksMasterPermission;
+
     public function index(): View
     {
+        $this->authorizeModule('agency_codes');
         $codes    = PartnerAgencyCode::with('tenant')->orderByDesc('created_at')->get();
         $partners = Tenant::where('plan', 'partner')
             ->orWhere('status', 'partner')

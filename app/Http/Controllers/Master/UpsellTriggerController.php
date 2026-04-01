@@ -14,8 +14,11 @@ use Illuminate\View\View;
 
 class UpsellTriggerController extends Controller
 {
+    use Traits\ChecksMasterPermission;
+
     public function index(): View
     {
+        $this->authorizeModule('upsell');
         $triggers = UpsellTrigger::withCount('logs')
             ->orderByDesc('priority')
             ->get();

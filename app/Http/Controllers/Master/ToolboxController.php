@@ -31,6 +31,7 @@ use Illuminate\View\View;
 
 class ToolboxController extends Controller
 {
+    use Traits\ChecksMasterPermission;
     private const TOOLS = [
         'sync-group-names',
         'clear-leads',
@@ -57,6 +58,8 @@ class ToolboxController extends Controller
 
     public function index(): View
     {
+        $this->authorizeModule('toolbox');
+
         $tenants = Tenant::orderBy('name')->get(['id', 'name']);
         $users   = User::whereNotNull('tenant_id')->orderBy('name')->get(['id', 'tenant_id', 'name', 'email']);
 

@@ -14,8 +14,11 @@ use Illuminate\View\View;
 
 class NotificationController extends Controller
 {
+    use Traits\ChecksMasterPermission;
+
     public function index(): View
     {
+        $this->authorizeModule('notifications');
         $notifications = MasterNotification::orderByDesc('created_at')->limit(100)->get();
         $tenants       = Tenant::orderBy('name')->get(['id', 'name']);
 

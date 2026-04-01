@@ -16,8 +16,11 @@ use Illuminate\View\View;
 
 class PartnerCommissionController extends Controller
 {
+    use Traits\ChecksMasterPermission;
+
     public function index(Request $request): View
     {
+        $this->authorizeModule('partner_commissions');
         $commissions = PartnerCommission::with(['partner:id,name', 'clientTenant:id,name'])
             ->orderByDesc('created_at')
             ->paginate(50);

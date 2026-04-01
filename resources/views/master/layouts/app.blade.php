@@ -484,6 +484,8 @@
                 <i class="bi bi-grid-1x2"></i> Dashboard
             </a>
 
+            @php $__u = auth()->user(); @endphp
+
             {{-- Gestão --}}
             <div class="m-nm-dropdown">
                 <button class="m-nm-item {{ $isGestao ? 'active' : '' }}" onclick="toggleMasterDropdown(this)">
@@ -491,46 +493,66 @@
                     <i class="bi bi-chevron-down m-nm-chev"></i>
                 </button>
                 <div class="m-nm-dropdown-menu">
+                    @if($__u->canAccessModule('tenants'))
                     <a href="{{ route('master.tenants') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.tenants*') ? 'active' : '' }}">
                         <i class="bi bi-building"></i> Empresas
                     </a>
+                    @endif
+                    @if($__u->canAccessModule('payments'))
                     <a href="{{ route('master.payments') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.payments*') ? 'active' : '' }}">
                         <i class="bi bi-cash-stack"></i> Recebimentos
                     </a>
+                    @endif
+                    @if($__u->canAccessModule('plans'))
                     <a href="{{ route('master.plans') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.plans*') ? 'active' : '' }}">
                         <i class="bi bi-layers"></i> Planos
                     </a>
+                    @endif
+                    @if($__u->canAccessModule('agency_codes'))
                     <a href="{{ route('master.agency-codes.index') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.agency-codes*') ? 'active' : '' }}">
                         <i class="bi bi-building-check"></i> Agências Parceiras
                     </a>
+                    @endif
+                    @if($__u->canAccessModule('partner_ranks'))
                     <a href="{{ route('master.partner-ranks.index') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.partner-ranks*') ? 'active' : '' }}">
                         <i class="bi bi-award"></i> {{ __('master_partner.nav_ranks') }}
                     </a>
+                    @endif
+                    @if($__u->canAccessModule('partner_commissions'))
                     <a href="{{ route('master.partner-commissions.index') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.partner-commissions*', 'master.partner-withdrawals*') ? 'active' : '' }}">
                         <i class="bi bi-cash-coin"></i> {{ __('master_partner.nav_commissions') }}
                     </a>
+                    @endif
+                    @if($__u->canAccessModule('partner_resources'))
                     <a href="{{ route('master.partner-resources.index') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.partner-resources*') ? 'active' : '' }}">
                         <i class="bi bi-folder2-open"></i> {{ __('master_partner.nav_resources') }}
                     </a>
+                    @endif
+                    @if($__u->canAccessModule('partner_courses'))
                     <a href="{{ route('master.partner-courses.index') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.partner-courses*') ? 'active' : '' }}">
                         <i class="bi bi-mortarboard"></i> {{ __('master_partner.nav_courses') }}
                     </a>
+                    @endif
+                    @if($__u->canAccessModule('token_increments'))
                     <a href="{{ route('master.token-increments') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.token-increments*') ? 'active' : '' }}">
                         <i class="bi bi-coin"></i> Pacotes de Tokens
                     </a>
+                    @endif
+                    @if($__u->canAccessModule('upsell'))
                     <a href="{{ route('master.upsell') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.upsell*') ? 'active' : '' }}">
                         <i class="bi bi-rocket-takeoff"></i> Upsell
                     </a>
+                    @endif
                 </div>
             </div>
 
@@ -541,22 +563,30 @@
                     <i class="bi bi-chevron-down m-nm-chev"></i>
                 </button>
                 <div class="m-nm-dropdown-menu">
+                    @if($__u->canAccessModule('usage'))
                     <a href="{{ route('master.usage') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.usage*') ? 'active' : '' }}">
                         <i class="bi bi-graph-up"></i> Uso / Tokens
                     </a>
+                    @endif
+                    @if($__u->canAccessModule('logs'))
                     <a href="{{ route('master.logs') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.logs*') ? 'active' : '' }}">
                         <i class="bi bi-terminal"></i> Logs
                     </a>
+                    @endif
+                    @if($__u->canAccessModule('system'))
                     <a href="{{ route('master.system') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.system*') ? 'active' : '' }}">
                         <i class="bi bi-cpu"></i> Sistema
                     </a>
+                    @endif
+                    @if($__u->canAccessModule('toolbox'))
                     <a href="{{ route('master.toolbox') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.toolbox*') ? 'active' : '' }}">
                         <i class="bi bi-tools"></i> Ferramentas
                     </a>
+                    @endif
                     <a href="/pulse" target="_blank" class="m-nm-dd-item">
                         <i class="bi bi-speedometer2"></i> Pulse
                     </a>
@@ -564,12 +594,15 @@
             </div>
 
             {{-- Notificações --}}
+            @if($__u->canAccessModule('notifications'))
             <a href="{{ route('master.notifications') }}"
                class="m-nm-item {{ request()->routeIs('master.notifications*') ? 'active' : '' }}">
                 <i class="bi bi-megaphone"></i> Notificações
             </a>
+            @endif
 
             {{-- Feedbacks --}}
+            @if($__u->canAccessModule('feedbacks'))
             @php $__fbNewCount = \App\Models\Feedback::where('status', 'new')->count(); @endphp
             <a href="{{ route('master.feedbacks.index') }}"
                class="m-nm-item {{ request()->routeIs('master.feedbacks*') ? 'active' : '' }}">
@@ -578,6 +611,15 @@
                     <span style="background:#ef4444;color:#fff;padding:1px 7px;border-radius:99px;font-size:10px;margin-left:4px;">{{ $__fbNewCount }}</span>
                 @endif
             </a>
+            @endif
+
+            {{-- Administradores (só owner) --}}
+            @if($__u->isOwnerAdmin())
+            <a href="{{ route('master.admins') }}"
+               class="m-nm-item {{ request()->routeIs('master.admins*') ? 'active' : '' }}">
+                <i class="bi bi-shield-lock"></i> Administradores
+            </a>
+            @endif
 
             {{-- Customer Success --}}
             <a href="{{ route('cs.index') }}"

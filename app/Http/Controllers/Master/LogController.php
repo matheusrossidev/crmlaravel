@@ -11,8 +11,11 @@ use Illuminate\View\View;
 
 class LogController extends Controller
 {
+    use Traits\ChecksMasterPermission;
+
     public function index(): View
     {
+        $this->authorizeModule('logs');
         $logDir = storage_path('logs');
         $files  = glob($logDir . '/*.log') ?: [];
 
