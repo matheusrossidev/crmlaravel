@@ -188,6 +188,17 @@ class StripeWebhookController extends Controller
             'status'                 => 'suspended',
         ]);
 
+        // Cancelar comissões pendentes do parceiro que indicou este tenant
+        if ($tenant->referred_by_agency_id) {
+            $cancelled = \App\Models\PartnerCommission::where('client_tenant_id', $tenant->id)
+                ->where('status', 'pending')
+                ->update(['status' => 'cancelled']);
+
+            if ($cancelled > 0) {
+                Log::info("Stripe: {$cancelled} comissão(ões) pendente(s) cancelada(s) — tenant {$tenant->id} suspenso");
+            }
+        }
+
         Log::info('Stripe: subscription cancelada', ['tenant_id' => $tenant->id]);
     }
 

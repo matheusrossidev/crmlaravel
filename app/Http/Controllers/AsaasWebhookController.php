@@ -191,21 +191,32 @@ class AsaasWebhookController extends Controller
             return;
         }
 
-        // Get partner rank to determine commission percentage
-        $activeClients = Tenant::withoutGlobalScope('tenant')
-            ->where('referred_by_agency_id', $partnerTenantId)
-            ->whereIn('status', ['active', 'partner', 'trial'])
-            ->count();
+        // Use locked commission % from tenant (set at time of referral).
+        // If not set yet (legacy), calculate from current rank and lock it.
+        $commissionPct = (float) ($tenant->partner_commission_pct ?? 0);
 
-        $rank = \App\Models\PartnerRank::forSalesCount($activeClients);
-        $commissionPct = $rank?->commission_pct ?? 0;
+        if ($commissionPct <= 0) {
+            // Legacy or first payment — calculate from rank and lock
+            $activeClients = Tenant::withoutGlobalScope('tenant')
+                ->where('referred_by_agency_id', $partnerTenantId)
+                ->whereIn('status', ['active', 'partner', 'trial'])
+                ->count();
+
+            $rank = \App\Models\PartnerRank::forSalesCount($activeClients);
+            $commissionPct = (float) ($rank?->commission_pct ?? 0);
+
+            if ($commissionPct > 0) {
+                // Lock the rate on this tenant for all future payments
+                $tenant->update(['partner_commission_pct' => $commissionPct]);
+            }
+        }
 
         if ($commissionPct <= 0) {
             return;
         }
 
         $commissionAmount = round($paymentValue * ($commissionPct / 100), 2);
-        $graceDays = 30; // carência antes de liberar
+        $graceDays = 30;
 
         \App\Models\PartnerCommission::create([
             'tenant_id'        => $partnerTenantId,
@@ -216,7 +227,7 @@ class AsaasWebhookController extends Controller
             'available_at'     => now()->addDays($graceDays)->toDateString(),
         ]);
 
-        \Log::info("PartnerCommission: R\${$commissionAmount} ({$commissionPct}%) para tenant {$partnerTenantId} de pagamento {$paymentId}");
+        \Log::info("PartnerCommission: R\${$commissionAmount} ({$commissionPct}% locked) para tenant {$partnerTenantId} de pagamento {$paymentId}");
     }
 
     private function handlePaymentOverdue(Tenant $tenant): void
@@ -242,6 +253,18 @@ class AsaasWebhookController extends Controller
             'subscription_status' => 'inactive',
             'status'              => 'suspended',
         ]);
+
+        // Cancelar comissões pendentes do parceiro que indicou este tenant
+        if ($tenant->referred_by_agency_id) {
+            $cancelled = \App\Models\PartnerCommission::where('client_tenant_id', $tenant->id)
+                ->where('status', 'pending')
+                ->update(['status' => 'cancelled']);
+
+            if ($cancelled > 0) {
+                \Log::info("AsaasWebhook: {$cancelled} comissão(ões) pendente(s) cancelada(s) — tenant {$tenant->id} suspenso");
+            }
+        }
+
         \Log::info("AsaasWebhook: assinatura inativada para tenant {$tenant->id}");
     }
 

@@ -2325,7 +2325,7 @@ $pageIcon = 'chat-dots';
             bubble.innerHTML = '<i class="bi bi-slash-circle" style="margin-right:4px;"></i>' + escHtml(LANG.msg_deleted);
         } else if (msg.type === 'image' && msg.media_url) {
             bubble.innerHTML = `<img src="${escHtml(msg.media_url)}" class="wa-img-thumb" onclick="window.open(this.src,'_blank')" alt="Imagem">`;
-            if (msg.body) bubble.innerHTML += `<div style="margin-top:6px;font-size:13px;">${escHtml(msg.body)}</div>`;
+            if (msg.body) bubble.innerHTML += `<div style="margin-top:6px;font-size:13px;">${formatWhatsappText(msg.body)}</div>`;
         } else if (msg.type === 'audio' && msg.media_url) {
             const apBars = Array.from({length: 28}, () => {
                 const h = 4 + Math.floor(Math.random() * 22);
@@ -2344,11 +2344,11 @@ $pageIcon = 'chat-dots';
             </div>`;
         } else if (msg.type === 'video' && msg.media_url) {
             bubble.innerHTML = `<video src="${escHtml(msg.media_url)}" controls preload="metadata" style="max-width:100%;border-radius:8px;display:block;"></video>`;
-            if (msg.body) bubble.innerHTML += `<div style="margin-top:6px;font-size:13px;">${escHtml(msg.body)}</div>`;
+            if (msg.body) bubble.innerHTML += `<div style="margin-top:6px;font-size:13px;">${formatWhatsappText(msg.body)}</div>`;
         } else if (msg.type === 'document' && msg.media_url) {
             const fname = escHtml(msg.media_filename || LANG.preview_file.replace('📎 ', ''));
             bubble.innerHTML = `<a href="${escHtml(msg.media_url)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none;"><i class="bi bi-file-earmark-text" style="font-size:20px;color:#3b82f6;flex-shrink:0;"></i><span style="word-break:break-all;">${fname}</span><i class="bi bi-download" style="margin-left:4px;font-size:13px;flex-shrink:0;"></i></a>`;
-            if (msg.body) bubble.innerHTML += `<div style="margin-top:4px;font-size:12px;color:#6b7280;">${escHtml(msg.body)}</div>`;
+            if (msg.body) bubble.innerHTML += `<div style="margin-top:4px;font-size:12px;color:#6b7280;">${formatWhatsappText(msg.body)}</div>`;
         } else if (msg.type === 'share') {
             let inner = '';
             if (msg.media_url) {
@@ -2361,7 +2361,7 @@ $pageIcon = 'chat-dots';
             if (!inner) inner = `<span style="color:#6b7280;font-style:italic;">${escHtml(LANG.shared_post)}</span>`;
             bubble.innerHTML = inner;
         } else {
-            bubble.textContent = msg.body || '';
+            bubble.innerHTML = formatWhatsappText(msg.body);
         }
 
         wrap.appendChild(bubble);
@@ -3411,6 +3411,20 @@ $pageIcon = 'chat-dots';
     function escHtml(str) {
         if (!str) return '';
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function formatWhatsappText(text) {
+        if (!text) return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\*([^*\n]+)\*/g, '<strong>$1</strong>')
+            .replace(/_([^_\n]+)_/g, '<em>$1</em>')
+            .replace(/~([^~\n]+)~/g, '<s>$1</s>')
+            .replace(/`([^`\n]+)`/g, '<code style="background:rgba(0,0,0,.06);padding:1px 4px;border-radius:3px;font-family:monospace;font-size:12px;">$1</code>')
+            .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">$1</a>')
+            .replace(/\n/g, '<br>');
     }
 
     function timeRelative(iso) {

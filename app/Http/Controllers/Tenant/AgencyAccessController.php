@@ -93,7 +93,10 @@ class AgencyAccessController extends Controller
             ], 422);
         }
 
-        $tenant->update(['referred_by_agency_id' => $agencyCode->tenant_id]);
+        $tenant->update([
+            'referred_by_agency_id'  => $agencyCode->tenant_id,
+            'partner_commission_pct' => $this->getLockedCommissionPct($agencyCode->tenant_id),
+        ]);
 
         // Notificar parceiro sobre novo cliente
         $this->notifyPartnerLinked($agencyCode->tenant_id, $tenant);
@@ -180,8 +183,11 @@ class AgencyAccessController extends Controller
             $this->notifyPartnerUnlinked($oldPartnerId, $tenant);
         }
 
-        // Vincular ao novo
-        $tenant->update(['referred_by_agency_id' => $newPartnerId]);
+        // Vincular ao novo com % travada
+        $tenant->update([
+            'referred_by_agency_id'  => $newPartnerId,
+            'partner_commission_pct' => $this->getLockedCommissionPct($newPartnerId),
+        ]);
         $this->notifyPartnerLinked($newPartnerId, $tenant);
 
         $newPartner = Tenant::withoutGlobalScope('tenant')->find($newPartnerId);
@@ -202,6 +208,19 @@ class AgencyAccessController extends Controller
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /** Cancela comissões pending do parceiro para este cliente */
+    /** Calculate commission % based on partner's current rank */
+    private function getLockedCommissionPct(int $partnerTenantId): ?float
+    {
+        $activeClients = Tenant::withoutGlobalScope('tenant')
+            ->where('referred_by_agency_id', $partnerTenantId)
+            ->whereIn('status', ['active', 'partner', 'trial'])
+            ->count();
+
+        $rank = \App\Models\PartnerRank::forSalesCount($activeClients);
+
+        return $rank?->commission_pct ? (float) $rank->commission_pct : null;
+    }
+
     private function cancelPendingCommissions(int $partnerId, int $clientTenantId): int
     {
         return PartnerCommission::where('tenant_id', $partnerId)

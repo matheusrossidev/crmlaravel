@@ -17,7 +17,7 @@ class Tenant extends Model
         'logo', 'plan', 'status', 'trial_ends_at', 'settings_json',
         'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields', 'max_chatbot_flows', 'max_ai_agents', 'max_departments', 'max_whatsapp_instances', 'api_rate_limit',
         'asaas_customer_id', 'asaas_subscription_id', 'subscription_status', 'subscription_ends_at',
-        'onboarding_completed_at', 'ai_tokens_exhausted', 'referred_by_agency_id',
+        'onboarding_completed_at', 'ai_tokens_exhausted', 'referred_by_agency_id', 'partner_commission_pct',
         'partner_billing_starts_at', 'locale',
         'billing_provider', 'billing_country', 'billing_currency',
         'stripe_customer_id', 'stripe_subscription_id',

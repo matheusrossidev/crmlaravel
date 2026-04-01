@@ -162,6 +162,7 @@ class AuthController extends Controller
             'status'                => 'trial',
             'trial_ends_at'         => now()->addDays($trialDays),
             'referred_by_agency_id' => $agencyCode?->tenant_id,
+            'partner_commission_pct' => $agencyCode?->tenant_id ? $this->getLockedCommissionPct($agencyCode->tenant_id) : null,
             'locale'                => $request->input('locale', 'pt_BR'),
             'billing_provider'      => $request->input('locale', 'pt_BR') === 'pt_BR' ? 'asaas' : 'stripe',
             'billing_country'       => $request->input('locale', 'pt_BR') === 'pt_BR' ? 'BR' : 'US',
@@ -380,5 +381,18 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
+    }
+
+    /** Calculate commission % based on partner's current rank at time of referral */
+    private function getLockedCommissionPct(int $partnerTenantId): ?float
+    {
+        $activeClients = Tenant::withoutGlobalScope('tenant')
+            ->where('referred_by_agency_id', $partnerTenantId)
+            ->whereIn('status', ['active', 'partner', 'trial'])
+            ->count();
+
+        $rank = \App\Models\PartnerRank::forSalesCount($activeClients);
+
+        return $rank?->commission_pct ? (float) $rank->commission_pct : null;
     }
 }
