@@ -234,7 +234,10 @@ async function saveAdmin() {
     const name     = document.getElementById('admName').value.trim();
     const email    = document.getElementById('admEmail').value.trim();
     const password = document.getElementById('admPassword').value;
-    const modules  = [...document.querySelectorAll('.module-check:checked')].map(c => c.value);
+    const modules  = [...new Set([
+        'dashboard',
+        ...[...document.querySelectorAll('.module-check:checked')].map(c => c.value)
+    ])];
 
     if (!name || !email) { toastr.warning('Preencha nome e email.'); return; }
     if (!id && !password) { toastr.warning('Defina uma senha.'); return; }
