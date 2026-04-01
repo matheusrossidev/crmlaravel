@@ -803,6 +803,7 @@
                     <textarea id="waBtnEmbed" readonly onclick="this.select()" style="width:100%;height:50px;font-family:monospace;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 70px 10px 10px;resize:none;color:#334155;"></textarea>
                     <button onclick="navigator.clipboard.writeText(document.getElementById('waBtnEmbed').value.replace(/&lt;/g,'<').replace(/&gt;/g,'>'));toastr.success(ILANG.toast_copied)" style="position:absolute;top:8px;right:8px;background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="bi bi-clipboard"></i> {{ __('integrations.wabtn_copy') }}</button>
                 </div>
+            </div>
             <div id="waBtnTrackSection" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid #f0f2f7;">
                 <label style="font-size:13px;font-weight:700;color:#1a1d23;display:block;margin-bottom:6px;"><i class="bi bi-link-45deg"></i> {{ __('integrations.wabtn_tracking') }}</label>
                 <p style="font-size:11.5px;color:#6b7280;margin-bottom:8px;">{{ __('integrations.wabtn_tracking_hint') }}</p>
@@ -810,33 +811,7 @@
                     <input type="text" id="waBtnTrackLink" readonly onclick="this.select()" style="width:100%;font-family:monospace;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 70px 10px 10px;color:#334155;">
                     <button onclick="navigator.clipboard.writeText(document.getElementById('waBtnTrackLink').value);toastr.success(ILANG.toast_link_copied)" style="position:absolute;top:6px;right:8px;background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="bi bi-clipboard"></i> {{ __('integrations.wabtn_copy') }}</button>
                 </div>
-                <div style="margin-top:8px;padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;">
-                    <div style="font-size:11px;font-weight:600;color:#92400e;margin-bottom:4px;">{{ __('integrations.wabtn_google_example') }}</div>
-                    <code style="font-size:10px;color:#78350f;word-break:break-all;">{{ rtrim(config('app.url'), '/') }}/wa/{{ $waBtn->website_token }}?utm_source=google&utm_medium=cpc&utm_campaign=@{{campaignid}}&utm_term=@{{keyword}}&gclid=@{{gclid}}</code>
-                </div>
             </div>
-
-                @php
-                    $clicksToday = $waBtn->clicks()->whereDate('clicked_at', today())->count();
-                    $clicks7d_ = $waBtn->clicks()->where('clicked_at', '>=', now()->subDays(7))->count();
-                    $clicks30d = $waBtn->clicks()->where('clicked_at', '>=', now()->subDays(30))->count();
-                @endphp
-                <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-                    <div style="text-align:center;padding:10px 8px;background:#f0fdf4;border-radius:8px;">
-                        <div style="font-size:18px;font-weight:700;color:#16a34a;">{{ $clicksToday }}</div>
-                        <div style="font-size:10.5px;color:#6b7280;">{{ __('integrations.wabtn_today') }}</div>
-                    </div>
-                    <div style="text-align:center;padding:10px 8px;background:#eff6ff;border-radius:8px;">
-                        <div style="font-size:18px;font-weight:700;color:#0085f3;">{{ $clicks7d_ }}</div>
-                        <div style="font-size:10.5px;color:#6b7280;">{{ __('integrations.wabtn_7d') }}</div>
-                    </div>
-                    <div style="text-align:center;padding:10px 8px;background:#f5f3ff;border-radius:8px;">
-                        <div style="font-size:18px;font-weight:700;color:#8B5CF6;">{{ $clicks30d }}</div>
-                        <div style="font-size:10.5px;color:#6b7280;">{{ __('integrations.wabtn_30d') }}</div>
-                    </div>
-                </div>
-            </div>
-            @endif
         </div>
         <div style="padding:16px 24px;border-top:1px solid #f0f2f7;display:flex;gap:8px;justify-content:flex-end;">
             <button onclick="closeWaBtnDrawer()" style="padding:8px 20px;border:1px solid #e2e8f0;background:#fff;border-radius:100px;font-size:13px;cursor:pointer;color:#374151;">{{ __('integrations.wabtn_cancel') }}</button>
