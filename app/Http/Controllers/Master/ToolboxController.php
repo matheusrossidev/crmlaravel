@@ -1722,17 +1722,23 @@ class ToolboxController extends Controller
             $partnerAdmin = User::where('tenant_id', $partnerId)->where('role', 'admin')->first();
             if (!$partnerAdmin) return;
 
-            $subject = $action === 'unlinked'
-                ? "Cliente {$client->name} se desvinculou da sua agência — Syncro"
-                : "Novo cliente vinculado: {$client->name} — Syncro";
-
-            $body = $action === 'unlinked'
-                ? "Olá,\n\nO cliente \"{$client->name}\" foi desvinculado da sua agência parceira no Syncro.\n\nComissões pendentes (em período de carência) foram canceladas. Comissões já liberadas foram mantidas.\n\nEquipe Syncro"
-                : "Olá,\n\nO cliente \"{$client->name}\" foi vinculado à sua agência parceira no Syncro.\n\nAs próximas cobranças deste cliente gerarão comissões para você.\n\nEquipe Syncro";
-
-            Mail::raw($body, function ($msg) use ($partnerAdmin, $subject) {
-                $msg->to($partnerAdmin->email)->subject($subject);
-            });
+            if ($action === 'unlinked') {
+                Mail::send('emails.partner-client-unlinked', [
+                    'partnerName' => $partnerAdmin->name,
+                    'clientName'  => $client->name,
+                ], function ($msg) use ($partnerAdmin, $client) {
+                    $msg->to($partnerAdmin->email)
+                        ->subject("Cliente {$client->name} se desvinculou da sua agência — Syncro");
+                });
+            } else {
+                Mail::raw(
+                    "Olá {$partnerAdmin->name},\n\nO cliente \"{$client->name}\" foi vinculado à sua agência parceira no Syncro.\n\nAs próximas cobranças deste cliente gerarão comissões para você.\n\nEquipe Syncro",
+                    function ($msg) use ($partnerAdmin, $client) {
+                        $msg->to($partnerAdmin->email)
+                            ->subject("Novo cliente vinculado: {$client->name} — Syncro");
+                    }
+                );
+            }
         } catch (\Throwable $e) {
             \Log::warning('Falha ao notificar parceiro sobre mudança de vínculo', ['error' => $e->getMessage()]);
         }

@@ -23,6 +23,7 @@ class TenantController extends Controller
                 'users',
                 'leads' => fn ($q) => $q->withoutGlobalScope('tenant'),
             ])
+            ->with(['referringAgency:id,name'])
             ->orderBy('name')
             ->paginate(20)
             ->withQueryString();

@@ -224,14 +224,13 @@ class AgencyAccessController extends Controller
                     ['type' => 'client_unlinked', 'client_name' => $client->name, 'client_id' => $client->id]
                 ));
 
-                // Email direto
-                Mail::raw(
-                    "Olá,\n\nO cliente \"{$client->name}\" se desvinculou da sua agência parceira no Syncro.\n\nComissões pendentes (em período de carência) foram canceladas. Comissões já liberadas foram mantidas.\n\nEquipe Syncro",
-                    function ($msg) use ($partnerAdmin, $client) {
-                        $msg->to($partnerAdmin->email)
-                            ->subject("Cliente {$client->name} se desvinculou da sua agência — Syncro");
-                    }
-                );
+                Mail::send('emails.partner-client-unlinked', [
+                    'partnerName' => $partnerAdmin->name,
+                    'clientName'  => $client->name,
+                ], function ($msg) use ($partnerAdmin, $client) {
+                    $msg->to($partnerAdmin->email)
+                        ->subject("Cliente {$client->name} se desvinculou da sua agência — Syncro");
+                });
             }
         } catch (\Throwable $e) {
             Log::warning('Falha ao notificar parceiro sobre desvinculação', ['error' => $e->getMessage()]);

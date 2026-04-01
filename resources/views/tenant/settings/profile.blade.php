@@ -303,7 +303,7 @@
                                 <input id="switchAgencyCode" type="text" class="form-control"
                                        style="font-family:monospace;font-weight:700;letter-spacing:.06em;flex:1;text-transform:uppercase;"
                                        placeholder="EX: AGENCIA-123" maxlength="20">
-                                <button onclick="doSwitchPartner()" class="btn-save" style="white-space:nowrap;">Confirmar</button>
+                                <button onclick="confirmSwitchPartner()" class="btn-save" style="white-space:nowrap;">Confirmar</button>
                                 <button onclick="document.getElementById('switchPartnerForm').style.display='none'" style="background:#f3f4f6;color:#6b7280;border:none;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;">Cancelar</button>
                             </div>
                         </div>
@@ -552,16 +552,22 @@ if (btnLinkAgency) {
 }
 
 // ── Desvincular / Trocar Parceiro ────────────────────────────
+const _csrf = document.querySelector('meta[name=csrf-token]').content;
+
 function confirmUnlinkPartner() {
-    if (!confirm('Tem certeza que deseja desvincular da agência parceira?\n\nComissões pendentes (em carência) serão canceladas.\nComissões já liberadas serão mantidas.')) return;
-    doUnlinkPartner();
+    window.confirmAction({
+        title: 'Desvincular agência parceira?',
+        message: 'Comissões pendentes (em carência) serão canceladas. Comissões já liberadas serão mantidas.',
+        confirmText: 'Desvincular',
+        onConfirm: doUnlinkPartner,
+    });
 }
 
 async function doUnlinkPartner() {
     try {
         const res = await fetch("{{ route('settings.agency.unlink') }}", {
             method: 'POST',
-            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            headers: { 'X-CSRF-TOKEN': _csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
         });
         const data = await res.json();
         if (data.success) {
@@ -573,15 +579,22 @@ async function doUnlinkPartner() {
     } catch { toastr.error('Erro de conexão.'); }
 }
 
-async function doSwitchPartner() {
+function confirmSwitchPartner() {
     const code = document.getElementById('switchAgencyCode').value.trim();
     if (!code) { toastr.warning('Informe o código da agência.'); return; }
-    if (!confirm('Confirma a troca de agência parceira?\n\nComissões pendentes do parceiro atual serão canceladas.')) return;
+    window.confirmAction({
+        title: 'Trocar agência parceira?',
+        message: 'Comissões pendentes do parceiro atual serão canceladas. Novas comissões irão para o novo parceiro.',
+        confirmText: 'Trocar',
+        onConfirm: () => doSwitchPartner(code),
+    });
+}
 
+async function doSwitchPartner(code) {
     try {
         const res = await fetch("{{ route('settings.agency.switch') }}", {
             method: 'POST',
-            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            headers: { 'X-CSRF-TOKEN': _csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
             body: JSON.stringify({ agency_code: code }),
         });
         const data = await res.json();

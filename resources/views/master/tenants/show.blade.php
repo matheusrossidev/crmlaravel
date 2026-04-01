@@ -611,42 +611,54 @@ async function rejectPartner() {
 const csrf      = document.querySelector('meta[name=csrf-token]').content;
 const toolboxUrl = "{{ route('master.toolbox.run', 'manage-partner') }}";
 
-async function masterUnlinkPartner() {
-    if (!confirm('Desvincular este tenant do parceiro?\n\nComissões pendentes serão canceladas.')) return;
-    try {
-        const res = await fetch(toolboxUrl, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tenant_id: {{ $tenant->id }}, action: 'unlink' }),
-        });
-        const data = await res.json();
-        if (data.success) {
-            toastr.success(data.lines.join('\n'));
-            setTimeout(() => window.location.reload(), 1500);
-        } else {
-            toastr.error(data.lines?.join('\n') || 'Erro');
-        }
-    } catch { toastr.error('Erro de conexão.'); }
+function masterUnlinkPartner() {
+    window.confirmAction({
+        title: 'Desvincular parceiro?',
+        message: 'Comissões pendentes (em carência) serão canceladas. Comissões já liberadas serão mantidas.',
+        confirmText: 'Desvincular',
+        onConfirm: async () => {
+            try {
+                const res = await fetch(toolboxUrl, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tenant_id: {{ $tenant->id }}, action: 'unlink' }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    toastr.success(data.lines.join(' '));
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    toastr.error(data.lines?.join(' ') || 'Erro');
+                }
+            } catch { toastr.error('Erro de conexão.'); }
+        },
+    });
 }
 
-async function masterSwitchPartner() {
+function masterSwitchPartner() {
     const code = document.getElementById('masterNewAgencyCode').value.trim();
     if (!code) { toastr.warning('Informe o código.'); return; }
-    if (!confirm('Confirma trocar o parceiro deste tenant?')) return;
-    try {
-        const res = await fetch(toolboxUrl, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tenant_id: {{ $tenant->id }}, action: 'switch', agency_code: code }),
-        });
-        const data = await res.json();
-        if (data.success) {
-            toastr.success(data.lines.join('\n'));
-            setTimeout(() => window.location.reload(), 1500);
-        } else {
-            toastr.error(data.lines?.join('\n') || 'Erro');
-        }
-    } catch { toastr.error('Erro de conexão.'); }
+    window.confirmAction({
+        title: 'Trocar parceiro?',
+        message: 'Comissões pendentes do parceiro atual serão canceladas. Novas comissões irão para o novo parceiro.',
+        confirmText: 'Trocar',
+        onConfirm: async () => {
+            try {
+                const res = await fetch(toolboxUrl, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tenant_id: {{ $tenant->id }}, action: 'switch', agency_code: code }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    toastr.success(data.lines.join(' '));
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    toastr.error(data.lines?.join(' ') || 'Erro');
+                }
+            } catch { toastr.error('Erro de conexão.'); }
+        },
+    });
 }
 
 async function masterLinkPartner() {
@@ -660,10 +672,10 @@ async function masterLinkPartner() {
         });
         const data = await res.json();
         if (data.success) {
-            toastr.success(data.lines.join('\n'));
+            toastr.success(data.lines.join(' '));
             setTimeout(() => window.location.reload(), 1500);
         } else {
-            toastr.error(data.lines?.join('\n') || 'Erro');
+            toastr.error(data.lines?.join(' ') || 'Erro');
         }
     } catch { toastr.error('Erro de conexão.'); }
 }

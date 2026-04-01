@@ -89,6 +89,9 @@
                 <div class="ph-rank-title">
                     @if($currentRank)
                         Sua empresa está no nível <strong>{{ $currentRank->name }}</strong>
+                        <span style="display:inline-block;margin-left:8px;padding:2px 10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:99px;font-size:12px;font-weight:700;color:#10B981;">
+                            {{ number_format($currentRank->commission_pct, 0) }}% de comissão
+                        </span>
                     @else
                         Programa de Parceiros
                     @endif
@@ -116,9 +119,20 @@
             </div>
 
             @if($agencyCode)
-                <button class="ph-link-btn" onclick="navigator.clipboard.writeText('{{ url('/register?agency=' . $agencyCode->code) }}');toastr.success('{{ __('partner.link_copied') }}');">
-                    <i class="bi bi-link-45deg"></i> {{ __('partner.your_referral_link') }}
-                </button>
+                <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
+                    {{-- Código do parceiro --}}
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:11px;color:rgba(255,255,255,.45);font-weight:600;">SEU CÓDIGO:</span>
+                        <code style="font-size:14px;font-weight:800;color:#fff;letter-spacing:.08em;background:rgba(255,255,255,.1);padding:4px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.15);">{{ $agencyCode->code }}</code>
+                        <button class="ph-link-btn" style="padding:6px 12px;font-size:11px;" onclick="navigator.clipboard.writeText('{{ $agencyCode->code }}');toastr.success('Código copiado!');">
+                            <i class="bi bi-clipboard"></i> Copiar
+                        </button>
+                    </div>
+                    {{-- Link de indicação --}}
+                    <button class="ph-link-btn" onclick="navigator.clipboard.writeText('{{ url('/register?agency=' . $agencyCode->code) }}');toastr.success('{{ __('partner.link_copied') }}');">
+                        <i class="bi bi-link-45deg"></i> {{ __('partner.your_referral_link') }}
+                    </button>
+                </div>
             @endif
         </div>
 

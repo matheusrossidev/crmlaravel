@@ -1,4 +1,4 @@
-@if(!request()->routeIs('whatsapp.*', 'chatbot.flows.edit'))
+@if(!request()->routeIs('whatsapp.*', 'chatbot.flows.edit', 'partner.*'))
 @php
     $helpLocale = app()->getLocale();
     $helpUserName = auth()->user()->name ?? 'User';

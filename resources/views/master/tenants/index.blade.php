@@ -194,6 +194,7 @@
                     <th>WhatsApp</th>
                     <th>Status</th>
                     <th>Plano</th>
+                    <th>Parceiro</th>
                     <th>Usuários</th>
                     <th>Leads</th>
                     <th>Criada em</th>
@@ -223,6 +224,15 @@
                         </span>
                     </td>
                     <td><span class="plan-badge">{{ $tenant->plan }}</span></td>
+                    <td>
+                        @if($tenant->referringAgency)
+                            <span style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:#7c3aed;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:6px;padding:2px 8px;">
+                                <i class="bi bi-building-check"></i> {{ $tenant->referringAgency->name }}
+                            </span>
+                        @else
+                            <span style="color:#d1d5db;font-size:12px;">—</span>
+                        @endif
+                    </td>
                     <td>
                         <span class="stat-mini">
                             <i class="bi bi-people"></i> {{ $tenant->users_count }}
