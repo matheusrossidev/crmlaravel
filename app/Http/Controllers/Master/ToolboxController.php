@@ -1336,6 +1336,11 @@ class ToolboxController extends Controller
         if ($withUtms) {
             $lines[] = "Leads com UTM: {$utmCount}";
         }
+        // Gerar dados de TODAS as features (usuários, departamentos, produtos, metas, etc.)
+        $demoService = new \App\Services\DemoDataService($tenantId);
+        $extraLines  = $demoService->generateAll();
+        $lines = array_merge($lines, ['', '── Dados complementares ──'], $extraLines);
+
         $lines[] = '';
         $lines[] = 'Geração concluída.';
 
