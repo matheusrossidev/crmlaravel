@@ -52,6 +52,7 @@ class ToolboxController extends Controller
         'test-wa-notifications',
         'create-cs-user',
         'manage-cs-users',
+        'manage-partner',
     ];
 
     public function index(): View
@@ -1608,6 +1609,133 @@ class ToolboxController extends Controller
         $lines[] = "Para deletar, execute novamente com action=delete e user_id=<ID>.";
 
         return response()->json(['success' => true, 'lines' => $lines]);
+    }
+
+    // ── Gerenciar Parceiro ──────────────────────────────────────────────────
+
+    private function managePartner(Request $request): JsonResponse
+    {
+        $tenantId = $request->input('tenant_id');
+        $action   = $request->input('action'); // 'unlink', 'switch', 'info'
+        $newCode  = $request->input('agency_code');
+
+        if (!$tenantId) {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] Selecione uma empresa.']], 422);
+        }
+
+        $tenant = Tenant::withoutGlobalScope('tenant')->find($tenantId);
+        if (!$tenant) {
+            return response()->json(['success' => false, 'lines' => ['[ERRO] Empresa não encontrada.']], 404);
+        }
+
+        $lines = [];
+
+        // Info — mostrar parceiro atual
+        if ($action === 'info' || !$action) {
+            $lines[] = "Empresa: {$tenant->name} (ID: {$tenant->id})";
+            if ($tenant->referred_by_agency_id) {
+                $partner = Tenant::withoutGlobalScope('tenant')->find($tenant->referred_by_agency_id);
+                $lines[] = "Parceiro vinculado: {$partner->name} (ID: {$partner->id})";
+
+                $pendingCount   = \App\Models\PartnerCommission::where('tenant_id', $partner->id)->where('client_tenant_id', $tenant->id)->where('status', 'pending')->count();
+                $availableCount = \App\Models\PartnerCommission::where('tenant_id', $partner->id)->where('client_tenant_id', $tenant->id)->where('status', 'available')->count();
+                $totalAmount    = \App\Models\PartnerCommission::where('tenant_id', $partner->id)->where('client_tenant_id', $tenant->id)->whereIn('status', ['pending', 'available', 'withdrawn'])->sum('amount');
+
+                $lines[] = "Comissões: {$pendingCount} pendentes, {$availableCount} disponíveis, total R$ " . number_format((float) $totalAmount, 2, ',', '.');
+            } else {
+                $lines[] = 'Sem parceiro vinculado.';
+            }
+            return response()->json(['success' => true, 'lines' => $lines]);
+        }
+
+        // Unlink — desvincular
+        if ($action === 'unlink') {
+            if (!$tenant->referred_by_agency_id) {
+                return response()->json(['success' => false, 'lines' => ['[ERRO] Empresa não tem parceiro vinculado.']], 422);
+            }
+
+            $oldPartnerId = $tenant->referred_by_agency_id;
+            $oldPartner   = Tenant::withoutGlobalScope('tenant')->find($oldPartnerId);
+
+            $cancelledCount = \App\Models\PartnerCommission::where('tenant_id', $oldPartnerId)
+                ->where('client_tenant_id', $tenant->id)
+                ->where('status', 'pending')
+                ->update(['status' => 'cancelled']);
+
+            $tenant->update(['referred_by_agency_id' => null]);
+
+            // Notificar parceiro
+            $this->notifyPartnerChange($oldPartnerId, $tenant, 'unlinked');
+
+            $lines[] = "[OK] Desvinculado de: {$oldPartner->name}";
+            $lines[] = "[OK] {$cancelledCount} comissão(ões) pendente(s) cancelada(s).";
+            $lines[] = '[OK] Comissões já liberadas (available/withdrawn) foram mantidas.';
+
+            return response()->json(['success' => true, 'lines' => $lines]);
+        }
+
+        // Switch — trocar parceiro
+        if ($action === 'switch') {
+            if (!$newCode) {
+                return response()->json(['success' => false, 'lines' => ['[ERRO] Informe o código da nova agência.']], 422);
+            }
+
+            $agencyCode = \App\Models\PartnerAgencyCode::where('code', strtoupper($newCode))
+                ->where('is_active', true)
+                ->whereNotNull('tenant_id')
+                ->first();
+
+            if (!$agencyCode) {
+                return response()->json(['success' => false, 'lines' => ['[ERRO] Código inválido, inativo ou não encontrado.']], 422);
+            }
+
+            $oldPartnerId = $tenant->referred_by_agency_id;
+            $newPartnerId = $agencyCode->tenant_id;
+            $cancelledCount = 0;
+
+            if ($oldPartnerId) {
+                $oldPartner     = Tenant::withoutGlobalScope('tenant')->find($oldPartnerId);
+                $cancelledCount = \App\Models\PartnerCommission::where('tenant_id', $oldPartnerId)
+                    ->where('client_tenant_id', $tenant->id)
+                    ->where('status', 'pending')
+                    ->update(['status' => 'cancelled']);
+                $this->notifyPartnerChange($oldPartnerId, $tenant, 'unlinked');
+                $lines[] = "[OK] Desvinculado de: {$oldPartner->name} ({$cancelledCount} comissões pendentes canceladas)";
+            }
+
+            $tenant->update(['referred_by_agency_id' => $newPartnerId]);
+            $newPartner = Tenant::withoutGlobalScope('tenant')->find($newPartnerId);
+            $this->notifyPartnerChange($newPartnerId, $tenant, 'linked');
+
+            $lines[] = "[OK] Vinculado a: {$newPartner->name}";
+            $lines[] = '[OK] Novas comissões serão contabilizadas para o novo parceiro.';
+
+            return response()->json(['success' => true, 'lines' => $lines]);
+        }
+
+        return response()->json(['success' => false, 'lines' => ['[ERRO] Ação inválida. Use: info, unlink ou switch.']], 422);
+    }
+
+    private function notifyPartnerChange(int $partnerId, Tenant $client, string $action): void
+    {
+        try {
+            $partnerAdmin = User::where('tenant_id', $partnerId)->where('role', 'admin')->first();
+            if (!$partnerAdmin) return;
+
+            $subject = $action === 'unlinked'
+                ? "Cliente {$client->name} se desvinculou da sua agência — Syncro"
+                : "Novo cliente vinculado: {$client->name} — Syncro";
+
+            $body = $action === 'unlinked'
+                ? "Olá,\n\nO cliente \"{$client->name}\" foi desvinculado da sua agência parceira no Syncro.\n\nComissões pendentes (em período de carência) foram canceladas. Comissões já liberadas foram mantidas.\n\nEquipe Syncro"
+                : "Olá,\n\nO cliente \"{$client->name}\" foi vinculado à sua agência parceira no Syncro.\n\nAs próximas cobranças deste cliente gerarão comissões para você.\n\nEquipe Syncro";
+
+            Mail::raw($body, function ($msg) use ($partnerAdmin, $subject) {
+                $msg->to($partnerAdmin->email)->subject($subject);
+            });
+        } catch (\Throwable $e) {
+            \Log::warning('Falha ao notificar parceiro sobre mudança de vínculo', ['error' => $e->getMessage()]);
+        }
     }
 
     private function removeAccents(string $str): string

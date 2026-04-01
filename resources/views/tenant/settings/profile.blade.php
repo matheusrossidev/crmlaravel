@@ -278,13 +278,35 @@
                 </div>
                 <div class="profile-card-body">
                     @if($agencyTenant)
-                        <div style="display:flex;align-items:center;gap:10px;padding:6px 0;">
-                            <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:20px;padding:4px 12px;font-size:12.5px;font-weight:600;">
-                                <i class="bi bi-check-circle-fill"></i> {{ __('settings.profile_agency_linked') }}
-                            </span>
-                            <span style="font-size:13.5px;font-weight:600;color:#1a1d23;">{{ $agencyTenant->name }}</span>
+                        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:6px 0;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:20px;padding:4px 12px;font-size:12.5px;font-weight:600;">
+                                    <i class="bi bi-check-circle-fill"></i> {{ __('settings.profile_agency_linked') }}
+                                </span>
+                                <span style="font-size:13.5px;font-weight:600;color:#1a1d23;">{{ $agencyTenant->name }}</span>
+                            </div>
+                            <div style="display:flex;gap:6px;">
+                                <button onclick="confirmUnlinkPartner()" style="background:#fff;border:1.5px solid #fca5a5;color:#dc2626;border-radius:8px;padding:5px 12px;font-size:11.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                                    <i class="bi bi-x-circle"></i> Desvincular
+                                </button>
+                                <button onclick="document.getElementById('switchPartnerForm').style.display='block'" style="background:#eff6ff;border:1.5px solid #bfdbfe;color:#0085f3;border-radius:8px;padding:5px 12px;font-size:11.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                                    <i class="bi bi-arrow-left-right"></i> Trocar
+                                </button>
+                            </div>
                         </div>
                         <p style="font-size:12px;color:#9ca3af;margin:8px 0 0;">{{ __('settings.profile_agency_desc') }}</p>
+
+                        {{-- Switch form (hidden) --}}
+                        <div id="switchPartnerForm" style="display:none;margin-top:12px;padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;">
+                            <label style="font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;display:block;">Código da nova agência</label>
+                            <div style="display:flex;gap:6px;">
+                                <input id="switchAgencyCode" type="text" class="form-control"
+                                       style="font-family:monospace;font-weight:700;letter-spacing:.06em;flex:1;text-transform:uppercase;"
+                                       placeholder="EX: AGENCIA-123" maxlength="20">
+                                <button onclick="doSwitchPartner()" class="btn-save" style="white-space:nowrap;">Confirmar</button>
+                                <button onclick="document.getElementById('switchPartnerForm').style.display='none'" style="background:#f3f4f6;color:#6b7280;border:none;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;">Cancelar</button>
+                            </div>
+                        </div>
                     @else
                         <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">{{ __('settings.profile_agency_none') }}</p>
                         <div style="display:flex;gap:8px;align-items:flex-start;">
@@ -527,6 +549,49 @@ if (btnLinkAgency) {
         } catch { toastr.error(SLANG.profile_conn_error); }
         btnLinkAgency.disabled = false;
     });
+}
+
+// ── Desvincular / Trocar Parceiro ────────────────────────────
+function confirmUnlinkPartner() {
+    if (!confirm('Tem certeza que deseja desvincular da agência parceira?\n\nComissões pendentes (em carência) serão canceladas.\nComissões já liberadas serão mantidas.')) return;
+    doUnlinkPartner();
+}
+
+async function doUnlinkPartner() {
+    try {
+        const res = await fetch("{{ route('settings.agency.unlink') }}", {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        });
+        const data = await res.json();
+        if (data.success) {
+            toastr.success(data.message);
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            toastr.error(data.message || 'Erro ao desvincular.');
+        }
+    } catch { toastr.error('Erro de conexão.'); }
+}
+
+async function doSwitchPartner() {
+    const code = document.getElementById('switchAgencyCode').value.trim();
+    if (!code) { toastr.warning('Informe o código da agência.'); return; }
+    if (!confirm('Confirma a troca de agência parceira?\n\nComissões pendentes do parceiro atual serão canceladas.')) return;
+
+    try {
+        const res = await fetch("{{ route('settings.agency.switch') }}", {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ agency_code: code }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            toastr.success(data.message);
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            toastr.error(data.message || 'Erro ao trocar parceiro.');
+        }
+    } catch { toastr.error('Erro de conexão.'); }
 }
 
 // ── Helpers ───────────────────────────────────────────────

@@ -660,5 +660,7 @@ async function confirmCancel() {
         toastr.error(IS_STRIPE_BILLING ? 'Connection error. Try again.' : SLANG.billing_conn_error);
     }
 }
+
+
 </script>
 @endsection

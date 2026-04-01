@@ -495,6 +495,47 @@
                         </small>
                     </div>
                     @endif
+
+                    {{-- Gerenciar parceiro vinculado (para todos os tenants) --}}
+                    @php
+                        $linkedPartner = $tenant->referred_by_agency_id
+                            ? \App\Models\Tenant::withoutGlobalScope('tenant')->find($tenant->referred_by_agency_id)
+                            : null;
+                    @endphp
+                    <div class="form-group" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;">
+                        <label style="color:#0085f3;font-weight:700;font-size:12.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                            <i class="bi bi-people"></i> Parceiro Vinculado
+                        </label>
+                        @if($linkedPartner)
+                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                                <div>
+                                    <span style="font-size:13px;font-weight:600;color:#1a1d23;">{{ $linkedPartner->name }}</span>
+                                    <span style="font-size:11px;color:#9ca3af;margin-left:6px;">(ID: {{ $linkedPartner->id }})</span>
+                                </div>
+                                <div style="display:flex;gap:6px;">
+                                    <button type="button" onclick="masterUnlinkPartner()" style="background:#fff;border:1px solid #fca5a5;color:#dc2626;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;">
+                                        <i class="bi bi-x-circle"></i> Desvincular
+                                    </button>
+                                    <button type="button" onclick="document.getElementById('masterSwitchForm').style.display='block'" style="background:#fff;border:1px solid #bfdbfe;color:#0085f3;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;">
+                                        <i class="bi bi-arrow-left-right"></i> Trocar
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="masterSwitchForm" style="display:none;margin-top:8px;display:flex;gap:6px;display:none;">
+                                <input id="masterNewAgencyCode" type="text" class="form-control" style="max-width:180px;text-transform:uppercase;" placeholder="Código nova agência">
+                                <button type="button" onclick="masterSwitchPartner()" style="background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;">OK</button>
+                            </div>
+                        @else
+                            <div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Sem parceiro vinculado.</div>
+                            <div style="display:flex;gap:6px;">
+                                <input id="masterLinkAgencyCode" type="text" class="form-control" style="max-width:180px;text-transform:uppercase;" placeholder="Código agência">
+                                <button type="button" onclick="masterLinkPartner()" style="background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;">
+                                    <i class="bi bi-link-45deg"></i> Vincular
+                                </button>
+                            </div>
+                        @endif
+                    </div>
+
                     <button class="btn-save" id="btnUpdateTenant" onclick="updateTenant()">
                         <i class="bi bi-check2"></i> Salvar alterações
                     </button>
@@ -568,6 +609,64 @@ async function rejectPartner() {
     else toastr.error(data.message || 'Erro');
 }
 const csrf      = document.querySelector('meta[name=csrf-token]').content;
+const toolboxUrl = "{{ route('master.toolbox.run', 'manage-partner') }}";
+
+async function masterUnlinkPartner() {
+    if (!confirm('Desvincular este tenant do parceiro?\n\nComissões pendentes serão canceladas.')) return;
+    try {
+        const res = await fetch(toolboxUrl, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tenant_id: {{ $tenant->id }}, action: 'unlink' }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            toastr.success(data.lines.join('\n'));
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            toastr.error(data.lines?.join('\n') || 'Erro');
+        }
+    } catch { toastr.error('Erro de conexão.'); }
+}
+
+async function masterSwitchPartner() {
+    const code = document.getElementById('masterNewAgencyCode').value.trim();
+    if (!code) { toastr.warning('Informe o código.'); return; }
+    if (!confirm('Confirma trocar o parceiro deste tenant?')) return;
+    try {
+        const res = await fetch(toolboxUrl, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tenant_id: {{ $tenant->id }}, action: 'switch', agency_code: code }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            toastr.success(data.lines.join('\n'));
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            toastr.error(data.lines?.join('\n') || 'Erro');
+        }
+    } catch { toastr.error('Erro de conexão.'); }
+}
+
+async function masterLinkPartner() {
+    const code = document.getElementById('masterLinkAgencyCode').value.trim();
+    if (!code) { toastr.warning('Informe o código.'); return; }
+    try {
+        const res = await fetch(toolboxUrl, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tenant_id: {{ $tenant->id }}, action: 'switch', agency_code: code }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            toastr.success(data.lines.join('\n'));
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            toastr.error(data.lines?.join('\n') || 'Erro');
+        }
+    } catch { toastr.error('Erro de conexão.'); }
+}
 
 async function updateTenant() {
     const btn = document.getElementById('btnUpdateTenant');

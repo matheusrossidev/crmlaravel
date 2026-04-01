@@ -523,7 +523,9 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::post('workspace/logo',        [ProfileController::class, 'uploadWorkspaceLogo'])->name('workspace.logo');
 
             // Vínculo de agência parceira
-            Route::post('agencia-parceira', [AgencyAccessController::class, 'linkCode'])->name('agency.link');
+            Route::post('agencia-parceira',          [AgencyAccessController::class, 'linkCode'])->name('agency.link');
+            Route::post('agencia-parceira/desvincular', [AgencyAccessController::class, 'unlinkPartner'])->name('agency.unlink');
+            Route::post('agencia-parceira/trocar',   [AgencyAccessController::class, 'switchPartner'])->name('agency.switch');
 
             // Usuários
             Route::post('usuarios',           [UserController::class, 'store'])->name('users.store')->middleware('plan.limit:users');
