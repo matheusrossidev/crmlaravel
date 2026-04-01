@@ -2061,7 +2061,8 @@ $pageIcon = 'chat-dots';
         renderTags(tagsRaw);
         document.getElementById('contactViewMode').style.display = '';
         document.getElementById('contactEditMode').style.display = 'none';
-        document.getElementById('detailsStatus').textContent = activeConvStatus === 'open' ? LANG.status_open : LANG.status_closed;
+        const detailsStatusEl = document.getElementById('detailsStatus');
+        if (detailsStatusEl) detailsStatusEl.textContent = activeConvStatus === 'open' ? LANG.status_open : LANG.status_closed;
         document.getElementById('btnCloseConv').title = activeConvStatus === 'open' ? LANG.close_conversation : LANG.reopen;
         document.getElementById('btnCloseConv').querySelector('i').className = activeConvStatus === 'open' ?
             'bi bi-check-circle' : 'bi bi-arrow-counterclockwise';
@@ -2736,7 +2737,8 @@ $pageIcon = 'chat-dots';
             activeConvStatus = newStatus;
             const convEl = document.querySelector(`[data-conv-id="${activeConvId}"]`);
             if (convEl) convEl.dataset.status = newStatus;
-            document.getElementById('detailsStatus').textContent = newStatus === 'open' ? LANG.status_open : LANG.status_closed;
+            const statusEl = document.getElementById('detailsStatus');
+            if (statusEl) statusEl.textContent = newStatus === 'open' ? LANG.status_open : LANG.status_closed;
             document.getElementById('btnCloseConv').title = newStatus === 'open' ? LANG.close_conversation : LANG.reopen;
             document.getElementById('btnCloseConv').querySelector('i').className = newStatus === 'open' ?
                 'bi bi-check-circle' : 'bi bi-arrow-counterclockwise';
