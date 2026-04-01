@@ -424,7 +424,7 @@ class DemoDataService
         AiAgent::withoutGlobalScope('tenant')->create([
             'tenant_id'              => $this->tenantId,
             'name'                   => 'Assistente Demo',
-            'objective'              => 'Atender leads, qualificar interesse e agendar reuniões',
+            'objective'              => 'sales',
             'communication_style'    => 'Profissional e amigável, com emojis moderados',
             'persona_description'    => 'Você é um assistente de vendas da empresa. Sua missão é entender as necessidades do cliente e ajudá-lo.',
             'language'               => 'pt-BR',
