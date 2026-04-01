@@ -1290,6 +1290,7 @@ $pageIcon = 'chat-dots';
             <div class="wa-compose-tabs">
                 <button class="wa-tab-btn active" id="tabReply" onclick="setComposeMode('reply')">{{ __('chat.reply') }}</button>
                 <button class="wa-tab-btn" id="tabNote" onclick="setComposeMode('note')">{{ __('chat.private_note') }}</button>
+                <button class="wa-tab-btn" id="tabSchedule" onclick="setComposeMode('schedule')"><i class="bi bi-clock" style="margin-right:3px;"></i> {{ __('chat.schedule') ?? 'Agendar' }}</button>
             </div>
 
             <div class="wa-compose-row" id="recordingRow" style="display:none;">
@@ -1571,26 +1572,7 @@ $pageIcon = 'chat-dots';
         </div>
         @endif
 
-        {{-- IA Analista — Sugestões --}}
-        <div class="wa-details-section" id="analystSection" style="display:none;">
-            <div class="wa-details-label" style="display:flex;align-items:center;justify-content:space-between;">
-                <span><i class="bi bi-robot" style="margin-right:4px;color:#0085f3;"></i> {{ __('chat.ai_suggestions') }}</span>
-                <button onclick="triggerAnalysis()" id="analyzeBtn" type="button"
-                        style="background:none;border:none;padding:0;font-size:11px;color:#0085f3;cursor:pointer;font-weight:600;">
-                    {{ __('chat.analyze') }}
-                </button>
-            </div>
-            <div id="analystList" style="margin-top:6px;"></div>
-            <button id="approveAllBtn" onclick="approveAllSuggestions()" type="button"
-                    style="display:none;width:100%;margin-top:6px;padding:5px 8px;background:#0085f3;color:#fff;border:none;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600;">
-                <i class="bi bi-check-all"></i> {{ __('chat.approve_all') }}
-            </button>
-        </div>
-
-        <div class="wa-details-section">
-            <div class="wa-details-label">{{ __('chat.status') }}</div>
-            <div class="wa-details-value" id="detailsStatus"></div>
-        </div>
+        {{-- Seção de status removida — informação disponível no header da conversa --}}
     </div>
 
     {{-- WebSocket status toast --}}
@@ -1709,6 +1691,7 @@ $pageIcon = 'chat-dots';
     let activeConvId = null;
     let activeConvChannel = 'whatsapp'; // 'whatsapp' | 'instagram'
     let activeConvStatus = 'open';
+    let activeConvLeadId = null;
     let activeLeadId = null; // lead vinculado à conversa ativa
 
     // ── Formatação de telefone brasileiro ─────────────────────────────────────
@@ -2178,10 +2161,8 @@ $pageIcon = 'chat-dots';
         }
 
         // Renderiza painel de lead
+        activeConvLeadId = data.lead?.id || null;
         renderLeadPanel(data.lead);
-
-        // Carrega sugestões da IA para esta conversa
-        loadAnalystSuggestions(convId);
 
         // Avança o anchor do poll para agora, evitando que o próximo poll re-entregue
         // mensagens do histórico já renderizadas pelo openConversation.
@@ -2439,6 +2420,34 @@ $pageIcon = 'chat-dots';
         const body = input.value.trim();
         if (!body) return;
 
+        // Schedule mode — send to scheduled messages endpoint
+        if (composeMode === 'schedule') {
+            const dt = document.getElementById('scheduleDateTime');
+            if (!dt || !dt.value) { toastr.warning('Selecione a data e hora do agendamento.'); return; }
+
+            const leadId = document.getElementById('detailsLeadId')?.value || activeConvLeadId;
+            if (!leadId) { toastr.warning('Vincule um lead a esta conversa para agendar.'); return; }
+
+            input.value = '';
+            autoResize(input);
+
+            try {
+                const res = await fetch(`/contatos/${leadId}/mensagens-agendadas`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'text', body: body, send_at: dt.value }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    toastr.success('Mensagem agendada para ' + new Date(dt.value).toLocaleString('pt-BR'));
+                    setComposeMode('reply');
+                } else {
+                    toastr.error(data.message || data.error || 'Erro ao agendar.');
+                }
+            } catch { toastr.error('Erro de conexão.'); }
+            return;
+        }
+
         input.value = '';
         autoResize(input);
 
@@ -2672,8 +2681,34 @@ $pageIcon = 'chat-dots';
         const textarea = document.getElementById('messageInput');
         document.getElementById('tabReply').classList.toggle('active', mode === 'reply');
         document.getElementById('tabNote').classList.toggle('active', mode === 'note');
+        document.getElementById('tabSchedule').classList.toggle('active', mode === 'schedule');
         textarea.classList.toggle('note-mode', mode === 'note');
-        textarea.placeholder = mode === 'note' ? LANG.placeholder_note : LANG.placeholder;
+
+        // Schedule row
+        let schedRow = document.getElementById('scheduleRow');
+        if (mode === 'schedule') {
+            textarea.placeholder = LANG.placeholder_schedule ?? 'Mensagem para agendar...';
+            if (!schedRow) {
+                schedRow = document.createElement('div');
+                schedRow.id = 'scheduleRow';
+                schedRow.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 14px;background:#eff6ff;border-bottom:1px solid #bfdbfe;';
+                schedRow.innerHTML = '<i class="bi bi-clock" style="color:#0085f3;font-size:13px;"></i>' +
+                    '<span style="font-size:11px;color:#374151;font-weight:600;">Agendar para:</span>' +
+                    '<input type="datetime-local" id="scheduleDateTime" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;color:#1a1d23;" />';
+                const composeArea = document.getElementById('composeArea');
+                const normalRow = document.getElementById('normalRow');
+                composeArea.insertBefore(schedRow, normalRow);
+            }
+            schedRow.style.display = 'flex';
+            // Set default to 1 hour from now
+            const now = new Date(Date.now() + 3600000);
+            const dt = document.getElementById('scheduleDateTime');
+            if (dt && !dt.value) dt.value = now.toISOString().slice(0, 16);
+        } else {
+            if (schedRow) schedRow.style.display = 'none';
+            textarea.placeholder = mode === 'note' ? LANG.placeholder_note : LANG.placeholder;
+        }
+
         document.getElementById('normalRow').querySelectorAll('.wa-btn-icon').forEach(b => {
             b.style.display = mode === 'note' ? 'none' : '';
         });
@@ -2747,6 +2782,7 @@ $pageIcon = 'chat-dots';
 
     // ── Lead / CRM ────────────────────────────────────────────────────────────────
     function renderLeadPanel(lead) {
+        activeConvLeadId = lead?.id || null;
         const leadSection = document.getElementById('leadSection');
         const noLeadSection = document.getElementById('noLeadSection');
 

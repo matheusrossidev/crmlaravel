@@ -338,6 +338,53 @@
                 </div>
             </div>
 
+            {{-- STEP: trigger_type (instagram only) --}}
+            @php $igConnected = \App\Models\InstagramInstance::where('status', 'connected')->exists(); @endphp
+            <div class="wizard-step" data-step="trigger_type">
+                <div class="wizard-question">Como o fluxo será ativado?</div>
+                <div class="wizard-subtitle">Escolha o que dispara este chatbot no Instagram.</div>
+                <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
+                    <label id="triggerOpt_keyword" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border:2px solid #0085f3;border-radius:12px;cursor:pointer;transition:all .15s;background:#eff6ff;" onclick="selectTriggerType('keyword', this)">
+                        <input type="radio" name="f_trigger_type" value="keyword" checked style="accent-color:#0085f3;width:18px;height:18px;">
+                        <div>
+                            <div style="font-size:14px;font-weight:700;color:#1a1d23;"><i class="bi bi-chat-dots" style="color:#0085f3;margin-right:4px;"></i> Palavras-chave em DM</div>
+                            <div style="font-size:12px;color:#6b7280;margin-top:2px;">O lead envia uma mensagem na DM com palavras específicas</div>
+                        </div>
+                    </label>
+                    <label id="triggerOpt_comment" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border:2px solid #e5e7eb;border-radius:12px;cursor:pointer;transition:all .15s;{{ !$igConnected ? 'opacity:.5;pointer-events:none;' : '' }}" onclick="selectTriggerType('instagram_comment', this)">
+                        <input type="radio" name="f_trigger_type" value="instagram_comment" {{ !$igConnected ? 'disabled' : '' }} style="accent-color:#0085f3;width:18px;height:18px;">
+                        <div>
+                            <div style="font-size:14px;font-weight:700;color:#1a1d23;"><i class="bi bi-chat-left-heart" style="color:#e1306c;margin-right:4px;"></i> Comentou em publicação</div>
+                            <div style="font-size:12px;color:#6b7280;margin-top:2px;">Alguém comenta em um post ou reel com palavras-chave</div>
+                            @if(!$igConnected)
+                            <div style="font-size:11px;color:#ef4444;margin-top:4px;"><i class="bi bi-exclamation-triangle"></i> Instagram não conectado. <a href="{{ route('settings.integrations.index') }}" style="color:#0085f3;">Conectar</a></div>
+                            @endif
+                        </div>
+                    </label>
+                </div>
+
+                {{-- Post selector (shown when instagram_comment selected) --}}
+                <div id="triggerPostSelector" style="display:none;margin-top:16px;">
+                    <div style="font-size:13px;font-weight:700;color:#1a1d23;margin-bottom:8px;">Publicação alvo</div>
+                    <div style="display:flex;gap:10px;margin-bottom:10px;">
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                            <input type="radio" name="f_comment_scope" value="all" checked onchange="toggleCommentPostPicker()" style="accent-color:#0085f3;"> Qualquer publicação
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                            <input type="radio" name="f_comment_scope" value="specific" onchange="toggleCommentPostPicker()" style="accent-color:#0085f3;"> Post/Reel específico
+                        </label>
+                    </div>
+                    <div id="triggerPostGrid" style="display:none;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;max-height:200px;overflow-y:auto;margin-bottom:8px;"></div>
+                    <button type="button" id="triggerLoadPostsBtn" style="display:none;padding:6px 14px;background:#eff6ff;color:#0085f3;border:1px solid #bfdbfe;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" onclick="loadTriggerPosts()">
+                        <i class="bi bi-arrow-clockwise"></i> Carregar publicações
+                    </button>
+                    <div style="margin-top:12px;">
+                        <div style="font-size:13px;font-weight:700;color:#1a1d23;margin-bottom:6px;">Resposta no comentário (opcional)</div>
+                        <input type="text" class="wizard-text-input" id="f_reply_comment" placeholder="Ex: Vou te mandar no privado!" maxlength="300" style="font-size:13px;">
+                    </div>
+                </div>
+            </div>
+
             {{-- STEP: trigger_keywords (whatsapp/instagram only) --}}
             <div class="wizard-step" data-step="trigger_keywords">
                 <div class="wizard-question">{{ __('chatbot.wizard_keywords_question') }}</div>
@@ -455,7 +502,10 @@ const state = {
     welcome_message: '',
     widget_type: 'bubble',
     widget_color: '#0085f3',
+    trigger_type: 'keyword',
     trigger_keywords: '',
+    trigger_media_id: '',
+    trigger_reply_comment: '',
 };
 
 let stepOrder = ['channel', 'name', 'template', 'review'];
@@ -463,8 +513,12 @@ let currentIdx = 0;
 
 function buildStepOrder() {
     const steps = ['channel', 'name', 'template'];
-    if (state.channel === 'website') steps.push('widget_settings');
-    else steps.push('trigger_keywords');
+    if (state.channel === 'website') {
+        steps.push('widget_settings');
+    } else {
+        if (state.channel === 'instagram') steps.push('trigger_type');
+        steps.push('trigger_keywords');
+    }
     steps.push('review');
     stepOrder = steps;
 }
@@ -506,6 +560,11 @@ function saveCurrentStep() {
         state.name = document.getElementById('f_name').value.trim();
         state.description = document.getElementById('f_description').value.trim();
     }
+    if (step === 'trigger_type') {
+        const checked = document.querySelector('input[name="f_trigger_type"]:checked');
+        state.trigger_type = checked ? checked.value : 'keyword';
+        state.trigger_reply_comment = document.getElementById('f_reply_comment')?.value?.trim() || '';
+    }
     if (step === 'trigger_keywords') {
         state.trigger_keywords = document.getElementById('f_keywords').value.trim();
     }
@@ -527,6 +586,64 @@ function validateCurrentStep() {
         return false;
     }
     return true;
+}
+
+function selectTriggerType(value, el) {
+    document.querySelectorAll('input[name="f_trigger_type"]').forEach(r => {
+        r.closest('label').style.borderColor = '#e5e7eb';
+        r.closest('label').style.background = '#fff';
+    });
+    el.querySelector('input').checked = true;
+    el.style.borderColor = '#0085f3';
+    el.style.background = '#eff6ff';
+    state.trigger_type = value;
+
+    const postSel = document.getElementById('triggerPostSelector');
+    if (postSel) postSel.style.display = value === 'instagram_comment' ? 'block' : 'none';
+}
+
+function toggleCommentPostPicker() {
+    const scope = document.querySelector('input[name="f_comment_scope"]:checked')?.value;
+    const grid = document.getElementById('triggerPostGrid');
+    const btn = document.getElementById('triggerLoadPostsBtn');
+    if (scope === 'specific') {
+        grid.style.display = 'grid';
+        btn.style.display = 'inline-flex';
+    } else {
+        grid.style.display = 'none';
+        btn.style.display = 'none';
+        state.trigger_media_id = '';
+    }
+}
+
+function loadTriggerPosts(after) {
+    const grid = document.getElementById('triggerPostGrid');
+    if (!after) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:12px;color:#9ca3af;font-size:11px;">Carregando...</div>';
+    const url = '{{ route("settings.ig-automations.posts") }}' + (after ? '?after=' + after : '');
+    window.API.get(url).then(res => {
+        if (!after) grid.innerHTML = '';
+        (res.data || []).forEach(post => {
+            const div = document.createElement('div');
+            div.style.cssText = 'position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:2px solid ' + (post.id === state.trigger_media_id ? '#0085f3' : '#e5e7eb') + ';cursor:pointer;';
+            const img = post.thumbnail_url ? '<img src="' + post.thumbnail_url + '" style="width:100%;height:100%;object-fit:cover;" loading="lazy">' : '<div style="height:100%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#9ca3af;"><i class="bi bi-image"></i></div>';
+            const badge = post.media_type === 'REEL' ? '<span style="position:absolute;top:3px;left:3px;background:rgba(124,58,237,.85);color:#fff;font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;">Reel</span>' : '';
+            div.innerHTML = img + badge;
+            div.onclick = () => {
+                grid.querySelectorAll('div').forEach(d => d.style.borderColor = '#e5e7eb');
+                div.style.borderColor = '#0085f3';
+                state.trigger_media_id = post.id;
+            };
+            grid.appendChild(div);
+        });
+        if (res.next_cursor) {
+            const more = document.createElement('div');
+            more.style.cssText = 'grid-column:1/-1;text-align:center;';
+            more.innerHTML = '<button type="button" onclick="loadTriggerPosts(\'' + res.next_cursor + '\');this.parentElement.remove();" style="padding:5px 14px;background:#eff6ff;color:#0085f3;border:1px solid #bfdbfe;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">Carregar mais</button>';
+            grid.appendChild(more);
+        }
+    }).catch(() => {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:12px;color:#ef4444;font-size:11px;">Erro ao carregar. Verifique a conexão com Instagram.</div>';
+    });
 }
 
 function wizardNext() {
@@ -688,12 +805,14 @@ const LABELS = {
     welcome_message: CBLANG.review_welcome,
     widget_type: CBLANG.review_widget_type,
     widget_color: CBLANG.review_color,
+    trigger_type: 'Tipo de gatilho',
     trigger_keywords: CBLANG.review_keywords,
 };
 
 const DISPLAY = {
     channel: { whatsapp: 'WhatsApp', instagram: 'Instagram', website: 'Website' },
     widget_type: { bubble: CBLANG.review_widget_bubble, inline: CBLANG.review_widget_inline },
+    trigger_type: { keyword: 'Palavras-chave em DM', instagram_comment: 'Comentou em publicação' },
 };
 
 function buildReview() {
@@ -703,7 +822,10 @@ function buildReview() {
 
     const keys = ['channel', 'name', 'description', 'template_name'];
     if (state.channel === 'website') keys.push('bot_name', 'bot_avatar', 'welcome_message', 'widget_type', 'widget_color');
-    else keys.push('trigger_keywords');
+    else {
+        if (state.channel === 'instagram') keys.push('trigger_type');
+        keys.push('trigger_keywords');
+    }
 
     keys.forEach(key => {
         let val = state[key];
@@ -737,6 +859,12 @@ function wizardSubmit() {
     fd.append('channel', state.channel);
     if (state.description) fd.append('description', state.description);
     if (state.trigger_keywords) fd.append('trigger_keywords', state.trigger_keywords);
+    if (state.trigger_type && state.trigger_type !== 'keyword') {
+        fd.append('trigger_type', state.trigger_type);
+        if (state.trigger_media_id) fd.append('trigger_media_id', state.trigger_media_id);
+        const rc = document.getElementById('f_reply_comment')?.value?.trim();
+        if (rc) fd.append('trigger_reply_comment', rc);
+    }
 
     // Website-specific fields
     if (state.channel === 'website') {

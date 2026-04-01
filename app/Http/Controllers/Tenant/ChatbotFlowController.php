@@ -127,7 +127,84 @@ class ChatbotFlowController extends Controller
             ->values()
             ->all();
 
-        return view('tenant.chatbot.builder', compact('flow', 'pipelines', 'tags', 'users', 'customFieldDefs'));
+        // Build React Flow nodes/edges from DB tables
+        $dbNodes = ChatbotFlowNode::withoutGlobalScope('tenant')
+            ->where('flow_id', $flow->id)
+            ->orderBy('canvas_y')
+            ->get();
+        $dbEdges = ChatbotFlowEdge::withoutGlobalScope('tenant')
+            ->where('flow_id', $flow->id)
+            ->get();
+
+        $rfNodes = [];
+        $hasStart = false;
+
+        foreach ($dbNodes as $n) {
+            $rfNodes[] = [
+                'id'       => (string) $n->id,
+                'type'     => $n->type,
+                'position' => ['x' => (float) $n->canvas_x, 'y' => (float) $n->canvas_y],
+                'data'     => $n->config ?? [],
+            ];
+            if ($n->is_start) $hasStart = true;
+        }
+
+        // Always prepend a start/trigger node (visual only — not saved to DB)
+        $firstNodeY = !empty($rfNodes) ? ($rfNodes[0]['position']['y'] ?? 200) : 200;
+        $firstNodeX = !empty($rfNodes) ? (($rfNodes[0]['position']['x'] ?? 300) - 320) : 100;
+        array_unshift($rfNodes, [
+            'id'       => 'start-1',
+            'type'     => 'start',
+            'position' => ['x' => $firstNodeX, 'y' => $firstNodeY],
+            'data'     => ['label' => 'Trigger'],
+        ]);
+
+        // If there's a first real node marked as is_start, add an edge from start to it
+        $startTarget = null;
+        foreach ($dbNodes as $n) {
+            if ($n->is_start) { $startTarget = (string) $n->id; break; }
+        }
+        if (!$startTarget && $dbNodes->isNotEmpty()) {
+            $startTarget = (string) $dbNodes->first()->id;
+        }
+
+        $rfEdges = $dbEdges->map(fn ($e) => [
+            'id'           => (string) $e->id,
+            'source'       => (string) $e->source_node_id,
+            'sourceHandle' => $e->source_handle ?? 'default',
+            'target'       => (string) $e->target_node_id,
+        ])->values()->all();
+
+        // Add edge from start trigger node to first real node
+        if ($startTarget) {
+            $rfEdges[] = [
+                'id'           => 'edge-start',
+                'source'       => 'start-1',
+                'sourceHandle' => 'default',
+                'target'       => $startTarget,
+            ];
+        }
+
+        $builderData = [
+            'flow'          => $flow->only(['id', 'name', 'channel', 'is_active', 'trigger_keywords', 'trigger_type', 'trigger_media_id', 'trigger_reply_comment']),
+            'variables'     => $flow->variables ?? [],
+            'nodes'         => $rfNodes,
+            'edges'         => $rfEdges,
+            'tags'          => $tags,
+            'users'         => $users,
+            'customFieldDefs' => $customFieldDefs,
+            'pipelines'     => $pipelines->map(fn ($p) => [
+                'id'     => $p->id,
+                'name'   => $p->name,
+                'stages' => $p->stages->sortBy('position')->values()->map(fn ($s) => ['id' => $s->id, 'name' => $s->name]),
+            ])->values()->all(),
+            'csrfToken'     => csrf_token(),
+            'saveUrl'       => route('chatbot.flows.graph-react', $flow),
+            'uploadUrl'     => route('chatbot.flows.upload-image'),
+            'pipelinesUrl'  => route('chatbot.flows.pipelines'),
+        ];
+
+        return view('tenant.chatbot.edit', compact('flow', 'builderData'));
     }
 
     public function update(Request $request, ChatbotFlow $flow): RedirectResponse
@@ -222,6 +299,122 @@ class ChatbotFlowController extends Controller
         Log::info('Chatbot: fluxo salvo', ['flow_id' => $flow->id]);
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Save graph from React Flow builder (nodes/edges format).
+     */
+    public function saveGraphReact(Request $request, ChatbotFlow $flow): JsonResponse
+    {
+        $validated = $request->validate([
+            'nodes'                => 'required|array',
+            'nodes.*.id'           => 'required',
+            'nodes.*.type'         => 'required|string',
+            'nodes.*.position'     => 'nullable|array',
+            'nodes.*.data'         => 'nullable|array',
+            'edges'                => 'nullable|array',
+            'edges.*.source'       => 'required',
+            'edges.*.sourceHandle' => 'nullable|string',
+            'edges.*.target'       => 'required',
+            'trigger_keywords'     => 'nullable|array',
+            'variables'            => 'nullable|array',
+            'is_active'            => 'nullable|boolean',
+        ]);
+
+        // Update flow metadata
+        $updateData = [];
+        if (isset($validated['trigger_keywords'])) {
+            $updateData['trigger_keywords'] = $validated['trigger_keywords'];
+        }
+        if (isset($validated['variables'])) {
+            $updateData['variables'] = $validated['variables'];
+        }
+        if (isset($validated['is_active'])) {
+            $updateData['is_active'] = $validated['is_active'];
+        }
+        if (!empty($updateData)) {
+            $flow->update($updateData);
+        }
+
+        // Clear existing nodes and edges
+        ChatbotFlowNode::withoutGlobalScope('tenant')->where('flow_id', $flow->id)->delete();
+        ChatbotFlowEdge::withoutGlobalScope('tenant')->where('flow_id', $flow->id)->delete();
+
+        // Create nodes from React Flow format
+        $idMap = []; // React Flow string ID → DB int ID
+        $nodes = $validated['nodes'] ?? [];
+
+        // Determine start node (no incoming edges)
+        $targetIds = collect($validated['edges'] ?? [])->pluck('target')->unique()->all();
+
+        foreach ($nodes as $rfNode) {
+            $jsId   = $rfNode['id'];
+            $type   = $rfNode['type'] ?? 'message';
+            $pos    = $rfNode['position'] ?? ['x' => 0, 'y' => 0];
+            $data   = $rfNode['data'] ?? [];
+
+            // Skip 'start' pseudo-node — it's only visual in React Flow
+            if ($type === 'start') {
+                $idMap[$jsId] = '_start_' . $jsId;
+                continue;
+            }
+
+            $dbNode = ChatbotFlowNode::create([
+                'flow_id'   => $flow->id,
+                'tenant_id' => $flow->tenant_id,
+                'type'      => $type,
+                'config'    => $data,
+                'canvas_x'  => (float) ($pos['x'] ?? 0),
+                'canvas_y'  => (float) ($pos['y'] ?? 0),
+                'is_start'  => !in_array($jsId, $targetIds),
+            ]);
+
+            $idMap[$jsId] = $dbNode->id;
+        }
+
+        // Create edges
+        foreach ($validated['edges'] ?? [] as $rfEdge) {
+            $sourceDbId = $idMap[$rfEdge['source']] ?? null;
+            $targetDbId = $idMap[$rfEdge['target']] ?? null;
+
+            // Skip edges from/to start pseudo-node
+            if (!$sourceDbId || !$targetDbId) continue;
+            if (is_string($sourceDbId) && str_starts_with($sourceDbId, '_start_')) {
+                // Edge from start node → mark target as is_start
+                if (is_int($targetDbId)) {
+                    ChatbotFlowNode::withoutGlobalScope('tenant')
+                        ->where('id', $targetDbId)
+                        ->update(['is_start' => true]);
+                }
+                continue;
+            }
+            if (is_string($targetDbId) && str_starts_with($targetDbId, '_start_')) continue;
+
+            try {
+                ChatbotFlowEdge::create([
+                    'flow_id'        => $flow->id,
+                    'tenant_id'      => $flow->tenant_id,
+                    'source_node_id' => $sourceDbId,
+                    'source_handle'  => $rfEdge['sourceHandle'] ?? 'default',
+                    'target_node_id' => $targetDbId,
+                ]);
+            } catch (\Illuminate\Database\QueryException $e) {
+                // Duplicate edge — skip silently
+                if ($e->errorInfo[1] !== 1062) throw $e;
+            }
+        }
+
+        // Build idMap response (React Flow ID → DB ID) for client-side ID update
+        $responseIdMap = [];
+        foreach ($idMap as $jsId => $dbId) {
+            if (is_int($dbId)) {
+                $responseIdMap[$jsId] = $dbId;
+            }
+        }
+
+        Log::info('Chatbot: fluxo salvo (React)', ['flow_id' => $flow->id, 'nodes' => count($nodes)]);
+
+        return response()->json(['success' => true, 'idMap' => $responseIdMap]);
     }
 
     /**

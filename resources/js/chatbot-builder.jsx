@@ -27,24 +27,44 @@ const BLUE_LIGHT  = '#eff6ff';
 const BLUE_BORDER = '#bfdbfe';
 
 // Bootstrap Icons (bi bi-*) — FontAwesome não está instalado no projeto
-const NODE_TYPES_CONFIG = {
-    start:     { label: 'Início',   icon: 'play-fill'        },
-    message:   { label: 'Mensagem', icon: 'chat-dots'        },
-    input:     { label: 'Pergunta', icon: 'keyboard'         },
-    condition: { label: 'Condição', icon: 'diagram-2'        },
-    action:    { label: 'Ação',     icon: 'lightning-charge' },
-    delay:     { label: 'Aguardar', icon: 'hourglass-split'  },
-    end:       { label: 'Fim',      icon: 'stop-circle'      },
+// Channel-aware node config: message/input vary by channel, others are universal
+const CHANNEL_NODE_CFG = {
+    message: {
+        whatsapp:  { label: 'WhatsApp Oficial', sublabel: 'Enviar mensagem',   icon: 'whatsapp',   color: '#25d366' },
+        instagram: { label: 'Instagram',        sublabel: 'Enviar DM',         icon: 'instagram',  color: '#e1306c' },
+        website:   { label: 'Chat',             sublabel: 'Enviar mensagem',   icon: 'chat-dots',  color: '#2563eb' },
+    },
+    input: {
+        whatsapp:  { label: 'WhatsApp Oficial', sublabel: 'Aguardar resposta', icon: 'whatsapp',   color: '#25d366' },
+        instagram: { label: 'Instagram',        sublabel: 'Aguardar resposta', icon: 'instagram',  color: '#e1306c' },
+        website:   { label: 'Chat',             sublabel: 'Aguardar resposta', icon: 'keyboard',   color: '#7c3aed' },
+    },
 };
+
+const NODE_TYPES_CONFIG = {
+    start:     { label: 'Iniciar quando...', sublabel: '',              icon: 'play-fill',        color: '#10b981' },
+    message:   { label: 'Mensagem',          sublabel: '',              icon: 'chat-dots',        color: '#25d366' },
+    input:     { label: 'Pergunta',          sublabel: '',              icon: 'keyboard',          color: '#7c3aed' },
+    condition: { label: 'Condição',          sublabel: '',              icon: 'diagram-2',         color: '#ea580c' },
+    action:    { label: 'Ações',             sublabel: '',              icon: 'lightning-charge',  color: '#f59e0b' },
+    delay:     { label: 'Atraso',            sublabel: '',              icon: 'clock-history',     color: '#ef4444' },
+    end:       { label: 'Fim do fluxo',      sublabel: '',              icon: 'stop-circle',       color: '#6b7280' },
+};
+
+function getNodeCfg(type) {
+    const channel = (window.chatbotBuilderData?.flow?.channel) || 'whatsapp';
+    if (CHANNEL_NODE_CFG[type]?.[channel]) return CHANNEL_NODE_CFG[type][channel];
+    return NODE_TYPES_CONFIG[type] || NODE_TYPES_CONFIG.message;
+}
 
 // Tipos disponíveis na sidebar (start não aparece — criado automaticamente)
 const SIDEBAR_NODE_TYPES = [
-    { type: 'message',   label: 'Mensagem', icon: 'chat-dots',        color: '#2563eb' },
+    { type: 'message',   label: 'Mensagem', icon: 'chat-dots',        color: '#25d366' },
     { type: 'input',     label: 'Pergunta', icon: 'keyboard',          color: '#7c3aed' },
     { type: 'condition', label: 'Condição', icon: 'diagram-2',         color: '#ea580c' },
-    { type: 'action',    label: 'Ação',     icon: 'lightning-charge',  color: '#ca8a04' },
-    { type: 'delay',     label: 'Aguardar', icon: 'hourglass-split',   color: '#4b5563' },
-    { type: 'end',       label: 'Fim',      icon: 'stop-circle',       color: '#dc2626' },
+    { type: 'action',    label: 'Ação',     icon: 'lightning-charge',  color: '#f59e0b' },
+    { type: 'delay',     label: 'Aguardar', icon: 'hourglass-split',   color: '#ef4444' },
+    { type: 'end',       label: 'Fim',      icon: 'stop-circle',       color: '#6b7280' },
 ];
 
 const ACTION_TYPES = [
@@ -57,7 +77,9 @@ const ACTION_TYPES = [
     { value: 'save_variable',      label: 'Salvar variável'                 },
     { value: 'send_webhook',       label: 'Enviar Webhook (HTTP)'           },
     { value: 'set_custom_field',   label: 'Preencher campo personalizado'   },
-    { value: 'send_whatsapp',     label: 'Enviar WhatsApp'                 },
+    { value: 'send_whatsapp',      label: 'Enviar WhatsApp'                },
+    { value: 'create_task',        label: 'Criar tarefa'                    },
+    { value: 'redirect',           label: 'Redirecionar (Website)'          },
 ];
 
 const SYSTEM_VARS_META = [
@@ -120,113 +142,88 @@ const field = {
  * with position:relative rows.
  */
 function BaseNode({ type, data, selected, children, rightHandles = [], hasDefaultHandle = true }) {
-    const cfg = NODE_TYPES_CONFIG[type] || NODE_TYPES_CONFIG.message;
-
+    const cfg = getNodeCfg(type);
+    const isAction = type === 'action';
     const FONT = "'Inter', system-ui, sans-serif";
+    const HANDLE_COLOR = '#3b82f6';
 
     return (
         <div style={{
             background: '#fff',
-            border: `1.5px solid ${selected ? BLUE : '#e5e7eb'}`,
-            borderRadius: 10,
-            width: 240,
+            border: `1.5px solid ${selected ? HANDLE_COLOR : '#e5e7eb'}`,
+            borderRadius: 14,
+            width: 300,
             position: 'relative',
             boxShadow: selected
-                ? `0 0 0 3px ${BLUE}22, 0 6px 20px rgba(0,0,0,0.10)`
-                : '0 1px 6px rgba(0,0,0,0.07)',
+                ? `0 0 0 3px ${HANDLE_COLOR}18, 0 4px 16px rgba(0,0,0,0.08)`
+                : '0 2px 12px rgba(0,0,0,0.06)',
             fontFamily: FONT,
+            overflow: 'visible',
         }}>
 
-            {/* INÍCIO badge — aparece no nó raiz (sem incoming edges) */}
-            {data._isStart && (
-                <div style={{
-                    position: 'absolute', top: -28, left: '50%', transform: 'translateX(-50%)',
-                    background: '#10b981', color: '#fff', fontSize: 10, fontWeight: 700,
-                    padding: '3px 10px', borderRadius: 99, whiteSpace: 'nowrap',
-                    display: 'flex', alignItems: 'center', gap: 4,
-                    boxShadow: '0 2px 6px rgba(16,185,129,0.35)', pointerEvents: 'none',
-                    letterSpacing: '0.04em',
-                }}>
-                    <i className="bi bi-play-fill" style={{ fontSize: 8 }} />
-                    INÍCIO DO FLUXO
-                </div>
-            )}
-
-            {/* LEFT: single target handle — centered on full node height */}
+            {/* LEFT: target handle */}
             <Handle
                 type="target"
                 position={Position.Left}
                 style={{
                     background: '#fff',
-                    width: 12, height: 12,
-                    border: `2.5px solid ${BLUE}`,
-                    left: -7,
+                    width: 11, height: 11,
+                    border: `2px solid ${HANDLE_COLOR}`,
+                    left: -6,
                     top: '50%',
                     transform: 'translateY(-50%)',
                 }}
             />
 
-            {/* Blue header */}
+            {/* Header — white background, colored icon (like Kommo reference) */}
             <div style={{
-                background: BLUE,
-                borderRadius: '8px 8px 0 0',
-                padding: '6px 8px 6px 10px',
-                display: 'flex', alignItems: 'center', gap: 6,
-                color: '#fff',
-                fontFamily: FONT,
+                padding: '10px 14px',
+                display: 'flex', alignItems: 'center', gap: 8,
+                borderBottom: '1px solid #f0f2f7',
+                borderRadius: '14px 14px 0 0',
             }}>
-                <i className={`bi bi-${cfg.icon}`} style={{ fontSize: 10, opacity: 0.85 }} />
-                <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.02em', fontFamily: FONT, opacity: 0.9 }}>
-                    {cfg.label}
-                </span>
-                {/* Pencil edit affordance */}
+                <i className={`bi bi-${cfg.icon}`} style={{ fontSize: 16, color: cfg.color, flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500, lineHeight: 1.2, fontFamily: FONT }}>
+                        {cfg.label}
+                    </div>
+                    {cfg.sublabel && (
+                        <div style={{ fontSize: 13, color: '#1a1d23', fontWeight: 700, lineHeight: 1.3, fontFamily: FONT }}>
+                            {cfg.sublabel}
+                        </div>
+                    )}
+                    {!cfg.sublabel && !isAction && (
+                        <div style={{ fontSize: 13, color: '#1a1d23', fontWeight: 700, lineHeight: 1.3, fontFamily: FONT }}>
+                            {cfg.label}
+                        </div>
+                    )}
+                </div>
+                {/* Delete icon */}
                 <div style={{
-                    marginLeft: 'auto',
-                    width: 18, height: 18,
-                    background: 'rgba(255,255,255,0.18)',
-                    borderRadius: 5,
+                    width: 22, height: 22,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                    cursor: 'pointer',
+                    flexShrink: 0, cursor: 'pointer', borderRadius: 6,
+                    color: '#d1d5db', transition: 'color .15s',
                 }}>
-                    <i className="bi bi-pencil" style={{ fontSize: 9, color: '#fff' }} />
+                    <i className="bi bi-trash3" style={{ fontSize: 11 }} />
                 </div>
             </div>
 
             {/* Body */}
             <div style={{
-                padding: '9px 12px',
-                fontSize: 12,
+                padding: '10px 14px',
+                fontSize: 12.5,
                 color: '#374151',
-                lineHeight: 1.5,
-                minHeight: 32,
+                lineHeight: 1.55,
+                minHeight: 28,
                 fontFamily: FONT,
             }}>
                 {children}
             </div>
 
-            {/* Single default source handle (message, action nodes) */}
-            {hasDefaultHandle && type !== 'end' && (
-                <Handle
-                    type="source"
-                    position={Position.Right}
-                    id="default"
-                    style={{
-                        background: BLUE,
-                        width: 12, height: 12,
-                        border: '2px solid #fff',
-                        right: -7,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                    }}
-                />
-            )}
-
-            {/* Branch rows (input / condition nodes)
-                Each branch is a natural-flow row; the handle sits at the
-                right edge of its row. Node height grows automatically. */}
+            {/* Branch rows — pills style (like Kommo buttons) */}
             {rightHandles.length > 0 && (
-                <div style={{ borderTop: '1px solid #f0f2f7' }}>
+                <div style={{ padding: '0 14px 8px' }}>
                     {rightHandles.map((h, i) => (
                         <div
                             key={h.id}
@@ -234,19 +231,19 @@ function BaseNode({ type, data, selected, children, rightHandles = [], hasDefaul
                                 position: 'relative',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'flex-end',
-                                padding: '7px 26px 7px 12px',
-                                borderBottom: i < rightHandles.length - 1 ? '1px solid #f5f6f8' : 'none',
+                                justifyContent: 'space-between',
+                                padding: '6px 28px 6px 12px',
+                                marginBottom: i < rightHandles.length - 1 ? 4 : 0,
+                                border: '1px solid #e5e7eb',
+                                borderRadius: 8,
+                                background: '#fafafa',
                                 overflow: 'visible',
                             }}
                         >
                             <span style={{
-                                fontSize: 11, fontWeight: 400,
-                                color: '#6b7280',
-                                background: '#f3f4f6',
-                                padding: '2px 8px',
-                                borderRadius: 99,
-                                maxWidth: 160,
+                                fontSize: 12, fontWeight: 500,
+                                color: '#374151',
+                                maxWidth: 200,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
@@ -259,8 +256,8 @@ function BaseNode({ type, data, selected, children, rightHandles = [], hasDefaul
                                 position={Position.Right}
                                 id={h.id}
                                 style={{
-                                    background: BLUE,
-                                    width: 12, height: 12,
+                                    background: HANDLE_COLOR,
+                                    width: 11, height: 11,
                                     border: '2px solid #fff',
                                     position: 'absolute',
                                     right: -7,
@@ -270,6 +267,37 @@ function BaseNode({ type, data, selected, children, rightHandles = [], hasDefaul
                             />
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Footer: "Próximo passo" + default handle */}
+            {hasDefaultHandle && type !== 'end' && (
+                <div style={{
+                    position: 'relative',
+                    padding: '8px 14px',
+                    borderTop: '1px solid #f0f2f7',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    overflow: 'visible',
+                }}>
+                    <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500, fontFamily: FONT, marginRight: 8 }}>
+                        Próximo passo
+                    </span>
+                    <Handle
+                        type="source"
+                        position={Position.Right}
+                        id="default"
+                        style={{
+                            background: HANDLE_COLOR,
+                            width: 11, height: 11,
+                            border: '2px solid #fff',
+                            position: 'absolute',
+                            right: -7,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                        }}
+                    />
                 </div>
             )}
         </div>
@@ -328,13 +356,10 @@ function InputNode({ id, data, selected }) {
     const branches = data.branches || [];
     const hasBranches = branches.length > 0;
     const rightHandles = hasBranches
-        ? [
-            ...branches.map((b, i) => ({ id: b.handle || `branch-${i}`, label: b.label || `Branch ${i + 1}` })),
-            { id: 'default', label: 'Padrão' },
-          ]
+        ? branches.map((b, i) => ({ id: b.handle || `branch-${i}`, label: b.label || `Opção ${i + 1}` }))
         : [];
     return (
-        <BaseNode type="input" data={data} selected={selected} hasDefaultHandle={!hasBranches} rightHandles={rightHandles}>
+        <BaseNode type="input" data={data} selected={selected} hasDefaultHandle={true} rightHandles={rightHandles}>
             <Preview text={data.text} />
             {data.save_to && <Tag><i className="bi bi-floppy" style={{ marginRight: 4, fontSize: 9 }} />{data.save_to}</Tag>}
         </BaseNode>
@@ -343,12 +368,9 @@ function InputNode({ id, data, selected }) {
 
 function ConditionNode({ id, data, selected }) {
     const conditions = data.conditions || [];
-    const rightHandles = [
-        ...conditions.map((c, i) => ({ id: c.handle || `branch-${i}`, label: c.label || `Cond ${i + 1}` })),
-        { id: 'default', label: '↩ Padrão' },
-    ];
+    const rightHandles = conditions.map((c, i) => ({ id: c.handle || `branch-${i}`, label: c.label || `Saída ${i + 1}` }));
     return (
-        <BaseNode type="condition" data={data} selected={selected} hasDefaultHandle={false} rightHandles={rightHandles}>
+        <BaseNode type="condition" data={data} selected={selected} hasDefaultHandle={true} rightHandles={rightHandles}>
             {data.variable && (
                 <Tag><i className="bi bi-code-slash" style={{ marginRight: 4, fontSize: 9 }} />{'{{' + data.variable + '}}'}</Tag>
             )}
@@ -406,51 +428,96 @@ function EndNode({ id, data, selected }) {
 }
 
 function StartNode({ id, data, selected }) {
-    const GREEN  = '#10b981';
-    const GLIGHT = '#ecfdf5';
     const FONT   = "'Inter', system-ui, sans-serif";
+    const flow   = window.chatbotBuilderData?.flow || {};
+    const channel = flow.channel || 'whatsapp';
+    const triggerType = flow.trigger_type || 'keyword';
+
+    const channelIcon  = { whatsapp: 'whatsapp', instagram: 'instagram', website: 'globe' }[channel] || 'chat-dots';
+    const channelColor = { whatsapp: '#25d366', instagram: '#e1306c', website: '#2563eb' }[channel] || '#2563eb';
+    const channelLabel = { whatsapp: 'WhatsApp', instagram: 'Instagram', website: 'Website' }[channel] || channel;
+
+    const triggerLabel = triggerType === 'instagram_comment'
+        ? 'Comentou em publicação'
+        : 'Palavras-chave';
+
+    const keywords = flow.trigger_keywords || [];
 
     return (
         <div style={{
-            background: GLIGHT,
-            border: `1.5px solid ${selected ? GREEN : '#6ee7b7'}`,
-            borderRadius: 10,
-            width: 200,
+            background: '#fff',
+            border: `1.5px solid ${selected ? '#3b82f6' : '#e5e7eb'}`,
+            borderRadius: 14,
+            width: 260,
             position: 'relative',
             boxShadow: selected
-                ? `0 0 0 3px ${GREEN}33, 0 6px 20px rgba(0,0,0,0.10)`
-                : '0 1px 6px rgba(0,0,0,0.07)',
+                ? '0 0 0 3px rgba(59,130,246,0.1), 0 4px 16px rgba(0,0,0,0.08)'
+                : '0 2px 12px rgba(0,0,0,0.06)',
             fontFamily: FONT,
         }}>
-            {/* No target handle — this is always the root */}
+            {/* Header */}
             <div style={{
-                background: GREEN,
-                borderRadius: '8px 8px 0 0',
-                padding: '8px 12px',
+                padding: '10px 14px',
                 display: 'flex', alignItems: 'center', gap: 8,
-                color: '#fff',
+                borderBottom: '1px solid #f0f2f7',
+                borderRadius: '14px 14px 0 0',
             }}>
-                <i className="bi bi-play-fill" style={{ fontSize: 14 }} />
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', fontFamily: FONT }}>
-                    INÍCIO DO FLUXO
-                </span>
+                <div style={{
+                    width: 28, height: 28, borderRadius: 8,
+                    background: channelColor + '14',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                    <i className={`bi bi-${channelIcon}`} style={{ fontSize: 14, color: channelColor }} />
+                </div>
+                <div>
+                    <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500, fontFamily: FONT }}>Iniciar quando...</div>
+                    <div style={{ fontSize: 12, color: '#1a1d23', fontWeight: 700, fontFamily: FONT }}>{triggerLabel}</div>
+                </div>
             </div>
-            <div style={{ padding: '8px 12px', fontSize: 12, color: '#059669', lineHeight: 1.5, fontFamily: FONT }}>
-                {data.label || 'Conecte ao primeiro nó do fluxo.'}
+            {/* Body: show trigger info */}
+            <div style={{ padding: '10px 14px', fontSize: 12, color: '#6b7280', lineHeight: 1.5, fontFamily: FONT }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <i className={`bi bi-${channelIcon}`} style={{ fontSize: 11, color: channelColor }} />
+                    <span style={{ fontWeight: 600, color: '#374151' }}>{channelLabel}</span>
+                </div>
+                {keywords.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                        {keywords.slice(0, 5).map((kw, i) => (
+                            <span key={i} style={{
+                                padding: '2px 8px', background: '#f3f4f6', borderRadius: 99,
+                                fontSize: 10, fontWeight: 600, color: '#374151',
+                            }}>{kw}</span>
+                        ))}
+                        {keywords.length > 5 && <span style={{ fontSize: 10, color: '#9ca3af' }}>+{keywords.length - 5}</span>}
+                    </div>
+                )}
+                {keywords.length === 0 && (
+                    <span style={{ fontSize: 11, color: '#d1d5db', fontStyle: 'italic' }}>Qualquer mensagem</span>
+                )}
             </div>
-            <Handle
-                type="source"
-                position={Position.Right}
-                id="default"
-                style={{
-                    background: GREEN,
-                    width: 12, height: 12,
-                    border: '2px solid #fff',
-                    right: -7,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                }}
-            />
+            {/* Footer with "Próximo passo" */}
+            <div style={{
+                position: 'relative', padding: '8px 14px',
+                borderTop: '1px solid #f0f2f7',
+                display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+                overflow: 'visible',
+            }}>
+                <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500, fontFamily: FONT, marginRight: 8 }}>Próximo passo</span>
+                <Handle
+                    type="source"
+                    position={Position.Right}
+                    id="default"
+                    style={{
+                        background: '#3b82f6',
+                        width: 11, height: 11,
+                        border: '2px solid #fff',
+                        position: 'absolute',
+                        right: -7,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                    }}
+                />
+            </div>
         </div>
     );
 }
@@ -790,47 +857,51 @@ function InputForm({ data, update, textareaRef, saveCursor, variables }) {
                     </div>
                 )}
             </FieldGroup>
-            <FieldGroup label="Botões de resposta rápida">
-                <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer', marginBottom: 0 }}>
-                    <input
-                        type="checkbox"
-                        checked={!!data.show_buttons}
-                        onChange={e => {
-                            update('show_buttons', e.target.checked);
-                            if (!e.target.checked) {
-                                update('branches', []);
-                            } else if (!branches.length) {
+            <FieldGroup label="Tipo de resposta">
+                <select
+                    style={{ ...field.input, cursor: 'pointer' }}
+                    value={data.input_type || 'text'}
+                    onChange={e => {
+                        const val = e.target.value;
+                        update('input_type', val);
+                        if (val === 'text') {
+                            update('branches', []);
+                            update('show_buttons', false);
+                        } else {
+                            update('show_buttons', true);
+                            if (!branches.length) {
                                 update('branches', [{ handle: 'branch-0', keywords: [], label: 'Opção 1' }]);
                             }
-                        }}
-                        style={{ width: 14, height: 14, cursor: 'pointer' }}
-                    />
-                    <span style={{ fontSize: 12, color: '#374151', fontFamily: "'Inter', sans-serif" }}>
-                        Exibir botões de resposta rápida
-                    </span>
-                </label>
+                        }
+                    }}
+                >
+                    <option value="text">Texto livre</option>
+                    <option value="buttons">Botões de resposta</option>
+                    {(window.chatbotBuilderData?.flow?.channel) === 'whatsapp' && (
+                        <option value="list">Menu interativo (lista)</option>
+                    )}
+                </select>
             </FieldGroup>
-            {!!data.show_buttons && (
+            {(data.input_type === 'buttons' || data.input_type === 'list' || !!data.show_buttons) && (
             <div style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <label style={field.label}>Opções de resposta</label>
+                    <label style={field.label}>Opções</label>
                     <button onClick={addBranch} style={field.smallBtn}>+ Opção</button>
                 </div>
                 {branches.map((b, i) => (
                     <div key={i} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, marginBottom: 8 }}>
                         <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-                            <input style={{ ...field.input, flex: 1 }} value={b.label || ''} onChange={e => updateBranch(i, 'label', e.target.value)} placeholder="Rótulo" />
+                            <input style={{ ...field.input, flex: 1 }} value={b.label || ''} onChange={e => updateBranch(i, 'label', e.target.value)} placeholder="Texto do botão" />
                             <button onClick={() => update('branches', branches.filter((_, idx) => idx !== i))} style={{ ...field.smallBtn, background: '#fee2e2', color: '#dc2626', border: 'none' }}>×</button>
                         </div>
                         <input
                             style={field.input}
                             value={(b.keywords || []).join(', ')}
                             onChange={e => updateBranch(i, 'keywords', e.target.value.split(',').map(k => k.trim()).filter(Boolean))}
-                            placeholder="Keywords (vírgula): sim, s, yes"
+                            placeholder="Keywords alternativas (vírgula): sim, s, yes"
                         />
                     </div>
                 ))}
-                <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>A rota "Padrão" é usada quando nenhuma keyword corresponder.</p>
             </div>
             )}
         </>
@@ -1408,6 +1479,52 @@ function ActionForm({ data, update, pipelines, allVars, tags, users, customField
                     </p>
                 </>
             )}
+
+            {data.type === 'create_task' && (
+                <>
+                    <FieldGroup label="Assunto da tarefa">
+                        <input style={field.input} value={data.subject || ''} onChange={e => update('subject', e.target.value)} placeholder="Ex: Ligar para o lead" />
+                    </FieldGroup>
+                    <FieldGroup label="Descrição (opcional)">
+                        <textarea style={{ ...field.input, height: 60, resize: 'vertical' }} value={data.description || ''} onChange={e => update('description', e.target.value)} placeholder="Detalhes da tarefa..." />
+                    </FieldGroup>
+                    <FieldGroup label="Prazo (dias a partir de hoje)">
+                        <input type="number" style={field.input} min={0} max={365} value={data.due_date_offset ?? 1} onChange={e => update('due_date_offset', parseInt(e.target.value) || 1)} />
+                    </FieldGroup>
+                    <FieldGroup label="Atribuir a">
+                        <select style={field.input} value={data.assigned_to_mode || 'lead_owner'} onChange={e => update('assigned_to_mode', e.target.value)}>
+                            <option value="lead_owner">Responsável do lead</option>
+                            <option value="specific">Usuário específico</option>
+                        </select>
+                    </FieldGroup>
+                    {data.assigned_to_mode === 'specific' && users.length > 0 && (
+                        <FieldGroup label="Usuário">
+                            <select style={field.input} value={data.assigned_to_user_id || ''} onChange={e => update('assigned_to_user_id', e.target.value)}>
+                                <option value="">— Selecione —</option>
+                                {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                            </select>
+                        </FieldGroup>
+                    )}
+                </>
+            )}
+
+            {data.type === 'redirect' && (
+                <>
+                    <FieldGroup label="URL de redirecionamento">
+                        <input style={field.input} value={data.url || ''} onChange={e => update('url', e.target.value)} placeholder="https://exemplo.com/pagina" />
+                    </FieldGroup>
+                    <FieldGroup label="Abrir em">
+                        <select style={field.input} value={data.target || '_blank'} onChange={e => update('target', e.target.value)}>
+                            <option value="_blank">Nova aba</option>
+                            <option value="_self">Mesma aba</option>
+                        </select>
+                    </FieldGroup>
+                    <p style={{ fontSize: 11, color: '#9ca3af', margin: '4px 0 0' }}>
+                        <i className="bi bi-info-circle" style={{ marginRight: 4 }} />
+                        Disponível apenas para chatbots do Website.
+                    </p>
+                </>
+            )}
         </>
     );
 }
@@ -1848,53 +1965,90 @@ const defaultEdgeOptions = {
 
 function NodeSidebar({ onAddNode, onDragStart }) {
     const FONT = "'Inter', system-ui, sans-serif";
+    const channel = (window.chatbotBuilderData?.flow?.channel) || 'whatsapp';
+
+    const channelLabel = { whatsapp: 'WhatsApp', instagram: 'Instagram', website: 'Website' }[channel] || channel;
+    const channelColor = { whatsapp: '#25d366', instagram: '#e1306c', website: '#2563eb' }[channel] || '#2563eb';
+    const channelIcon  = { whatsapp: 'whatsapp', instagram: 'instagram', website: 'globe' }[channel] || 'chat-dots';
+
+    const messageNodes = [
+        { type: 'message', label: 'Enviar mensagem', icon: channelIcon, color: channelColor },
+        { type: 'input',   label: 'Pergunta',        icon: 'keyboard',  color: channelColor },
+    ];
+
+    const logicNodes = [
+        { type: 'condition', label: 'Condição', icon: 'diagram-2',     color: '#ea580c' },
+        { type: 'delay',     label: 'Atraso',   icon: 'clock-history',  color: '#ef4444' },
+        { type: 'end',       label: 'Fim',      icon: 'stop-circle',    color: '#6b7280' },
+    ];
+
+    const actionNodes = [
+        { type: 'action', label: 'Ação', icon: 'lightning-charge', color: '#f59e0b' },
+    ];
+
+    const SidebarItem = ({ type, label, icon, color }) => (
+        <div
+            draggable
+            onDragStart={(e) => onDragStart(e, type)}
+            onClick={() => onAddNode(type)}
+            title={`Adicionar ${label}`}
+            style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '7px 10px', marginBottom: 4,
+                background: '#fff', border: '1px solid #e8eaf0',
+                borderRadius: 8, cursor: 'grab',
+                fontSize: 12, fontWeight: 600, color: '#374151',
+                userSelect: 'none', fontFamily: FONT,
+                transition: 'background .12s, border-color .12s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = color + '60'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e8eaf0'; }}
+        >
+            <div style={{
+                width: 26, height: 26, borderRadius: 7,
+                background: color + '14',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+                <i className={`bi bi-${icon}`} style={{ fontSize: 12, color }} />
+            </div>
+            {label}
+        </div>
+    );
+
+    const SectionTitle = ({ children }) => (
+        <div style={{ fontSize: 9, fontWeight: 700, color: '#b0b8c4', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '10px 4px 5px', fontFamily: FONT }}>
+            {children}
+        </div>
+    );
 
     return (
         <div style={{
-            width: 180, flexShrink: 0,
+            width: 190, flexShrink: 0,
             borderRight: '1px solid #e5e7eb',
-            background: '#fff',
+            background: '#fafbfc',
             display: 'flex', flexDirection: 'column',
             zIndex: 10,
         }}>
             <div style={{
                 padding: '10px 12px',
                 borderBottom: '1px solid #e5e7eb',
-                background: '#f9fafb',
+                display: 'flex', alignItems: 'center', gap: 6,
             }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: FONT }}>Blocos</div>
-                <div style={{ fontSize: 10, color: '#d1d5db', marginTop: 2, fontFamily: FONT }}>Arraste ou clique</div>
+                <i className={`bi bi-${channelIcon}`} style={{ fontSize: 14, color: channelColor }} />
+                <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#1a1d23', fontFamily: FONT }}>{channelLabel}</div>
+                    <div style={{ fontSize: 9, color: '#9ca3af', fontFamily: FONT }}>Arraste ou clique</div>
+                </div>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
-                {SIDEBAR_NODE_TYPES.map(({ type, label, icon, color }) => (
-                    <div
-                        key={type}
-                        draggable
-                        onDragStart={(e) => onDragStart(e, type)}
-                        onClick={() => onAddNode(type)}
-                        title={`Adicionar ${label}`}
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: 8,
-                            padding: '8px 10px', marginBottom: 5,
-                            background: '#f9fafb', border: '1px solid #e5e7eb',
-                            borderRadius: 8, cursor: 'grab',
-                            fontSize: 12, fontWeight: 600, color: '#374151',
-                            userSelect: 'none', fontFamily: FONT,
-                            transition: 'background .12s, border-color .12s',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.borderColor = '#bfdbfe'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = '#f9fafb'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
-                    >
-                        <div style={{
-                            width: 28, height: 28, borderRadius: 7,
-                            background: color + '18',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                        }}>
-                            <i className={`bi bi-${icon}`} style={{ fontSize: 13, color }} />
-                        </div>
-                        {label}
-                    </div>
-                ))}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '4px 8px 12px' }}>
+                <SectionTitle>Mensagens</SectionTitle>
+                {messageNodes.map(n => <SidebarItem key={n.type} {...n} />)}
+
+                <SectionTitle>Lógica</SectionTitle>
+                {logicNodes.map(n => <SidebarItem key={n.type} {...n} />)}
+
+                <SectionTitle>Ações</SectionTitle>
+                {actionNodes.map(n => <SidebarItem key={n.type} {...n} />)}
             </div>
         </div>
     );

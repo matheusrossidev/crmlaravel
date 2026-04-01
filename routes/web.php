@@ -441,6 +441,7 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::post('upload-image',  [ChatbotFlowController::class, 'uploadImage'])->name('upload-image');
             Route::post('{flow}/toggle',    [ChatbotFlowController::class, 'toggle'])->name('toggle');
             Route::put('{flow}/graph',      [ChatbotFlowController::class, 'saveGraph'])->name('graph');
+            Route::put('{flow}/graph-react', [ChatbotFlowController::class, 'saveGraphReact'])->name('graph-react');
         });
     });
 
