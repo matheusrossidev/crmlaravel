@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class MasterAdminController extends Controller
@@ -62,7 +63,7 @@ class MasterAdminController extends Controller
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'modules'  => 'required|array|min:1',
-            'modules.*'=> 'string|in:' . implode(',', array_keys(self::AVAILABLE_MODULES)),
+            'modules.*'=> ['string', Rule::in(array_keys(self::AVAILABLE_MODULES))],
         ]);
 
         $user = User::create([
@@ -107,7 +108,7 @@ class MasterAdminController extends Controller
             'email'    => "sometimes|email|unique:users,email,{$user->id}",
             'password' => 'nullable|string|min:8',
             'modules'  => 'required|array|min:1',
-            'modules.*'=> 'string|in:' . implode(',', array_keys(self::AVAILABLE_MODULES)),
+            'modules.*'=> ['string', Rule::in(array_keys(self::AVAILABLE_MODULES))],
             'is_active' => 'sometimes|boolean',
         ]);
 
