@@ -3272,10 +3272,7 @@ $pageIcon = 'chat-dots';
 
     // ── Atualizar conversa na sidebar ─────────────────────────────────────────────
     function updateConvInSidebar(conv) {
-        const convChannel = conv.channel || 'whatsapp';
-        // Use channel+id to avoid collisions between WhatsApp/Instagram/Website tables (same numeric IDs)
-        let el = document.querySelector(`[data-conv-id="${conv.id}"][data-channel="${convChannel}"]`)
-              || document.querySelector(`[data-conv-id="${conv.id}"]`);
+        let el = document.querySelector(`[data-conv-id="${conv.id}"]`);
 
         if (!el) {
             el = document.createElement('div');
@@ -3283,7 +3280,7 @@ $pageIcon = 'chat-dots';
             el.dataset.convId          = conv.id;
             el.dataset.phone           = conv.phone || '';
             el.dataset.status          = conv.status || 'open';
-            el.dataset.channel         = convChannel;
+            el.dataset.channel         = conv.channel || 'whatsapp';
             el.dataset.assignedUserId  = conv.assigned_user_id || '';
             el.dataset.departmentId    = conv.department_id || '';
             el.dataset.instanceLabel   = conv.instance_label || '';
@@ -3293,9 +3290,6 @@ $pageIcon = 'chat-dots';
             };
             document.getElementById('convList').prepend(el);
         }
-
-        // Always update channel in case it was missing or wrong
-        if (conv.channel) el.dataset.channel = conv.channel;
 
         // Update picture attribute whenever we have fresh data
         if (conv.contact_picture) el.dataset.picture = conv.contact_picture;
@@ -3309,7 +3303,7 @@ $pageIcon = 'chat-dots';
             conv.last_message_type === 'note'     ? LANG.preview_note  :
             (conv.last_message_body || '').substring(0, 40);
 
-        const channel = conv.channel || el.dataset.channel || 'whatsapp';
+        const channel = el.dataset.channel || 'whatsapp';
         const convDisplayName = conv.contact_name ||
             (channel === 'website' ? ('Visitante #' + (conv.phone || '').substring(0, 8)) :
             (conv.is_group ? LANG.group : conv.phone));
