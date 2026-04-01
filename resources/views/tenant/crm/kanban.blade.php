@@ -1271,7 +1271,7 @@ document.addEventListener('click', e => {
     if (window._kDragging) return;
     if (e.target.closest('button, a, .card-tag-badge, .btn-add-in-col')) return;
     const card = e.target.closest('.lead-card[data-lead-id]');
-    if (card) window.location.href = '/contatos/' + card.dataset.leadId + '/perfil';
+    if (card) window.location.href = '{{ url("/contatos") }}/' + card.dataset.leadId + '/perfil';
 });
 
 // ── Botão "Adicionar lead" por coluna ─────────────────────────────────────

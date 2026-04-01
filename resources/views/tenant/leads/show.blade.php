@@ -167,8 +167,15 @@ $pageIcon = 'person-badge';
 .lp-step.current .lp-step-dot {
     border-width: 3px;
     color: #fff;
-    box-shadow: 0 0 0 4px rgba(37,211,102,.2);
+    box-shadow: 0 0 0 4px rgba(0,133,243,.2);
+    animation: stagePulse 2s ease-in-out infinite;
 }
+@keyframes stagePulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(0,133,243,.15); }
+    50%      { box-shadow: 0 0 0 8px rgba(0,133,243,.08); }
+}
+.lp-step-dot.clickable { cursor: pointer; }
+.lp-step-dot.clickable:hover { transform: scale(1.15); }
 .lp-step-label {
     font-size: 11.5px;
     font-weight: 600;
@@ -186,7 +193,7 @@ $pageIcon = 'person-badge';
     min-width: 32px;
     margin-bottom: 18px; /* align with dots */
 }
-.lp-step-line.filled { background: #25d366; }
+.lp-step-line.filled { background: #0085f3; }
 
 /* ── Main grid ── */
 .lp-grid {
@@ -787,8 +794,49 @@ $pageIcon = 'person-badge';
 <div class="lp-hero">
     <div class="lp-avatar">{{ strtoupper(substr($lead->name, 0, 1)) }}</div>
     <div class="lp-hero-info" style="flex:1;">
-        <h1 class="lp-hero-name">{{ $lead->name }}</h1>
-        <div class="lp-hero-meta">
+        {{-- Name + quick action icons --}}
+        <div style="display:flex;align-items:center;gap:8px;">
+            <h1 class="lp-hero-name">{{ $lead->name }}</h1>
+            @if($lead->phone)
+            <a href="https://wa.me/{{ preg_replace('/\D/', '', $lead->phone) }}" target="_blank" title="Ligar/WhatsApp" style="color:#0085f3;font-size:13px;text-decoration:none;padding:2px;"><i class="bi bi-telephone"></i></a>
+            @endif
+            @if($lead->phone)
+            <a href="https://wa.me/{{ preg_replace('/\D/', '', $lead->phone) }}" target="_blank" title="WhatsApp" style="color:#0085f3;font-size:13px;text-decoration:none;padding:2px;"><i class="bi bi-chat-dots"></i></a>
+            @endif
+            @if($lead->email)
+            <a href="mailto:{{ $lead->email }}" title="Email" style="color:#0085f3;font-size:13px;text-decoration:none;padding:2px;"><i class="bi bi-envelope"></i></a>
+            @endif
+            <button onclick="openLeadTaskDrawer()" title="Agendar atividade" style="background:none;border:none;color:#0085f3;font-size:13px;cursor:pointer;padding:2px;"><i class="bi bi-calendar-plus"></i></button>
+            <button onclick="openNewNote()" title="Nova nota" style="background:none;border:none;color:#0085f3;font-size:13px;cursor:pointer;padding:2px;"><i class="bi bi-flag"></i></button>
+        </div>
+        {{-- Tags --}}
+        <div style="display:flex;align-items:center;gap:5px;margin-top:6px;flex-wrap:wrap;">
+            @foreach(($lead->tags ?? []) as $tag)
+            <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;background:#eff6ff;color:#0085f3;border:1px solid #bfdbfe;">
+                {{ $tag }}
+                <button onclick="removeTag('{{ addslashes($tag) }}')" style="background:none;border:none;color:#93c5fd;cursor:pointer;font-size:12px;line-height:1;padding:0 0 0 2px;">&times;</button>
+            </span>
+            @endforeach
+            <div style="position:relative;display:inline-block;">
+                <button onclick="document.getElementById('tagDropdown').style.display=document.getElementById('tagDropdown').style.display==='block'?'none':'block'" style="width:22px;height:22px;border-radius:50%;background:#f3f4f6;border:1px dashed #d1d5db;color:#9ca3af;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;" title="Adicionar tag">+</button>
+                @php $allTags = \App\Models\WhatsappTag::orderBy('name')->get(['name','color']); @endphp
+                <div id="tagDropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid #e8eaf0;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:50;min-width:140px;max-height:200px;overflow-y:auto;">
+                    @foreach($allTags as $t)
+                        @if(!in_array($t->name, $lead->tags ?? []))
+                        <button onclick="addExistingTag('{{ addslashes($t->name) }}')" style="display:flex;align-items:center;gap:6px;padding:7px 12px;width:100%;border:none;background:none;cursor:pointer;font-size:12px;color:#374151;font-weight:500;" onmouseenter="this.style.background='#f8fafc'" onmouseleave="this.style.background=''">
+                            @if($t->color)<span style="width:8px;height:8px;border-radius:50%;background:{{ $t->color }};flex-shrink:0;"></span>@endif
+                            {{ $t->name }}
+                        </button>
+                        @endif
+                    @endforeach
+                    @if($allTags->count() === 0 || $allTags->whereNotIn('name', $lead->tags ?? [])->isEmpty())
+                    <div style="padding:10px 12px;font-size:11px;color:#9ca3af;text-align:center;">Nenhuma tag disponível</div>
+                    @endif
+                </div>
+            </div>
+        </div>
+        {{-- Meta row --}}
+        <div class="lp-hero-meta" style="margin-top:4px;">
             @if($lead->stage)
             <span class="stage-badge" style="background:{{ $lead->stage->color }}22;color:{{ $lead->stage->color }};">
                 <span class="dot" style="background:{{ $lead->stage->color }};"></span>
@@ -798,35 +846,57 @@ $pageIcon = 'person-badge';
             @if($lead->source)
             <span class="source-pill">{{ $lead->source }}</span>
             @endif
-            @if($lead->assignedTo)
-            <span style="display:inline-flex;align-items:center;gap:4px;">
-                <i class="bi bi-person-fill" style="font-size:12px;"></i>{{ Str::limit($lead->assignedTo->name, 18) }}
-            </span>
-            @endif
             <span style="color:#d1d5db;">|</span>
             <span>{{ __('leads.created_ago', ['time' => $lead->created_at->diffForHumans()]) }}</span>
         </div>
     </div>
-    @if($lead->score > 0)
-    @php
-        $sCls = $lead->score >= 70 ? 'hot' : ($lead->score >= 30 ? 'warm' : 'cold');
-        $sColorMap = ['hot' => '#059669', 'warm' => '#d97706', 'cold' => '#9ca3af'];
-        $sLabelMap = ['hot' => __('scoring.score_high') . ' 🔥', 'warm' => __('scoring.score_medium'), 'cold' => __('scoring.score_low')];
-        $sBgMap = ['hot' => '#ecfdf5', 'warm' => '#fffbeb', 'cold' => '#f3f4f6'];
-    @endphp
-    <div class="lp-hero-score">
-        <div style="display:flex;align-items:center;gap:10px;">
-            <div style="width:80px;">
-                <div style="background:#f3f4f6;border-radius:100px;height:6px;overflow:hidden;">
-                    <div style="width:{{ min(100, $lead->score) }}%;height:100%;background:{{ $sColorMap[$sCls] }};border-radius:100px;"></div>
-                </div>
+
+    {{-- Right side: score + outcome dropdown + assignee avatar --}}
+    <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
+        @if($lead->score > 0)
+        @php
+            $sCls = $lead->score >= 70 ? 'hot' : ($lead->score >= 30 ? 'warm' : 'cold');
+            $sColorMap = ['hot' => '#059669', 'warm' => '#d97706', 'cold' => '#9ca3af'];
+            $sLabelMap = ['hot' => __('scoring.score_high') . ' 🔥', 'warm' => __('scoring.score_medium'), 'cold' => __('scoring.score_low')];
+            $sBgMap = ['hot' => '#ecfdf5', 'warm' => '#fffbeb', 'cold' => '#f3f4f6'];
+        @endphp
+        <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:100px;font-size:13px;font-weight:700;background:{{ $sBgMap[$sCls] }};color:{{ $sColorMap[$sCls] }};white-space:nowrap;">
+            <i class="bi bi-lightning-fill" style="font-size:11px;"></i> {{ $lead->score }}
+        </span>
+        @endif
+
+        {{-- Outcome dropdown (just icon) --}}
+        @php
+            $wonStage = $lead->pipeline?->stages->firstWhere('is_won', true);
+            $lostStage = $lead->pipeline?->stages->firstWhere('is_lost', true);
+        @endphp
+        @if($wonStage || $lostStage)
+        <div style="position:relative;" id="outcomeWrap">
+            <button onclick="document.getElementById('outcomeMenu').style.display=document.getElementById('outcomeMenu').style.display==='block'?'none':'block'" title="Marcar resultado" style="background:none;border:none;color:#6b7280;font-size:18px;cursor:pointer;padding:4px;display:flex;align-items:center;">
+                <i class="bi bi-emoji-neutral"></i> <i class="bi bi-chevron-down" style="font-size:10px;margin-left:2px;"></i>
+            </button>
+            <div id="outcomeMenu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid #e8eaf0;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:50;min-width:170px;overflow:hidden;">
+                @if($wonStage)
+                <button onclick="moveToStage({{ $wonStage->id }},'{{ addslashes($wonStage->name) }}')" style="display:flex;align-items:center;gap:8px;padding:10px 16px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;color:#059669;font-weight:600;" onmouseenter="this.style.background='#f0fdf4'" onmouseleave="this.style.background=''">
+                    <i class="bi bi-trophy-fill"></i> Ganho
+                </button>
+                @endif
+                @if($lostStage)
+                <button onclick="moveToStage({{ $lostStage->id }},'{{ addslashes($lostStage->name) }}')" style="display:flex;align-items:center;gap:8px;padding:10px 16px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;color:#dc2626;font-weight:600;" onmouseenter="this.style.background='#fef2f2'" onmouseleave="this.style.background=''">
+                    <i class="bi bi-x-circle-fill"></i> Perdido
+                </button>
+                @endif
             </div>
-            <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:100px;font-size:13px;font-weight:700;background:{{ $sBgMap[$sCls] }};color:{{ $sColorMap[$sCls] }};white-space:nowrap;">
-                <i class="bi bi-lightning-fill" style="font-size:11px;"></i> {{ $lead->score }} · {{ $sLabelMap[$sCls] }}
-            </span>
         </div>
+        @endif
+
+        {{-- Assignee avatar --}}
+        @if($lead->assignedTo)
+        <div title="{{ $lead->assignedTo->name }}" style="width:36px;height:36px;border-radius:50%;background:#eff6ff;color:#0085f3;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid #bfdbfe;flex-shrink:0;">
+            {{ strtoupper(substr($lead->assignedTo->name, 0, 2)) }}
+        </div>
+        @endif
     </div>
-    @endif
 </div>
 
 {{-- ── Step Indicator ── --}}
@@ -842,18 +912,21 @@ $pageIcon = 'person-badge';
             $isPast    = $stage->position < $currentPos;
             $isCurrent = $stage->id === $lead->stage_id;
             $cls       = $isPast ? 'past' : ($isCurrent ? 'current' : 'future');
-            $dotBg     = ($isPast || $isCurrent) ? '#25d366' : '#e5e7eb';
+            $dotBg     = ($isPast || $isCurrent) ? '#0085f3' : '#e5e7eb';
             $dotColor  = ($isPast || $isCurrent) ? '#fff' : '#9ca3af';
         @endphp
         <div class="lp-step {{ $cls }}">
-            <div class="lp-step-dot" style="background:{{ $dotBg }};border-color:{{ $dotBg }};color:{{ $dotColor }};">
+            <div class="lp-step-dot clickable" style="background:{{ $dotBg }};border-color:{{ $dotBg }};color:{{ $dotColor }};"
+                 onclick="moveToStage({{ $stage->id }}, '{{ addslashes($stage->name) }}')" title="Mover para {{ $stage->name }}">
                 @if($isPast)
                     <i class="bi bi-check-lg"></i>
                 @elseif($isCurrent)
                     @if($stage->is_won)  <i class="bi bi-trophy-fill"></i>
                     @elseif($stage->is_lost) <i class="bi bi-x-lg"></i>
-                    @else <i class="bi bi-record-fill" style="font-size:8px;"></i>
+                    @else <span style="font-size:12px;font-weight:800;">{{ $stage->position }}</span>
                     @endif
+                @else
+                    <span style="font-size:11px;font-weight:700;">{{ $stage->position }}</span>
                 @endif
             </div>
             <div class="lp-step-label">{{ $stage->name }}</div>
@@ -2333,6 +2406,59 @@ function buildAttachHtml(a) {
 }
 
 // ── Tarefas do Lead ──────────────────────────────────────────────────
+// ── Move lead to stage (pipeline click) ────────────────────────────────
+async function moveToStage(stageId, stageName) {
+    try {
+        const res = await fetch('{{ route("crm.lead.stage", $lead->id) }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stage_id: stageId, pipeline_id: {{ $lead->pipeline_id }} }),
+        });
+        const data = await res.json();
+        if (data.success !== false && res.ok) {
+            toastr.success('Movido para ' + stageName);
+            setTimeout(() => location.reload(), 800);
+        } else {
+            toastr.error(data.message || data.error || 'Erro ao mover etapa.');
+        }
+    } catch { toastr.error('Erro de conexão.'); }
+    document.getElementById('outcomeMenu')?.style && (document.getElementById('outcomeMenu').style.display = 'none');
+}
+
+// ── Tags from hero ─────────────────────────────────────────────────────
+async function addExistingTag(tagName) {
+    document.getElementById('tagDropdown').style.display = 'none';
+    const currentTags = @json($lead->tags ?? []);
+    if (currentTags.includes(tagName)) return;
+    currentTags.push(tagName);
+    await updateLeadTags(currentTags);
+}
+async function removeTag(tag) {
+    const currentTags = @json($lead->tags ?? []).filter(t => t !== tag);
+    await updateLeadTags(currentTags);
+}
+async function updateLeadTags(tags) {
+    try {
+        const res = await fetch('{{ route("leads.update", $lead->id) }}', {
+            method: 'PUT',
+            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: {!! json_encode($lead->name) !!}, tags: tags }),
+        });
+        if (res.ok) { location.reload(); }
+        else { toastr.error('Erro ao atualizar tags.'); }
+    } catch { toastr.error('Erro de conexão.'); }
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', e => {
+    const outcomeWrap = document.getElementById('outcomeWrap');
+    const outcomeMenu = document.getElementById('outcomeMenu');
+    if (outcomeWrap && outcomeMenu && !outcomeWrap.contains(e.target)) outcomeMenu.style.display = 'none';
+
+    const tagDd = document.getElementById('tagDropdown');
+    if (tagDd && !e.target.closest('[title="Adicionar tag"]') && !tagDd.contains(e.target)) tagDd.style.display = 'none';
+});
+
 function toggleLeadTask(id) {
     $.ajax({ url: '/crm/public/tarefas/' + id + '/toggle', method: 'PATCH', headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'), 'Accept': 'application/json' } })
         .done(function() { location.reload(); });
