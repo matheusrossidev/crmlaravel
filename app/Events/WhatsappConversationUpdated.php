@@ -39,6 +39,7 @@ class WhatsappConversationUpdated implements ShouldBroadcastNow
 
         return [
             'id'                => $c->id,
+            'channel'           => 'whatsapp',
             'phone'             => $c->phone,
             'contact_name'      => $c->contact_name,
             'contact_picture'   => $c->contact_picture_url,
@@ -49,6 +50,7 @@ class WhatsappConversationUpdated implements ShouldBroadcastNow
             'last_message_type' => $latest?->type,
             'assigned_user'     => $c->assignedUser?->name,
             'assigned_user_id'  => $c->assigned_user_id,
+            'tags'              => $c->tags ?? [],
         ];
     }
 }

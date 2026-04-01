@@ -184,8 +184,15 @@ class ProcessChatbotStep
     {
         $text     = ChatbotVariableService::interpolate((string) ($node->config['text'] ?? ''), $vars);
         $imageUrl = (string) ($node->config['image_url'] ?? '');
+        $audioUrl = (string) ($node->config['audio_url'] ?? '');
 
-        if ($imageUrl !== '') {
+        if ($audioUrl !== '' && $this->channel === 'whatsapp' && $conv instanceof WhatsappConversation) {
+            $this->sendVoice($conv, $audioUrl);
+            // If there's also text, send it after the audio
+            if ($text !== '') {
+                $this->sendText($conv, $text);
+            }
+        } elseif ($imageUrl !== '') {
             $this->sendImage($conv, $imageUrl, $text);
         } elseif ($text !== '') {
             $this->sendText($conv, $text);
@@ -527,6 +534,29 @@ class ProcessChatbotStep
             $this->sendInstagramImage($conv, $imageUrl, $caption);
         } else {
             $this->sendWahaImage($conv, $imageUrl, $caption);
+        }
+    }
+
+    private function sendVoice(WhatsappConversation $conv, string $audioUrl): void
+    {
+        try {
+            $instance = $conv->instance;
+            if (! $instance) {
+                Log::channel('whatsapp')->warning('Chatbot: instância não encontrada para áudio', ['conv' => $conv->id]);
+                return;
+            }
+
+            $chatId = $this->resolveChatId($conv);
+            $waha   = new WahaService($instance->session_name);
+            $waha->sendVoice($chatId, $audioUrl);
+
+            sleep(self::DEFAULT_MESSAGE_DELAY);
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->error('Chatbot: erro ao enviar áudio', [
+                'conversation_id' => $conv->id,
+                'audio_url'       => $audioUrl,
+                'error'           => $e->getMessage(),
+            ]);
         }
     }
 

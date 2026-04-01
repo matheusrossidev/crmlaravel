@@ -49,6 +49,7 @@ const NODE_TYPES_CONFIG = {
     action:    { label: 'Ações',             sublabel: '',              icon: 'lightning-charge',  color: '#f59e0b' },
     delay:     { label: 'Atraso',            sublabel: '',              icon: 'clock-history',     color: '#ef4444' },
     end:       { label: 'Fim do fluxo',      sublabel: '',              icon: 'stop-circle',       color: '#6b7280' },
+    cards:     { label: 'Cards',             sublabel: '',              icon: 'card-heading',      color: '#16a34a' },
 };
 
 function getNodeCfg(type) {
@@ -64,6 +65,7 @@ const SIDEBAR_NODE_TYPES = [
     { type: 'condition', label: 'Condição', icon: 'diagram-2',         color: '#ea580c' },
     { type: 'action',    label: 'Ação',     icon: 'lightning-charge',  color: '#f59e0b' },
     { type: 'delay',     label: 'Aguardar', icon: 'hourglass-split',   color: '#ef4444' },
+    { type: 'cards',     label: 'Cards',    icon: 'card-heading',      color: '#16a34a' },
     { type: 'end',       label: 'Fim',      icon: 'stop-circle',       color: '#6b7280' },
 ];
 
@@ -347,6 +349,16 @@ function MessageNode({ id, data, selected }) {
                     />
                 </div>
             )}
+            {data.audio_url && (
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6,
+                    padding: '5px 8px', background: '#f0fdf4', borderRadius: 6,
+                    border: '1px solid #bbf7d0', fontSize: 11,
+                }}>
+                    <i className="bi bi-soundwave" style={{ color: '#16a34a', fontSize: 13 }} />
+                    <span style={{ color: '#374151', fontWeight: 500 }}>Áudio</span>
+                </div>
+            )}
             <Preview text={data.text} />
         </BaseNode>
     );
@@ -423,6 +435,32 @@ function EndNode({ id, data, selected }) {
     return (
         <BaseNode type="end" data={data} selected={selected} hasDefaultHandle={false} rightHandles={[]}>
             <Preview text={data.text} />
+        </BaseNode>
+    );
+}
+
+function CardsNode({ id, data, selected }) {
+    const items = data.items || [];
+    return (
+        <BaseNode type="cards" data={data} selected={selected} hasDefaultHandle={true}>
+            {items.length === 0 && (
+                <span style={{ color: '#9ca3af', fontStyle: 'italic', fontSize: 11 }}>Nenhum card adicionado</span>
+            )}
+            {items.slice(0, 3).map((item, i) => (
+                <div key={i} style={{
+                    display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4,
+                    padding: '4px 8px', background: '#f0fdf4', borderRadius: 6,
+                    border: '1px solid #bbf7d0', fontSize: 11,
+                }}>
+                    {item.image_url && <i className="bi bi-image" style={{ color: '#16a34a', fontSize: 10 }} />}
+                    <span style={{ color: '#374151', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
+                        {item.title || `Card ${i + 1}`}
+                    </span>
+                </div>
+            ))}
+            {items.length > 3 && (
+                <span style={{ fontSize: 10, color: '#9ca3af' }}>+{items.length - 3} cards</span>
+            )}
         </BaseNode>
     );
 }
@@ -522,7 +560,7 @@ function StartNode({ id, data, selected }) {
     );
 }
 
-const nodeTypes = { start: StartNode, message: MessageNode, input: InputNode, condition: ConditionNode, action: ActionNode, delay: DelayNode, end: EndNode };
+const nodeTypes = { start: StartNode, message: MessageNode, input: InputNode, condition: ConditionNode, action: ActionNode, delay: DelayNode, cards: CardsNode, end: EndNode };
 
 // ── Node Edit Panel ───────────────────────────────────────────────────────────
 
@@ -535,8 +573,100 @@ function FieldGroup({ label, children }) {
     );
 }
 
+function AudioField({ data, update }) {
+    const FONT = "'Inter', system-ui, sans-serif";
+    const hasAudio = data.audio_url != null;
+    const audioUploadRef = useRef(null);
+    const [audioUploading, setAudioUploading] = useState(false);
+
+    const handleAudioUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setAudioUploading(true);
+        try {
+            const form = new FormData();
+            form.append('image', file);
+            const res = await fetch(window.chatbotBuilderData.uploadUrl, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': window.chatbotBuilderData.csrfToken },
+                body: form,
+            });
+            const json = await res.json();
+            if (json.url) update('audio_url', json.url);
+        } catch {}
+        setAudioUploading(false);
+        e.target.value = '';
+    };
+
+    return (
+        <div style={{ marginBottom: 14 }}>
+            <label style={field.label}>Áudio (nota de voz)</label>
+            {!hasAudio ? (
+                <div style={{ display: 'flex', gap: 6 }}>
+                    <input ref={audioUploadRef} type="file" accept="audio/*" style={{ display: 'none' }} onChange={handleAudioUpload} />
+                    <button
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => audioUploadRef.current?.click()}
+                        disabled={audioUploading}
+                        style={{ ...field.smallBtn, display: 'inline-flex', alignItems: 'center', gap: 5, opacity: audioUploading ? 0.6 : 1 }}
+                    >
+                        <i className={`bi bi-${audioUploading ? 'hourglass-split' : 'mic'}`} style={{ fontSize: 11 }} />
+                        {audioUploading ? 'Enviando…' : 'Upload áudio'}
+                    </button>
+                    <button
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => update('audio_url', '')}
+                        style={{ ...field.smallBtn, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                    >
+                        <i className="bi bi-link-45deg" style={{ fontSize: 11 }} />
+                        URL
+                    </button>
+                </div>
+            ) : (
+                <div style={{ border: '1px solid #bbf7d0', borderRadius: 9, overflow: 'hidden', background: '#f0fdf4' }}>
+                    {data.audio_url && (
+                        <div style={{ padding: '8px 10px' }}>
+                            <audio controls src={data.audio_url} style={{ width: '100%', height: 36 }} />
+                        </div>
+                    )}
+                    <div style={{ padding: '6px 10px', borderTop: '1px solid #bbf7d0', background: '#fff', display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <input
+                            style={{ ...field.input, flex: 1, fontSize: 12 }}
+                            value={data.audio_url || ''}
+                            onChange={e => update('audio_url', e.target.value)}
+                            placeholder="https://exemplo.com/audio.ogg"
+                        />
+                        <input ref={audioUploadRef} type="file" accept="audio/*" style={{ display: 'none' }} onChange={handleAudioUpload} />
+                        <button
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={() => audioUploadRef.current?.click()}
+                            disabled={audioUploading}
+                            title="Trocar áudio"
+                            style={{ ...field.smallBtn, padding: '4px 8px', display: 'inline-flex', alignItems: 'center', opacity: audioUploading ? 0.6 : 1 }}
+                        >
+                            <i className={`bi bi-${audioUploading ? 'hourglass-split' : 'arrow-repeat'}`} style={{ fontSize: 12 }} />
+                        </button>
+                        <button
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={() => update('audio_url', null)}
+                            title="Remover áudio"
+                            style={{ ...field.smallBtn, padding: '4px 8px', display: 'inline-flex', alignItems: 'center', background: '#fff0f0', color: '#dc2626', border: '1px solid #fca5a5' }}
+                        >
+                            <i className="bi bi-trash3" style={{ fontSize: 12 }} />
+                        </button>
+                    </div>
+                </div>
+            )}
+            <p style={{ fontSize: 10, color: '#9ca3af', margin: '4px 0 0', fontFamily: FONT }}>
+                Envie um áudio .ogg/.mp3 que será entregue como nota de voz no WhatsApp.
+            </p>
+        </div>
+    );
+}
+
 function MessageForm({ data, update, textareaRef, saveCursor }) {
     const FONT      = "'Inter', system-ui, sans-serif";
+    const isWhatsApp = (window.chatbotBuilderData?.flow?.channel || 'whatsapp') === 'whatsapp';
     const hasImage  = data.image_url != null;
     const uploadRef = useRef(null);
     const [uploading, setUploading] = useState(false);
@@ -700,6 +830,11 @@ function MessageForm({ data, update, textareaRef, saveCursor }) {
                     </div>
                 )}
             </div>
+
+            {/* ── Audio section (WhatsApp only) ── */}
+            {isWhatsApp && (
+                <AudioField data={data} update={update} />
+            )}
 
             {/* ── Text + toolbar ── */}
             <div style={{ marginBottom: 14 }}>
@@ -1529,6 +1664,115 @@ function ActionForm({ data, update, pipelines, allVars, tags, users, customField
     );
 }
 
+function CardsForm({ data, update }) {
+    const FONT = "'Inter', system-ui, sans-serif";
+    const items = data.items || [];
+
+    const addCard = () => update('items', [...items, { title: '', description: '', image_url: '', button_label: '', button_action: 'reply', button_url: '', button_value: '' }]);
+
+    const updateCard = (i, f, v) => update('items', items.map((item, idx) => idx === i ? { ...item, [f]: v } : item));
+
+    const removeCard = (i) => update('items', items.filter((_, idx) => idx !== i));
+
+    const moveCard = (i, dir) => {
+        const j = i + dir;
+        if (j < 0 || j >= items.length) return;
+        const copy = [...items];
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+        update('items', copy);
+    };
+
+    const uploadRefs = useRef({});
+
+    const handleCardUpload = async (i, e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+            const form = new FormData();
+            form.append('image', file);
+            const res = await fetch(window.chatbotBuilderData.uploadUrl, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': window.chatbotBuilderData.csrfToken },
+                body: form,
+            });
+            const json = await res.json();
+            if (json.url) updateCard(i, 'image_url', json.url);
+        } catch {}
+        e.target.value = '';
+    };
+
+    return (
+        <>
+            {items.map((item, i) => (
+                <div key={i} style={{
+                    border: '1px solid #e8eaf0', borderRadius: 10,
+                    padding: 12, marginBottom: 10, background: '#fafafa',
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', fontFamily: FONT }}>CARD {i + 1}</span>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                            <button onClick={() => moveCard(i, -1)} disabled={i === 0} style={{ ...field.smallBtn, padding: '2px 6px', opacity: i === 0 ? 0.3 : 1 }} title="Mover acima"><i className="bi bi-chevron-up" style={{ fontSize: 10 }} /></button>
+                            <button onClick={() => moveCard(i, 1)} disabled={i === items.length - 1} style={{ ...field.smallBtn, padding: '2px 6px', opacity: i === items.length - 1 ? 0.3 : 1 }} title="Mover abaixo"><i className="bi bi-chevron-down" style={{ fontSize: 10 }} /></button>
+                            <button onClick={() => removeCard(i)} style={{ ...field.smallBtn, padding: '2px 6px', background: '#fee2e2', color: '#dc2626', border: 'none' }} title="Remover card"><i className="bi bi-trash3" style={{ fontSize: 10 }} /></button>
+                        </div>
+                    </div>
+
+                    {/* Image */}
+                    {item.image_url ? (
+                        <div style={{ position: 'relative', marginBottom: 8 }}>
+                            <img src={item.image_url} alt="" style={{ width: '100%', maxHeight: 100, objectFit: 'cover', borderRadius: 6, border: '1px solid #e8eaf0', display: 'block' }} onError={e => { e.target.style.display = 'none'; }} />
+                            <button onClick={() => updateCard(i, 'image_url', '')} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,.55)', color: '#fff', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>&times;</button>
+                        </div>
+                    ) : (
+                        <div style={{ marginBottom: 8, display: 'flex', gap: 6 }}>
+                            <input ref={el => { if (el) uploadRefs.current[i] = el; }} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleCardUpload(i, e)} />
+                            <button onClick={() => uploadRefs.current[i]?.click()} style={{ ...field.smallBtn, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '8px 0' }}>
+                                <i className="bi bi-upload" style={{ fontSize: 11 }} /> Upload
+                            </button>
+                            <button onClick={() => updateCard(i, 'image_url', ' ')} style={{ ...field.smallBtn, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '8px 0' }}>
+                                <i className="bi bi-link-45deg" style={{ fontSize: 11 }} /> URL
+                            </button>
+                        </div>
+                    )}
+                    {item.image_url === ' ' && (
+                        <div style={{ marginBottom: 8 }}>
+                            <input style={field.input} value="" onChange={e => updateCard(i, 'image_url', e.target.value)} placeholder="https://exemplo.com/imagem.jpg" />
+                        </div>
+                    )}
+
+                    <input style={{ ...field.input, marginBottom: 6 }} value={item.title || ''} onChange={e => updateCard(i, 'title', e.target.value)} placeholder="Título do card" />
+                    <textarea style={{ ...field.input, minHeight: 38, marginBottom: 6, resize: 'vertical' }} value={item.description || ''} onChange={e => updateCard(i, 'description', e.target.value)} placeholder="Descrição (opcional)" />
+
+                    <div style={{ display: 'flex', gap: 6 }}>
+                        <input style={{ ...field.input, flex: 1 }} value={item.button_label || ''} onChange={e => updateCard(i, 'button_label', e.target.value)} placeholder="Texto do botão" />
+                        <select style={{ ...field.input, maxWidth: 110, cursor: 'pointer' }} value={item.button_action || 'reply'} onChange={e => updateCard(i, 'button_action', e.target.value)}>
+                            <option value="reply">Resposta</option>
+                            <option value="url">URL</option>
+                        </select>
+                    </div>
+                    {item.button_action === 'url' && (
+                        <input style={{ ...field.input, marginTop: 6 }} value={item.button_url || ''} onChange={e => updateCard(i, 'button_url', e.target.value)} placeholder="https://exemplo.com" />
+                    )}
+                </div>
+            ))}
+
+            <button onClick={addCard} style={{
+                width: '100%', background: '#eff6ff', color: '#0085f3',
+                border: '1.5px solid #bfdbfe', borderRadius: 8,
+                fontSize: 12, fontWeight: 600, padding: '8px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+            }}>
+                <i className="bi bi-plus-lg" /> Adicionar card
+            </button>
+
+            <div style={{ marginTop: 10, padding: '8px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 7, fontSize: 11, color: '#166534', fontFamily: FONT }}>
+                <i className="bi bi-info-circle" style={{ marginRight: 5 }} />
+                Cards são exibidos como carrossel no widget do website. Cada card pode ter imagem, título, descrição e botão.
+            </div>
+        </>
+    );
+}
+
 function DelayForm({ data, update }) {
     const FONT    = "'Inter', system-ui, sans-serif";
     const seconds = data.seconds ?? 3;
@@ -1687,6 +1931,7 @@ function NodePanel({ node, onUpdate, onDelete, variables, pipelines, tags, users
                 {node.type === 'input'     && <InputForm   data={data} update={update} textareaRef={textareaRef} saveCursor={saveCursor} variables={variables} />}
                 {node.type === 'condition' && <ConditionForm data={data} update={update} allVars={allVars} />}
                 {node.type === 'action'    && <ActionForm data={data} update={update} pipelines={pipelines} allVars={allVars} tags={tags} users={users} customFieldDefs={customFieldDefs} />}
+                {node.type === 'cards'     && <CardsForm data={data} update={update} />}
                 {node.type === 'delay'     && <DelayForm data={data} update={update} />}
                 {node.type === 'end'       && <EndForm data={data} update={update} textareaRef={textareaRef} saveCursor={saveCursor} />}
 
@@ -1974,6 +2219,7 @@ function NodeSidebar({ onAddNode, onDragStart }) {
     const messageNodes = [
         { type: 'message', label: 'Enviar mensagem', icon: channelIcon, color: channelColor },
         { type: 'input',   label: 'Pergunta',        icon: 'keyboard',  color: channelColor },
+        ...(channel === 'website' ? [{ type: 'cards', label: 'Cards', icon: 'card-heading', color: '#16a34a' }] : []),
     ];
 
     const logicNodes = [
