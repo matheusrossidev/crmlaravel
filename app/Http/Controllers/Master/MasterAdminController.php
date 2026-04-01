@@ -58,6 +58,8 @@ class MasterAdminController extends Controller
     {
         $this->ensureOwner();
 
+        \Log::info('MasterAdmin store request', ['modules' => $request->input('modules'), 'valid_keys' => array_keys(self::AVAILABLE_MODULES)]);
+
         $data = $request->validate([
             'name'     => 'required|string|max:100',
             'email'    => 'required|email|unique:users,email',
