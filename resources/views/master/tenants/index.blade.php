@@ -260,7 +260,7 @@
 
         @if($tenants->hasPages())
         <div style="padding:16px 22px;border-top:1px solid #f0f2f7;">
-            {{ $tenants->links() }}
+            {{ $tenants->links('pagination::bootstrap-5') }}
         </div>
         @endif
         @endif
