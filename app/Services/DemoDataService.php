@@ -425,7 +425,7 @@ class DemoDataService
             'tenant_id'              => $this->tenantId,
             'name'                   => 'Assistente Demo',
             'objective'              => 'sales',
-            'communication_style'    => 'Profissional e amigável, com emojis moderados',
+            'communication_style'    => 'normal',
             'persona_description'    => 'Você é um assistente de vendas da empresa. Sua missão é entender as necessidades do cliente e ajudá-lo.',
             'language'               => 'pt-BR',
             'knowledge_base'         => "Somos uma empresa de tecnologia.\nNossos planos: Starter (R$97/mês), Pro (R$197/mês), Enterprise (R$497/mês).\nHorário de atendimento: seg-sex 9h-18h.",
