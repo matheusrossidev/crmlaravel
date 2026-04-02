@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syncro Docs — Services, Jobs, Events, Commands & Notifications</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <div class="main">
+        <h1 class="page-title">Services, Jobs, Events, Commands & Notifications</h1>
+        <p class="page-subtitle">Services, Jobs, Events, Artisan Commands, Notifications e fluxos de processamento</p>
+
+        <!-- Services -->
+        <h2 id="services">Services (36)</h2>
+
+        <div class="card">
+            <div class="card-header">WahaService</div>
+            <p><code>app/Services/WahaService.php</code></p>
+            <p>Client HTTP para a API do WAHA (WhatsApp). Gerencia sessoes e envia mensagens.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>createSession()</code></td><td>Cria nova sessao WhatsApp</td></tr>
+                    <tr><td><code>patchSession()</code></td><td>Atualiza config de webhook da sessao</td></tr>
+                    <tr><td><code>getSession()</code></td><td>Info da sessao</td></tr>
+                    <tr><td><code>startSession()</code> / <code>stopSession()</code></td><td>Inicia/para sessao</td></tr>
+                    <tr><td><code>getQrResponse()</code></td><td>Retorna QR code como PNG</td></tr>
+                    <tr><td><code>getContactInfo()</code></td><td>Resolve @lid para telefone real</td></tr>
+                    <tr><td><code>sendText()</code></td><td>Envia mensagem de texto</td></tr>
+                    <tr><td><code>sendImage()</code> / <code>sendImageBase64()</code></td><td>Envia imagem</td></tr>
+                    <tr><td><code>sendVoice()</code> / <code>sendVoiceBase64()</code></td><td>Envia audio</td></tr>
+                    <tr><td><code>sendFileBase64()</code></td><td>Envia documento/arquivo</td></tr>
+                    <tr><td><code>sendReaction()</code></td><td>Reage a mensagem com emoji</td></tr>
+                    <tr><td><code>getChatMessages()</code></td><td>Busca mensagens de um chat</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">AiAgentService</div>
+            <p><code>app/Services/AiAgentService.php</code></p>
+            <p>Monta prompts, historico e envia respostas dos agentes IA.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>buildSystemPrompt()</code></td><td>Constroi prompt com personalidade, pipeline stages, tags, calendar</td></tr>
+                    <tr><td><code>buildHistory()</code></td><td>Monta historico no formato OpenAI (limit: 50 msgs)</td></tr>
+                    <tr><td><code>splitIntoMessages()</code></td><td>Divide resposta longa em multiplas mensagens</td></tr>
+                    <tr><td><code>sendWhatsappReplies()</code></td><td>Envia mensagens sequencialmente com delay</td></tr>
+                    <tr><td><code>transcribeAudio()</code></td><td>Transcreve audio via OpenAI Whisper</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">AiAgentWebChatService</div>
+            <p><code>app/Services/AiAgentWebChatService.php</code></p>
+            <p>Engine de respostas IA para o widget de chat do website. Processa mensagens do visitante via LLM sincronamente.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>processMessage(conv, agent, userMessage)</code></td><td>Processa mensagem web via LLM, verifica quota de tokens, retorna replies compativel com widget.js</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">WebsiteChatService</div>
+            <p><code>app/Services/WebsiteChatService.php</code></p>
+            <p>Engine de execucao do chatbot para o widget website. Processa mensagens do visitante e executa o fluxo.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>processMessage()</code></td><td>Processa mensagem do visitante, executa steps, retorna {replies, buttons, input_type}</td></tr>
+                    <tr><td><code>resolveInput()</code></td><td>Resolve resposta do visitante ao input node</td></tr>
+                    <tr><td><code>executeFromCursor()</code></td><td>Executa steps a partir da posicao do cursor</td></tr>
+                    <tr><td><code>executeAction()</code></td><td>Executa acoes: create_lead, change_stage, close_conversation, etc.</td></tr>
+                    <tr><td><code>persistState()</code></td><td>Salva estado do fluxo (cursor + variaveis) no DB</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">ChatbotVariableService</div>
+            <p><code>app/Services/ChatbotVariableService.php</code></p>
+            <p>Interpolacao de variaveis <code>{{variavel}}</code> em textos do chatbot.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>interpolate()</code></td><td>Substitui placeholders no texto</td></tr>
+                    <tr><td><code>loadSystemVars()</code></td><td>Carrega variaveis do sistema ($lead_exists, $lead_stage_id, etc.)</td></tr>
+                    <tr><td><code>buildVars()</code></td><td>Merge de session + system vars</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">AgnoService</div>
+            <p><code>app/Services/AgnoService.php</code></p>
+            <p>Client para o microservico Agno AI (alternativa ao LLM direto).</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>isAvailable()</code></td><td>Verifica se Agno esta acessivel</td></tr>
+                    <tr><td><code>chat()</code></td><td>Envia mensagem ao Agno, retorna resposta + acoes</td></tr>
+                    <tr><td><code>configureAgent()</code></td><td>Pusha config do agente para Agno</td></tr>
+                    <tr><td><code>indexFile()</code></td><td>Indexa arquivo de knowledge no vector store</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">AutomationEngine</div>
+            <p><code>app/Services/AutomationEngine.php</code></p>
+            <p>Motor de automacao: trigger &rarr; conditions &rarr; actions.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>run()</code></td><td>Triggers: message_received, conversation_created, lead_created, lead_stage_changed, lead_won, lead_lost</td></tr>
+                    <tr><td><code>matchesConditions()</code></td><td>Avalia config + condicoes da automacao</td></tr>
+                    <tr><td><code>executeAction()</code></td><td>Acoes: add_tag_lead, move_to_stage, assign_ai_agent, send_whatsapp_message, etc.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">ConversationAnalystService</div>
+            <p><code>app/Services/ConversationAnalystService.php</code></p>
+            <p>Analisa conversas com LLM e gera sugestoes de acoes.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>runLlm()</code></td><td>Analisa conversa, retorna array de sugestoes</td></tr>
+                    <tr><td><code>createSuggestions()</code></td><td>Salva sugestoes deduplicated no DB</td></tr>
+                    <tr><td><code>applySuggestion()</code></td><td>Aplica sugestao (stage, tags, notes, fields)</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">AsaasService</div>
+            <p><code>app/Services/AsaasService.php</code></p>
+            <p>Client para API do Asaas (gateway de pagamentos brasileiro, PIX/boleto/cartao).</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>createCustomer()</code></td><td>Cria cliente no Asaas</td></tr>
+                    <tr><td><code>createSubscription()</code></td><td>Cria assinatura recorrente</td></tr>
+                    <tr><td><code>cancelSubscription()</code></td><td>Cancela assinatura</td></tr>
+                    <tr><td><code>createPayment()</code></td><td>Cria pagamento avulso (token increment)</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">StripeService</div>
+            <p><code>app/Services/StripeService.php</code></p>
+            <p>Client para API do Stripe (gateway de pagamentos internacional, cartao). Gerencia customers, checkout sessions, subscriptions e webhooks.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>createCustomer(email, name)</code></td><td>Cria customer no Stripe</td></tr>
+                    <tr><td><code>getOrCreateCustomer(email, name, ?existingId)</code></td><td>Busca customer existente ou cria novo</td></tr>
+                    <tr><td><code>createSubscriptionCheckout(customerId, priceId, ...)</code></td><td>Cria Checkout Session para assinatura (redirect)</td></tr>
+                    <tr><td><code>createPaymentCheckout(customerId, priceId, ...)</code></td><td>Cria Checkout Session para pagamento avulso (token increment)</td></tr>
+                    <tr><td><code>createPortalSession(customerId, returnUrl)</code></td><td>Cria sessao do Customer Portal para gerenciar assinatura</td></tr>
+                    <tr><td><code>cancelSubscription(subscriptionId)</code></td><td>Cancela assinatura</td></tr>
+                    <tr><td><code>constructWebhookEvent(payload, sigHeader)</code></td><td>Valida e constroi evento de webhook Stripe</td></tr>
+                    <tr><td><code>retrieveCheckoutSession(sessionId)</code></td><td>Busca detalhes de uma Checkout Session (expand subscription + customer)</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">InstagramService</div>
+            <p><code>app/Services/InstagramService.php</code></p>
+            <p>Client para API do Instagram/Meta Graph.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>sendMessage()</code></td><td>Envia DM de texto</td></tr>
+                    <tr><td><code>sendMessageWithButtons()</code></td><td>DM com quick reply buttons</td></tr>
+                    <tr><td><code>replyToComment()</code></td><td>Responde a comentario em post</td></tr>
+                    <tr><td><code>exchangeToken()</code></td><td>Troca token curto por longo</td></tr>
+                    <tr><td><code>subscribeToWebhooks()</code></td><td>Subscreve a eventos webhook</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">PlanLimitChecker</div>
+            <p><code>app/Services/PlanLimitChecker.php</code></p>
+            <p>Verifica limites de recursos por plano do tenant. Usado em controllers (ex: <code>UserController</code>) para bloquear criacao quando o limite e atingido.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>check(resource, tenant?)</code></td><td>Retorna <code>null</code> se OK ou mensagem de erro se limite atingido</td></tr>
+                    <tr><td><code>remaining(resource, tenant?)</code></td><td>Retorna quantos recursos restam antes do limite (<code>null</code> = ilimitado)</td></tr>
+                </tbody>
+            </table>
+            <div class="info-box info">
+                <strong>Recursos verificados:</strong> <code>users</code>, <code>leads</code>, <code>pipelines</code>, <code>custom_fields</code>, <code>departments</code>, <code>chatbot_flows</code>, <code>ai_agents</code>, <code>whatsapp_instances</code>. Cada recurso le o campo <code>max_*</code> correspondente do tenant (0 = ilimitado).
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">StageRequirementService</div>
+            <p><code>app/Services/StageRequirementService.php</code></p>
+            <p>Gerencia tarefas obrigatorias por etapa do funil. Cria tasks automaticamente ao entrar em uma etapa e verifica se o lead pode sair (exit requirements).</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>createRequiredTasks(Lead, PipelineStage)</code></td><td>Cria tasks obrigatorias definidas na etapa. Interpola <code>{{lead_name}}</code> e <code>{{stage_name}}</code> no subject. Registra LeadEvent para cada task.</td></tr>
+                    <tr><td><code>canLeaveStage(Lead, ?int stageId)</code></td><td>Verifica se todas as tasks obrigatorias estao completas. Retorna <code>{allowed, pending[], total, completed}</code>.</td></tr>
+                    <tr><td><code>getCompletionStatusBatch(Collection leads, int stageId)</code></td><td>Batch query para Kanban: retorna <code>{total, completed}</code> por lead_id em uma unica query.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">EventReminderService</div>
+            <p><code>app/Services/EventReminderService.php</code></p>
+            <p>Cria e gerencia lembretes WhatsApp para eventos de calendario. Suporta multiplos offsets (ex: 24h e 1h antes).</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>createRemindersForEvent(array params)</code></td><td>Cria reminders para um evento. Params: tenant_id, lead_id, event_title, event_starts_at, offsets (default: [1440, 60] minutos). Template interpolado com <code>{{lead_name}}</code>, <code>{{event_title}}</code>, <code>{{event_date}}</code>, <code>{{event_time}}</code>.</td></tr>
+                    <tr><td><code>cancelRemindersForEvent(string googleEventId)</code></td><td>Cancela todos os reminders pendentes de um evento Google Calendar.</td></tr>
+                    <tr><td><code>rescheduleReminders(string googleEventId, string newStart)</code></td><td>Recalcula send_at de reminders quando um evento e movido. Cancela reminders cujo novo horario ja passou.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">LeadScoringService</div>
+            <p><code>app/Services/LeadScoringService.php</code></p>
+            <p>Lead scoring baseado em regras configuraveis (ScoringRule). Avalia eventos, aplica pontos com cooldown, e suporta decay por inatividade.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>evaluate(Lead, string eventType, array context)</code></td><td>Avalia regras de scoring para um evento (message_received, lead_created, lead_stage_changed, etc.). Verifica condicoes (lead_source, lead_value, lead_tag, has_email, message_type) e cooldown. Loga em LeadScoreLog.</td></tr>
+                    <tr><td><code>applyDecay(Lead, string reason, int points)</code></td><td>Aplica pontos negativos de decay (usado pelo comando <code>scoring:decay</code>). Points e negativo.</td></tr>
+                    <tr><td><code>recalculate(Lead)</code></td><td>Recalcula score total do lead a partir de todos os logs.</td></tr>
+                    <tr><td><code>getBreakdown(Lead)</code></td><td>Retorna score agrupado por categoria (engagement, profile, decay, etc.).</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">NurtureSequenceService</div>
+            <p><code>app/Services/NurtureSequenceService.php</code></p>
+            <p>Sequencias automatizadas de nurturing (drip campaigns). Envia mensagens, executa acoes e gerencia estado por lead.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>enroll(Lead, NurtureSequence)</code></td><td>Inscreve lead na sequencia. Verifica duplicata. Cria LeadSequence com first step e next_step_at calculado.</td></tr>
+                    <tr><td><code>processStep(LeadSequence)</code></td><td>Executa step atual: message (cria ScheduledMessage), action (move_stage, add_tag, assign_user), wait_reply, condition. Auto-pausa se IA/Chatbot ativo. Auto-exit se lead respondeu ou humano enviou mensagem.</td></tr>
+                    <tr><td><code>resumePaused()</code></td><td>Retoma sequencias pausadas cujo IA/Chatbot foi removido.</td></tr>
+                    <tr><td><code>exitAllForLead(int leadId, string reason)</code></td><td>Encerra todas as sequencias ativas de um lead (ex: ao receber reply ou transfer humano).</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">LeadListQueryBuilder</div>
+            <p><code>app/Services/LeadListQueryBuilder.php</code></p>
+            <p>Constroi queries dinamicas para listas de leads. Suporta listas estaticas (member table) e dinamicas (filtros).</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>resolve(LeadList)</code></td><td>Retorna Builder para uma lista. Static: join com lead_list_members. Dynamic: aplica filtros.</td></tr>
+                    <tr><td><code>buildFromFilters(int tenantId, array filters)</code></td><td>Constroi query a partir de filtros raw (para preview). Suporta: AND/OR, operadores eq/neq/gte/lte/contains/is_null/not_null, tag (JSON contains), has_open_conversation, datas relativas (<code>-7 days</code>).</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">NotificationDispatcher</div>
+            <p><code>app/Services/NotificationDispatcher.php</code></p>
+            <p>Central de despacho de notificacoes. Resolve usuarios elegiveis, respeita quiet hours e preferencias de canal.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>dispatch(string type, array data, int tenantId, ?int targetUserId, ?int excludeUserId)</code></td><td>Despacha notificacao para usuarios elegiveis. Filtra por tenant, target/exclude user, quiet hours e preferencias (browser/push). Types: new_lead, lead_assigned, whatsapp_message, whatsapp_assigned, ai_intent, campaign_completed, lead_stage_changed, master_notification.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">MasterWhatsappNotifier</div>
+            <p><code>app/Services/MasterWhatsappNotifier.php</code></p>
+            <p>Envia notificacoes administrativas para o grupo WhatsApp master via WAHA. Todos os metodos sao <code>static</code>.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>newRegistration(Tenant, User, ?agencyName)</code></td><td>Notifica novo cadastro de tenant (empresa, plano, idioma, gateway, indicacao).</td></tr>
+                    <tr><td><code>newAgencyRegistration(Tenant, User, string code)</code></td><td>Notifica novo cadastro de agencia parceira (aguardando aprovacao).</td></tr>
+                    <tr><td><code>paymentConfirmed(Tenant, float value, string gateway, ?paymentId)</code></td><td>Notifica pagamento de assinatura confirmado (Asaas ou Stripe).</td></tr>
+                    <tr><td><code>tokenPurchase(Tenant, int tokens, float price, string gateway)</code></td><td>Notifica compra de pacote de tokens IA.</td></tr>
+                    <tr><td><code>weeklyReport()</code></td><td>Envia relatorio semanal: total contas, trial/pagantes/parceiros/suspensos, novos cadastros, conversao, churn, receita.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">SalesGoalService</div>
+            <p><code>app/Services/SalesGoalService.php</code></p>
+            <p>Calculo de progresso, projecao, ranking e recorrencia de metas de vendas.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>progress(SalesGoal)</code></td><td>Calcula progresso atual. Tipos: leads_won, revenue, leads_created, messages_sent, leads_contacted, tasks_completed. Retorna <code>{current, target, percentage, raw_pct, remaining, status}</code>.</td></tr>
+                    <tr><td><code>forecast(SalesGoal, ?array progress)</code></td><td>Projecao linear baseada no ritmo diario. Retorna <code>{projected_value, projected_percentage, pace, acceleration_needed, daily_rate, needed_daily_rate, remaining_days}</code>.</td></tr>
+                    <tr><td><code>teamProgress(SalesGoal parentGoal)</code></td><td>Progresso cascata: soma contribuicoes dos child goals (metas individuais de cada vendedor).</td></tr>
+                    <tr><td><code>achievedBonusTier(SalesGoal, float rawPct)</code></td><td>Verifica qual tier de bonus foi atingido (tiers configurados no goal).</td></tr>
+                    <tr><td><code>generateSnapshot(SalesGoal)</code></td><td>Salva snapshot historico (SalesGoalSnapshot) com target, achieved, percentage, periodo.</td></tr>
+                    <tr><td><code>renewRecurring(SalesGoal)</code></td><td>Cria novo goal para o proximo periodo. Aplica growth_rate (% de crescimento) no target. Suporta weekly/monthly/quarterly.</td></tr>
+                    <tr><td><code>ranking(int tenantId)</code></td><td>Ranking de vendedores por % media de metas no periodo atual, com streak.</td></tr>
+                    <tr><td><code>calculateStreak(int tenantId, int userId)</code></td><td>Calcula dias consecutivos com vendas (pula fins de semana). Max 60 dias lookback.</td></tr>
+                    <tr><td><code>userHistory(int tenantId, ?int userId, int months)</code></td><td>Historico de snapshots agrupados por mes. Retorna avg_pct, best/worst month, trend.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">UpsellEvaluator</div>
+            <p><code>app/Services/UpsellEvaluator.php</code></p>
+            <p>Avalia triggers de upsell comparando metricas do tenant com limites do plano. Dispara acoes (email, banner, notificacao) quando threshold e atingido.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>evaluate(Tenant)</code></td><td>Avalia todos os triggers ativos. Verifica plano, cooldown e threshold (absolute ou % do limite). Metricas: leads, users, pipelines, ai_agents, ai_tokens, chatbot_flows, automations. Retorna o trigger de maior prioridade ou null.</td></tr>
+                    <tr><td><code>fire(UpsellTrigger, Tenant, ?array metrics)</code></td><td>Executa acao do trigger: cria UpsellTriggerLog, envia email de upgrade se action_type = email ou all.</td></tr>
+                    <tr><td><code>evaluateAndFire(Tenant)</code></td><td>Ciclo completo: evaluate + fire. Retorna o trigger disparado ou null.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">ElevenLabsService</div>
+            <p><code>app/Services/ElevenLabsService.php</code></p>
+            <p>Client para API do ElevenLabs (text-to-speech). Usado para respostas de voz dos agentes IA no WhatsApp.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>isAvailable()</code></td><td>Verifica se a API key esta configurada.</td></tr>
+                    <tr><td><code>textToSpeech(string text, ?string voiceId)</code></td><td>Gera audio MP3 a partir de texto. Retorna path do arquivo temporario ou null. Modelo: eleven_multilingual_v2. Timeout: 30s.</td></tr>
+                    <tr><td><code>getVoices()</code></td><td>Lista vozes disponiveis na conta. Retorna array com voice_id, name, labels, preview_url, category.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">GoogleCalendarService</div>
+            <p><code>app/Services/GoogleCalendarService.php</code></p>
+            <p>CRUD completo de eventos no Google Calendar via API v3. Gerencia refresh de tokens OAuth automaticamente.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>listEvents(string timeMin, string timeMax)</code></td><td>Lista eventos no range. Max 250 resultados, ordenados por startTime. Normaliza datas para RFC3339 UTC.</td></tr>
+                    <tr><td><code>getEvent(string eventId)</code></td><td>Busca um unico evento pelo ID.</td></tr>
+                    <tr><td><code>createEvent(array data)</code></td><td>Cria evento com title, start, end, description, location, attendees. Envia convites por email se attendees presente.</td></tr>
+                    <tr><td><code>updateEvent(string eventId, array data)</code></td><td>Atualiza evento existente (PATCH parcial). Suporta attendees no update.</td></tr>
+                    <tr><td><code>deleteEvent(string eventId)</code></td><td>Exclui evento pelo ID.</td></tr>
+                    <tr><td><code>listCalendars()</code></td><td>Lista todas as agendas acessiveis (minAccessRole: writer). Retorna id, summary, primary, backgroundColor.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">FacebookAdsService / GoogleAdsService</div>
+            <table>
+                <thead><tr><th>Service</th><th>Arquivo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>FacebookAdsService</code></td><td>app/Services/FacebookAdsService.php</td><td>Sync de campanhas e insights do Facebook Ads</td></tr>
+                    <tr><td><code>GoogleAdsService</code></td><td>app/Services/GoogleAdsService.php</td><td>Sync de campanhas e ad spends do Google Ads</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">DuplicateLeadDetector</div>
+            <p><code>app/Services/DuplicateLeadDetector.php</code></p>
+            <p>Detecção fuzzy de leads duplicados por phone, email, nome. Score 0-100.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>detect(Lead)</code></td><td>Busca duplicatas potenciais comparando phone, email e nome com score fuzzy (0-100)</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">LeadMergeService</div>
+            <p><code>app/Services/LeadMergeService.php</code></p>
+            <p>Merge atômico de leads com migração de 21 relações. Transaction + lockForUpdate.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>merge(Lead primary, Lead secondary)</code></td><td>Merge atômico: migra 21 relações do secondary para o primary, arquiva secondary com status merged</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">SophiaActionExecutor</div>
+            <p><code>app/Services/SophiaActionExecutor.php</code></p>
+            <p>Executor de ações da Sophia com whitelist, rate limit, audit log.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>execute(string action, array params)</code></td><td>Executa ação da Sophia IA no CRM (criar scoring rules, sequências, pipelines, automações, tarefas, leads) com whitelist de ações permitidas, rate limiting e audit logging</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Jobs -->
+        <h2 id="jobs">Jobs (10)</h2>
+        <table>
+            <thead><tr><th>Job</th><th>Queue</th><th>Tries</th><th>Descricao</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><code>ProcessWahaWebhook</code></td>
+                    <td>sync (dispatchSync)</td>
+                    <td>3</td>
+                    <td>Processa webhooks WAHA: mensagens, reacoes, acks, status. Dedup via Redis. Cria/atualiza conversations, linka leads, dispara chatbot/AI.</td>
+                </tr>
+                <tr>
+                    <td><code>ProcessAiResponse</code></td>
+                    <td>ai</td>
+                    <td>1</td>
+                    <td>Gera resposta IA com debouncing por versao. Verifica quota de tokens. Roteia entre Agno e LLM direto. Aplica acoes (stage, tags, intent, transfer, calendar).</td>
+                </tr>
+                <tr>
+                    <td><code>ProcessChatbotStep</code></td>
+                    <td>sync (dispatchSync)</td>
+                    <td>-</td>
+                    <td>Executa steps do chatbot (message, input, condition, action, delay, end). Max 30 iteracoes. Delay entre mensagens.</td>
+                </tr>
+                <tr>
+                    <td><code>ProcessInstagramWebhook</code></td>
+                    <td>queued</td>
+                    <td>3</td>
+                    <td>Processa DMs e comentarios do Instagram. Cria conversations, linka leads, aplica automacoes.</td>
+                </tr>
+                <tr>
+                    <td><code>SyncCampaignsJob</code></td>
+                    <td>queued</td>
+                    <td>3</td>
+                    <td>Sync de campanhas Facebook/Google Ads. Timeout: 120s.</td>
+                </tr>
+                <tr>
+                    <td><code>AnalyzeConversation</code></td>
+                    <td>queued</td>
+                    <td>-</td>
+                    <td>Roda analise LLM em conversa e gera sugestoes do analista IA.</td>
+                </tr>
+                <tr>
+                    <td><code>ImportWhatsappHistory</code></td>
+                    <td>queued</td>
+                    <td>2</td>
+                    <td>Importa historico de conversas e mensagens via WAHA API. Timeout: 600s. Backoff: 60s. Cria WhatsappConversation + WhatsappMessage em batch.</td>
+                </tr>
+                <tr>
+                    <td><code>SummarizeConversation</code></td>
+                    <td>ai</td>
+                    <td>1</td>
+                    <td>Gera resumo de conversa WhatsApp via LLM (Agno ou direto). Timeout: 60s.</td>
+                </tr>
+                <tr>
+                    <td><code>GenerateCRMFromAI</code></td>
+                    <td>queued</td>
+                    <td>-</td>
+                    <td>Gera estrutura inicial de CRM via IA: pipelines, stages, scoring rules, automations, nurture sequences, quick messages, tags, lost sale reasons.</td>
+                </tr>
+                <tr>
+                    <td><code>SendNpsSurveyJob</code></td>
+                    <td>default</td>
+                    <td>-</td>
+                    <td>Envia pesquisa NPS via WhatsApp para um lead. Cria SurveyResponse e envia mensagem com link ou lista interativa.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Events -->
+        <h2 id="events">Broadcast Events (6)</h2>
+        <div class="info-box info">
+            <strong>Canal:</strong> Todos os events sao broadcast no canal privado <code>tenant.{tenantId}</code> via Laravel Reverb (WebSocket).
+        </div>
+        <table>
+            <thead><tr><th>Event</th><th>broadcastAs</th><th>Dados</th></tr></thead>
+            <tbody>
+                <tr><td><code>WhatsappMessageCreated</code></td><td>whatsapp.message</td><td>id, conversation_id, direction, type, body, media_url, ack, sent_at</td></tr>
+                <tr><td><code>InstagramMessageCreated</code></td><td>instagram.message</td><td>id, conversation_id, direction, type, body, media_url, sent_at</td></tr>
+                <tr><td><code>WhatsappConversationUpdated</code></td><td>whatsapp.conversation</td><td>id, phone, contact_name, status, unread_count, last_message_*</td></tr>
+                <tr><td><code>InstagramConversationUpdated</code></td><td>instagram.conversation</td><td>id, contact_name, status, unread_count, last_message_*, tags</td></tr>
+                <tr><td><code>AiIntentDetected</code></td><td>ai.intent</td><td>id, contact_name, phone, intent_type, context, conversation_id</td></tr>
+                <tr><td><code>MasterNotificationSent</code></td><td>master.notification</td><td>id, title, body, type</td></tr>
+            </tbody>
+        </table>
+
+        <!-- Artisan Commands -->
+        <h2 id="commands">Artisan Commands (18)</h2>
+        <div class="info-box info">
+            <strong>Schedule:</strong> Comandos agendados rodam via <code>schedule:run</code> no service <code>scheduler</code> do Docker Swarm a cada 60s.
+        </div>
+        <table>
+            <thead><tr><th>Comando</th><th>Frequencia</th><th>Descricao</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><code>campaigns:sync</code></td>
+                    <td>Manual / Hourly</td>
+                    <td>Sync de campanhas Facebook Ads e Google Ads para todos os tenants. Opcao <code>--platform=</code> para filtrar (facebook ou google).</td>
+                </tr>
+                <tr>
+                    <td><code>sales:backfill-won</code></td>
+                    <td>Manual</td>
+                    <td>Cria registros em <code>sales</code> para leads ja em etapas "ganhas" que nao possuem venda registrada. Util para migracao de dados.</td>
+                </tr>
+                <tr>
+                    <td><code>ai:followup</code></td>
+                    <td>A cada 10 min</td>
+                    <td>Envia mensagens de follow-up automatico para conversas com clientes silenciosos (configuraveis por agente IA).</td>
+                </tr>
+                <tr>
+                    <td><code>whatsapp:send-scheduled</code></td>
+                    <td>A cada minuto</td>
+                    <td>Envia mensagens WhatsApp agendadas cujo <code>send_at</code> ja passou. Com <code>withoutOverlapping()</code>.</td>
+                </tr>
+                <tr>
+                    <td><code>wa:sync-group-names</code></td>
+                    <td>Manual</td>
+                    <td>Busca e atualiza o nome dos grupos WhatsApp nas conversas existentes. Opcao <code>--all</code> para atualizar todos (mesmo os que ja tem nome).</td>
+                </tr>
+                <tr>
+                    <td><code>ai:analyze-conversations</code></td>
+                    <td>Manual</td>
+                    <td>Analisa conversas abertas com IA e gera sugestoes de acoes para os leads (stage, tags, notes, fields).</td>
+                </tr>
+                <tr>
+                    <td><code>automations:process-date-triggers</code></td>
+                    <td>Diario 08:00</td>
+                    <td>Dispara automacoes baseadas em datas (aniversarios, campos de data) diariamente.</td>
+                </tr>
+                <tr>
+                    <td><code>upsell:evaluate</code></td>
+                    <td>Manual</td>
+                    <td>Avalia triggers de upsell para todos os tenants ativos. Dispara emails/banners quando metricas atingem threshold.</td>
+                </tr>
+                <tr>
+                    <td><code>automations:process-recurring</code></td>
+                    <td>Hourly</td>
+                    <td>Processa automacoes recorrentes (agendamentos semanais/mensais). Com <code>withoutOverlapping()</code>.</td>
+                </tr>
+                <tr>
+                    <td><code>billing:check-trials</code></td>
+                    <td>Diario 06:00</td>
+                    <td>Verifica trials prestes a expirar e expira os vencidos. Envia emails de aviso e suspende tenants.</td>
+                </tr>
+                <tr>
+                    <td><code>scoring:decay</code></td>
+                    <td>Diario 09:00</td>
+                    <td>Aplica decay de score para leads inativos. Regras: 3 dias sem resposta ou 7 dias parado na mesma etapa.</td>
+                </tr>
+                <tr>
+                    <td><code>sequences:process</code></td>
+                    <td>A cada minuto</td>
+                    <td>Processa steps devidos de nurture sequences. Envia mensagens, executa acoes, avanca steps. Com <code>withoutOverlapping()</code>. Tambem resume sequencias pausadas.</td>
+                </tr>
+                <tr>
+                    <td><code>master:weekly-report</code></td>
+                    <td>Semanal (sex 12:00)</td>
+                    <td>Envia relatorio semanal da plataforma no grupo WhatsApp do master via MasterWhatsappNotifier.</td>
+                </tr>
+                <tr>
+                    <td><code>goals:process-recurrence</code></td>
+                    <td>Diario 00:05</td>
+                    <td>Faz snapshot de metas expiradas e renova metas recorrentes para o proximo periodo (com growth_rate aplicado).</td>
+                </tr>
+                <tr>
+                    <td><code>goals:check-alerts</code></td>
+                    <td>Diario 09:00</td>
+                    <td>Envia alertas para gestores sobre metas em risco de nao serem batidas.</td>
+                </tr>
+                <tr>
+                    <td><code>partners:release-commissions</code></td>
+                    <td>Diario 06:30</td>
+                    <td>Libera comissoes de parceiros que passaram o periodo de carencia.</td>
+                </tr>
+                <tr>
+                    <td><code>whatsapp:send-event-reminders</code></td>
+                    <td>A cada minuto</td>
+                    <td>Envia lembretes de eventos via WhatsApp cujo <code>send_at</code> ja passou. Com <code>withoutOverlapping()</code>.</td>
+                </tr>
+                <tr>
+                    <td><code>wa:import-history</code></td>
+                    <td>Manual</td>
+                    <td>Importa historico de conversas e mensagens do WhatsApp via WAHA. Opcao <code>--limit=100</code> para maximo de mensagens por chat.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Notifications -->
+        <h2 id="notifications">Notifications (11)</h2>
+        <div class="info-box info">
+            <strong>Arquitetura:</strong> Todas as notificacoes extendem <code>BaseNotification</code> (abstract). Canais: <code>database</code> (sempre), <code>broadcast</code> (se preferencia browser), <code>WebPush</code> (se preferencia push + subscricao ativa). Despacho centralizado via <code>NotificationDispatcher</code> que respeita quiet hours e preferencias do usuario.
+        </div>
+
+        <div class="card">
+            <div class="card-header">BaseNotification (abstract)</div>
+            <p><code>app/Notifications/BaseNotification.php</code></p>
+            <p>Classe base abstrata para todas as notificacoes. Define logica compartilhada de canais, formatacao e WebPush.</p>
+            <table>
+                <thead><tr><th>Metodo</th><th>Descricao</th></tr></thead>
+                <tbody>
+                    <tr><td><code>via(notifiable)</code></td><td>Resolve canais: database + broadcast (se <code>wantsNotification(type, 'browser')</code>) + WebPush (se <code>wantsNotification(type, 'push')</code> e tem subscricao).</td></tr>
+                    <tr><td><code>toArray(notifiable)</code></td><td>Formato database: notification_type, title, body, url, icon.</td></tr>
+                    <tr><td><code>toBroadcast(notifiable)</code></td><td>Formato broadcast (Reverb): notification_type, title, body, url.</td></tr>
+                    <tr><td><code>toWebPush(notifiable)</code></td><td>Formato WebPush: title, body, icon, badge, data.url, tag.</td></tr>
+                    <tr><td><code>broadcastType()</code></td><td>Retorna <code>notification.{notificationType}</code> para o canal Reverb.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <table>
+            <thead><tr><th>Notification</th><th>Type Key</th><th>Parametros</th><th>Descricao</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><code>NewLeadNotification</code></td>
+                    <td><code>new_lead</code></td>
+                    <td>leadName, ?url</td>
+                    <td>Notifica criacao de novo lead.</td>
+                </tr>
+                <tr>
+                    <td><code>LeadAssignedNotification</code></td>
+                    <td><code>lead_assigned</code></td>
+                    <td>leadName, assignedBy, ?url</td>
+                    <td>Notifica que um lead foi atribuido ao usuario.</td>
+                </tr>
+                <tr>
+                    <td><code>WhatsappMessageNotification</code></td>
+                    <td><code>whatsapp_message</code></td>
+                    <td>contactName, messagePreview, ?url</td>
+                    <td>Nova mensagem WhatsApp recebida. Preview truncado em 120 chars.</td>
+                </tr>
+                <tr>
+                    <td><code>WhatsappConversationAssignedNotification</code></td>
+                    <td><code>whatsapp_assigned</code></td>
+                    <td>contactName, assignedBy, ?url</td>
+                    <td>Conversa WhatsApp atribuida ao usuario.</td>
+                </tr>
+                <tr>
+                    <td><code>AiIntentNotification</code></td>
+                    <td><code>ai_intent</code></td>
+                    <td>contactName, intentType, ?url</td>
+                    <td>Sinal de intencao detectado pela IA (compra, agendamento, etc.).</td>
+                </tr>
+                <tr>
+                    <td><code>CampaignCompletedNotification</code></td>
+                    <td><code>campaign_completed</code></td>
+                    <td>campaignName, ?url</td>
+                    <td>Campanha de marketing foi concluida.</td>
+                </tr>
+                <tr>
+                    <td><code>LeadStageChangedNotification</code></td>
+                    <td><code>lead_stage_changed</code></td>
+                    <td>leadName, newStageName, ?url</td>
+                    <td>Lead avancou para uma nova etapa do funil.</td>
+                </tr>
+                <tr>
+                    <td><code>GoalAlertNotification</code></td>
+                    <td><code>goal_alert</code></td>
+                    <td>title, body, ?url</td>
+                    <td>Alerta sobre performance de metas (em risco, atingida, etc.). URL default: <code>/metas</code>.</td>
+                </tr>
+                <tr>
+                    <td><code>PartnerNotification</code></td>
+                    <td><code>partner_alert</code></td>
+                    <td>title, body, ?url</td>
+                    <td>Notificacoes para agencias parceiras (aprovacao, comissao, etc.). URL default: <code>/parceiro</code>.</td>
+                </tr>
+                <tr>
+                    <td><code>SystemNotification</code></td>
+                    <td><code>master_notification</code></td>
+                    <td>title, body, ?url</td>
+                    <td>Notificacao generica do sistema/master (anuncios, manutencao, etc.).</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Processing Flows -->
+        <h2 id="flows">Fluxos de Processamento</h2>
+
+        <h3>WhatsApp Inbound Message</h3>
+        <div class="flow-diagram">
+<span class="box">WAHA</span> <span class="arrow">──POST──&gt;</span> <span class="box">WhatsappWebhookController</span>
+   <span class="arrow">│</span>
+   <span class="arrow">├──</span> Dedup: Cache::add("waha:processing:{msgId}", 1, 10)
+   <span class="arrow">│</span>
+   <span class="arrow">└──&gt;</span> <span class="box">ProcessWahaWebhook::dispatchSync()</span>
+         <span class="arrow">│</span>
+         <span class="arrow">├──</span> Encontra/cria WhatsappConversation
+         <span class="arrow">├──</span> Salva WhatsappMessage (UNIQUE waha_message_id)
+         <span class="arrow">├──</span> Encontra/cria Lead se pipeline.auto_create_from_whatsapp
+         <span class="arrow">├──</span> Broadcast: WhatsappMessageCreated + WhatsappConversationUpdated
+         <span class="arrow">├──</span> AutomationEngine::run('message_received')
+         <span class="arrow">├──</span> LeadScoringService::evaluate('message_received')
+         <span class="arrow">│</span>
+         <span class="arrow">├──</span> Se chatbot_flow_id ativo:
+         <span class="arrow">│</span>     <span class="arrow">└──&gt;</span> <span class="box">ProcessChatbotStep::dispatchSync()</span>
+         <span class="arrow">│</span>
+         <span class="arrow">└──</span> Se ai_agent_id ativo:
+               <span class="arrow">└──&gt;</span> <span class="box">ProcessAiResponse::dispatch()</span> (queued, com debounce)
+        </div>
+
+        <h3>Website Widget Message</h3>
+        <div class="flow-diagram">
+<span class="box">Widget JS</span> <span class="arrow">──POST──&gt;</span> <span class="box">WebsiteWidgetController::message()</span>
+   <span class="arrow">│</span>
+   <span class="arrow">└──&gt;</span> <span class="box">WebsiteChatService::processMessage()</span>
+         <span class="arrow">│</span>
+         <span class="arrow">├──</span> resolveInput() — processa resposta do visitor
+         <span class="arrow">├──</span> executeFromCursor() — executa steps do fluxo
+         <span class="arrow">│</span>     <span class="arrow">├──</span> message → adiciona ao replies[]
+         <span class="arrow">│</span>     <span class="arrow">├──</span> input → para e pede resposta
+         <span class="arrow">│</span>     <span class="arrow">├──</span> condition → avalia e segue branch
+         <span class="arrow">│</span>     <span class="arrow">└──</span> action → create_lead, change_stage, etc.
+         <span class="arrow">├──</span> persistState() — salva cursor + vars no DB
+         <span class="arrow">└──</span> return {replies, buttons, input_type}
+        </div>
+
+        <h3>AI Agent Response</h3>
+        <div class="flow-diagram">
+<span class="box">ProcessAiResponse</span> (queued job)
+   <span class="arrow">│</span>
+   <span class="arrow">├──</span> Debounce: verifica versao (ignora se outdated)
+   <span class="arrow">├──</span> checkTokenQuota() — soma base + incrementos do mes
+   <span class="arrow">│</span>
+   <span class="arrow">├──</span> Se agent.use_agno:
+   <span class="arrow">│</span>     <span class="arrow">└──&gt;</span> <span class="box">AgnoService::chat()</span> — resposta + acoes
+   <span class="arrow">│</span>
+   <span class="arrow">└──</span> Senao: chamada direta ao LLM (OpenAI/Anthropic)
+         <span class="arrow">│</span>
+         <span class="arrow">├──</span> Aplica acoes: setStage, addTags, notifyIntent, transfer, calendar
+         <span class="arrow">├──</span> splitIntoMessages() — divide resposta longa
+         <span class="arrow">├──</span> sendWhatsappReplies() — envia sequencialmente
+         <span class="arrow">└──</span> Log token usage em AiUsageLog
+        </div>
+
+        <h3>Nurture Sequence Flow</h3>
+        <div class="flow-diagram">
+<span class="box">sequences:process</span> (a cada minuto)
+   <span class="arrow">│</span>
+   <span class="arrow">├──</span> Busca LeadSequences com status=active e next_step_at &lt;= now()
+   <span class="arrow">│</span>
+   <span class="arrow">└──&gt;</span> <span class="box">NurtureSequenceService::processStep()</span>
+         <span class="arrow">│</span>
+         <span class="arrow">├──</span> Verifica exit conditions (lead respondeu? humano enviou msg?)
+         <span class="arrow">├──</span> Verifica IA/Chatbot ativo → pausa se sim
+         <span class="arrow">├──</span> Verifica opted_out → exit se sim
+         <span class="arrow">│</span>
+         <span class="arrow">├──</span> Executa step:
+         <span class="arrow">│</span>     <span class="arrow">├──</span> message → cria ScheduledMessage
+         <span class="arrow">│</span>     <span class="arrow">├──</span> action → move_stage, add_tag, assign_user
+         <span class="arrow">│</span>     <span class="arrow">├──</span> wait_reply → aguarda timeout
+         <span class="arrow">│</span>     <span class="arrow">└──</span> condition → avalia e pode pular para step_if_false
+         <span class="arrow">│</span>
+         <span class="arrow">└──</span> advanceToNextStep() ou markCompleted()
+        </div>
+
+        <h3>Sales Goal Lifecycle</h3>
+        <div class="flow-diagram">
+<span class="box">goals:process-recurrence</span> (diario 00:05)
+   <span class="arrow">│</span>
+   <span class="arrow">├──</span> Busca goals expirados (end_date &lt; today)
+   <span class="arrow">│</span>     <span class="arrow">├──</span> generateSnapshot() — salva historico
+   <span class="arrow">│</span>     <span class="arrow">└──</span> Se is_recurring → renewRecurring() (aplica growth_rate)
+   <span class="arrow">│</span>
+<span class="box">goals:check-alerts</span> (diario 09:00)
+   <span class="arrow">│</span>
+   <span class="arrow">├──</span> Calcula progress() e forecast() para cada goal ativo
+   <span class="arrow">└──</span> Se pace=behind ou acceleration_needed &gt; 50% → GoalAlertNotification
+        </div>
+    </div>
+    <script src="assets/nav.js"></script>
+</body>
+</html>

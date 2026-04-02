@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syncro — Documentação</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <div class="main">
+        <h1 class="page-title">Syncro</h1>
+        <p class="page-subtitle">Plataforma SaaS multi-tenant de CRM, automação e comunicação omnichannel</p>
+
+        <!-- Stats -->
+        <div class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin-bottom: 32px;">
+            <div class="stat-card">
+                <div class="stat-number">~89</div>
+                <div class="stat-label">Models</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">~55</div>
+                <div class="stat-label">Controllers</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">36+</div>
+                <div class="stat-label">Services</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">250+</div>
+                <div class="stat-label">Rotas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">99+</div>
+                <div class="stat-label">Migrations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">8</div>
+                <div class="stat-label">Middleware</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">10+</div>
+                <div class="stat-label">Integrações</div>
+            </div>
+        </div>
+
+        <!-- Novidades Recentes -->
+        <h2>Novidades Recentes</h2>
+        <div class="card-grid">
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">Partner Portal</h3>
+                <p>Portal completo com ranks, comissões, saques PIX, cursos e certificados para agências parceiras.</p>
+            </div>
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">Products &amp; Catalog</h3>
+                <p>Catálogo de produtos com categorias, mídia, vinculação a leads e itens de venda.</p>
+            </div>
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">Tasks &amp; Stage Requirements</h3>
+                <p>Tarefas com tipos (ligar, email, reunião) e atividades obrigatórias por etapa do funil.</p>
+            </div>
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">Lead Scoring</h3>
+                <p>Pontuação de leads com regras configuráveis, decay automático e cooldown.</p>
+            </div>
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">Nurture Sequences</h3>
+                <p>Sequências de nutrição automatizadas com delays e condições de saída.</p>
+            </div>
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">NPS Surveys</h3>
+                <p>Pesquisas NPS/CSAT via WhatsApp com link público e tracking de respostas.</p>
+            </div>
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">Sales Goals</h3>
+                <p>Metas individuais e de equipe com recorrência, snapshots e forecasting.</p>
+            </div>
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">React Flow Builder</h3>
+                <p>Editor visual de chatbot com nós por canal (WhatsApp/Instagram/Website).</p>
+            </div>
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">Event Reminders</h3>
+                <p>Lembretes automáticos via WhatsApp para eventos do Google Calendar.</p>
+            </div>
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">Instagram Reels</h3>
+                <p>Automações de Instagram com suporte a Reels e chatbot por comentário em publicação.</p>
+            </div>
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">Two-Factor Auth</h3>
+                <p>Autenticação em dois fatores com TOTP e backup codes.</p>
+            </div>
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">WhatsApp Buttons</h3>
+                <p>Botões flutuantes para websites com rastreamento UTM e analytics de clicks.</p>
+            </div>
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">Lead Merge &amp; Duplicate Detection</h3>
+                <p>Detecção automática de duplicatas com score fuzzy (phone/email/name), fila de revisão, merge atômico de 21 relações.</p>
+            </div>
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">Sophia AI Assistant com Actions</h3>
+                <p>Assistente IA interna que executa ações no CRM (criar scoring rules, sequências, pipelines, automações, tarefas, leads).</p>
+            </div>
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">i18n Overhaul</h3>
+                <p>150+ strings traduzidas em 15+ páginas (pt_BR + en).</p>
+            </div>
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">pgvector Memory Fix</h3>
+                <p>Corrigido bug de parsing no psycopg3 que quebrava busca de memórias.</p>
+            </div>
+            <div class="card" style="padding: 16px 20px;">
+                <h3 style="margin-top:0; font-size:14px;">AI Media Sending Fix</h3>
+                <p>Agentes IA agora enviam imagens configuradas corretamente.</p>
+            </div>
+        </div>
+
+        <!-- Stack -->
+        <div class="card">
+            <div class="card-header">Stack Tecnológico</div>
+            <table>
+                <tbody>
+                    <tr><td style="width:140px;font-weight:600;">Backend</td><td>Laravel 11, PHP 8.2/8.3</td></tr>
+                    <tr><td style="font-weight:600;">Banco de Dados</td><td>MySQL 8 (local WAMP / Docker prod)</td></tr>
+                    <tr><td style="font-weight:600;">Frontend</td><td>AdminLTE 4.0, Bootstrap 5, jQuery, Chart.js, Toastr, DataTables</td></tr>
+                    <tr><td style="font-weight:600;">Build</td><td>Vite 6.x, React (chatbot builder only)</td></tr>
+                    <tr><td style="font-weight:600;">Real-time</td><td>Laravel Reverb (WebSocket)</td></tr>
+                    <tr><td style="font-weight:600;">WhatsApp</td><td>WAHA Plus (GOWS engine)</td></tr>
+                    <tr><td style="font-weight:600;">Pagamentos</td><td>Asaas (PIX, boleto) + Stripe (internacional)</td></tr>
+                    <tr><td style="font-weight:600;">Deploy</td><td>Docker Swarm, Traefik SSL, Portainer</td></tr>
+                    <tr><td style="font-weight:600;">Domínio</td><td>app.syncro.chat</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Middlewares -->
+        <h2>Middlewares</h2>
+        <table>
+            <thead>
+                <tr><th>Alias</th><th>Classe</th><th>Descrição</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><code>tenant</code></td><td>EnsureTenant</td><td>Verifica que o usuário pertence a um tenant ativo</td></tr>
+                <tr><td><code>super_admin</code></td><td>EnsureSuperAdmin</td><td>Restringe acesso ao painel master (super_admin only)</td></tr>
+                <tr><td><code>api_key</code></td><td>VerifyApiKey</td><td>Valida API key para rotas da API v1</td></tr>
+                <tr><td><code>role</code></td><td>RoleMiddleware</td><td>Verifica role do usuário (<code>role:admin,manager</code>). Super admins sempre passam.</td></tr>
+                <tr><td><code>track_last_seen</code></td><td>TrackLastSeen</td><td>Atualiza <code>last_seen_at</code> do usuário</td></tr>
+                <tr><td><code>check_trial</code></td><td>CheckTrialExpired</td><td>Bloqueia acesso se trial expirado e sem assinatura</td></tr>
+                <tr><td><code>plan.limit</code></td><td>CheckPlanLimit</td><td>Verifica quota do plano (leads, usuários, pipelines, etc.)</td></tr>
+                <tr><td><code>agno_internal</code></td><td>AgnoInternalMiddleware</td><td>Valida X-Agno-Token para chamadas internas do microsserviço IA</td></tr>
+            </tbody>
+        </table>
+
+        <!-- Roles -->
+        <h2>Roles</h2>
+        <table>
+            <thead>
+                <tr><th>Role</th><th>Descrição</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="badge badge-red">super_admin</span></td><td>Acesso total ao painel master e todas as funcionalidades. Gerencia tenants, planos e configurações globais.</td></tr>
+                <tr><td><span class="badge badge-primary">admin</span></td><td>Administrador do tenant. Acesso completo dentro do próprio tenant: configurações, usuários, integrações.</td></tr>
+                <tr><td><span class="badge badge-green">manager</span></td><td>Gestor. Acesso a CRM, conversas, relatórios e operações do dia-a-dia. Sem acesso a configurações avançadas.</td></tr>
+                <tr><td><span class="badge">viewer</span></td><td>Somente visualização. Pode ver dados mas não criar, editar ou excluir registros.</td></tr>
+            </tbody>
+        </table>
+
+        <!-- Navigation cards -->
+        <h2>Documentação</h2>
+        <div class="card-grid">
+            <a href="architecture.html" class="card-link">
+                <h3>&#9881; Arquitetura</h3>
+                <p>Estrutura do projeto, multi-tenancy, middlewares, fluxo de requests</p>
+            </a>
+            <a href="models.html" class="card-link">
+                <h3>&#9830; Models</h3>
+                <p>~89 models, relações, traits BelongsToTenant, casts e scopes</p>
+            </a>
+            <a href="controllers.html" class="card-link">
+                <h3>&#9654; Controllers</h3>
+                <p>~55 controllers organizados por namespace: Tenant, Master, API, Auth</p>
+            </a>
+            <a href="services.html" class="card-link">
+                <h3>&#9881; Services & Jobs</h3>
+                <p>36 services, 10 jobs, 18 commands, 6 events, 11 notifications</p>
+            </a>
+            <a href="routes.html" class="card-link">
+                <h3>&#8644; Rotas</h3>
+                <p>Mapa completo de rotas web, API e channels com middlewares</p>
+            </a>
+            <a href="frontend.html" class="card-link">
+                <h3>&#9635; Frontend</h3>
+                <p>Views Blade, layouts, assets JS/CSS, widget público, identidade visual</p>
+            </a>
+            <a href="integrations.html" class="card-link">
+                <h3>&#9889; Integrações</h3>
+                <p>WhatsApp WAHA, Instagram, Asaas, OAuth, AI Agents, Chatbot</p>
+            </a>
+            <a href="database.html" class="card-link">
+                <h3>&#9707; Banco de Dados</h3>
+                <p>Schema completo, migrations, seeders, convenções de banco</p>
+            </a>
+            <a href="deployment.html" class="card-link">
+                <h3>&#9729; Deploy</h3>
+                <p>Docker Swarm, Portainer, Traefik, CI/CD, variáveis de ambiente</p>
+            </a>
+            <a href="llm-reference.html" class="card-link" style="border-color: var(--primary);">
+                <h3>&#9733; LLM Reference</h3>
+                <p>Referência rápida para LLMs: padrões, gotchas, convenções, quick-ref</p>
+            </a>
+        </div>
+
+        <!-- Quick info -->
+        <h2>Usuários de Teste</h2>
+        <table>
+            <thead>
+                <tr><th>Email</th><th>Senha</th><th>Role</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><code>admin@plataforma360.com</code></td><td><code>password</code></td><td><span class="badge badge-red">super_admin</span></td></tr>
+                <tr><td><code>admin@demo.com</code></td><td><code>password</code></td><td><span class="badge badge-primary">admin (tenant: demo)</span></td></tr>
+                <tr><td><code>gestor@demo.com</code></td><td><code>password</code></td><td><span class="badge badge-green">manager (tenant: demo)</span></td></tr>
+            </tbody>
+        </table>
+
+        <h2>URLs</h2>
+        <table>
+            <tbody>
+                <tr><td style="width:140px;font-weight:600;">Local</td><td><code>http://localhost/crm/public</code></td></tr>
+                <tr><td style="font-weight:600;">Produção</td><td><code>https://app.syncro.chat</code></td></tr>
+                <tr><td style="font-weight:600;">PHP (WAMP)</td><td><code>C:\wamp64\bin\php\php8.2.26\php.exe</code></td></tr>
+                <tr><td style="font-weight:600;">Composer</td><td><code>C:\ProgramData\ComposerSetup\bin\composer.phar</code></td></tr>
+            </tbody>
+        </table>
+    </div>
+    <script src="assets/nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syncro Docs — Rotas</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <div class="main">
+        <h1 class="page-title">Rotas</h1>
+        <p class="page-subtitle">Mapa completo de rotas web, API e channels</p>
+
+        <!-- Role Middleware Info -->
+        <div class="info-box info">
+            <strong>Sistema de permissoes por role:</strong> Rotas de escrita (POST/PUT/DELETE) sao protegidas pelo middleware <code>role</code>.
+            Existem tres niveis de acesso:<br><br>
+            <span class="badge badge-red">admin</span> — Apenas administradores. Usado em configuracoes (pipelines, tags, integracoes, automacoes, chatbot, IA, cobranca, API keys, departamentos, usuarios, campos extras, Instagram automations).<br>
+            <span class="badge badge-yellow">admin+manager</span> — Administradores e gestores. Usado em operacoes CRM (leads CRUD, calendario, chat escrita, campanhas, importacao, movimentacao de etapas).<br>
+            <span class="badge badge-green">all roles</span> — Qualquer usuario autenticado. Usado em rotas GET/leitura e perfil pessoal.<br><br>
+            Rotas publicas (auth, webhooks, widget) nao possuem restricao de role.
+        </div>
+
+        <div class="table-filter">
+            <input type="text" data-table="routesTable" placeholder="Filtrar rotas...">
+        </div>
+
+        <!-- Auth Routes -->
+        <h2 id="auth">Autenticacao (publico)</h2>
+        <table id="routesTable">
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Middleware</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/login</td><td>AuthController@showLogin</td><td>login</td><td>guest</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/login</td><td>AuthController@login</td><td>login.post</td><td>guest</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/register</td><td>AuthController@showRegister</td><td>register</td><td>guest</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/register</td><td>AuthController@register</td><td>register.post</td><td>guest, throttle:register</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/cadastro-agencia</td><td>AgencyRegisterController@show</td><td>agency.register</td><td>guest</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/cadastro-agencia</td><td>AgencyRegisterController@store</td><td>agency.register.store</td><td>guest, throttle:register</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/forgot-password</td><td>AuthController@showForgotPassword</td><td>password.request</td><td>guest</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/forgot-password</td><td>AuthController@sendResetLink</td><td>password.email</td><td>guest, throttle:password-reset</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/reset-password/{token}</td><td>AuthController@showResetPassword</td><td>password.reset</td><td>guest</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/reset-password</td><td>AuthController@resetPassword</td><td>password.update</td><td>guest</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/verify-email/{token}</td><td>AuthController@verifyEmail</td><td>verify.email</td><td>—</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/cadastro-pendente</td><td>Closure (view)</td><td>register.pending</td><td>—</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/logout</td><td>AuthController@logout</td><td>logout</td><td>auth</td></tr>
+            </tbody>
+        </table>
+
+        <!-- Account Block Pages -->
+        <h2 id="account">Conta Bloqueada <span class="badge badge-primary">auth</span></h2>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Middleware</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/conta/suspensa</td><td>View (tenant.account.suspended)</td><td>account.suspended</td><td>auth</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/conta/trial-expirado</td><td>View (tenant.account.trial-expired)</td><td>trial.expired</td><td>auth</td></tr>
+            </tbody>
+        </table>
+
+        <!-- Public Pages -->
+        <h2 id="public">Paginas Publicas</h2>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Middleware</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/politica-de-privacidade</td><td>View (public.privacy)</td><td>privacy</td><td>—</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/termos-de-uso</td><td>View (public.terms)</td><td>terms</td><td>—</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/chat/{tenantSlug}/{botSlug}</td><td>WebsiteWidgetController@hostedPage</td><td>chatbot.hosted</td><td>—</td></tr>
+            </tbody>
+        </table>
+
+        <!-- Tenant Routes -->
+        <h2 id="tenant">Painel Tenant <span class="badge badge-primary">auth + tenant</span></h2>
+
+        <h3>Onboarding</h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/onboarding</td><td>OnboardingController@show</td><td>onboarding.show</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/onboarding/complete</td><td>OnboardingController@complete</td><td>onboarding.complete</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/onboarding/skip</td><td>OnboardingController@skip</td><td>onboarding.skip</td><td><span class="badge badge-green">all roles</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Dashboard</h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/</td><td>DashboardController@index</td><td>dashboard</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/inicio</td><td>DashboardController@index</td><td>inicio</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/dashboard/config</td><td>DashboardController@saveConfig</td><td>dashboard.config</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/dashboard/leads-chart</td><td>DashboardController@leadsChart</td><td>dashboard.leads-chart</td><td><span class="badge badge-green">all roles</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Cobranca / Checkout</h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/cobranca/checkout</td><td>BillingController@showCheckout</td><td>billing.checkout</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/cobranca/assinar</td><td>BillingController@subscribe</td><td>billing.subscribe</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/cobranca/cancelar</td><td>BillingController@cancel</td><td>billing.cancel</td><td><span class="badge badge-red">admin</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Upsell Banner</h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/upsell/{log}/dismiss</td><td>UpsellBannerController@dismiss</td><td>upsell.dismiss</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/upsell/{log}/click</td><td>UpsellBannerController@click</td><td>upsell.click</td><td><span class="badge badge-green">all roles</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Agenda (Calendario) <span class="badge badge-yellow">admin+manager (escrita)</span></h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/agenda</td><td>CalendarController@index</td><td>calendar.index</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/agenda/eventos</td><td>CalendarController@events</td><td>calendar.events</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/agenda/eventos</td><td>CalendarController@store</td><td>calendar.store</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/agenda/eventos/{id}</td><td>CalendarController@update</td><td>calendar.update</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/agenda/eventos/{id}</td><td>CalendarController@destroy</td><td>calendar.destroy</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Agencia Parceira</h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/agencia/acessar/{tenant}</td><td>AgencyAccessController@enter</td><td>agency.access.enter</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/agencia/sair</td><td>AgencyAccessController@exit</td><td>agency.access.exit</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/agencia/meus-clientes</td><td>AgencyAccessController@clients</td><td>agency.clients</td><td><span class="badge badge-green">all roles</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>CRM Kanban <span class="badge badge-yellow">admin+manager (escrita)</span></h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/crm</td><td>KanbanController@index</td><td>crm.kanban</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/crm/poll</td><td>KanbanController@poll</td><td>crm.poll</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/crm/exportar</td><td>KanbanController@export</td><td>crm.export</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/crm/template</td><td>KanbanController@template</td><td>crm.template</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/crm/importar/preview</td><td>KanbanController@preview</td><td>crm.import.preview</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/crm/importar</td><td>KanbanController@import</td><td>crm.import</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/crm/lead/{lead}/stage</td><td>KanbanController@updateStage</td><td>crm.lead.stage</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Leads / Contatos <span class="badge badge-yellow">admin+manager (escrita)</span></h3>
+        <div class="info-box warning">
+            <strong>Ordem importa:</strong> Rotas <code>/contatos/exportar</code> e <code>/contatos/importar</code> devem vir ANTES de <code>/contatos/{lead}</code> (wildcard).
+        </div>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/contatos/exportar</td><td>LeadController@export</td><td>leads.export</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/contatos</td><td>LeadController@index</td><td>leads.index</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/contatos/{lead}</td><td>LeadController@show</td><td>leads.show</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/contatos/{lead}/perfil</td><td>LeadController@showPage</td><td>leads.profile</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/contatos/importar</td><td>LeadController@import</td><td>leads.import</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/contatos/custom-fields/upload</td><td>LeadController@uploadCustomFieldFile</td><td>leads.cf-upload</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/contatos</td><td>LeadController@store</td><td>leads.store</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/contatos/{lead}</td><td>LeadController@update</td><td>leads.update</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/kanban/leads/{lead}</td><td>LeadController@removeFromPipeline</td><td>leads.kanban-remove</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/contatos/{lead}</td><td>LeadController@destroy</td><td>leads.destroy</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/contatos/{lead}/notas</td><td>LeadController@addNote</td><td>leads.notes.store</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/contatos/{lead}/notas/{note}</td><td>LeadController@deleteNote</td><td>leads.notes.destroy</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/contatos/{lead}/anexos</td><td>LeadController@uploadAttachment</td><td>leads.attachments.store</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/contatos/{lead}/anexos/{attachment}</td><td>LeadController@deleteAttachment</td><td>leads.attachments.destroy</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Lead Merge &amp; Duplicatas <span class="badge badge-yellow">admin+manager (escrita)</span></h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/contatos/duplicatas</td><td>LeadMergeController@duplicates</td><td>leads.duplicates</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/contatos/duplicatas/data</td><td>LeadMergeController@duplicatesData</td><td>leads.duplicates.data</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/contatos/{primary}/merge/{secondary}</td><td>LeadMergeController@merge</td><td>leads.merge</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/contatos/duplicatas/{duplicate}/ignorar</td><td>LeadMergeController@ignore</td><td>leads.duplicates.ignore</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/contatos/detectar-duplicatas</td><td>LeadMergeController@detect</td><td>leads.duplicates.detect</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/contatos/{primary}/merge/{secondary}/preview</td><td>LeadMergeController@preview</td><td>leads.merge.preview</td><td><span class="badge badge-green">all roles</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Sophia AI Assistant</h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/help-chat/execute</td><td>HelpChatController@execute</td><td>help-chat.execute</td><td><span class="badge badge-green">all roles</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Mensagens Agendadas <span class="badge badge-yellow">admin+manager (escrita)</span></h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/contatos/{lead}/mensagens-agendadas</td><td>ScheduledMessageController@index</td><td>leads.scheduled.index</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/contatos/{lead}/mensagens-agendadas</td><td>ScheduledMessageController@store</td><td>leads.scheduled.store</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/contatos/{lead}/mensagens-agendadas/{scheduled}</td><td>ScheduledMessageController@destroy</td><td>leads.scheduled.destroy</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Relatorios</h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/relatorios</td><td>ReportController@index</td><td>reports.index</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/relatorios/pdf</td><td>ReportController@exportPdf</td><td>reports.pdf</td><td><span class="badge badge-green">all roles</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Campanhas <span class="badge badge-yellow">admin+manager (escrita)</span></h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/campanhas</td><td>CampaignController@index</td><td>campaigns.index</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/campanhas/relatorios</td><td>CampaignController@reports</td><td>campaigns.reports</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/campanhas/relatorios/pdf</td><td>CampaignController@exportReportPdf</td><td>campaigns.reports.pdf</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/campanhas/drill-down</td><td>CampaignController@drillDown</td><td>campaigns.drill-down</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/campanhas/analytics</td><td>CampaignController@analytics</td><td>campaigns.analytics</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/campanhas</td><td>CampaignController@store</td><td>campaigns.store</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/campanhas/{campaign}</td><td>CampaignController@update</td><td>campaigns.update</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/campanhas/{campaign}</td><td>CampaignController@destroy</td><td>campaigns.destroy</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Chats (Inbox Multi-Canal) <span class="badge badge-yellow">admin+manager (escrita)</span></h3>
+        <div class="info-box info">
+            <strong>Multi-canal:</strong> O inbox unificado suporta conversas WhatsApp, Instagram DM e Website Widget. Cada canal tem rotas de leitura e escrita separadas.
+        </div>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <!-- Leitura -->
+                <tr><td><span class="badge badge-green">GET</span></td><td>/chats</td><td>WhatsappController@index</td><td>chats.index</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/chats/poll</td><td>WhatsappController@poll</td><td>chats.poll</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/chats/conversations/{conversation}</td><td>WhatsappController@show</td><td>chats.conversations.show</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/chats/conversations/{conversation}/read</td><td>WhatsappController@markRead</td><td>chats.conversations.read</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/chats/instagram-conversations/{conversation}</td><td>WhatsappController@showInstagram</td><td>chats.ig-conversations.show</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/chats/instagram-conversations/{conversation}/read</td><td>WhatsappController@markReadInstagram</td><td>chats.ig-conversations.read</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/chats/leads/search</td><td>WhatsappController@searchLeads</td><td>chats.leads.search</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/chats/website-conversations/{websiteConversation}</td><td>WhatsappController@showWebsite</td><td>chats.website-conversations.show</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/chats/website-conversations/{websiteConversation}/read</td><td>WhatsappController@markReadWebsite</td><td>chats.website-conversations.read</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/chats/{conversation}/analyst-suggestions</td><td>AiAnalystController@index</td><td>chats.analyst.index</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/chats/quick-messages</td><td>QuickMessageController@index</td><td>chats.quick-messages.index</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <!-- Escrita WhatsApp -->
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chats/conversations/{conversation}/assign</td><td>WhatsappController@assign</td><td>chats.conversations.assign</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chats/conversations/{conversation}/status</td><td>WhatsappController@updateStatus</td><td>chats.conversations.status</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chats/conversations/{conversation}/lead</td><td>WhatsappController@updateLead</td><td>chats.conversations.lead</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chats/conversations/{conversation}/link-lead</td><td>WhatsappController@linkLead</td><td>chats.conversations.link-lead</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chats/conversations/{conversation}/unlink-lead</td><td>WhatsappController@unlinkLead</td><td>chats.conversations.unlink-lead</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chats/conversations/{conversation}/contact</td><td>WhatsappController@updateContact</td><td>chats.conversations.contact</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/chats/conversations/{conversation}/messages</td><td>WhatsappMessageController@store</td><td>chats.messages.store</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/chats/conversations/{conversation}/react</td><td>WhatsappMessageController@react</td><td>chats.messages.react</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chats/conversations/{conversation}/ai-agent</td><td>WhatsappController@assignAiAgent</td><td>chats.conversations.ai-agent</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chats/conversations/{conversation}/chatbot-flow</td><td>WhatsappController@assignChatbotFlow</td><td>chats.conversations.chatbot-flow</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chats/conversations/{conversation}/department</td><td>WhatsappController@assignDepartment</td><td>chats.conversations.department</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/chats/conversations/{conversation}</td><td>WhatsappController@destroy</td><td>chats.conversations.destroy</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <!-- Escrita Instagram -->
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/chats/instagram-conversations/{conversation}/messages</td><td>WhatsappController@sendInstagramMessage</td><td>chats.ig-conversations.messages</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/chats/instagram-conversations/{conversation}</td><td>WhatsappController@destroyInstagram</td><td>chats.ig-conversations.destroy</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chats/instagram-conversations/{conversation}/link-lead</td><td>WhatsappController@linkLeadInstagram</td><td>chats.ig-conversations.link-lead</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chats/instagram-conversations/{conversation}/unlink-lead</td><td>WhatsappController@unlinkLeadInstagram</td><td>chats.ig-conversations.unlink-lead</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <!-- Escrita Website -->
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chats/website-conversations/{websiteConversation}/status</td><td>WhatsappController@updateStatusWebsite</td><td>chats.website-conversations.status</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chats/website-conversations/{websiteConversation}/link-lead</td><td>WhatsappController@linkLeadWebsite</td><td>chats.website-conversations.link-lead</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chats/website-conversations/{websiteConversation}/unlink-lead</td><td>WhatsappController@unlinkLeadWebsite</td><td>chats.website-conversations.unlink-lead</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/chats/website-conversations/{websiteConversation}</td><td>WhatsappController@destroyWebsite</td><td>chats.website-conversations.destroy</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <!-- AI Analyst acoes -->
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/chats/{conversation}/analyst-suggestions/approve-all</td><td>AiAnalystController@approveAll</td><td>chats.analyst.approve-all</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/chats/{conversation}/analyze</td><td>AiAnalystController@trigger</td><td>chats.analyst.trigger</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <!-- Quick Messages escrita -->
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/chats/quick-messages</td><td>QuickMessageController@store</td><td>chats.quick-messages.store</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chats/quick-messages/{qm}</td><td>QuickMessageController@update</td><td>chats.quick-messages.update</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/chats/quick-messages/{qm}</td><td>QuickMessageController@destroy</td><td>chats.quick-messages.destroy</td><td><span class="badge badge-yellow">admin+manager</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>AI Analyst — Acoes Globais</h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/analyst-suggestions/{suggestion}/approve</td><td>AiAnalystController@approve</td><td>analyst.approve</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/analyst-suggestions/{suggestion}/reject</td><td>AiAnalystController@reject</td><td>analyst.reject</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/analyst-suggestions/pending-count</td><td>AiAnalystController@pendingCount</td><td>analyst.pending-count</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/notificacoes/master</td><td>MasterNotificationReadController@index</td><td>master-notifications.index</td><td><span class="badge badge-green">all roles</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Chatbot Builder <span class="badge badge-red">admin (escrita)</span></h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/chatbot/fluxos/pipelines</td><td>ChatbotFlowController@getPipelines</td><td>chatbot.flows.pipelines</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/chatbot/fluxos</td><td>ChatbotFlowController@index</td><td>chatbot.flows.index</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/chatbot/fluxos/onboarding</td><td>ChatbotFlowController@onboarding</td><td>chatbot.flows.onboarding</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/chatbot/fluxos/{flow}/resultados</td><td>ChatbotFlowController@results</td><td>chatbot.flows.results</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/chatbot/fluxos/criar</td><td>ChatbotFlowController@create</td><td>chatbot.flows.create</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/chatbot/fluxos</td><td>ChatbotFlowController@store</td><td>chatbot.flows.store</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/chatbot/fluxos/{flow}/editar</td><td>ChatbotFlowController@edit</td><td>chatbot.flows.edit</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chatbot/fluxos/{flow}</td><td>ChatbotFlowController@update</td><td>chatbot.flows.update</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/chatbot/fluxos/{flow}</td><td>ChatbotFlowController@destroy</td><td>chatbot.flows.destroy</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/chatbot/fluxos/upload-image</td><td>ChatbotFlowController@uploadImage</td><td>chatbot.flows.upload-image</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/chatbot/fluxos/{flow}/toggle</td><td>ChatbotFlowController@toggle</td><td>chatbot.flows.toggle</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/chatbot/fluxos/{flow}/graph</td><td>ChatbotFlowController@saveGraph</td><td>chatbot.flows.graph</td><td><span class="badge badge-red">admin</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Instagram Automacoes <span class="badge badge-red">admin (escrita)</span></h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/instagram-automacoes/posts</td><td>InstagramAutomationController@posts</td><td>settings.ig-automations.posts</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/instagram-automacoes</td><td>InstagramAutomationController@index</td><td>settings.ig-automations.index</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/instagram-automacoes</td><td>InstagramAutomationController@store</td><td>settings.ig-automations.store</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/configuracoes/instagram-automacoes/{automation}</td><td>InstagramAutomationController@update</td><td>settings.ig-automations.update</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/configuracoes/instagram-automacoes/{automation}</td><td>InstagramAutomationController@destroy</td><td>settings.ig-automations.destroy</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PATCH</span></td><td>/configuracoes/instagram-automacoes/{automation}/toggle</td><td>InstagramAutomationController@toggleActive</td><td>settings.ig-automations.toggle</td><td><span class="badge badge-red">admin</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Configuracoes — Leitura <span class="badge badge-green">all roles</span></h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/pipelines</td><td>PipelineController@index</td><td>settings.pipelines</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/motivos-perda</td><td>LostSaleReasonController@index</td><td>settings.lost-reasons</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/tags</td><td>WhatsappTagController@index</td><td>settings.tags</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/cobranca</td><td>BillingController@index</td><td>settings.billing</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/departamentos</td><td>DepartmentController@index</td><td>settings.departments</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/automacoes</td><td>AutomationController@index</td><td>settings.automations</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/campos-extras</td><td>CustomFieldController@index</td><td>settings.custom-fields</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/api-keys</td><td>ApiKeyController@index</td><td>settings.api-keys</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/usuarios</td><td>UserController@index</td><td>settings.users</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/integracoes</td><td>IntegrationController@index</td><td>settings.integrations.index</td><td><span class="badge badge-green">all roles</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Configuracoes — Perfil (proprio) <span class="badge badge-green">all roles</span></h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/perfil</td><td>ProfileController@index</td><td>settings.profile</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/configuracoes/perfil</td><td>ProfileController@update</td><td>settings.profile.update</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/configuracoes/perfil/senha</td><td>ProfileController@updatePassword</td><td>settings.profile.password</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/perfil/avatar</td><td>ProfileController@updateAvatar</td><td>settings.profile.avatar</td><td><span class="badge badge-green">all roles</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Configuracoes — Escrita <span class="badge badge-red">admin</span></h3>
+        <div class="info-box danger">
+            <strong>Admin only:</strong> Todas as operacoes de escrita em configuracoes exigem role <code>admin</code>. Managers e attendants recebem 403.
+        </div>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <!-- Pipelines + Stages -->
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/pipelines</td><td>PipelineController@store</td><td>settings.pipelines.store</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/configuracoes/pipelines/{pipeline}</td><td>PipelineController@update</td><td>settings.pipelines.update</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/configuracoes/pipelines/{pipeline}</td><td>PipelineController@destroy</td><td>settings.pipelines.destroy</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/pipelines/{pipeline}/stages/reorder</td><td>PipelineController@reorderStages</td><td>settings.pipelines.stages.reorder</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/pipelines/{pipeline}/stages</td><td>PipelineController@storeStage</td><td>settings.pipelines.stages.store</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/configuracoes/pipelines/{pipeline}/stages/{stage}</td><td>PipelineController@updateStage</td><td>settings.pipelines.stages.update</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/configuracoes/pipelines/{pipeline}/stages/{stage}</td><td>PipelineController@destroyStage</td><td>settings.pipelines.stages.destroy</td><td><span class="badge badge-red">admin</span></td></tr>
+                <!-- Motivos de Perda -->
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/motivos-perda</td><td>LostSaleReasonController@store</td><td>settings.lost-reasons.store</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/configuracoes/motivos-perda/{reason}</td><td>LostSaleReasonController@update</td><td>settings.lost-reasons.update</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/configuracoes/motivos-perda/{reason}</td><td>LostSaleReasonController@destroy</td><td>settings.lost-reasons.destroy</td><td><span class="badge badge-red">admin</span></td></tr>
+                <!-- API Keys -->
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/api-keys</td><td>ApiKeyController@store</td><td>settings.api-keys.store</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/configuracoes/api-keys/{apiKey}</td><td>ApiKeyController@destroy</td><td>settings.api-keys.destroy</td><td><span class="badge badge-red">admin</span></td></tr>
+                <!-- Tags -->
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/tags</td><td>WhatsappTagController@store</td><td>settings.tags.store</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/configuracoes/tags/{tag}</td><td>WhatsappTagController@update</td><td>settings.tags.update</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/configuracoes/tags/{tag}</td><td>WhatsappTagController@destroy</td><td>settings.tags.destroy</td><td><span class="badge badge-red">admin</span></td></tr>
+                <!-- Tokens -->
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/tokens/comprar</td><td>TokenIncrementController@purchase</td><td>settings.tokens.purchase</td><td><span class="badge badge-red">admin</span></td></tr>
+                <!-- Workspace Logo -->
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/workspace/logo</td><td>ProfileController@uploadWorkspaceLogo</td><td>settings.workspace.logo</td><td><span class="badge badge-red">admin</span></td></tr>
+                <!-- Agencia Parceira Link -->
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/agencia-parceira</td><td>AgencyAccessController@linkCode</td><td>settings.agency.link</td><td><span class="badge badge-red">admin</span></td></tr>
+                <!-- Usuarios -->
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/usuarios</td><td>UserController@store</td><td>settings.users.store</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/configuracoes/usuarios/{user}</td><td>UserController@update</td><td>settings.users.update</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/configuracoes/usuarios/{user}</td><td>UserController@destroy</td><td>settings.users.destroy</td><td><span class="badge badge-red">admin</span></td></tr>
+                <!-- Campos Personalizados -->
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/campos-extras</td><td>CustomFieldController@store</td><td>settings.custom-fields.store</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/configuracoes/campos-extras/{field}</td><td>CustomFieldController@update</td><td>settings.custom-fields.update</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/configuracoes/campos-extras/{field}</td><td>CustomFieldController@destroy</td><td>settings.custom-fields.destroy</td><td><span class="badge badge-red">admin</span></td></tr>
+                <!-- Departamentos -->
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/departamentos</td><td>DepartmentController@store</td><td>settings.departments.store</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/configuracoes/departamentos/{department}</td><td>DepartmentController@update</td><td>settings.departments.update</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/configuracoes/departamentos/{department}</td><td>DepartmentController@destroy</td><td>settings.departments.destroy</td><td><span class="badge badge-red">admin</span></td></tr>
+                <!-- Automacoes -->
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/automacoes/criar</td><td>AutomationController@create</td><td>settings.automations.create</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/automacoes/{automation}/editar</td><td>AutomationController@edit</td><td>settings.automations.edit</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/automacoes</td><td>AutomationController@store</td><td>settings.automations.store</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/configuracoes/automacoes/{automation}</td><td>AutomationController@update</td><td>settings.automations.update</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/configuracoes/automacoes/{automation}</td><td>AutomationController@destroy</td><td>settings.automations.destroy</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PATCH</span></td><td>/configuracoes/automacoes/{automation}/toggle</td><td>AutomationController@toggle</td><td>settings.automations.toggle</td><td><span class="badge badge-red">admin</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Configuracoes — Integracoes <span class="badge badge-red">admin (escrita)</span></h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/integracoes/facebook/redirect</td><td>IntegrationController@redirectFacebook</td><td>settings.integrations.facebook.redirect</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/integracoes/facebook/callback</td><td>IntegrationController@callbackFacebook</td><td>settings.integrations.facebook.callback</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/integracoes/google/redirect</td><td>IntegrationController@redirectGoogle</td><td>settings.integrations.google.redirect</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/integracoes/google/callback</td><td>IntegrationController@callbackGoogle</td><td>settings.integrations.google.callback</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/integracoes/whatsapp/connect</td><td>IntegrationController@connectWhatsapp</td><td>settings.integrations.whatsapp.connect</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/integracoes/whatsapp/{instance}/qr</td><td>IntegrationController@getWhatsappQr</td><td>settings.integrations.whatsapp.qr</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/integracoes/whatsapp/{instance}/import</td><td>IntegrationController@importHistoryWhatsapp</td><td>settings.integrations.whatsapp.import</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/configuracoes/integracoes/whatsapp/{instance}</td><td>IntegrationController@updateWhatsappInstance</td><td>settings.integrations.whatsapp.update</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/configuracoes/integracoes/whatsapp/{instance}/disconnect</td><td>IntegrationController@disconnectWhatsapp</td><td>settings.integrations.whatsapp.disconnect</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/configuracoes/integracoes/whatsapp/{instance}</td><td>IntegrationController@deleteWhatsappInstance</td><td>settings.integrations.whatsapp.delete</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/integracoes/instagram/redirect</td><td>IntegrationController@redirectInstagram</td><td>settings.integrations.instagram.redirect</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/configuracoes/integracoes/instagram/callback</td><td>IntegrationController@callbackInstagram</td><td>settings.integrations.instagram.callback</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/configuracoes/integracoes/instagram</td><td>IntegrationController@disconnectInstagram</td><td>settings.integrations.instagram.disconnect</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/configuracoes/integracoes/{platform}</td><td>IntegrationController@disconnect</td><td>settings.integrations.disconnect</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/configuracoes/integracoes/{platform}/sync</td><td>IntegrationController@syncNow</td><td>settings.integrations.sync</td><td><span class="badge badge-red">admin</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Sinais de Intencao IA</h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/ia/sinais</td><td>AiIntentSignalController@list</td><td>ai.intent-signals.list</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/ia/sinais/{signal}/lida</td><td>AiIntentSignalController@markRead</td><td>ai.intent-signals.read</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/ia/sinais/marcar-todas</td><td>AiIntentSignalController@markAllRead</td><td>ai.intent-signals.read-all</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/ia/sinais/nao-lidas/contagem</td><td>AiIntentSignalController@unreadCount</td><td>ai.intent-signals.unread-count</td><td><span class="badge badge-green">all roles</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Agentes de IA <span class="badge badge-red">admin (escrita)</span></h3>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/ia/agentes</td><td>AiAgentController@index</td><td>ai.agents.index</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/ia/agentes/onboarding</td><td>AiAgentController@onboarding</td><td>ai.agents.onboarding</td><td><span class="badge badge-green">all roles</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/ia/agentes/criar</td><td>AiAgentController@create</td><td>ai.agents.create</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/ia/agentes</td><td>AiAgentController@store</td><td>ai.agents.store</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/ia/agentes/{agent}/editar</td><td>AiAgentController@edit</td><td>ai.agents.edit</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/ia/agentes/{agent}</td><td>AiAgentController@update</td><td>ai.agents.update</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/ia/agentes/{agent}</td><td>AiAgentController@destroy</td><td>ai.agents.destroy</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/ia/agentes/{agent}/toggle</td><td>AiAgentController@toggleActive</td><td>ai.agents.toggle</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/ia/agentes/{agent}/test-chat</td><td>AiAgentController@testChat</td><td>ai.agents.test-chat</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/ia/agentes/{agent}/knowledge-files</td><td>AiAgentController@uploadKnowledgeFile</td><td>ai.agents.knowledge-files.store</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/ia/agentes/{agent}/knowledge-files/{file}</td><td>AiAgentController@deleteKnowledgeFile</td><td>ai.agents.knowledge-files.destroy</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/ia/agentes/{agent}/media</td><td>AiAgentController@uploadMedia</td><td>ai.agents.media.store</td><td><span class="badge badge-red">admin</span></td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/ia/agentes/{agent}/media/{media}</td><td>AiAgentController@deleteMedia</td><td>ai.agents.media.destroy</td><td><span class="badge badge-red">admin</span></td></tr>
+            </tbody>
+        </table>
+
+        <!-- Master Routes -->
+        <h2 id="master">Master (Super Admin) <span class="badge badge-red">auth + super_admin</span></h2>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Name</th><th>Middleware</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/master</td><td>MasterDashboardController@index</td><td>master.dashboard</td><td>super_admin</td></tr>
+                <!-- Empresas -->
+                <tr><td><span class="badge badge-green">GET</span></td><td>/master/empresas</td><td>MasterTenantController@index</td><td>master.tenants</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/master/empresas</td><td>MasterTenantController@store</td><td>master.tenants.store</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/master/empresas/{tenant}</td><td>MasterTenantController@show</td><td>master.tenants.show</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/master/empresas/{tenant}</td><td>MasterTenantController@update</td><td>master.tenants.update</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/master/empresas/{tenant}</td><td>MasterTenantController@destroy</td><td>master.tenants.destroy</td><td>super_admin</td></tr>
+                <!-- Usuarios por tenant -->
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/master/empresas/{tenant}/usuarios</td><td>MasterUserController@store</td><td>master.tenants.users.store</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/master/empresas/{tenant}/usuarios/{user}</td><td>MasterUserController@update</td><td>master.tenants.users.update</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/master/empresas/{tenant}/usuarios/{user}</td><td>MasterUserController@destroy</td><td>master.tenants.users.destroy</td><td>super_admin</td></tr>
+                <!-- Planos -->
+                <tr><td><span class="badge badge-green">GET</span></td><td>/master/planos</td><td>MasterPlanController@index</td><td>master.plans</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/master/planos</td><td>MasterPlanController@store</td><td>master.plans.store</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/master/planos/{plan}</td><td>MasterPlanController@update</td><td>master.plans.update</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/master/planos/{plan}</td><td>MasterPlanController@destroy</td><td>master.plans.destroy</td><td>super_admin</td></tr>
+                <!-- Codigos de agencia -->
+                <tr><td><span class="badge badge-green">GET</span></td><td>/master/codigos-agencia</td><td>MasterPartnerAgencyCodeController@index</td><td>master.agency-codes.index</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/master/codigos-agencia</td><td>MasterPartnerAgencyCodeController@store</td><td>master.agency-codes.store</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/master/codigos-agencia/gerar</td><td>MasterPartnerAgencyCodeController@generate</td><td>master.agency-codes.generate</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/master/codigos-agencia/{partnerAgencyCode}</td><td>MasterPartnerAgencyCodeController@update</td><td>master.agency-codes.update</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/master/codigos-agencia/{partnerAgencyCode}</td><td>MasterPartnerAgencyCodeController@destroy</td><td>master.agency-codes.destroy</td><td>super_admin</td></tr>
+                <!-- Token Incrementos -->
+                <tr><td><span class="badge badge-green">GET</span></td><td>/master/token-incrementos</td><td>MasterTokenIncrementPlanController@index</td><td>master.token-increments</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/master/token-incrementos</td><td>MasterTokenIncrementPlanController@store</td><td>master.token-increments.store</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/master/token-incrementos/{tokenIncrementPlan}</td><td>MasterTokenIncrementPlanController@update</td><td>master.token-increments.update</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/master/token-incrementos/{tokenIncrementPlan}</td><td>MasterTokenIncrementPlanController@destroy</td><td>master.token-increments.destroy</td><td>super_admin</td></tr>
+                <!-- Upsell -->
+                <tr><td><span class="badge badge-green">GET</span></td><td>/master/upsell</td><td>MasterUpsellTriggerController@index</td><td>master.upsell</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/master/upsell</td><td>MasterUpsellTriggerController@store</td><td>master.upsell.store</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/master/upsell/{trigger}</td><td>MasterUpsellTriggerController@update</td><td>master.upsell.update</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/master/upsell/{trigger}</td><td>MasterUpsellTriggerController@destroy</td><td>master.upsell.destroy</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/master/upsell/{trigger}/logs</td><td>MasterUpsellTriggerController@logs</td><td>master.upsell.logs</td><td>super_admin</td></tr>
+                <!-- Uso -->
+                <tr><td><span class="badge badge-green">GET</span></td><td>/master/uso</td><td>MasterUsageController@index</td><td>master.usage</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/master/uso/{tenant}</td><td>MasterUsageController@show</td><td>master.usage.show</td><td>super_admin</td></tr>
+                <!-- Logs -->
+                <tr><td><span class="badge badge-green">GET</span></td><td>/master/logs</td><td>MasterLogController@index</td><td>master.logs</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/master/logs/content</td><td>MasterLogController@content</td><td>master.logs.content</td><td>super_admin</td></tr>
+                <!-- Sistema -->
+                <tr><td><span class="badge badge-green">GET</span></td><td>/master/sistema</td><td>MasterSystemController@index</td><td>master.system</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/master/sistema/stats</td><td>MasterSystemController@stats</td><td>master.system.stats</td><td>super_admin</td></tr>
+                <!-- Notificacoes -->
+                <tr><td><span class="badge badge-green">GET</span></td><td>/master/notificacoes</td><td>MasterNotificationController@index</td><td>master.notifications</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/master/notificacoes</td><td>MasterNotificationController@store</td><td>master.notifications.store</td><td>super_admin</td></tr>
+                <!-- Ferramentas -->
+                <tr><td><span class="badge badge-green">GET</span></td><td>/master/ferramentas</td><td>MasterToolboxController@index</td><td>master.toolbox</td><td>super_admin</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/master/ferramentas/{tool}</td><td>MasterToolboxController@run</td><td>master.toolbox.run</td><td>super_admin</td></tr>
+            </tbody>
+        </table>
+
+        <!-- API Routes -->
+        <h2 id="api">API v1 <span class="badge badge-yellow">X-API-Key</span></h2>
+        <div class="info-box info">
+            <strong>Autenticacao:</strong> Todas as rotas v1 exigem header <code>X-API-Key: crm_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</code>. Rate limit: <code>throttle:api</code>.
+        </div>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Descricao</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/api/v1/leads</td><td>Api\LeadController@store</td><td>Criar lead com custom fields e UTM</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/api/v1/leads/{lead}</td><td>Api\LeadController@show</td><td>Detalhes do lead</td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/api/v1/leads/{lead}/stage</td><td>Api\LeadController@stage</td><td>Mover lead de etapa</td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/api/v1/leads/{lead}/won</td><td>Api\LeadController@won</td><td>Marcar como ganho</td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/api/v1/leads/{lead}/lost</td><td>Api\LeadController@lost</td><td>Marcar como perdido</td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/api/v1/leads/{lead}</td><td>Api\LeadController@destroy</td><td>Deletar lead</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/api/v1/pipelines</td><td>Api\PipelineController@index</td><td>Listar pipelines + stages</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/api/v1/campaigns</td><td>Api\CampaignController@index</td><td>Listar campanhas</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/api/v1/campaigns</td><td>Api\CampaignController@store</td><td>Criar campanha</td></tr>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/api/v1/campaigns/{campaign}</td><td>Api\CampaignController@update</td><td>Atualizar campanha</td></tr>
+                <tr><td><span class="badge badge-red">DELETE</span></td><td>/api/v1/campaigns/{campaign}</td><td>Api\CampaignController@destroy</td><td>Deletar campanha</td></tr>
+            </tbody>
+        </table>
+
+        <!-- Internal Agno Routes -->
+        <h2 id="agno">API Interna Agno <span class="badge badge-yellow">X-Agno-Token</span></h2>
+        <div class="info-box warning">
+            <strong>Uso interno:</strong> Estas rotas sao chamadas exclusivamente pelo agente Agno IA. Autenticadas via middleware <code>agno_internal</code>.
+        </div>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Controller</th><th>Descricao</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-yellow">PUT</span></td><td>/api/internal/agno/leads/{leadId}/stage</td><td>AgnoToolsController@setStage</td><td>Mover lead de etapa (via IA)</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/api/internal/agno/leads/{leadId}/tags</td><td>AgnoToolsController@addTag</td><td>Adicionar tag ao lead (via IA)</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/api/internal/agno/conversations/{convId}/notify-intent</td><td>AgnoToolsController@notifyIntent</td><td>Notificar intencao detectada</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/api/internal/agno/conversations/{convId}/transfer</td><td>AgnoToolsController@transferToHuman</td><td>Transferir conversa para humano</td></tr>
+            </tbody>
+        </table>
+
+        <!-- Widget Routes -->
+        <h2 id="widget">Widget (publico)</h2>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Descricao</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/api/widget/{token}.js</td><td>Script JS do widget (injetado via &lt;script&gt;)</td></tr>
+                <tr><td><span class="badge badge-green">GET</span>/<span class="badge badge-primary">POST</span></td><td>/api/widget/{token}/init</td><td>Inicializa conversa (ou retoma por visitor_id)</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/api/widget/{token}/message</td><td>Envia mensagem do visitante</td></tr>
+            </tbody>
+        </table>
+
+        <!-- Webhook Routes -->
+        <h2 id="webhooks">Webhooks (publico)</h2>
+        <table>
+            <thead><tr><th>Metodo</th><th>URI</th><th>Descricao</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/api/webhook/waha</td><td>WhatsApp WAHA webhooks</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/api/webhook/asaas</td><td>Asaas payment webhooks</td></tr>
+                <tr><td><span class="badge badge-green">GET</span></td><td>/api/webhook/instagram</td><td>Meta verification challenge</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/api/webhook/instagram</td><td>Instagram DM/comment webhooks</td></tr>
+                <tr><td><span class="badge badge-primary">POST</span></td><td>/webhook/whatsapp</td><td>WAHA webhook (web routes, sem middleware)</td></tr>
+            </tbody>
+        </table>
+
+        <!-- Channels -->
+        <h2 id="channels">WebSocket Channels</h2>
+        <pre><code><span class="cm">// routes/channels.php</span>
+Broadcast::channel(<span class="str">'tenant.{tenantId}'</span>, <span class="kw">function</span>($user, $tenantId) {
+    <span class="kw">return</span> $user->tenant_id == $tenantId || $user->isSuperAdmin();
+});</code></pre>
+    </div>
+    <script src="assets/nav.js"></script>
+</body>
+</html>

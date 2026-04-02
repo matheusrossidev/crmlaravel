@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syncro Docs — Integrações</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <div class="main">
+        <h1 class="page-title">Integrações</h1>
+        <p class="page-subtitle">WhatsApp, Instagram, Asaas, OAuth, AI Agents e Chatbot</p>
+
+        <!-- Role-based Access -->
+        <h2 id="role-access">Controle de Acesso por Role</h2>
+        <div class="card">
+            <div class="card-header">Permissões por Integração</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ação</th>
+                        <th>Admin</th>
+                        <th>Manager</th>
+                        <th>Viewer</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Conectar/desconectar instâncias WhatsApp</td>
+                        <td><span class="badge badge-green">Sim</span></td>
+                        <td><span class="badge badge-red">Não</span></td>
+                        <td><span class="badge badge-red">Não</span></td>
+                    </tr>
+                    <tr>
+                        <td>Enviar mensagens WhatsApp/Instagram</td>
+                        <td><span class="badge badge-green">Sim</span></td>
+                        <td><span class="badge badge-green">Sim</span></td>
+                        <td><span class="badge badge-red">Não</span></td>
+                    </tr>
+                    <tr>
+                        <td>Atribuir conversas (assign)</td>
+                        <td><span class="badge badge-green">Sim</span></td>
+                        <td><span class="badge badge-green">Sim</span></td>
+                        <td><span class="badge badge-red">Não</span></td>
+                    </tr>
+                    <tr>
+                        <td>Visualizar conversas (filtradas por departamento)</td>
+                        <td><span class="badge badge-green">Todas</span></td>
+                        <td><span class="badge badge-yellow">Dept</span></td>
+                        <td><span class="badge badge-yellow">Dept</span></td>
+                    </tr>
+                    <tr>
+                        <td>Gerenciar automações Instagram</td>
+                        <td><span class="badge badge-green">Sim</span></td>
+                        <td><span class="badge badge-red">Não</span></td>
+                        <td><span class="badge badge-red">Não</span></td>
+                    </tr>
+                    <tr>
+                        <td>Gerenciar billing/assinaturas (Asaas)</td>
+                        <td><span class="badge badge-green">Sim</span></td>
+                        <td><span class="badge badge-red">Não</span></td>
+                        <td><span class="badge badge-red">Não</span></td>
+                    </tr>
+                    <tr>
+                        <td>Visualizar integrações (somente leitura)</td>
+                        <td><span class="badge badge-green">Sim</span></td>
+                        <td><span class="badge badge-green">Sim</span></td>
+                        <td><span class="badge badge-green">Sim</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="info-box info">
+            <strong>Departamento filtering:</strong> Manager e Viewer veem apenas conversas do(s) seu(s) departamento(s), conversas sem departamento, ou conversas atribuídas diretamente a eles. Admin vê todas as conversas sem restrição.
+        </div>
+
+        <!-- WhatsApp -->
+        <h2 id="whatsapp">WhatsApp (WAHA)</h2>
+        <div class="card">
+            <div class="card-header">Visão Geral</div>
+            <p>Integração via <strong>WAHA Plus</strong> (WhatsApp HTTP API) com engine <strong>GOWS</strong>.</p>
+            <table>
+                <tbody>
+                    <tr><td style="width:140px;font-weight:600;">Service</td><td><code>WahaService</code> — client HTTP para API WAHA</td></tr>
+                    <tr><td style="font-weight:600;">Webhook</td><td><code>POST /api/webhook/waha</code> → <code>WhatsappWebhookController</code></td></tr>
+                    <tr><td style="font-weight:600;">Job</td><td><code>ProcessWahaWebhook</code> (dispatchSync — síncrono)</td></tr>
+                    <tr><td style="font-weight:600;">Dedup</td><td><code>Cache::add("waha:processing:{msgId}", 1, 10)</code> — atômico Redis</td></tr>
+                    <tr><td style="font-weight:600;">Unique</td><td><code>whatsapp_messages.waha_message_id</code> UNIQUE constraint</td></tr>
+                    <tr><td style="font-weight:600;">Log</td><td><code>storage/logs/whatsapp-YYYY-MM-DD.log</code></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Múltiplas Instâncias por Tenant</h3>
+        <div class="card">
+            <div class="card-header">Multi-Instance</div>
+            <p>Cada tenant pode ter <strong>múltiplas instâncias WhatsApp</strong> conectadas simultaneamente. A listagem carrega todas as instâncias via <code>WhatsappInstance::orderBy('id')->get()</code> e considera o sistema como conectado se <strong>qualquer</strong> instância estiver com status <code>connected</code>.</p>
+            <ul>
+                <li>Cada conversa (<code>WhatsappConversation</code>) possui referência à instância via <code>instance:id,label,phone_number</code></li>
+                <li>Instâncias podem ter labels distintos para identificação (ex: "Vendas", "Suporte")</li>
+                <li><code>allInstances.count()</code> é passado à view para exibição de indicadores</li>
+                <li>Somente <strong>admin</strong> pode conectar ou desconectar instâncias</li>
+            </ul>
+        </div>
+
+        <h3>Filtragem por Departamento</h3>
+        <div class="info-box warning">
+            <strong>Lógica de filtragem (WhatsappController):</strong> Se o usuário <strong>não é admin</strong> (<code>!$authUser->isAdmin()</code>), as conversas são filtradas para exibir apenas: (1) conversas cujo <code>department_id</code> pertence aos departamentos do usuário, (2) conversas sem departamento (<code>department_id IS NULL</code>), ou (3) conversas atribuídas diretamente ao usuário (<code>assigned_user_id</code>).
+        </div>
+        <pre><code><span class="cm">// WhatsappController@index — filtragem por departamento</span>
+<span class="kw">$restrictByDept</span> = !<span class="kw">$authUser</span>-><span class="fn">isAdmin</span>();
+<span class="kw">$userDeptIds</span> = <span class="kw">$restrictByDept</span>
+    ? <span class="kw">$authUser</span>-><span class="fn">departments</span>()-><span class="fn">pluck</span>(<span class="str">'departments.id'</span>)
+    : <span class="fn">collect</span>();
+
+<span class="kw">if</span> (<span class="kw">$restrictByDept</span>) {
+    <span class="kw">$waQuery</span>-><span class="fn">where</span>(<span class="kw">function</span> (<span class="kw">$q</span>) <span class="kw">use</span> (<span class="kw">$authUser</span>, <span class="kw">$userDeptIds</span>) {
+        <span class="kw">$q</span>-><span class="fn">whereIn</span>(<span class="str">'department_id'</span>, <span class="kw">$userDeptIds</span>)
+          -><span class="fn">orWhereNull</span>(<span class="str">'department_id'</span>)
+          -><span class="fn">orWhere</span>(<span class="str">'assigned_user_id'</span>, <span class="kw">$authUser</span>->id);
+    });
+}</code></pre>
+
+        <h3>Fluxo de Mensagem Inbound</h3>
+        <div class="flow-diagram">
+<span class="box">WAHA</span> envia <span class="box">message</span> E <span class="box">message.any</span> (race condition!)
+   <span class="arrow">│</span>
+   <span class="arrow">├──</span> Dedup Redis: só o primeiro processa
+   <span class="arrow">├──</span> Encontra WhatsappInstance por session_name/phone
+   <span class="arrow">├──</span> Cria/atualiza WhatsappConversation
+   <span class="arrow">├──</span> Salva WhatsappMessage
+   <span class="arrow">├──</span> Resolve telefone/nome do contato
+   <span class="arrow">│</span>     <span class="arrow">├──</span> @c.us → extrai phone do JID
+   <span class="arrow">│</span>     <span class="arrow">└──</span> @lid → getContactInfo() via WAHA API
+   <span class="arrow">├──</span> Auto-create Lead se pipeline configurado
+   <span class="arrow">├──</span> Broadcast eventos WebSocket
+   <span class="arrow">├──</span> AutomationEngine::run('message_received')
+   <span class="arrow">│</span>
+   <span class="arrow">├──</span> Se chatbot ativo → ProcessChatbotStep
+   <span class="arrow">└──</span> Se AI agent ativo → ProcessAiResponse (queued)
+        </div>
+
+        <div class="info-box warning">
+            <strong>LID (Linked ID):</strong> WAHA GOWS engine pode enviar contatos com <code>@lid</code> em vez de <code>@c.us</code>. O sistema usa <code>WahaService::getContactInfo()</code> para resolver o telefone real.
+        </div>
+
+        <h3>Envio de Mensagens</h3>
+        <p>Via <code>WhatsappMessageController@store</code> → <code>WahaService::sendText/sendImage/sendFile</code></p>
+        <ul>
+            <li>Suporta: texto, imagem, áudio, documento, reação (emoji)</li>
+            <li>Resolve @lid vs @c.us para envio</li>
+            <li>Mensagens fromMe: verificação de duplicata pelo waha_message_id</li>
+            <li><strong>Viewer não pode enviar mensagens</strong> — restrição aplicada na UI e no controller</li>
+        </ul>
+
+        <!-- Instagram -->
+        <h2 id="instagram">Instagram</h2>
+        <div class="card">
+            <div class="card-header">Visão Geral</div>
+            <table>
+                <tbody>
+                    <tr><td style="width:140px;font-weight:600;">OAuth</td><td>Facebook Login → Instagram Business Account</td></tr>
+                    <tr><td style="font-weight:600;">Service</td><td><code>InstagramService</code> — Graph API client</td></tr>
+                    <tr><td style="font-weight:600;">Webhook</td><td><code>/api/webhook/instagram</code> → verification + message handling</td></tr>
+                    <tr><td style="font-weight:600;">Job</td><td><code>ProcessInstagramWebhook</code> (queued)</td></tr>
+                    <tr><td style="font-weight:600;">Automação</td><td><code>InstagramAutomation</code> — keyword matching + auto-reply + DM</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Funcionalidades</h3>
+        <ul>
+            <li><strong>DMs:</strong> Recebe e envia mensagens diretas (texto, imagem, botões quick reply)</li>
+            <li><strong>Automação por post:</strong> Monitora comentários em posts específicos, match por keywords, reply automático + envio de DM</li>
+            <li><strong>AI Agent:</strong> Pode ser atribuído a conversas Instagram para respostas automáticas</li>
+            <li><strong>Lead linking:</strong> Cria ou vincula leads automaticamente</li>
+        </ul>
+
+        <h3>Automações Instagram</h3>
+        <div class="card">
+            <div class="card-header">Auto-Reply por Keywords</div>
+            <p>O sistema de automação Instagram permite configurar <strong>respostas automáticas baseadas em palavras-chave</strong> de comentários em posts específicos.</p>
+            <ul>
+                <li><strong>Configuração:</strong> Admin seleciona um post, define keywords de trigger, mensagem de reply no comentário e/ou DM automática</li>
+                <li><strong>Fluxo:</strong> Comentário recebido → match de keyword → reply público + envio de DM privada com conteúdo configurado</li>
+                <li><strong>Gerenciamento:</strong> Somente <strong>admin</strong> pode criar, editar e excluir automações Instagram</li>
+                <li><strong>Model:</strong> <code>InstagramAutomation</code> — armazena post_id, keywords, reply_text, dm_text</li>
+            </ul>
+        </div>
+
+        <h3>Filtragem por Departamento (Instagram)</h3>
+        <div class="info-box info">
+            <strong>Mesma lógica do WhatsApp:</strong> Conversas Instagram (<code>InstagramConversation</code>) também são filtradas por departamento para Manager e Viewer. A query aplica o mesmo padrão: <code>whereIn('department_id', $userDeptIds)->orWhereNull('department_id')->orWhere('assigned_user_id', $authUser->id)</code>. Admin vê todas sem restrição.
+        </div>
+
+        <h3>Inbox Unificado</h3>
+        <p>As conversas de WhatsApp e Instagram são unificadas no mesmo inbox, ordenadas por <code>last_message_at</code> desc. Cada conversa recebe um atributo <code>_channel</code> (<code>'whatsapp'</code> ou <code>'instagram'</code>) para identificação visual na UI.</p>
+
+        <!-- Asaas -->
+        <h2 id="asaas">Asaas (Pagamentos)</h2>
+        <div class="card">
+            <div class="card-header">Visão Geral</div>
+            <table>
+                <tbody>
+                    <tr><td style="width:140px;font-weight:600;">Service</td><td><code>AsaasService</code> — API client</td></tr>
+                    <tr><td style="font-weight:600;">Webhook</td><td><code>/api/webhook/asaas</code> → <code>AsaasWebhookController</code></td></tr>
+                    <tr><td style="font-weight:600;">Checkout</td><td><code>BillingController@subscribe</code></td></tr>
+                    <tr><td style="font-weight:600;">Token PIX</td><td><code>TokenIncrementController@purchase</code></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Gerenciamento de Assinaturas</h3>
+        <div class="card">
+            <div class="card-header">Subscription Management</div>
+            <ul>
+                <li><strong>Criação:</strong> <code>BillingController@subscribe</code> — cria assinatura no Asaas e vincula ao tenant</li>
+                <li><strong>Status tracking:</strong> <code>tenants.subscription_status</code> — valores: <code>active</code>, <code>overdue</code>, <code>inactive</code>, <code>trial</code></li>
+                <li><strong>Atualização automática:</strong> Webhooks do Asaas atualizam o status em tempo real</li>
+                <li><strong>Acesso restrito:</strong> Somente <strong>admin</strong> pode gerenciar billing e assinaturas</li>
+            </ul>
+        </div>
+
+        <h3>Token Increment (PIX)</h3>
+        <div class="card">
+            <div class="card-header">Compra de Tokens IA</div>
+            <ul>
+                <li><strong>Rota:</strong> <code>POST /configuracoes/tokens/comprar</code> → <code>TokenIncrementController@purchase</code></li>
+                <li><strong>Fluxo:</strong> Usuário seleciona pacote → gera cobrança PIX no Asaas → QR code exibido na UI</li>
+                <li><strong>Confirmação:</strong> Webhook <code>PAYMENT_CONFIRMED</code> (token) → registra <code>TenantTokenIncrement</code> → limpa flag <code>ai_tokens_exhausted</code></li>
+                <li><strong>Planos:</strong> <code>TokenIncrementPlan</code> — gerenciados pelo super_admin via <code>master/token-incrementos</code></li>
+            </ul>
+        </div>
+
+        <h3>Eventos Webhook</h3>
+        <table>
+            <thead><tr><th>Evento</th><th>Ação</th></tr></thead>
+            <tbody>
+                <tr><td><code>PAYMENT_CONFIRMED</code></td><td>Ativa tenant: subscription_status = 'active'</td></tr>
+                <tr><td><code>PAYMENT_OVERDUE</code></td><td>Marca subscription_status = 'overdue', envia email</td></tr>
+                <tr><td><code>SUBSCRIPTION_INACTIVATED</code></td><td>Marca subscription_status = 'inactive'</td></tr>
+                <tr><td><code>PAYMENT_CONFIRMED</code> (token)</td><td>Registra TenantTokenIncrement, limpa ai_tokens_exhausted</td></tr>
+            </tbody>
+        </table>
+
+        <div class="info-box warning">
+            <strong>Env vars (Portainer):</strong>
+            <code>ASAAS_API_URL</code>, <code>ASAAS_API_KEY</code>, <code>ASAAS_WEBHOOK_TOKEN</code> — nunca commitados no código.
+        </div>
+
+        <!-- OAuth -->
+        <h2 id="oauth">OAuth Providers</h2>
+        <table>
+            <thead><tr><th>Provider</th><th>Uso</th><th>Redirect URI</th></tr></thead>
+            <tbody>
+                <tr><td>Facebook</td><td>Facebook Ads sync, Instagram connect</td><td>/configuracoes/integracoes/facebook/callback</td></tr>
+                <tr><td>Google</td><td>Google Ads sync, Google Calendar</td><td>/configuracoes/integracoes/google/callback</td></tr>
+                <tr><td>Instagram</td><td>Reutiliza Facebook Login (Business Account)</td><td>/configuracoes/integracoes/instagram/callback</td></tr>
+            </tbody>
+        </table>
+        <div class="info-box info">
+            <strong>Tokens criptografados:</strong> <code>OAuthConnection.access_token</code> e <code>refresh_token</code> são armazenados com <code>encrypt()</code> / <code>decrypt()</code>.
+        </div>
+
+        <!-- AI Agents -->
+        <h2 id="ai">AI Agents</h2>
+        <div class="card">
+            <div class="card-header">Arquitetura</div>
+            <div class="flow-diagram">
+<span class="box">Mensagem recebida</span>
+   <span class="arrow">│</span>
+   <span class="arrow">├──</span> Debounce: delay de response_wait_seconds
+   <span class="arrow">├──</span> Versioning: ignora se nova mensagem chegou
+   <span class="arrow">│</span>
+   <span class="arrow">├──</span> Via <span class="box">Agno</span> (microserviço):
+   <span class="arrow">│</span>     <span class="arrow">├──</span> AgnoService::chat() → resposta + ações
+   <span class="arrow">│</span>     <span class="arrow">└──</span> Callbacks via /api/internal/agno/*
+   <span class="arrow">│</span>
+   <span class="arrow">└──</span> Via <span class="box">LLM direto</span>:
+         <span class="arrow">├──</span> AiAgentService::buildSystemPrompt()
+         <span class="arrow">├──</span> AiAgentService::buildHistory()
+         <span class="arrow">└──</span> OpenAI/Anthropic API call
+            </div>
+        </div>
+
+        <h3>Funcionalidades do Agent</h3>
+        <table>
+            <thead><tr><th>Feature</th><th>Config</th><th>Descrição</th></tr></thead>
+            <tbody>
+                <tr><td>Pipeline Tool</td><td><code>enable_pipeline_tool</code></td><td>Agente pode mover lead de etapa</td></tr>
+                <tr><td>Tags Tool</td><td><code>enable_tags_tool</code></td><td>Agente pode adicionar tags</td></tr>
+                <tr><td>Intent Notify</td><td><code>enable_intent_notify</code></td><td>Detecta intenções e notifica equipe</td></tr>
+                <tr><td>Calendar Tool</td><td><code>enable_calendar_tool</code></td><td>Agente pode criar/consultar eventos</td></tr>
+                <tr><td>Followup</td><td><code>followup_enabled</code></td><td>Mensagens de follow-up automáticas</td></tr>
+                <tr><td>Transfer</td><td><code>transfer_to_user_id</code></td><td>Transfere para humano quando necessário</td></tr>
+                <tr><td>Knowledge Base</td><td><code>AiAgentKnowledgeFile</code></td><td>Upload de PDF/DOCX/TXT para contexto</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Token Quota</h3>
+        <ul>
+            <li>Base mensal definida no plano do tenant</li>
+            <li>Incrementos pagos via <code>TenantTokenIncrement</code> (PIX Asaas)</li>
+            <li><code>checkTokenQuota()</code> soma base + incrementos do mês corrente</li>
+            <li><code>ai_tokens_exhausted</code> flag no tenant → modal de compra na UI</li>
+            <li>Usage logado em <code>AiUsageLog</code> (append-only)</li>
+        </ul>
+
+        <!-- Chatbot -->
+        <h2 id="chatbot">Sistema de Chatbot</h2>
+        <div class="card">
+            <div class="card-header">Componentes</div>
+            <table>
+                <tbody>
+                    <tr><td style="width:140px;font-weight:600;">Builder</td><td>Visual editor em <code>builder.blade.php</code> (vanilla JS + SVG connections)</td></tr>
+                    <tr><td style="font-weight:600;">Engine WA</td><td><code>ProcessChatbotStep</code> — executa fluxo para WhatsApp</td></tr>
+                    <tr><td style="font-weight:600;">Engine Web</td><td><code>WebsiteChatService</code> — executa fluxo para widget website</td></tr>
+                    <tr><td style="font-weight:600;">Widget</td><td><code>public/widget.js</code> — script injetado nos sites dos clientes</td></tr>
+                    <tr><td style="font-weight:600;">Variables</td><td><code>ChatbotVariableService</code> — interpolação de variáveis</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Tipos de Nodes</h3>
+        <table>
+            <thead><tr><th>Tipo</th><th>Descrição</th><th>Config</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge badge-primary">message</span></td><td>Envia mensagem de texto/imagem</td><td>body, image_url</td></tr>
+                <tr><td><span class="badge badge-green">input</span></td><td>Pergunta e espera resposta</td><td>variable, input_type (text/email/phone/number/buttons)</td></tr>
+                <tr><td><span class="badge badge-yellow">condition</span></td><td>Avalia variável e segue branch</td><td>variable, operator, branches[]</td></tr>
+                <tr><td><span class="badge badge-red">action</span></td><td>Executa ação (criar lead, webhook, etc.)</td><td>action_type, config específica</td></tr>
+                <tr><td><span class="badge badge-gray">delay</span></td><td>Aguarda X segundos</td><td>seconds</td></tr>
+                <tr><td><span class="badge badge-gray">end</span></td><td>Finaliza o fluxo</td><td>-</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Ações Disponíveis</h3>
+        <ul>
+            <li><code>create_lead</code> — Cria lead com dados coletados</li>
+            <li><code>change_stage</code> — Move lead para etapa específica</li>
+            <li><code>send_webhook</code> — Envia HTTP request (GET/POST/PUT/DELETE/PATCH) com JSON body</li>
+            <li><code>close_conversation</code> — Fecha a conversa</li>
+            <li><code>assign_agent</code> — Atribui agente IA</li>
+            <li><code>transfer_human</code> — Transfere para atendente humano</li>
+        </ul>
+
+        <h3>Widget Website</h3>
+        <ul>
+            <li>Injetado via <code>&lt;script src="https://app.syncro.chat/api/widget/{token}.js"&gt;</code></li>
+            <li>Dois modos: <strong>bubble</strong> (flutuante) ou <strong>inline</strong> (dentro de <code>#syncro-chat</code>)</li>
+            <li>Persiste <code>visitor_id</code> e <code>conversation_id</code> em localStorage</li>
+            <li>Suporta UTM tracking do page URL</li>
+            <li>Config: bot_name, bot_avatar, welcome_message, primary_color</li>
+        </ul>
+
+        <!-- Automation -->
+        <h2 id="automation">Automações</h2>
+        <div class="card">
+            <div class="card-header">AutomationEngine</div>
+            <p>Motor de regras trigger → conditions → actions.</p>
+            <h4>Triggers</h4>
+            <ul>
+                <li><code>message_received</code> — Nova mensagem WhatsApp/Instagram</li>
+                <li><code>conversation_created</code> — Nova conversa criada</li>
+                <li><code>lead_created</code> — Novo lead criado</li>
+                <li><code>lead_stage_changed</code> — Lead mudou de etapa</li>
+                <li><code>lead_won</code> — Lead marcado como ganho</li>
+                <li><code>lead_lost</code> — Lead marcado como perdido</li>
+            </ul>
+            <h4>Ações</h4>
+            <ul>
+                <li><code>add_tag_lead</code> — Adiciona tag ao lead</li>
+                <li><code>move_to_stage</code> — Move para etapa</li>
+                <li><code>assign_ai_agent</code> — Atribui agente IA</li>
+                <li><code>send_whatsapp_message</code> — Envia mensagem WhatsApp</li>
+            </ul>
+        </div>
+    </div>
+    <script src="assets/nav.js"></script>
+</body>
+</html>

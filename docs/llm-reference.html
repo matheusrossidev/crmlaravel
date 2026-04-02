@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syncro Docs — LLM Reference</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <div class="main">
+        <h1 class="page-title">LLM Reference</h1>
+        <p class="page-subtitle">Referencia rapida para LLMs e assistentes de IA entenderem e modificarem o codigo</p>
+
+        <div class="info-box info">
+            <strong>Esta pagina e para LLMs.</strong> Contem resumos, padroes, gotchas, tabelas de permissao e quick-references otimizados para AI assistants que precisam entender e modificar o codigo do Syncro CRM.
+        </div>
+
+        <!-- ================================================================ -->
+        <!-- EXECUTIVE SUMMARY                                                -->
+        <!-- ================================================================ -->
+        <h2 id="summary">Resumo Executivo</h2>
+        <div class="card">
+            <p><strong>Syncro</strong> e uma plataforma SaaS multi-tenant de CRM, automacao e comunicacao omnichannel. Construida com Laravel 11 + PHP 8.2/8.3, MySQL, AdminLTE 4, Bootstrap 5, jQuery. Deploy via Docker Swarm no dominio <code>app.syncro.chat</code>.</p>
+            <p>Integra WhatsApp (WAHA), Instagram (Meta Graph API), AI agents (OpenAI/Agno), pagamentos (Asaas), e tem um chatbot visual builder com widget para websites.</p>
+            <p><strong>Conceitos-chave:</strong></p>
+            <ul>
+                <li><strong>Multi-tenancy</strong> via <code>BelongsToTenant</code> trait (Global Scope automatico)</li>
+                <li><strong>Role-based permissions</strong> com 3 roles: <span class="badge badge-primary">admin</span> <span class="badge badge-green">manager</span> <span class="badge badge-yellow">viewer</span></li>
+                <li><strong>Pipeline filtering</strong> via <code>pipeline_user</code> pivot &mdash; manager/viewer podem ver apenas pipelines atribuidas</li>
+                <li><strong>Department filtering</strong> &mdash; conversas filtradas por departamento para manager/viewer</li>
+                <li><strong>RoleMiddleware</strong> controla acesso a rotas; UI usa disable (nao hide) para viewers</li>
+            </ul>
+        </div>
+
+        <!-- ================================================================ -->
+        <!-- MUST-KNOW RULES                                                  -->
+        <!-- ================================================================ -->
+        <h2 id="rules">Regras Obrigatorias</h2>
+        <table>
+            <thead><tr><th>Regra</th><th>Detalhes</th></tr></thead>
+            <tbody>
+                <tr><td><code>declare(strict_types=1)</code></td><td>Em TODO arquivo PHP</td></tr>
+                <tr><td>PSR-12</td><td>Code style padrao</td></tr>
+                <tr><td>Typed properties + return types</td><td>Sempre declarar tipos</td></tr>
+                <tr><td>SEM gradientes na UI</td><td>Azul solido <code>#0085f3</code> apenas</td></tr>
+                <tr><td>Tokens OAuth: encrypt()/decrypt()</td><td>Nunca armazenar em texto plano</td></tr>
+                <tr><td>Schema::defaultStringLength(191)</td><td>Ja esta no AppServiceProvider</td></tr>
+                <tr><td>LeadEvent: timestamps=false</td><td>Sempre passar <code>'created_at' => now()</code></td></tr>
+                <tr><td>BelongsToTenant em novos models</td><td>Use o trait em todo model que tem tenant_id</td></tr>
+                <tr><td><strong>RoleMiddleware</strong></td><td>Rotas de escrita devem ter <code>->middleware('role:admin')</code> ou <code>'role:admin,manager'</code></td></tr>
+                <tr><td><strong>Viewer = disable, nao hide</strong></td><td>Viewers veem botoes desabilitados, nao escondidos. Usar <code>{{ auth()->user()->isViewer() ? 'disabled' : '' }}</code></td></tr>
+                <tr><td><strong>Pipeline filtering</strong></td><td>Sempre usar <code>allowedPipelineIds()</code> em queries de leads/kanban/dashboard</td></tr>
+            </tbody>
+        </table>
+
+        <!-- ================================================================ -->
+        <!-- ROLE-BASED PERMISSIONS                                           -->
+        <!-- ================================================================ -->
+        <h2 id="roles">Permissoes por Role</h2>
+
+        <div class="info-box info">
+            <strong>Tres roles de tenant:</strong> <code>admin</code>, <code>manager</code>, <code>viewer</code>. Ha tambem <code>super_admin</code> (is_super_admin=true) que acessa o painel Master e passa por qualquer RoleMiddleware.
+        </div>
+
+        <h3>Tabela de Permissoes</h3>
+        <table id="permissionsTable">
+            <thead>
+                <tr>
+                    <th>Acao</th>
+                    <th><span class="badge badge-primary">admin</span></th>
+                    <th><span class="badge badge-green">manager</span></th>
+                    <th><span class="badge badge-yellow">viewer</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Ver leads / kanban</td><td>Sim</td><td>Sim</td><td>Sim</td></tr>
+                <tr><td>Criar / editar / excluir leads</td><td>Sim</td><td>Sim</td><td><span class="badge badge-red">NAO</span></td></tr>
+                <tr><td>Ver conversas (inbox)</td><td>Todas</td><td>Dept</td><td>Dept</td></tr>
+                <tr><td>Enviar mensagens</td><td>Sim</td><td>Sim</td><td><span class="badge badge-red">NAO</span></td></tr>
+                <tr><td>Pipelines / tags / integracoes CRUD</td><td>Sim</td><td><span class="badge badge-red">NAO</span></td><td><span class="badge badge-red">NAO</span></td></tr>
+                <tr><td>Automacoes / chatbot / IA CRUD</td><td>Sim</td><td><span class="badge badge-red">NAO</span></td><td><span class="badge badge-red">NAO</span></td></tr>
+                <tr><td>Agenda &mdash; criar / editar</td><td>Sim</td><td>Sim</td><td><span class="badge badge-red">NAO</span></td></tr>
+                <tr><td>Agenda &mdash; ver</td><td>Sim</td><td>Sim</td><td>Sim</td></tr>
+                <tr><td>Usuarios CRUD</td><td>Sim</td><td><span class="badge badge-red">NAO</span></td><td><span class="badge badge-red">NAO</span></td></tr>
+                <tr><td>Departamentos CRUD</td><td>Sim</td><td><span class="badge badge-red">NAO</span></td><td><span class="badge badge-red">NAO</span></td></tr>
+                <tr><td>Campanhas CRUD</td><td>Sim</td><td>Sim</td><td><span class="badge badge-red">NAO</span></td></tr>
+                <tr><td>Relatorios (leitura)</td><td>Sim</td><td>Sim</td><td>Sim</td></tr>
+                <tr><td>Cobranca / assinatura</td><td>Sim</td><td><span class="badge badge-red">NAO</span></td><td><span class="badge badge-red">NAO</span></td></tr>
+                <tr><td>Perfil proprio (editar)</td><td>Sim</td><td>Sim</td><td>Sim</td></tr>
+            </tbody>
+        </table>
+
+        <h3>RoleMiddleware &mdash; Como Funciona</h3>
+        <pre><code><span class="cm">// app/Http/Middleware/RoleMiddleware.php</span>
+<span class="kw">class</span> <span class="fn">RoleMiddleware</span>
+{
+    <span class="kw">public function</span> <span class="fn">handle</span>(Request $request, Closure $next, <span class="kw">string</span> ...$roles): Response
+    {
+        $user = $request->user();
+
+        <span class="cm">// Super admin sempre passa</span>
+        <span class="kw">if</span> ($user->isSuperAdmin()) <span class="kw">return</span> $next($request);
+
+        <span class="kw">if</span> (! in_array($user->role, $roles, <span class="kw">true</span>)) {
+            abort(<span class="num">403</span>, <span class="str">'Sem permissao para esta acao.'</span>);
+        }
+
+        <span class="kw">return</span> $next($request);
+    }
+}</code></pre>
+
+        <h3>Uso em Rotas</h3>
+        <pre><code><span class="cm">// Admin only:</span>
+Route::middleware(<span class="str">'role:admin'</span>)->group(<span class="kw">function</span> () {
+    Route::post(<span class="str">'pipelines'</span>, [PipelineController::class, <span class="str">'store'</span>]);
+});
+
+<span class="cm">// Admin + Manager:</span>
+Route::middleware(<span class="str">'role:admin,manager'</span>)->group(<span class="kw">function</span> () {
+    Route::post(<span class="str">'/contatos'</span>, [LeadController::class, <span class="str">'store'</span>]);
+    Route::put(<span class="str">'/contatos/{lead}'</span>, [LeadController::class, <span class="str">'update'</span>]);
+});
+
+<span class="cm">// Sem middleware = todos os roles (admin, manager, viewer) podem acessar</span>
+Route::get(<span class="str">'/crm'</span>, [KanbanController::class, <span class="str">'index'</span>]);</code></pre>
+
+        <h3>Pipeline Filtering &mdash; allowedPipelineIds()</h3>
+
+        <div class="flow-diagram">
+<span class="box">[Request chega]</span>
+       <span class="arrow">|</span>
+       <span class="arrow">v</span>
+<span class="box">[auth()->user()->allowedPipelineIds()]</span>
+       <span class="arrow">|</span>
+   <span class="arrow">+---+---+</span>
+   <span class="arrow">|</span>       <span class="arrow">|</span>
+<span class="box">null</span>    <span class="box">[1,3]</span>
+   <span class="arrow">|</span>       <span class="arrow">|</span>
+   <span class="arrow">v</span>       <span class="arrow">v</span>
+<span class="box">Sem filtro</span>  <span class="box">whereIn('pipeline_id', [1,3])</span>
+(admin)     (manager/viewer com pipelines atribuidas)
+        </div>
+
+        <pre><code><span class="cm">// User model:</span>
+<span class="kw">public function</span> <span class="fn">allowedPipelineIds</span>(): ?<span class="kw">array</span>
+{
+    <span class="kw">if</span> ($this->isAdmin()) <span class="kw">return null</span>;  <span class="cm">// admin ve tudo</span>
+
+    $ids = $this->pipelines()->pluck(<span class="str">'pipelines.id'</span>)->toArray();
+    <span class="kw">return</span> count($ids) > <span class="num">0</span> ? $ids : <span class="kw">null</span>;  <span class="cm">// sem atribuicao = sem restricao</span>
+}
+
+<span class="cm">// Uso no controller:</span>
+$pipelineIds = auth()->user()->allowedPipelineIds();
+
+$leads = Lead::query()
+    ->when($pipelineIds, <span class="kw">fn</span>($q) => $q->whereIn(<span class="str">'pipeline_id'</span>, $pipelineIds))
+    ->get();</code></pre>
+
+        <h3>Department Filtering</h3>
+        <div class="info-box warning">
+            <strong>Admin</strong> ve TODAS as conversas. <strong>Manager/viewer</strong> so veem conversas cujo departamento pertence aos departamentos do usuario (via <code>department_user</code> pivot). O campo <code>can_see_all_conversations</code> no User permite override.
+        </div>
+
+        <h3>Viewer Disable Pattern (UI)</h3>
+        <div class="info-box danger">
+            <strong>NUNCA esconder botoes para viewers.</strong> Eles devem ver o botao desabilitado para entender o que existe. Use <code>disabled</code>, nao <code>display:none</code>.
+        </div>
+        <pre><code><span class="cm">&lt;!-- Blade template --&gt;</span>
+&lt;button class="btn btn-primary"
+    {{ auth()-&gt;user()-&gt;isViewer() ? <span class="str">'disabled'</span> : <span class="str">''</span> }}&gt;
+    Novo Lead
+&lt;/button&gt;
+
+<span class="cm">&lt;!-- Para links --&gt;</span>
+&lt;a href="{{ route(<span class="str">'leads.store'</span>) }}"
+   class="btn btn-primary {{ auth()-&gt;user()-&gt;isViewer() ? <span class="str">'disabled pe-none'</span> : <span class="str">''</span> }}"&gt;
+    Criar
+&lt;/a&gt;</code></pre>
+
+        <h3>Global JS Variables</h3>
+        <pre><code><span class="cm">// Injetados no layout (app.blade.php):</span>
+window.userRole = <span class="str">'admin'</span>;   <span class="cm">// 'admin' | 'manager' | 'viewer'</span>
+window.isViewer = <span class="kw">false</span>;     <span class="cm">// boolean</span>
+window.isAdmin  = <span class="kw">true</span>;      <span class="cm">// boolean (inclui super_admin)</span>
+
+<span class="cm">// Uso em JS inline:</span>
+<span class="kw">if</span> (window.isViewer) {
+    $(<span class="str">'.btn-save'</span>).prop(<span class="str">'disabled'</span>, <span class="kw">true</span>);
+}</code></pre>
+
+        <!-- ================================================================ -->
+        <!-- BLADE GOTCHAS                                                    -->
+        <!-- ================================================================ -->
+        <h2 id="gotchas">Blade Gotchas Criticos</h2>
+
+        <div class="card" style="border-color: #dc2626;">
+            <h3 style="color: #dc2626;">1. {{ }} dentro de &lt;script&gt;</h3>
+            <p>Blade interpreta <code>{{ }}</code> como PHP echo em QUALQUER lugar, incluindo strings JS e comentarios.</p>
+            <pre><code><span class="cm">// ERRADO &mdash; Blade vai quebrar:</span>
+<span class="cm">// Convert {{var}} to HTML</span>
+var x = "{{nome}}";
+
+<span class="cm">// CORRETO:</span>
+<span class="cm">// Convert variable placeholders to HTML</span>
+var x = String.fromCharCode(123,123) + 'nome' + String.fromCharCode(125,125);</code></pre>
+        </div>
+
+        <div class="card" style="border-color: #dc2626;">
+            <h3 style="color: #dc2626;">2. @php inline em child views</h3>
+            <p><code>@php($var = value)</code> compila para <code>&lt;?php($var = value)</code> SEM <code>?&gt;</code>. O bloco PHP fica aberto e toda a view falha.</p>
+            <pre><code><span class="cm">// ERRADO:</span>
+@php($title = 'CRM')
+
+<span class="cm">// CORRETO:</span>
+@php
+    $title = 'CRM';
+@endphp</code></pre>
+        </div>
+
+        <div class="card" style="border-color: #ca8a04;">
+            <h3 style="color: #ca8a04;">3. @json() com arrays complexos</h3>
+            <p>Usar <code>@php</code> + <code>{!! json_encode() !!}</code> em vez de <code>@json()</code> para arrays multi-linha.</p>
+        </div>
+
+        <div class="card" style="border-color: #ca8a04;">
+            <h3 style="color: #ca8a04;">4. VITE_* env vars em producao</h3>
+            <p>Dockerfile roda <code>npm run build</code> SEM build args. <code>import.meta.env.VITE_*</code> sera <code>undefined</code> em producao. Usar <code>window.*</code> injetado via Blade.</p>
+        </div>
+
+        <div class="card" style="border-color: #0085f3;">
+            <h3 style="color: #0085f3;">5. Sidebar anti-flash pattern</h3>
+            <p>O layout injeta um <code>&lt;script&gt;</code> inline no <code>&lt;head&gt;</code> que le <code>localStorage('sidebar_collapsed')</code> e aplica a classe ANTES do render. Isso evita o "flash" da sidebar aberta antes do JS carregar.</p>
+            <pre><code><span class="cm">&lt;!-- No &lt;head&gt; do layout, ANTES de qualquer CSS transicional --&gt;</span>
+&lt;script&gt;
+(function(){
+    var s = localStorage.getItem(<span class="str">'sidebar_collapsed'</span>);
+    window.__sidebarCollapsed = s === <span class="kw">null</span> ? <span class="kw">true</span> : s === <span class="str">'1'</span>;
+}());
+&lt;/script&gt;
+
+<span class="cm">&lt;!-- No mainContent, aplica margin imediatamente: --&gt;</span>
+&lt;script&gt;
+<span class="kw">if</span>(window.__sidebarCollapsed && window.innerWidth > <span class="num">768</span>)
+    document.getElementById(<span class="str">'mainContent'</span>).style.marginLeft = <span class="str">'72px'</span>;
+&lt;/script&gt;</code></pre>
+        </div>
+
+        <div class="card" style="border-color: #0085f3;">
+            <h3 style="color: #0085f3;">6. Trial widget</h3>
+            <p>O layout computa <code>$__showTrial</code> (tenant em trial com data futura). Dois widgets: desktop (texto + barber pole bar no topbar) e mobile (banner no main-content).</p>
+            <pre><code><span class="cm">// Calculado no layout:</span>
+$__showTrial = $__tenant
+    && $__tenant->status === <span class="str">'trial'</span>
+    && $__tenant->trial_ends_at
+    && !$__tenant->trial_ends_at->isPast();
+
+$__trialDays = $__showTrial
+    ? (<span class="kw">int</span>) now()->diffInDays($__tenant->trial_ends_at, <span class="kw">false</span>)
+    : <span class="num">0</span>;</code></pre>
+        </div>
+
+        <!-- ================================================================ -->
+        <!-- MULTI-TENANCY                                                    -->
+        <!-- ================================================================ -->
+        <h2 id="tenancy">Multi-Tenancy &mdash; Quick Reference</h2>
+
+        <pre><code><span class="cm">// NOVO MODEL com tenant:</span>
+<span class="kw">class</span> <span class="fn">MinhaEntidade</span> <span class="kw">extends</span> Model {
+    <span class="kw">use</span> BelongsToTenant;
+    <span class="kw">protected</span> $fillable = [<span class="str">'tenant_id'</span>, ...];
+}
+
+<span class="cm">// NOVA MIGRATION com tenant:</span>
+$table->foreignId(<span class="str">'tenant_id'</span>)->constrained()->cascadeOnDelete();
+
+<span class="cm">// QUERY &mdash; tenant_id e automatico (Global Scope):</span>
+Lead::all(); <span class="cm">// ja filtra por tenant_id do user logado</span>
+
+<span class="cm">// API &mdash; tenant vem do ApiKeyMiddleware:</span>
+request()->attributes->get(<span class="str">'tenant_id'</span>);</code></pre>
+
+        <h3>Pivot Tables de Relacao</h3>
+        <table>
+            <thead><tr><th>Pivot Table</th><th>Colunas</th><th>Finalidade</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><code>pipeline_user</code></td>
+                    <td><code>pipeline_id</code>, <code>user_id</code> (UNIQUE)</td>
+                    <td>Restringe quais pipelines um manager/viewer pode ver. Se nenhuma atribuida, ve todas.</td>
+                </tr>
+                <tr>
+                    <td><code>department_user</code></td>
+                    <td><code>department_id</code>, <code>user_id</code></td>
+                    <td>Determina quais departamentos (e conversas) o usuario pode ver.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="flow-diagram">
+<span class="box">[User]</span> ---M:N--- <span class="box">[Pipeline]</span>     via <span class="box">pipeline_user</span>
+   <span class="arrow">|</span>
+   <span class="arrow">+</span>---M:N--- <span class="box">[Department]</span>    via <span class="box">department_user</span>
+   <span class="arrow">|</span>
+   <span class="arrow">+</span>---1:N--- <span class="box">[Lead]</span>          via <span class="box">assigned_to</span>
+        </div>
+
+        <!-- ================================================================ -->
+        <!-- UI IDENTITY                                                      -->
+        <!-- ================================================================ -->
+        <h2 id="ui">Identidade Visual &mdash; Quick Reference</h2>
+
+        <pre><code><span class="cm">/* Cores */</span>
+--primary: <span class="str">#0085f3</span>;      <span class="cm">/* Azul principal */</span>
+--primary-hover: <span class="str">#0070d1</span>; <span class="cm">/* Hover */</span>
+--primary-light: <span class="str">#eff6ff</span>; <span class="cm">/* Background claro */</span>
+--text-primary: <span class="str">#1a1d23</span>;  <span class="cm">/* Titulos */</span>
+--text-secondary: <span class="str">#374151</span>; <span class="cm">/* Corpo */</span>
+--text-muted: <span class="str">#6b7280</span>;    <span class="cm">/* Labels */</span>
+--border: <span class="str">#e8eaf0</span>;         <span class="cm">/* Bordas */</span>
+
+<span class="cm">/* Card padrao */</span>
+.card { background:#fff; border:1.5px solid #e8eaf0; border-radius:14px; }
+
+<span class="cm">/* Botao primario */</span>
+.btn-primary { background:#0085f3; color:#fff; border-radius:9px;
+               font-size:13px; font-weight:600; }
+
+<span class="cm">/* NUNCA: gradient, box-shadow exagerado, border-radius > 14px */</span></code></pre>
+
+        <h3>Sidebar Behaviour</h3>
+        <table>
+            <thead><tr><th>Aspecto</th><th>Detalhe</th></tr></thead>
+            <tbody>
+                <tr><td>Estado padrao</td><td>Collapsed (72px). LocalStorage key: <code>sidebar_collapsed</code></td></tr>
+                <tr><td>Expanded</td><td>260px. Toggle via botao no topbar</td></tr>
+                <tr><td>Mobile (&lt;768px)</td><td>Overlay, aparece via hamburger menu</td></tr>
+                <tr><td>Anti-flash</td><td>Script inline no <code>&lt;head&gt;</code> le localStorage antes do render</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Trial Widget</h3>
+        <table>
+            <thead><tr><th>Viewport</th><th>Componente</th><th>Localizacao</th></tr></thead>
+            <tbody>
+                <tr><td>Desktop</td><td>Texto + barber pole progress bar</td><td>Topbar (direita)</td></tr>
+                <tr><td>Mobile</td><td>Banner simples</td><td>Topo do main-content</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Responsive Patterns</h3>
+        <ul>
+            <li><strong>Tabelas:</strong> primeira coluna fixa, scroll horizontal no restante</li>
+            <li><strong>Settings tabs:</strong> scroll horizontal no mobile</li>
+            <li><strong>FAB buttons:</strong> botao flutuante no mobile para acoes primarias (download PDF, adicionar lead)</li>
+            <li><strong>Custom 403 page:</strong> <code>resources/views/errors/403.blade.php</code></li>
+            <li><strong>Custom 404 page:</strong> <code>resources/views/errors/404.blade.php</code></li>
+        </ul>
+
+        <!-- ================================================================ -->
+        <!-- FILE QUICK REFERENCE                                             -->
+        <!-- ================================================================ -->
+        <h2 id="file-ref">Quick Reference: "Quero fazer X &rarr; Edite Y"</h2>
+        <div class="table-filter">
+            <input type="text" data-table="fileRefTable" placeholder="Filtrar...">
+        </div>
+        <table id="fileRefTable">
+            <thead><tr><th>Quero...</th><th>Arquivo(s)</th></tr></thead>
+            <tbody>
+                <tr><td>Adicionar rota web para tenant</td><td><code>routes/web.php</code> (dentro do grupo tenant middleware)</td></tr>
+                <tr><td>Adicionar rota API</td><td><code>routes/api.php</code> (dentro do grupo api_key)</td></tr>
+                <tr><td><strong>Restringir rota por role</strong></td><td><code>routes/web.php</code> &mdash; adicionar <code>->middleware('role:admin')</code> ou <code>'role:admin,manager'</code></td></tr>
+                <tr><td><strong>Adicionar pipeline filter</strong></td><td>Controller method + <code>auth()->user()->allowedPipelineIds()</code></td></tr>
+                <tr><td><strong>Desabilitar botao para viewer</strong></td><td>Blade view + <code>auth()->user()->isViewer()</code></td></tr>
+                <tr><td><strong>Atribuir pipelines a usuario</strong></td><td><code>UserController</code> + <code>pipeline_user</code> pivot</td></tr>
+                <tr><td>Criar novo model</td><td><code>app/Models/</code> + migration em <code>database/migrations/</code></td></tr>
+                <tr><td>Adicionar campo ao lead</td><td>Migration + <code>Lead.php</code> fillable + views (kanban, drawer, leads)</td></tr>
+                <tr><td>Modificar kanban</td><td><code>resources/views/tenant/crm/kanban.blade.php</code></td></tr>
+                <tr><td>Modificar chatbot builder</td><td><code>resources/views/tenant/chatbot/builder.blade.php</code></td></tr>
+                <tr><td>Modificar widget publico</td><td><code>public/widget.js</code></td></tr>
+                <tr><td>Modificar inbox de chats</td><td><code>resources/views/tenant/whatsapp/index.blade.php</code></td></tr>
+                <tr><td>Processar webhook WhatsApp</td><td><code>app/Jobs/ProcessWahaWebhook.php</code></td></tr>
+                <tr><td>Processar webhook Instagram</td><td><code>app/Jobs/ProcessInstagramWebhook.php</code></td></tr>
+                <tr><td>Modificar resposta IA</td><td><code>app/Jobs/ProcessAiResponse.php</code> + <code>app/Services/AiAgentService.php</code></td></tr>
+                <tr><td>Modificar chatbot engine (WhatsApp)</td><td><code>app/Jobs/ProcessChatbotStep.php</code></td></tr>
+                <tr><td>Modificar chatbot engine (Website)</td><td><code>app/Services/WebsiteChatService.php</code></td></tr>
+                <tr><td>Adicionar env var de producao</td><td><code>portainer-stack.yml</code> (Portainer UI)</td></tr>
+                <tr><td>Modificar layout principal</td><td><code>resources/views/tenant/layouts/app.blade.php</code></td></tr>
+                <tr><td>Adicionar middleware</td><td><code>app/Http/Middleware/</code> + <code>bootstrap/app.php</code></td></tr>
+                <tr><td>Adicionar broadcast event</td><td><code>app/Events/</code> + <code>routes/channels.php</code></td></tr>
+                <tr><td>Modificar billing/assinatura</td><td><code>BillingController.php</code> + <code>AsaasService.php</code> + <code>AsaasWebhookController.php</code></td></tr>
+                <tr><td>Adicionar automacao trigger/action</td><td><code>app/Services/AutomationEngine.php</code></td></tr>
+                <tr><td>Modificar drawer de lead</td><td><code>resources/views/components/_drawer.blade.php</code></td></tr>
+                <tr><td>Adicionar tipo de custom field</td><td><code>CustomFieldController</code> + drawer + kanban views</td></tr>
+                <tr><td>Modificar dashboard</td><td><code>DashboardController.php</code> + <code>resources/views/tenant/dashboard.blade.php</code></td></tr>
+            </tbody>
+        </table>
+
+        <!-- ================================================================ -->
+        <!-- CODE PATTERNS                                                    -->
+        <!-- ================================================================ -->
+        <h2 id="patterns">Padroes de Codigo</h2>
+
+        <h3>Controller Pattern (basico)</h3>
+        <pre><code><span class="cm">// Padrao: Controller leve, Service para logica complexa</span>
+<span class="kw">class</span> <span class="fn">MeuController</span> <span class="kw">extends</span> Controller
+{
+    <span class="kw">public function</span> <span class="fn">store</span>(Request $request): JsonResponse
+    {
+        $request->validate([<span class="str">'name'</span> => <span class="str">'required|string|max:191'</span>]);
+
+        $item = MeuModel::create([
+            <span class="str">'tenant_id'</span> => auth()->user()->tenant_id,
+            <span class="str">'name'</span> => $request->name,
+        ]);
+
+        <span class="kw">return</span> response()->json([<span class="str">'success'</span> => <span class="kw">true</span>, <span class="str">'data'</span> => $item]);
+    }
+}</code></pre>
+
+        <h3>Role Middleware em Rotas</h3>
+        <pre><code><span class="cm">// Padrao usado em routes/web.php:</span>
+<span class="cm">// 1. Rotas de LEITURA fora do middleware (todos podem ver)</span>
+<span class="cm">// 2. Rotas de ESCRITA dentro de middleware('role:...')</span>
+
+Route::prefix(<span class="str">'agenda'</span>)->name(<span class="str">'calendar.'</span>)->group(<span class="kw">function</span> () {
+    <span class="cm">// Leitura &mdash; todos os roles</span>
+    Route::get(<span class="str">'/'</span>,        [CalendarController::class, <span class="str">'index'</span>]);
+    Route::get(<span class="str">'/eventos'</span>, [CalendarController::class, <span class="str">'events'</span>]);
+
+    <span class="cm">// Escrita &mdash; admin + manager</span>
+    Route::middleware(<span class="str">'role:admin,manager'</span>)->group(<span class="kw">function</span> () {
+        Route::post(<span class="str">'/eventos'</span>,        [CalendarController::class, <span class="str">'store'</span>]);
+        Route::put(<span class="str">'/eventos/{id}'</span>,    [CalendarController::class, <span class="str">'update'</span>]);
+        Route::delete(<span class="str">'/eventos/{id}'</span>, [CalendarController::class, <span class="str">'destroy'</span>]);
+    });
+});</code></pre>
+
+        <h3>Pipeline Filtering em Controller</h3>
+        <pre><code><span class="cm">// Padrao usado em KanbanController, DashboardController, LeadController:</span>
+<span class="kw">public function</span> <span class="fn">index</span>()
+{
+    $user = auth()->user();
+    $pipelineIds = $user->allowedPipelineIds(); <span class="cm">// null ou int[]</span>
+
+    $pipelines = Pipeline::query()
+        ->when($pipelineIds, <span class="kw">fn</span>($q) => $q->whereIn(<span class="str">'id'</span>, $pipelineIds))
+        ->with(<span class="str">'stages'</span>)
+        ->get();
+
+    $leads = Lead::query()
+        ->when($pipelineIds, <span class="kw">fn</span>($q) => $q->whereIn(<span class="str">'pipeline_id'</span>, $pipelineIds))
+        ->get();
+
+    <span class="kw">return</span> view(<span class="str">'tenant.crm.kanban'</span>, compact(<span class="str">'pipelines'</span>, <span class="str">'leads'</span>));
+}</code></pre>
+
+        <h3>Viewer Disable em Blade (completo)</h3>
+        <pre><code><span class="cm">&lt;!-- Botao --&gt;</span>
+&lt;button class="btn btn-primary" {{ auth()-&gt;user()-&gt;isViewer() ? <span class="str">'disabled'</span> : <span class="str">''</span> }}&gt;
+    Salvar
+&lt;/button&gt;
+
+<span class="cm">&lt;!-- Select --&gt;</span>
+&lt;select {{ auth()-&gt;user()-&gt;isViewer() ? <span class="str">'disabled'</span> : <span class="str">''</span> }}&gt;
+    ...
+&lt;/select&gt;
+
+<span class="cm">&lt;!-- Via JS (para elementos dinamicos) --&gt;</span>
+&lt;script&gt;
+<span class="kw">if</span> (window.isViewer) {
+    document.querySelectorAll(<span class="str">'.btn-action'</span>).forEach(b =&gt; b.disabled = <span class="kw">true</span>);
+}
+&lt;/script&gt;</code></pre>
+
+        <h3>API Response Pattern</h3>
+        <pre><code><span class="cm">// Todas as respostas JSON seguem este formato:</span>
+{ <span class="str">"success"</span>: <span class="kw">true</span>, <span class="str">"data"</span>: { ... } }
+{ <span class="str">"success"</span>: <span class="kw">false</span>, <span class="str">"message"</span>: <span class="str">"Erro descritivo"</span> }</code></pre>
+
+        <h3>Frontend AJAX Pattern</h3>
+        <pre><code><span class="cm">// Definido em resources/js/app.js:</span>
+window.apiPost(<span class="str">'/contatos'</span>, { name: <span class="str">'Joao'</span> })
+    .then(data => {
+        <span class="kw">if</span> (data.success) toastr.success(<span class="str">'Salvo!'</span>);
+    })
+    .catch(err => toastr.error(err.message));
+
+<span class="cm">// apiGet, apiPost, apiPut, apiDelete disponiveis</span>
+<span class="cm">// Inclui CSRF token automaticamente</span></code></pre>
+
+        <h3>Webhook Processing Pattern</h3>
+        <pre><code><span class="cm">// 1. Controller recebe e sempre retorna 200</span>
+<span class="cm">// 2. Job processa (sync ou queued)</span>
+<span class="cm">// 3. Dedup via Cache::add() ou UNIQUE constraint</span>
+<span class="cm">// 4. Excecoes logadas, nunca propagadas ao caller</span>
+
+<span class="kw">public function</span> <span class="fn">handle</span>(Request $request): Response
+{
+    <span class="kw">try</span> {
+        ProcessWahaWebhook::dispatchSync($request->all());
+    } <span class="kw">catch</span> (\Throwable $e) {
+        Log::channel(<span class="str">'whatsapp'</span>)->error($e->getMessage());
+    }
+    <span class="kw">return</span> response(<span class="str">'OK'</span>, <span class="num">200</span>);
+}</code></pre>
+
+        <!-- ================================================================ -->
+        <!-- KNOWN ISSUES                                                     -->
+        <!-- ================================================================ -->
+        <h2 id="errors">Erros Conhecidos e Solucoes</h2>
+        <div class="table-filter">
+            <input type="text" data-table="errorsTable" placeholder="Filtrar erros...">
+        </div>
+        <table id="errorsTable">
+            <thead><tr><th>Erro</th><th>Causa</th><th>Solucao</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td>ParseError "Unclosed '(' does not match '}'"</td>
+                    <td>{{ }} em comentarios JS dentro de Blade</td>
+                    <td>Remover todas as ocorrencias de {{ }} em JS, mesmo em comentarios</td>
+                </tr>
+                <tr>
+                    <td>Widget: "element #syncro-chat not found"</td>
+                    <td>widget_type='inline' mas pagina nao tem #syncro-chat</td>
+                    <td>Usar <code>force_bubble=1</code> no URL do script para forcar modo bubble em testes</td>
+                </tr>
+                <tr>
+                    <td>"max key length is 1000 bytes"</td>
+                    <td>Indice composto com 3+ colunas varchar(191)</td>
+                    <td>Reduzir colunas no indice ou usar VARCHAR menores</td>
+                </tr>
+                <tr>
+                    <td>Pusher.js "You must pass your app key"</td>
+                    <td>VITE_REVERB_APP_KEY undefined em producao</td>
+                    <td>Injetar via Blade: window.reverbConfig = {key: '...'}</td>
+                </tr>
+                <tr>
+                    <td>Conversas/leads duplicados no WhatsApp</td>
+                    <td>WAHA envia message + message.any (race condition)</td>
+                    <td>Dedup via Cache::add("waha:processing:{msgId}", 1, 10)</td>
+                </tr>
+                <tr>
+                    <td>contact_picture_url truncado</td>
+                    <td>VARCHAR(191) curto demais para URLs WhatsApp</td>
+                    <td>Usar TEXT em vez de VARCHAR</td>
+                </tr>
+                <tr>
+                    <td>ParseError com @php($title = 'X')</td>
+                    <td>Compila para &lt;?php($title = 'X') sem fechar</td>
+                    <td>Usar bloco @php ... @endphp</td>
+                </tr>
+                <tr>
+                    <td>403 Sem permissao</td>
+                    <td>Viewer ou manager tentando acessar rota protegida por RoleMiddleware</td>
+                    <td>Verificar se a rota tem <code>middleware('role:...')</code> correto. Pagina customizada em <code>resources/views/errors/403.blade.php</code></td>
+                </tr>
+                <tr>
+                    <td>Sidebar "flash" ao carregar pagina</td>
+                    <td>CSS de transicao aplica antes do JS ler localStorage</td>
+                    <td>Script inline no &lt;head&gt; le sidebar_collapsed antes do render (ja implementado)</td>
+                </tr>
+                <tr>
+                    <td>Pipeline filtering nao funciona para admin</td>
+                    <td><code>allowedPipelineIds()</code> retorna null para admin (correto)</td>
+                    <td>Usar <code>->when($ids, ...)</code> &mdash; quando null, nao aplica filtro</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- ================================================================ -->
+        <!-- DATABASE CHEAT SHEET                                             -->
+        <!-- ================================================================ -->
+        <h2 id="db-cheat">Database Cheat Sheet</h2>
+
+        <h3>Pivot Tables</h3>
+        <table>
+            <thead><tr><th>Tabela</th><th>Colunas</th><th>Constraint</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><code>pipeline_user</code></td>
+                    <td><code>id</code>, <code>pipeline_id</code>, <code>user_id</code></td>
+                    <td>UNIQUE(pipeline_id, user_id)</td>
+                </tr>
+                <tr>
+                    <td><code>department_user</code></td>
+                    <td><code>department_id</code>, <code>user_id</code></td>
+                    <td>FK para departments + users</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Comandos Uteis</h3>
+        <pre><code><span class="cm">// Criar migration</span>
+php artisan make:migration add_campo_to_tabela
+
+<span class="cm">// SEMPRE no migration:</span>
+$table->foreignId(<span class="str">'tenant_id'</span>)->constrained()->cascadeOnDelete();
+
+<span class="cm">// Para URLs longas (WhatsApp/Instagram):</span>
+$table->text(<span class="str">'picture_url'</span>)->nullable();   <span class="cm">// NAO varchar!</span>
+
+<span class="cm">// Para phone:</span>
+$table->string(<span class="str">'phone'</span>, <span class="num">30</span>)->nullable();  <span class="cm">// LID ate 14 digitos</span>
+
+<span class="cm">// JSON columns:</span>
+$table->json(<span class="str">'config_json'</span>)->nullable();
+<span class="cm">// No model: protected $casts = ['config_json' => 'array'];</span>
+
+<span class="cm">// Evitar indice composto grande:</span>
+<span class="cm">// $table->unique(['tenant_id', 'email', 'phone']); &larr; pode estourar 1000 bytes</span>
+
+<span class="cm">// Pivot table sem timestamps:</span>
+$table->foreignId(<span class="str">'pipeline_id'</span>)->constrained()->cascadeOnDelete();
+$table->foreignId(<span class="str">'user_id'</span>)->constrained()->cascadeOnDelete();
+$table->unique([<span class="str">'pipeline_id'</span>, <span class="str">'user_id'</span>]);</code></pre>
+
+        <!-- ================================================================ -->
+        <!-- ARCHITECTURE DECISIONS                                           -->
+        <!-- ================================================================ -->
+        <h2 id="decisions">Decisoes Arquiteturais</h2>
+        <table>
+            <thead><tr><th>Decisao</th><th>Por que</th></tr></thead>
+            <tbody>
+                <tr><td>Processamento sincrono de webhooks WAHA</td><td>Garantir ordem de processamento e dedup efetiva. Queues causariam race conditions piores.</td></tr>
+                <tr><td>BelongsToTenant via Global Scope</td><td>Isolamento automatico sem precisar de WHERE manual em cada query.</td></tr>
+                <tr><td>jQuery em vez de React (maioria)</td><td>Projeto iniciou com AdminLTE (jQuery-based). React usado apenas no chatbot builder.</td></tr>
+                <tr><td>Blade + inline JS em vez de SPA</td><td>Simplicidade. Cada pagina e server-rendered com JS inline para interatividade.</td></tr>
+                <tr><td>Widget como script publico (vanilla JS)</td><td>Deve funcionar em qualquer site sem dependencias. Zero build tools necessarios pelo cliente.</td></tr>
+                <tr><td>Reverb em vez de Pusher</td><td>Self-hosted, sem custo por conexao. Roda como service no Docker Swarm.</td></tr>
+                <tr><td>Steps JSON no ChatbotFlow</td><td>Fluxo serializado como JSON permite builder visual simples e execution engine direta.</td></tr>
+                <tr><td>Agno como microservico</td><td>Separacao de concerns. LLM processing pode escalar independentemente.</td></tr>
+                <tr><td><strong>RoleMiddleware (nao Gates/Policies)</strong></td><td>Simplicidade: 3 roles fixos, sem permissoes granulares. Middleware em grupo de rotas e mais claro que Policy checks espalhados.</td></tr>
+                <tr><td><strong>Disable vs Hide para viewer</strong></td><td>Viewer precisa entender o que existe na plataforma. Esconder botoes causa confusao. Desabilitar e mais user-friendly.</td></tr>
+                <tr><td><strong>Pipeline filtering via pivot</strong></td><td>Flexivel: admin sempre ve tudo; manager/viewer podem ser restritos a pipelines especificos sem mudar logica de tenant.</td></tr>
+            </tbody>
+        </table>
+
+        <!-- ================================================================ -->
+        <!-- ROUTE PERMISSION MAP                                             -->
+        <!-- ================================================================ -->
+        <h2 id="route-map">Mapa de Permissoes por Rota</h2>
+
+        <div class="info-box info">
+            <strong>Padrao geral:</strong> rotas GET (leitura) ficam abertas para todos os roles. Rotas POST/PUT/DELETE ficam dentro de <code>middleware('role:...')</code>.
+        </div>
+
+        <table>
+            <thead><tr><th>Modulo</th><th>Leitura (GET)</th><th>Escrita (POST/PUT/DELETE)</th></tr></thead>
+            <tbody>
+                <tr><td>Dashboard</td><td>Todos</td><td>Todos (config propria)</td></tr>
+                <tr><td>CRM / Kanban</td><td>Todos</td><td><span class="badge badge-green">admin,manager</span></td></tr>
+                <tr><td>Contatos / Leads</td><td>Todos</td><td><span class="badge badge-green">admin,manager</span></td></tr>
+                <tr><td>Chats / Inbox</td><td>Todos (filtrado por dept)</td><td><span class="badge badge-green">admin,manager</span></td></tr>
+                <tr><td>Agenda</td><td>Todos</td><td><span class="badge badge-green">admin,manager</span></td></tr>
+                <tr><td>Campanhas</td><td>Todos</td><td><span class="badge badge-green">admin,manager</span></td></tr>
+                <tr><td>Relatorios</td><td>Todos</td><td>&mdash;</td></tr>
+                <tr><td>Pipelines / Stages</td><td>Todos</td><td><span class="badge badge-primary">admin</span></td></tr>
+                <tr><td>Tags</td><td>Todos</td><td><span class="badge badge-primary">admin</span></td></tr>
+                <tr><td>Integracoes</td><td>Todos</td><td><span class="badge badge-primary">admin</span></td></tr>
+                <tr><td>Usuarios</td><td>Todos</td><td><span class="badge badge-primary">admin</span></td></tr>
+                <tr><td>Departamentos</td><td>Todos</td><td><span class="badge badge-primary">admin</span></td></tr>
+                <tr><td>Automacoes</td><td>Todos</td><td><span class="badge badge-primary">admin</span></td></tr>
+                <tr><td>Chatbot Flows</td><td>Todos</td><td><span class="badge badge-primary">admin</span></td></tr>
+                <tr><td>AI Agents</td><td>Todos</td><td><span class="badge badge-primary">admin</span></td></tr>
+                <tr><td>IG Automations</td><td>Todos</td><td><span class="badge badge-primary">admin</span></td></tr>
+                <tr><td>Campos Extras</td><td>Todos</td><td><span class="badge badge-primary">admin</span></td></tr>
+                <tr><td>API Keys</td><td>Todos</td><td><span class="badge badge-primary">admin</span></td></tr>
+                <tr><td>Cobranca</td><td>Todos</td><td><span class="badge badge-primary">admin</span></td></tr>
+                <tr><td>Perfil</td><td>Todos</td><td>Todos (proprio perfil)</td></tr>
+            </tbody>
+        </table>
+
+        <!-- ================================================================ -->
+        <!-- MOST EDITED FILES                                                -->
+        <!-- ================================================================ -->
+        <h2 id="key-files">Arquivos Mais Importantes (por frequencia de edicao)</h2>
+        <ol>
+            <li><code>routes/web.php</code> &mdash; Todas as rotas web, middleware de roles</li>
+            <li><code>resources/views/tenant/layouts/app.blade.php</code> &mdash; Layout principal, sidebar, topbar, trial widget, JS globals</li>
+            <li><code>resources/views/tenant/crm/kanban.blade.php</code> &mdash; Kanban board</li>
+            <li><code>resources/views/tenant/whatsapp/index.blade.php</code> &mdash; Inbox multi-canal</li>
+            <li><code>resources/views/tenant/chatbot/builder.blade.php</code> &mdash; Chatbot builder (maior arquivo)</li>
+            <li><code>app/Http/Controllers/Tenant/KanbanController.php</code> &mdash; Kanban + pipeline filtering</li>
+            <li><code>app/Http/Controllers/Tenant/LeadController.php</code> &mdash; CRUD de leads + pipeline filtering</li>
+            <li><code>app/Http/Controllers/Tenant/DashboardController.php</code> &mdash; Dashboard + pipeline filtering</li>
+            <li><code>app/Http/Controllers/Tenant/WhatsappController.php</code> &mdash; Inbox controller + dept filtering</li>
+            <li><code>app/Jobs/ProcessWahaWebhook.php</code> &mdash; Processing de mensagens WhatsApp</li>
+            <li><code>app/Jobs/ProcessAiResponse.php</code> &mdash; Respostas IA</li>
+            <li><code>app/Models/User.php</code> &mdash; Roles, pipelines(), allowedPipelineIds(), isViewer()</li>
+            <li><code>public/widget.js</code> &mdash; Widget publico do chatbot</li>
+            <li><code>app/Services/WebsiteChatService.php</code> &mdash; Engine chatbot website</li>
+        </ol>
+
+        <!-- ================================================================ -->
+        <!-- DIRECTORY TREE (key areas)                                       -->
+        <!-- ================================================================ -->
+        <h2 id="tree">Estrutura de Diretorios (areas-chave)</h2>
+        <div class="tree">
+<span class="dir">app/</span>
+<span class="dir">  Http/</span>
+<span class="dir">    Controllers/</span>
+<span class="dir">      Tenant/</span>               <span class="desc">&larr; controllers do painel tenant</span>
+<span class="dir">      Master/</span>               <span class="desc">&larr; controllers do painel super_admin</span>
+<span class="dir">    Middleware/</span>
+<span class="file">      RoleMiddleware.php</span>    <span class="desc">&larr; role:admin, role:admin,manager</span>
+<span class="file">      TenantMiddleware.php</span>  <span class="desc">&larr; injeta tenant_id via auth</span>
+<span class="file">      SuperAdminMiddleware.php</span>
+<span class="dir">  Models/</span>
+<span class="file">    User.php</span>               <span class="desc">&larr; roles, pipelines(), allowedPipelineIds()</span>
+<span class="file">    Lead.php</span>               <span class="desc">&larr; BelongsToTenant</span>
+<span class="file">    Pipeline.php</span>           <span class="desc">&larr; users() M:N via pipeline_user</span>
+<span class="dir">    Traits/</span>
+<span class="file">      BelongsToTenant.php</span>  <span class="desc">&larr; Global Scope por tenant_id</span>
+<span class="dir">  Services/</span>                <span class="desc">&larr; logica de negocio complexa</span>
+<span class="dir">  Jobs/</span>                    <span class="desc">&larr; webhook processing, AI responses</span>
+<span class="dir">resources/views/</span>
+<span class="dir">  tenant/layouts/</span>
+<span class="file">    app.blade.php</span>          <span class="desc">&larr; layout principal (sidebar, topbar, JS globals)</span>
+<span class="dir">  errors/</span>
+<span class="file">    403.blade.php</span>          <span class="desc">&larr; pagina customizada de permissao negada</span>
+<span class="file">    404.blade.php</span>          <span class="desc">&larr; pagina customizada nao encontrado</span>
+<span class="dir">routes/</span>
+<span class="file">  web.php</span>                  <span class="desc">&larr; todas as rotas web com middleware de roles</span>
+<span class="file">  api.php</span>                  <span class="desc">&larr; API v1 (middleware api_key)</span>
+<span class="dir">database/migrations/</span>
+<span class="file">  ..._create_pipeline_user_table.php</span>  <span class="desc">&larr; pivot pipeline &harr; user</span>
+        </div>
+
+        <!-- ================================================================ -->
+        <!-- DEPLOY CHEAT SHEET                                               -->
+        <!-- ================================================================ -->
+        <h2 id="deploy-cheat">Deploy Cheat Sheet</h2>
+        <pre><code><span class="cm">// Nova env var? Adicionar no Portainer UI (portainer-stack.yml)</span>
+<span class="cm">// Nunca commitar secrets no codigo</span>
+
+<span class="cm">// Nova integracao? Lembrar de:</span>
+<span class="cm">// 1. Adicionar env vars no portainer-stack.yml</span>
+<span class="cm">// 2. Documentar em MEMORY.md</span>
+<span class="cm">// 3. Usar encrypt()/decrypt() para tokens</span>
+
+<span class="cm">// VITE_* nao funciona em prod!</span>
+<span class="cm">// Usar window.config injetado via Blade</span>
+
+<span class="cm">// Novo middleware? Registrar em bootstrap/app.php</span>
+<span class="cm">// Nova role check? Usar RoleMiddleware, nao Gates</span></code></pre>
+
+        <!-- ================================================================ -->
+        <!-- PERMISSION FLOW DIAGRAM                                          -->
+        <!-- ================================================================ -->
+        <h2 id="flow">Fluxo de Permissao &mdash; Request Lifecycle</h2>
+
+        <div class="flow-diagram">
+<span class="box">[HTTP Request]</span>
+       <span class="arrow">|</span>
+       <span class="arrow">v</span>
+<span class="box">[auth middleware]</span> ── nao logado? ──&gt; <span class="box">Login page</span>
+       <span class="arrow">|</span>
+       <span class="arrow">v</span>
+<span class="box">[tenant middleware]</span> ── sem tenant? ──&gt; <span class="box">403</span>
+       <span class="arrow">|</span>
+       <span class="arrow">v</span>
+<span class="box">[role middleware]</span> ── role nao permitido? ──&gt; <span class="box">403 (custom page)</span>
+       <span class="arrow">|</span>
+       <span class="arrow">v</span>
+<span class="box">[Controller]</span>
+       <span class="arrow">|</span>
+   <span class="arrow">+---+---+</span>
+   <span class="arrow">|</span>       <span class="arrow">|</span>
+<span class="box">Query</span>   <span class="box">View</span>
+   <span class="arrow">|</span>       <span class="arrow">|</span>
+   <span class="arrow">v</span>       <span class="arrow">v</span>
+<span class="box">BelongsToTenant</span>    <span class="box">isViewer() ? disabled : ''</span>
+<span class="box">+ allowedPipelineIds()</span>
+<span class="box">+ dept filtering</span>
+        </div>
+    </div>
+    <script src="assets/nav.js"></script>
+</body>
+</html>

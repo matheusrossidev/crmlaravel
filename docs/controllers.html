@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syncro Docs — Controllers</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <div class="main">
+        <h1 class="page-title">Controllers</h1>
+        <p class="page-subtitle">54 controllers organizados por namespace</p>
+
+        <div class="table-filter">
+            <input type="text" data-table="controllersTable" placeholder="Filtrar controllers...">
+        </div>
+
+        <!-- Auth Controllers -->
+        <h2 id="auth">Auth Controllers (2)</h2>
+        <table id="controllersTable">
+            <thead>
+                <tr><th>Controller</th><th>Rota Base</th><th>Métodos</th><th>Descrição</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><code>AuthController</code></td><td>/login, /register, etc.</td><td>showLogin, login, showRegister, register, verifyEmail, showForgotPassword, sendResetLink, showResetPassword, resetPassword, logout</td><td>Autenticação completa: login, registro, verificação de email, reset de senha</td></tr>
+                <tr><td><code>AgencyRegisterController</code></td><td>/cadastro-agencia</td><td>show, store</td><td>Registro de agências parceiras com código de parceiro</td></tr>
+
+                <!-- Webhook Controllers -->
+                <tr><td colspan="4" style="background:var(--bg-sidebar);font-weight:700;">Webhook Controllers (3)</td></tr>
+                <tr><td><code>WhatsappWebhookController</code></td><td>/api/webhook/waha</td><td>handle</td><td>Recebe webhooks do WAHA. Dedup via Redis. Sempre retorna 200.</td></tr>
+                <tr><td><code>InstagramWebhookController</code></td><td>/api/webhook/instagram</td><td>verify, handle</td><td>Webhooks Meta: verification challenge + message processing</td></tr>
+                <tr><td><code>AsaasWebhookController</code></td><td>/api/webhook/asaas</td><td>handle</td><td>Pagamentos Asaas: confirmação, overdue, cancelamento, token increments</td></tr>
+
+                <!-- Tenant Controllers -->
+                <tr><td colspan="4" style="background:var(--bg-sidebar);font-weight:700;">Tenant Controllers (32)</td></tr>
+                <tr>
+                    <td><code>DashboardController</code></td>
+                    <td>/inicio</td>
+                    <td>index, saveConfig, leadsChart</td>
+                    <td>Dashboard com métricas: leads/mês, vendas, conversão, pipeline charts. <strong>Pipeline filtering:</strong> <code>buildDashboardData()</code> e <code>leadsChart()</code> filtram todas as estatísticas por <code>auth()->user()->allowedPipelineIds()</code> — usuários com pipelines restritos veem apenas dados dos funis permitidos.</td>
+                </tr>
+                <tr>
+                    <td><code>KanbanController</code></td>
+                    <td>/crm</td>
+                    <td>index, updateStage, export, preview, import, template, poll</td>
+                    <td>Kanban board com drag-drop, filtros, import/export Excel. <strong>Pipeline filtering:</strong> <code>index()</code> filtra pipelines por <code>auth()->user()->allowedPipelineIds()</code> — somente funis permitidos são listados e carregados. <code>poll()</code> também verifica acesso ao pipeline.</td>
+                </tr>
+                <tr>
+                    <td><code>LeadController</code></td>
+                    <td>/contatos</td>
+                    <td>index, store, show, showPage, update, removeFromPipeline, destroy, addNote, deleteNote, export, import, uploadCustomFieldFile</td>
+                    <td>CRUD completo de leads com custom fields, notas, perfil. <strong>Pipeline filtering:</strong> <code>index()</code> filtra leads e pipelines por <code>allowedPipelineIds()</code>. <code>show()</code> e <code>showPage()</code> também filtram os pipelines disponíveis para seleção.</td>
+                </tr>
+                <tr>
+                    <td><code>WhatsappController</code></td>
+                    <td>/chats</td>
+                    <td>index, show, markRead, assign, updateStatus, updateLead, linkLead, unlinkLead, searchLeads, updateContact, assignAiAgent, assignChatbotFlow, assignDepartment, destroy, showInstagram, markReadInstagram, sendInstagramMessage, linkLeadInstagram, unlinkLeadInstagram, destroyInstagram, showWebsite, markReadWebsite, updateStatusWebsite, linkLeadWebsite, unlinkLeadWebsite, destroyWebsite, poll</td>
+                    <td>Inbox unificado: WhatsApp + Instagram + Website conversations. <strong>Department filtering:</strong> <code>$restrictByDept = !$authUser->isAdmin()</code> — non-admins veem apenas conversas do próprio departamento ou atribuídas a si. <strong>Viewer blocking:</strong> rotas de escrita (sendMessage, assign, updateStatus, etc.) protegidas por middleware <code>role:admin,manager</code> — viewers têm acesso somente leitura.</td>
+                </tr>
+                <tr><td><code>WhatsappMessageController</code></td><td>/chats/.../messages</td><td>store, react</td><td>Envio de mensagens WhatsApp (texto + mídia) e reações. Protegido por middleware <code>role:admin,manager</code>.</td></tr>
+                <tr>
+                    <td><code>CampaignController</code></td>
+                    <td>/campanhas</td>
+                    <td>index, drillDown, analytics, store, update, destroy, reports, exportReportPdf</td>
+                    <td>Campanhas UTM com breakdown por source/medium/campaign/term/content, KPIs com comparação período anterior, top performers. <strong>Relatórios:</strong> <code>reports()</code> gera relatório detalhado de campanhas cadastradas com ROI, CTR, custo por lead. <code>exportReportPdf()</code> exporta relatório em PDF via DomPDF.</td>
+                </tr>
+                <tr><td><code>AiAgentController</code></td><td>/ia/agentes</td><td>index, create, store, edit, update, destroy, toggleActive, testChat, uploadKnowledgeFile, deleteKnowledgeFile</td><td>Agentes IA: personalidade, knowledge base, token quota</td></tr>
+                <tr><td><code>ChatbotFlowController</code></td><td>/chatbot/fluxos</td><td>index, create, store, edit, update, destroy, uploadImage, toggle, saveGraph, getPipelines</td><td>Builder visual de chatbot com nodes e edges</td></tr>
+                <tr><td><code>PipelineController</code></td><td>/configuracoes/funis</td><td>index, store, update, destroy, storeStage, updateStage, destroyStage, reorderStages</td><td>Funis + etapas CRUD com reorder</td></tr>
+                <tr>
+                    <td><code>UserController</code></td>
+                    <td>/configuracoes/usuarios</td>
+                    <td>index, store, update, destroy</td>
+                    <td>Gestão de usuários do tenant (admin only). <strong>Pipeline access control:</strong> <code>index()</code> passa <code>$pipelines</code> para a view. <code>store()</code> e <code>update()</code> validam <code>pipeline_ids</code> (array de inteiros, exists:pipelines) e sincronizam via <code>$user->pipelines()->sync()</code>. JSON response inclui <code>pipeline_ids</code> do usuário criado/atualizado.</td>
+                </tr>
+                <tr><td><code>CustomFieldController</code></td><td>/configuracoes/campos-extras</td><td>index, store, update, destroy, reorder</td><td>Definição de campos customizados para leads</td></tr>
+                <tr><td><code>AutomationController</code></td><td>/configuracoes/automacoes</td><td>index, create, edit, store, update, destroy, toggle</td><td>Regras de automação trigger-condition-action</td></tr>
+                <tr><td><code>IntegrationController</code></td><td>/configuracoes/integracoes</td><td>index, redirectFacebook, callbackFacebook, redirectGoogle, callbackGoogle, connectWhatsapp, getWhatsappQr, importHistoryWhatsapp, disconnectWhatsapp, redirectInstagram, callbackInstagram, disconnectInstagram, disconnect, syncNow</td><td>OAuth Facebook/Google/Instagram + WhatsApp WAHA connect</td></tr>
+                <tr><td><code>InstagramAutomationController</code></td><td>/configuracoes/instagram-automacoes</td><td>index, store, update, destroy, toggleActive, posts</td><td>Automação por post: keywords + auto-reply + DM</td></tr>
+                <tr><td><code>ProfileController</code></td><td>/configuracoes/perfil</td><td>index, update, updatePassword, updateAvatar, uploadWorkspaceLogo</td><td>Perfil do usuário e logo do workspace</td></tr>
+                <tr><td><code>LostSaleReasonController</code></td><td>/configuracoes/motivos-perda</td><td>index, store, update, destroy</td><td>Motivos de perda configuráveis</td></tr>
+                <tr><td><code>WhatsappTagController</code></td><td>/configuracoes/tags</td><td>index, store, update, destroy</td><td>Tags para conversas WhatsApp</td></tr>
+                <tr><td><code>DepartmentController</code></td><td>/configuracoes/departamentos</td><td>index, store, update, destroy</td><td>CRUD de departamentos com cor, atribuição de usuários, agentes IA e chatbot flows. Admin only.</td></tr>
+                <tr><td><code>QuickMessageController</code></td><td>/chats/quick-messages</td><td>index, store, update, destroy</td><td>Templates de resposta rápida</td></tr>
+                <tr><td><code>ScheduledMessageController</code></td><td>/contatos/{lead}/mensagens-agendadas</td><td>index, store, destroy</td><td>Agendamento de mensagens futuras</td></tr>
+                <tr>
+                    <td><code>ReportController</code></td>
+                    <td>/relatorios</td>
+                    <td>index, exportPdf</td>
+                    <td>Relatórios gerais de vendas e leads com filtros por período, campanha, pipeline e usuário. Compara KPIs com período anterior. <code>exportPdf()</code> gera PDF via DomPDF com os mesmos dados e filtros da view.</td>
+                </tr>
+                <tr><td><code>CalendarController</code></td><td>/agenda</td><td>index, events, store, update, destroy</td><td>Calendário com Google Calendar integration</td></tr>
+                <tr><td><code>OnboardingController</code></td><td>/onboarding</td><td>show, complete, skip</td><td>Fluxo de primeira configuração</td></tr>
+                <tr><td><code>BillingController</code></td><td>/cobranca</td><td>showCheckout, subscribe, cancel, index</td><td>Checkout e gestão de assinatura Asaas</td></tr>
+                <tr><td><code>ApiKeyController</code></td><td>/configuracoes/api-keys</td><td>index, store, destroy</td><td>Geração e gestão de API keys</td></tr>
+                <tr><td><code>TokenIncrementController</code></td><td>/configuracoes/tokens</td><td>purchase</td><td>Compra de pacotes de tokens AI via PIX</td></tr>
+                <tr><td><code>AiAnalystController</code></td><td>/chats/{conv}/analyst-*</td><td>index, approveAll, trigger, approve, reject, pendingCount</td><td>Sugestões do analista IA: aprovar/rejeitar</td></tr>
+                <tr><td><code>AiIntentSignalController</code></td><td>/ia/sinais</td><td>list, markRead, markAllRead, unreadCount</td><td>Alertas de intenção detectada pela IA</td></tr>
+                <tr><td><code>AiConfigurationController</code></td><td>/configuracoes</td><td>-</td><td>Config de API key LLM</td></tr>
+                <tr><td><code>AgencyAccessController</code></td><td>/agencia</td><td>enter, exit, clients, linkCode</td><td>Impersonação de clientes por agências parceiras</td></tr>
+                <tr><td><code>MasterNotificationReadController</code></td><td>/chats/notificacoes/master</td><td>index</td><td>Lista notificações broadcast do super admin para o tenant atual (globais + específicas).</td></tr>
+                <tr><td><code>UpsellBannerController</code></td><td>/upsell/{log}</td><td>dismiss, click</td><td>Interação com banners de upsell: dismiss marca como lido, click redireciona para CTA do plano alvo.</td></tr>
+
+                <!-- Master Controllers -->
+                <tr><td colspan="4" style="background:var(--bg-sidebar);font-weight:700;">Master Controllers (12) — Super Admin</td></tr>
+                <tr><td><code>MasterDashboardController</code></td><td>/master</td><td>index</td><td>Overview: total tenants, ativos, trial, parceiros</td></tr>
+                <tr><td><code>MasterTenantController</code></td><td>/master/empresas</td><td>index, store, show, update, destroy</td><td>CRUD de tenants (empresas)</td></tr>
+                <tr><td><code>MasterUserController</code></td><td>/master/empresas/{t}/usuarios</td><td>store, update, destroy</td><td>Gestão de usuários dentro de tenants</td></tr>
+                <tr><td><code>MasterPlanController</code></td><td>/master/planos</td><td>index, store, update, destroy</td><td>Definição de planos de assinatura</td></tr>
+                <tr><td><code>MasterPartnerAgencyCodeController</code></td><td>/master/codigos-agencia</td><td>index, store, generate, update, destroy</td><td>Códigos de agência parceira</td></tr>
+                <tr><td><code>MasterTokenIncrementPlanController</code></td><td>/master/token-incrementos</td><td>index, store, update, destroy</td><td>Pacotes de tokens IA</td></tr>
+                <tr><td><code>MasterUsageController</code></td><td>/master/uso</td><td>index, show</td><td>Uso de tokens por tenant</td></tr>
+                <tr><td><code>MasterLogController</code></td><td>/master/logs</td><td>index, content</td><td>Viewer de logs do sistema</td></tr>
+                <tr><td><code>MasterSystemController</code></td><td>/master/sistema</td><td>index, stats</td><td>Configuração e status do sistema</td></tr>
+                <tr><td><code>MasterNotificationController</code></td><td>/master/notificacoes</td><td>index, store</td><td>Notificações broadcast para tenants</td></tr>
+                <tr><td><code>MasterToolboxController</code></td><td>/master/ferramentas</td><td>index, run</td><td>Ferramentas de diagnóstico</td></tr>
+                <tr><td><code>MasterUpsellTriggerController</code></td><td>/master/upsell</td><td>index, store, update, destroy, logs</td><td>Configuração de triggers de upsell: regras baseadas em uso/plano, prioridade, plano alvo. <code>logs()</code> retorna histórico de disparos por trigger.</td></tr>
+
+                <!-- API Controllers -->
+                <tr><td colspan="4" style="background:var(--bg-sidebar);font-weight:700;">API Controllers (5) — X-API-Key</td></tr>
+                <tr><td><code>Api\LeadController</code></td><td>/api/v1/leads</td><td>store, show, stage, won, lost, destroy</td><td>API RESTful de leads com custom fields e UTM</td></tr>
+                <tr><td><code>Api\PipelineController</code></td><td>/api/v1/pipelines</td><td>index</td><td>Listagem de pipelines e stages</td></tr>
+                <tr><td><code>Api\CampaignController</code></td><td>/api/v1/campaigns</td><td>index, store, update, destroy</td><td>CRUD de campanhas via API</td></tr>
+                <tr><td><code>WebsiteWidgetController</code></td><td>/api/widget/{token}</td><td>script, init, message</td><td>Backend do widget de chat do site</td></tr>
+                <tr><td><code>AgnoToolsController</code></td><td>/api/internal/agno</td><td>setStage, addTag, notifyIntent, transferToHuman</td><td>Callbacks do microserviço Agno AI</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <script src="assets/nav.js"></script>
+</body>
+</html>
