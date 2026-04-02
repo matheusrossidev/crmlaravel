@@ -329,6 +329,14 @@ class ProcessAiResponse implements ShouldQueue
             $hasMedia  = $agent->mediaFiles()->exists();
             $needsJson = ! empty($stages) || ! empty($availTags) || $enableIntentNotify || $agent->enable_calendar_tool || $hasMedia;
 
+            Log::channel('whatsapp')->debug('AI job: needsJson check', [
+                'conversation_id' => $this->conversationId,
+                'needsJson'       => $needsJson,
+                'hasMedia'        => $hasMedia,
+                'stages'          => count($stages),
+                'tags'            => count($availTags),
+            ]);
+
             $llmResult = AiConfigurationController::callLlm(
                 provider:  $provider,
                 apiKey:    $apiKey,
@@ -383,6 +391,14 @@ class ProcessAiResponse implements ShouldQueue
                 if (str_starts_with($clean, '{')) {
                     $decoded = json_decode($clean, true);
                 }
+
+                Log::channel('whatsapp')->debug('AI job: JSON parse result', [
+                    'conversation_id' => $this->conversationId,
+                    'has_decoded'     => $decoded !== null,
+                    'has_reply_key'   => is_array($decoded) && isset($decoded['reply']),
+                    'actions_count'   => is_array($decoded) ? count($decoded['actions'] ?? []) : 0,
+                    'raw_preview'     => mb_substr($clean, 0, 300),
+                ]);
 
                 if (is_array($decoded) && isset($decoded['reply'])) {
                     $replyRaw = $decoded['reply'] ?? '';
