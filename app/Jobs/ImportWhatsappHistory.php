@@ -417,6 +417,16 @@ class ImportWhatsappHistory implements ShouldQueue
             }
         }
 
+        // Ordenar mensagens cronologicamente (oldest → newest) antes de salvar.
+        // WAHA GOWS não garante ordem — pode retornar newest-first.
+        usort($msgs, function ($a, $b) {
+            $tsA = (int) ($a['timestamp'] ?? 0);
+            $tsB = (int) ($b['timestamp'] ?? 0);
+            if ($tsA > 9999999999) $tsA = intdiv($tsA, 1000);
+            if ($tsB > 9999999999) $tsB = intdiv($tsB, 1000);
+            return $tsA <=> $tsB;
+        });
+
         foreach ($msgs as $msg) {
             if (! is_array($msg)) {
                 continue;

@@ -157,6 +157,13 @@ class WaImportHistoryCommand extends Command
                 break;
             }
 
+            // Ordenar cronologicamente (oldest → newest) — WAHA pode retornar em qualquer ordem
+            usort($messages, function ($a, $b) {
+                $tsA = (int) ($a['timestamp'] ?? 0);
+                $tsB = (int) ($b['timestamp'] ?? 0);
+                return $tsA <=> $tsB;
+            });
+
             foreach ($messages as $msg) {
                 if (! is_array($msg) || empty($msg['id'])) {
                     continue;

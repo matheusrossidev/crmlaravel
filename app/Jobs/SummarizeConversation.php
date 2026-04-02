@@ -46,7 +46,7 @@ class SummarizeConversation implements ShouldQueue
         // Fetch conversation messages
         $messages = WhatsappMessage::withoutGlobalScope('tenant')
             ->where('whatsapp_conversation_id', $conv->id)
-            ->orderBy('created_at')
+            ->orderBy('sent_at')
             ->limit(100)
             ->get(['from_me', 'body', 'type']);
 

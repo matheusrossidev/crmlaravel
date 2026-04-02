@@ -134,7 +134,7 @@ class WhatsappController extends Controller
         $conversation->load(['lead.pipeline', 'lead.stage']);
 
         $messages = InstagramMessage::where('conversation_id', $conversation->id)
-            ->orderBy('sent_at')
+            ->orderBy('sent_at')->orderBy('id')
             ->get()
             ->map(fn ($m) => [
                 'id'        => $m->id,
@@ -280,7 +280,7 @@ class WhatsappController extends Controller
             if ($convChannel === 'instagram') {
                 $newMessages = InstagramMessage::where('conversation_id', $convId)
                     ->where('created_at', '>=', $since)
-                    ->orderBy('sent_at')
+                    ->orderBy('sent_at')->orderBy('id')
                     ->get()
                     ->map(fn ($m) => [
                         'id'         => $m->id,
@@ -295,7 +295,7 @@ class WhatsappController extends Controller
             } elseif ($convChannel === 'website') {
                 $newMessages = WebsiteMessage::where('conversation_id', $convId)
                     ->where('sent_at', '>=', $since)
-                    ->orderBy('sent_at')
+                    ->orderBy('sent_at')->orderBy('id')
                     ->get()
                     ->map(fn ($m) => [
                         'id'         => $m->id,
@@ -310,7 +310,7 @@ class WhatsappController extends Controller
             } else {
                 $newMessages = WhatsappMessage::where('conversation_id', $convId)
                     ->where('created_at', '>=', $since)
-                    ->orderBy('sent_at')
+                    ->orderBy('sent_at')->orderBy('id')
                     ->get()
                     ->map(fn ($m) => $this->formatMessage($m));
             }
@@ -368,7 +368,7 @@ class WhatsappController extends Controller
         $conversation->load(['lead.pipeline', 'lead.stage']);
 
         $messages = WhatsappMessage::where('conversation_id', $conversation->id)
-            ->orderBy('sent_at')
+            ->orderBy('sent_at')->orderBy('id')
             ->get()
             ->map(fn ($m) => $this->formatMessage($m));
 
@@ -770,7 +770,7 @@ class WhatsappController extends Controller
         $websiteConversation->load(['lead.pipeline', 'lead.stage']);
 
         $messages = WebsiteMessage::where('conversation_id', $websiteConversation->id)
-            ->orderBy('sent_at')
+            ->orderBy('sent_at')->orderBy('id')
             ->get()
             ->map(fn ($m) => [
                 'id'         => $m->id,
