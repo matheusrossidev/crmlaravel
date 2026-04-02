@@ -720,12 +720,17 @@ class IntegrationController extends Controller
             return response()->json(['success' => false, 'message' => 'Não conectado'], 422);
         }
 
-        // Get page access token
+        // Get page access token — try /me/accounts first, fallback to direct lookup
         $service = new FacebookLeadAdsService(decrypt($conn->access_token));
         $pages   = $service->getPages();
         $page    = collect($pages)->firstWhere('id', $request->page_id);
 
         if (! $page) {
+            // Business Login fallback: fetch page directly by ID
+            $page = $service->searchPage($request->page_id);
+        }
+
+        if (! $page || empty($page['access_token'])) {
             return response()->json(['success' => false, 'message' => 'Página não encontrada'], 404);
         }
 
