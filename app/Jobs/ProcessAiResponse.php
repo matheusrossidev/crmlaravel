@@ -1001,10 +1001,14 @@ class ProcessAiResponse implements ShouldQueue
         // Flatten nested payload in actions to match the existing PHP action executor format.
         // Agno returns: {"type": "set_stage", "payload": {"stage_id": 3}}
         // PHP executor expects: {"type": "set_stage", "stage_id": 3}
-        $agnoResult['actions'] = array_map(
-            fn (array $a) => array_merge((array) ($a['payload'] ?? []), ['type' => $a['type'] ?? '']),
-            $agnoResult['actions'] ?? [],
-        );
+        // Also handles actions without payload wrapper (e.g. {"type": "send_media", "media_id": 42})
+        $agnoResult['actions'] = array_map(function (array $a) {
+            $type    = $a['type'] ?? '';
+            $payload = (array) ($a['payload'] ?? []);
+            // Merge all top-level keys except 'type' and 'payload' (handles flat actions)
+            $extra = array_diff_key($a, ['type' => 1, 'payload' => 1]);
+            return array_merge($payload, $extra, ['type' => $type]);
+        }, $agnoResult['actions'] ?? []);
 
         return $agnoResult;
     }
