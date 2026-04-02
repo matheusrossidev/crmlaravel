@@ -146,4 +146,5 @@ return [
     'msgs_suffix'         => 'msgs',
     'minutes_short'       => 'min',
     'hours_short'         => 'h',
+    'index_subtitle'      => 'Analyze sales performance and conversions.',
 ];

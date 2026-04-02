@@ -99,4 +99,21 @@ return [
     'type_conversion_rate' => 'Conversion rate (%)',
     'recurring_label'      => 'Recurring',
     'no_ranking_goals'     => 'Create individual goals to generate the ranking.',
+
+    // Additional keys
+    'no_goals_assigned'    => 'No goals assigned to you',
+    'goals_will_appear'    => 'Your individual goals will appear here.',
+    'vendor_filter'        => 'Salesperson:',
+    'avg_overall'          => 'Overall average',
+    'trend_label'          => 'Trend',
+    'goal_type_label'      => 'Goal type',
+    'group_result'         => 'Outcome',
+    'group_activity'       => 'Activity',
+    'start_label'          => 'Start',
+    'end_label'            => 'End',
+    'team_cascade'         => 'Team goal (cascade)',
+    'progress_label'       => 'Progress',
+    'position_label'       => 'Position',
+    'goal_word'            => 'goal|goals',
+    'select_placeholder'   => 'Select...',
 ];

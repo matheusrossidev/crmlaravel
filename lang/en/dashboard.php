@@ -78,4 +78,5 @@ return [
     'source_telefone'  => 'Phone',
     'source_email'     => 'Email',
     'response_time'    => 'Response Time',
+    'response_time_sub' => 'Average of last 7 days',
 ];

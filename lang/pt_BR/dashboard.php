@@ -78,4 +78,5 @@ return [
     'source_telefone'  => 'Telefone',
     'source_email'     => 'Email',
     'response_time'    => 'Tempo de Resposta',
+    'response_time_sub' => 'Média dos últimos 7 dias',
 ];

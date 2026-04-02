@@ -274,7 +274,7 @@
 
                 @if($contribs)
                     <div class="team-contribs">
-                        <div class="team-contribs-title">Contribuições</div>
+                        <div class="team-contribs-title">{{ __('goals.contributions') }}</div>
                         @foreach($contribs as $c)
                             <div class="contrib-row">
                                 <div class="contrib-name">{{ $c['user']?->name ?? '—' }}</div>
@@ -293,9 +293,9 @@
             @if($teamGoals->isEmpty())
                 <div class="g-empty">
                     <i class="bi bi-flag"></i>
-                    <div class="t">Nenhuma meta criada</div>
+                    <div class="t">{{ __('goals.no_goals') }}</div>
                     <div class="s">{{ __('goals.no_goals_desc') }}</div>
-                    <button class="btn-primary-sm" onclick="openGoalDrawer()"><i class="bi bi-plus-lg"></i> Criar primeira meta</button>
+                    <button class="btn-primary-sm" onclick="openGoalDrawer()"><i class="bi bi-plus-lg"></i> {{ __('goals.create_first') }}</button>
                 </div>
             @endif
         @endforelse
@@ -306,7 +306,7 @@
         @if(count($ranking) === 0)
             <div class="g-empty">
                 <i class="bi bi-bar-chart"></i>
-                <div class="t">Sem dados para ranking</div>
+                <div class="t">{{ __('goals.no_ranking_data') }}</div>
                 <div class="s">{{ __('goals.no_ranking_goals') }}</div>
             </div>
         @else
@@ -347,11 +347,11 @@
                         <div class="rank-stats">
                             <div class="rank-stat">
                                 <div class="rank-stat-val" style="color:{{ $pctClr }};">{{ $r['avg_pct'] }}%</div>
-                                <div class="rank-stat-label">Progresso</div>
+                                <div class="rank-stat-label">{{ __('goals.progress_label') }}</div>
                             </div>
                             <div class="rank-stat">
                                 <div class="rank-stat-val" style="color:#1a1d23;">{{ $r['position'] }}º</div>
-                                <div class="rank-stat-label">Posição</div>
+                                <div class="rank-stat-label">{{ __('goals.position_label') }}</div>
                             </div>
                         </div>
                     </div>
@@ -371,7 +371,7 @@
             <div class="g-summary" style="margin-bottom:20px;">
                 <div class="g-stat">
                     <div class="g-stat-icon blue"><i class="bi bi-trophy-fill"></i></div>
-                    <div class="g-stat-body"><div class="g-stat-label">Sua posição</div><div class="g-stat-val">{{ $myRank['position'] }}º</div></div>
+                    <div class="g-stat-body"><div class="g-stat-label">{{ __('goals.your_position') }}</div><div class="g-stat-val">{{ $myRank['position'] }}º</div></div>
                 </div>
                 <div class="g-stat">
                     <div class="g-stat-icon purple"><i class="bi bi-graph-up"></i></div>
@@ -379,7 +379,7 @@
                 </div>
                 <div class="g-stat">
                     <div class="g-stat-icon" style="background:#fffbeb;color:#f59e0b;"><i class="bi bi-fire"></i></div>
-                    <div class="g-stat-body"><div class="g-stat-label">Streak</div><div class="g-stat-val" style="color:#f59e0b;">{{ $myRank['streak'] > 0 ? $myRank['streak'].' dias' : '—' }}</div></div>
+                    <div class="g-stat-body"><div class="g-stat-label">Streak</div><div class="g-stat-val" style="color:#f59e0b;">{{ $myRank['streak'] > 0 ? $myRank['streak'].' '.__('goals.days') : '—' }}</div></div>
                 </div>
             </div>
         @endif
@@ -389,8 +389,8 @@
         @empty
             <div class="g-empty">
                 <i class="bi bi-person"></i>
-                <div class="t">Nenhuma meta atribuída a você</div>
-                <div class="s">Suas metas individuais aparecerão aqui.</div>
+                <div class="t">{{ __('goals.no_goals_assigned') }}</div>
+                <div class="s">{{ __('goals.goals_will_appear') }}</div>
             </div>
         @endforelse
     </div>
@@ -398,45 +398,45 @@
     {{-- ═══ TAB: HISTÓRICO ═══ --}}
     <div class="g-panel" id="panel-history">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
-            <label style="font-size:13px;font-weight:600;color:#374151;">Vendedor:</label>
+            <label style="font-size:13px;font-weight:600;color:#374151;">{{ __('goals.vendor_filter') }}</label>
             <select id="histUserSelect" onchange="loadHistory()" style="padding:9px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;outline:none;">
-                <option value="">Todos</option>
+                <option value="">{{ __('goals.all') }}</option>
                 @foreach($users as $u)
                     <option value="{{ $u->id }}">{{ $u->name }}</option>
                 @endforeach
             </select>
         </div>
-        <div id="histLoading" style="text-align:center;padding:50px;color:#97A3B7;display:none;"><i class="bi bi-hourglass-split" style="font-size:24px;"></i><p style="margin-top:8px;">Carregando...</p></div>
+        <div id="histLoading" style="text-align:center;padding:50px;color:#97A3B7;display:none;"><i class="bi bi-hourglass-split" style="font-size:24px;"></i><p style="margin-top:8px;">{{ __('goals.loading') }}</p></div>
         <div id="histEmpty" style="display:none;">
-            <div class="g-empty"><i class="bi bi-inbox"></i><div class="t">Nenhum histórico encontrado</div><div class="s">Os dados aparecerão após o encerramento de períodos com metas.</div></div>
+            <div class="g-empty"><i class="bi bi-inbox"></i><div class="t">{{ __('goals.no_history') }}</div><div class="s">{{ __('goals.no_history_desc') }}</div></div>
         </div>
         <div id="histContent" style="display:none;">
             {{-- KPI cards with icons --}}
             <div class="hist-kpis">
                 <div class="hist-kpi">
                     <div class="hist-kpi-icon" style="background:#f5f3ff;color:#8B5CF6;"><i class="bi bi-percent"></i></div>
-                    <div><div class="v" id="hAvg">—</div><div class="l">Média geral</div></div>
+                    <div><div class="v" id="hAvg">—</div><div class="l">{{ __('goals.avg_overall') }}</div></div>
                 </div>
                 <div class="hist-kpi">
                     <div class="hist-kpi-icon" style="background:#f0fdf4;color:#10B981;"><i class="bi bi-arrow-up-circle-fill"></i></div>
-                    <div><div class="v clr-achieved" id="hBest">—</div><div class="l">Melhor mês</div></div>
+                    <div><div class="v clr-achieved" id="hBest">—</div><div class="l">{{ __('goals.best_month') }}</div></div>
                 </div>
                 <div class="hist-kpi">
                     <div class="hist-kpi-icon" style="background:#eff6ff;color:#0085f3;"><i class="bi bi-activity"></i></div>
-                    <div><div class="v" id="hTrend">—</div><div class="l">Tendência</div></div>
+                    <div><div class="v" id="hTrend">—</div><div class="l">{{ __('goals.trend_label') }}</div></div>
                 </div>
             </div>
 
             {{-- Chart + Table side by side --}}
             <div class="hist-split">
                 <div class="hist-chart-card">
-                    <h4><i class="bi bi-graph-up"></i> Evolução</h4>
+                    <h4><i class="bi bi-graph-up"></i> {{ __('goals.evolution') }}</h4>
                     <div style="flex:1;"><canvas id="hChart" height="220"></canvas></div>
                 </div>
                 <div class="hist-tbl-card">
-                    <h4><i class="bi bi-table"></i> Detalhamento</h4>
+                    <h4><i class="bi bi-table"></i> {{ __('goals.detail') }}</h4>
                     <div class="hist-tbl-scroll">
-                        <table class="hist-tbl"><thead><tr><th>Período</th><th>Meta</th><th>Real</th><th>%</th></tr></thead><tbody id="hTbody"></tbody></table>
+                        <table class="hist-tbl"><thead><tr><th>{{ __('goals.period') }}</th><th>{{ __('goals.goal') }}</th><th>{{ __('goals.actual') }}</th><th>%</th></tr></thead><tbody id="hTbody"></tbody></table>
                     </div>
                 </div>
             </div>
@@ -452,52 +452,52 @@
         <button onclick="closeGoalDrawer()" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;"><i class="bi bi-x-lg"></i></button>
     </div>
     <div class="dw-body">
-        <div class="fg"><label>Tipo de meta *</label>
+        <div class="fg"><label>{{ __('goals.goal_type_label') }} *</label>
             <select id="gType">
-                <optgroup label="Resultado"><option value="leads_won">Vendas fechadas</option><option value="revenue">Receita (R$)</option><option value="leads_created">Leads criados</option></optgroup>
-                <optgroup label="Atividade"><option value="messages_sent">Mensagens enviadas</option><option value="leads_contacted">Leads contatados</option><option value="tasks_completed">Tarefas concluídas</option></optgroup>
+                <optgroup label="{{ __('goals.group_result') }}"><option value="leads_won">{{ __('goals.type_sales_count') }}</option><option value="revenue">{{ __('goals.type_sales_value') }}</option><option value="leads_created">{{ __('goals.type_leads_created') }}</option></optgroup>
+                <optgroup label="{{ __('goals.group_activity') }}"><option value="messages_sent">{{ __('goals.type_messages_sent') }}</option><option value="leads_contacted">{{ __('goals.type_leads_contacted') }}</option><option value="tasks_completed">{{ __('goals.type_tasks_completed') }}</option></optgroup>
             </select>
         </div>
-        <div class="fg"><label>Período</label>
-            <select id="gPeriod" onchange="autoFillDates()"><option value="monthly">Mensal</option><option value="weekly">Semanal</option><option value="quarterly">Trimestral</option></select>
+        <div class="fg"><label>{{ __('goals.period_label') }}</label>
+            <select id="gPeriod" onchange="autoFillDates()"><option value="monthly">{{ __('goals.period_monthly') }}</option><option value="weekly">{{ __('goals.period_weekly') }}</option><option value="quarterly">{{ __('goals.period_quarterly') }}</option></select>
         </div>
         <div class="fg-row">
-            <div class="fg"><label>Início</label><input type="date" id="gStart"></div>
-            <div class="fg"><label>Fim</label><input type="date" id="gEnd"></div>
+            <div class="fg"><label>{{ __('goals.start_label') }}</label><input type="date" id="gStart"></div>
+            <div class="fg"><label>{{ __('goals.end_label') }}</label><input type="date" id="gEnd"></div>
         </div>
         <div class="toggle-box">
-            <div class="toggle-row"><input type="checkbox" id="gIsTeam" onchange="toggleTeamMode()"><label for="gIsTeam">Meta de time (cascata)</label></div>
+            <div class="toggle-row"><input type="checkbox" id="gIsTeam" onchange="toggleTeamMode()"><label for="gIsTeam">{{ __('goals.team_cascade') }}</label></div>
             <div id="teamSection" style="display:none;margin-top:12px;">
-                <div class="fg"><label>Meta total do time *</label><input type="number" id="gTeamTarget" placeholder="Ex: 100000" min="1"></div>
-                <div style="font-size:11px;font-weight:600;color:#97A3B7;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">Distribuição por membro</div>
+                <div class="fg"><label>{{ __('goals.team_total') }}</label><input type="number" id="gTeamTarget" placeholder="Ex: 100000" min="1"></div>
+                <div style="font-size:11px;font-weight:600;color:#97A3B7;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">{{ __('goals.distribution') }}</div>
                 <div id="teamMembers"></div>
-                <button type="button" class="add-btn" onclick="addTeamMember()"><i class="bi bi-plus"></i> Adicionar membro</button>
+                <button type="button" class="add-btn" onclick="addTeamMember()"><i class="bi bi-plus"></i> {{ __('goals.add_member') }}</button>
             </div>
         </div>
         <div id="individualSection">
-            <div class="fg"><label>Vendedor</label>
-                <select id="gUser"><option value="">Time inteiro</option>@foreach($users as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>@endforeach</select>
+            <div class="fg"><label>{{ __('goals.vendor_label') }}</label>
+                <select id="gUser"><option value="">{{ __('goals.whole_team') }}</option>@foreach($users as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>@endforeach</select>
             </div>
-            <div class="fg"><label>Meta *</label><input type="number" id="gTarget" placeholder="Ex: 10 ou 50000" min="1"></div>
+            <div class="fg"><label>{{ __('goals.target') }}</label><input type="number" id="gTarget" placeholder="Ex: 10 ou 50000" min="1"></div>
         </div>
         <div class="toggle-box">
-            <div class="toggle-row"><input type="checkbox" id="gRecurring" onchange="toggleRecurring()"><label for="gRecurring">Meta recorrente (auto-renova)</label></div>
+            <div class="toggle-row"><input type="checkbox" id="gRecurring" onchange="toggleRecurring()"><label for="gRecurring">{{ __('goals.recurring_toggle') }}</label></div>
             <div id="recurringSection" style="display:none;margin-top:10px;">
-                <div class="fg"><label>Crescimento por período (%)</label><input type="number" id="gGrowth" placeholder="Ex: 5" min="0" max="100" step="0.5"></div>
-                <p style="font-size:11px;color:#97A3B7;margin:4px 0 0;">0 ou vazio = mesmo valor. Ex: 5 = meta sobe 5% a cada renovação.</p>
+                <div class="fg"><label>{{ __('goals.growth_pct') }}</label><input type="number" id="gGrowth" placeholder="Ex: 5" min="0" max="100" step="0.5"></div>
+                <p style="font-size:11px;color:#97A3B7;margin:4px 0 0;">{{ __('goals.growth_hint') }}</p>
             </div>
         </div>
         <div class="toggle-box">
-            <div class="toggle-row"><input type="checkbox" id="gHasBonus" onchange="toggleBonus()"><label for="gHasBonus">Bônus por atingimento</label></div>
+            <div class="toggle-row"><input type="checkbox" id="gHasBonus" onchange="toggleBonus()"><label for="gHasBonus">{{ __('goals.bonus_toggle') }}</label></div>
             <div id="bonusSection" style="display:none;margin-top:10px;">
                 <div id="tierList"></div>
-                <button type="button" class="add-btn" onclick="addTier()"><i class="bi bi-plus"></i> Adicionar faixa</button>
+                <button type="button" class="add-btn" onclick="addTier()"><i class="bi bi-plus"></i> {{ __('goals.add_tier') }}</button>
             </div>
         </div>
     </div>
     <div class="dw-footer">
-        <button class="btn-outline-sm" onclick="closeGoalDrawer()">Cancelar</button>
-        <button class="btn-primary-sm" id="btnCreateGoal" onclick="createGoal()"><i class="bi bi-check-lg"></i> Criar Meta</button>
+        <button class="btn-outline-sm" onclick="closeGoalDrawer()">{{ __('goals.cancel') }}</button>
+        <button class="btn-primary-sm" id="btnCreateGoal" onclick="createGoal()"><i class="bi bi-check-lg"></i> {{ __('goals.create_goal') }}</button>
     </div>
 </div>
 @endsection
@@ -540,7 +540,7 @@ function addTier() {
 }
 function addTeamMember() {
     const d = document.createElement('div'); d.className = 'tm-row';
-    let o = '<option value="">Selecione...</option>'; USERS_JSON.forEach(u => o += `<option value="${u.id}">${u.name}</option>`);
+    let o = '<option value="">{{ __('goals.select_placeholder') }}</option>'; USERS_JSON.forEach(u => o += `<option value="${u.id}">${u.name}</option>`);
     d.innerHTML = `<select class="tmu">${o}</select><input type="number" class="tmt" placeholder="Meta" min="1"><button class="td" onclick="this.parentElement.remove()"><i class="bi bi-x"></i></button>`;
     document.getElementById('teamMembers').appendChild(d);
 }

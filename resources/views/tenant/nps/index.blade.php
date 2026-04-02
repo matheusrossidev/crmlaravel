@@ -150,15 +150,15 @@
     <div class="nps-grid-2">
         {{-- By vendor --}}
         <div class="content-card">
-            <div class="content-card-header"><h3><i class="bi bi-people"></i> Por Vendedor</h3></div>
+            <div class="content-card-header"><h3><i class="bi bi-people"></i> {{ __('nps.by_vendor') }}</h3></div>
             <div style="overflow-x:auto;">
                 <table style="width:100%;border-collapse:collapse;font-size:13px;">
                     <thead>
                         <tr>
-                            <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">Vendedor</th>
-                            <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">Respostas</th>
+                            <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">{{ __('nps.vendor') }}</th>
+                            <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">{{ __('nps.responses') }}</th>
                             <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">NPS</th>
-                            <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">Média</th>
+                            <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">{{ __('nps.average') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -171,7 +171,7 @@
                             <td style="padding:10px 12px;text-align:center;border-bottom:1px solid #f7f8fa;">{{ $v->avg_score }}</td>
                         </tr>
                         @empty
-                        <tr><td colspan="4" style="padding:24px;text-align:center;color:#9ca3af;">Sem dados no período</td></tr>
+                        <tr><td colspan="4" style="padding:24px;text-align:center;color:#9ca3af;">{{ __('nps.no_data_period') }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -180,7 +180,7 @@
 
         {{-- Recent comments --}}
         <div class="content-card">
-            <div class="content-card-header"><h3><i class="bi bi-chat-quote"></i> Comentários Recentes</h3></div>
+            <div class="content-card-header"><h3><i class="bi bi-chat-quote"></i> {{ __('nps.recent_comments') }}</h3></div>
             <div style="padding:0 20px;">
                 @forelse($recentComments as $c)
                 <div class="comment-item" style="display:flex;gap:12px;align-items:flex-start;">
@@ -188,14 +188,14 @@
                     <div style="flex:1;min-width:0;">
                         <div style="font-size:13px;color:#374151;line-height:1.5;">{{ $c->comment }}</div>
                         <div style="font-size:11px;color:#9ca3af;margin-top:4px;">
-                            {{ $c->lead?->name ?? 'Anônimo' }}
+                            {{ $c->lead?->name ?? __('nps.anonymous') }}
                             @if($c->user) · {{ $c->user->name }} @endif
                             · {{ $c->answered_at?->format('d/m/Y') }}
                         </div>
                     </div>
                 </div>
                 @empty
-                <div style="padding:24px;text-align:center;color:#9ca3af;font-size:13px;">Nenhum comentário no período</div>
+                <div style="padding:24px;text-align:center;color:#9ca3af;font-size:13px;">{{ __('nps.no_comments_period') }}</div>
                 @endforelse
             </div>
         </div>
@@ -204,17 +204,17 @@
     {{-- Surveys list --}}
     <div class="content-card">
         <div class="content-card-header">
-            <h3><i class="bi bi-list-ul"></i> Pesquisas Configuradas</h3>
+            <h3><i class="bi bi-list-ul"></i> {{ __('nps.configured_surveys') }}</h3>
         </div>
         <div style="overflow-x:auto;">
             <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
                 <thead>
                     <tr>
-                        <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">Nome</th>
-                        <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">Trigger</th>
-                        <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">Respostas</th>
-                        <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">Link</th>
-                        <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">Status</th>
+                        <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">{{ __('nps.name_label') }}</th>
+                        <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">{{ __('nps.trigger_label') }}</th>
+                        <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">{{ __('nps.responses') }}</th>
+                        <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">{{ __('nps.link_label') }}</th>
+                        <th style="padding:10px 12px;text-align:center;font-size:11px;font-weight:600;color:#677489;border-bottom:1px solid #f0f2f7;">{{ __('nps.status_label') }}</th>
                         <th style="padding:10px 12px;border-bottom:1px solid #f0f2f7;"></th>
                     </tr>
                 </thead>
@@ -226,24 +226,24 @@
                             <div style="font-size:12px;color:#9ca3af;">{{ \Illuminate\Support\Str::limit($s->question, 50) }}</div>
                         </td>
                         <td style="padding:10px 12px;border-bottom:1px solid #f7f8fa;">
-                            @php $triggerLabels = ['lead_won' => 'Venda fechada', 'conversation_closed' => 'Conversa fechada', 'manual' => 'Manual']; @endphp
+                            @php $triggerLabels = ['lead_won' => __('nps.trigger_sale_closed'), 'conversation_closed' => __('nps.trigger_conv_closed'), 'manual' => __('nps.trigger_manual')]; @endphp
                             <span style="font-size:12px;font-weight:600;">{{ $triggerLabels[$s->trigger] ?? $s->trigger }}</span>
                             @if($s->delay_hours > 0)
-                                <div style="font-size:11px;color:#9ca3af;">+{{ $s->delay_hours }}h de delay</div>
+                                <div style="font-size:11px;color:#9ca3af;">+{{ $s->delay_hours }}h {{ __('nps.delay_label') }}</div>
                             @endif
                         </td>
                         <td style="padding:10px 12px;text-align:center;border-bottom:1px solid #f7f8fa;font-weight:700;">{{ $s->answered_count }}/{{ $s->responses_count }}</td>
                         <td style="padding:10px 12px;text-align:center;border-bottom:1px solid #f7f8fa;">
                             <button onclick="copyLink('{{ url('/pesquisa/' . $s->slug) }}')" title="Copiar link"
                                 style="background:#eff6ff;color:#0085f3;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:600;">
-                                <i class="bi bi-link-45deg"></i> Copiar
+                                <i class="bi bi-link-45deg"></i> {{ __('nps.copy_label') }}
                             </button>
                         </td>
                         <td style="padding:10px 12px;text-align:center;border-bottom:1px solid #f7f8fa;">
                             @if($s->is_active)
-                                <span style="color:#10B981;font-weight:600;font-size:12px;"><i class="bi bi-check-circle-fill"></i> Ativo</span>
+                                <span style="color:#10B981;font-weight:600;font-size:12px;"><i class="bi bi-check-circle-fill"></i> {{ __('nps.active') }}</span>
                             @else
-                                <span style="color:#9ca3af;font-size:12px;"><i class="bi bi-x-circle"></i> Inativo</span>
+                                <span style="color:#9ca3af;font-size:12px;"><i class="bi bi-x-circle"></i> {{ __('nps.inactive') }}</span>
                             @endif
                         </td>
                         <td style="padding:10px 12px;border-bottom:1px solid #f7f8fa;text-align:right;">
@@ -271,44 +271,44 @@
     </div>
     <div style="flex:1;overflow-y:auto;padding:24px;">
         <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">Nome *</label>
-            <input type="text" id="sName" placeholder="Ex: NPS Pós-Venda" style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;">
+            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">{{ __('nps.form_name') }} *</label>
+            <input type="text" id="sName" placeholder="{{ __('nps.form_name_placeholder') }}" style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;">
         </div>
         <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">Pergunta principal *</label>
-            <textarea id="sQuestion" rows="2" placeholder="De 0 a 10, quanto você recomendaria nossos serviços?" style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;resize:vertical;font-family:inherit;"></textarea>
+            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">{{ __('nps.form_question') }} *</label>
+            <textarea id="sQuestion" rows="2" placeholder="{{ __('nps.form_question_ph') }}" style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;resize:vertical;font-family:inherit;"></textarea>
         </div>
         <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">Pergunta de follow-up (opcional)</label>
-            <input type="text" id="sFollowUp" placeholder="O que motivou sua nota?" style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;">
+            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">{{ __('nps.form_followup') }}</label>
+            <input type="text" id="sFollowUp" placeholder="{{ __('nps.form_followup_ph') }}" style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;">
         </div>
         <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">Disparar quando</label>
+            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">{{ __('nps.form_trigger') }}</label>
             <select id="sTrigger" style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;">
-                <option value="manual">Manual (enviar link)</option>
-                <option value="lead_won">Automático — Venda fechada</option>
-                <option value="conversation_closed">Automático — Conversa fechada</option>
+                <option value="manual">{{ __('nps.form_trigger_manual') }}</option>
+                <option value="lead_won">{{ __('nps.form_trigger_sale') }}</option>
+                <option value="conversation_closed">{{ __('nps.form_trigger_conv') }}</option>
             </select>
         </div>
         <div style="margin-bottom:14px;" id="delayRow">
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">Delay (horas após trigger)</label>
+            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">{{ __('nps.form_delay') }}</label>
             <input type="number" id="sDelay" value="0" min="0" max="168" style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;">
         </div>
         <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">Enviar via</label>
+            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">{{ __('nps.form_channel') }}</label>
             <select id="sSendVia" style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;">
                 <option value="whatsapp">WhatsApp</option>
                 <option value="link">Apenas link</option>
             </select>
         </div>
         <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">Mensagem de agradecimento (opcional)</label>
-            <input type="text" id="sThanks" placeholder="Obrigado pela sua opinião!" style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;">
+            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">{{ __('nps.form_thanks') }}</label>
+            <input type="text" id="sThanks" placeholder="{{ __('nps.form_thanks_ph') }}" style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;">
         </div>
     </div>
     <div style="padding:16px 24px;border-top:1px solid #f0f2f7;display:flex;gap:10px;justify-content:flex-end;">
-        <button class="btn-outline-sm" onclick="closeCreate()">Cancelar</button>
-        <button class="btn-primary-sm" id="btnCreateSurvey" onclick="createSurvey()"><i class="bi bi-check-lg"></i> Criar</button>
+        <button class="btn-outline-sm" onclick="closeCreate()">{{ __('nps.cancel') }}</button>
+        <button class="btn-primary-sm" id="btnCreateSurvey" onclick="createSurvey()"><i class="bi bi-check-lg"></i> {{ __('nps.create') }}</button>
     </div>
 </div>
 
@@ -317,6 +317,11 @@
 @push('scripts')
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+const NLANG = {!! json_encode([
+    'link_copied' => __('nps.link_copied'),
+    'fill_required' => __('nps.fill_required'),
+    'survey_created' => __('nps.survey_created'),
+]) !!};
 
 // Charts
 new Chart(document.getElementById('npsChart'), {
@@ -367,7 +372,7 @@ new Chart(document.getElementById('distChart'), {
 });
 
 function copyLink(url) {
-    navigator.clipboard.writeText(url).then(() => toastr.success('Link copiado!'));
+    navigator.clipboard.writeText(url).then(() => toastr.success(NLANG.link_copied));
 }
 
 function openCreate() {
@@ -383,7 +388,7 @@ function closeCreate() {
 async function createSurvey() {
     const name = document.getElementById('sName').value.trim();
     const question = document.getElementById('sQuestion').value.trim();
-    if (!name || !question) { toastr.error('Preencha nome e pergunta'); return; }
+    if (!name || !question) { toastr.error(NLANG.fill_required); return; }
 
     document.getElementById('btnCreateSurvey').disabled = true;
     const res = await fetch('{{ route("nps.store") }}', {
@@ -399,7 +404,7 @@ async function createSurvey() {
         }),
     });
     const data = await res.json();
-    if (data.success) { toastr.success('Pesquisa criada!'); setTimeout(() => location.reload(), 800); }
+    if (data.success) { toastr.success(NLANG.survey_created); setTimeout(() => location.reload(), 800); }
     else { toastr.error(data.message || 'Erro'); document.getElementById('btnCreateSurvey').disabled = false; }
 }
 

@@ -123,4 +123,21 @@ return [
     'type_conversion_rate' => 'Taxa de conversão (%)',
     'recurring_label'      => 'Recorrente',
     'no_ranking_goals'     => 'Crie metas individuais para gerar o ranking.',
+
+    // Additional keys
+    'no_goals_assigned'    => 'Nenhuma meta atribuída a você',
+    'goals_will_appear'    => 'Suas metas individuais aparecerão aqui.',
+    'vendor_filter'        => 'Vendedor:',
+    'avg_overall'          => 'Média geral',
+    'trend_label'          => 'Tendência',
+    'goal_type_label'      => 'Tipo de meta',
+    'group_result'         => 'Resultado',
+    'group_activity'       => 'Atividade',
+    'start_label'          => 'Início',
+    'end_label'            => 'Fim',
+    'team_cascade'         => 'Meta de time (cascata)',
+    'progress_label'       => 'Progresso',
+    'position_label'       => 'Posição',
+    'goal_word'            => 'meta|metas',
+    'select_placeholder'   => 'Selecione...',
 ];

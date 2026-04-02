@@ -507,7 +507,7 @@
                 <div class="stat-value-row">
                     <span class="stat-value">{{ $avgResponseFormatted ?? '—' }}</span>
                 </div>
-                <span class="stat-sub">Média dos últimos 7 dias</span>
+                <span class="stat-sub">{{ __('dashboard.response_time_sub') }}</span>
             </div>
         </div>
     </div>
