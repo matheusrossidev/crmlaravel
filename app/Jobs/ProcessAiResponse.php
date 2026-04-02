@@ -326,7 +326,8 @@ class ProcessAiResponse implements ShouldQueue
             $extraTokens = (! empty($stages) || ! empty($availTags)) ? 300 : 0;
             $maxTokens   = $maxLength + 200 + $extraTokens;
 
-            $needsJson = ! empty($stages) || ! empty($availTags) || $enableIntentNotify || $agent->enable_calendar_tool;
+            $hasMedia  = $agent->mediaFiles()->exists();
+            $needsJson = ! empty($stages) || ! empty($availTags) || $enableIntentNotify || $agent->enable_calendar_tool || $hasMedia;
 
             $llmResult = AiConfigurationController::callLlm(
                 provider:  $provider,
@@ -366,8 +367,8 @@ class ProcessAiResponse implements ShouldQueue
                 return;
             }
 
-            // Parsear JSON de ações (quando pipeline/tags/intent/calendar disponíveis)
-            if (! empty($stages) || ! empty($availTags) || $enableIntentNotify || $agent->enable_calendar_tool) {
+            // Parsear JSON de ações (quando pipeline/tags/intent/calendar/media disponíveis)
+            if ($needsJson) {
                 $clean = preg_replace('/```(?:json)?\s*([\s\S]*?)```/i', '$1', $reply);
                 $clean = trim($clean ?? $reply);
 
