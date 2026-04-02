@@ -184,11 +184,14 @@ function closeFeatureDrawer() {
     }, 300);
 }
 
+const FEATURE_TOGGLE_URL = @json(route('master.features.toggle-global', ['feature' => '__ID__']));
+const FEATURE_TENANTS_URL = @json(route('master.features.update-tenants', ['feature' => '__ID__']));
+
 function toggleGlobal() {
     const isGlobal = document.getElementById('globalToggle').checked;
     document.getElementById('tenantSelectionArea').style.display = isGlobal ? 'none' : 'block';
 
-    fetch(`/crm/public/master/features/${currentFeatureId}/toggle-global`, {
+    fetch(FEATURE_TOGGLE_URL.replace('__ID__', currentFeatureId), {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' },
     })
@@ -207,7 +210,7 @@ function saveTenants() {
     const tenantIds = [];
     document.querySelectorAll('.tenant-cb:checked').forEach(cb => tenantIds.push(parseInt(cb.value)));
 
-    fetch(`/crm/public/master/features/${currentFeatureId}/tenants`, {
+    fetch(FEATURE_TENANTS_URL.replace('__ID__', currentFeatureId), {
         method: 'PUT',
         headers: {
             'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,

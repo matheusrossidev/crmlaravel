@@ -75,6 +75,10 @@ if [ "${IS_APP}" = "true" ]; then
         echo "[entrypoint] Users already exist (${USER_COUNT}) — skipping seed."
     fi
 
+    # Always run idempotent seeders (use updateOrCreate, safe to re-run)
+    echo "[entrypoint] Running feature flag seeder..."
+    php artisan db:seed --class=FeatureFlagSeeder --force --no-interaction 2>/dev/null || true
+
     echo "[entrypoint] Caching config/routes/views..."
     php artisan config:cache  2>/dev/null || true
     php artisan route:cache   2>/dev/null || true
