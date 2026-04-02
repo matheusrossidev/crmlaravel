@@ -101,23 +101,36 @@ class ReengagementController extends Controller
             'target'  => 'required|string|max:50',
         ]);
 
-        if ($data['channel'] === 'email') {
-            Artisan::call('users:send-reengagement', [
-                '--test-email' => $data['target'],
-                '--test-stage' => $data['stage'],
-            ]);
-        } else {
-            Artisan::call('users:send-reengagement', [
-                '--test-phone' => $data['target'],
-                '--test-stage' => $data['stage'],
-            ]);
-        }
+        try {
+            if ($data['channel'] === 'email') {
+                Artisan::call('users:send-reengagement', [
+                    '--test-email' => $data['target'],
+                    '--test-stage' => $data['stage'],
+                ]);
+            } else {
+                Artisan::call('users:send-reengagement', [
+                    '--test-phone' => $data['target'],
+                    '--test-stage' => $data['stage'],
+                ]);
+            }
 
-        return response()->json([
-            'success' => true,
-            'message' => $data['channel'] === 'email'
-                ? "Teste enviado para {$data['target']}"
-                : "WhatsApp enviado para {$data['target']}",
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => $data['channel'] === 'email'
+                    ? "Teste enviado para {$data['target']}"
+                    : "WhatsApp enviado para {$data['target']}",
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Reengagement test failed', [
+                'channel' => $data['channel'],
+                'target'  => $data['target'],
+                'error'   => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro: ' . $e->getMessage(),
+            ], 422);
+        }
     }
 }

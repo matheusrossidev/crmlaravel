@@ -80,6 +80,12 @@ async def chat(req: ChatRequest) -> AgentResponse:
 
         reply_blocks, actions = _extract_reply_and_actions(result)
 
+        # Debug: log raw actions to diagnose send_media issues
+        if actions:
+            print(f"[DEBUG] Agent {req.agent_id} actions: {json.dumps(actions, default=str)}")
+        if req.available_media:
+            print(f"[DEBUG] Agent {req.agent_id} available_media count: {len(req.available_media)}")
+
         # Second-pass formatter: a dedicated LLM call that only splits and
         # humanizes the text — much more reliable than prompt instructions alone.
         config = get_agent_config(req.agent_id)

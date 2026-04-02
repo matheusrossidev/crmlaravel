@@ -537,9 +537,23 @@ class ProcessAiResponse implements ShouldQueue
                 $this->applyAssignHuman($conv, $agent);
             } elseif ($type === 'send_media') {
                 $mediaId = (int) ($action['media_id'] ?? 0);
+
+                // Fallback: if LLM didn't include media_id, infer from last user message
+                if ($mediaId <= 0) {
+                    $mediaId = $this->inferMediaId($conv, $agent);
+                    Log::channel('whatsapp')->info('AI send_media: media_id inferido por fallback', [
+                        'conversation_id' => $conv->id,
+                        'inferred_media_id' => $mediaId,
+                    ]);
+                }
+
                 if ($mediaId > 0) {
                     try {
                         $service->sendMediaReply($conv, $agent, $mediaId);
+                        Log::channel('whatsapp')->info('AI send_media: enviado com sucesso', [
+                            'conversation_id' => $conv->id,
+                            'media_id' => $mediaId,
+                        ]);
                     } catch (\Throwable $e) {
                         Log::channel('whatsapp')->error('AI send_media falhou', [
                             'conversation_id' => $conv->id,
@@ -547,6 +561,11 @@ class ProcessAiResponse implements ShouldQueue
                             'error'           => $e->getMessage(),
                         ]);
                     }
+                } else {
+                    Log::channel('whatsapp')->warning('AI send_media: sem media_id, ação ignorada', [
+                        'conversation_id' => $conv->id,
+                        'action' => $action,
+                    ]);
                 }
             } elseif ($type === 'update_lead') {
                 $this->applyUpdateLead($conv, $action, $lead);
@@ -1701,6 +1720,48 @@ class ProcessAiResponse implements ShouldQueue
             ]);
             return "Erro ao executar {$type}: " . $e->getMessage();
         }
+    }
+
+    /**
+     * Infer the best media_id from the user's last message matched against agent media descriptions.
+     */
+    private function inferMediaId(WhatsappConversation $conv, AiAgent $agent): int
+    {
+        $lastMsg = WhatsappMessage::withoutGlobalScope('tenant')
+            ->where('conversation_id', $conv->id)
+            ->where('direction', 'inbound')
+            ->latest('sent_at')
+            ->value('body');
+
+        if (!$lastMsg) return 0;
+
+        $msgLower = mb_strtolower($lastMsg);
+        $bestId    = 0;
+        $bestScore = 0;
+
+        foreach ($agent->mediaFiles()->get() as $media) {
+            $desc = mb_strtolower(($media->description ?? '') . ' ' . ($media->original_name ?? ''));
+            $score = 0;
+
+            // Check each word from description against the user message
+            foreach (preg_split('/\s+/', $desc) as $word) {
+                if (mb_strlen($word) >= 3 && str_contains($msgLower, $word)) {
+                    $score++;
+                }
+            }
+
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $bestId    = $media->id;
+            }
+        }
+
+        // If no match found, return first media as default
+        if ($bestId === 0) {
+            $bestId = $agent->mediaFiles()->value('id') ?? 0;
+        }
+
+        return $bestId;
     }
 
     // ── Product Actions ─────────────────────────────────────────────────────
