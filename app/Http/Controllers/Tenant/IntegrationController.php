@@ -679,7 +679,33 @@ class IntegrationController extends Controller
         $service = new FacebookLeadAdsService(decrypt($conn->access_token));
         $pages   = $service->getPages();
 
-        return response()->json(['success' => true, 'pages' => $pages]);
+        return response()->json([
+            'success'      => true,
+            'pages'        => $pages,
+            'needs_search' => empty($pages), // Business Login: /me/accounts empty
+        ]);
+    }
+
+    public function searchFacebookLeadAdsPage(Request $request): JsonResponse
+    {
+        $request->validate(['query' => 'required|string|max:500']);
+
+        $conn = OAuthConnection::where('platform', 'facebook_leadads')
+            ->where('status', 'active')
+            ->first();
+
+        if (! $conn) {
+            return response()->json(['success' => false, 'message' => 'Não conectado'], 422);
+        }
+
+        $service = new FacebookLeadAdsService(decrypt($conn->access_token));
+        $page    = $service->searchPage($request->query('query'));
+
+        if (! $page || empty($page['id'])) {
+            return response()->json(['success' => false, 'message' => 'Página não encontrada. Verifique o ID ou URL.'], 404);
+        }
+
+        return response()->json(['success' => true, 'page' => $page]);
     }
 
     public function getFacebookLeadAdsForms(Request $request): JsonResponse

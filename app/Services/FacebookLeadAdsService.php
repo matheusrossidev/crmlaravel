@@ -20,7 +20,8 @@ class FacebookLeadAdsService
 
     /**
      * List Facebook Pages the user manages.
-     * Requires: pages_show_list + pages_manage_metadata
+     * Tries /me/accounts first. If empty (Facebook Business Login),
+     * falls back to searching by page name/URL.
      * Returns [{id, name, access_token}]
      */
     public function getPages(): array
@@ -32,12 +33,65 @@ class FacebookLeadAdsService
                 'limit'  => 100,
             ]);
 
-        if (! $response->successful()) {
-            Log::warning('FacebookLeadAds: getPages failed', ['status' => $response->status(), 'body' => $response->body()]);
-            return [];
+        $pages = $response->successful() ? $response->json('data', []) : [];
+
+        if (! empty($pages)) {
+            return $pages;
         }
 
-        return $response->json('data', []);
+        Log::info('FacebookLeadAds: /me/accounts empty (Business Login), use searchPage instead');
+        return [];
+    }
+
+    /**
+     * Search/validate a page by ID or URL.
+     * Works with Facebook Business Login where /me/accounts is empty.
+     */
+    public function searchPage(string $input): ?array
+    {
+        // Extract page ID from URL or use directly
+        $pageId = $this->extractPageId($input);
+        if (! $pageId) {
+            return null;
+        }
+
+        $response = Http::withToken($this->userAccessToken)
+            ->timeout(15)
+            ->get($this->baseUrl . "/{$pageId}", [
+                'fields' => 'id,name,access_token',
+            ]);
+
+        if (! $response->successful()) {
+            Log::warning('FacebookLeadAds: searchPage failed', ['input' => $input, 'status' => $response->status()]);
+            return null;
+        }
+
+        return $response->json();
+    }
+
+    /**
+     * Extract page ID from various input formats.
+     * Accepts: numeric ID, facebook.com/pageId, facebook.com/pageName
+     */
+    private function extractPageId(string $input): ?string
+    {
+        $input = trim($input);
+
+        // Pure numeric ID
+        if (ctype_digit($input)) {
+            return $input;
+        }
+
+        // URL: extract last path segment
+        if (str_contains($input, 'facebook.com')) {
+            $path = parse_url($input, PHP_URL_PATH);
+            $segments = array_filter(explode('/', trim($path ?? '', '/')));
+            $last = end($segments);
+            return $last ?: null;
+        }
+
+        // Page name/slug — try as-is
+        return $input;
     }
 
     /**

@@ -1019,6 +1019,22 @@
             <option value="">{{ __('integrations.fb_page_loading') }}</option>
         </select>
 
+        {{-- Search mode (Business Login fallback) --}}
+        <div id="fbPageSearchArea" style="display:none;margin-bottom:16px;">
+            <div style="display:flex;gap:8px;">
+                <input type="text" id="fbPageSearchInput" placeholder="Cole a URL ou ID da sua Facebook Page"
+                    style="flex:1;padding:10px 12px;border:1.5px solid #e8eaf0;border-radius:8px;font-size:13px;"
+                    onkeydown="if(event.key==='Enter'){event.preventDefault();searchFbPage();}">
+                <button onclick="searchFbPage()" class="fb-btn-primary" style="padding:10px 16px;white-space:nowrap;">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </div>
+            <div style="font-size:11.5px;color:#9ca3af;margin-top:6px;">
+                Ex: https://facebook.com/SuaPagina ou o ID numérico da página
+            </div>
+            <div id="fbPageSearchResult" style="margin-top:10px;"></div>
+        </div>
+
         <label style="font-size:13px;font-weight:600;color:#1a1d23;display:block;margin-bottom:6px;">{{ __('integrations.fb_form_label') }}</label>
         <select id="fbFormSelect" style="width:100%;padding:10px 12px;border:1.5px solid #e8eaf0;border-radius:8px;font-size:13px;margin-bottom:16px;" disabled>
             <option value="">{{ __('integrations.fb_form_select_page') }}</option>
@@ -1783,21 +1799,86 @@ function fbGoStep(step) {
 
 function loadFbPages() {
     const sel = document.getElementById('fbPageSelect');
+    const searchArea = document.getElementById('fbPageSearchArea');
     sel.innerHTML = '<option value="">' + ILANG.fb_page_loading + '</option>';
+    searchArea.style.display = 'none';
 
     window.API.get('{{ route("settings.integrations.facebook-leadads.pages") }}')
     .then(data => {
-        if (!data.success || !data.pages.length) {
-            sel.innerHTML = '<option value="">' + ILANG.fb_page_empty + '</option>';
+        if (!data.success) {
+            sel.innerHTML = '<option value="">Error</option>';
             return;
         }
-        fbPagesData = data.pages;
-        sel.innerHTML = '<option value="">' + ILANG.fb_page_select + '</option>';
-        data.pages.forEach(p => {
-            sel.innerHTML += '<option value="' + p.id + '">' + window.escapeHtml(p.name) + '</option>';
-        });
+        if (data.pages && data.pages.length > 0) {
+            // Classic login — pages listed normally
+            fbPagesData = data.pages;
+            sel.innerHTML = '<option value="">' + ILANG.fb_page_select + '</option>';
+            data.pages.forEach(p => {
+                sel.innerHTML += '<option value="' + p.id + '">' + window.escapeHtml(p.name) + '</option>';
+            });
+        } else {
+            // Business Login — need manual search
+            sel.style.display = 'none';
+            searchArea.style.display = 'block';
+        }
     })
     .catch(() => { sel.innerHTML = '<option value="">Error</option>'; });
+}
+
+function searchFbPage() {
+    const input = document.getElementById('fbPageSearchInput').value.trim();
+    const resultDiv = document.getElementById('fbPageSearchResult');
+    if (!input) return;
+
+    resultDiv.innerHTML = '<div style="color:#6b7280;font-size:13px;"><i class="bi bi-hourglass-split"></i> Buscando...</div>';
+
+    window.API.get('{{ route("settings.integrations.facebook-leadads.search-page") }}?query=' + encodeURIComponent(input))
+    .then(data => {
+        if (!data.success || !data.page) {
+            resultDiv.innerHTML = '<div style="color:#dc2626;font-size:13px;"><i class="bi bi-x-circle"></i> ' + (data.message || 'Página não encontrada') + '</div>';
+            return;
+        }
+        fbSelectedPage = { id: data.page.id, name: data.page.name };
+        fbPageAccessToken = null; // Will be fetched with forms
+        resultDiv.innerHTML = '<div style="padding:10px 14px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;font-size:13px;">' +
+            '<i class="bi bi-check-circle" style="color:#059669;"></i> <strong>' + window.escapeHtml(data.page.name) + '</strong> (ID: ' + data.page.id + ')' +
+            '</div>';
+        document.getElementById('fbNextStep1').disabled = false;
+        // Pre-load forms
+        loadFbFormsForPage(data.page.id);
+    })
+    .catch(() => {
+        resultDiv.innerHTML = '<div style="color:#dc2626;font-size:13px;"><i class="bi bi-x-circle"></i> Erro na busca</div>';
+    });
+}
+
+function loadFbFormsForPage(pageId) {
+    const formSel = document.getElementById('fbFormSelect');
+    formSel.innerHTML = '<option value="">' + ILANG.fb_form_loading + '</option>';
+    formSel.disabled = true;
+
+    window.API.get('{{ route("settings.integrations.facebook-leadads.forms") }}?page_id=' + pageId)
+    .then(data => {
+        if (!data.success || !data.forms || !data.forms.length) {
+            formSel.innerHTML = '<option value="">' + ILANG.fb_form_empty + '</option>';
+            return;
+        }
+        fbFormsData = data.forms;
+        if (data.page_access_token) fbPageAccessToken = data.page_access_token;
+        if (data.page_name && fbSelectedPage) fbSelectedPage.name = data.page_name;
+
+        formSel.innerHTML = '<option value="">' + ILANG.fb_form_select + '</option>';
+        data.forms.forEach(f => {
+            const status = f.status === 'ACTIVE' ? '' : ' (' + f.status + ')';
+            formSel.innerHTML += '<option value="' + f.id + '">' + window.escapeHtml(f.name) + status + '</option>';
+        });
+        formSel.disabled = false;
+        formSel.onchange = function() {
+            fbSelectedForm = fbFormsData.find(x => x.id === this.value) || null;
+            document.getElementById('fbNextStep1').disabled = !this.value;
+        };
+    })
+    .catch(() => { formSel.innerHTML = '<option value="">Error</option>'; });
 }
 
 function onPageSelected() {

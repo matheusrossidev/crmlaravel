@@ -372,6 +372,7 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::get('facebook-leadads/redirect',                         [IntegrationController::class, 'redirectFacebookLeadAds'])->name('facebook-leadads.redirect');
             Route::get('facebook-leadads/callback',                         [IntegrationController::class, 'callbackFacebookLeadAds'])->name('facebook-leadads.callback');
             Route::get('facebook-leadads/pages',                            [IntegrationController::class, 'getFacebookLeadAdsPages'])->name('facebook-leadads.pages');
+            Route::get('facebook-leadads/search-page',                      [IntegrationController::class, 'searchFacebookLeadAdsPage'])->name('facebook-leadads.search-page');
             Route::get('facebook-leadads/forms',                            [IntegrationController::class, 'getFacebookLeadAdsForms'])->name('facebook-leadads.forms');
             Route::post('facebook-leadads/connections',                     [IntegrationController::class, 'storeFbLeadConnection'])->name('facebook-leadads.connections.store');
             Route::put('facebook-leadads/connections/{connection}',         [IntegrationController::class, 'updateFbLeadConnection'])->name('facebook-leadads.connections.update');
