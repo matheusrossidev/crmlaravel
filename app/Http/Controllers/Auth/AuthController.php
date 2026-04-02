@@ -376,9 +376,14 @@ class AuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
+        // Preserve tenant locale so login page stays in the right language
+        $locale = auth()->user()?->tenant?->locale ?? 'pt_BR';
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        session(['guest_locale' => $locale]);
 
         return redirect()->route('login');
     }
