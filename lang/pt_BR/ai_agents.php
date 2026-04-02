@@ -576,4 +576,5 @@ return [
     'reminder_template_label'      => 'Mensagem do lembrete',
     'reminder_template_ph'         => 'Olá @{{lead_name}}! Lembrete: você tem @{{event_title}} agendado(a) para @{{event_date}} às @{{event_time}}.',
     'reminder_template_hint'       => 'Placeholders: @{{lead_name}}, @{{event_title}}, @{{event_date}}, @{{event_time}}, @{{event_location}}. Deixe vazio para usar o template padrão.',
+    'index_subtitle'    => 'Configure agentes inteligentes para seu atendimento.',
 ];

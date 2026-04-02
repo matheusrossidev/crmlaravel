@@ -501,7 +501,7 @@
         <div class="stat-card blue">
             <div class="stat-card-top">
                 <div class="stat-icon blue"><i class="bi bi-stopwatch"></i></div>
-                <span class="stat-label">Tempo de Resposta</span>
+                <span class="stat-label">{{ __('dashboard.response_time') }}</span>
             </div>
             <div class="stat-bottom">
                 <div class="stat-value-row">

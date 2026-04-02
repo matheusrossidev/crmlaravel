@@ -584,7 +584,7 @@ function closeWidgetTest() {
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
             <div>
                 <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('chatbot.page_title') }}</h1>
-                <p style="font-size:13.5px;color:#677489;margin:0;">Crie e gerencie fluxos de atendimento automatizado.</p>
+                <p style="font-size:13.5px;color:#677489;margin:0;">{{ __('chatbot.index_subtitle') }}</p>
             </div>
             <a href="{{ route('chatbot.flows.onboarding') }}" class="btn-primary-sm" style="text-decoration:none;">
                 <i class="bi bi-plus-lg"></i> {{ __('chatbot.new_flow') }}

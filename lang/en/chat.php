@@ -168,4 +168,5 @@ return [
     'error_delete_qm'   => 'Error deleting quick message.',
     'schedule'           => 'Schedule',
     'placeholder_schedule' => 'Message to schedule...',
+    'shift_enter_hint'   => 'Shift+Enter for new line',
 ];

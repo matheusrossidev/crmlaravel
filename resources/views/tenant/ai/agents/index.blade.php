@@ -350,7 +350,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
             <div>
                 <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('ai_agents.index_heading') }}</h1>
-                <p style="font-size:13.5px;color:#677489;margin:0;">Configure agentes inteligentes para seu atendimento.</p>
+                <p style="font-size:13.5px;color:#677489;margin:0;">{{ __('ai_agents.index_subtitle') }}</p>
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
             @if(auth()->user()->tenant->ai_tokens_exhausted)

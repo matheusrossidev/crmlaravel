@@ -55,4 +55,5 @@ return [
     'req_priority_low'    => 'Baixa',
     'req_priority_medium' => 'Média',
     'req_priority_high'   => 'Alta',
+    'index_subtitle'    => 'Configure funis e etapas de vendas.',
 ];

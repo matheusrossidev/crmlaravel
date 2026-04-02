@@ -1167,7 +1167,9 @@ document.getElementById('btnSaveLead')?.addEventListener('click', () => {
             }
         },
         error(xhr) {
-            if (xhr.status === 422 && xhr.responseJSON?.limit_reached) {
+            if (xhr.status === 409 && xhr.responseJSON?.duplicates_found) {
+                showDuplicateAlert(xhr.responseJSON.duplicates, payload);
+            } else if (xhr.status === 422 && xhr.responseJSON?.limit_reached) {
                 showLimitModal(xhr.responseJSON.message || DLANG.plan_limit);
             } else if (xhr.status === 422) {
                 const errors = xhr.responseJSON?.errors || {};
@@ -1652,5 +1654,105 @@ function openDrawerSchedModal(leadId) {
         // Outras páginas (kanban, index) → redireciona para a show page
         window.location.href = LEAD_PROFILE.replace('__ID__', leadId);
     }
+}
+
+// ── Duplicate Alert ──────────────────────────────────────────────────────
+let _dupPayloadCache = null;
+
+function showDuplicateAlert(duplicates, originalPayload) {
+    _dupPayloadCache = originalPayload;
+    const escH = window.escapeHtml || (s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'));
+    const BASE = @json(url('/'));
+
+    let rows = '';
+    duplicates.forEach(d => {
+        const scoreClass = d.score >= 80 ? 'color:#dc2626' : 'color:#ca8a04';
+        rows += `<div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f0f2f7;">
+            <div>
+                <div style="font-weight:600; color:#1a1d23; font-size:13px;">${escH(d.name || '—')}</div>
+                <div style="font-size:12px; color:#6b7280;">
+                    ${d.phone ? escH(d.phone) + ' · ' : ''}${d.email ? escH(d.email) : ''}
+                    ${d.stage ? ' — <strong>' + escH(d.stage) + '</strong>' : ''}
+                    ${d.created_at ? ' · Criado em ' + escH(d.created_at) : ''}
+                </div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <span style="font-weight:700; font-size:13px; ${scoreClass};">${d.score}%</span>
+                <a href="${BASE}/contatos/${d.id}/perfil" target="_blank"
+                   style="font-size:12px; color:#0085f3; text-decoration:none; white-space:nowrap;">
+                    Ver lead →
+                </a>
+            </div>
+        </div>`;
+    });
+
+    const modalHtml = `
+        <div id="dupAlertOverlay" style="position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:250; display:flex; align-items:center; justify-content:center;">
+            <div style="background:#fff; border-radius:16px; width:95%; max-width:500px; overflow:hidden;">
+                <div style="padding:20px 24px; border-bottom:1px solid #f0f2f7;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <i class="bi bi-exclamation-triangle-fill" style="font-size:20px; color:#f59e0b;"></i>
+                        <h3 style="font-size:16px; font-weight:700; color:#1a1d23; margin:0;">Possível duplicata encontrada</h3>
+                    </div>
+                </div>
+                <div style="padding:16px 24px; max-height:300px; overflow-y:auto;">
+                    ${rows}
+                </div>
+                <div style="padding:16px 24px; border-top:1px solid #f0f2f7; display:flex; justify-content:flex-end; gap:10px;">
+                    <button onclick="document.getElementById('dupAlertOverlay').remove()"
+                            style="background:#f3f4f6; color:#6b7280; border:1px solid #e5e7eb; border-radius:8px; padding:8px 16px; font-size:13px; font-weight:600; cursor:pointer;">
+                        Cancelar
+                    </button>
+                    <button onclick="forceCreateLead()"
+                            style="background:#0085f3; color:#fff; border:none; border-radius:8px; padding:8px 16px; font-size:13px; font-weight:600; cursor:pointer;">
+                        Criar mesmo assim
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Remove existing if any
+    document.getElementById('dupAlertOverlay')?.remove();
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function forceCreateLead() {
+    document.getElementById('dupAlertOverlay')?.remove();
+    if (!_dupPayloadCache) return;
+
+    const payload = _dupPayloadCache;
+    _dupPayloadCache = null;
+
+    const btn = document.getElementById('btnSaveLead');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando...';
+
+    $.ajax({
+        url: LEAD_STORE + '?force=true',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(payload),
+        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'), 'Accept': 'application/json' },
+        success(res) {
+            if (res.success) {
+                toastr.success(DLANG.lead_created);
+                closeLeadDrawer();
+                window.onLeadSaved && window.onLeadSaved(res.lead, true);
+            }
+        },
+        error(xhr) {
+            if (xhr.status === 422) {
+                const errors = xhr.responseJSON?.errors || {};
+                Object.entries(errors).forEach(([field, msgs]) => showDrawerError(field, msgs[0]));
+            } else {
+                toastr.error('Erro ao salvar lead.');
+            }
+        },
+        complete() {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-lg"></i> Salvar';
+        }
+    });
 }
 </script>

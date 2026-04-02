@@ -258,7 +258,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
             <div>
                 <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('leads.contacts_title') }}</h1>
-                <p style="font-size:13.5px;color:#677489;margin:0;">Gerencie seus leads e contatos.</p>
+                <p style="font-size:13.5px;color:#677489;margin:0;">{{ __('leads.index_subtitle') }}</p>
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <form method="GET" action="{{ route('leads.index') }}" id="filterForm" style="display:flex;align-items:center;gap:6px;">
@@ -277,6 +277,14 @@
                     @endforeach
                 </select>
             </form>
+            @php
+                $dupCount = \App\Models\LeadDuplicate::where('status', 'pending')->count();
+            @endphp
+            @if($dupCount > 0)
+            <a href="{{ route('leads.duplicates') }}" class="btn-secondary-sm leads-hide-mobile" style="display:flex;align-items:center;gap:5px;text-decoration:none;font-size:12px;padding:6px 12px; background:#fef2f2; color:#dc2626; border-color:#fecaca;">
+                <i class="bi bi-copy"></i> {{ __('leads.duplicates_link') }} <span style="background:#dc2626;color:#fff;padding:0 6px;border-radius:20px;font-size:11px;font-weight:700;margin-left:2px;">{{ $dupCount }}</span>
+            </a>
+            @endif
             <a href="{{ route('leads.export') }}" class="btn-secondary-sm leads-hide-mobile" style="display:flex;align-items:center;gap:5px;text-decoration:none;font-size:12px;padding:6px 12px;">
                 <i class="bi bi-download"></i> {{ __('leads.export') }}
             </a>

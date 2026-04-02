@@ -168,4 +168,5 @@ return [
     'error_delete_qm'   => 'Erro ao excluir mensagem rápida.',
     'schedule'           => 'Agendar',
     'placeholder_schedule' => 'Mensagem para agendar...',
+    'shift_enter_hint'   => 'Shift+Enter para nova linha',
 ];

@@ -82,11 +82,11 @@
         <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#97A3B7;margin-bottom:4px;">CRM</div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
             <div>
-                <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">Listas de Leads</h1>
-                <p style="font-size:13.5px;color:#677489;margin:0;">Organize seus leads em listas estáticas ou dinâmicas.</p>
+                <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('lists.title') }}</h1>
+                <p style="font-size:13.5px;color:#677489;margin:0;">{{ __('lists.subtitle') }}</p>
             </div>
             <button class="btn-primary-sm" onclick="openDrawer()">
-                <i class="bi bi-plus-lg"></i> Nova Lista
+                <i class="bi bi-plus-lg"></i> {{ __('lists.new_list') }}
             </button>
         </div>
     </div>
@@ -95,8 +95,8 @@
         @if($lists->isEmpty())
             <div style="padding:60px;text-align:center;color:#9ca3af;">
                 <i class="bi bi-list-check" style="font-size:40px;display:block;margin-bottom:12px;"></i>
-                <p style="font-size:14px;font-weight:600;color:#374151;margin:0 0 4px;">Nenhuma lista criada</p>
-                <p style="font-size:13px;margin:0;">Crie listas para organizar e segmentar seus leads.</p>
+                <p style="font-size:14px;font-weight:600;color:#374151;margin:0 0 4px;">{{ __('lists.no_lists') }}</p>
+                <p style="font-size:13px;margin:0;">{{ __('lists.no_lists_desc') }}</p>
             </div>
         @else
             <div style="overflow-x:auto;">
@@ -149,7 +149,7 @@
 <div class="list-drawer" id="listDrawer">
     <div class="list-drawer-header">
         <h3 style="margin:0;font-size:16px;font-weight:700;color:#1a1d23;display:flex;align-items:center;gap:8px;">
-            <i class="bi bi-list-check" style="color:#0085f3;"></i> Nova Lista
+            <i class="bi bi-list-check" style="color:#0085f3;"></i> {{ __('lists.new_list') }}
         </h3>
         <button onclick="closeDrawer()" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;"><i class="bi bi-x-lg"></i></button>
     </div>

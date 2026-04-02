@@ -25,6 +25,7 @@ class Lead extends Model
         'birthday',
         'score', 'score_updated_at',
         'opted_out', 'opted_out_at', 'opted_out_reason',
+        'status', 'merged_into', 'merged_at',
     ];
 
     protected $casts = [
@@ -38,6 +39,7 @@ class Lead extends Model
         'score_updated_at' => 'datetime',
         'created_at'       => 'datetime',
         'updated_at'       => 'datetime',
+        'merged_at'        => 'datetime',
     ];
 
     public function pipeline(): BelongsTo
@@ -129,6 +131,31 @@ class Lead extends Model
     public function activeSequence(): HasOne
     {
         return $this->hasOne(LeadSequence::class)->where('status', 'active');
+    }
+
+    public function mergedInto(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'merged_into');
+    }
+
+    public function duplicatesAsA(): HasMany
+    {
+        return $this->hasMany(LeadDuplicate::class, 'lead_id_a');
+    }
+
+    public function duplicatesAsB(): HasMany
+    {
+        return $this->hasMany(LeadDuplicate::class, 'lead_id_b');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    public function scopeNotMerged($query)
+    {
+        return $query->where('status', '!=', 'merged');
     }
 
     public function getCustomFieldsAttribute(): array

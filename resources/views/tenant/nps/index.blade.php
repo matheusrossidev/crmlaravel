@@ -72,8 +72,8 @@
         <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#97A3B7;margin-bottom:4px;">NPS</div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
             <div>
-                <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">Pesquisas de Satisfação</h1>
-                <p style="font-size:13.5px;color:#677489;margin:0;">Meça a satisfação dos seus clientes com Net Promoter Score.</p>
+                <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('nps.title') }}</h1>
+                <p style="font-size:13.5px;color:#677489;margin:0;">{{ __('nps.subtitle') }}</p>
             </div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                 <form method="GET" style="display:flex;gap:6px;align-items:center;">
@@ -82,7 +82,7 @@
                     <button type="submit" class="btn-outline-sm" style="padding:7px 12px;"><i class="bi bi-funnel"></i></button>
                 </form>
                 <button class="btn-primary-sm" onclick="openCreate()">
-                    <i class="bi bi-plus-lg"></i> Nova Pesquisa
+                    <i class="bi bi-plus-lg"></i> {{ __('nps.new_survey') }}
                 </button>
             </div>
         </div>
@@ -92,11 +92,11 @@
     <div class="nps-kpi-grid">
         @php
             $kpis = [
-                ['icon' => 'speedometer2', 'color' => ($npsScore >= 50 ? 'green' : ($npsScore >= 0 ? 'orange' : 'red')), 'label' => 'NPS Score', 'value' => ($npsScore > 0 ? '+' : '') . $npsScore, 'valueColor' => ($npsScore > 0 ? '#10B981' : ($npsScore < 0 ? '#EF4444' : '#F59E0B')), 'sub' => null],
-                ['icon' => 'chat-square-text', 'color' => 'blue', 'label' => 'Respostas', 'value' => $totalAnswered, 'valueColor' => '#1a1d23', 'sub' => null],
-                ['icon' => 'emoji-laughing', 'color' => 'green', 'label' => 'Promotores', 'value' => ($totalAnswered > 0 ? round($promoters / $totalAnswered * 100) : 0) . '%', 'valueColor' => '#10B981', 'sub' => $promoters . ' respostas'],
-                ['icon' => 'emoji-frown', 'color' => 'red', 'label' => 'Críticos', 'value' => ($totalAnswered > 0 ? round($detractors / $totalAnswered * 100) : 0) . '%', 'valueColor' => '#EF4444', 'sub' => $detractors . ' respostas'],
-                ['icon' => 'star', 'color' => 'purple', 'label' => 'Nota média', 'value' => number_format((float) $avgScore, 1, ',', '.'), 'valueColor' => '#1a1d23', 'sub' => null],
+                ['icon' => 'speedometer2', 'color' => ($npsScore >= 50 ? 'green' : ($npsScore >= 0 ? 'orange' : 'red')), 'label' => __('nps.nps_score'), 'value' => ($npsScore > 0 ? '+' : '') . $npsScore, 'valueColor' => ($npsScore > 0 ? '#10B981' : ($npsScore < 0 ? '#EF4444' : '#F59E0B')), 'sub' => null],
+                ['icon' => 'chat-square-text', 'color' => 'blue', 'label' => __('nps.responses'), 'value' => $totalAnswered, 'valueColor' => '#1a1d23', 'sub' => null],
+                ['icon' => 'emoji-laughing', 'color' => 'green', 'label' => __('nps.promoters'), 'value' => ($totalAnswered > 0 ? round($promoters / $totalAnswered * 100) : 0) . '%', 'valueColor' => '#10B981', 'sub' => $promoters . ' ' . strtolower(__('nps.responses'))],
+                ['icon' => 'emoji-frown', 'color' => 'red', 'label' => __('nps.detractors'), 'value' => ($totalAnswered > 0 ? round($detractors / $totalAnswered * 100) : 0) . '%', 'valueColor' => '#EF4444', 'sub' => $detractors . ' ' . strtolower(__('nps.responses'))],
+                ['icon' => 'star', 'color' => 'purple', 'label' => __('nps.avg_score'), 'value' => number_format((float) $avgScore, 1, ',', '.'), 'valueColor' => '#1a1d23', 'sub' => null],
             ];
             $iconBgs = ['blue' => '#eff6ff', 'green' => '#f0fdf4', 'red' => '#fef2f2', 'orange' => '#fffbeb', 'purple' => '#f5f3ff'];
             $iconColors = ['blue' => '#007DFF', 'green' => '#10B981', 'red' => '#EF4444', 'orange' => '#F59E0B', 'purple' => '#8B5CF6'];
@@ -121,9 +121,9 @@
     @if($totalAnswered > 0)
     <div class="content-card" style="margin-bottom:20px;padding:16px 20px;">
         <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;">
-            <span style="color:#10B981;">Promotores {{ round($promoters/$totalAnswered*100) }}%</span>
-            <span style="color:#F59E0B;">Neutros {{ round($passives/$totalAnswered*100) }}%</span>
-            <span style="color:#EF4444;">Críticos {{ round($detractors/$totalAnswered*100) }}%</span>
+            <span style="color:#10B981;">{{ __('nps.promoters') }} {{ round($promoters/$totalAnswered*100) }}%</span>
+            <span style="color:#F59E0B;">{{ __('nps.neutrals') }} {{ round($passives/$totalAnswered*100) }}%</span>
+            <span style="color:#EF4444;">{{ __('nps.detractors') }} {{ round($detractors/$totalAnswered*100) }}%</span>
         </div>
         <div class="nps-bar">
             <div class="nps-bar-p" style="width:{{ $promoters/$totalAnswered*100 }}%;"></div>
@@ -136,12 +136,12 @@
     <div class="nps-grid-2">
         {{-- Monthly trend --}}
         <div class="content-card">
-            <div class="content-card-header"><h3><i class="bi bi-graph-up"></i> Evolução NPS</h3></div>
+            <div class="content-card-header"><h3><i class="bi bi-graph-up"></i> {{ __('nps.nps_evolution') }}</h3></div>
             <div style="padding:16px 20px;"><canvas id="npsChart" height="200"></canvas></div>
         </div>
         {{-- Distribution --}}
         <div class="content-card">
-            <div class="content-card-header"><h3><i class="bi bi-bar-chart"></i> Distribuição de Notas</h3></div>
+            <div class="content-card-header"><h3><i class="bi bi-bar-chart"></i> {{ __('nps.score_distribution') }}</h3></div>
             <div style="padding:16px 20px;"><canvas id="distChart" height="200"></canvas></div>
         </div>
     </div>
@@ -265,7 +265,7 @@
 <div class="page-drawer" id="createDrawer">
     <div class="notif-drawer-header">
         <h3 style="margin:0;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;">
-            <i class="bi bi-emoji-smile" style="color:#0085f3;"></i> Nova Pesquisa
+            <i class="bi bi-emoji-smile" style="color:#0085f3;"></i> {{ __('nps.new_survey') }}
         </h3>
         <button onclick="closeCreate()" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;"><i class="bi bi-x-lg"></i></button>
     </div>

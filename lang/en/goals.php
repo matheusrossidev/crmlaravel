@@ -91,4 +91,12 @@ return [
     'goal_created'     => 'Goal created!',
     'delete_confirm'   => 'Delete this goal and linked sub-goals?',
     'select'           => 'Select...',
+    'index_subtitle'       => 'Track performance, rankings and team projections.',
+    'new_goal_btn'         => 'New Goal',
+    'achieved_count'       => 'Achieved',
+    'type_sales_value'     => 'Revenue',
+    'type_sales_count'     => 'Closed deals',
+    'type_conversion_rate' => 'Conversion rate (%)',
+    'recurring_label'      => 'Recurring',
+    'no_ranking_goals'     => 'Create individual goals to generate the ranking.',
 ];

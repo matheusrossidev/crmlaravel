@@ -65,4 +65,5 @@ return [
     'error_upload'      => 'Erro ao fazer upload.',
     'confirm_delete_media' => 'Remover esta mídia?',
     'media_removed'     => 'Mídia removida.',
+    'index_subtitle'    => 'Gerencie seu catálogo de produtos e serviços.',
 ];

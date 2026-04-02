@@ -265,6 +265,16 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
         Route::get('/historico/{user?}', 'history')->name('history');
     });
 
+    // Lead duplicates & merge — ANTES do {lead} wildcard
+    Route::get('/contatos/duplicatas', [\App\Http\Controllers\Tenant\LeadMergeController::class, 'duplicates'])->name('leads.duplicates');
+    Route::get('/contatos/duplicatas/data', [\App\Http\Controllers\Tenant\LeadMergeController::class, 'duplicatesData'])->name('leads.duplicates.data');
+    Route::post('/contatos/detectar-duplicatas', [\App\Http\Controllers\Tenant\LeadMergeController::class, 'detect'])->name('leads.detect-duplicates');
+    Route::middleware('role:admin,manager')->group(function () {
+        Route::get('/contatos/{primary}/merge/{secondary}/preview', [\App\Http\Controllers\Tenant\LeadMergeController::class, 'preview'])->name('leads.merge.preview');
+        Route::post('/contatos/{primary}/merge/{secondary}', [\App\Http\Controllers\Tenant\LeadMergeController::class, 'merge'])->name('leads.merge');
+        Route::post('/contatos/duplicatas/{duplicate}/ignorar', [\App\Http\Controllers\Tenant\LeadMergeController::class, 'ignore'])->name('leads.duplicates.ignore');
+    });
+
     // Leads / Contatos — exportar e importar ANTES do {lead} wildcard
     Route::get('/contatos/exportar', [LeadController::class, 'export'])->name('leads.export');
 

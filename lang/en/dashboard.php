@@ -77,4 +77,5 @@ return [
     'source_manual'    => 'Manual',
     'source_telefone'  => 'Phone',
     'source_email'     => 'Email',
+    'response_time'    => 'Response Time',
 ];

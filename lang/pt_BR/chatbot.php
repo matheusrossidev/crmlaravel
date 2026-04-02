@@ -561,4 +561,5 @@ return [
     'sidebar_load_posts'           => 'Carregar posts',
     'sidebar_load_more'            => 'Mais',
     'sidebar_load_error'           => 'Erro ao carregar',
+    'index_subtitle'    => 'Crie e gerencie fluxos de atendimento automatizado.',
 ];

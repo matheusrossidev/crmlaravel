@@ -52,4 +52,5 @@ return [
     'delete_title'      => 'Excluir tarefa',
     'delete_confirm'    => 'Tem certeza que deseja excluir esta tarefa?',
     'task_deleted'      => 'Tarefa excluída.',
+    'index_subtitle'    => 'Organize e acompanhe suas tarefas.',
 ];

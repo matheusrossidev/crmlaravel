@@ -55,4 +55,5 @@ return [
     'req_priority_low'    => 'Low',
     'req_priority_medium' => 'Medium',
     'req_priority_high'   => 'High',
+    'index_subtitle'    => 'Configure sales funnels and stages.',
 ];

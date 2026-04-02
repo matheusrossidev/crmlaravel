@@ -196,8 +196,8 @@
     $avgPct = $activeCount > 0 ? round($allGoals->avg(fn($i) => $i['progress']['percentage']), 1) : 0;
     $achievedCount = $allGoals->where('progress.status', 'achieved')->count();
     $behindCount = $allGoals->where('progress.status', 'behind')->count();
-    $typeLabels = ['leads_won'=>'Vendas','revenue'=>'Receita','leads_created'=>'Leads criados','messages_sent'=>'Msgs enviadas','leads_contacted'=>'Leads contatados','tasks_completed'=>'Tarefas'];
-    $statusLabels = ['achieved'=>'Atingida','on_track'=>'No caminho','behind'=>'Atrasada'];
+    $typeLabels = ['leads_won'=>__('goals.type_sales_count'),'revenue'=>__('goals.type_sales_value'),'leads_created'=>__('goals.type_leads_created'),'messages_sent'=>__('goals.type_messages_sent'),'leads_contacted'=>__('goals.type_leads_contacted'),'tasks_completed'=>__('goals.type_tasks_completed')];
+    $statusLabels = ['achieved'=>__('goals.status_achieved'),'on_track'=>__('goals.status_on_track'),'behind'=>__('goals.status_behind')];
 @endphp
 
 <div class="page-container">
@@ -206,10 +206,10 @@
         <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#97A3B7;margin-bottom:4px;">CRM</div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
             <div>
-                <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">Metas de Vendas</h1>
-                <p style="font-size:13.5px;color:#677489;margin:0;">Acompanhe performance, ranking e projeções da equipe.</p>
+                <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('goals.title') }}</h1>
+                <p style="font-size:13.5px;color:#677489;margin:0;">{{ __('goals.index_subtitle') }}</p>
             </div>
-            <button class="btn-primary-sm" onclick="openGoalDrawer()"><i class="bi bi-plus-lg"></i> Nova Meta</button>
+            <button class="btn-primary-sm" onclick="openGoalDrawer()"><i class="bi bi-plus-lg"></i> {{ __('goals.new_goal_btn') }}</button>
         </div>
     </div>
 
@@ -217,28 +217,28 @@
     <div class="g-summary">
         <div class="g-stat">
             <div class="g-stat-icon blue"><i class="bi bi-flag-fill"></i></div>
-            <div class="g-stat-body"><div class="g-stat-label">Metas ativas</div><div class="g-stat-val">{{ $activeCount }}</div></div>
+            <div class="g-stat-body"><div class="g-stat-label">{{ __('goals.active_goals') }}</div><div class="g-stat-val">{{ $activeCount }}</div></div>
         </div>
         <div class="g-stat">
             <div class="g-stat-icon purple"><i class="bi bi-graph-up"></i></div>
-            <div class="g-stat-body"><div class="g-stat-label">Progresso médio</div><div class="g-stat-val">{{ $avgPct }}%</div></div>
+            <div class="g-stat-body"><div class="g-stat-label">{{ __('goals.avg_progress') }}</div><div class="g-stat-val">{{ $avgPct }}%</div></div>
         </div>
         <div class="g-stat">
             <div class="g-stat-icon green"><i class="bi bi-check-circle-fill"></i></div>
-            <div class="g-stat-body"><div class="g-stat-label">Atingidas</div><div class="g-stat-val clr-achieved">{{ $achievedCount }}</div></div>
+            <div class="g-stat-body"><div class="g-stat-label">{{ __('goals.achieved_count') }}</div><div class="g-stat-val clr-achieved">{{ $achievedCount }}</div></div>
         </div>
         <div class="g-stat">
             <div class="g-stat-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div>
-            <div class="g-stat-body"><div class="g-stat-label">Em risco</div><div class="g-stat-val clr-behind">{{ $behindCount }}</div></div>
+            <div class="g-stat-body"><div class="g-stat-label">{{ __('goals.at_risk') }}</div><div class="g-stat-val clr-behind">{{ $behindCount }}</div></div>
         </div>
     </div>
 
     {{-- Tabs --}}
     <div class="g-tabs">
-        <button class="g-tab active" onclick="switchTab('overview', this)">Visão geral</button>
-        <button class="g-tab" onclick="switchTab('ranking', this)">Ranking</button>
-        <button class="g-tab" onclick="switchTab('individual', this)">Individual</button>
-        <button class="g-tab" onclick="switchTab('history', this)">Histórico</button>
+        <button class="g-tab active" onclick="switchTab('overview', this)">{{ __('goals.tab_overview') }}</button>
+        <button class="g-tab" onclick="switchTab('ranking', this)">{{ __('goals.tab_ranking') }}</button>
+        <button class="g-tab" onclick="switchTab('individual', this)">{{ __('goals.tab_individual') }}</button>
+        <button class="g-tab" onclick="switchTab('history', this)">{{ __('goals.tab_history') }}</button>
     </div>
 
     {{-- ═══ TAB: VISÃO GERAL ═══ --}}
@@ -249,12 +249,12 @@
             <div class="team-card">
                 <div class="team-header">
                     <div>
-                        <span class="team-title">Meta do Time</span>
+                        <span class="team-title">{{ __('goals.team_goal') }}</span>
                         <span class="team-sub">{{ $typeLabels[$g->type] ?? $g->type }} · {{ $g->start_date->format('d/m') }}—{{ $g->end_date->format('d/m/Y') }}</span>
                     </div>
                     <div style="display:flex;align-items:center;gap:6px;">
                         <span class="gc-badge {{ $p['status'] }}">{{ $statusLabels[$p['status']] }}</span>
-                        @if($g->is_recurring) <span class="gc-badge recurring">Recorrente</span> @endif
+                        @if($g->is_recurring) <span class="gc-badge recurring">{{ __('goals.recurring_label') }}</span> @endif
                         <button class="gc-act del" onclick="deleteGoal({{ $g->id }})"><i class="bi bi-trash3"></i></button>
                     </div>
                 </div>
@@ -294,7 +294,7 @@
                 <div class="g-empty">
                     <i class="bi bi-flag"></i>
                     <div class="t">Nenhuma meta criada</div>
-                    <div class="s">Crie metas para acompanhar o desempenho da equipe.</div>
+                    <div class="s">{{ __('goals.no_goals_desc') }}</div>
                     <button class="btn-primary-sm" onclick="openGoalDrawer()"><i class="bi bi-plus-lg"></i> Criar primeira meta</button>
                 </div>
             @endif
@@ -307,7 +307,7 @@
             <div class="g-empty">
                 <i class="bi bi-bar-chart"></i>
                 <div class="t">Sem dados para ranking</div>
-                <div class="s">Crie metas individuais para gerar o ranking.</div>
+                <div class="s">{{ __('goals.no_ranking_goals') }}</div>
             </div>
         @else
             <div class="rank-scroll">
@@ -375,7 +375,7 @@
                 </div>
                 <div class="g-stat">
                     <div class="g-stat-icon purple"><i class="bi bi-graph-up"></i></div>
-                    <div class="g-stat-body"><div class="g-stat-label">Progresso médio</div><div class="g-stat-val">{{ $myRank['avg_pct'] }}%</div></div>
+                    <div class="g-stat-body"><div class="g-stat-label">{{ __('goals.avg_progress') }}</div><div class="g-stat-val">{{ $myRank['avg_pct'] }}%</div></div>
                 </div>
                 <div class="g-stat">
                     <div class="g-stat-icon" style="background:#fffbeb;color:#f59e0b;"><i class="bi bi-fire"></i></div>
@@ -448,7 +448,7 @@
 <div class="page-drawer-overlay" id="goalDrawerOverlay" onclick="closeGoalDrawer()"></div>
 <div class="page-drawer" id="goalDrawer">
     <div class="dw-header">
-        <h3>Nova Meta</h3>
+        <h3>{{ __('goals.new_goal_btn') }}</h3>
         <button onclick="closeGoalDrawer()" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;"><i class="bi bi-x-lg"></i></button>
     </div>
     <div class="dw-body">

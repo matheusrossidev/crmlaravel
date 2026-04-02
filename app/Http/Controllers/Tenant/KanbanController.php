@@ -55,6 +55,7 @@ class KanbanController extends Controller
         if ($pipeline) {
             $stages = $pipeline->stages->map(function (PipelineStage $stage) use ($request) {
                 $query = Lead::where('stage_id', $stage->id)
+                    ->where(fn ($q) => $q->where('status', '!=', 'merged')->orWhereNull('status'))
                     ->with(['assignedTo', 'customFieldValues.fieldDefinition', 'whatsappConversation.aiAgent', 'activeSequence'])
                     ->orderByDesc('created_at');
 

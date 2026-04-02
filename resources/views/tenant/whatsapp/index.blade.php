@@ -1365,7 +1365,7 @@ $pageIcon = 'chat-dots';
                 </button>
             </div>
             <div style="padding:0 14px 4px;text-align:right;">
-                <span style="font-size:10px;color:#c4c9d4;">Shift+Enter para nova linha</span>
+                <span style="font-size:10px;color:#c4c9d4;">{{ __('chat.shift_enter_hint') }}</span>
             </div>
         </div>
         @endif

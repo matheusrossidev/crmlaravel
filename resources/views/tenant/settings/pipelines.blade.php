@@ -287,7 +287,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
             <div>
                 <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('pipelines.title') }}</h1>
-                <p style="font-size:13.5px;color:#677489;margin:0;">Configure funis e etapas de vendas.</p>
+                <p style="font-size:13.5px;color:#677489;margin:0;">{{ __('pipelines.index_subtitle') }}</p>
             </div>
             <button class="btn-primary-sm" id="btnNovoPipeline">
                 <i class="bi bi-plus-lg"></i> {{ __('pipelines.new_pipeline') }}

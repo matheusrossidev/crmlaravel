@@ -561,4 +561,5 @@ return [
     'sidebar_load_posts'           => 'Load posts',
     'sidebar_load_more'            => 'More',
     'sidebar_load_error'           => 'Error loading',
+    'index_subtitle'    => 'Create and manage automated service flows.',
 ];

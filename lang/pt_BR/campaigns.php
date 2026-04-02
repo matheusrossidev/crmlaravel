@@ -83,4 +83,5 @@ return [
     'total'               => 'Total',
     'value'               => 'Valor',
     'loading'             => 'Carregando...',
+    'index_subtitle'    => 'Acompanhe o desempenho das suas campanhas.',
 ];

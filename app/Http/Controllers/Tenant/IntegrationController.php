@@ -36,7 +36,7 @@ class IntegrationController extends Controller
         $google    = $connections->get('google');
         $whatsappInstances = WhatsappInstance::orderBy('id')->get();
         $whatsapp          = $whatsappInstances->first(); // retrocompat
-        $instagram         = InstagramInstance::first();
+        $instagram         = InstagramInstance::where('status', '!=', 'disconnected')->first();
 
         $tenant = activeTenant();
         $s = $tenant->settings_json ?? [];

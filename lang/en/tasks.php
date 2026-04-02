@@ -52,4 +52,5 @@ return [
     'delete_title'      => 'Delete task',
     'delete_confirm'    => 'Are you sure you want to delete this task?',
     'task_deleted'      => 'Task deleted.',
+    'index_subtitle'    => 'Organize and track your tasks.',
 ];

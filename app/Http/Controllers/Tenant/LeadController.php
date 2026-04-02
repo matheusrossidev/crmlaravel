@@ -42,6 +42,7 @@ class LeadController extends Controller
 
         $query = Lead::with(['stage', 'pipeline', 'campaign', 'assignedTo', 'whatsappConversation.aiAgent'])
             ->where(fn ($q) => $q->where('exclude_from_pipeline', false)->orWhereNull('exclude_from_pipeline'))
+            ->where(fn ($q) => $q->where('status', '!=', 'merged')->orWhereNull('status'))
             ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
             ->orderByDesc('created_at');
 
@@ -125,6 +126,31 @@ class LeadController extends Controller
             'notes'       => 'nullable|string|max:2000',
             'birthday'    => 'nullable|date',
         ]);
+
+        // Duplicate detection (skip if force=true)
+        if (!$request->boolean('force')) {
+            $detector = new \App\Services\DuplicateLeadDetector();
+            $duplicates = $detector->findDuplicatesFromData($data, auth()->user()->tenant_id);
+            $highConfidence = $duplicates->filter(fn ($d) => $d['score'] >= 70);
+
+            if ($highConfidence->isNotEmpty()) {
+                return response()->json([
+                    'success'          => false,
+                    'duplicates_found' => true,
+                    'message'          => 'Possíveis duplicatas encontradas.',
+                    'duplicates'       => $highConfidence->map(fn ($d) => [
+                        'id'         => $d['lead']->id,
+                        'name'       => $d['lead']->name,
+                        'phone'      => $d['lead']->phone,
+                        'email'      => $d['lead']->email,
+                        'company'    => $d['lead']->company,
+                        'score'      => $d['score'],
+                        'created_at' => $d['lead']->created_at?->format('d/m/Y'),
+                        'stage'      => $d['lead']->stage?->name,
+                    ])->values(),
+                ], 409);
+            }
+        }
 
         $data['created_by'] = auth()->id();
 
@@ -506,6 +532,12 @@ class LeadController extends Controller
         if ($remaining !== null && $import->getLimitSkipped() > 0) {
             $result['limit_skipped'] = $import->getLimitSkipped();
             $result['message'] = "{$import->getImported()} leads importados. {$import->getLimitSkipped()} ignorados por limite do plano.";
+        }
+
+        if ($import->getDuplicatesFound() > 0) {
+            $result['duplicates_found'] = $import->getDuplicatesFound();
+            $msg = $result['message'] ?? "{$import->getImported()} leads importados.";
+            $result['message'] = $msg . " {$import->getDuplicatesFound()} possível(is) duplicata(s) detectada(s) — revise em Contatos > Duplicatas.";
         }
 
         return response()->json($result);

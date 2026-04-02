@@ -576,4 +576,5 @@ return [
     'reminder_template_label'      => 'Reminder message',
     'reminder_template_ph'         => 'Hi @{{lead_name}}! Reminder: you have @{{event_title}} scheduled for @{{event_date}} at @{{event_time}}.',
     'reminder_template_hint'       => 'Placeholders: @{{lead_name}}, @{{event_title}}, @{{event_date}}, @{{event_time}}, @{{event_location}}. Leave empty to use default template.',
+    'index_subtitle'    => 'Configure intelligent agents for your customer service.',
 ];

@@ -65,4 +65,5 @@ return [
     'error_upload'      => 'Error uploading.',
     'confirm_delete_media' => 'Remove this media?',
     'media_removed'     => 'Media removed.',
+    'index_subtitle'    => 'Manage your product and service catalog.',
 ];

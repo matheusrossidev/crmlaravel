@@ -115,4 +115,12 @@ return [
     'goal_created'     => 'Meta criada!',
     'delete_confirm'   => 'Excluir esta meta e submetas vinculadas?',
     'select'           => 'Selecione...',
+    'index_subtitle'       => 'Acompanhe performance, ranking e projeções da equipe.',
+    'new_goal_btn'         => 'Nova Meta',
+    'achieved_count'       => 'Atingidas',
+    'type_sales_value'     => 'Receita (R$)',
+    'type_sales_count'     => 'Vendas fechadas',
+    'type_conversion_rate' => 'Taxa de conversão (%)',
+    'recurring_label'      => 'Recorrente',
+    'no_ranking_goals'     => 'Crie metas individuais para gerar o ranking.',
 ];

@@ -3,10 +3,10 @@
     $p = $item['progress'];
     $f = $item['forecast'];
     $bt = $item['bonus_tier'] ?? null;
-    $typeLabels = ['leads_won'=>'Vendas','revenue'=>'Receita','leads_created'=>'Leads criados','messages_sent'=>'Msgs enviadas','leads_contacted'=>'Leads contatados','tasks_completed'=>'Tarefas'];
-    $periodLabels = ['monthly'=>'Mensal','weekly'=>'Semanal','quarterly'=>'Trimestral'];
-    $statusLabels = ['achieved'=>'Atingida','on_track'=>'No caminho','behind'=>'Atrasada'];
-    $paceLabels = ['ahead'=>'Acima do ritmo','on_pace'=>'No ritmo','behind'=>'Abaixo do ritmo','achieved'=>'Meta atingida!','not_started'=>'Não iniciada'];
+    $typeLabels = ['leads_won'=>__('goals.type_sales_count'),'revenue'=>__('goals.type_sales_value'),'leads_created'=>__('goals.type_leads_created'),'messages_sent'=>__('goals.type_messages_sent'),'leads_contacted'=>__('goals.type_leads_contacted'),'tasks_completed'=>__('goals.type_tasks_completed')];
+    $periodLabels = ['monthly'=>__('goals.period_monthly'),'weekly'=>__('goals.period_weekly'),'quarterly'=>__('goals.period_quarterly')];
+    $statusLabels = ['achieved'=>__('goals.status_achieved'),'on_track'=>__('goals.status_on_track'),'behind'=>__('goals.status_behind')];
+    $paceLabels = ['ahead'=>__('goals.pace_ahead'),'on_pace'=>__('goals.pace_on_pace'),'behind'=>__('goals.pace_behind'),'achieved'=>__('goals.pace_achieved'),'not_started'=>__('goals.pace_not_started')];
     $initials = $g->user ? strtoupper(mb_substr($g->user->name, 0, 2)) : 'TI';
     $streak = null;
     if ($g->user_id && isset($ranking)) {
