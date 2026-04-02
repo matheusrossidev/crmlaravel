@@ -90,8 +90,8 @@ class SendReengagement extends Command
                         try {
                             $message = $waTemplate->render($vars);
                             $chatId  = preg_replace('/\D/', '', $user->phone) . '@c.us';
-                            $waha    = app(WahaService::class);
-                            $waha->sendText(self::WA_SESSION, $chatId, $message);
+                            $waha    = new WahaService(self::WA_SESSION);
+                            $waha->sendText($chatId, $message);
                             $totalWa++;
                         } catch (\Throwable $e) {
                             Log::warning('Reengagement WhatsApp failed', [
@@ -230,8 +230,8 @@ class SendReengagement extends Command
 
             $message = $template->render($mockVars);
             $chatId  = preg_replace('/\D/', '', $phone) . '@c.us';
-            $waha    = app(WahaService::class);
-            $waha->sendText(self::WA_SESSION, $chatId, $message);
+            $waha    = new WahaService(self::WA_SESSION);
+            $waha->sendText($chatId, $message);
             $this->info("Test WhatsApp sent to {$phone} (stage: {$stage})");
         }
 
