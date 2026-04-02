@@ -783,7 +783,7 @@ class IntegrationController extends Controller
                 'oauth_connection_id' => $conn->id,
                 'page_id'             => $data['page_id'],
                 'page_name'           => $data['page_name'],
-                'page_access_token'   => $data['page_access_token'], // already encrypted from getForms
+                'page_access_token'   => decrypt($data['page_access_token']), // decrypt JS encrypt(), model cast re-encrypts
                 'form_name'           => $data['form_name'],
                 'form_fields_json'    => $data['form_fields_json'] ?? null,
                 'pipeline_id'         => $data['pipeline_id'],
