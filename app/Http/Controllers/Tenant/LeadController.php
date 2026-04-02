@@ -595,7 +595,7 @@ class LeadController extends Controller
 
     public function uploadCustomFieldFile(Request $request): JsonResponse
     {
-        $request->validate(['file' => 'required|file|max:20480']); // 20 MB
+        $request->validate(['file' => ['required', 'file', 'max:20480', new \App\Rules\SafeFile]]); // 20 MB
 
         $path = $request->file('file')->store('lead-files', 'public');
 
@@ -618,7 +618,7 @@ class LeadController extends Controller
             'lead_id'       => $lead->id,
             'tenant_id'     => activeTenantId(),
             'uploaded_by'   => auth()->id(),
-            'original_name' => $file->getClientOriginalName(),
+            'original_name' => preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($file->getClientOriginalName())),
             'storage_path'  => $path,
             'mime_type'     => $file->getMimeType() ?? $file->getClientMimeType(),
             'file_size'     => $file->getSize(),

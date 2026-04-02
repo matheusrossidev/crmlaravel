@@ -29,7 +29,7 @@ class FeedbackController extends Controller
             'priority'    => 'nullable|integer|min:1|max:5',
             'can_contact' => 'nullable|boolean',
             'url_origin'  => 'nullable|string|max:500',
-            'evidence'    => 'nullable|image|max:5120',
+            'evidence'    => ['nullable', 'file', 'max:5120', new \App\Rules\SafeImage],
         ]);
 
         $user   = auth()->user();

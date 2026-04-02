@@ -32,9 +32,9 @@ class PartnerResourceController extends Controller
             'category'           => 'nullable|string|max:50',
             'sort_order'         => 'nullable|integer|min:0',
             'is_published'       => 'nullable|boolean',
-            'cover'              => 'nullable|image|max:2048',
+            'cover'              => ['nullable', 'file', 'max:2048', new \App\Rules\SafeImage],
             'new_attachments'    => 'nullable|array',
-            'new_attachments.*'  => 'file|max:20480',
+            'new_attachments.*'  => ['file', 'max:20480', new \App\Rules\SafeFile],
         ]);
 
         $resource = PartnerResource::create([
@@ -70,9 +70,9 @@ class PartnerResourceController extends Controller
             'category'           => 'nullable|string|max:50',
             'sort_order'         => 'nullable|integer|min:0',
             'is_published'       => 'nullable|boolean',
-            'cover'              => 'nullable|image|max:2048',
+            'cover'              => ['nullable', 'file', 'max:2048', new \App\Rules\SafeImage],
             'new_attachments'    => 'nullable|array',
-            'new_attachments.*'  => 'file|max:20480',
+            'new_attachments.*'  => ['file', 'max:20480', new \App\Rules\SafeFile],
         ]);
 
         $resource->update([
@@ -108,7 +108,7 @@ class PartnerResourceController extends Controller
             foreach ($request->file('new_attachments') as $file) {
                 $path = $file->store('partner-resource-files', 'public');
                 $attachments[] = [
-                    'name' => $file->getClientOriginalName(),
+                    'name' => preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($file->getClientOriginalName())),
                     'path' => $path,
                     'size' => $this->formatBytes($file->getSize()),
                 ];

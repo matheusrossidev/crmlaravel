@@ -30,7 +30,7 @@ class PartnerRankController extends Controller
             'commission_pct' => 'nullable|numeric|min:0|max:100',
             'color'          => 'nullable|string|max:20',
             'sort_order'     => 'nullable|integer|min:0',
-            'image'          => 'nullable|image|max:2048',
+            'image'          => ['nullable', 'file', 'max:2048', new \App\Rules\SafeImage],
         ]);
 
         $rank = PartnerRank::create([
@@ -57,7 +57,7 @@ class PartnerRankController extends Controller
             'commission_pct' => 'nullable|numeric|min:0|max:100',
             'color'          => 'nullable|string|max:20',
             'sort_order'     => 'nullable|integer|min:0',
-            'image'          => 'nullable|image|max:2048',
+            'image'          => ['nullable', 'file', 'max:2048', new \App\Rules\SafeImage],
         ]);
 
         $rank->update([

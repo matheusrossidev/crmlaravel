@@ -119,6 +119,18 @@ class AuthController extends Controller
 
     public function register(Request $request): RedirectResponse
     {
+        // Honeypot: reject bots that fill hidden field
+        if ($request->filled('website_url')) {
+            abort(422);
+        }
+
+        // Rate limit registration per IP
+        $regKey = 'register:' . $request->ip();
+        if (RateLimiter::tooManyAttempts($regKey, 3)) {
+            return back()->withErrors(['email' => 'Muitas tentativas. Aguarde alguns minutos.'])->withInput();
+        }
+        RateLimiter::hit($regKey, 3600);
+
         $data = $request->validate([
             'tenant_name'  => 'required|string|max:255',
             'name'         => 'required|string|max:255',
@@ -153,46 +165,50 @@ class AuthController extends Controller
                 ->first();
         }
 
-        // Cria o tenant
+        // Cria o tenant, usuário e consentimento em transação atômica
         $freePlan  = PlanDefinition::where('name', 'free')->first();
         $trialDays = $freePlan?->trial_days ?? 14;
 
-        $tenant = Tenant::create([
-            'name'                  => $data['tenant_name'],
-            'phone'                 => preg_replace('/\D/', '', $data['phone']),
-            'slug'                  => Str::slug($data['tenant_name']) . '-' . Str::random(4),
-            'plan'                  => 'free',
-            'status'                => 'trial',
-            'trial_ends_at'         => now()->addDays($trialDays),
-            'referred_by_agency_id' => $agencyCode?->tenant_id,
-            'partner_commission_pct' => $agencyCode?->tenant_id ? $this->getLockedCommissionPct($agencyCode->tenant_id) : null,
-            'locale'                => $request->input('locale', 'pt_BR'),
-            'billing_provider'      => $request->input('locale', 'pt_BR') === 'pt_BR' ? 'asaas' : 'stripe',
-            'billing_country'       => $request->input('locale', 'pt_BR') === 'pt_BR' ? 'BR' : 'US',
-            'billing_currency'      => $request->input('locale', 'pt_BR') === 'pt_BR' ? 'BRL' : 'USD',
-        ]);
+        [$tenant, $user] = DB::transaction(function () use ($data, $token, $agencyCode, $request, $trialDays) {
+            $tenant = Tenant::create([
+                'name'                  => $data['tenant_name'],
+                'phone'                 => preg_replace('/\D/', '', $data['phone']),
+                'slug'                  => Str::slug($data['tenant_name']) . '-' . Str::random(4),
+                'plan'                  => 'free',
+                'status'                => 'trial',
+                'trial_ends_at'         => now()->addDays($trialDays),
+                'referred_by_agency_id' => $agencyCode?->tenant_id,
+                'partner_commission_pct' => $agencyCode?->tenant_id ? $this->getLockedCommissionPct($agencyCode->tenant_id) : null,
+                'locale'                => $request->input('locale', 'pt_BR'),
+                'billing_provider'      => $request->input('locale', 'pt_BR') === 'pt_BR' ? 'asaas' : 'stripe',
+                'billing_country'       => $request->input('locale', 'pt_BR') === 'pt_BR' ? 'BR' : 'US',
+                'billing_currency'      => $request->input('locale', 'pt_BR') === 'pt_BR' ? 'BRL' : 'USD',
+            ]);
 
-        // Cria o usuário admin — email não verificado ainda
-        $user = User::create([
-            'tenant_id'          => $tenant->id,
-            'name'               => $data['name'],
-            'email'              => $data['email'],
-            'password'           => $data['password'],
-            'role'               => 'admin',
-            'email_verified_at'              => null,
-            'verification_token'             => $token,
-            'verification_token_expires_at'  => now()->addHours(48),
-        ]);
+            // Cria o usuário admin — email não verificado ainda
+            $user = User::create([
+                'tenant_id'          => $tenant->id,
+                'name'               => $data['name'],
+                'email'              => $data['email'],
+                'password'           => $data['password'],
+                'role'               => 'admin',
+                'email_verified_at'              => null,
+                'verification_token'             => $token,
+                'verification_token_expires_at'  => now()->addHours(48),
+            ]);
 
-        // Registra consentimento LGPD
-        UserConsent::create([
-            'user_id'        => $user->id,
-            'consent_type'   => 'terms_and_privacy',
-            'policy_version' => '2026-03',
-            'accepted_at'    => now(),
-            'ip_address'     => $request->ip(),
-            'user_agent'     => $request->userAgent(),
-        ]);
+            // Registra consentimento LGPD
+            UserConsent::create([
+                'user_id'        => $user->id,
+                'consent_type'   => 'terms_and_privacy',
+                'policy_version' => '2026-03',
+                'accepted_at'    => now(),
+                'ip_address'     => $request->ip(),
+                'user_agent'     => $request->userAgent(),
+            ]);
+
+            return [$tenant, $user];
+        });
 
         // Envia email de verificação (ignora falhas para não bloquear o cadastro)
         try {

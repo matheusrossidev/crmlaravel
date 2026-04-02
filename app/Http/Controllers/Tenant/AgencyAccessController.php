@@ -32,6 +32,7 @@ class AgencyAccessController extends Controller
         }
 
         session(['impersonating_tenant_id' => $tenant->id]);
+        $request->session()->regenerate();
 
         return redirect()->route('dashboard')
             ->with('success', "Acessando a conta de {$tenant->name}.");
@@ -41,6 +42,7 @@ class AgencyAccessController extends Controller
     public function exit(Request $request): RedirectResponse
     {
         session()->forget('impersonating_tenant_id');
+        $request->session()->regenerate();
 
         return redirect()->route('dashboard')
             ->with('success', 'Voltou para sua própria conta.');

@@ -59,7 +59,7 @@ class ScheduledMessageController extends Controller
             $file          = $request->file('file');
             $mediaPath     = $file->store('whatsapp/scheduled', 'public');
             $mediaMime     = $file->getMimeType();
-            $mediaFilename = $file->getClientOriginalName();
+            $mediaFilename = preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($file->getClientOriginalName()));
         }
 
         $scheduled = ScheduledMessage::create([

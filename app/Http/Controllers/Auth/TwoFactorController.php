@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\View;
 use PragmaRX\Google2FA\Google2FA;
 
@@ -37,6 +38,15 @@ class TwoFactorController extends Controller
     public function verifyChallenge(Request $request): RedirectResponse
     {
         $request->validate(['code' => 'required|string']);
+
+        $throttleKey = '2fa:' . session('2fa:user_id') . '|' . $request->ip();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            return back()->withErrors(['code' => "Muitas tentativas. Aguarde {$seconds} segundos."]);
+        }
+
+        RateLimiter::hit($throttleKey, 300); // 5 min decay
 
         $userId = session('2fa:user_id');
         if (!$userId) {

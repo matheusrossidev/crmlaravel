@@ -238,7 +238,7 @@ class ChatbotFlowController extends Controller
 
     public function uploadImage(Request $request): JsonResponse
     {
-        $request->validate(['image' => 'required|image|max:10240']); // 10 MB
+        $request->validate(['image' => ['required', 'file', 'max:10240', new \App\Rules\SafeImage]]); // 10 MB
 
         $path = $request->file('image')->store('chatbot-images', 'public');
 

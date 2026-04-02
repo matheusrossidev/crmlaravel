@@ -35,7 +35,7 @@ class PartnerCourseController extends Controller
             'description'  => 'nullable|string|max:1000',
             'sort_order'   => 'nullable|integer|min:0',
             'is_published' => 'nullable|boolean',
-            'cover'        => 'nullable|image|max:2048',
+            'cover'        => ['nullable', 'file', 'max:2048', new \App\Rules\SafeImage],
         ]);
 
         $course = PartnerCourse::create([
@@ -61,7 +61,7 @@ class PartnerCourseController extends Controller
             'description'  => 'nullable|string|max:1000',
             'sort_order'   => 'nullable|integer|min:0',
             'is_published' => 'nullable|boolean',
-            'cover'        => 'nullable|image|max:2048',
+            'cover'        => ['nullable', 'file', 'max:2048', new \App\Rules\SafeImage],
         ]);
 
         $course->update([

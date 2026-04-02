@@ -345,6 +345,7 @@
 
             <form method="POST" action="{{ route('register.post') }}" id="regForm">
                 @csrf
+                <div style="position:absolute;left:-9999px;"><input type="text" name="website_url" tabindex="-1" autocomplete="off"></div>
 
                 {{-- Campos hidden (enviados no POST) --}}
                 <input type="hidden" name="tenant_name"            id="h-tenant">

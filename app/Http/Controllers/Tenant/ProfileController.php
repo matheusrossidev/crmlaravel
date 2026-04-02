@@ -72,7 +72,7 @@ class ProfileController extends Controller
     public function updateAvatar(Request $request): JsonResponse
     {
         $request->validate([
-            'avatar' => 'required|image|max:2048',
+            'avatar' => ['required', 'file', 'max:2048', new \App\Rules\SafeImage],
         ]);
 
         $user = auth()->user();
@@ -93,7 +93,7 @@ class ProfileController extends Controller
     public function uploadWorkspaceLogo(Request $request): JsonResponse
     {
         $request->validate([
-            'logo' => 'required|image|max:2048',
+            'logo' => ['required', 'file', 'max:2048', new \App\Rules\SafeImage],
         ]);
 
         $user   = auth()->user();

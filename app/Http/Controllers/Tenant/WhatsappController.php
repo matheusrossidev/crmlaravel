@@ -415,6 +415,10 @@ class WhatsappController extends Controller
 
     public function assign(WhatsappConversation $conversation, Request $request): JsonResponse
     {
+        $request->validate([
+            'user_id' => 'nullable|integer|exists:users,id',
+        ]);
+
         $userId = $request->input('user_id');
         $conversation->update(['assigned_user_id' => $userId ?: null]);
 
@@ -454,18 +458,20 @@ class WhatsappController extends Controller
 
     public function updateLead(WhatsappConversation $conversation, Request $request): JsonResponse
     {
+        $data = $request->validate([
+            'pipeline_id' => 'nullable|integer|exists:pipelines,id',
+            'stage_id'    => 'nullable|integer|exists:pipeline_stages,id',
+            'value'       => 'nullable|numeric|min:0',
+            'email'       => 'nullable|email|max:191',
+        ]);
+
         $conversation->load('lead');
 
         if (! $conversation->lead) {
             return response()->json(['error' => 'Conversa sem lead vinculado'], 422);
         }
 
-        $data = array_filter([
-            'pipeline_id' => $request->input('pipeline_id'),
-            'stage_id'    => $request->input('stage_id'),
-            'value'       => $request->input('value'),
-            'email'       => $request->input('email'),
-        ], fn ($v) => $v !== null);
+        $data = array_filter($data, fn ($v) => $v !== null);
 
         $conversation->lead->update($data);
 
@@ -474,7 +480,7 @@ class WhatsappController extends Controller
 
     public function linkLead(WhatsappConversation $conversation, Request $request): JsonResponse
     {
-        $request->validate(['lead_id' => 'required|integer']);
+        $request->validate(['lead_id' => 'required|integer|exists:leads,id']);
         $conversation->update(['lead_id' => $request->lead_id]);
         return response()->json(['success' => true]);
     }
@@ -827,7 +833,7 @@ class WhatsappController extends Controller
         $request->validate(['lead_id' => 'required|integer']);
         $websiteConversation->update(['lead_id' => $request->lead_id]);
 
-        $lead = Lead::withoutGlobalScope('tenant')->find($request->lead_id);
+        $lead = Lead::find($request->lead_id);
         if ($lead) {
             $utmUpdate = array_filter([
                 'utm_source'   => $lead->utm_source   ?: $websiteConversation->utm_source,

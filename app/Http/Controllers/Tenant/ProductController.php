@@ -117,7 +117,7 @@ class ProductController extends Controller
         $media = ProductMedia::create([
             'product_id'    => $product->id,
             'tenant_id'     => $product->tenant_id,
-            'original_name' => $file->getClientOriginalName(),
+            'original_name' => preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($file->getClientOriginalName())),
             'storage_path'  => $path,
             'mime_type'     => $file->getMimeType(),
             'file_size'     => $file->getSize(),

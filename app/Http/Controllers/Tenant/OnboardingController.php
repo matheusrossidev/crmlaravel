@@ -60,6 +60,8 @@ class OnboardingController extends Controller
 
         // Upload logo if present
         if ($request->hasFile('logo')) {
+            $request->validate(['logo' => ['nullable', 'file', 'max:2048', new \App\Rules\SafeImage]]);
+
             $file     = $request->file('logo');
             $filename = $tenant->id . '.' . $file->extension();
             Storage::disk('public')->putFileAs('workspace-logos', $file, $filename);

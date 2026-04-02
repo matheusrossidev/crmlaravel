@@ -177,7 +177,7 @@ class AiAgentController extends Controller
         $record = AiAgentMedia::create([
             'ai_agent_id'   => $agent->id,
             'tenant_id'     => $agent->tenant_id,
-            'original_name' => $file->getClientOriginalName(),
+            'original_name' => preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($file->getClientOriginalName())),
             'storage_path'  => $path,
             'mime_type'     => $file->getMimeType(),
             'file_size'     => $file->getSize(),
@@ -286,7 +286,7 @@ class AiAgentController extends Controller
 
         $uploaded  = $request->file('file');
         $mime      = $uploaded->getMimeType() ?? $uploaded->getClientMimeType();
-        $origName  = $uploaded->getClientOriginalName();
+        $origName  = preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($uploaded->getClientOriginalName()));
 
         $path = $uploaded->store("ai-knowledge/{$agent->id}", 'public');
 
@@ -456,8 +456,8 @@ class AiAgentController extends Controller
             'enable_pipeline_tool'   => 'nullable|boolean',
             'enable_tags_tool'       => 'nullable|boolean',
             'enable_intent_notify'   => 'nullable|boolean',
-            'transfer_to_user_id'         => 'nullable|integer|exists:users,id',
-            'transfer_to_department_id'   => 'nullable|integer|exists:departments,id',
+            'transfer_to_user_id'         => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('users', 'id')->where('tenant_id', activeTenantId())],
+            'transfer_to_department_id'   => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('departments', 'id')->where('tenant_id', activeTenantId())],
             'followup_enabled'           => 'nullable|boolean',
             'followup_delay_minutes'     => 'nullable|integer|min:5|max:1440',
             'followup_max_count'         => 'nullable|integer|min:1|max:10',

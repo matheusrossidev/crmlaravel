@@ -75,7 +75,7 @@
 
     {{-- Content --}}
     @if($resource->content)
-        <div class="res-content">{!! $resource->content !!}</div>
+        <div class="res-content">{!! strip_tags($resource->content, '<p><br><strong><em><ul><ol><li><a><h1><h2><h3><h4><h5><h6><blockquote><code><pre><img><hr>') !!}</div>
     @endif
 
     {{-- Downloads --}}

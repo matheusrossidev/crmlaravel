@@ -12,6 +12,12 @@ class AgnoAction(BaseModel):
     """An action the AI wants to execute on the CRM (PHP will process it)."""
     type: str
     payload: Optional[dict[str, Any]] = None
+    media_id: Optional[int] = None
+    stage_id: Optional[int] = None
+    tags: Optional[list[str]] = None
+    field: Optional[str] = None
+    value: Optional[str] = None
+    body: Optional[str] = None
 
 
 class AgnoReply(BaseModel):
@@ -324,7 +330,8 @@ MÍDIAS DISPONÍVEIS PARA ENVIO
 {chr(10).join(media_lines)}
 
 Quando o contato pedir prints, fotos, imagens ou exemplos visuais, envie a mídia correspondente.
-Para enviar: {{"type": "send_media", "payload": {{"media_id": <id>}}}}
+Para enviar: {{"type": "send_media", "media_id": <id numérico>}}
+IMPORTANTE: Inclua o media_id numérico da lista acima. Envie APENAS 1 mídia por vez.
 SEMPRE envie a mídia quando relevante. NÃO diga que não pode enviar imagens.""")
 
     # ── Actions instructions ─────────────────────────────────────────
@@ -334,16 +341,16 @@ AÇÕES DISPONÍVEIS
 ═══════════════════════════════════════
 Inclua ações em "actions" quando necessário. O sistema PHP as executará.
 
-- set_stage: mover lead no funil. {{"type": "set_stage", "payload": {{"stage_id": 123}}}}
-- add_tags: adicionar tags. {{"type": "add_tags", "payload": {{"tags": ["tag1"]}}}}
-- update_lead: atualizar dados (name/email/company/birthday/value). {{"type": "update_lead", "payload": {{"field": "value", "value": "2500.00"}}}}
-- create_note: registrar observação estratégica. {{"type": "create_note", "payload": {{"body": "Cliente pediu proposta por email"}}}}
-- update_custom_field: preencher campo personalizado. {{"type": "update_custom_field", "payload": {{"field": "interesse", "value": "premium"}}}}
-- assign_human: transferir para humano. {{"type": "assign_human", "payload": {{}}}}
-- send_media: enviar mídia do agente (prints, fotos, catálogos). {{"type": "send_media", "payload": {{"media_id": 42}}}}
-- send_product_media: enviar foto/vídeo de produto. {{"type": "send_product_media", "payload": {{"product_id": 1, "media_id": 42}}}}
-- add_product_to_lead: vincular produto ao lead. {{"type": "add_product_to_lead", "payload": {{"product_id": 1, "quantity": 2}}}}
-- remove_product_from_lead: remover produto do lead. {{"type": "remove_product_from_lead", "payload": {{"product_id": 1}}}}
+- set_stage: mover lead no funil. {{"type": "set_stage", "stage_id": 123}}
+- add_tags: adicionar tags. {{"type": "add_tags", "tags": ["tag1"]}}
+- update_lead: atualizar dados. {{"type": "update_lead", "field": "value", "value": "2500.00"}}
+- create_note: registrar observação. {{"type": "create_note", "body": "Cliente pediu proposta"}}
+- update_custom_field: preencher campo. {{"type": "update_custom_field", "field": "interesse", "value": "premium"}}
+- assign_human: transferir para humano. {{"type": "assign_human"}}
+- send_media: enviar mídia do agente. {{"type": "send_media", "media_id": 1}}
+- send_product_media: enviar foto de produto. {{"type": "send_product_media", "media_id": 42}}
+- add_product_to_lead: vincular produto. {{"type": "add_product_to_lead"}}
+- remove_product_from_lead: remover produto. {{"type": "remove_product_from_lead"}}
 
 REGRAS para actions:
 - NÃO crie nota para cada mensagem — apenas informações estratégicas.

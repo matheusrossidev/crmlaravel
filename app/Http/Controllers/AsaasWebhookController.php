@@ -186,9 +186,10 @@ class AsaasWebhookController extends Controller
 
         $partnerTenantId = $tenant->referred_by_agency_id;
 
-        // Avoid duplicate commission for same payment
-        if ($paymentId && \App\Models\PartnerCommission::where('asaas_payment_id', $paymentId)->exists()) {
-            return;
+        // Avoid duplicate commission — atomic check with lock
+        if ($paymentId) {
+            $exists = \App\Models\PartnerCommission::where('asaas_payment_id', $paymentId)->lockForUpdate()->exists();
+            if ($exists) return;
         }
 
         // Use locked commission % from tenant (set at time of referral).

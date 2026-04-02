@@ -654,12 +654,11 @@ class ProcessAiResponse implements ShouldQueue
             ->sum('tokens_total');
 
         if ($used >= $limit) {
-            // Setar flag de esgotamento para bloquear o frontend
-            if (! $tenant->ai_tokens_exhausted) {
-                Tenant::withoutGlobalScope('tenant')
-                    ->where('id', $tenant->id)
-                    ->update(['ai_tokens_exhausted' => true]);
-            }
+            // Atomic: only update if not already set (prevents race condition)
+            Tenant::withoutGlobalScope('tenant')
+                ->where('id', $tenant->id)
+                ->where('ai_tokens_exhausted', false)
+                ->update(['ai_tokens_exhausted' => true]);
             return false;
         }
 
@@ -1002,13 +1001,15 @@ class ProcessAiResponse implements ShouldQueue
         // Agno returns: {"type": "set_stage", "payload": {"stage_id": 3}}
         // PHP executor expects: {"type": "set_stage", "stage_id": 3}
         // Also handles actions without payload wrapper (e.g. {"type": "send_media", "media_id": 42})
+        // Limit actions to 5 max (prevent LLM spam loops)
+        $rawActions = array_slice($agnoResult['actions'] ?? [], 0, 5);
         $agnoResult['actions'] = array_map(function (array $a) {
             $type    = $a['type'] ?? '';
             $payload = (array) ($a['payload'] ?? []);
             // Merge all top-level keys except 'type' and 'payload' (handles flat actions)
             $extra = array_diff_key($a, ['type' => 1, 'payload' => 1]);
             return array_merge($payload, $extra, ['type' => $type]);
-        }, $agnoResult['actions'] ?? []);
+        }, $rawActions);
 
         return $agnoResult;
     }
