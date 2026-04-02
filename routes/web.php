@@ -368,6 +368,15 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::post('wa-button',                [IntegrationController::class, 'storeWaButton'])->name('wa-button.store');
             Route::put('wa-button/{waButton}',      [IntegrationController::class, 'updateWaButton'])->name('wa-button.update');
             Route::delete('wa-button/{waButton}',   [IntegrationController::class, 'destroyWaButton'])->name('wa-button.destroy');
+            // Facebook Lead Ads
+            Route::get('facebook-leadads/redirect',                         [IntegrationController::class, 'redirectFacebookLeadAds'])->name('facebook-leadads.redirect');
+            Route::get('facebook-leadads/callback',                         [IntegrationController::class, 'callbackFacebookLeadAds'])->name('facebook-leadads.callback');
+            Route::get('facebook-leadads/pages',                            [IntegrationController::class, 'getFacebookLeadAdsPages'])->name('facebook-leadads.pages');
+            Route::get('facebook-leadads/forms',                            [IntegrationController::class, 'getFacebookLeadAdsForms'])->name('facebook-leadads.forms');
+            Route::post('facebook-leadads/connections',                     [IntegrationController::class, 'storeFbLeadConnection'])->name('facebook-leadads.connections.store');
+            Route::put('facebook-leadads/connections/{connection}',         [IntegrationController::class, 'updateFbLeadConnection'])->name('facebook-leadads.connections.update');
+            Route::delete('facebook-leadads/connections/{connection}',      [IntegrationController::class, 'destroyFbLeadConnection'])->name('facebook-leadads.connections.destroy');
+            Route::delete('facebook-leadads',                               [IntegrationController::class, 'disconnectFacebookLeadAds'])->name('facebook-leadads.disconnect');
             // Wildcards (OAuth)
             Route::delete('{platform}',     [IntegrationController::class, 'disconnect'])->name('disconnect');
             Route::post('{platform}/sync',  [IntegrationController::class, 'syncNow'])->name('sync');
@@ -724,6 +733,11 @@ Route::middleware(['auth', 'super_admin', '2fa'])->prefix('master')->name('maste
     // Sistema
     Route::get('sistema',                              [MasterSystemController::class, 'index'])->name('system');
     Route::get('sistema/stats',                        [MasterSystemController::class, 'stats'])->name('system.stats');
+
+    // Feature Flags
+    Route::get('features',                             [\App\Http\Controllers\Master\FeatureController::class, 'index'])->name('features');
+    Route::post('features/{feature}/toggle-global',    [\App\Http\Controllers\Master\FeatureController::class, 'toggleGlobal'])->name('features.toggle-global');
+    Route::put('features/{feature}/tenants',           [\App\Http\Controllers\Master\FeatureController::class, 'updateTenants'])->name('features.update-tenants');
 
     // Reengajamento
     Route::get('reengajamento',                        [\App\Http\Controllers\Master\ReengagementController::class, 'index'])->name('reengagement');

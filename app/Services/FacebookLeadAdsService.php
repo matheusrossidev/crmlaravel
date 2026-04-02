@@ -1,0 +1,148 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+class FacebookLeadAdsService
+{
+    private const API_VERSION = 'v25.0';
+    private const BASE_URL    = 'https://graph.facebook.com/' . self::API_VERSION;
+
+    public function __construct(
+        private readonly string $userAccessToken,
+    ) {}
+
+    /**
+     * List Facebook Pages the user manages.
+     * Returns [{id, name, access_token}]
+     */
+    public function getPages(): array
+    {
+        $response = Http::withToken($this->userAccessToken)
+            ->timeout(15)
+            ->get(self::BASE_URL . '/me/accounts', [
+                'fields' => 'id,name,access_token',
+                'limit'  => 100,
+            ]);
+
+        if (! $response->successful()) {
+            Log::warning('FacebookLeadAds: getPages failed', ['status' => $response->status(), 'body' => $response->body()]);
+            return [];
+        }
+
+        return $response->json('data', []);
+    }
+
+    /**
+     * List lead gen forms for a Page.
+     * Returns [{id, name, status, questions[{key, label, type}]}]
+     */
+    public function getPageForms(string $pageId, string $pageAccessToken): array
+    {
+        $response = Http::withToken($pageAccessToken)
+            ->timeout(15)
+            ->get(self::BASE_URL . "/{$pageId}/leadgen_forms", [
+                'fields' => 'id,name,status,questions',
+                'limit'  => 100,
+            ]);
+
+        if (! $response->successful()) {
+            Log::warning('FacebookLeadAds: getPageForms failed', ['page' => $pageId, 'status' => $response->status()]);
+            return [];
+        }
+
+        return $response->json('data', []);
+    }
+
+    /**
+     * Subscribe a Page to leadgen webhook events.
+     */
+    public function subscribePage(string $pageId, string $pageAccessToken): bool
+    {
+        $response = Http::withToken($pageAccessToken)
+            ->timeout(15)
+            ->asForm()
+            ->post(self::BASE_URL . "/{$pageId}/subscribed_apps", [
+                'subscribed_fields' => 'leadgen',
+            ]);
+
+        if (! $response->successful()) {
+            Log::warning('FacebookLeadAds: subscribePage failed', ['page' => $pageId, 'body' => $response->body()]);
+            return false;
+        }
+
+        return (bool) $response->json('success', false);
+    }
+
+    /**
+     * Fetch lead data by leadgen ID.
+     * Returns {id, field_data[{name, values}], form_id, ad_id, platform, created_time}
+     */
+    public function getLeadData(string $leadgenId, string $pageAccessToken): ?array
+    {
+        $response = Http::withToken($pageAccessToken)
+            ->timeout(15)
+            ->get(self::BASE_URL . "/{$leadgenId}", [
+                'fields' => 'id,field_data,form_id,ad_id,created_time,platform',
+            ]);
+
+        if (! $response->successful()) {
+            Log::warning('FacebookLeadAds: getLeadData failed', ['leadgen' => $leadgenId, 'status' => $response->status()]);
+            return null;
+        }
+
+        return $response->json();
+    }
+
+    /**
+     * Get campaign info from an ad ID (for UTM tracking).
+     * Returns {campaign_name, campaign_id} or null.
+     */
+    public function getCampaignFromAd(string $adId): ?array
+    {
+        $response = Http::withToken($this->userAccessToken)
+            ->timeout(15)
+            ->get(self::BASE_URL . "/{$adId}", [
+                'fields' => 'campaign_id,campaign{name,objective}',
+            ]);
+
+        if (! $response->successful()) {
+            Log::debug('FacebookLeadAds: getCampaignFromAd failed', ['ad' => $adId]);
+            return null;
+        }
+
+        $data = $response->json();
+        $campaign = $data['campaign'] ?? null;
+
+        return $campaign ? [
+            'campaign_id'   => $data['campaign_id'] ?? null,
+            'campaign_name' => $campaign['name'] ?? null,
+            'objective'     => $campaign['objective'] ?? null,
+        ] : null;
+    }
+
+    /**
+     * Exchange short-lived token for long-lived (60 days).
+     */
+    public static function exchangeForLongLivedToken(string $shortToken): ?array
+    {
+        $response = Http::timeout(15)
+            ->get(self::BASE_URL . '/oauth/access_token', [
+                'grant_type'        => 'fb_exchange_token',
+                'client_id'         => config('services.facebook.client_id'),
+                'client_secret'     => config('services.facebook.client_secret'),
+                'fb_exchange_token' => $shortToken,
+            ]);
+
+        if (! $response->successful()) {
+            Log::warning('FacebookLeadAds: token exchange failed', ['body' => $response->body()]);
+            return null;
+        }
+
+        return $response->json(); // {access_token, token_type, expires_in}
+    }
+}

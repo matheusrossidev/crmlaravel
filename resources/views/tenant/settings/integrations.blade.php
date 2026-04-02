@@ -708,6 +708,65 @@
         </div>
         @endif
 
+    {{-- ─── Facebook/Instagram Lead Ads ──────────────────────────────── --}}
+    @if($enabledIntegrations['facebook_leadads'] ?? false)
+    <div class="integration-card">
+        <div class="integration-header">
+            <div class="integration-logo facebook">
+                <i class="bi bi-facebook" style="font-size:20px;"></i>
+            </div>
+            <div class="integration-title">
+                <h3>{{ __('integrations.fb_lead_title') }}</h3>
+                <p>{{ __('integrations.fb_lead_subtitle') }}</p>
+            </div>
+            @if($facebookLeadAds && $facebookLeadAds->status === 'active')
+                <span class="conn-badge conn-active">{{ __('integrations.fb_lead_connected') }}</span>
+            @else
+                <span class="conn-badge conn-none">{{ __('integrations.fb_lead_disconnected') }}</span>
+            @endif
+        </div>
+        <div class="integration-body">
+            <ul class="integration-features">
+                <li>{{ __('integrations.fb_lead_feat_1') }}</li>
+                <li>{{ __('integrations.fb_lead_feat_2') }}</li>
+                <li>{{ __('integrations.fb_lead_feat_3') }}</li>
+                <li>{{ __('integrations.fb_lead_feat_4') }}</li>
+            </ul>
+            @if($facebookLeadAds && $facebookLeadAds->status === 'active')
+                <div class="conn-detail">
+                    <strong>{{ $facebookLeadAds->platform_user_name ?? 'Facebook' }}</strong><br>
+                    <span>{{ __('integrations.fb_lead_connected_ago', ['time' => $facebookLeadAds->updated_at?->diffForHumans() ?? '']) }}</span>
+                </div>
+                @if($fbLeadConnections->isNotEmpty())
+                <div style="margin:10px 0;padding:10px 14px;background:#f0f4ff;border:1px solid #dbeafe;border-radius:8px;font-size:12.5px;">
+                    <strong style="color:#1a1d23;">{{ __('integrations.fb_lead_forms_count', ['count' => $fbLeadConnections->count()]) }}</strong>
+                    @foreach($fbLeadConnections as $fc)
+                    <div style="margin-top:4px;color:#6b7280;">
+                        {{ $fc->form_name }} &rarr; {{ $fc->pipeline?->name }} / {{ $fc->stage?->name }}
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+                <div class="integration-actions" style="gap:8px;">
+                    <button class="btn-connect" onclick="openFbLeadDrawer()" style="background:#1877F2;">
+                        <i class="bi bi-gear"></i> {{ __('integrations.fb_lead_manage') }}
+                    </button>
+                    <button class="btn-disconnect" onclick="disconnectFbLeadAds(this)">
+                        <i class="bi bi-x-circle"></i> {{ __('integrations.fb_lead_disconnect') }}
+                    </button>
+                </div>
+            @else
+                <div class="conn-detail" style="color:#9ca3af;">{{ __('integrations.fb_lead_not_connected') }}</div>
+                <div class="integration-actions">
+                    <a href="{{ route('settings.integrations.facebook-leadads.redirect') }}" class="btn-connect" style="background:#1877F2;">
+                        <i class="bi bi-facebook"></i> {{ __('integrations.fb_lead_connect') }}
+                    </a>
+                </div>
+            @endif
+        </div>
+    </div>
+    @endif
+
     {{-- ─── Botões WhatsApp (rastreamento de cliques) ──────────────────── --}}
     <div class="integration-card">
         <div class="integration-header">
@@ -933,6 +992,102 @@
         </div>
     </div>
 </div>
+
+{{-- ─── Facebook Lead Ads Drawer ──────────────────────────────────────── --}}
+@if($enabledIntegrations['facebook_leadads'] ?? false)
+<div id="fbLeadOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1040;" onclick="closeFbLeadDrawer()"></div>
+<div id="fbLeadDrawer" style="display:none;position:fixed;top:0;right:-560px;width:540px;height:100vh;background:#fff;z-index:1050;box-shadow:-4px 0 24px rgba(0,0,0,.12);transition:right .3s ease;overflow-y:auto;">
+    <div style="padding:20px 24px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+            <div style="font-size:16px;font-weight:700;color:#1a1d23;">{{ __('integrations.fb_drawer_title') }}</div>
+            <div style="font-size:12px;color:#9ca3af;">{{ __('integrations.fb_drawer_subtitle') }}</div>
+        </div>
+        <button onclick="closeFbLeadDrawer()" style="background:none;border:none;font-size:20px;color:#6b7280;cursor:pointer;">&times;</button>
+    </div>
+
+    {{-- Stepper --}}
+    <div style="display:flex;padding:16px 24px;gap:8px;" id="fbStepper">
+        <div class="fb-step active" data-step="1"><span class="fb-step-num">1</span> {{ __('integrations.fb_step_form') }}</div>
+        <div class="fb-step" data-step="2"><span class="fb-step-num">2</span> {{ __('integrations.fb_step_pipeline') }}</div>
+        <div class="fb-step" data-step="3"><span class="fb-step-num">3</span> {{ __('integrations.fb_step_fields') }}</div>
+    </div>
+
+    {{-- Step 1: Select Page + Form --}}
+    <div class="fb-panel" id="fbStep1" style="padding:0 24px 24px;">
+        <label style="font-size:13px;font-weight:600;color:#1a1d23;display:block;margin-bottom:6px;">{{ __('integrations.fb_page_label') }}</label>
+        <select id="fbPageSelect" style="width:100%;padding:10px 12px;border:1.5px solid #e8eaf0;border-radius:8px;font-size:13px;margin-bottom:16px;" onchange="onPageSelected()">
+            <option value="">{{ __('integrations.fb_page_loading') }}</option>
+        </select>
+
+        <label style="font-size:13px;font-weight:600;color:#1a1d23;display:block;margin-bottom:6px;">{{ __('integrations.fb_form_label') }}</label>
+        <select id="fbFormSelect" style="width:100%;padding:10px 12px;border:1.5px solid #e8eaf0;border-radius:8px;font-size:13px;margin-bottom:16px;" disabled>
+            <option value="">{{ __('integrations.fb_form_select_page') }}</option>
+        </select>
+
+        <div style="font-size:12px;color:#9ca3af;margin-bottom:16px;">
+            <i class="bi bi-info-circle"></i> {{ __('integrations.fb_form_hint') }}
+        </div>
+
+        <div style="text-align:right;">
+            <button onclick="fbGoStep(2)" class="fb-btn-primary" id="fbNextStep1" disabled>{{ __('integrations.fb_btn_next') }} <i class="bi bi-arrow-right"></i></button>
+        </div>
+    </div>
+
+    {{-- Step 2: Pipeline + Stage --}}
+    <div class="fb-panel" id="fbStep2" style="display:none;padding:0 24px 24px;">
+        <label style="font-size:13px;font-weight:600;color:#1a1d23;display:block;margin-bottom:6px;">{{ __('integrations.fb_pipeline_label') }}</label>
+        <select id="fbPipelineSelect" style="width:100%;padding:10px 12px;border:1.5px solid #e8eaf0;border-radius:8px;font-size:13px;margin-bottom:16px;" onchange="onPipelineSelected()">
+            @foreach($pipelines as $p)
+            <option value="{{ $p->id }}" data-stages="{{ $p->stages->toJson() }}">{{ $p->name }}</option>
+            @endforeach
+        </select>
+
+        <label style="font-size:13px;font-weight:600;color:#1a1d23;display:block;margin-bottom:6px;">{{ __('integrations.fb_stage_label') }}</label>
+        <select id="fbStageSelect" style="width:100%;padding:10px 12px;border:1.5px solid #e8eaf0;border-radius:8px;font-size:13px;margin-bottom:16px;"></select>
+
+        <label style="font-size:13px;font-weight:600;color:#1a1d23;display:block;margin-bottom:6px;">{{ __('integrations.fb_tags_label') }}</label>
+        <input type="text" id="fbDefaultTags" placeholder="{{ __('integrations.fb_tags_placeholder') }}" style="width:100%;padding:10px 12px;border:1.5px solid #e8eaf0;border-radius:8px;font-size:13px;margin-bottom:16px;">
+
+        <div style="display:flex;justify-content:space-between;margin-top:8px;">
+            <button onclick="fbGoStep(1)" class="fb-btn-secondary"><i class="bi bi-arrow-left"></i> {{ __('integrations.fb_btn_back') }}</button>
+            <button onclick="fbGoStep(3)" class="fb-btn-primary">{{ __('integrations.fb_btn_next') }} <i class="bi bi-arrow-right"></i></button>
+        </div>
+    </div>
+
+    {{-- Step 3: Field Mapping --}}
+    <div class="fb-panel" id="fbStep3" style="display:none;padding:0 24px 24px;">
+        <div style="font-size:13px;font-weight:600;color:#1a1d23;margin-bottom:12px;">{{ __('integrations.fb_mapping_title') }}</div>
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;font-size:12px;font-weight:600;color:#6b7280;margin-bottom:8px;">
+            <div>{{ __('integrations.fb_mapping_form_col') }}</div>
+            <div></div>
+            <div>{{ __('integrations.fb_mapping_crm_col') }}</div>
+        </div>
+        <div id="fbFieldMappingContainer"></div>
+
+        <div style="display:flex;justify-content:space-between;margin-top:20px;">
+            <button onclick="fbGoStep(2)" class="fb-btn-secondary"><i class="bi bi-arrow-left"></i> {{ __('integrations.fb_btn_back') }}</button>
+            <button onclick="saveFbLeadConnection()" class="fb-btn-primary"><i class="bi bi-check-lg"></i> {{ __('integrations.fb_btn_save') }}</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.fb-step { flex:1;text-align:center;padding:8px;border-radius:8px;font-size:12px;font-weight:600;color:#9ca3af;background:#f9fafb;transition:.2s; }
+.fb-step.active { background:#eff6ff;color:#1877F2; }
+.fb-step.done { background:#ecfdf5;color:#059669; }
+.fb-step-num { display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;border-radius:50%;background:#e5e7eb;color:#6b7280;font-size:11px;margin-right:4px; }
+.fb-step.active .fb-step-num { background:#1877F2;color:#fff; }
+.fb-step.done .fb-step-num { background:#059669;color:#fff; }
+.fb-btn-primary { padding:9px 20px;background:#1877F2;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer; }
+.fb-btn-primary:hover { background:#1565D8; }
+.fb-btn-primary:disabled { opacity:.5;cursor:not-allowed; }
+.fb-btn-secondary { padding:9px 20px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;cursor:pointer; }
+.fb-mapping-row { display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-bottom:8px; }
+.fb-mapping-row .fb-field-label { padding:8px 12px;background:#f9fafb;border:1px solid #e8eaf0;border-radius:8px;font-size:12.5px;color:#1a1d23; }
+.fb-mapping-row .fb-arrow { color:#9ca3af;font-size:14px; }
+.fb-mapping-row select { padding:8px 10px;border:1.5px solid #e8eaf0;border-radius:8px;font-size:12.5px;width:100%; }
+</style>
+@endif
 
 @endsection
 
@@ -1566,4 +1721,222 @@ function deleteWaButton(btnId, phone) {
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .spin { animation: spin .8s linear infinite; display: inline-block; }
 </style>
+
+{{-- ─── Facebook Lead Ads JS ──────────────────────────────────────── --}}
+<script>
+let fbCurrentStep = 1;
+let fbPagesData = [];
+let fbFormsData = [];
+let fbSelectedPage = null;
+let fbSelectedForm = null;
+let fbPageAccessToken = null;
+
+@php
+    $crmFieldOptions = [
+        '' => __('integrations.fb_map_ignore'),
+        'name' => __('integrations.fb_map_name'),
+        'email' => __('integrations.fb_map_email'),
+        'phone' => __('integrations.fb_map_phone'),
+        'company' => __('integrations.fb_map_company'),
+        'value' => __('integrations.fb_map_value'),
+        'tags' => __('integrations.fb_map_tags'),
+    ];
+    foreach ($customFields as $cf) {
+        $crmFieldOptions['custom:' . $cf->id] = $cf->label . ' (campo extra)';
+    }
+@endphp
+const CRM_FIELD_OPTIONS = {!! json_encode($crmFieldOptions) !!};
+
+function openFbLeadDrawer() {
+    document.getElementById('fbLeadOverlay').style.display = 'block';
+    const drawer = document.getElementById('fbLeadDrawer');
+    drawer.style.display = 'block';
+    requestAnimationFrame(() => { drawer.style.right = '0'; });
+    fbGoStep(1);
+    loadFbPages();
+}
+
+function closeFbLeadDrawer() {
+    const drawer = document.getElementById('fbLeadDrawer');
+    drawer.style.right = '-560px';
+    setTimeout(() => {
+        drawer.style.display = 'none';
+        document.getElementById('fbLeadOverlay').style.display = 'none';
+    }, 300);
+}
+
+function fbGoStep(step) {
+    fbCurrentStep = step;
+    document.querySelectorAll('.fb-panel').forEach(p => p.style.display = 'none');
+    document.getElementById('fbStep' + step).style.display = 'block';
+
+    document.querySelectorAll('.fb-step').forEach(s => {
+        const sn = parseInt(s.dataset.step);
+        s.classList.remove('active', 'done');
+        if (sn === step) s.classList.add('active');
+        else if (sn < step) s.classList.add('done');
+    });
+
+    if (step === 2) onPipelineSelected();
+    if (step === 3) buildFieldMapping();
+}
+
+function loadFbPages() {
+    const sel = document.getElementById('fbPageSelect');
+    sel.innerHTML = '<option value="">' + ILANG.fb_page_loading + '</option>';
+
+    window.API.get('{{ route("settings.integrations.facebook-leadads.pages") }}')
+    .then(data => {
+        if (!data.success || !data.pages.length) {
+            sel.innerHTML = '<option value="">' + ILANG.fb_page_empty + '</option>';
+            return;
+        }
+        fbPagesData = data.pages;
+        sel.innerHTML = '<option value="">' + ILANG.fb_page_select + '</option>';
+        data.pages.forEach(p => {
+            sel.innerHTML += '<option value="' + p.id + '">' + window.escapeHtml(p.name) + '</option>';
+        });
+    })
+    .catch(() => { sel.innerHTML = '<option value="">Error</option>'; });
+}
+
+function onPageSelected() {
+    const pageId = document.getElementById('fbPageSelect').value;
+    const formSel = document.getElementById('fbFormSelect');
+    document.getElementById('fbNextStep1').disabled = true;
+
+    if (!pageId) {
+        formSel.innerHTML = '<option value="">Selecione a página primeiro</option>';
+        formSel.disabled = true;
+        return;
+    }
+
+    formSel.innerHTML = '<option value="">' + ILANG.fb_form_loading + '</option>';
+    formSel.disabled = true;
+
+    window.API.get('{{ route("settings.integrations.facebook-leadads.forms") }}?page_id=' + pageId)
+    .then(data => {
+        if (!data.success || !data.forms.length) {
+            formSel.innerHTML = '<option value="">' + ILANG.fb_form_empty + '</option>';
+            return;
+        }
+        fbFormsData = data.forms;
+        fbSelectedPage = { id: pageId, name: data.page_name };
+        fbPageAccessToken = data.page_access_token;
+
+        formSel.innerHTML = '<option value="">' + ILANG.fb_form_select + '</option>';
+        data.forms.forEach(f => {
+            const status = f.status === 'ACTIVE' ? '' : ' (' + f.status + ')';
+            formSel.innerHTML += '<option value="' + f.id + '">' + window.escapeHtml(f.name) + status + '</option>';
+        });
+        formSel.disabled = false;
+
+        formSel.onchange = function() {
+            fbSelectedForm = fbFormsData.find(x => x.id === this.value) || null;
+            document.getElementById('fbNextStep1').disabled = !this.value;
+        };
+    })
+    .catch(() => { formSel.innerHTML = '<option value="">Error</option>'; });
+}
+
+function onPipelineSelected() {
+    const pipSel = document.getElementById('fbPipelineSelect');
+    const opt = pipSel.options[pipSel.selectedIndex];
+    const stageSel = document.getElementById('fbStageSelect');
+
+    try {
+        const stages = JSON.parse(opt.dataset.stages || '[]');
+        stageSel.innerHTML = '';
+        stages.sort((a,b) => a.position - b.position).forEach(s => {
+            stageSel.innerHTML += '<option value="' + s.id + '">' + window.escapeHtml(s.name) + '</option>';
+        });
+    } catch(e) {
+        stageSel.innerHTML = '<option value="">Erro</option>';
+    }
+}
+
+function buildFieldMapping() {
+    const container = document.getElementById('fbFieldMappingContainer');
+    container.innerHTML = '';
+
+    if (!fbSelectedForm || !fbSelectedForm.questions) {
+        container.innerHTML = '<div style="color:#9ca3af;font-size:13px;">' + ILANG.fb_mapping_empty + '</div>';
+        return;
+    }
+
+    fbSelectedForm.questions.forEach(q => {
+        const key = q.key || q.id || '';
+        const label = q.label || key;
+
+        let optionsHtml = '';
+        for (const [val, text] of Object.entries(CRM_FIELD_OPTIONS)) {
+            // Auto-select common mappings
+            let selected = '';
+            if (key === 'full_name' && val === 'name') selected = ' selected';
+            else if (key === 'email' && val === 'email') selected = ' selected';
+            else if (key === 'phone_number' && val === 'phone') selected = ' selected';
+            else if (key === 'company_name' && val === 'company') selected = ' selected';
+            optionsHtml += '<option value="' + val + '"' + selected + '>' + window.escapeHtml(text) + '</option>';
+        }
+
+        container.innerHTML += '<div class="fb-mapping-row">' +
+            '<div class="fb-field-label">' + window.escapeHtml(label) + '</div>' +
+            '<div class="fb-arrow"><i class="bi bi-arrow-right"></i></div>' +
+            '<select data-meta-key="' + window.escapeHtml(key) + '">' + optionsHtml + '</select>' +
+            '</div>';
+    });
+}
+
+function saveFbLeadConnection() {
+    // Collect mapping
+    const mapping = {};
+    document.querySelectorAll('#fbFieldMappingContainer select').forEach(sel => {
+        if (sel.value) {
+            mapping[sel.dataset.metaKey] = sel.value;
+        }
+    });
+
+    const tagsRaw = document.getElementById('fbDefaultTags').value;
+    const defaultTags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+    const payload = {
+        page_id: fbSelectedPage.id,
+        page_name: fbSelectedPage.name,
+        page_access_token: fbPageAccessToken,
+        form_id: fbSelectedForm.id,
+        form_name: fbSelectedForm.name || fbSelectedForm.id,
+        form_fields_json: fbSelectedForm.questions || [],
+        pipeline_id: document.getElementById('fbPipelineSelect').value,
+        stage_id: document.getElementById('fbStageSelect').value,
+        field_mapping: mapping,
+        default_tags: defaultTags.length ? defaultTags : null,
+    };
+
+    window.API.post('{{ route("settings.integrations.facebook-leadads.connections.store") }}', payload)
+    .then(data => {
+        if (data.success) {
+            toastr.success(ILANG.fb_save_success);
+            closeFbLeadDrawer();
+            setTimeout(() => location.reload(), 800);
+        } else {
+            toastr.error(data.message || 'Erro ao salvar');
+        }
+    })
+    .catch(err => { toastr.error(ILANG.fb_save_error); });
+}
+
+function disconnectFbLeadAds(btn) {
+    if (!confirm(ILANG.fb_confirm_disconnect)) return;
+    btn.disabled = true;
+
+    window.API.delete('{{ route("settings.integrations.facebook-leadads.disconnect") }}')
+    .then(data => {
+        if (data.success) {
+            toastr.success(ILANG.fb_disconnected_success);
+            setTimeout(() => location.reload(), 800);
+        }
+    })
+    .catch(() => { btn.disabled = false; toastr.error('Erro'); });
+}
+</script>
 @endpush

@@ -7,10 +7,15 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Jobs\ImportWhatsappHistory;
 use App\Jobs\SyncCampaignsJob;
+use App\Models\FacebookLeadFormConnection;
+use App\Models\FeatureFlag;
 use App\Models\InstagramInstance;
 use App\Models\OAuthConnection;
+use App\Models\Pipeline;
+use App\Models\CustomFieldDefinition;
 use App\Models\WhatsappButton;
 use App\Models\WhatsappInstance;
+use App\Services\FacebookLeadAdsService;
 use App\Services\InstagramService;
 use App\Services\PlanLimitChecker;
 use App\Services\WahaService;
@@ -34,6 +39,7 @@ class IntegrationController extends Controller
 
         $facebook  = $connections->get('facebook');
         $google    = $connections->get('google');
+        $facebookLeadAds = $connections->get('facebook_leadads');
         $whatsappInstances = WhatsappInstance::orderBy('id')->get();
         $whatsapp          = $whatsappInstances->first(); // retrocompat
         $instagram         = InstagramInstance::where('status', '!=', 'disconnected')->first();
@@ -41,20 +47,30 @@ class IntegrationController extends Controller
         $tenant = activeTenant();
         $s = $tenant->settings_json ?? [];
         $enabledIntegrations = [
-            'whatsapp'        => $s['integration_whatsapp']        ?? true,
-            'google_calendar' => $s['integration_google_calendar'] ?? true,
-            'instagram'       => $s['integration_instagram']       ?? true,
-            'facebook_ads'    => $s['integration_facebook_ads']    ?? false,
-            'google_ads'      => $s['integration_google_ads']      ?? false,
+            'whatsapp'         => $s['integration_whatsapp']        ?? true,
+            'google_calendar'  => $s['integration_google_calendar'] ?? true,
+            'instagram'        => $s['integration_instagram']       ?? true,
+            'facebook_ads'     => $s['integration_facebook_ads']    ?? false,
+            'google_ads'       => $s['integration_google_ads']      ?? false,
+            'facebook_leadads' => FeatureFlag::isEnabled('facebook_leadads', $tenant->id),
         ];
 
         $maxWhatsappInstances    = $tenant->max_whatsapp_instances > 0 ? $tenant->max_whatsapp_instances : null;
         $whatsappInstancesRemain = PlanLimitChecker::remaining('whatsapp_instances');
         $waButtons = WhatsappButton::orderBy('id')->get();
 
+        // Facebook Lead Ads form connections
+        $fbLeadConnections = $facebookLeadAds
+            ? FacebookLeadFormConnection::where('is_active', true)->with('pipeline', 'stage')->get()
+            : collect();
+
+        $pipelines    = Pipeline::with('stages:id,pipeline_id,name,position')->orderBy('sort_order')->get(['id', 'name']);
+        $customFields = CustomFieldDefinition::where('is_active', true)->orderBy('sort_order')->get(['id', 'name', 'label', 'field_type']);
+
         return view('tenant.settings.integrations', compact(
-            'facebook', 'google', 'whatsapp', 'whatsappInstances', 'instagram',
-            'enabledIntegrations', 'maxWhatsappInstances', 'whatsappInstancesRemain', 'waButtons'
+            'facebook', 'google', 'facebookLeadAds', 'whatsapp', 'whatsappInstances', 'instagram',
+            'enabledIntegrations', 'maxWhatsappInstances', 'whatsappInstancesRemain', 'waButtons',
+            'fbLeadConnections', 'pipelines', 'customFields'
         ));
     }
 
@@ -604,6 +620,186 @@ class IntegrationController extends Controller
     public function destroyWaButton(WhatsappButton $waButton): JsonResponse
     {
         $waButton->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    // ── Facebook Lead Ads ────────────────────────────────────────────────────
+
+    public function redirectFacebookLeadAds(): RedirectResponse
+    {
+        return Socialite::driver('facebook')
+            ->scopes(['pages_show_list', 'leads_retrieval', 'pages_manage_ads'])
+            ->redirectUrl(config('services.facebook.leadgen_redirect'))
+            ->redirect();
+    }
+
+    public function callbackFacebookLeadAds(Request $request): RedirectResponse
+    {
+        try {
+            $fbUser = Socialite::driver('facebook')
+                ->redirectUrl(config('services.facebook.leadgen_redirect'))
+                ->user();
+        } catch (\Throwable $e) {
+            return redirect()->route('settings.integrations')
+                ->with('error', 'Falha na autenticação com o Facebook: ' . $e->getMessage());
+        }
+
+        // Exchange for long-lived token
+        $exchanged   = $this->exchangeFacebookToken($fbUser->token);
+        $accessToken = $exchanged['access_token'] ?? $fbUser->token;
+        $expiresIn   = $exchanged['expires_in'] ?? 5184000;
+
+        OAuthConnection::updateOrCreate(
+            ['tenant_id' => activeTenantId(), 'platform' => 'facebook_leadads'],
+            [
+                'platform_user_id'   => $fbUser->getId(),
+                'platform_user_name' => $fbUser->getName(),
+                'access_token'       => encrypt($accessToken),
+                'token_expires_at'   => now()->addSeconds((int) $expiresIn),
+                'scopes_json'        => ['pages_show_list', 'leads_retrieval', 'pages_manage_ads'],
+                'status'             => 'active',
+            ],
+        );
+
+        return redirect()->route('settings.integrations')
+            ->with('success', 'Facebook Lead Ads conectado com sucesso!');
+    }
+
+    public function getFacebookLeadAdsPages(): JsonResponse
+    {
+        $conn = OAuthConnection::where('platform', 'facebook_leadads')
+            ->where('status', 'active')
+            ->first();
+
+        if (! $conn) {
+            return response()->json(['success' => false, 'message' => 'Não conectado'], 422);
+        }
+
+        $service = new FacebookLeadAdsService(decrypt($conn->access_token));
+        $pages   = $service->getPages();
+
+        return response()->json(['success' => true, 'pages' => $pages]);
+    }
+
+    public function getFacebookLeadAdsForms(Request $request): JsonResponse
+    {
+        $request->validate(['page_id' => 'required|string']);
+
+        $conn = OAuthConnection::where('platform', 'facebook_leadads')
+            ->where('status', 'active')
+            ->first();
+
+        if (! $conn) {
+            return response()->json(['success' => false, 'message' => 'Não conectado'], 422);
+        }
+
+        // Get page access token
+        $service = new FacebookLeadAdsService(decrypt($conn->access_token));
+        $pages   = $service->getPages();
+        $page    = collect($pages)->firstWhere('id', $request->page_id);
+
+        if (! $page) {
+            return response()->json(['success' => false, 'message' => 'Página não encontrada'], 404);
+        }
+
+        $forms = $service->getPageForms($page['id'], $page['access_token']);
+
+        return response()->json([
+            'success'          => true,
+            'page_name'        => $page['name'],
+            'page_access_token' => encrypt($page['access_token']),
+            'forms'            => $forms,
+        ]);
+    }
+
+    public function storeFbLeadConnection(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'page_id'            => 'required|string|max:64',
+            'page_name'          => 'required|string|max:191',
+            'page_access_token'  => 'required|string',
+            'form_id'            => 'required|string|max:64',
+            'form_name'          => 'required|string|max:191',
+            'form_fields_json'   => 'nullable|array',
+            'pipeline_id'        => 'required|exists:pipelines,id',
+            'stage_id'           => 'required|integer',
+            'field_mapping'      => 'required|array',
+            'default_tags'       => 'nullable|array',
+            'auto_assign_to'     => 'nullable|integer',
+        ]);
+
+        $conn = OAuthConnection::where('platform', 'facebook_leadads')
+            ->where('status', 'active')
+            ->first();
+
+        if (! $conn) {
+            return response()->json(['success' => false, 'message' => 'Não conectado'], 422);
+        }
+
+        // Subscribe page to leadgen webhooks
+        try {
+            $pageToken = decrypt($data['page_access_token']);
+            $service   = new FacebookLeadAdsService(decrypt($conn->access_token));
+            $service->subscribePage($data['page_id'], $pageToken);
+        } catch (\Throwable $e) {
+            Log::warning('FacebookLeadAds: subscribePage failed on store', ['error' => $e->getMessage()]);
+        }
+
+        $connection = FacebookLeadFormConnection::updateOrCreate(
+            ['tenant_id' => activeTenantId(), 'form_id' => $data['form_id']],
+            [
+                'oauth_connection_id' => $conn->id,
+                'page_id'             => $data['page_id'],
+                'page_name'           => $data['page_name'],
+                'page_access_token'   => $data['page_access_token'], // already encrypted from getForms
+                'form_name'           => $data['form_name'],
+                'form_fields_json'    => $data['form_fields_json'] ?? null,
+                'pipeline_id'         => $data['pipeline_id'],
+                'stage_id'            => $data['stage_id'],
+                'field_mapping'       => $data['field_mapping'],
+                'default_tags'        => $data['default_tags'] ?? null,
+                'auto_assign_to'      => $data['auto_assign_to'] ?? null,
+                'is_active'           => true,
+            ],
+        );
+
+        $connection->load('pipeline', 'stage');
+
+        return response()->json(['success' => true, 'connection' => $connection]);
+    }
+
+    public function updateFbLeadConnection(Request $request, FacebookLeadFormConnection $connection): JsonResponse
+    {
+        $data = $request->validate([
+            'pipeline_id'    => 'sometimes|exists:pipelines,id',
+            'stage_id'       => 'sometimes|integer',
+            'field_mapping'  => 'sometimes|array',
+            'default_tags'   => 'nullable|array',
+            'auto_assign_to' => 'nullable|integer',
+            'is_active'      => 'sometimes|boolean',
+        ]);
+
+        $connection->update($data);
+
+        return response()->json(['success' => true, 'connection' => $connection->fresh()->load('pipeline', 'stage')]);
+    }
+
+    public function destroyFbLeadConnection(FacebookLeadFormConnection $connection): JsonResponse
+    {
+        $connection->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    public function disconnectFacebookLeadAds(): JsonResponse
+    {
+        FacebookLeadFormConnection::where('tenant_id', activeTenantId())
+            ->update(['is_active' => false]);
+
+        OAuthConnection::where('tenant_id', activeTenantId())
+            ->where('platform', 'facebook_leadads')
+            ->delete();
 
         return response()->json(['success' => true]);
     }

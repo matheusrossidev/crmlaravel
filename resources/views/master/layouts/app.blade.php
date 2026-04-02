@@ -482,7 +482,10 @@
              || request()->routeIs('master.plans*')
              || request()->routeIs('master.agency-codes*')
              || request()->routeIs('master.token-increments*')
-             || request()->routeIs('master.upsell*');
+             || request()->routeIs('master.upsell*')
+             || request()->routeIs('master.notifications*')
+             || request()->routeIs('master.features*')
+             || request()->routeIs('master.reengagement*');
 
     $isMonitor = request()->routeIs('master.usage*')
               || request()->routeIs('master.logs*')
@@ -578,6 +581,22 @@
                         <i class="bi bi-rocket-takeoff"></i> Upsell
                     </a>
                     @endif
+                    @if($__u->canAccessModule('notifications'))
+                    <a href="{{ route('master.notifications') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.notifications*') ? 'active' : '' }}">
+                        <i class="bi bi-megaphone"></i> Notificações
+                    </a>
+                    @endif
+                    @if($__u->canAccessModule('system'))
+                    <a href="{{ route('master.features') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.features*') ? 'active' : '' }}">
+                        <i class="bi bi-toggles"></i> Features
+                    </a>
+                    <a href="{{ route('master.reengagement') }}"
+                       class="m-nm-dd-item {{ request()->routeIs('master.reengagement*') ? 'active' : '' }}">
+                        <i class="bi bi-arrow-repeat"></i> Reengajamento
+                    </a>
+                    @endif
                     <a href="{{ route('master.cs-agents') }}"
                        class="m-nm-dd-item {{ request()->routeIs('master.cs-agents*') ? 'active' : '' }}">
                         <i class="bi bi-headset"></i> CS Agents
@@ -624,22 +643,6 @@
                     </a>
                 </div>
             </div>
-
-            {{-- Notificações --}}
-            @if($__u->canAccessModule('notifications'))
-            <a href="{{ route('master.notifications') }}"
-               class="m-nm-item {{ request()->routeIs('master.notifications*') ? 'active' : '' }}">
-                <i class="bi bi-megaphone"></i> Notificações
-            </a>
-            @endif
-
-            {{-- Reengajamento --}}
-            @if($__u->canAccessModule('system'))
-            <a href="{{ route('master.reengagement') }}"
-               class="m-nm-item {{ request()->routeIs('master.reengagement*') ? 'active' : '' }}">
-                <i class="bi bi-arrow-repeat"></i> Reengajamento
-            </a>
-            @endif
 
             {{-- Feedbacks --}}
             @if($__u->canAccessModule('feedbacks'))

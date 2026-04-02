@@ -39,6 +39,10 @@ Route::post('/webhook/waha', [WhatsappWebhookController::class, 'handle'])
 Route::get ('/webhook/instagram', [InstagramWebhookController::class, 'verify'])->name('instagram.webhook.verify');
 Route::post('/webhook/instagram', [InstagramWebhookController::class, 'handle'])->middleware('throttle:webhooks')->name('instagram.webhook.handle');
 
+// Facebook Lead Ads webhook
+Route::get ('/webhook/facebook/leadgen', [\App\Http\Controllers\FacebookLeadgenWebhookController::class, 'verify'])->name('facebook.leadgen.webhook.verify');
+Route::post('/webhook/facebook/leadgen', [\App\Http\Controllers\FacebookLeadgenWebhookController::class, 'handle'])->middleware('throttle:webhooks')->name('facebook.leadgen.webhook.handle');
+
 /*
 |--------------------------------------------------------------------------
 | API Routes — /api/v1/*
