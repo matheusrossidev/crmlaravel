@@ -9,12 +9,14 @@ use Illuminate\Support\Facades\Log;
 
 class FacebookLeadAdsService
 {
-    private const API_VERSION = 'v25.0';
-    private const BASE_URL    = 'https://graph.facebook.com/' . self::API_VERSION;
+    private string $baseUrl;
 
     public function __construct(
         private readonly string $userAccessToken,
-    ) {}
+    ) {
+        $version = config('services.facebook.api_version', 'v21.0');
+        $this->baseUrl = "https://graph.facebook.com/{$version}";
+    }
 
     /**
      * List Facebook Pages the user manages.
@@ -24,7 +26,7 @@ class FacebookLeadAdsService
     {
         $response = Http::withToken($this->userAccessToken)
             ->timeout(15)
-            ->get(self::BASE_URL . '/me/accounts', [
+            ->get($this->baseUrl . '/me/accounts', [
                 'fields' => 'id,name,access_token',
                 'limit'  => 100,
             ]);
@@ -45,7 +47,7 @@ class FacebookLeadAdsService
     {
         $response = Http::withToken($pageAccessToken)
             ->timeout(15)
-            ->get(self::BASE_URL . "/{$pageId}/leadgen_forms", [
+            ->get($this->baseUrl . "/{$pageId}/leadgen_forms", [
                 'fields' => 'id,name,status,questions',
                 'limit'  => 100,
             ]);
@@ -66,7 +68,7 @@ class FacebookLeadAdsService
         $response = Http::withToken($pageAccessToken)
             ->timeout(15)
             ->asForm()
-            ->post(self::BASE_URL . "/{$pageId}/subscribed_apps", [
+            ->post($this->baseUrl . "/{$pageId}/subscribed_apps", [
                 'subscribed_fields' => 'leadgen',
             ]);
 
@@ -86,7 +88,7 @@ class FacebookLeadAdsService
     {
         $response = Http::withToken($pageAccessToken)
             ->timeout(15)
-            ->get(self::BASE_URL . "/{$leadgenId}", [
+            ->get($this->baseUrl . "/{$leadgenId}", [
                 'fields' => 'id,field_data,form_id,ad_id,created_time,platform',
             ]);
 
@@ -106,7 +108,7 @@ class FacebookLeadAdsService
     {
         $response = Http::withToken($this->userAccessToken)
             ->timeout(15)
-            ->get(self::BASE_URL . "/{$adId}", [
+            ->get($this->baseUrl . "/{$adId}", [
                 'fields' => 'campaign_id,campaign{name,objective}',
             ]);
 
@@ -130,8 +132,9 @@ class FacebookLeadAdsService
      */
     public static function exchangeForLongLivedToken(string $shortToken): ?array
     {
+        $version = config('services.facebook.api_version', 'v21.0');
         $response = Http::timeout(15)
-            ->get(self::BASE_URL . '/oauth/access_token', [
+            ->get("https://graph.facebook.com/{$version}/oauth/access_token", [
                 'grant_type'        => 'fb_exchange_token',
                 'client_id'         => config('services.facebook.client_id'),
                 'client_secret'     => config('services.facebook.client_secret'),

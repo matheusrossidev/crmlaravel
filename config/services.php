@@ -41,6 +41,7 @@ return [
         'redirect'                     => env('FACEBOOK_REDIRECT_URI'),
         'leadgen_redirect'             => env('FACEBOOK_LEADGEN_REDIRECT_URI'),
         'leadgen_webhook_verify_token' => env('FACEBOOK_LEADGEN_WEBHOOK_VERIFY_TOKEN', 'syncro_fb_leadgen_verify_2026'),
+        'api_version'                  => env('FACEBOOK_API_VERSION', 'v21.0'),
     ],
 
     'google' => [
