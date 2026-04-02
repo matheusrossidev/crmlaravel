@@ -360,6 +360,20 @@
                 </div>
             </div>
             @endif
+
+            {{-- Card: Tour --}}
+            <div class="profile-card" style="margin-top:16px;">
+                <div class="profile-card-header">
+                    <i class="bi bi-signpost-2" style="color:#8B5CF6;"></i>
+                    {{ app()->getLocale() === 'en' ? 'Platform Tour' : 'Tour da plataforma' }}
+                </div>
+                <div class="profile-card-body" style="padding:16px 20px;">
+                    <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">{{ app()->getLocale() === 'en' ? 'Redo the interactive tour to remember all features.' : 'Refaça o tour interativo para relembrar todas as funcionalidades.' }}</p>
+                    <button class="btn-secondary-sm" onclick="resetTours()" style="font-size:12px;">
+                        <i class="bi bi-arrow-counterclockwise"></i> {{ app()->getLocale() === 'en' ? 'Redo tour' : 'Refazer tour' }}
+                    </button>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -625,6 +639,15 @@ function showErrors(errors, map) {
 }
 
 // ── Locale ───────────────────────────────────────────────
+function resetTours() {
+    window.API.post('{{ route("tour.reset") }}')
+        .then(function() {
+            toastr.success('{{ app()->getLocale() === "en" ? "Tours reset! Redirecting..." : "Tours resetados! Redirecionando..." }}');
+            setTimeout(function() { window.location.href = '{{ route("dashboard") }}'; }, 1000);
+        })
+        .catch(function() { toastr.error('Erro'); });
+}
+
 function updateLocale(locale) {
     window.API.put('{{ route("settings.profile.locale") }}', { locale: locale })
         .then(function() {

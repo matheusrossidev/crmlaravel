@@ -1502,6 +1502,7 @@ document.getElementById('limitReachedModal').addEventListener('click', function(
 </div>
 
 @include('tenant.layouts._help_widget')
+@include('tenant.layouts._tour')
 
 {{-- Global Search Modal (Cmd+K / Ctrl+K) --}}
 <style>

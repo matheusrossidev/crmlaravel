@@ -263,9 +263,15 @@ class AuditLogController extends Controller
             return 'R$ ' . number_format((float) $value, 2, ',', '.');
         }
 
-        // Arrays (tags, permissions)
+        // Arrays (tags, permissions, nested objects)
         if (is_array($value)) {
-            return implode(', ', $value);
+            // Check if any element is an array (nested) — use json_encode
+            foreach ($value as $v) {
+                if (is_array($v) || is_object($v)) {
+                    return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+                }
+            }
+            return implode(', ', array_map('strval', $value));
         }
 
         return (string) $value;

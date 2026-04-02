@@ -150,6 +150,10 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
     // Global search (Cmd+K)
     Route::get('busca', [\App\Http\Controllers\Tenant\GlobalSearchController::class, 'search'])->name('global.search');
 
+    // Interactive tour
+    Route::post('tour/complete', [\App\Http\Controllers\Tenant\TourController::class, 'complete'])->name('tour.complete');
+    Route::post('tour/reset', [\App\Http\Controllers\Tenant\TourController::class, 'reset'])->name('tour.reset');
+
     Route::get('onboarding',             [OnboardingController::class, 'show'])->name('onboarding.show');
     Route::post('onboarding/generate',  [OnboardingController::class, 'generate'])->name('onboarding.generate');
     Route::get('onboarding/loading',    [OnboardingController::class, 'loading'])->name('onboarding.loading');

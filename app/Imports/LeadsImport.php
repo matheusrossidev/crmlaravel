@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Imports;
 
+use App\Models\CustomFieldDefinition;
+use App\Models\CustomFieldValue;
 use App\Models\Lead;
 use App\Models\LeadDuplicate;
 use App\Models\LeadEvent;
@@ -27,6 +29,9 @@ class LeadsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
     private ?int $maxRemaining;
     private DuplicateLeadDetector $detector;
 
+    /** @var array<string, CustomFieldDefinition> header_key => definition */
+    private array $customFieldMap = [];
+
     public function __construct(?int $maxRemaining = null)
     {
         $pipeline = Pipeline::where('is_default', true)->first() ?? Pipeline::first();
@@ -34,6 +39,14 @@ class LeadsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
         $this->defaultStageId    = $pipeline?->stages()->orderBy('position')->first()?->id;
         $this->maxRemaining      = $maxRemaining;
         $this->detector          = new DuplicateLeadDetector();
+
+        // Build map of custom fields: normalized header → definition
+        $defs = CustomFieldDefinition::where('is_active', true)->get();
+        foreach ($defs as $def) {
+            // Match by name (slug) or label (display name), normalized to lowercase
+            $this->customFieldMap[mb_strtolower($def->name)] = $def;
+            $this->customFieldMap[mb_strtolower($def->label)] = $def;
+        }
     }
 
     public function collection(Collection $rows): void
@@ -85,6 +98,38 @@ class LeadsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
                 'performed_by' => auth()->id(),
                 'created_at'   => now(),
             ]);
+
+            // Save custom field values from extra columns
+            $standardKeys = ['nome', 'name', 'telefone', 'phone', 'email', 'valor', 'value', 'origem', 'source'];
+            foreach ($row as $header => $cellValue) {
+                $headerKey = mb_strtolower(trim((string) $header));
+                if (in_array($headerKey, $standardKeys, true) || $cellValue === null || trim((string) $cellValue) === '') {
+                    continue;
+                }
+                $def = $this->customFieldMap[$headerKey] ?? null;
+                if (!$def) continue;
+
+                $cfData = ['tenant_id' => auth()->user()->tenant_id, 'lead_id' => $lead->id, 'field_id' => $def->id];
+                $val = trim((string) $cellValue);
+
+                match ($def->field_type) {
+                    'number', 'currency' => CustomFieldValue::create(array_merge($cfData, [
+                        'value_number' => is_numeric(str_replace(['.', ','], ['', '.'], $val)) ? (float) str_replace(['.', ','], ['', '.'], $val) : null,
+                    ])),
+                    'date' => CustomFieldValue::create(array_merge($cfData, [
+                        'value_date' => \Carbon\Carbon::parse($val)->format('Y-m-d'),
+                    ])),
+                    'checkbox' => CustomFieldValue::create(array_merge($cfData, [
+                        'value_boolean' => in_array(mb_strtolower($val), ['sim', 'yes', '1', 'true', 'x'], true),
+                    ])),
+                    'multiselect' => CustomFieldValue::create(array_merge($cfData, [
+                        'value_json' => array_map('trim', explode(',', $val)),
+                    ])),
+                    default => CustomFieldValue::create(array_merge($cfData, [
+                        'value_text' => $val,
+                    ])),
+                };
+            }
 
             // Register duplicate pairs for review
             if ($hasDuplicate) {

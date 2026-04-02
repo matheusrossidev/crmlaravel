@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
+use App\Models\CustomFieldDefinition;
 use App\Models\Pipeline;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromArray;
@@ -22,14 +23,25 @@ class KanbanTemplateExport implements FromArray, WithHeadings, ShouldAutoSize, W
         'whatsapp', 'site', 'indicacao', 'api', 'importado',
     ];
 
+    /** @var Collection<int, CustomFieldDefinition> */
+    private Collection $customFields;
+
     public function __construct(
         private readonly Pipeline   $pipeline,
         private readonly Collection $existingTags,
-    ) {}
+    ) {
+        $this->customFields = CustomFieldDefinition::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+    }
 
     public function headings(): array
     {
-        return ['Nome*', 'Telefone', 'E-mail', 'Valor', 'Etapa', 'Origem', 'Tags', 'Notas', 'Criado em'];
+        $base = ['Nome*', 'Telefone', 'E-mail', 'Valor', 'Etapa', 'Origem', 'Tags', 'Notas', 'Criado em'];
+        foreach ($this->customFields as $cf) {
+            $base[] = $cf->label;
+        }
+        return $base;
     }
 
     public function array(): array
@@ -43,9 +55,37 @@ class KanbanTemplateExport implements FromArray, WithHeadings, ShouldAutoSize, W
             ? $this->existingTags->implode(' | ')
             : 'Ex: vip, quente, retorno';
 
+        // Custom field hints and examples
+        $cfHints    = [];
+        $cfExamples = [];
+        $typeHints  = [
+            'text'        => ['Texto livre', 'Exemplo'],
+            'textarea'    => ['Texto longo', 'Detalhes aqui...'],
+            'number'      => ['Somente números', '42'],
+            'currency'    => ['Valor monetário. Ex: 1500,50', '1500'],
+            'date'        => ['Formato: dd/mm/aaaa', '15/01/2025'],
+            'select'      => ['Ver opções na aba Referência', ''],
+            'multiselect' => ['Separar por vírgula', ''],
+            'checkbox'    => ['sim ou não', 'sim'],
+            'url'         => ['URL completa', 'https://exemplo.com'],
+            'phone'       => ['Ex: (11) 99999-9999', '(11) 99999-9999'],
+            'email'       => ['Ex: contato@email.com', 'contato@email.com'],
+        ];
+
+        foreach ($this->customFields as $cf) {
+            $hint = $typeHints[$cf->field_type] ?? ['(opcional)', ''];
+            if (in_array($cf->field_type, ['select', 'multiselect']) && !empty($cf->options_json)) {
+                $opts = is_array($cf->options_json) ? implode(' | ', array_slice($cf->options_json, 0, 5)) : '';
+                $hint[0] = $opts ?: $hint[0];
+                $hint[1] = is_array($cf->options_json) ? ($cf->options_json[0] ?? '') : '';
+            }
+            $cfHints[]    = $hint[0];
+            $cfExamples[] = $hint[1];
+        }
+
         return [
             // Linha 2 — dicas de preenchimento (laranja claro)
-            [
+            array_merge([
                 'Obrigatório. Nome completo do lead',
                 'Ex: (11) 99999-9999',
                 'Ex: joao@email.com',
@@ -55,9 +95,9 @@ class KanbanTemplateExport implements FromArray, WithHeadings, ShouldAutoSize, W
                 'Separadas por vírgula. ' . ($this->existingTags->isNotEmpty() ? 'Existentes: ' . $tagsHint : $tagsHint),
                 'Texto livre (opcional)',
                 'Formato: dd/mm/aaaa',
-            ],
+            ], $cfHints),
             // Linha 3 — exemplo real (azul claro)
-            [
+            array_merge([
                 'João Silva',
                 '(11) 99999-9999',
                 'joao@email.com',
@@ -67,7 +107,7 @@ class KanbanTemplateExport implements FromArray, WithHeadings, ShouldAutoSize, W
                 $this->existingTags->take(2)->implode(', ') ?: 'vip, quente',
                 'Cliente indicado pelo parceiro X',
                 '15/01/2025',
-            ],
+            ], $cfExamples),
         ];
     }
 
@@ -176,7 +216,45 @@ class KanbanTemplateExport implements FromArray, WithHeadings, ShouldAutoSize, W
                     $row++;
                 }
 
+                // ── Campos Personalizados ────────────────────────────────
+                if ($this->customFields->isNotEmpty()) {
+                    $row++;
+                    $ref->setCellValue("A{$row}", '📝  CAMPOS PERSONALIZADOS');
+                    $ref->getStyle("A{$row}")->getFont()->setBold(true);
+                    $ref->getStyle("A{$row}")->getFont()->getColor()->setARGB('FF8B5CF6');
+                    $row++;
+
+                    foreach ($this->customFields as $cf) {
+                        $typeLabel = match ($cf->field_type) {
+                            'text'        => 'Texto',
+                            'textarea'    => 'Texto longo',
+                            'number'      => 'Número',
+                            'currency'    => 'Moeda',
+                            'date'        => 'Data (dd/mm/aaaa)',
+                            'select'      => 'Seleção única',
+                            'multiselect' => 'Múltipla escolha (vírgula)',
+                            'checkbox'    => 'Sim/Não',
+                            'url'         => 'URL',
+                            'phone'       => 'Telefone',
+                            'email'       => 'Email',
+                            default       => $cf->field_type,
+                        };
+                        $ref->setCellValue("A{$row}", $cf->label . "  ({$typeLabel})");
+                        $ref->getStyle("A{$row}")->getFill()
+                            ->setFillType(Fill::FILL_SOLID)
+                            ->getStartColor()->setARGB('FFF5F3FF');
+
+                        if (in_array($cf->field_type, ['select', 'multiselect']) && !empty($cf->options_json)) {
+                            $ref->setCellValue("B{$row}", 'Opções: ' . implode(', ', $cf->options_json));
+                            $ref->getStyle("B{$row}")->getFont()->setItalic(true);
+                            $ref->getStyle("B{$row}")->getFont()->getColor()->setARGB('FF6B7280');
+                        }
+                        $row++;
+                    }
+                }
+
                 $ref->getColumnDimension('A')->setAutoSize(true);
+                $ref->getColumnDimension('B')->setAutoSize(true);
 
                 $spreadsheet->setActiveSheetIndex(0);
             },
