@@ -173,13 +173,13 @@ async def search_memories(
         sql = f"""
             SELECT am.id, am.summary, am.customer_profile, am.key_learnings,
                    am.contact_phone, am.conversation_id, am.created_at,
-                   1 - (am.embedding <=> :emb::vector) AS similarity
+                   1 - (am.embedding <=> CAST(:emb AS vector)) AS similarity
             FROM agent_memories am
             WHERE am.tenant_id = :tid
               AND am.agent_id = :aid
               AND am.embedding IS NOT NULL
               {phone_filter}
-            ORDER BY am.embedding <=> :emb::vector
+            ORDER BY am.embedding <=> CAST(:emb AS vector)
             LIMIT :topk
         """
 
