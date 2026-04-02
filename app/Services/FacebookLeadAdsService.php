@@ -20,12 +20,14 @@ class FacebookLeadAdsService
 
     /**
      * List Facebook Pages the user manages.
-     * Tries /me/accounts first. If empty (Facebook Business Login),
-     * falls back to searching by page name/URL.
+     * Strategy:
+     *   1. /me/accounts (classic Facebook Login)
+     *   2. /me/businesses → /{biz}/owned_pages (Business Login with business_management)
      * Returns [{id, name, access_token}]
      */
     public function getPages(): array
     {
+        // 1. Try /me/accounts (works with classic login + pages_manage_metadata)
         $response = Http::withToken($this->userAccessToken)
             ->timeout(15)
             ->get($this->baseUrl . '/me/accounts', [
@@ -34,12 +36,48 @@ class FacebookLeadAdsService
             ]);
 
         $pages = $response->successful() ? $response->json('data', []) : [];
-
         if (! empty($pages)) {
             return $pages;
         }
 
-        Log::info('FacebookLeadAds: /me/accounts empty (Business Login), use searchPage instead');
+        // 2. Try via Business Manager (requires business_management permission)
+        $bizResponse = Http::withToken($this->userAccessToken)
+            ->timeout(15)
+            ->get($this->baseUrl . '/me/businesses', [
+                'fields' => 'id,name',
+                'limit'  => 50,
+            ]);
+
+        $businesses = $bizResponse->successful() ? $bizResponse->json('data', []) : [];
+
+        foreach ($businesses as $biz) {
+            $ownedResponse = Http::withToken($this->userAccessToken)
+                ->timeout(15)
+                ->get($this->baseUrl . "/{$biz['id']}/owned_pages", [
+                    'fields' => 'id,name,access_token',
+                    'limit'  => 100,
+                ]);
+
+            $ownedPages = $ownedResponse->successful() ? $ownedResponse->json('data', []) : [];
+            if (! empty($ownedPages)) {
+                return $ownedPages;
+            }
+
+            // Also try client pages (pages managed for clients)
+            $clientResponse = Http::withToken($this->userAccessToken)
+                ->timeout(15)
+                ->get($this->baseUrl . "/{$biz['id']}/client_pages", [
+                    'fields' => 'id,name,access_token',
+                    'limit'  => 100,
+                ]);
+
+            $clientPages = $clientResponse->successful() ? $clientResponse->json('data', []) : [];
+            if (! empty($clientPages)) {
+                return $clientPages;
+            }
+        }
+
+        Log::info('FacebookLeadAds: no pages found via /me/accounts or businesses');
         return [];
     }
 

@@ -629,7 +629,7 @@ class IntegrationController extends Controller
     public function redirectFacebookLeadAds(): RedirectResponse
     {
         return Socialite::driver('facebook')
-            ->scopes(['pages_show_list', 'pages_manage_metadata', 'leads_retrieval', 'pages_manage_ads'])
+            ->scopes(['pages_show_list', 'pages_manage_metadata', 'leads_retrieval', 'pages_manage_ads', 'business_management'])
             ->redirectUrl(config('services.facebook.leadgen_redirect'))
             ->redirect();
     }
@@ -657,7 +657,7 @@ class IntegrationController extends Controller
                 'platform_user_name' => $fbUser->getName(),
                 'access_token'       => encrypt($accessToken),
                 'token_expires_at'   => now()->addSeconds((int) $expiresIn),
-                'scopes_json'        => ['pages_show_list', 'pages_manage_metadata', 'leads_retrieval', 'pages_manage_ads'],
+                'scopes_json'        => ['pages_show_list', 'pages_manage_metadata', 'leads_retrieval', 'pages_manage_ads', 'business_management'],
                 'status'             => 'active',
             ],
         );
