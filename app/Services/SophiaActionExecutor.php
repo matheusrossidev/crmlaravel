@@ -165,7 +165,7 @@ class SophiaActionExecutor
             'sort_order'     => ScoringRule::max('sort_order') + 1,
         ]);
 
-        return ['success' => true, 'message' => "Scoring rule '{$rule->name}' created.", 'id' => $rule->id];
+        return ['success' => true, 'message' => __('help.action_scoring_created', ['name' => $rule->name]), 'id' => $rule->id];
     }
 
     private function createSequence(array $p): array
@@ -202,7 +202,7 @@ class SophiaActionExecutor
                 ]);
             }
 
-            return ['success' => true, 'message' => "Sequence '{$seq->name}' created with " . count($p['steps']) . " steps.", 'id' => $seq->id];
+            return ['success' => true, 'message' => __('help.action_sequence_created', ['name' => $seq->name, 'count' => count($p['steps'])]), 'id' => $seq->id];
         });
     }
 
@@ -238,7 +238,7 @@ class SophiaActionExecutor
                 ]);
             }
 
-            return ['success' => true, 'message' => "Pipeline '{$pipeline->name}' created with " . count($p['stages']) . " stages.", 'id' => $pipeline->id];
+            return ['success' => true, 'message' => __('help.action_pipeline_created', ['name' => $pipeline->name, 'count' => count($p['stages'])]), 'id' => $pipeline->id];
         });
     }
 
@@ -263,7 +263,7 @@ class SophiaActionExecutor
             'is_active'      => true,
         ]);
 
-        return ['success' => true, 'message' => "Automation '{$automation->name}' created.", 'id' => $automation->id];
+        return ['success' => true, 'message' => __('help.action_automation_created', ['name' => $automation->name]), 'id' => $automation->id];
     }
 
     private function createCustomField(array $p): array
@@ -287,7 +287,7 @@ class SophiaActionExecutor
             'sort_order'   => CustomFieldDefinition::max('sort_order') + 1,
         ]);
 
-        return ['success' => true, 'message' => "Custom field '{$field->label}' created.", 'id' => $field->id];
+        return ['success' => true, 'message' => __('help.action_field_created', ['name' => $field->label]), 'id' => $field->id];
     }
 
     private function createTask(array $p, int $userId): array
@@ -314,7 +314,7 @@ class SophiaActionExecutor
             'created_by'  => $userId,
         ]);
 
-        return ['success' => true, 'message' => "Task '{$task->subject}' created.", 'id' => $task->id];
+        return ['success' => true, 'message' => __('help.action_task_created', ['name' => $task->subject]), 'id' => $task->id];
     }
 
     private function createLead(array $p, int $userId): array
@@ -346,7 +346,7 @@ class SophiaActionExecutor
             'created_by'  => $userId,
         ]);
 
-        return ['success' => true, 'message' => "Lead '{$lead->name}' created.", 'id' => $lead->id];
+        return ['success' => true, 'message' => __('help.action_lead_created', ['name' => $lead->name]), 'id' => $lead->id];
     }
 
     // ── Read-only queries (no confirmation needed) ───────────────────────────

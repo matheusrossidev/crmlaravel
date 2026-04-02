@@ -964,19 +964,24 @@
             pendingActions = null;
 
             var isEn = '{{ app()->getLocale() }}' === 'en';
-            var successCount = (data.results || []).filter(function(r) { return r.success; }).length;
-            var msg = isEn
-                ? '✅ Done! ' + successCount + ' action(s) executed successfully.'
-                : '✅ Pronto! ' + successCount + ' ação(ões) executada(s) com sucesso.';
+            var results = data.results || [];
+            var successResults = results.filter(function(r) { return r.success; });
+            var failedResults = results.filter(function(r) { return !r.success; });
 
-            // Add details of what was created
-            (data.results || []).forEach(function(r) {
-                if (r.success && r.message) {
-                    msg += '\n• ' + r.message;
-                } else if (!r.success && r.message) {
-                    msg += '\n❌ ' + r.message;
-                }
-            });
+            var msg = '';
+            if (successResults.length > 0) {
+                msg += isEn ? '✅ **Done!**\n' : '✅ **Pronto!**\n';
+                successResults.forEach(function(r) {
+                    if (r.message) msg += '- ' + r.message + '\n';
+                });
+            }
+            if (failedResults.length > 0) {
+                msg += '\n' + (isEn ? '❌ **Errors:**\n' : '❌ **Erros:**\n');
+                failedResults.forEach(function(r) {
+                    if (r.message) msg += '- ' + r.message + '\n';
+                });
+            }
+            msg += '\n' + (isEn ? 'Need anything else?' : 'Precisa de mais alguma coisa?');
 
             typewriterBotBubble(msg, function() {
                 messages.push({ role: 'assistant', content: msg });

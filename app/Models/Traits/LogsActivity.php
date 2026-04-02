@@ -11,6 +11,10 @@ trait LogsActivity
     protected static array $auditIgnoredFields = [
         'updated_at', 'created_at', 'remember_token', 'password',
         'totp_secret', 'totp_backup_codes', 'access_token',
+        // Noisy fields that change on every request/interaction
+        'last_login_at', 'last_login_ip',
+        'unread_count', 'last_message_at', 'last_inbound_at', 'first_response_at',
+        'followup_count', 'last_followup_at',
     ];
 
     public static function bootLogsActivity(): void

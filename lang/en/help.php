@@ -554,4 +554,13 @@ return [
             ],
         ],
     ],
+
+    // Sophia action results
+    'action_scoring_created'    => 'Scoring rule ":name" created.',
+    'action_sequence_created'   => 'Sequence ":name" created with :count step(s).',
+    'action_pipeline_created'   => 'Pipeline ":name" created with :count stage(s).',
+    'action_automation_created' => 'Automation ":name" created.',
+    'action_field_created'      => 'Custom field ":name" created.',
+    'action_task_created'       => 'Task ":name" created.',
+    'action_lead_created'       => 'Lead ":name" created.',
 ];
