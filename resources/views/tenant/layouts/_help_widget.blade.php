@@ -408,6 +408,68 @@
         to { transform: rotate(360deg); }
     }
 
+    /* ── Confirmation Card ── */
+    .shw-confirm-card {
+        background: #f0f7ff;
+        border: 1.5px solid #bfdbfe;
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-top: 8px;
+    }
+    .shw-confirm-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: #1a1d23;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .shw-confirm-title i { color: #0085f3; font-size: 14px; }
+    .shw-confirm-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 12px;
+    }
+    .shw-confirm-list li {
+        font-size: 12px;
+        color: #374151;
+        padding: 4px 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .shw-confirm-list li::before {
+        content: '✦';
+        color: #0085f3;
+        font-size: 10px;
+        flex-shrink: 0;
+    }
+    .shw-confirm-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+    .shw-confirm-btn {
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: background .15s;
+    }
+    .shw-confirm-btn.cancel {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+    .shw-confirm-btn.cancel:hover { background: #e5e7eb; }
+    .shw-confirm-btn.confirm {
+        background: #0085f3;
+        color: #fff;
+    }
+    .shw-confirm-btn.confirm:hover { background: #0070d1; }
+
     /* ── Input Bar ── */
     .shw-input-bar {
         display: flex;
@@ -522,6 +584,7 @@
     const STORAGE_KEY = 'syncro_help_messages';
     const CSRF_TOKEN  = '{{ csrf_token() }}';
     const CHAT_URL    = '{{ route("help.chat") }}';
+    const EXECUTE_URL = '{{ route("help.execute") }}';
     const SOPHIA_IMG  = '{{ asset("images/avatars/sophia-ai-agent.jpeg") }}';
     const ROBOT_IMG   = '{{ asset("images/avatars/robot.gif") }}';
     const TYPING_TEXT = @json($typingText);
@@ -770,16 +833,15 @@
             return res.json();
         })
         .then(function(data) {
-            responseData = data.reply || data.message || ERROR_MSG;
+            responseData = data;
             responseReady = true;
-            // If steps already finished animating, render now
             const lastStep = thinkingBlock.querySelector('.shw-step:last-child');
             if (lastStep && lastStep.classList.contains('visible')) {
                 renderResponse(thinkingBlock, responseData);
             }
         })
         .catch(function() {
-            responseData = ERROR_MSG;
+            responseData = { reply: ERROR_MSG };
             responseReady = true;
             const lastStep = thinkingBlock.querySelector('.shw-step:last-child');
             if (lastStep && lastStep.classList.contains('visible')) {
@@ -788,20 +850,146 @@
         });
     }
 
-    function renderResponse(thinkingBlock, reply) {
-        // Mark all steps as done
+    function renderResponse(thinkingBlock, data) {
         completeThinking(thinkingBlock);
 
-        // Small pause after last check, then replace with response
+        const reply   = data.reply || data.message || ERROR_MSG;
+        const actions = data.actions || [];
+        const needsConfirmation = data.needs_confirmation || false;
+
         setTimeout(function() {
             thinkingBlock.remove();
             typewriterBotBubble(reply, function() {
                 messages.push({ role: 'assistant', content: reply });
                 saveMessages();
+
+                // Show confirmation card if actions need approval
+                if (needsConfirmation && actions.length > 0) {
+                    showConfirmationCard(actions);
+                }
             });
             setProcessing(false);
         }, 500);
     }
+
+    /* ── Confirmation Card ── */
+    var pendingActions = null;
+
+    function showConfirmationCard(actions) {
+        pendingActions = actions;
+
+        const actionLabels = {
+            create_scoring_rule: 'Regra de scoring',
+            create_sequence: 'Sequência de nurture',
+            create_pipeline: 'Pipeline',
+            create_automation: 'Automação',
+            create_custom_field: 'Campo personalizado',
+            create_task: 'Tarefa',
+            create_lead: 'Lead',
+        };
+
+        const isEn = '{{ app()->getLocale() }}' === 'en';
+        const actionLabelsEn = {
+            create_scoring_rule: 'Scoring rule',
+            create_sequence: 'Nurture sequence',
+            create_pipeline: 'Pipeline',
+            create_automation: 'Automation',
+            create_custom_field: 'Custom field',
+            create_task: 'Task',
+            create_lead: 'Lead',
+        };
+
+        const labels = isEn ? actionLabelsEn : actionLabels;
+
+        let listHtml = '';
+        actions.forEach(function(a) {
+            const typeName = labels[a.type] || a.type;
+            const name = a.name || a.subject || a.label || '';
+            listHtml += '<li>' + escHtml(typeName) + (name ? ': <strong>' + escHtml(name) + '</strong>' : '') + '</li>';
+        });
+
+        const titleText = isEn
+            ? 'Sophia wants to execute ' + actions.length + ' action(s):'
+            : 'Sophia quer executar ' + actions.length + ' ação(ões):';
+        const cancelText = isEn ? 'Cancel' : 'Cancelar';
+        const confirmText = isEn ? '✓ Confirm' : '✓ Confirmar';
+
+        const card = document.createElement('div');
+        card.className = 'shw-confirm-card';
+        card.id = 'shwConfirmCard';
+        card.innerHTML =
+            '<div class="shw-confirm-title"><i class="bi bi-lightning-charge-fill"></i> ' + titleText + '</div>' +
+            '<ul class="shw-confirm-list">' + listHtml + '</ul>' +
+            '<div class="shw-confirm-actions">' +
+                '<button class="shw-confirm-btn cancel" onclick="sophiaCancelActions()">' + cancelText + '</button>' +
+                '<button class="shw-confirm-btn confirm" onclick="sophiaConfirmActions()">' + confirmText + '</button>' +
+            '</div>';
+
+        msgArea.appendChild(card);
+        scrollToBottom();
+    }
+
+    window.sophiaCancelActions = function() {
+        pendingActions = null;
+        var card = document.getElementById('shwConfirmCard');
+        if (card) card.remove();
+        var isEn = '{{ app()->getLocale() }}' === 'en';
+        appendBotBubble(isEn ? 'No problem! Actions cancelled. How else can I help?' : 'Sem problema! Ações canceladas. Em que mais posso ajudar?');
+        messages.push({ role: 'assistant', content: 'Actions cancelled.' });
+        saveMessages();
+    };
+
+    window.sophiaConfirmActions = function() {
+        if (!pendingActions || pendingActions.length === 0) return;
+
+        var card = document.getElementById('shwConfirmCard');
+        var btn = card ? card.querySelector('.confirm') : null;
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = '⏳';
+        }
+
+        fetch(EXECUTE_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN
+            },
+            body: JSON.stringify({ actions: pendingActions })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (card) card.remove();
+            pendingActions = null;
+
+            var isEn = '{{ app()->getLocale() }}' === 'en';
+            var successCount = (data.results || []).filter(function(r) { return r.success; }).length;
+            var msg = isEn
+                ? '✅ Done! ' + successCount + ' action(s) executed successfully.'
+                : '✅ Pronto! ' + successCount + ' ação(ões) executada(s) com sucesso.';
+
+            // Add details of what was created
+            (data.results || []).forEach(function(r) {
+                if (r.success && r.message) {
+                    msg += '\n• ' + r.message;
+                } else if (!r.success && r.message) {
+                    msg += '\n❌ ' + r.message;
+                }
+            });
+
+            typewriterBotBubble(msg, function() {
+                messages.push({ role: 'assistant', content: msg });
+                saveMessages();
+            });
+        })
+        .catch(function() {
+            if (card) card.remove();
+            pendingActions = null;
+            var isEn = '{{ app()->getLocale() }}' === 'en';
+            appendBotBubble(isEn ? 'Error executing actions. Please try again.' : 'Erro ao executar ações. Tente novamente.');
+        });
+    };
 
     /* ── Processing state ── */
     function setProcessing(state) {

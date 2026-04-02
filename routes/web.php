@@ -145,6 +145,7 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
     // Onboarding (primeiro acesso)
     // Help assistant (Sophia)
     Route::post('help-chat', [HelpChatController::class, 'chat'])->name('help.chat');
+    Route::post('help-chat/execute', [HelpChatController::class, 'execute'])->name('help.execute');
 
     Route::get('onboarding',             [OnboardingController::class, 'show'])->name('onboarding.show');
     Route::post('onboarding/generate',  [OnboardingController::class, 'generate'])->name('onboarding.generate');
