@@ -1926,17 +1926,34 @@ function saveFbLeadConnection() {
 }
 
 function disconnectFbLeadAds(btn) {
-    if (!confirm(ILANG.fb_confirm_disconnect)) return;
-    btn.disabled = true;
-
-    window.API.delete('{{ route("settings.integrations.facebook-leadads.disconnect") }}')
-    .then(data => {
-        if (data.success) {
-            toastr.success(ILANG.fb_disconnected_success);
-            setTimeout(() => location.reload(), 800);
+    confirmAction({
+        title: ILANG.fb_lead_title,
+        message: ILANG.fb_confirm_disconnect,
+        confirmText: ILANG.fb_lead_disconnect,
+        onConfirm: async () => {
+            btn.disabled = true;
+            try {
+                const res = await fetch('{{ route("settings.integrations.facebook-leadads.disconnect") }}', {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                });
+                const data = await res.json();
+                if (data.success) {
+                    toastr.success(ILANG.fb_disconnected_success);
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    toastr.error(data.message || 'Erro');
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                toastr.error('Erro');
+                btn.disabled = false;
+            }
         }
-    })
-    .catch(() => { btn.disabled = false; toastr.error('Erro'); });
+    });
 }
 </script>
 @endpush

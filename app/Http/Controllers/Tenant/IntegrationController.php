@@ -641,7 +641,7 @@ class IntegrationController extends Controller
                 ->redirectUrl(config('services.facebook.leadgen_redirect'))
                 ->user();
         } catch (\Throwable $e) {
-            return redirect()->route('settings.integrations')
+            return redirect()->route('settings.integrations.index')
                 ->with('error', 'Falha na autenticação com o Facebook: ' . $e->getMessage());
         }
 
@@ -662,7 +662,7 @@ class IntegrationController extends Controller
             ],
         );
 
-        return redirect()->route('settings.integrations')
+        return redirect()->route('settings.integrations.index')
             ->with('success', 'Facebook Lead Ads conectado com sucesso!');
     }
 
