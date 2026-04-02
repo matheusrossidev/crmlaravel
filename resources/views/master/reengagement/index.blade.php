@@ -167,7 +167,7 @@
 
 @push('scripts')
 <script>
-const CSRF = '{{ csrf_token() }}';
+function getCSRF() { return document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}'; }
 let testStage = '', testChannel = '';
 
 function switchReTab(el) {
@@ -193,7 +193,7 @@ function saveTemplates() {
 
     fetch('{{ route("master.reengagement.update") }}', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': getCSRF() },
         body: JSON.stringify({ templates: templates })
     })
     .then(r => r.json())
@@ -220,7 +220,7 @@ function confirmSendTest() {
 
     fetch('{{ route("master.reengagement.test") }}', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': getCSRF() },
         body: JSON.stringify({ stage: testStage, channel: testChannel, target: target })
     })
     .then(r => r.json())
