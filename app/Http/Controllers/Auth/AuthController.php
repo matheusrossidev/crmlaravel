@@ -94,7 +94,10 @@ class AuthController extends Controller
             return redirect('/2fa/challenge');
         }
 
-        $user->update(['last_login_at' => now()]);
+        $user->update([
+            'last_login_at'      => now(),
+            'reengagement_stage' => null, // Reset reengagement on login
+        ]);
 
         $request->session()->regenerate();
 

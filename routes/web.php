@@ -147,6 +147,9 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
     Route::post('help-chat', [HelpChatController::class, 'chat'])->name('help.chat');
     Route::post('help-chat/execute', [HelpChatController::class, 'execute'])->name('help.execute');
 
+    // Global search (Cmd+K)
+    Route::get('busca', [\App\Http\Controllers\Tenant\GlobalSearchController::class, 'search'])->name('global.search');
+
     Route::get('onboarding',             [OnboardingController::class, 'show'])->name('onboarding.show');
     Route::post('onboarding/generate',  [OnboardingController::class, 'generate'])->name('onboarding.generate');
     Route::get('onboarding/loading',    [OnboardingController::class, 'loading'])->name('onboarding.loading');
@@ -717,6 +720,12 @@ Route::middleware(['auth', 'super_admin', '2fa'])->prefix('master')->name('maste
     // Sistema
     Route::get('sistema',                              [MasterSystemController::class, 'index'])->name('system');
     Route::get('sistema/stats',                        [MasterSystemController::class, 'stats'])->name('system.stats');
+
+    // Reengajamento
+    Route::get('reengajamento',                        [\App\Http\Controllers\Master\ReengagementController::class, 'index'])->name('reengagement');
+    Route::put('reengajamento',                        [\App\Http\Controllers\Master\ReengagementController::class, 'update'])->name('reengagement.update');
+    Route::post('reengajamento/teste',                 [\App\Http\Controllers\Master\ReengagementController::class, 'sendTest'])->name('reengagement.test');
+    Route::get('reengajamento/preview',                [\App\Http\Controllers\Master\ReengagementController::class, 'preview'])->name('reengagement.preview');
 
     // Notificações
     Route::get('notificacoes',                         [MasterNotificationController::class, 'index'])->name('notifications');

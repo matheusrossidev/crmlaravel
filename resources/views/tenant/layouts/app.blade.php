@@ -949,6 +949,11 @@
             </div>
             @endif
 
+            {{-- Search button (Cmd+K) --}}
+            <button class="topbar-btn" onclick="openGlobalSearch()" title="Ctrl+K" style="position:relative;">
+                <i class="bi bi-search"></i>
+            </button>
+
             {{-- Feedback button --}}
             @if(!$isPartnerUser || $impersonatingId)
             <a href="{{ route('feedback.create', ['from' => request()->path()]) }}" target="_blank"
@@ -1497,6 +1502,163 @@ document.getElementById('limitReachedModal').addEventListener('click', function(
 </div>
 
 @include('tenant.layouts._help_widget')
+
+{{-- Global Search Modal (Cmd+K / Ctrl+K) --}}
+<style>
+.gs-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:500; display:none; align-items:flex-start; justify-content:center; padding-top:12vh; }
+.gs-overlay.open { display:flex; }
+.gs-modal { background:#fff; border-radius:16px; width:95%; max-width:580px; box-shadow:0 20px 60px rgba(0,0,0,.2); overflow:hidden; animation:gsSlideIn .15s ease; }
+@keyframes gsSlideIn { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:translateY(0); } }
+.gs-input-wrap { display:flex; align-items:center; gap:10px; padding:14px 18px; border-bottom:1px solid #f0f2f7; }
+.gs-input-wrap i { color:#9ca3af; font-size:16px; }
+.gs-input { flex:1; border:none; outline:none; font-size:15px; font-family:inherit; color:#1a1d23; background:transparent; }
+.gs-input::placeholder { color:#9ca3af; }
+.gs-kbd { font-size:10px; color:#9ca3af; background:#f3f4f6; padding:2px 6px; border-radius:4px; border:1px solid #e5e7eb; font-family:monospace; }
+.gs-results { max-height:50vh; overflow-y:auto; padding:8px; }
+.gs-group-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#9ca3af; padding:8px 10px 4px; }
+.gs-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; cursor:pointer; transition:background .1s; text-decoration:none; color:#374151; }
+.gs-item:hover, .gs-item.active { background:#f0f7ff; }
+.gs-item-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+.gs-item-icon.lead { background:#eff6ff; color:#0085f3; }
+.gs-item-icon.chat { background:#f0fdf4; color:#10b981; }
+.gs-item-icon.task { background:#fff7ed; color:#f59e0b; }
+.gs-item-icon.ig { background:#fdf2f8; color:#ec4899; }
+.gs-item-info { flex:1; min-width:0; }
+.gs-item-name { font-size:13px; font-weight:600; color:#1a1d23; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.gs-item-meta { font-size:11px; color:#9ca3af; }
+.gs-empty { text-align:center; padding:32px; color:#9ca3af; font-size:13px; }
+.gs-hint { text-align:center; padding:24px; color:#d1d5db; font-size:12px; }
+</style>
+
+<div class="gs-overlay" id="gsOverlay" onclick="if(event.target===this)closeGlobalSearch()">
+    <div class="gs-modal">
+        <div class="gs-input-wrap">
+            <i class="bi bi-search"></i>
+            <input class="gs-input" id="gsInput" type="text" placeholder="{{ app()->getLocale() === 'en' ? 'Search leads, conversations, tasks...' : 'Buscar leads, conversas, tarefas...' }}" autocomplete="off">
+            <span class="gs-kbd">ESC</span>
+        </div>
+        <div class="gs-results" id="gsResults">
+            <div class="gs-hint">
+                <i class="bi bi-command" style="font-size:16px;display:block;margin-bottom:6px;"></i>
+                {{ app()->getLocale() === 'en' ? 'Type to search across your CRM' : 'Digite para buscar em todo o CRM' }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+    const overlay = document.getElementById('gsOverlay');
+    const input   = document.getElementById('gsInput');
+    const results = document.getElementById('gsResults');
+    const BASE    = @json(url('/'));
+    const isEn    = '{{ app()->getLocale() }}' === 'en';
+    let timer = null;
+    let activeIdx = -1;
+
+    // Cmd+K / Ctrl+K
+    document.addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            openGlobalSearch();
+        }
+        if (e.key === 'Escape' && overlay.classList.contains('open')) {
+            closeGlobalSearch();
+        }
+    });
+
+    window.openGlobalSearch = function() {
+        overlay.classList.add('open');
+        input.value = '';
+        results.innerHTML = '<div class="gs-hint"><i class="bi bi-command" style="font-size:16px;display:block;margin-bottom:6px;"></i>' + (isEn ? 'Type to search across your CRM' : 'Digite para buscar em todo o CRM') + '</div>';
+        activeIdx = -1;
+        setTimeout(function(){ input.focus(); }, 50);
+    };
+
+    window.closeGlobalSearch = function() {
+        overlay.classList.remove('open');
+        input.value = '';
+    };
+
+    // Debounced search
+    input.addEventListener('input', function() {
+        clearTimeout(timer);
+        const q = this.value.trim();
+        if (q.length < 2) {
+            results.innerHTML = '<div class="gs-hint"><i class="bi bi-command" style="font-size:16px;display:block;margin-bottom:6px;"></i>' + (isEn ? 'Type to search across your CRM' : 'Digite para buscar em todo o CRM') + '</div>';
+            return;
+        }
+        timer = setTimeout(function(){ doSearch(q); }, 300);
+    });
+
+    // Arrow keys navigation
+    input.addEventListener('keydown', function(e) {
+        const items = results.querySelectorAll('.gs-item');
+        if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(activeIdx + 1, items.length - 1); highlightItem(items); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); highlightItem(items); }
+        else if (e.key === 'Enter' && activeIdx >= 0 && items[activeIdx]) { e.preventDefault(); items[activeIdx].click(); }
+    });
+
+    function highlightItem(items) {
+        items.forEach(function(el, i) { el.classList.toggle('active', i === activeIdx); });
+        if (items[activeIdx]) items[activeIdx].scrollIntoView({ block: 'nearest' });
+    }
+
+    function doSearch(q) {
+        fetch(BASE + '/busca?q=' + encodeURIComponent(q), {
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            activeIdx = -1;
+            let html = '';
+            const labels = isEn
+                ? { leads: 'Leads', conversations: 'Conversations', tasks: 'Tasks' }
+                : { leads: 'Leads', conversations: 'Conversas', tasks: 'Tarefas' };
+
+            if (data.leads && data.leads.length) {
+                html += '<div class="gs-group-label">' + labels.leads + '</div>';
+                data.leads.forEach(function(l) {
+                    html += '<a class="gs-item" href="' + BASE + l.url + '">' +
+                        '<div class="gs-item-icon lead"><i class="bi bi-person"></i></div>' +
+                        '<div class="gs-item-info"><div class="gs-item-name">' + esc(l.name) + '</div>' +
+                        '<div class="gs-item-meta">' + esc(l.phone || '') + (l.email ? ' · ' + esc(l.email) : '') + (l.stage ? ' — ' + esc(l.stage) : '') + '</div></div></a>';
+                });
+            }
+
+            if (data.conversations && data.conversations.length) {
+                html += '<div class="gs-group-label">' + labels.conversations + '</div>';
+                data.conversations.forEach(function(c) {
+                    var iconClass = c.channel === 'instagram' ? 'ig' : 'chat';
+                    var icon = c.channel === 'instagram' ? 'bi-instagram' : 'bi-whatsapp';
+                    html += '<a class="gs-item" href="' + BASE + c.url + '">' +
+                        '<div class="gs-item-icon ' + iconClass + '"><i class="bi ' + icon + '"></i></div>' +
+                        '<div class="gs-item-info"><div class="gs-item-name">' + esc(c.name) + '</div>' +
+                        '<div class="gs-item-meta">' + esc(c.phone || '') + ' · ' + esc(c.status) + '</div></div></a>';
+                });
+            }
+
+            if (data.tasks && data.tasks.length) {
+                html += '<div class="gs-group-label">' + labels.tasks + '</div>';
+                data.tasks.forEach(function(t) {
+                    html += '<a class="gs-item" href="' + BASE + t.url + '">' +
+                        '<div class="gs-item-icon task"><i class="bi bi-check2-square"></i></div>' +
+                        '<div class="gs-item-info"><div class="gs-item-name">' + esc(t.subject) + '</div>' +
+                        '<div class="gs-item-meta">' + esc(t.type) + (t.due_date ? ' · ' + esc(t.due_date) : '') + '</div></div></a>';
+                });
+            }
+
+            if (!html) {
+                html = '<div class="gs-empty">' + (isEn ? 'No results found' : 'Nenhum resultado encontrado') + '</div>';
+            }
+
+            results.innerHTML = html;
+        });
+    }
+
+    function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+})();
+</script>
 
 </body>
 </html>

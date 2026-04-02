@@ -52,6 +52,20 @@ class NotificationDispatcher
                     continue;
                 }
 
+                // Group similar unread notifications (avoid spam)
+                $existing = $user->unreadNotifications()
+                    ->where('type', get_class($notification))
+                    ->where('created_at', '>=', now()->subHours(2))
+                    ->first();
+
+                if ($existing) {
+                    $existingData = $existing->data;
+                    $existingData['count'] = ($existingData['count'] ?? 1) + 1;
+                    $existingData['last_item'] = $data;
+                    $existing->update(['data' => $existingData, 'read_at' => null]);
+                    continue;
+                }
+
                 $user->notify($notification);
             }
         } catch (\Throwable $e) {

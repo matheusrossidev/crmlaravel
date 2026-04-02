@@ -633,6 +633,14 @@
             </a>
             @endif
 
+            {{-- Reengajamento --}}
+            @if($__u->canAccessModule('system'))
+            <a href="{{ route('master.reengagement') }}"
+               class="m-nm-item {{ request()->routeIs('master.reengagement*') ? 'active' : '' }}">
+                <i class="bi bi-arrow-repeat"></i> Reengajamento
+            </a>
+            @endif
+
             {{-- Feedbacks --}}
             @if($__u->canAccessModule('feedbacks'))
             @php $__fbNewCount = \App\Models\Feedback::where('status', 'new')->count(); @endphp

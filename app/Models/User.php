@@ -19,12 +19,13 @@ class User extends Authenticatable
     use HasFactory, Notifiable, HasPushSubscriptions, LogsActivity;
 
     protected $fillable = [
-        'tenant_id', 'name', 'email', 'password', 'role',
+        'tenant_id', 'name', 'email', 'phone', 'password', 'role',
         'is_super_admin', 'is_cs_agent', 'master_permissions', 'avatar', 'last_login_at', 'dashboard_config',
         'notification_preferences',
         'email_verified_at', 'verification_token',
         'can_see_all_conversations',
         'totp_secret', 'totp_enabled', 'totp_backup_codes',
+        'last_reengagement_sent_at', 'reengagement_stage',
     ];
 
     protected $hidden = [

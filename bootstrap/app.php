@@ -64,6 +64,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('partners:release-commissions')->dailyAt('06:30');
         $schedule->command('instagram:refresh-tokens')->dailyAt('03:00');
         $schedule->command('leads:detect-duplicates')->dailyAt('03:30');
+        $schedule->command('users:send-reengagement')->dailyAt('10:00');
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
