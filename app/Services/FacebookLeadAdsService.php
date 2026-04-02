@@ -20,6 +20,7 @@ class FacebookLeadAdsService
 
     /**
      * List Facebook Pages the user manages.
+     * Requires: pages_show_list + pages_manage_metadata
      * Returns [{id, name, access_token}]
      */
     public function getPages(): array
