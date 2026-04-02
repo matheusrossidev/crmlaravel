@@ -23,13 +23,15 @@ class PartnerApproved extends Mailable
         public readonly Tenant $tenant,
         public readonly string $code,
     ) {
+        $locale = $user->tenant?->locale ?? $tenant->locale ?? config('app.locale', 'pt_BR');
+        $this->locale($locale);
         $this->loginUrl = route('login');
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Seu cadastro de parceiro foi aprovado! 🎉',
+            subject: __('email.partner_approved.subject'),
         );
     }
 

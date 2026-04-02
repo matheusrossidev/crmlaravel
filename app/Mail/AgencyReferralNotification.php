@@ -21,12 +21,15 @@ class AgencyReferralNotification extends Mailable
         public readonly Tenant $agencyTenant,
         public readonly Tenant $newClientTenant,
         public readonly int $totalClients,
-    ) {}
+    ) {
+        $locale = $agencyAdminUser->tenant?->locale ?? $agencyTenant->locale ?? config('app.locale', 'pt_BR');
+        $this->locale($locale);
+    }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Novo cliente cadastrado com seu código de parceiro!',
+            subject: __('email.agency_referral.subject', ['client' => $this->newClientTenant->name]),
         );
     }
 

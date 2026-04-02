@@ -21,12 +21,15 @@ class SubscriptionCancelled extends Mailable
         public readonly User $user,
         public readonly Tenant $tenant,
         public readonly ?PlanDefinition $plan,
-    ) {}
+    ) {
+        $locale = $user->tenant?->locale ?? $tenant->locale ?? config('app.locale', 'pt_BR');
+        $this->locale($locale);
+    }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Assinatura cancelada — sentiremos sua falta',
+            subject: __('email.subscription_cancelled.subject'),
         );
     }
 

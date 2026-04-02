@@ -22,13 +22,15 @@ class PaymentFailed extends Mailable
         public readonly User $user,
         public readonly Tenant $tenant,
     ) {
+        $locale = $user->tenant?->locale ?? $tenant->locale ?? config('app.locale', 'pt_BR');
+        $this->locale($locale);
         $this->billingUrl = route('settings.billing');
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '⚠️ Falha no pagamento — regularize seu acesso',
+            subject: __('email.payment_failed.subject'),
         );
     }
 

@@ -11,6 +11,7 @@ class ReengagementTemplate extends Model
     protected $fillable = [
         'stage',
         'channel',
+        'locale',
         'subject',
         'body',
         'is_active',

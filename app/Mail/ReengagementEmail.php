@@ -27,6 +27,8 @@ class ReengagementEmail extends Mailable
         public ReengagementTemplate $template,
         public array $variables,
     ) {
+        $locale = $user->tenant?->locale ?? $tenant->locale ?? config('app.locale', 'pt_BR');
+        $this->locale($locale);
         $this->renderedBody = $template->render($variables);
         $this->userName = $user->name;
         $this->loginUrl = config('app.url', 'https://app.syncro.chat');

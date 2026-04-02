@@ -21,6 +21,8 @@ class ResetPassword extends Mailable
         public readonly User $user,
         string $plainToken,
     ) {
+        $locale = $user->tenant?->locale ?? config('app.locale', 'pt_BR');
+        $this->locale($locale);
         $this->resetUrl = route('password.reset', [
             'token' => $plainToken,
             'email' => $user->email,
@@ -30,7 +32,7 @@ class ResetPassword extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Redefinição de senha — Syncro',
+            subject: __('email.reset.subject'),
         );
     }
 

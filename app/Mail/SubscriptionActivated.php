@@ -24,13 +24,15 @@ class SubscriptionActivated extends Mailable
         public readonly Tenant $tenant,
         public readonly ?PlanDefinition $plan,
     ) {
+        $locale = $user->tenant?->locale ?? $tenant->locale ?? config('app.locale', 'pt_BR');
+        $this->locale($locale);
         $this->dashboardUrl = route('dashboard');
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '✅ Assinatura confirmada — acesso liberado!',
+            subject: __('email.subscription_activated.subject'),
         );
     }
 

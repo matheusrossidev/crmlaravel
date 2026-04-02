@@ -57,13 +57,20 @@ class SendReengagement extends Command
                 $tenant = Tenant::withoutGlobalScope('tenant')->find($user->tenant_id);
                 if (!$tenant) continue;
 
-                $vars = $this->buildVariables($user, $tenant);
+                $vars   = $this->buildVariables($user, $tenant);
+                $locale = $tenant->locale ?? 'pt_BR';
 
                 // Email
                 $emailTemplate = ReengagementTemplate::where('stage', $s['stage'])
                     ->where('channel', 'email')
+                    ->where('locale', $locale)
                     ->where('is_active', true)
-                    ->first();
+                    ->first()
+                    ?? ReengagementTemplate::where('stage', $s['stage'])
+                        ->where('channel', 'email')
+                        ->where('locale', 'pt_BR')
+                        ->where('is_active', true)
+                        ->first(); // fallback to PT if no translation
 
                 if ($emailTemplate) {
                     try {
@@ -83,8 +90,14 @@ class SendReengagement extends Command
                 if ($user->phone) {
                     $waTemplate = ReengagementTemplate::where('stage', $s['stage'])
                         ->where('channel', 'whatsapp')
+                        ->where('locale', $locale)
                         ->where('is_active', true)
-                        ->first();
+                        ->first()
+                        ?? ReengagementTemplate::where('stage', $s['stage'])
+                            ->where('channel', 'whatsapp')
+                            ->where('locale', 'pt_BR')
+                            ->where('is_active', true)
+                            ->first(); // fallback to PT if no translation
 
                     if ($waTemplate) {
                         try {
@@ -203,9 +216,13 @@ class SendReengagement extends Command
             '{{link_chats}}'         => 'https://app.syncro.chat/chats',
         ];
 
+        $locale = 'pt_BR';
+
         if ($email = $this->option('test-email')) {
             $template = ReengagementTemplate::where('stage', $stage)
-                ->where('channel', 'email')->first();
+                ->where('channel', 'email')
+                ->where('locale', $locale)
+                ->first();
 
             if (!$template) {
                 $this->error("No email template for stage {$stage}. Run the seeder first.");
@@ -221,7 +238,9 @@ class SendReengagement extends Command
 
         if ($phone = $this->option('test-phone')) {
             $template = ReengagementTemplate::where('stage', $stage)
-                ->where('channel', 'whatsapp')->first();
+                ->where('channel', 'whatsapp')
+                ->where('locale', $locale)
+                ->first();
 
             if (!$template) {
                 $this->error("No WhatsApp template for stage {$stage}. Run the seeder first.");

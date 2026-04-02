@@ -1,85 +1,51 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Seu trial está acabando</title>
-</head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:16px;color:#1f2937;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);">
+@extends('emails._layout')
 
-        <!-- Header -->
-        <tr>
-          <td style="background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);padding:48px 40px 40px;text-align:center;">
-            <img src="{{ url('/images/logo-white.png') }}" alt="Syncro" style="height:44px;width:auto;display:block;margin:0 auto;" />
-            <div style="font-size:26px;font-weight:800;color:#fff;line-height:1.3;margin-top:20px;">
-              @if($daysLeft === 1)
-                Último dia de trial!
-              @else
-                {{ $daysLeft }} dias restantes
-              @endif
-            </div>
-            <div style="color:#fef3c7;font-size:15px;margin-top:8px;">Seu período de teste está acabando</div>
-          </td>
-        </tr>
+@section('title', __('email.trial_ending.subject', ['days' => $daysLeft]))
 
-        <!-- Body -->
-        <tr>
-          <td style="padding:40px;">
-            <p style="font-size:20px;font-weight:700;color:#111827;margin:0 0 12px;">Olá, {{ $user->name }}!</p>
-            <p style="color:#6b7280;line-height:1.6;margin:0 0 24px;">
-              @if($daysLeft === 1)
-                Seu trial na <strong>{{ $tenant->name }}</strong> expira <strong>hoje</strong>. Para continuar usando a plataforma sem interrupção, assine agora.
-              @else
-                Seu trial na <strong>{{ $tenant->name }}</strong> expira em <strong>{{ $daysLeft }} dias</strong>. Para não perder o acesso, assine antes do vencimento.
-              @endif
-            </p>
+@section('preheader', __('email.trial_ending.subtitle'))
 
-            <!-- CTA -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
-              <tr><td align="center">
-                <a href="{{ $checkoutUrl }}" style="display:inline-block;background:#f59e0b;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 40px;border-radius:8px;">
-                  Assinar agora — não perca o acesso
-                </a>
-              </td></tr>
-            </table>
+@section('content')
+  {{-- Urgency badge --}}
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;"><tr>
+    <td style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:20px;text-align:center;">
+      <div style="font-size:22px;font-weight:800;color:#92400e;margin-bottom:4px;">
+        @if($daysLeft === 1)
+          {{ __('email.trial_ending.title_last_day') }}
+        @else
+          {{ __('email.trial_ending.title_days', ['days' => $daysLeft]) }}
+        @endif
+      </div>
+      <div style="font-size:14px;color:#a16207;">{{ __('email.trial_ending.subtitle') }}</div>
+    </td>
+  </tr></table>
 
-            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:20px;margin-bottom:28px;">
-              <p style="font-size:14px;color:#92400e;font-weight:600;margin:0 0 8px;">O que você perde ao expirar:</p>
-              <ul style="font-size:13px;color:#78350f;line-height:1.8;margin:0;padding-left:20px;">
-                <li>Acesso ao CRM e kanban de leads</li>
-                <li>Histórico de conversas WhatsApp</li>
-                <li>Automações e agentes de IA</li>
-                <li>Relatórios e dashboards</li>
-              </ul>
-            </div>
+  <h1 style="font-family:'DM Sans',sans-serif;font-size:24px;font-weight:700;color:#1a1d23;margin:0 0 16px;">
+    {{ __('email.trial_ending.greeting', ['name' => $user->name]) }}
+  </h1>
+  <p style="color:#677489;line-height:1.7;margin:0 0 24px;font-size:15px;">
+    @if($daysLeft === 1)
+      {{ __('email.trial_ending.body_last_day', ['tenant' => $tenant->name]) }}
+    @else
+      {{ __('email.trial_ending.body_days', ['tenant' => $tenant->name, 'days' => $daysLeft]) }}
+    @endif
+  </p>
 
-            <hr style="border:none;border-top:1px solid #f3f4f6;margin:0 0 24px;" />
+  {{-- CTA --}}
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;"><tr><td align="center">
+    <a href="{{ $checkoutUrl }}" style="display:inline-block;background:#0085f3;color:#fff;text-decoration:none;font-family:'DM Sans',sans-serif;font-weight:600;font-size:15px;padding:14px 36px;border-radius:100px;">
+      {{ __('email.trial_ending.cta') }}
+    </a>
+  </td></tr></table>
 
-            <div style="background:#f9fafb;border-radius:8px;padding:20px;text-align:center;">
-              <p style="font-size:14px;color:#6b7280;margin:0;">Dúvidas? Fale conosco em
-                <a href="mailto:suporte@syncro.chat" style="color:#0085f3;font-weight:600;text-decoration:none;">suporte@syncro.chat</a>
-              </p>
-            </div>
-          </td>
-        </tr>
-
-        <!-- Footer -->
-        <tr>
-          <td style="padding:0 40px 36px;text-align:center;">
-            <p style="font-size:12px;color:#9ca3af;line-height:1.7;margin:0;">
-              Syncro Plataforma · <a href="{{ config('app.url') }}" style="color:#9ca3af;text-decoration:underline;">app.syncro.chat</a>
-            </p>
-          </td>
-        </tr>
-
+  {{-- What you lose --}}
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;"><tr>
+    <td style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:20px;">
+      <p style="font-size:14px;color:#991b1b;font-weight:600;margin:0 0 8px;">{{ __('email.trial_ending.lose_title') }}</p>
+      <table cellpadding="0" cellspacing="0" width="100%">
+        @foreach(['lose_1','lose_2','lose_3','lose_4'] as $key)
+        <tr><td style="padding:3px 0;font-size:13px;color:#991b1b;">&bull; {{ __('email.trial_ending.' . $key) }}</td></tr>
+        @endforeach
       </table>
-      <p style="text-align:center;font-size:12px;color:#9ca3af;margin-top:20px;">
-        © {{ date('Y') }} Syncro. Todos os direitos reservados.
-      </p>
-    </td></tr>
-  </table>
-</body>
-</html>
+    </td>
+  </tr></table>
+@endsection

@@ -23,14 +23,15 @@ class TrialEndingSoon extends Mailable
         public readonly Tenant $tenant,
         public readonly int $daysLeft,
     ) {
+        $locale = $user->tenant?->locale ?? $tenant->locale ?? config('app.locale', 'pt_BR');
+        $this->locale($locale);
         $this->checkoutUrl = route('billing.checkout');
     }
 
     public function envelope(): Envelope
     {
-        $urgency = $this->daysLeft === 1 ? 'Último dia!' : "{$this->daysLeft} dias restantes";
         return new Envelope(
-            subject: "⏳ Seu trial expira em breve — {$urgency}",
+            subject: __('email.trial_ending.subject', ['days' => $this->daysLeft]),
         );
     }
 

@@ -22,13 +22,15 @@ class WelcomeUser extends Mailable
         public readonly User $user,
         public readonly Tenant $tenant,
     ) {
+        $locale = $user->tenant?->locale ?? $tenant->locale ?? config('app.locale', 'pt_BR');
+        $this->locale($locale);
         $this->loginUrl = route('login');
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Bem-vindo à Syncro! 🎉',
+            subject: __('email.welcome.subject'),
         );
     }
 

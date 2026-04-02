@@ -28,6 +28,9 @@ class UpsellUpgrade extends Mailable
         public readonly Tenant $tenant,
         public readonly UpsellTrigger $trigger,
     ) {
+        $locale = $user->tenant?->locale ?? $tenant->locale ?? config('app.locale', 'pt_BR');
+        $this->locale($locale);
+
         $config = $trigger->action_config ?? [];
 
         $this->checkoutUrl    = route('billing.checkout', ['plan' => $trigger->target_plan]);
@@ -40,7 +43,7 @@ class UpsellUpgrade extends Mailable
     public function envelope(): Envelope
     {
         $config  = $this->trigger->action_config ?? [];
-        $subject = $config['email_subject'] ?? "Hora de crescer — conheça o plano {$this->targetPlanName}";
+        $subject = $config['email_subject'] ?? __('email.upsell.subject', ['plan' => $this->targetPlanName]);
 
         return new Envelope(subject: $subject);
     }

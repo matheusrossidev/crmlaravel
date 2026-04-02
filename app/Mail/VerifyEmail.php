@@ -22,13 +22,15 @@ class VerifyEmail extends Mailable
         public readonly User $user,
         public readonly Tenant $tenant,
     ) {
+        $locale = $user->tenant?->locale ?? $tenant->locale ?? config('app.locale', 'pt_BR');
+        $this->locale($locale);
         $this->verifyUrl = route('verify.email', ['token' => $user->verification_token]);
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Confirme seu email — Syncro',
+            subject: __('email.verify.subject'),
         );
     }
 
