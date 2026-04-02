@@ -59,7 +59,7 @@ class HelpChatController extends Controller
                 apiKey:    $apiKey,
                 model:     $model,
                 messages:  $messages,
-                maxTokens: 800,
+                maxTokens: 1500,
                 system:    $system,
             );
 

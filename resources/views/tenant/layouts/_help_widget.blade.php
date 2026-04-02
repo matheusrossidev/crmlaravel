@@ -21,6 +21,10 @@
     $aiLabel = 'AI';
     $assistantSubtitle = $isPortuguese ? 'Assistente IA' : 'AI Assistant';
     $errorMsg = $isPortuguese ? 'Desculpe, ocorreu um erro. Tente novamente.' : 'Sorry, an error occurred. Please try again.';
+
+    $thinkingSteps = $isPortuguese
+        ? ['Analisando sua pergunta', 'Identificando detalhes importantes', 'Buscando informações relevantes', 'Revisando dados encontrados', 'Gerando resposta']
+        : ['Analyzing your request', 'Identifying key details', 'Finding relevant information', 'Reviewing gathered information', 'Generating the response'];
 @endphp
 
 <style>
@@ -328,6 +332,82 @@
         30% { transform: translateY(-6px); }
     }
 
+    /* ── Thinking Steps ── */
+    .shw-thinking {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    .shw-thinking-body {
+        background: #f8fafc;
+        border: 1px solid #e8eaf0;
+        border-radius: 12px;
+        padding: 14px 16px;
+        min-width: 220px;
+    }
+    .shw-thinking-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    .shw-thinking-header img {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .shw-thinking-header span {
+        font-size: 13px;
+        font-weight: 700;
+        color: #1a1d23;
+    }
+    .shw-step {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 0;
+        font-size: 12.5px;
+        color: #6b7280;
+        opacity: 0;
+        transform: translateY(6px);
+        transition: opacity .3s ease, transform .3s ease;
+    }
+    .shw-step.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .shw-step.done { color: #374151; }
+    .shw-step-icon {
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .shw-step-check {
+        color: #10b981;
+        font-size: 14px;
+    }
+    .shw-step-spinner {
+        width: 14px;
+        height: 14px;
+        border: 2px solid #e2e8f0;
+        border-top-color: #0085f3;
+        border-radius: 50%;
+        animation: shwSpin .7s linear infinite;
+    }
+    .shw-step-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #d1d5db;
+    }
+    @keyframes shwSpin {
+        to { transform: rotate(360deg); }
+    }
+
     /* ── Input Bar ── */
     .shw-input-bar {
         display: flex;
@@ -399,9 +479,12 @@
 <div class="shw-drawer" id="shwDrawer">
     <!-- Header -->
     <div class="shw-header">
-        <img src="{{ asset('images/avatars/sophia-ai-agent.jpeg') }}" alt="Sophia" class="shw-header-avatar">
+        <div style="position:relative;">
+            <img src="{{ asset('images/avatars/sophia-ai-agent.jpeg') }}" alt="Sophia" class="shw-header-avatar">
+            <div style="position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;background:#10b981;border:2px solid #0085f3;"></div>
+        </div>
         <div class="shw-header-info">
-            <div class="shw-header-title">Sophia</div>
+            <div class="shw-header-title">Sophia <span style="font-size:10px;background:rgba(255,255,255,.2);padding:1px 6px;border-radius:8px;font-weight:500;margin-left:4px;">AI</span></div>
             <div class="shw-header-subtitle">{{ $assistantSubtitle }}</div>
         </div>
         <div class="shw-header-actions">
@@ -561,6 +644,87 @@
         });
     }
 
+    /* ── Thinking Steps ── */
+    const THINKING_STEPS = {!! json_encode($thinkingSteps) !!};
+
+    function createThinkingBlock() {
+        const row = document.createElement('div');
+        row.className = 'shw-thinking';
+        row.id = 'shwThinkingBlock';
+
+        let stepsHtml = '';
+        THINKING_STEPS.forEach(function(label, i) {
+            stepsHtml += '<div class="shw-step" data-step="' + i + '">' +
+                '<div class="shw-step-icon"><div class="shw-step-dot"></div></div>' +
+                '<span>' + escHtml(label) + '</span>' +
+            '</div>';
+        });
+
+        row.innerHTML =
+            '<img src="' + SOPHIA_IMG + '" alt="Sophia" class="shw-msg-avatar">' +
+            '<div class="shw-thinking-body">' +
+                '<div class="shw-thinking-header">' +
+                    '<img src="' + SOPHIA_IMG + '" alt="">' +
+                    '<span>Sophia</span>' +
+                '</div>' +
+                stepsHtml +
+            '</div>';
+
+        msgArea.appendChild(row);
+        scrollToBottom();
+        return row;
+    }
+
+    function animateSteps(thinkingBlock, onAllVisible) {
+        const steps = thinkingBlock.querySelectorAll('.shw-step');
+        let current = 0;
+
+        function showNext() {
+            if (current >= steps.length) {
+                if (onAllVisible) onAllVisible();
+                return;
+            }
+
+            const step = steps[current];
+            step.classList.add('visible');
+
+            // Previous step: mark as done with check
+            if (current > 0) {
+                const prev = steps[current - 1];
+                prev.classList.add('done');
+                prev.querySelector('.shw-step-icon').innerHTML = '<span class="shw-step-check">✓</span>';
+            }
+
+            // Current step: show spinner (except waiting steps)
+            if (current < steps.length - 1) {
+                step.querySelector('.shw-step-icon').innerHTML = '<div class="shw-step-spinner"></div>';
+                setTimeout(function() {
+                    step.classList.add('done');
+                    step.querySelector('.shw-step-icon').innerHTML = '<span class="shw-step-check">✓</span>';
+                    current++;
+                    showNext();
+                }, 1200 + Math.random() * 800);
+            } else {
+                // Last step: keep spinner until response
+                step.querySelector('.shw-step-icon').innerHTML = '<div class="shw-step-spinner"></div>';
+                if (onAllVisible) onAllVisible();
+            }
+
+            scrollToBottom();
+        }
+
+        // Start first step after small delay
+        setTimeout(showNext, 600);
+    }
+
+    function completeThinking(thinkingBlock) {
+        const steps = thinkingBlock.querySelectorAll('.shw-step');
+        steps.forEach(function(step) {
+            step.classList.add('visible', 'done');
+            step.querySelector('.shw-step-icon').innerHTML = '<span class="shw-step-check">✓</span>';
+        });
+    }
+
     /* ── Send ── */
     function sendMessage() {
         if (isProcessing) return;
@@ -573,8 +737,21 @@
         saveMessages();
 
         setProcessing(true);
-        showTyping();
 
+        // Show thinking steps instead of simple typing dots
+        const thinkingBlock = createThinkingBlock();
+        let responseReady = false;
+        let responseData = null;
+
+        // Start step animation
+        animateSteps(thinkingBlock, function() {
+            // All steps visible — if response already arrived, render it
+            if (responseReady) {
+                renderResponse(thinkingBlock, responseData);
+            }
+        });
+
+        // Fire API call in parallel
         fetch(CHAT_URL, {
             method: 'POST',
             headers: {
@@ -593,22 +770,37 @@
             return res.json();
         })
         .then(function(data) {
-            hideTyping();
-            const reply = data.reply || data.message || ERROR_MSG;
+            responseData = data.reply || data.message || ERROR_MSG;
+            responseReady = true;
+            // If steps already finished animating, render now
+            const lastStep = thinkingBlock.querySelector('.shw-step:last-child');
+            if (lastStep && lastStep.classList.contains('visible')) {
+                renderResponse(thinkingBlock, responseData);
+            }
+        })
+        .catch(function() {
+            responseData = ERROR_MSG;
+            responseReady = true;
+            const lastStep = thinkingBlock.querySelector('.shw-step:last-child');
+            if (lastStep && lastStep.classList.contains('visible')) {
+                renderResponse(thinkingBlock, responseData);
+            }
+        });
+    }
+
+    function renderResponse(thinkingBlock, reply) {
+        // Mark all steps as done
+        completeThinking(thinkingBlock);
+
+        // Small pause after last check, then replace with response
+        setTimeout(function() {
+            thinkingBlock.remove();
             typewriterBotBubble(reply, function() {
                 messages.push({ role: 'assistant', content: reply });
                 saveMessages();
             });
-        })
-        .catch(function() {
-            hideTyping();
-            appendBotBubble(ERROR_MSG);
-            messages.push({ role: 'assistant', content: ERROR_MSG });
-            saveMessages();
-        })
-        .finally(function() {
             setProcessing(false);
-        });
+        }, 500);
     }
 
     /* ── Processing state ── */
