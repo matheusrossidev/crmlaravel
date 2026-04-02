@@ -2416,12 +2416,12 @@ async function moveToStage(stageId, stageName) {
         });
         const data = await res.json();
         if (data.success !== false && res.ok) {
-            toastr.success(@json(__('leads.moved_to', ['stage' => ''])) + stageName);
+            toastr.success(LLANG.moved_to.replace(':stage', stageName));
             setTimeout(() => location.reload(), 800);
         } else {
-            toastr.error(data.message || data.error || @json(__('leads.error_move_stage')));
+            toastr.error(data.message || data.error || LLANG.error_move_stage);
         }
-    } catch { toastr.error(@json(__('leads.error_conn'))); }
+    } catch { toastr.error(LLANG.error_conn); }
     document.getElementById('outcomeMenu')?.style && (document.getElementById('outcomeMenu').style.display = 'none');
 }
 
@@ -2485,8 +2485,8 @@ function toggleLeadTask(id) {
 @endphp
 const _taskData = {!! json_encode($taskDataMap) !!};
 
-const _taskTypeLabels = { call: @json(__('leads.type_call')), email: @json(__('leads.type_email_activity')), task: @json(__('leads.type_task')), visit: @json(__('leads.type_visit')), whatsapp: @json(__('leads.type_whatsapp')), meeting: @json(__('leads.type_meeting')) };
-const _taskPriorityLabels = { low: @json(__('leads.priority_low')), medium: @json(__('leads.priority_medium')), high: @json(__('leads.priority_high')) };
+const _taskTypeLabels = { call: LLANG.type_call, email: LLANG.type_email_activity, task: LLANG.type_task, visit: LLANG.type_visit, whatsapp: LLANG.type_whatsapp, meeting: LLANG.type_meeting };
+const _taskPriorityLabels = { low: LLANG.priority_low, medium: LLANG.priority_medium, high: LLANG.priority_high };
 const _taskPriorityColors = { low: '#10b981', medium: '#f59e0b', high: '#ef4444' };
 
 function showTaskDetail(taskId) {
@@ -2505,7 +2505,7 @@ function showTaskDetail(taskId) {
         <div style="padding:20px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
                 <h4 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0;">${escapeHtml(t.subject)}</h4>
-                <i class="bi bi-question-circle" style="color:#9ca3af;font-size:14px;cursor:help;" title="Clique na tarefa para ver detalhes"></i>
+                <i class="bi bi-question-circle" style="color:#9ca3af;font-size:14px;cursor:help;" title="${LLANG.click_task_detail}"></i>
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
                 <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:#eff6ff;color:#0085f3;">
@@ -2514,14 +2514,14 @@ function showTaskDetail(taskId) {
                 <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:${priColor}15;color:${priColor};">
                     ${_taskPriorityLabels[t.priority] || t.priority}
                 </span>
-                ${t.status === 'completed' ? '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:#f0fdf4;color:#10b981;"><i class="bi bi-check-circle-fill"></i> ' + @json(__('leads.completed_label')) + '</span>' : ''}
+                ${t.status === 'completed' ? '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;background:#f0fdf4;color:#10b981;"><i class="bi bi-check-circle-fill"></i> ' + LLANG.completed_label + '</span>' : ''}
             </div>
             ${t.description ? `<div style="margin-bottom:16px;padding:12px;background:#f8fafc;border-radius:8px;font-size:13px;color:#374151;line-height:1.6;">${escapeHtml(t.description)}</div>` : ''}
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
-                <div><span style="color:#9ca3af;font-size:11px;display:block;margin-bottom:2px;">${@json(__('leads.date_label'))}</span><strong>${t.due_date || '—'}${t.due_time ? ' ' + t.due_time : ''}</strong></div>
-                <div><span style="color:#9ca3af;font-size:11px;display:block;margin-bottom:2px;">${@json(__('leads.responsible_label'))}</span><strong>${t.assigned_to_name || @json(__('leads.sidebar_not_assigned'))}</strong></div>
-                ${t.completed_at ? `<div><span style="color:#9ca3af;font-size:11px;display:block;margin-bottom:2px;">${@json(__('leads.completed_at_label'))}</span><strong>${t.completed_at}</strong></div>` : ''}
-                ${t.notes ? `<div style="grid-column:span 2;"><span style="color:#9ca3af;font-size:11px;display:block;margin-bottom:2px;">${@json(__('leads.observations_label'))}</span><div style="color:#374151;">${escapeHtml(t.notes)}</div></div>` : ''}
+                <div><span style="color:#9ca3af;font-size:11px;display:block;margin-bottom:2px;">${LLANG.date_label}</span><strong>${t.due_date || '—'}${t.due_time ? ' ' + t.due_time : ''}</strong></div>
+                <div><span style="color:#9ca3af;font-size:11px;display:block;margin-bottom:2px;">${LLANG.responsible_label}</span><strong>${t.assigned_to_name || LLANG.sidebar_not_assigned}</strong></div>
+                ${t.completed_at ? `<div><span style="color:#9ca3af;font-size:11px;display:block;margin-bottom:2px;">${LLANG.completed_at_label}</span><strong>${t.completed_at}</strong></div>` : ''}
+                ${t.notes ? `<div style="grid-column:span 2;"><span style="color:#9ca3af;font-size:11px;display:block;margin-bottom:2px;">${LLANG.observations_label}</span><div style="color:#374151;">${escapeHtml(t.notes)}</div></div>` : ''}
             </div>
         </div>
     `;
@@ -2561,8 +2561,8 @@ function closeNewTaskDrawer() {
 async function saveNewTask() {
     const subject = document.getElementById('ntSubject').value.trim();
     const dueDate = document.getElementById('ntDueDate').value;
-    if (!subject) { toastr.warning(@json(__('leads.subject_required'))); return; }
-    if (!dueDate) { toastr.warning(@json(__('leads.date_required'))); return; }
+    if (!subject) { toastr.warning(LLANG.subject_required); return; }
+    if (!dueDate) { toastr.warning(LLANG.date_required); return; }
 
     try {
         const res = await fetch('{{ route("tasks.store") }}', {
@@ -2582,13 +2582,13 @@ async function saveNewTask() {
         });
         const data = await res.json();
         if (data.success || res.ok) {
-            toastr.success(@json(__('leads.activity_created')));
+            toastr.success(LLANG.activity_created);
             closeNewTaskDrawer();
             setTimeout(() => location.reload(), 800);
         } else {
-            toastr.error(data.message || @json(__('leads.error_create_activity')));
+            toastr.error(data.message || LLANG.error_create_activity);
         }
-    } catch { toastr.error(@json(__('leads.error_conn'))); }
+    } catch { toastr.error(LLANG.error_conn); }
 }
 
 // ── Contacts ─────────────────────────────────────────────────────────
