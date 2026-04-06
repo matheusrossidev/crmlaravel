@@ -40,7 +40,15 @@ class IntegrationController extends Controller
         $facebook  = $connections->get('facebook');
         $google    = $connections->get('google');
         $facebookLeadAds = $connections->get('facebook_leadads');
-        $whatsappInstances = WhatsappInstance::orderBy('id')->get();
+        // Card "WhatsApp Business" lista APENAS instâncias WAHA. Cloud API
+        // é mostrada no card próprio "WhatsApp Cloud API" mais abaixo.
+        // (NULL provider = rows legadas pré-refactor multi-provider, todas WAHA)
+        $whatsappInstances = WhatsappInstance::query()
+            ->where(function ($q) {
+                $q->where('provider', 'waha')->orWhereNull('provider');
+            })
+            ->orderBy('id')
+            ->get();
         $whatsapp          = $whatsappInstances->first(); // retrocompat
         $instagram         = InstagramInstance::where('status', '!=', 'disconnected')->first();
 
@@ -201,8 +209,13 @@ class IntegrationController extends Controller
         $tenant = activeTenant();
         $label  = $request->input('label', '');
 
-        // Se já existe alguma instância, verificar limite do plano
-        $existingCount = WhatsappInstance::where('tenant_id', $tenant->id)->count();
+        // Se já existe alguma instância WAHA, verificar limite do plano
+        // (Cloud API tem o card próprio e não conta pro limite do WAHA)
+        $existingCount = WhatsappInstance::where('tenant_id', $tenant->id)
+            ->where(function ($q) {
+                $q->where('provider', 'waha')->orWhereNull('provider');
+            })
+            ->count();
         if ($existingCount > 0) {
             $limitMsg = PlanLimitChecker::check('whatsapp_instances');
             if ($limitMsg) {
@@ -319,7 +332,13 @@ class IntegrationController extends Controller
 
     public function importHistoryWhatsapp(Request $request, ?WhatsappInstance $instance = null): JsonResponse
     {
-        $instance ??= WhatsappInstance::first();
+        // Import de histórico só faz sentido pra WAHA (Cloud API não expõe
+        // histórico via API). Filtra fallback pra WAHA.
+        $instance ??= WhatsappInstance::query()
+            ->where(function ($q) {
+                $q->where('provider', 'waha')->orWhereNull('provider');
+            })
+            ->first();
 
         if (! $instance || $instance->status !== 'connected') {
             return response()->json(['success' => false, 'message' => 'WhatsApp não está conectado.'], 422);
