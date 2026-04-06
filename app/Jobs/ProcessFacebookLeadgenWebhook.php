@@ -162,14 +162,13 @@ class ProcessFacebookLeadgenWebhook implements ShouldQueue
         }
 
         // 8. Plan limit check
-        try {
-            $tenant = \App\Models\Tenant::find($tenantId);
-            if ($tenant) {
-                \App\Support\PlanLimitChecker::check('leads', $tenant);
+        $tenant = \App\Models\Tenant::find($tenantId);
+        if ($tenant) {
+            $limitError = \App\Services\PlanLimitChecker::check('leads', $tenant);
+            if ($limitError) {
+                $this->logEntry($connection, $leadgenId, $platform, $adId, null, $leadData, 'skipped', $limitError);
+                return;
             }
-        } catch (\Throwable) {
-            $this->logEntry($connection, $leadgenId, $platform, $adId, null, $leadData, 'skipped', 'Plan limit reached');
-            return;
         }
 
         // 9. Create lead
