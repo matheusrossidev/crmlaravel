@@ -200,6 +200,8 @@ return [
     'channel_both'              => 'WhatsApp e Instagram',
     'channel_whatsapp'          => 'Somente WhatsApp',
     'channel_instagram'         => 'Somente Instagram',
+    'label_whatsapp_instance'   => 'Instância do WhatsApp',
+    'any_whatsapp_instance'     => 'Qualquer instância',
 
     // ── Trigger config: pipeline / stage ────────────────────────────────
     'label_pipeline'            => 'Funil',

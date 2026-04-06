@@ -171,6 +171,15 @@ class AutomationEngine
             }
         }
 
+        // Filtro de instância WhatsApp (só faz sentido se há conversa no contexto)
+        if (! empty($config['whatsapp_instance_id'])) {
+            $conv = $ctx['conversation'] ?? null;
+            if (! ($conv instanceof WhatsappConversation)
+                || (int) $conv->instance_id !== (int) $config['whatsapp_instance_id']) {
+                return false;
+            }
+        }
+
         // Condições dinâmicas adicionais
         foreach ($conditions as $condition) {
             if (! $this->evaluateCondition($condition, $ctx)) {

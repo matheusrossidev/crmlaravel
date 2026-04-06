@@ -479,6 +479,7 @@ const AI_AGENTS      = @json($aiAgents);
 const CHATBOT_FLOWS  = @json($chatbotFlows);
 const DEPARTMENTS    = @json($departments);
 const WAHA_CONNECTED = {{ $wahaConnected ? 'true' : 'false' }};
+const WHATSAPP_INSTANCES = @json($whatsappInstances);
 const LEAD_TAGS      = @json($leadTags->values());
 const LEAD_SOURCES   = @json($leadSources->values());
 const WAPP_TAGS           = @json($whatsappTags->pluck('name')->values());
@@ -549,6 +550,20 @@ function buildTriggerConfig(type, prefill) {
             <select class="form-select" id="tcChannel"><option value="both">${h(AUTLANG.channel_both)}</option>
             <option value="whatsapp" ${prefill.channel==='whatsapp'?'selected':''}>${h(AUTLANG.channel_whatsapp)}</option>
             <option value="instagram" ${prefill.channel==='instagram'?'selected':''}>${h(AUTLANG.channel_instagram)}</option></select>`;
+
+        // Filtro de instância WhatsApp — só aparece se há 2+ instâncias conectadas
+        if (WHATSAPP_INSTANCES.length > 1) {
+            const insOpts = WHATSAPP_INSTANCES.map(i => {
+                const label = i.label || i.phone_number || i.session_name || '#' + i.id;
+                const sel = prefill.whatsapp_instance_id == i.id ? 'selected' : '';
+                return `<option value="${i.id}" ${sel}>${h(label)}</option>`;
+            }).join('');
+            html += `<label style="margin-top:10px;">${h(AUTLANG.label_whatsapp_instance)}
+                <small style="font-weight:400;color:#9ca3af;">(${h(AUTLANG.label_pipeline_optional)})</small></label>
+                <select class="form-select" id="tcWhatsappInstance">
+                    <option value="">${h(AUTLANG.any_whatsapp_instance)}</option>${insOpts}
+                </select>`;
+        }
     }
     if (type === 'lead_stage_changed') {
         const pOpts = PIPELINES.map(p => `<option value="${p.id}" ${prefill.pipeline_id==p.id?'selected':''}>${h(p.name)}</option>`).join('');
@@ -1447,6 +1462,7 @@ function saveAutomation() {
     const triggerType = triggerNode.dataset.triggerType;
     const tc = {};
     const chanEl = document.getElementById('tcChannel');  if (chanEl && chanEl.value) tc.channel = chanEl.value;
+    const wiEl   = document.getElementById('tcWhatsappInstance'); if (wiEl && wiEl.value) tc.whatsapp_instance_id = parseInt(wiEl.value);
     const pipeEl = document.getElementById('tcPipeline'); if (pipeEl && pipeEl.value) tc.pipeline_id = parseInt(pipeEl.value);
     const stgEl  = document.getElementById('tcStage');    if (stgEl  && stgEl.value)  tc.stage_id   = parseInt(stgEl.value);
     const srcEl  = document.getElementById('tcSource');   if (srcEl  && srcEl.value)  tc.source     = srcEl.value;

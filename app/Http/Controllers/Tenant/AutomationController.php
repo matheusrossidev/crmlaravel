@@ -43,6 +43,10 @@ class AutomationController extends Controller
 
         $wahaConnected = WhatsappInstance::where('status', 'connected')->exists();
 
+        $whatsappInstances = WhatsappInstance::where('status', 'connected')
+            ->orderBy('label')
+            ->get(['id', 'label', 'phone_number', 'session_name']);
+
         $whatsappTags = WhatsappTag::orderBy('name')->get(['id', 'name', 'color']);
 
         $leadTags = Lead::withoutGlobalScope('tenant')
@@ -85,8 +89,9 @@ class AutomationController extends Controller
             ->get(['id', 'name']);
 
         return compact('pipelines', 'users', 'aiAgents', 'chatbotFlows', 'wahaConnected',
-                       'whatsappTags', 'leadTags', 'leadSources', 'allLeadSources',
-                       'campaigns', 'dateCustomFields', 'allCustomFields', 'departments');
+                       'whatsappInstances', 'whatsappTags', 'leadTags', 'leadSources',
+                       'allLeadSources', 'campaigns', 'dateCustomFields', 'allCustomFields',
+                       'departments');
     }
 
     public function index(): View

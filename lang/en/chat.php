@@ -3,6 +3,8 @@
 return [
     // Page
     'title' => 'Chats',
+    'close' => 'Close',
+    'download' => 'Download',
 
     // Empty state
     'wa_not_connected'      => 'WhatsApp not connected',

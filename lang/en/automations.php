@@ -200,6 +200,8 @@ return [
     'channel_both'              => 'WhatsApp and Instagram',
     'channel_whatsapp'          => 'WhatsApp only',
     'channel_instagram'         => 'Instagram only',
+    'label_whatsapp_instance'   => 'WhatsApp Instance',
+    'any_whatsapp_instance'     => 'Any instance',
 
     // ── Trigger config: pipeline / stage ────────────────────────────────
     'label_pipeline'            => 'Pipeline',

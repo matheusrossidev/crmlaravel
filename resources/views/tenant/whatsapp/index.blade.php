@@ -675,6 +675,163 @@ $pageIcon = 'chat-dots';
         cursor: pointer;
         object-fit: cover;
         display: block;
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .wa-img-thumb:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, .15);
+    }
+
+    /* ── Documento (card) ─────────────────────────────────────────── */
+    /* Default = estilo outbound (bubble azul). Inbound sobrescreve abaixo. */
+    .wa-doc-card {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, .15);
+        border-radius: 10px;
+        min-width: 240px;
+        max-width: 320px;
+        color: #fff;
+    }
+    .wa-msg.inbound .wa-doc-card {
+        background: rgba(59, 130, 246, .08);
+        color: #1a1d23;
+    }
+    .wa-doc-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 9px;
+        background: rgba(255, 255, 255, .25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: #fff;
+        flex-shrink: 0;
+    }
+    .wa-msg.inbound .wa-doc-icon {
+        background: #eff6ff;
+        color: #3b82f6;
+    }
+    .wa-doc-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .wa-doc-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: inherit;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.3;
+    }
+    .wa-doc-meta {
+        font-size: 11px;
+        opacity: .8;
+        line-height: 1.3;
+        color: inherit;
+    }
+    .wa-doc-download {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .25);
+        border: none;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 16px;
+        flex-shrink: 0;
+        text-decoration: none;
+        transition: background .12s, transform .12s;
+    }
+    .wa-doc-download:hover {
+        background: rgba(255, 255, 255, .4);
+        transform: scale(1.05);
+    }
+    .wa-msg.inbound .wa-doc-download {
+        background: #3b82f6;
+        color: #fff;
+    }
+    .wa-msg.inbound .wa-doc-download:hover { background: #2563eb; }
+    .wa-doc-caption {
+        margin-top: 8px;
+        font-size: 13px;
+        line-height: 1.5;
+        word-wrap: break-word;
+        color: inherit;
+    }
+    .wa-doc-caption a { color: inherit; text-decoration: underline; }
+
+    /* ── Image Lightbox Modal ─────────────────────────────────────── */
+    .wa-img-lightbox {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, .85);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        animation: waImgFadeIn .15s ease-out;
+    }
+    .wa-img-lightbox.open { display: flex; }
+    .wa-img-lightbox-content {
+        position: relative;
+        max-width: 100%;
+        max-height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .wa-img-lightbox-img {
+        max-width: 100%;
+        max-height: calc(100vh - 100px);
+        border-radius: 8px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
+        object-fit: contain;
+    }
+    .wa-img-lightbox-close,
+    .wa-img-lightbox-download {
+        position: absolute;
+        top: -42px;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, .15);
+        border: none;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 18px;
+        transition: background .12s;
+        text-decoration: none;
+    }
+    .wa-img-lightbox-close { right: 0; }
+    .wa-img-lightbox-download { right: 46px; font-size: 16px; }
+    .wa-img-lightbox-close:hover,
+    .wa-img-lightbox-download:hover {
+        background: rgba(255, 255, 255, .3);
+        color: #fff;
+    }
+    @keyframes waImgFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @media (max-width: 640px) {
+        .wa-img-lightbox { padding: 60px 12px 12px; }
+        .wa-img-lightbox-close { top: 12px; right: 12px; }
+        .wa-img-lightbox-download { top: 12px; right: 58px; }
     }
 
     /* Vídeo */
@@ -1696,6 +1853,19 @@ $pageIcon = 'chat-dots';
         </div>
     </div>
 </div>
+
+{{-- ── Image Lightbox Modal ─────────────────────────────────────── --}}
+<div class="wa-img-lightbox" id="waImgLightbox" onclick="closeImageLightbox(event)">
+    <div class="wa-img-lightbox-content" onclick="event.stopPropagation()">
+        <a id="waImgLightboxDownload" class="wa-img-lightbox-download" href="#" download target="_blank" title="{{ __('chat.download') }}">
+            <i class="bi bi-download"></i>
+        </a>
+        <button type="button" class="wa-img-lightbox-close" onclick="closeImageLightbox()" title="{{ __('chat.close') }}">
+            <i class="bi bi-x-lg"></i>
+        </button>
+        <img id="waImgLightboxImg" class="wa-img-lightbox-img" src="" alt="">
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -2324,7 +2494,8 @@ $pageIcon = 'chat-dots';
         if (msg.is_deleted) {
             bubble.innerHTML = '<i class="bi bi-slash-circle" style="margin-right:4px;"></i>' + escHtml(LANG.msg_deleted);
         } else if (msg.type === 'image' && msg.media_url) {
-            bubble.innerHTML = `<img src="${escHtml(msg.media_url)}" class="wa-img-thumb" onclick="window.open(this.src,'_blank')" alt="Imagem">`;
+            const imgUrl = escHtml(msg.media_url);
+            bubble.innerHTML = `<img src="${imgUrl}" class="wa-img-thumb" onclick="openImageLightbox('${imgUrl}')" alt="Imagem">`;
             if (msg.body) bubble.innerHTML += `<div style="margin-top:6px;font-size:13px;">${formatWhatsappText(msg.body)}</div>`;
         } else if (msg.type === 'audio' && msg.media_url) {
             const apBars = Array.from({length: 28}, () => {
@@ -2347,12 +2518,26 @@ $pageIcon = 'chat-dots';
             if (msg.body) bubble.innerHTML += `<div style="margin-top:6px;font-size:13px;">${formatWhatsappText(msg.body)}</div>`;
         } else if (msg.type === 'document' && msg.media_url) {
             const fname = escHtml(msg.media_filename || LANG.preview_file.replace('📎 ', ''));
-            bubble.innerHTML = `<a href="${escHtml(msg.media_url)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none;"><i class="bi bi-file-earmark-text" style="font-size:20px;color:#3b82f6;flex-shrink:0;"></i><span style="word-break:break-all;">${fname}</span><i class="bi bi-download" style="margin-left:4px;font-size:13px;flex-shrink:0;"></i></a>`;
-            if (msg.body) bubble.innerHTML += `<div style="margin-top:4px;font-size:12px;color:#6b7280;">${formatWhatsappText(msg.body)}</div>`;
+            const docUrl = escHtml(msg.media_url);
+            const docIcon = getDocIcon(msg.media_filename || '');
+            const ext = (msg.media_filename || '').split('.').pop().toUpperCase().slice(0, 5) || 'FILE';
+            bubble.innerHTML = `
+                <div class="wa-doc-card">
+                    <div class="wa-doc-icon"><i class="bi ${docIcon}"></i></div>
+                    <div class="wa-doc-info">
+                        <div class="wa-doc-name" title="${fname}">${fname}</div>
+                        <div class="wa-doc-meta">${ext}</div>
+                    </div>
+                    <a href="${docUrl}" download="${fname}" target="_blank" rel="noopener" class="wa-doc-download" title="${escHtml(LANG.download || 'Baixar')}">
+                        <i class="bi bi-download"></i>
+                    </a>
+                </div>`;
+            if (msg.body) bubble.innerHTML += `<div class="wa-doc-caption">${formatWhatsappText(msg.body)}</div>`;
         } else if (msg.type === 'share') {
             let inner = '';
             if (msg.media_url) {
-                inner += `<img src="${escHtml(msg.media_url)}" class="wa-img-thumb" onclick="window.open(this.src,'_blank')" alt="Publicação" onerror="this.style.display='none'">`;
+                const shareImgUrl = escHtml(msg.media_url);
+                inner += `<img src="${shareImgUrl}" class="wa-img-thumb" onclick="openImageLightbox('${shareImgUrl}')" alt="Publicação" onerror="this.style.display='none'">`;
             }
             const postLink = escHtml(msg.body || '');
             if (postLink) {
@@ -3411,6 +3596,65 @@ $pageIcon = 'chat-dots';
     function escHtml(str) {
         if (!str) return '';
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // ── Image Lightbox ────────────────────────────────────────────
+    function openImageLightbox(url) {
+        if (!url) return;
+        const lb = document.getElementById('waImgLightbox');
+        const img = document.getElementById('waImgLightboxImg');
+        const dl  = document.getElementById('waImgLightboxDownload');
+        if (!lb || !img) return;
+        img.src = url;
+        if (dl) dl.href = url;
+        lb.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeImageLightbox(e) {
+        // Click no overlay (não no conteúdo) ou no botão fecha
+        if (e && e.target && e.target.id !== 'waImgLightbox' && !e.target.closest('.wa-img-lightbox-close')) {
+            return;
+        }
+        const lb = document.getElementById('waImgLightbox');
+        if (!lb) return;
+        lb.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const lb = document.getElementById('waImgLightbox');
+            if (lb && lb.classList.contains('open')) closeImageLightbox({ target: lb });
+        }
+    });
+
+    // ── Document icon picker by extension ──────────────────────────
+    function getDocIcon(filename) {
+        const ext = (filename || '').toLowerCase().split('.').pop();
+        const map = {
+            pdf:  'bi-file-earmark-pdf',
+            doc:  'bi-file-earmark-word',
+            docx: 'bi-file-earmark-word',
+            xls:  'bi-file-earmark-excel',
+            xlsx: 'bi-file-earmark-excel',
+            csv:  'bi-file-earmark-spreadsheet',
+            ppt:  'bi-file-earmark-ppt',
+            pptx: 'bi-file-earmark-ppt',
+            zip:  'bi-file-earmark-zip',
+            rar:  'bi-file-earmark-zip',
+            '7z': 'bi-file-earmark-zip',
+            txt:  'bi-file-earmark-text',
+            mp3:  'bi-file-earmark-music',
+            wav:  'bi-file-earmark-music',
+            mp4:  'bi-file-earmark-play',
+            mov:  'bi-file-earmark-play',
+            avi:  'bi-file-earmark-play',
+            jpg:  'bi-file-earmark-image',
+            jpeg: 'bi-file-earmark-image',
+            png:  'bi-file-earmark-image',
+            gif:  'bi-file-earmark-image',
+            webp: 'bi-file-earmark-image',
+        };
+        return map[ext] || 'bi-file-earmark';
     }
 
     function formatWhatsappText(text) {
