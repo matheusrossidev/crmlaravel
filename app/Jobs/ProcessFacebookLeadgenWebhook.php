@@ -171,13 +171,22 @@ class ProcessFacebookLeadgenWebhook implements ShouldQueue
             }
         }
 
-        // 9. Create lead
+        // 9. Create lead — sanitize fields to respect column lengths
+        $phone = $leadFields['phone'] ?? null;
+        if ($phone) {
+            // Keep only digits and + — Meta test tool sends placeholder text
+            $phoneDigits = preg_replace('/[^\d+]/', '', $phone);
+            $phone = $phoneDigits ? mb_substr($phoneDigits, 0, 30) : null;
+        }
+
         $lead = Lead::withoutGlobalScope('tenant')->create([
             'tenant_id'    => $tenantId,
-            'name'         => $leadFields['name'] ?? 'Lead Facebook',
-            'phone'        => $leadFields['phone'] ?? null,
-            'email'        => isset($leadFields['email']) ? strtolower($leadFields['email']) : null,
-            'company'      => $leadFields['company'] ?? null,
+            'name'         => mb_substr($leadFields['name'] ?? 'Lead Facebook', 0, 191),
+            'phone'        => $phone,
+            'email'        => isset($leadFields['email']) && filter_var($leadFields['email'], FILTER_VALIDATE_EMAIL)
+                ? strtolower($leadFields['email'])
+                : null,
+            'company'      => isset($leadFields['company']) ? mb_substr($leadFields['company'], 0, 191) : null,
             'value'        => $leadFields['value'] ?? null,
             'source'       => $leadFields['source'],
             'pipeline_id'  => $connection->pipeline_id,
