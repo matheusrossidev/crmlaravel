@@ -94,7 +94,7 @@ class SendScheduledMessages extends Command
             }
         }
 
-        $waha   = new WahaService($instance->session_name);
+        $waha   = \App\Services\WhatsappServiceFactory::for($instance);
         $result = [];
 
         switch ($scheduled->type) {

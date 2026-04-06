@@ -915,7 +915,7 @@ WEBCHAT;
                 $chatId   = $rawPhone . '@c.us';
             }
 
-            $waha = new WahaService($instance->session_name);
+            $waha = \App\Services\WhatsappServiceFactory::for($instance);
         }
 
         foreach ($messages as $i => $text) {
@@ -1047,7 +1047,7 @@ WEBCHAT;
             $chatId   = $rawPhone . '@c.us';
         }
 
-        $waha   = new WahaService($instance->session_name);
+        $waha   = \App\Services\WhatsappServiceFactory::for($instance);
         $result = $waha->sendText($chatId, $text);
 
         if (isset($result['error'])) {
@@ -1156,7 +1156,7 @@ WEBCHAT;
             return;
         }
 
-        $waha    = new WahaService($instance->session_name);
+        $waha    = \App\Services\WhatsappServiceFactory::for($instance);
         $caption = $media->description ?? '';
         $isImage = str_starts_with($media->mime_type, 'image/');
 

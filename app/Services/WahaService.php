@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Contracts\WhatsappServiceContract;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
-class WahaService
+class WahaService implements WhatsappServiceContract
 {
     private string $baseUrl;
     private string $apiKey;
@@ -435,5 +436,12 @@ class WahaService
 
         $decoded = json_decode($body, true);
         return is_array($decoded) ? $decoded : ['raw' => $body];
+    }
+
+    // ── WhatsappServiceContract ───────────────────────────────────────────────
+
+    public function getProviderName(): string
+    {
+        return 'waha';
     }
 }

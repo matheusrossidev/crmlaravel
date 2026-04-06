@@ -35,6 +35,12 @@ Route::post('/webhook/waha', [WhatsappWebhookController::class, 'handle'])
     ->middleware('throttle:webhooks')
     ->name('waha.webhook');
 
+// ── Webhook WhatsApp Cloud API (público, sem autenticação) ────────────────
+Route::get ('/webhook/whatsapp-cloud', [\App\Http\Controllers\WhatsappCloudWebhookController::class, 'verify'])->name('whatsapp-cloud.webhook.verify');
+Route::post('/webhook/whatsapp-cloud', [\App\Http\Controllers\WhatsappCloudWebhookController::class, 'handle'])
+    ->middleware('throttle:webhooks')
+    ->name('whatsapp-cloud.webhook.handle');
+
 // ── Webhook Instagram / Meta (público, sem autenticação) ──────────────────
 Route::get ('/webhook/instagram', [InstagramWebhookController::class, 'verify'])->name('instagram.webhook.verify');
 Route::post('/webhook/instagram', [InstagramWebhookController::class, 'handle'])->middleware('throttle:webhooks')->name('instagram.webhook.handle');

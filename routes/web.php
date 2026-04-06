@@ -379,6 +379,10 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::put('facebook-leadads/connections/{connection}',         [IntegrationController::class, 'updateFbLeadConnection'])->name('facebook-leadads.connections.update');
             Route::delete('facebook-leadads/connections/{connection}',      [IntegrationController::class, 'destroyFbLeadConnection'])->name('facebook-leadads.connections.destroy');
             Route::delete('facebook-leadads',                               [IntegrationController::class, 'disconnectFacebookLeadAds'])->name('facebook-leadads.disconnect');
+            // WhatsApp Cloud API (Embedded Signup)
+            Route::get('whatsapp-cloud/redirect',                           [IntegrationController::class, 'redirectWhatsappCloud'])->name('whatsapp-cloud.redirect');
+            Route::get('whatsapp-cloud/callback',                           [IntegrationController::class, 'callbackWhatsappCloud'])->name('whatsapp-cloud.callback');
+            Route::delete('whatsapp-cloud/{instance}',                      [IntegrationController::class, 'disconnectWhatsappCloud'])->name('whatsapp-cloud.disconnect');
             // Wildcards (OAuth)
             Route::delete('{platform}',     [IntegrationController::class, 'disconnect'])->name('disconnect');
             Route::post('{platform}/sync',  [IntegrationController::class, 'syncNow'])->name('sync');

@@ -588,7 +588,7 @@ class WebsiteChatService
         }
 
         try {
-            $waha = new WahaService($instance->session_name);
+            $waha = \App\Services\WhatsappServiceFactory::for($instance);
             $waha->sendText($phone . '@c.us', $message);
             Log::channel('whatsapp')->info('WebsiteChatService: WhatsApp enviado via chatbot', [
                 'conv'  => $conv->id,

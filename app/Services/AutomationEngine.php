@@ -557,11 +557,11 @@ class AutomationEngine
         }
 
         $text   = $this->interpolate((string) $config['message'], $ctx);
-        $waha   = new WahaService($instance->session_name);
+        $service = \App\Services\WhatsappServiceFactory::for($instance);
         $chatId = $phone . '@c.us';
 
         try {
-            $result = $waha->sendText($chatId, $text);
+            $result = $service->sendText($chatId, $text);
 
             // Salvar mensagem enviada no banco (para aparecer no chat)
             if (empty($result['error'])) {

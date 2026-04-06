@@ -16,6 +16,7 @@ class WhatsappMessage extends Model
         'tenant_id',
         'conversation_id',
         'waha_message_id',
+        'cloud_message_id',
         'direction',
         'sender_name',
         'type',

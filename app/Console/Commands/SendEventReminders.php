@@ -95,7 +95,7 @@ class SendEventReminders extends Command
             }
         }
 
-        $waha   = new WahaService($instance->session_name);
+        $waha   = \App\Services\WhatsappServiceFactory::for($instance);
         $result = $waha->sendText($chatId, $reminder->body);
 
         if (isset($result['error'])) {

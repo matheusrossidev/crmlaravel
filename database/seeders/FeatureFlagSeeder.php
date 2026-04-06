@@ -22,6 +22,7 @@ class FeatureFlagSeeder extends Seeder
             ['slug' => 'nurture_sequences', 'label' => 'Sequências de Nutrição',     'description' => 'Automação de follow-up por etapas',                    'is_enabled_globally' => true,  'sort_order' => 8],
             ['slug' => 'nps_surveys',       'label' => 'Pesquisas NPS',              'description' => 'Net Promoter Score e pesquisas de satisfação',          'is_enabled_globally' => true,  'sort_order' => 9],
             ['slug' => 'website_chat',      'label' => 'Chat para Website',          'description' => 'Widget de chat para sites com chatbot',                 'is_enabled_globally' => true,  'sort_order' => 10],
+            ['slug' => 'whatsapp_cloud_api','label' => 'WhatsApp Cloud API (Meta)',  'description' => 'Conexão via API oficial da Meta com modo Coexistência (use no celular e API ao mesmo tempo)', 'is_enabled_globally' => false, 'sort_order' => 11],
         ];
 
         foreach ($features as $feature) {

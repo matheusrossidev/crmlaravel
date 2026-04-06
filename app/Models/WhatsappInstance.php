@@ -18,7 +18,13 @@ class WhatsappInstance extends Model
         'tenant_id',
         'session_name',
         'status',
+        'provider',
         'phone_number',
+        'phone_number_id',
+        'waba_id',
+        'business_account_id',
+        'access_token',
+        'token_expires_at',
         'display_name',
         'label',
         'history_imported',
@@ -26,7 +32,19 @@ class WhatsappInstance extends Model
 
     protected $casts = [
         'history_imported' => 'boolean',
+        'access_token'     => 'encrypted',
+        'token_expires_at' => 'datetime',
     ];
+
+    public function isWaha(): bool
+    {
+        return ($this->provider ?? 'waha') === 'waha';
+    }
+
+    public function isCloudApi(): bool
+    {
+        return $this->provider === 'cloud_api';
+    }
 
     public function conversations(): HasMany
     {

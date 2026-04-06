@@ -1,0 +1,402 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Contracts\WhatsappServiceContract;
+use App\Models\WhatsappInstance;
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * Implementação do WhatsAppServiceContract usando a Cloud API oficial da Meta.
+ *
+ * Espelha a interface do WahaService — quem chama não precisa saber qual
+ * provider está por trás, basta usar WhatsappServiceFactory::for($instance).
+ *
+ * Diferenças importantes vs WAHA:
+ *  - chatId é só o número (sem "@c.us")
+ *  - Mídia precisa ser enviada por upload (POST /media → recebe id → usa id na mensagem)
+ *  - Lista interativa tem schema diferente (sections + rows com id/title/description)
+ *  - Reaction tem schema próprio (sem PUT)
+ */
+class WhatsappCloudService implements WhatsappServiceContract
+{
+    private string $baseUrl;
+    private string $phoneNumberId;
+    private string $accessToken;
+
+    public function __construct(WhatsappInstance $instance)
+    {
+        $version = (string) config('services.whatsapp_cloud.api_version', 'v21.0');
+        $this->baseUrl = "https://graph.facebook.com/{$version}";
+        $this->phoneNumberId = (string) ($instance->phone_number_id ?? '');
+        // O cast 'encrypted' do model decripta automaticamente ao acessar
+        $this->accessToken = (string) ($instance->access_token ?? '');
+
+        if ($this->phoneNumberId === '' || $this->accessToken === '') {
+            Log::warning('WhatsappCloudService: instância sem phone_number_id ou access_token', [
+                'instance_id' => $instance->id,
+            ]);
+        }
+    }
+
+    public function getProviderName(): string
+    {
+        return 'cloud_api';
+    }
+
+    // ── Mensagens ────────────────────────────────────────────────────────────
+
+    public function sendText(string $chatId, string $text): array
+    {
+        return $this->sendMessage([
+            'messaging_product' => 'whatsapp',
+            'recipient_type'    => 'individual',
+            'to'                => $this->normalizeChatId($chatId),
+            'type'              => 'text',
+            'text'              => [
+                'preview_url' => true,
+                'body'        => $text,
+            ],
+        ]);
+    }
+
+    public function sendImage(string $chatId, string $url, string $caption = ''): array
+    {
+        $payload = [
+            'messaging_product' => 'whatsapp',
+            'recipient_type'    => 'individual',
+            'to'                => $this->normalizeChatId($chatId),
+            'type'              => 'image',
+            'image'             => [
+                'link' => $url,
+            ],
+        ];
+        if ($caption !== '') {
+            $payload['image']['caption'] = $caption;
+        }
+        return $this->sendMessage($payload);
+    }
+
+    public function sendImageBase64(string $chatId, string $filePath, string $mimeType, string $caption = ''): array
+    {
+        // Cloud API exige upload via /media endpoint primeiro, depois usa o ID retornado
+        $mediaId = $this->uploadMedia($filePath, $mimeType);
+        if (! $mediaId) {
+            return ['error' => 'media_upload_failed'];
+        }
+
+        $payload = [
+            'messaging_product' => 'whatsapp',
+            'recipient_type'    => 'individual',
+            'to'                => $this->normalizeChatId($chatId),
+            'type'              => 'image',
+            'image'             => [
+                'id' => $mediaId,
+            ],
+        ];
+        if ($caption !== '') {
+            $payload['image']['caption'] = $caption;
+        }
+        return $this->sendMessage($payload);
+    }
+
+    public function sendVoice(string $chatId, string $url): array
+    {
+        return $this->sendMessage([
+            'messaging_product' => 'whatsapp',
+            'recipient_type'    => 'individual',
+            'to'                => $this->normalizeChatId($chatId),
+            'type'              => 'audio',
+            'audio'             => [
+                'link' => $url,
+            ],
+        ]);
+    }
+
+    public function sendVoiceBase64(string $chatId, string $filePath, string $mimeType): array
+    {
+        $mediaId = $this->uploadMedia($filePath, $mimeType);
+        if (! $mediaId) {
+            return ['error' => 'media_upload_failed'];
+        }
+
+        return $this->sendMessage([
+            'messaging_product' => 'whatsapp',
+            'recipient_type'    => 'individual',
+            'to'                => $this->normalizeChatId($chatId),
+            'type'              => 'audio',
+            'audio'             => [
+                'id' => $mediaId,
+            ],
+        ]);
+    }
+
+    public function sendFileBase64(string $chatId, string $filePath, string $mimeType, string $filename, string $caption = ''): array
+    {
+        $mediaId = $this->uploadMedia($filePath, $mimeType, $filename);
+        if (! $mediaId) {
+            return ['error' => 'media_upload_failed'];
+        }
+
+        $payload = [
+            'messaging_product' => 'whatsapp',
+            'recipient_type'    => 'individual',
+            'to'                => $this->normalizeChatId($chatId),
+            'type'              => 'document',
+            'document'          => [
+                'id'       => $mediaId,
+                'filename' => $filename,
+            ],
+        ];
+        if ($caption !== '') {
+            $payload['document']['caption'] = $caption;
+        }
+        return $this->sendMessage($payload);
+    }
+
+    public function sendList(
+        string $chatId,
+        string $description,
+        array $rows,
+        ?string $title = null,
+        string $buttonText = 'Selecione',
+        ?string $footer = null,
+    ): array {
+        // Cloud API tem limite: máx 10 rows totais, button label máx 20 chars
+        $cleanRows = array_slice(array_map(function ($r) {
+            return [
+                'id'          => (string) ($r['id'] ?? $r['rowId'] ?? uniqid('row_')),
+                'title'       => mb_substr((string) ($r['title'] ?? ''), 0, 24),
+                'description' => mb_substr((string) ($r['description'] ?? ''), 0, 72),
+            ];
+        }, $rows), 0, 10);
+
+        $interactive = [
+            'type'   => 'list',
+            'body'   => ['text' => mb_substr($description, 0, 1024)],
+            'action' => [
+                'button'   => mb_substr($buttonText, 0, 20),
+                'sections' => [
+                    [
+                        'title' => mb_substr($title ?? 'Opções', 0, 24),
+                        'rows'  => $cleanRows,
+                    ],
+                ],
+            ],
+        ];
+        if ($footer) {
+            $interactive['footer'] = ['text' => mb_substr($footer, 0, 60)];
+        }
+        if ($title) {
+            $interactive['header'] = ['type' => 'text', 'text' => mb_substr($title, 0, 60)];
+        }
+
+        return $this->sendMessage([
+            'messaging_product' => 'whatsapp',
+            'recipient_type'    => 'individual',
+            'to'                => $this->normalizeChatId($chatId),
+            'type'              => 'interactive',
+            'interactive'       => $interactive,
+        ]);
+    }
+
+    public function sendReaction(string $messageId, string $emoji): array
+    {
+        // Cloud API: precisa do número do destinatário no payload — extraído da WhatsappMessage
+        // Como o contract recebe só o messageId, precisamos de uma forma de pegar o "to".
+        // Como esse caso é raro e o Cloud API exige "to", se chamado sem contexto retornamos erro.
+        // Quem chamar deve usar uma versão estendida (sendReactionWithRecipient).
+        Log::warning('WhatsappCloudService::sendReaction precisa de recipient — use sendReactionWithRecipient', [
+            'message_id' => $messageId,
+        ]);
+        return ['error' => 'reaction_requires_recipient_for_cloud_api'];
+    }
+
+    /**
+     * Versão estendida pra reação no Cloud API que aceita o destinatário.
+     * Use esta quando estiver enviando reação via Cloud (não faz parte do contract).
+     */
+    public function sendReactionWithRecipient(string $chatId, string $messageId, string $emoji): array
+    {
+        return $this->sendMessage([
+            'messaging_product' => 'whatsapp',
+            'recipient_type'    => 'individual',
+            'to'                => $this->normalizeChatId($chatId),
+            'type'              => 'reaction',
+            'reaction'          => [
+                'message_id' => $messageId,
+                'emoji'      => $emoji,
+            ],
+        ]);
+    }
+
+    // ── Webhook subscription ─────────────────────────────────────────────────
+
+    /**
+     * Inscreve a Page no nosso app pra receber webhooks de mensagens.
+     * Necessário fazer 1x após conectar via Embedded Signup.
+     */
+    public function subscribeApp(): array
+    {
+        return $this->parse(
+            $this->client()->post("{$this->baseUrl}/{$this->phoneNumberId}/subscribed_apps", [])
+        );
+    }
+
+    // ── Phone numbers ───────────────────────────────────────────────────────
+
+    /**
+     * Lista os phone numbers vinculados a um WABA.
+     * Usado pelo callback do Embedded Signup pra escolher qual número conectar.
+     */
+    public function listPhoneNumbers(string $wabaId): array
+    {
+        return $this->parse(
+            $this->client()->get("{$this->baseUrl}/{$wabaId}/phone_numbers", [
+                'fields' => 'id,display_phone_number,verified_name,quality_rating,code_verification_status',
+            ])
+        );
+    }
+
+    // ── Helpers internos ─────────────────────────────────────────────────────
+
+    private function sendMessage(array $payload): array
+    {
+        $response = $this->client()->post("{$this->baseUrl}/{$this->phoneNumberId}/messages", $payload);
+        $parsed = $this->parse($response);
+
+        // Normaliza retorno: retorna sempre 'id' no top-level (igual ao WAHA pra facilitar dedup)
+        if (isset($parsed['messages'][0]['id'])) {
+            $parsed['id'] = $parsed['messages'][0]['id'];
+        }
+        return $parsed;
+    }
+
+    /**
+     * Upload de mídia local pro endpoint /media da Cloud API.
+     * Retorna o media_id retornado pela Meta.
+     */
+    private function uploadMedia(string $filePath, string $mimeType, ?string $filename = null): ?string
+    {
+        if (! is_file($filePath)) {
+            Log::warning('WhatsappCloud uploadMedia: arquivo não existe', ['path' => $filePath]);
+            return null;
+        }
+
+        try {
+            $response = Http::withToken($this->accessToken)
+                ->timeout(60)
+                ->attach(
+                    'file',
+                    file_get_contents($filePath),
+                    $filename ?? basename($filePath),
+                    ['Content-Type' => $mimeType],
+                )
+                ->post("{$this->baseUrl}/{$this->phoneNumberId}/media", [
+                    'messaging_product' => 'whatsapp',
+                    'type'              => $mimeType,
+                ]);
+
+            if ($response->successful()) {
+                return $response->json('id');
+            }
+
+            Log::warning('WhatsappCloud uploadMedia: falha', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+            return null;
+        } catch (\Throwable $e) {
+            Log::warning('WhatsappCloud uploadMedia: exception', ['error' => $e->getMessage()]);
+            return null;
+        }
+    }
+
+    /**
+     * Faz download de mídia recebida via webhook.
+     * Cloud API só envia o media_id no webhook — precisa fazer 2 chamadas:
+     *   1) GET /{media_id} → retorna URL temporária
+     *   2) GET URL temporária → retorna o binário
+     *
+     * @return array{url:?string, mime:?string, size:?int}
+     */
+    public function getMediaInfo(string $mediaId): array
+    {
+        try {
+            $response = $this->client()->get("{$this->baseUrl}/{$mediaId}", [
+                'fields' => 'url,mime_type,sha256,file_size',
+            ]);
+            $data = $this->parse($response);
+            return [
+                'url'  => $data['url']       ?? null,
+                'mime' => $data['mime_type'] ?? null,
+                'size' => $data['file_size'] ?? null,
+            ];
+        } catch (\Throwable $e) {
+            return ['url' => null, 'mime' => null, 'size' => null];
+        }
+    }
+
+    /**
+     * Faz download do binário de uma mídia (GET na URL retornada por getMediaInfo).
+     * O endpoint exige Authorization header.
+     */
+    public function downloadMediaBinary(string $url): ?string
+    {
+        try {
+            $response = Http::withToken($this->accessToken)
+                ->timeout(60)
+                ->get($url);
+
+            return $response->successful() ? $response->body() : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Cloud API espera o número PURO (sem @c.us). Aceita também com @c.us
+     * por compatibilidade com código que usa o pattern WAHA.
+     */
+    private function normalizeChatId(string $chatId): string
+    {
+        // Remove @c.us, @s.whatsapp.net, @lid e outros sufixos
+        $clean = preg_replace('/@.*$/', '', $chatId);
+        // Remove + e qualquer não-dígito
+        return preg_replace('/\D/', '', (string) $clean);
+    }
+
+    private function client(): \Illuminate\Http\Client\PendingRequest
+    {
+        return Http::withToken($this->accessToken)
+            ->acceptJson()
+            ->timeout(30);
+    }
+
+    private function parse(Response $response): array
+    {
+        if ($response->failed()) {
+            Log::warning('WhatsappCloud HTTP error', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+            return [
+                'error'  => true,
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ];
+        }
+
+        $body = $response->body();
+        if (empty($body)) {
+            return ['success' => true];
+        }
+
+        $decoded = json_decode($body, true);
+        return is_array($decoded) ? $decoded : ['raw' => $body];
+    }
+}

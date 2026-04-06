@@ -80,7 +80,7 @@ class SendNpsSurveyJob implements ShouldQueue
             return;
         }
 
-        $waha = new WahaService($instance->session_name);
+        $waha = \App\Services\WhatsappServiceFactory::for($instance);
         $phone = preg_replace('/\D/', '', $lead->phone);
 
         $waha->sendText(

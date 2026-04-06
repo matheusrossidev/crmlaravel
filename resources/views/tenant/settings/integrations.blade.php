@@ -773,6 +773,63 @@
     </div>
     @endif
 
+    {{-- ─── WhatsApp Cloud API (Meta Oficial) — gated por Feature Flag ──────── --}}
+    @if($enabledIntegrations['whatsapp_cloud_api'] ?? false)
+    <div class="integration-card">
+        <div class="integration-header">
+            <div class="integration-logo" style="background:#dcfce7;color:#25D366;">
+                <i class="bi bi-whatsapp" style="font-size:20px;"></i>
+            </div>
+            <div class="integration-title">
+                <h3>WhatsApp Cloud API <span style="font-size:11px;color:#fff;background:#0085f3;padding:2px 7px;border-radius:99px;font-weight:600;margin-left:6px;vertical-align:middle;">BETA</span></h3>
+                <p>API oficial da Meta com modo Coexistência (use no celular e API ao mesmo tempo)</p>
+            </div>
+            @if($cloudApiInstances->isNotEmpty())
+                <span class="conn-badge conn-active">Conectado</span>
+            @else
+                <span class="conn-badge conn-none">Não conectado</span>
+            @endif
+        </div>
+        <div class="integration-body">
+            <ul class="integration-features">
+                <li>API oficial Meta — risco zero de banimento</li>
+                <li>Coexistência: WhatsApp no celular continua funcionando normalmente</li>
+                <li>Sincronização bidirecional entre app e Syncro</li>
+                <li>Templates aprovados, broadcast e métricas oficiais</li>
+            </ul>
+            @if($cloudApiInstances->isNotEmpty())
+                <div style="margin:10px 0;padding:10px 14px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;font-size:12.5px;">
+                    <strong style="color:#1a1d23;">{{ $cloudApiInstances->count() }} número(s) conectado(s)</strong>
+                    @foreach($cloudApiInstances as $ci)
+                    <div style="margin-top:6px;display:flex;align-items:center;gap:6px;color:#6b7280;">
+                        <i class="bi bi-whatsapp" style="color:#25D366;"></i>
+                        <span style="flex:1;min-width:0;">
+                            <strong>{{ $ci->label ?: ('+' . $ci->phone_number) }}</strong>
+                            <small style="color:#9ca3af;display:block;font-size:11px;">phone_number_id: {{ $ci->phone_number_id }}</small>
+                        </span>
+                        <button type="button" onclick="disconnectWaCloud({{ $ci->id }}, this)" title="Desconectar" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;border-radius:6px;padding:4px 9px;cursor:pointer;font-size:11px;">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                    @endforeach
+                </div>
+                <div class="integration-actions">
+                    <a href="{{ route('settings.integrations.whatsapp-cloud.redirect') }}" class="btn-connect" style="background:#25D366;">
+                        <i class="bi bi-plus-lg"></i> Adicionar outro número
+                    </a>
+                </div>
+            @else
+                <div class="conn-detail" style="color:#9ca3af;">Conecte sua conta Meta Business para começar a receber leads via API oficial.</div>
+                <div class="integration-actions">
+                    <a href="{{ route('settings.integrations.whatsapp-cloud.redirect') }}" class="btn-connect" style="background:#25D366;">
+                        <i class="bi bi-whatsapp"></i> Conectar com Meta
+                    </a>
+                </div>
+            @endif
+        </div>
+    </div>
+    @endif
+
     {{-- ─── Botões WhatsApp (rastreamento de cliques) ──────────────────── --}}
     <div class="integration-card">
         <div class="integration-header">
@@ -2227,6 +2284,39 @@ function disconnectFbLeadAds(btn) {
                 if (data.success) {
                     toastr.success(ILANG.fb_disconnected_success);
                     setTimeout(() => location.reload(), 1200);
+                } else {
+                    toastr.error(data.message || 'Erro');
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                toastr.error('Erro');
+                btn.disabled = false;
+            }
+        }
+    });
+}
+
+// ── WhatsApp Cloud API: disconnect instance ─────────────────────────────
+function disconnectWaCloud(instanceId, btn) {
+    confirmAction({
+        title: 'Desconectar WhatsApp Cloud?',
+        message: 'O número será removido do Syncro. Você pode reconectar depois.',
+        confirmText: 'Desconectar',
+        onConfirm: async () => {
+            btn.disabled = true;
+            try {
+                const url = '{{ route("settings.integrations.whatsapp-cloud.disconnect", ["instance" => "__ID__"]) }}'.replace('__ID__', instanceId);
+                const res = await fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                });
+                const data = await res.json();
+                if (data.success) {
+                    toastr.success('Desconectado');
+                    setTimeout(() => location.reload(), 800);
                 } else {
                     toastr.error(data.message || 'Erro');
                     btn.disabled = false;

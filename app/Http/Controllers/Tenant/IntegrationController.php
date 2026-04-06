@@ -52,8 +52,12 @@ class IntegrationController extends Controller
             'instagram'        => $s['integration_instagram']       ?? true,
             'facebook_ads'     => $s['integration_facebook_ads']    ?? false,
             'google_ads'       => $s['integration_google_ads']      ?? false,
-            'facebook_leadads' => FeatureFlag::isEnabled('facebook_leadads', $tenant->id),
+            'facebook_leadads'   => FeatureFlag::isEnabled('facebook_leadads', $tenant->id),
+            'whatsapp_cloud_api' => FeatureFlag::isEnabled('whatsapp_cloud_api', $tenant->id),
         ];
+
+        // Cloud API instances (provider='cloud_api') — separadas das WAHA
+        $cloudApiInstances = WhatsappInstance::where('provider', 'cloud_api')->orderBy('id')->get();
 
         $maxWhatsappInstances    = $tenant->max_whatsapp_instances > 0 ? $tenant->max_whatsapp_instances : null;
         $whatsappInstancesRemain = PlanLimitChecker::remaining('whatsapp_instances');
@@ -70,7 +74,7 @@ class IntegrationController extends Controller
         return view('tenant.settings.integrations', compact(
             'facebook', 'google', 'facebookLeadAds', 'whatsapp', 'whatsappInstances', 'instagram',
             'enabledIntegrations', 'maxWhatsappInstances', 'whatsappInstancesRemain', 'waButtons',
-            'fbLeadConnections', 'pipelines', 'customFields'
+            'fbLeadConnections', 'pipelines', 'customFields', 'cloudApiInstances'
         ));
     }
 
@@ -835,6 +839,182 @@ class IntegrationController extends Controller
             ->where('platform', 'facebook_leadads')
             ->delete();
 
+        return response()->json(['success' => true]);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // WhatsApp Cloud API (Meta oficial) — Embedded Signup com Coexistence
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Inicia o Embedded Signup do WhatsApp Cloud API.
+     * Redireciona pro Facebook Login com escopos do WhatsApp + config_id
+     * do Embedded Signup configurado no Meta Developer Console (modo Coexistence).
+     */
+    public function redirectWhatsappCloud(): RedirectResponse
+    {
+        $clientId    = (string) config('services.whatsapp_cloud.app_id');
+        $configId    = (string) config('services.whatsapp_cloud.config_id');
+        $redirectUri = (string) config('services.whatsapp_cloud.redirect');
+
+        if (! $clientId || ! $configId || ! $redirectUri) {
+            return redirect()
+                ->route('settings.integrations.index')
+                ->withErrors(['whatsapp_cloud' => 'WhatsApp Cloud API não está configurado no servidor (env vars faltando).']);
+        }
+
+        $state = bin2hex(random_bytes(16));
+        session(['whatsapp_cloud_oauth_state' => $state]);
+
+        $params = http_build_query([
+            'client_id'     => $clientId,
+            'redirect_uri'  => $redirectUri,
+            'scope'         => 'whatsapp_business_management,whatsapp_business_messaging,business_management',
+            'response_type' => 'code',
+            'config_id'     => $configId, // ← Embedded Signup config (modo Coexistence ativado lá)
+            'state'         => $state,
+            'override_default_response_type' => true,
+        ]);
+
+        return redirect("https://www.facebook.com/v21.0/dialog/oauth?{$params}");
+    }
+
+    /**
+     * Callback do Embedded Signup.
+     * Recebe `code`, troca por access_token, busca phone_number_id + waba_id,
+     * salva como WhatsappInstance com provider='cloud_api', subscribe webhook.
+     */
+    public function callbackWhatsappCloud(Request $request): RedirectResponse
+    {
+        $code  = $request->get('code');
+        $state = $request->get('state');
+
+        if (! $code || $state !== session('whatsapp_cloud_oauth_state')) {
+            return redirect()
+                ->route('settings.integrations.index')
+                ->withErrors(['whatsapp_cloud' => 'OAuth state inválido ou code ausente.']);
+        }
+        session()->forget('whatsapp_cloud_oauth_state');
+
+        $clientId     = (string) config('services.whatsapp_cloud.app_id');
+        $clientSecret = (string) config('services.whatsapp_cloud.app_secret');
+        $redirectUri  = (string) config('services.whatsapp_cloud.redirect');
+        $apiVersion   = (string) config('services.whatsapp_cloud.api_version', 'v21.0');
+
+        try {
+            // 1. Trocar code por access_token
+            $tokenResponse = \Illuminate\Support\Facades\Http::timeout(15)
+                ->get("https://graph.facebook.com/{$apiVersion}/oauth/access_token", [
+                    'client_id'     => $clientId,
+                    'client_secret' => $clientSecret,
+                    'redirect_uri'  => $redirectUri,
+                    'code'          => $code,
+                ]);
+
+            if (! $tokenResponse->successful()) {
+                Log::warning('WhatsappCloud: token exchange failed', ['body' => $tokenResponse->body()]);
+                return redirect()->route('settings.integrations.index')
+                    ->withErrors(['whatsapp_cloud' => 'Falha ao trocar code por token.']);
+            }
+
+            $accessToken = (string) $tokenResponse->json('access_token');
+            $expiresIn   = (int) ($tokenResponse->json('expires_in') ?? 0);
+            $expiresAt   = $expiresIn > 0 ? now()->addSeconds($expiresIn) : null;
+
+            // 2. Listar WABAs disponíveis na conta
+            $wabaResponse = \Illuminate\Support\Facades\Http::withToken($accessToken)
+                ->timeout(15)
+                ->get("https://graph.facebook.com/{$apiVersion}/me/businesses", ['fields' => 'id,name']);
+
+            $businesses = $wabaResponse->successful() ? ($wabaResponse->json('data') ?? []) : [];
+            if (empty($businesses)) {
+                return redirect()->route('settings.integrations.index')
+                    ->withErrors(['whatsapp_cloud' => 'Nenhum Business Manager encontrado na conta.']);
+            }
+
+            // Pega o primeiro WABA do primeiro business (MVP — depois pode ter um picker)
+            $businessId = $businesses[0]['id'];
+            $wabaListResponse = \Illuminate\Support\Facades\Http::withToken($accessToken)
+                ->timeout(15)
+                ->get("https://graph.facebook.com/{$apiVersion}/{$businessId}/owned_whatsapp_business_accounts", ['fields' => 'id,name']);
+
+            $wabas = $wabaListResponse->successful() ? ($wabaListResponse->json('data') ?? []) : [];
+            if (empty($wabas)) {
+                return redirect()->route('settings.integrations.index')
+                    ->withErrors(['whatsapp_cloud' => 'Nenhum WhatsApp Business Account encontrado.']);
+            }
+
+            $wabaId = $wabas[0]['id'];
+
+            // 3. Listar phone numbers do WABA
+            $phoneResponse = \Illuminate\Support\Facades\Http::withToken($accessToken)
+                ->timeout(15)
+                ->get("https://graph.facebook.com/{$apiVersion}/{$wabaId}/phone_numbers", [
+                    'fields' => 'id,display_phone_number,verified_name,quality_rating',
+                ]);
+
+            $phones = $phoneResponse->successful() ? ($phoneResponse->json('data') ?? []) : [];
+            if (empty($phones)) {
+                return redirect()->route('settings.integrations.index')
+                    ->withErrors(['whatsapp_cloud' => 'Nenhum número conectado neste WABA.']);
+            }
+
+            $phone = $phones[0];
+            $phoneNumberId  = (string) $phone['id'];
+            $displayPhone   = preg_replace('/\D/', '', (string) ($phone['display_phone_number'] ?? ''));
+            $verifiedName   = $phone['verified_name'] ?? null;
+
+            // 4. Cria/atualiza instância com provider='cloud_api'
+            $instance = WhatsappInstance::updateOrCreate(
+                [
+                    'tenant_id'       => activeTenantId(),
+                    'phone_number_id' => $phoneNumberId,
+                ],
+                [
+                    'session_name'        => 'cloud_' . $phoneNumberId,
+                    'status'              => 'connected',
+                    'provider'            => 'cloud_api',
+                    'phone_number'        => $displayPhone,
+                    'waba_id'             => $wabaId,
+                    'business_account_id' => $businessId,
+                    'access_token'        => $accessToken,
+                    'token_expires_at'    => $expiresAt,
+                    'display_name'        => $verifiedName,
+                    'label'               => $verifiedName ?: ('+' . $displayPhone),
+                ],
+            );
+
+            // 5. Subscribe ao webhook (1x por phone_number_id)
+            try {
+                $service = new \App\Services\WhatsappCloudService($instance->fresh());
+                $service->subscribeApp();
+            } catch (\Throwable $e) {
+                Log::warning('WhatsappCloud: subscribeApp failed', ['error' => $e->getMessage()]);
+            }
+
+            return redirect()->route('settings.integrations.index')
+                ->with('success', 'WhatsApp Cloud API conectado com sucesso!');
+
+        } catch (\Throwable $e) {
+            Log::error('WhatsappCloud: callback exception', [
+                'error' => $e->getMessage(),
+                'trace' => substr($e->getTraceAsString(), 0, 500),
+            ]);
+            return redirect()->route('settings.integrations.index')
+                ->withErrors(['whatsapp_cloud' => 'Erro ao conectar: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Desconecta uma instância Cloud API do tenant atual.
+     */
+    public function disconnectWhatsappCloud(WhatsappInstance $instance): JsonResponse
+    {
+        if ($instance->tenant_id !== activeTenantId() || ! $instance->isCloudApi()) {
+            return response()->json(['success' => false, 'message' => 'Não permitido'], 403);
+        }
+
+        $instance->delete();
         return response()->json(['success' => true]);
     }
 }

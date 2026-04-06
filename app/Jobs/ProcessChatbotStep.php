@@ -440,7 +440,7 @@ class ProcessChatbotStep
                             $instance = $conv->instance;
                             if ($instance) {
                                 try {
-                                    (new WahaService($instance->session_name))->sendText($chatId, $message);
+                                    \App\Services\WhatsappServiceFactory::for($instance)->sendText($chatId, $message);
                                     Log::channel('whatsapp')->info('Chatbot: WhatsApp enviado para número fixo', ['conv' => $conv->id, 'phone' => $phone]);
                                 } catch (\Throwable $e) {
                                     Log::channel('whatsapp')->error('Chatbot: erro ao enviar WhatsApp', ['conv' => $conv->id, 'error' => $e->getMessage()]);
@@ -547,7 +547,7 @@ class ProcessChatbotStep
             }
 
             $chatId = $this->resolveChatId($conv);
-            $waha   = new WahaService($instance->session_name);
+            $waha   = \App\Services\WhatsappServiceFactory::for($instance);
             $waha->sendVoice($chatId, $audioUrl);
 
             sleep(self::DEFAULT_MESSAGE_DELAY);
@@ -682,7 +682,7 @@ class ProcessChatbotStep
             }
 
             $chatId = $this->resolveChatId($conv);
-            $waha   = new WahaService($instance->session_name);
+            $waha   = \App\Services\WhatsappServiceFactory::for($instance);
             $waha->sendText($chatId, $text);
             sleep(self::DEFAULT_MESSAGE_DELAY);
         } catch (\Throwable $e) {
@@ -703,7 +703,7 @@ class ProcessChatbotStep
             }
 
             $chatId    = $this->resolveChatId($conv);
-            $waha      = new WahaService($instance->session_name);
+            $waha      = \App\Services\WhatsappServiceFactory::for($instance);
             $localPath = $this->resolveLocalImagePath($imageUrl);
 
             if ($localPath !== null && file_exists($localPath)) {
@@ -733,7 +733,7 @@ class ProcessChatbotStep
             }
 
             $chatId = $this->resolveChatId($conv);
-            $waha   = new WahaService($instance->session_name);
+            $waha   = \App\Services\WhatsappServiceFactory::for($instance);
 
             Log::channel('whatsapp')->info('Chatbot: enviando lista interativa', [
                 'conversation_id' => $conv->id,

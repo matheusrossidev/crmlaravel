@@ -30,7 +30,7 @@ class WhatsappMessageController extends Controller
             return response()->json(['error' => 'WhatsApp não conectado'], 422);
         }
 
-        $waha = new WahaService($instance->session_name);
+        $waha = \App\Services\WhatsappServiceFactory::for($instance);
 
         // ── Build chatId ──────────────────────────────────────────────────────
         // Groups always use @g.us (phone stores only the numeric group ID).
@@ -164,7 +164,7 @@ class WhatsappMessageController extends Controller
             return response()->json(['error' => 'WhatsApp não conectado'], 422);
         }
 
-        $waha = new WahaService($instance->session_name);
+        $waha = \App\Services\WhatsappServiceFactory::for($instance);
         $waha->sendReaction($wahaMessageId, $emoji);
 
         WhatsappMessage::create([
