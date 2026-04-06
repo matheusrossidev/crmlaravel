@@ -814,16 +814,16 @@
                     @endforeach
                 </div>
                 <div class="integration-actions">
-                    <a href="{{ route('settings.integrations.whatsapp-cloud.redirect') }}" class="btn-connect" style="background:#25D366;">
+                    <button type="button" class="btn-connect" onclick="connectWhatsappCloud()" style="background:#25D366;">
                         <i class="bi bi-plus-lg"></i> Adicionar outro número
-                    </a>
+                    </button>
                 </div>
             @else
                 <div class="conn-detail" style="color:#9ca3af;">Conecte sua conta Meta Business para começar a receber leads via API oficial.</div>
                 <div class="integration-actions">
-                    <a href="{{ route('settings.integrations.whatsapp-cloud.redirect') }}" class="btn-connect" style="background:#25D366;">
+                    <button type="button" class="btn-connect" onclick="connectWhatsappCloud()" style="background:#25D366;">
                         <i class="bi bi-whatsapp"></i> Conectar com Meta
-                    </a>
+                    </button>
                 </div>
             @endif
         </div>
@@ -2294,6 +2294,49 @@ function disconnectFbLeadAds(btn) {
             }
         }
     });
+}
+
+// ── WhatsApp Cloud API: connect via popup (window.open) ────────────────
+function connectWhatsappCloud() {
+    const url = '{{ route("settings.integrations.whatsapp-cloud.redirect") }}';
+    const w = 600;
+    const h = 750;
+    const left = Math.max(0, (window.screen.width  - w) / 2);
+    const top  = Math.max(0, (window.screen.height - h) / 2);
+
+    const popup = window.open(
+        url,
+        'wacloud_connect',
+        `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`
+    );
+
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+        toastr.error('Permita popups deste site para conectar com o Meta');
+        return;
+    }
+
+    // Listener pra mensagem do popup quando concluir
+    let done = false;
+    const onMessage = (event) => {
+        if (event.data && event.data.type === 'wacloud_done') {
+            done = true;
+            window.removeEventListener('message', onMessage);
+            if (event.data.success) {
+                toastr.success('WhatsApp Cloud conectado!');
+            }
+        }
+    };
+    window.addEventListener('message', onMessage);
+
+    // Polling: detecta quando a janelinha fecha → recarrega pra mostrar instance nova
+    const poll = setInterval(() => {
+        if (popup.closed) {
+            clearInterval(poll);
+            window.removeEventListener('message', onMessage);
+            // Pequeno delay pro callback terminar de criar a instance no DB
+            setTimeout(() => location.reload(), 600);
+        }
+    }, 500);
 }
 
 // ── WhatsApp Cloud API: disconnect instance ─────────────────────────────

@@ -887,26 +887,28 @@ class IntegrationController extends Controller
     }
 
     /**
-     * Callback do Embedded Signup.
+     * Callback do OAuth do WhatsApp Cloud.
      * Recebe `code`, troca por access_token, busca phone_number_id + waba_id,
      * salva como WhatsappInstance com provider='cloud_api', subscribe webhook.
+     *
+     * IMPORTANTE: este endpoint é chamado dentro de uma janelinha pop-up
+     * (window.open) — então sempre retorna a view _wacloud-callback que
+     * fecha a janelinha sozinha + recarrega a página pai.
      */
-    public function callbackWhatsappCloud(Request $request): RedirectResponse
+    public function callbackWhatsappCloud(Request $request)
     {
         $code  = $request->get('code');
         $state = $request->get('state');
 
         if (! $code || $state !== session('whatsapp_cloud_oauth_state')) {
-            return redirect()
-                ->route('settings.integrations.index')
-                ->withErrors(['whatsapp_cloud' => 'OAuth state inválido ou code ausente.']);
+            return $this->wacloudPopupResponse(false, 'Erro de autenticação', 'OAuth state inválido ou code ausente. Tente novamente.');
         }
         session()->forget('whatsapp_cloud_oauth_state');
 
         $clientId     = (string) config('services.whatsapp_cloud.app_id');
         $clientSecret = (string) config('services.whatsapp_cloud.app_secret');
         $redirectUri  = (string) config('services.whatsapp_cloud.redirect');
-        $apiVersion   = (string) config('services.whatsapp_cloud.api_version', 'v21.0');
+        $apiVersion   = (string) config('services.whatsapp_cloud.api_version', 'v22.0');
 
         try {
             // 1. Trocar code por access_token
@@ -920,8 +922,7 @@ class IntegrationController extends Controller
 
             if (! $tokenResponse->successful()) {
                 Log::warning('WhatsappCloud: token exchange failed', ['body' => $tokenResponse->body()]);
-                return redirect()->route('settings.integrations.index')
-                    ->withErrors(['whatsapp_cloud' => 'Falha ao trocar code por token.']);
+                return $this->wacloudPopupResponse(false, 'Falha ao autenticar', 'Não foi possível trocar o código por um token de acesso.');
             }
 
             $accessToken = (string) $tokenResponse->json('access_token');
@@ -935,8 +936,7 @@ class IntegrationController extends Controller
 
             $businesses = $wabaResponse->successful() ? ($wabaResponse->json('data') ?? []) : [];
             if (empty($businesses)) {
-                return redirect()->route('settings.integrations.index')
-                    ->withErrors(['whatsapp_cloud' => 'Nenhum Business Manager encontrado na conta.']);
+                return $this->wacloudPopupResponse(false, 'Conta não encontrada', 'Nenhum Business Manager encontrado na sua conta Meta.');
             }
 
             // Pega o primeiro WABA do primeiro business (MVP — depois pode ter um picker)
@@ -947,8 +947,7 @@ class IntegrationController extends Controller
 
             $wabas = $wabaListResponse->successful() ? ($wabaListResponse->json('data') ?? []) : [];
             if (empty($wabas)) {
-                return redirect()->route('settings.integrations.index')
-                    ->withErrors(['whatsapp_cloud' => 'Nenhum WhatsApp Business Account encontrado.']);
+                return $this->wacloudPopupResponse(false, 'WABA não encontrado', 'Nenhum WhatsApp Business Account encontrado neste Business Manager.');
             }
 
             $wabaId = $wabas[0]['id'];
@@ -962,8 +961,7 @@ class IntegrationController extends Controller
 
             $phones = $phoneResponse->successful() ? ($phoneResponse->json('data') ?? []) : [];
             if (empty($phones)) {
-                return redirect()->route('settings.integrations.index')
-                    ->withErrors(['whatsapp_cloud' => 'Nenhum número conectado neste WABA.']);
+                return $this->wacloudPopupResponse(false, 'Nenhum número', 'Nenhum número de telefone conectado neste WhatsApp Business Account.');
             }
 
             $phone = $phones[0];
@@ -999,17 +997,32 @@ class IntegrationController extends Controller
                 Log::warning('WhatsappCloud: subscribeApp failed', ['error' => $e->getMessage()]);
             }
 
-            return redirect()->route('settings.integrations.index')
-                ->with('success', 'WhatsApp Cloud API conectado com sucesso!');
+            return $this->wacloudPopupResponse(
+                true,
+                'WhatsApp conectado!',
+                ($verifiedName ?: '+' . $displayPhone) . ' está pronto pra receber mensagens.'
+            );
 
         } catch (\Throwable $e) {
             Log::error('WhatsappCloud: callback exception', [
                 'error' => $e->getMessage(),
                 'trace' => substr($e->getTraceAsString(), 0, 500),
             ]);
-            return redirect()->route('settings.integrations.index')
-                ->withErrors(['whatsapp_cloud' => 'Erro ao conectar: ' . $e->getMessage()]);
+            return $this->wacloudPopupResponse(false, 'Erro ao conectar', $e->getMessage());
         }
+    }
+
+    /**
+     * Helper: retorna a view minimal que fecha a janelinha pop-up
+     * e recarrega a página pai (settings/integrations).
+     */
+    private function wacloudPopupResponse(bool $success, string $message, ?string $detail = null)
+    {
+        return response()->view('tenant.settings._wacloud-callback', [
+            'success' => $success,
+            'message' => $message,
+            'detail'  => $detail,
+        ]);
     }
 
     /**
