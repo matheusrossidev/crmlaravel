@@ -382,6 +382,7 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             // WhatsApp Cloud API (Embedded Signup)
             Route::get('whatsapp-cloud/redirect',                           [IntegrationController::class, 'redirectWhatsappCloud'])->name('whatsapp-cloud.redirect');
             Route::get('whatsapp-cloud/callback',                           [IntegrationController::class, 'callbackWhatsappCloud'])->name('whatsapp-cloud.callback');
+            Route::post('whatsapp-cloud/exchange',                          [IntegrationController::class, 'exchangeWhatsappCloud'])->name('whatsapp-cloud.exchange');
             Route::delete('whatsapp-cloud/{instance}',                      [IntegrationController::class, 'disconnectWhatsappCloud'])->name('whatsapp-cloud.disconnect');
             // Wildcards (OAuth)
             Route::delete('{platform}',     [IntegrationController::class, 'disconnect'])->name('disconnect');

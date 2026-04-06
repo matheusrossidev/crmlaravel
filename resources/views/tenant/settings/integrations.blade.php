@@ -1179,6 +1179,36 @@
 @endsection
 
 @push('scripts')
+{{-- Facebook JS SDK pro Embedded Signup do WhatsApp Coexistence --}}
+@if($enabledIntegrations['whatsapp_cloud_api'] ?? false)
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+<script>
+    window.fbAsyncInit = function() {
+        if (typeof FB === 'undefined') return;
+        FB.init({
+            appId   : @json(config('services.whatsapp_cloud.app_id')),
+            cookie  : true,
+            xfbml   : true,
+            version : @json(config('services.whatsapp_cloud.api_version', 'v22.0')),
+        });
+    };
+
+    // Listener pro Embedded Signup postar resultado de volta (WA_EMBEDDED_SIGNUP)
+    window.addEventListener('message', function(event) {
+        if (typeof event.origin !== 'string' || !event.origin.endsWith('facebook.com')) return;
+        try {
+            const payload = (typeof event.data === 'string') ? JSON.parse(event.data) : event.data;
+            if (payload && payload.type === 'WA_EMBEDDED_SIGNUP') {
+                if (payload.event === 'FINISH' && payload.data) {
+                    window._wacloudSignupData = payload.data;
+                } else if (payload.event === 'CANCEL') {
+                    window._wacloudSignupData = null;
+                }
+            }
+        } catch (e) { /* ignore non-JSON messages */ }
+    });
+</script>
+@endif
 <script>
 const ILANG = @json(__('integrations'));
 const SYNC_URL            = @json(route('settings.integrations.sync',       ['platform' => '__P__']));
@@ -2296,11 +2326,85 @@ function disconnectFbLeadAds(btn) {
     });
 }
 
-// ── WhatsApp Cloud API: connect via popup (window.open) ────────────────
+// ── WhatsApp Cloud API: connect via Embedded Signup (FB JS SDK) ─────────
+// Usa FB.login() com featureType=whatsapp_business_app_onboarding pro fluxo
+// de Coexistência (cliente escaneia QR no celular). Fallback pro OAuth velho
+// (window.open) caso config_id ainda não esteja configurado no servidor.
 function connectWhatsappCloud() {
-    const url = '{{ route("settings.integrations.whatsapp-cloud.redirect") }}';
-    const w = 600;
-    const h = 750;
+    const configId  = @json(config('services.whatsapp_cloud.config_id'));
+    const fbVersion = @json(config('services.whatsapp_cloud.api_version', 'v22.0'));
+
+    // Sem config_id → ainda em fase de aprovação na Meta. Usa o fluxo OAuth velho
+    // (escolhe WABA existente) como fallback pra testes.
+    if (!configId) {
+        return _connectWhatsappCloudFallback();
+    }
+
+    if (typeof FB === 'undefined') {
+        toastr.error('SDK do Facebook ainda carregando. Tente novamente em 2s.');
+        return;
+    }
+
+    // Limpa dados de signup anterior
+    window._wacloudSignupData = null;
+
+    FB.login(function(response) {
+        if (!response || !response.authResponse || !response.authResponse.code) {
+            toastr.info('Conexão cancelada.');
+            return;
+        }
+
+        const code       = response.authResponse.code;
+        const signupData = window._wacloudSignupData || {};
+
+        if (!signupData.phone_number_id || !signupData.waba_id) {
+            toastr.error('Dados incompletos do Embedded Signup. Tente novamente.');
+            return;
+        }
+
+        toastr.info('Registrando seu número...');
+
+        $.ajax({
+            url    : @json(route('settings.integrations.whatsapp-cloud.exchange')),
+            method : 'POST',
+            data   : {
+                _token          : @json(csrf_token()),
+                code            : code,
+                phone_number_id : signupData.phone_number_id,
+                waba_id         : signupData.waba_id,
+                business_id     : signupData.business_id || null,
+            },
+        }).done(function(data) {
+            if (data && data.success) {
+                toastr.success('WhatsApp conectado com sucesso!');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                toastr.error((data && data.message) || 'Erro ao conectar.');
+            }
+        }).fail(function(xhr) {
+            const msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Erro ao conectar com o servidor.';
+            toastr.error(msg);
+        });
+    }, {
+        config_id     : configId,
+        scope         : 'whatsapp_business_management,whatsapp_business_messaging',
+        response_type : 'code',
+        override_default_response_type: true,
+        extras        : {
+            setup              : {},
+            featureType        : 'whatsapp_business_app_onboarding',
+            sessionInfoVersion : '3',
+        },
+    });
+}
+
+// Fallback: OAuth tradicional via popup window.open (sem config_id).
+// Permite testar a infra do backend antes do App Review aprovar
+// whatsapp_business_messaging. Usuário precisa ter WABA pré-existente.
+function _connectWhatsappCloudFallback() {
+    const url  = '{{ route("settings.integrations.whatsapp-cloud.redirect") }}';
+    const w    = 600;
+    const h    = 750;
     const left = Math.max(0, (window.screen.width  - w) / 2);
     const top  = Math.max(0, (window.screen.height - h) / 2);
 
@@ -2315,25 +2419,18 @@ function connectWhatsappCloud() {
         return;
     }
 
-    // Listener pra mensagem do popup quando concluir
-    let done = false;
     const onMessage = (event) => {
         if (event.data && event.data.type === 'wacloud_done') {
-            done = true;
             window.removeEventListener('message', onMessage);
-            if (event.data.success) {
-                toastr.success('WhatsApp Cloud conectado!');
-            }
+            if (event.data.success) toastr.success('WhatsApp Cloud conectado!');
         }
     };
     window.addEventListener('message', onMessage);
 
-    // Polling: detecta quando a janelinha fecha → recarrega pra mostrar instance nova
     const poll = setInterval(() => {
         if (popup.closed) {
             clearInterval(poll);
             window.removeEventListener('message', onMessage);
-            // Pequeno delay pro callback terminar de criar a instance no DB
             setTimeout(() => location.reload(), 600);
         }
     }, 500);

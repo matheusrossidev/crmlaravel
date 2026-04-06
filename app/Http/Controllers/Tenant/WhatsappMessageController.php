@@ -25,7 +25,7 @@ class WhatsappMessageController extends Controller
         $type = $request->input('type', 'text');
         $body = $request->input('body', '');
 
-        $instance = WhatsappInstance::first();
+        $instance = $this->resolveInstance($conversation);
         if (! $instance || $instance->status !== 'connected') {
             return response()->json(['error' => 'WhatsApp não conectado'], 422);
         }
@@ -159,7 +159,7 @@ class WhatsappMessageController extends Controller
         $wahaMessageId = $request->input('waha_message_id');
         $emoji         = $request->input('emoji', '');
 
-        $instance = WhatsappInstance::first();
+        $instance = $this->resolveInstance($conversation);
         if (! $instance || $instance->status !== 'connected') {
             return response()->json(['error' => 'WhatsApp não conectado'], 422);
         }
@@ -182,6 +182,33 @@ class WhatsappMessageController extends Controller
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Encontra a WhatsappInstance correta para a conversa.
+     *
+     * 1. Prioriza a instance vinculada à conversa (conversation.instance_id) —
+     *    cada conversa nasce com a instance que a recebeu.
+     * 2. Fallback: primeira instance WAHA conectada do tenant. Isso evita o bug
+     *    em que `WhatsappInstance::first()` pegava uma instance Cloud API criada
+     *    pelo painel de integrações e tentava enviar via Graph API com chatId
+     *    em formato WAHA (`@c.us`/`@lid`), retornando erro.
+     */
+    private function resolveInstance(WhatsappConversation $conversation): ?WhatsappInstance
+    {
+        if ($conversation->instance_id) {
+            $instance = WhatsappInstance::find($conversation->instance_id);
+            if ($instance) {
+                return $instance;
+            }
+        }
+
+        return WhatsappInstance::query()
+            ->where('status', 'connected')
+            ->where(function ($q) {
+                $q->where('provider', 'waha')->orWhereNull('provider');
+            })
+            ->first();
+    }
 
     private function handleUpload(Request $request, string $subdir): array
     {
