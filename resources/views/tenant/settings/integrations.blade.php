@@ -741,8 +741,14 @@
                 <div style="margin:10px 0;padding:10px 14px;background:#f0f4ff;border:1px solid #dbeafe;border-radius:8px;font-size:12.5px;">
                     <strong style="color:#1a1d23;">{{ __('integrations.fb_lead_forms_count', ['count' => $fbLeadConnections->count()]) }}</strong>
                     @foreach($fbLeadConnections as $fc)
-                    <div style="margin-top:4px;color:#6b7280;">
-                        {{ $fc->form_name }} &rarr; {{ $fc->pipeline?->name }} / {{ $fc->stage?->name }}
+                    <div style="margin-top:6px;display:flex;align-items:center;gap:6px;color:#6b7280;">
+                        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $fc->form_name }} &rarr; {{ $fc->pipeline?->name }} / {{ $fc->stage?->name }}</span>
+                        <button type="button" onclick="editFbLeadConnection({{ $fc->id }})" title="{{ __('integrations.fb_lead_edit') }}" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1877F2;border-radius:6px;padding:3px 7px;cursor:pointer;font-size:11px;">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button type="button" onclick="deleteFbLeadConnection({{ $fc->id }}, this)" title="{{ __('integrations.fb_lead_delete') }}" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;border-radius:6px;padding:3px 7px;cursor:pointer;font-size:11px;">
+                            <i class="bi bi-trash"></i>
+                        </button>
                     </div>
                     @endforeach
                 </div>
@@ -1762,14 +1768,70 @@ let fbPageAccessToken = null;
     }
 @endphp
 const CRM_FIELD_OPTIONS = {!! json_encode($crmFieldOptions) !!};
+@php
+    $fbConnectionsJs = $fbLeadConnections->map(fn($c) => [
+        'id'              => $c->id,
+        'form_id'         => $c->form_id,
+        'form_name'       => $c->form_name,
+        'page_id'         => $c->page_id,
+        'page_name'       => $c->page_name,
+        'pipeline_id'     => $c->pipeline_id,
+        'stage_id'        => $c->stage_id,
+        'field_mapping'   => $c->field_mapping ?? [],
+        'default_tags'    => $c->default_tags ?? [],
+        'form_fields_json'=> $c->form_fields_json ?? [],
+    ])->keyBy('id');
+@endphp
+const FB_CONNECTIONS = {!! json_encode($fbConnectionsJs) !!};
+let fbEditingId = null;
 
 function openFbLeadDrawer() {
+    fbEditingId = null;
     document.getElementById('fbLeadOverlay').style.display = 'block';
     const drawer = document.getElementById('fbLeadDrawer');
     drawer.style.display = 'block';
     requestAnimationFrame(() => { drawer.style.right = '0'; });
+    // Show step 1 (form/page picker)
+    document.querySelector('.fb-step[data-step="1"]').style.display = '';
     fbGoStep(1);
     loadFbPages();
+}
+
+function editFbLeadConnection(id) {
+    const conn = FB_CONNECTIONS[id];
+    if (!conn) { toastr.error('Conexão não encontrada'); return; }
+
+    fbEditingId = id;
+    // Reuse existing globals so save/build use the right data
+    fbSelectedPage = { id: conn.page_id, name: conn.page_name };
+    fbSelectedForm = {
+        id: conn.form_id,
+        name: conn.form_name,
+        questions: Array.isArray(conn.form_fields_json) ? conn.form_fields_json : [],
+    };
+
+    // Open drawer
+    document.getElementById('fbLeadOverlay').style.display = 'block';
+    const drawer = document.getElementById('fbLeadDrawer');
+    drawer.style.display = 'block';
+    requestAnimationFrame(() => { drawer.style.right = '0'; });
+
+    // Hide step 1 — form/page locked in edit mode
+    document.querySelector('.fb-step[data-step="1"]').style.display = 'none';
+
+    // Pre-fill step 2
+    const pipSel = document.getElementById('fbPipelineSelect');
+    pipSel.value = conn.pipeline_id;
+    onPipelineSelected();
+    document.getElementById('fbStageSelect').value = conn.stage_id;
+    document.getElementById('fbDefaultTags').value = (conn.default_tags || []).join(', ');
+
+    // Jump straight to step 2
+    fbGoStep(2);
+
+    // Override step 2 "back" to close (no step 1 in edit mode)
+    // and pre-build mapping when going to step 3 — handled by buildFieldMapping reading FB_EDIT_MAPPING
+    window.__fbEditMapping = conn.field_mapping || {};
 }
 
 function closeFbLeadDrawer() {
@@ -1782,6 +1844,11 @@ function closeFbLeadDrawer() {
 }
 
 function fbGoStep(step) {
+    // In edit mode, step 1 is locked — back from step 2 closes the drawer
+    if (step === 1 && fbEditingId) {
+        closeFbLeadDrawer();
+        return;
+    }
     fbCurrentStep = step;
     document.querySelectorAll('.fb-panel').forEach(p => p.style.display = 'none');
     document.getElementById('fbStep' + step).style.display = 'block';
@@ -1945,18 +2012,24 @@ function buildFieldMapping() {
         return;
     }
 
+    const editMap = (fbEditingId && window.__fbEditMapping) ? window.__fbEditMapping : null;
+
     fbSelectedForm.questions.forEach(q => {
         const key = q.key || q.id || '';
         const label = q.label || key;
 
         let optionsHtml = '';
         for (const [val, text] of Object.entries(CRM_FIELD_OPTIONS)) {
-            // Auto-select common mappings
+            // Edit mode: honor existing mapping; otherwise auto-select common mappings
             let selected = '';
-            if (key === 'full_name' && val === 'name') selected = ' selected';
-            else if (key === 'email' && val === 'email') selected = ' selected';
-            else if (key === 'phone_number' && val === 'phone') selected = ' selected';
-            else if (key === 'company_name' && val === 'company') selected = ' selected';
+            if (editMap) {
+                if (editMap[key] === val) selected = ' selected';
+            } else {
+                if (key === 'full_name' && val === 'name') selected = ' selected';
+                else if (key === 'email' && val === 'email') selected = ' selected';
+                else if (key === 'phone_number' && val === 'phone') selected = ' selected';
+                else if (key === 'company_name' && val === 'company') selected = ' selected';
+            }
             optionsHtml += '<option value="' + val + '"' + selected + '>' + window.escapeHtml(text) + '</option>';
         }
 
@@ -1979,6 +2052,29 @@ function saveFbLeadConnection() {
 
     const tagsRaw = document.getElementById('fbDefaultTags').value;
     const defaultTags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+    if (fbEditingId) {
+        // EDIT mode — only update pipeline/stage/mapping/tags
+        const editPayload = {
+            pipeline_id: document.getElementById('fbPipelineSelect').value,
+            stage_id: document.getElementById('fbStageSelect').value,
+            field_mapping: mapping,
+            default_tags: defaultTags.length ? defaultTags : null,
+        };
+        const url = '{{ route("settings.integrations.facebook-leadads.connections.update", ["connection" => "__ID__"]) }}'.replace('__ID__', fbEditingId);
+        window.API.put(url, editPayload)
+        .then(data => {
+            if (data.success) {
+                toastr.success(ILANG.fb_save_success);
+                closeFbLeadDrawer();
+                setTimeout(() => location.reload(), 800);
+            } else {
+                toastr.error(data.message || 'Erro ao salvar');
+            }
+        })
+        .catch(() => { toastr.error(ILANG.fb_save_error); });
+        return;
+    }
 
     const payload = {
         page_id: fbSelectedPage.id,
@@ -2004,6 +2100,38 @@ function saveFbLeadConnection() {
         }
     })
     .catch(err => { toastr.error(ILANG.fb_save_error); });
+}
+
+function deleteFbLeadConnection(id, btn) {
+    confirmAction({
+        title: ILANG.fb_lead_delete,
+        message: ILANG.fb_confirm_delete,
+        confirmText: ILANG.fb_lead_delete,
+        onConfirm: async () => {
+            if (btn) btn.disabled = true;
+            try {
+                const url = '{{ route("settings.integrations.facebook-leadads.connections.destroy", ["connection" => "__ID__"]) }}'.replace('__ID__', id);
+                const res = await fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                });
+                const data = await res.json();
+                if (data.success) {
+                    toastr.success(ILANG.fb_deleted_success);
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    toastr.error(data.message || 'Erro');
+                    if (btn) btn.disabled = false;
+                }
+            } catch (e) {
+                toastr.error('Erro');
+                if (btn) btn.disabled = false;
+            }
+        },
+    });
 }
 
 function disconnectFbLeadAds(btn) {

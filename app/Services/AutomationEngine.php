@@ -257,8 +257,37 @@ class AutomationEngine
             'transfer_to_department'        => $this->actionTransferToDepartment($config, $ctx),
             'create_task'                   => $this->actionCreateTask($config, $ctx),
             'enroll_sequence'               => $this->actionEnrollSequence($config, $ctx),
+            'ai_extract_fields'             => $this->actionAiExtractFields($config, $ctx, $automation),
+            'send_webhook'                  => $this->actionSendWebhook($config, $ctx, $automation),
             default               => null,
         };
+    }
+
+    private function actionAiExtractFields(array $config, array $ctx, Automation $automation): void
+    {
+        $lead = $this->resolveLead($ctx);
+        if (! $lead) {
+            return;
+        }
+        \App\Jobs\ExtractLeadDataJob::dispatch(
+            $lead->id,
+            $automation->tenant_id,
+            $config,
+        );
+    }
+
+    private function actionSendWebhook(array $config, array $ctx, Automation $automation): void
+    {
+        $lead = $this->resolveLead($ctx);
+        if (! $lead) {
+            return;
+        }
+        \App\Jobs\DispatchAutomationWebhookJob::dispatch(
+            $lead->id,
+            $automation->tenant_id,
+            $config,
+            $automation->trigger_type,
+        );
     }
 
     // ── Ações ────────────────────────────────────────────────────────────────────

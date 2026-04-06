@@ -79,6 +79,11 @@ return [
         'internal_token' => env('AGNO_INTERNAL_TOKEN', ''),
     ],
 
+    'openai_extraction' => [
+        'key'   => env('OPENAI_API_KEY', ''),
+        'model' => env('OPENAI_EXTRACTION_MODEL', 'gpt-4o-mini'),
+    ],
+
     'elevenlabs' => [
         'api_key'  => env('ELEVENLABS_API_KEY', ''),
         'voice_id' => env('ELEVENLABS_VOICE_ID', ''),

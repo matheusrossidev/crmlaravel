@@ -1,7 +1,7 @@
 @extends('tenant.layouts.app')
 
 @php
-    $title    = 'Auditoria';
+    $title    = __('audit.title');
     $pageIcon = 'shield-check';
 @endphp
 
@@ -89,50 +89,50 @@
 
     {{-- Header --}}
     <div style="margin-bottom:24px;">
-        <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:700;color:#1a1d23;margin:0 0 4px;">Log de Auditoria</h1>
-        <p style="font-size:13px;color:#677489;margin:0;">Todas as ações realizadas no workspace.</p>
+        <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('audit.page_title') }}</h1>
+        <p style="font-size:13px;color:#677489;margin:0;">{{ __('audit.page_desc') }}</p>
     </div>
 
     {{-- Filters --}}
     <form method="GET" action="{{ route('settings.audit-log') }}" class="audit-filters">
         <div class="fg">
-            <label>Usuário</label>
+            <label>{{ __('audit.user') }}</label>
             <select name="user_id">
-                <option value="">Todos</option>
+                <option value="">{{ __('audit.all') }}</option>
                 @foreach($users as $u)
                     <option value="{{ $u->id }}" {{ request('user_id') == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
                 @endforeach
             </select>
         </div>
         <div class="fg">
-            <label>Entidade</label>
+            <label>{{ __('audit.entity') }}</label>
             <select name="entity_type">
-                <option value="">Todas</option>
+                <option value="">{{ __('audit.all_f') }}</option>
                 @foreach($entityTypes as $key => $label)
                     <option value="{{ $key }}" {{ request('entity_type') === $key ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
         </div>
         <div class="fg">
-            <label>Ação</label>
+            <label>{{ __('audit.action') }}</label>
             <select name="action">
-                <option value="">Todas</option>
+                <option value="">{{ __('audit.all_f') }}</option>
                 @foreach($actionLabels as $key => $label)
                     <option value="{{ $key }}" {{ request('action') === $key ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
         </div>
         <div class="fg">
-            <label>De</label>
+            <label>{{ __('audit.from') }}</label>
             <input type="date" name="date_from" value="{{ request('date_from') }}">
         </div>
         <div class="fg">
-            <label>Até</label>
+            <label>{{ __('audit.to') }}</label>
             <input type="date" name="date_to" value="{{ request('date_to') }}">
         </div>
-        <button type="submit" class="btn-primary-sm" style="height:36px;"><i class="bi bi-funnel"></i> Filtrar</button>
+        <button type="submit" class="btn-primary-sm" style="height:36px;"><i class="bi bi-funnel"></i> {{ __('audit.filter') }}</button>
         @if(request()->hasAny(['user_id','entity_type','action','date_from','date_to']))
-            <a href="{{ route('settings.audit-log') }}" style="font-size:12px;color:#6b7280;text-decoration:none;padding:8px 0;">Limpar</a>
+            <a href="{{ route('settings.audit-log') }}" style="font-size:12px;color:#6b7280;text-decoration:none;padding:8px 0;">{{ __('audit.clear') }}</a>
         @endif
     </form>
 
@@ -140,19 +140,19 @@
     @if($logs->isEmpty())
         <div class="audit-empty">
             <i class="bi bi-shield-check"></i>
-            <div class="t">Nenhum registro encontrado</div>
-            <div class="s">Ações serão registradas automaticamente a partir de agora.</div>
+            <div class="t">{{ __('audit.no_records') }}</div>
+            <div class="s">{{ __('audit.records_auto') }}</div>
         </div>
     @else
         <div class="audit-tbl-wrap">
             <table class="audit-tbl">
                 <thead>
                     <tr>
-                        <th>Data</th>
-                        <th>Usuário</th>
-                        <th>Ação</th>
-                        <th>Entidade</th>
-                        <th>Alterações</th>
+                        <th>{{ __('audit.date') }}</th>
+                        <th>{{ __('audit.user') }}</th>
+                        <th>{{ __('audit.action') }}</th>
+                        <th>{{ __('audit.entity') }}</th>
+                        <th>{{ __('audit.changes') }}</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -166,7 +166,7 @@
                         @endphp
                         <tr>
                             <td class="audit-time">{{ $log->created_at?->format('d/m/Y H:i') }}</td>
-                            <td class="audit-user">{{ $log->user?->name ?? 'Sistema' }}</td>
+                            <td class="audit-user">{{ $log->user?->name ?? __('audit.system') }}</td>
                             <td><span class="audit-action {{ $actionClass }}">{{ $actionLabel }}</span></td>
                             <td class="audit-entity">
                                 <strong>{{ $entityLabel }}</strong>
@@ -175,7 +175,7 @@
                             <td class="audit-desc">{!! $desc !!}</td>
                             <td>
                                 @if($log->action !== 'login' && $log->action !== 'logout')
-                                    <button class="audit-view-btn" onclick="showDetail({{ $log->id }})" title="Ver detalhes"><i class="bi bi-eye"></i></button>
+                                    <button class="audit-view-btn" onclick="showDetail({{ $log->id }})" title="{{ __('audit.view_details') }}"><i class="bi bi-eye"></i></button>
                                 @endif
                             </td>
                         </tr>
@@ -194,11 +194,11 @@
 <div class="page-drawer-overlay" id="detailOverlay" onclick="closeDetail()"></div>
 <div class="page-drawer" id="detailDrawer">
     <div class="dw-header">
-        <h3>Detalhes da ação</h3>
+        <h3>{{ __('audit.detail_title') }}</h3>
         <button onclick="closeDetail()" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;"><i class="bi bi-x-lg"></i></button>
     </div>
     <div class="dw-body" id="detailBody">
-        <div style="text-align:center;padding:40px;color:#97A3B7;">Carregando...</div>
+        <div style="text-align:center;padding:40px;color:#97A3B7;">{{ __('audit.loading') }}</div>
     </div>
 </div>
 
@@ -207,28 +207,29 @@
 @push('scripts')
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+const ALANG = @json(__('audit'));
 
 function showDetail(id) {
     document.getElementById('detailOverlay').classList.add('open');
     document.getElementById('detailDrawer').classList.add('open');
-    document.getElementById('detailBody').innerHTML = '<div style="text-align:center;padding:40px;color:#97A3B7;"><i class="bi bi-hourglass-split" style="font-size:20px;"></i><p style="margin-top:8px;">Carregando...</p></div>';
+    document.getElementById('detailBody').innerHTML = '<div style="text-align:center;padding:40px;color:#97A3B7;"><i class="bi bi-hourglass-split" style="font-size:20px;"></i><p style="margin-top:8px;">' + ALANG.loading + '</p></div>';
 
     fetch('{{ route("settings.audit-log.show", "__ID__") }}'.replace('__ID__', id), {
         headers: { Accept: 'application/json', 'X-CSRF-TOKEN': CSRF }
     })
     .then(r => r.json())
     .then(data => {
-        if (!data.success) { document.getElementById('detailBody').innerHTML = '<p>Erro ao carregar.</p>'; return; }
+        if (!data.success) { document.getElementById('detailBody').innerHTML = '<p>' + ALANG.load_error + '</p>'; return; }
         const l = data.log;
         let html = '';
 
         // Meta info
-        html += `<div class="detail-row"><div class="detail-label">Usuário</div><div class="detail-value">${esc(l.user)}</div></div>`;
-        html += `<div class="detail-row"><div class="detail-label">Ação</div><div class="detail-value">${esc(l.action)}</div></div>`;
-        html += `<div class="detail-row"><div class="detail-label">Entidade</div><div class="detail-value">${esc(l.entity_type)} ${l.entity_id ? '#' + l.entity_id : ''}</div></div>`;
-        html += `<div class="detail-row"><div class="detail-label">Data</div><div class="detail-value">${esc(l.created_at)}</div></div>`;
-        if (l.ip_address) html += `<div class="detail-row"><div class="detail-label">IP</div><div class="detail-value">${esc(l.ip_address)}</div></div>`;
-        if (l.user_agent) html += `<div class="detail-row"><div class="detail-label">User Agent</div><div class="detail-value" style="font-size:11px;color:#6b7280;word-break:break-all;">${esc(l.user_agent)}</div></div>`;
+        html += `<div class="detail-row"><div class="detail-label">${esc(ALANG.user)}</div><div class="detail-value">${esc(l.user)}</div></div>`;
+        html += `<div class="detail-row"><div class="detail-label">${esc(ALANG.action)}</div><div class="detail-value">${esc(l.action)}</div></div>`;
+        html += `<div class="detail-row"><div class="detail-label">${esc(ALANG.entity)}</div><div class="detail-value">${esc(l.entity_type)} ${l.entity_id ? '#' + l.entity_id : ''}</div></div>`;
+        html += `<div class="detail-row"><div class="detail-label">${esc(ALANG.date)}</div><div class="detail-value">${esc(l.created_at)}</div></div>`;
+        if (l.ip_address) html += `<div class="detail-row"><div class="detail-label">${esc(ALANG.ip)}</div><div class="detail-value">${esc(l.ip_address)}</div></div>`;
+        if (l.user_agent) html += `<div class="detail-row"><div class="detail-label">${esc(ALANG.user_agent)}</div><div class="detail-value" style="font-size:11px;color:#6b7280;word-break:break-all;">${esc(l.user_agent)}</div></div>`;
 
         // Diff table
         const oldD = l.old_data || {};
@@ -236,8 +237,8 @@ function showDetail(id) {
         const allKeys = [...new Set([...Object.keys(oldD), ...Object.keys(newD)])];
 
         if (allKeys.length > 0) {
-            html += '<div class="diff-section"><div class="diff-title"><i class="bi bi-arrow-left-right" style="color:#0085f3;"></i> Alterações</div>';
-            html += '<table class="diff-table"><thead><tr><th>Campo</th><th>Antes</th><th>Depois</th></tr></thead><tbody>';
+            html += '<div class="diff-section"><div class="diff-title"><i class="bi bi-arrow-left-right" style="color:#0085f3;"></i> ' + esc(ALANG.diff_title) + '</div>';
+            html += '<table class="diff-table"><thead><tr><th>' + esc(ALANG.field) + '</th><th>' + esc(ALANG.before) + '</th><th>' + esc(ALANG.after) + '</th></tr></thead><tbody>';
             for (const key of allKeys) {
                 const ov = oldD[key] !== undefined ? fmt(oldD[key]) : '';
                 const nv = newD[key] !== undefined ? fmt(newD[key]) : '';
@@ -255,7 +256,7 @@ function showDetail(id) {
         document.getElementById('detailBody').innerHTML = html;
     })
     .catch(() => {
-        document.getElementById('detailBody').innerHTML = '<p style="color:#ef4444;">Erro ao carregar detalhes.</p>';
+        document.getElementById('detailBody').innerHTML = '<p style="color:#ef4444;">' + ALANG.load_error + '</p>';
     });
 }
 

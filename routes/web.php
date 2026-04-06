@@ -588,6 +588,7 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::put('automacoes/{automation}',           [AutomationController::class, 'update'])->name('automations.update');
             Route::delete('automacoes/{automation}',        [AutomationController::class, 'destroy'])->name('automations.destroy');
             Route::patch('automacoes/{automation}/toggle',  [AutomationController::class, 'toggle'])->name('automations.toggle');
+            Route::post('automacoes/test-webhook',          [AutomationController::class, 'testWebhook'])->name('automations.test-webhook');
 
             // Sequências de Nutrição
             Route::get('sequencias',                          [NurtureSequenceController::class, 'index'])->name('sequences');

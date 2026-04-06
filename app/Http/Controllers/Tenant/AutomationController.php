@@ -75,13 +75,18 @@ class AutomationController extends Controller
             ->orderBy('sort_order')
             ->get(['id', 'name', 'label']);
 
+        // All custom fields (used by ai_extract_fields and send_webhook builders)
+        $allCustomFields = \App\Models\CustomFieldDefinition::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'name', 'label', 'field_type']);
+
         $departments = Department::where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name']);
 
         return compact('pipelines', 'users', 'aiAgents', 'chatbotFlows', 'wahaConnected',
                        'whatsappTags', 'leadTags', 'leadSources', 'allLeadSources',
-                       'campaigns', 'dateCustomFields', 'departments');
+                       'campaigns', 'dateCustomFields', 'allCustomFields', 'departments');
     }
 
     public function index(): View
@@ -151,5 +156,61 @@ class AutomationController extends Controller
         $automation->update(['is_active' => ! $automation->is_active]);
 
         return response()->json(['success' => true, 'is_active' => $automation->is_active]);
+    }
+
+    /**
+     * Dispara o webhook configurado pra um lead real do tenant (mais recente)
+     * pra validar URL/headers/body sem precisar salvar a automação.
+     */
+    public function testWebhook(Request $request): JsonResponse
+    {
+        $config = $request->validate([
+            'url'         => 'required|string|max:2000',
+            'method'      => 'nullable|string|in:GET,POST,PUT,PATCH,DELETE',
+            'headers'     => 'nullable|array',
+            'body_mode'   => 'nullable|string|in:builder,raw',
+            'body_fields' => 'nullable|array',
+            'body_raw'    => 'nullable|string',
+        ]);
+
+        $tenantId = activeTenantId();
+
+        // Pega o lead mais recente do tenant pra teste com dado real
+        $lead = Lead::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->with(['stage', 'pipeline', 'assignedTo'])
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $lead) {
+            return response()->json([
+                'success' => false,
+                'message' => __('automations.wh_test_no_lead'),
+            ], 422);
+        }
+
+        $tenant = \App\Models\Tenant::withoutGlobalScope('tenant')->find($tenantId);
+
+        $context = [
+            'lead'         => $lead,
+            'tenant'       => $tenant,
+            'trigger_type' => 'manual_test',
+        ];
+
+        $dispatcher = new \App\Services\WebhookDispatcherService();
+        $result = $dispatcher->dispatch($config, $context);
+
+        return response()->json([
+            'success'      => true,
+            'status'       => $result['status'],
+            'duration_ms'  => $result['duration_ms'],
+            'error'        => $result['error'],
+            'request_body' => mb_substr($result['request_body'] ?? '', 0, 3000),
+            'response_body'=> mb_substr($result['body'] ?? '', 0, 3000),
+            'lead_used'    => [
+                'id'   => $lead->id,
+                'name' => $lead->name,
+            ],
+        ]);
     }
 }

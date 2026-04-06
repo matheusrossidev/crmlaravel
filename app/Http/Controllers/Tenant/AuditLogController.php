@@ -15,67 +15,71 @@ use Illuminate\View\View;
 
 class AuditLogController extends Controller
 {
-    private const ENTITY_LABELS = [
-        'Lead'                  => 'Lead',
-        'Sale'                  => 'Venda',
-        'LostSale'              => 'Venda perdida',
-        'Pipeline'              => 'Pipeline',
-        'WhatsappConversation'  => 'Conversa WA',
-        'AiAgent'               => 'Agente IA',
-        'ChatbotFlow'           => 'Fluxo chatbot',
-        'Automation'            => 'Automação',
-        'User'                  => 'Usuário',
-        'Department'            => 'Departamento',
-        'WhatsappTag'           => 'Tag',
-        'CustomFieldDefinition' => 'Campo extra',
-        'ApiKey'                => 'Chave API',
-        'WhatsappInstance'      => 'Instância WA',
-        'InstagramInstance'     => 'Instância IG',
-        'ScoringRule'           => 'Regra scoring',
+    private const ENTITY_KEYS = [
+        'Lead'                  => 'entity_lead',
+        'Sale'                  => 'entity_sale',
+        'LostSale'              => 'entity_lost_sale',
+        'Pipeline'              => 'entity_pipeline',
+        'WhatsappConversation'  => 'entity_conversation',
+        'AiAgent'               => 'entity_ai_agent',
+        'ChatbotFlow'           => 'entity_chatbot',
+        'Automation'            => 'entity_automation',
+        'User'                  => 'entity_user',
+        'Department'            => 'entity_department',
+        'WhatsappTag'           => 'entity_tag',
+        'CustomFieldDefinition' => 'entity_custom_field',
+        'ApiKey'                => 'entity_api_key',
+        'WhatsappInstance'      => 'entity_wa_instance',
+        'InstagramInstance'     => 'entity_ig_instance',
+        'ScoringRule'           => 'entity_scoring_rule',
     ];
 
-    private const ACTION_LABELS = [
-        'created'        => 'Criou',
-        'updated'        => 'Editou',
-        'deleted'        => 'Excluiu',
-        'login'          => 'Login',
-        'logout'         => 'Logout',
-        'login_failed'   => 'Login falhou',
-        'password_reset' => 'Redefiniu senha',
+    private const ACTION_KEYS = [
+        'created'        => 'action_created',
+        'updated'        => 'action_updated',
+        'deleted'        => 'action_deleted',
+        'login'          => 'action_login',
+        'logout'         => 'action_logout',
+        'login_failed'   => 'action_login_failed',
+        'password_reset' => 'action_password_reset',
     ];
 
-    /** Human-readable field names */
-    private const FIELD_LABELS = [
-        'name'                 => 'Nome',
-        'email'                => 'E-mail',
-        'phone'                => 'Telefone',
-        'company'              => 'Empresa',
-        'value'                => 'Valor',
-        'stage_id'             => 'Etapa',
-        'pipeline_id'          => 'Pipeline',
-        'assigned_to'          => 'Responsável',
-        'closed_by'            => 'Fechado por',
-        'lead_id'              => 'Lead',
-        'status'               => 'Status',
-        'role'                 => 'Permissão',
-        'tags'                 => 'Tags',
-        'is_active'            => 'Ativo',
-        'objective'            => 'Objetivo',
-        'communication_style'  => 'Estilo de comunicação',
-        'channel'              => 'Canal',
-        'trigger_type'         => 'Tipo de gatilho',
-        'assignment_strategy'  => 'Estratégia de distribuição',
-        'field_type'           => 'Tipo de campo',
-        'is_required'          => 'Obrigatório',
-        'color'                => 'Cor',
-        'points'               => 'Pontos',
-        'event_type'           => 'Tipo de evento',
-        'permissions'          => 'Permissões',
-        'phone_number'         => 'Número',
-        'session_name'         => 'Sessão',
-        'birthday'             => 'Aniversário',
-        'source'               => 'Origem',
+    /** Field name → translation key suffix */
+    private const FIELD_KEYS = [
+        'name', 'email', 'phone', 'company', 'value',
+        'stage_id', 'pipeline_id', 'assigned_to', 'closed_by',
+        'lead_id', 'status', 'role', 'tags', 'is_active',
+        'objective', 'communication_style', 'channel',
+        'trigger_type', 'assignment_strategy', 'field_type',
+        'is_required', 'color', 'points', 'event_type',
+        'permissions', 'phone_number', 'session_name',
+        'birthday', 'source',
     ];
+
+    private function entityLabels(): array
+    {
+        $out = [];
+        foreach (self::ENTITY_KEYS as $key => $langKey) {
+            $out[$key] = __('audit.' . $langKey);
+        }
+        return $out;
+    }
+
+    private function actionLabels(): array
+    {
+        $out = [];
+        foreach (self::ACTION_KEYS as $key => $langKey) {
+            $out[$key] = __('audit.' . $langKey);
+        }
+        return $out;
+    }
+
+    private function fieldLabel(string $field): string
+    {
+        return in_array($field, self::FIELD_KEYS, true)
+            ? __('audit.field_' . $field)
+            : $field;
+    }
 
     public function index(Request $request): View
     {
@@ -114,8 +118,8 @@ class AuditLogController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        $entityTypes = self::ENTITY_LABELS;
-        $actionLabels = self::ACTION_LABELS;
+        $entityTypes = $this->entityLabels();
+        $actionLabels = $this->actionLabels();
 
         return view('tenant.settings.audit-log', compact('logs', 'users', 'entityTypes', 'actionLabels'));
     }
@@ -129,13 +133,16 @@ class AuditLogController extends Controller
         $oldHuman = $this->humanizeData($log->old_data_json ?? [], $lookups);
         $newHuman = $this->humanizeData($log->new_data_json ?? [], $lookups);
 
+        $entityLabels = $this->entityLabels();
+        $actionLabels = $this->actionLabels();
+
         return response()->json([
             'success' => true,
             'log'     => [
                 'id'          => $log->id,
-                'user'        => $log->user?->name ?? 'Sistema',
-                'action'      => self::ACTION_LABELS[$log->action] ?? $log->action,
-                'entity_type' => self::ENTITY_LABELS[$log->entity_type] ?? $log->entity_type,
+                'user'        => $log->user?->name ?? __('audit.system'),
+                'action'      => $actionLabels[$log->action] ?? $log->action,
+                'entity_type' => $entityLabels[$log->entity_type] ?? $log->entity_type,
                 'entity_id'   => $log->entity_id,
                 'old_data'    => $oldHuman,
                 'new_data'    => $newHuman,
@@ -184,11 +191,11 @@ class AuditLogController extends Controller
 
         if ($action === 'deleted' && !empty($old)) {
             $name = $old['name'] ?? $old['email'] ?? $old['phone'] ?? '';
-            return $name ? "Excluiu: {$name}" : '';
+            return $name ? __('audit.deleted_prefix') . ": {$name}" : '';
         }
 
         if ($action === 'login_failed') {
-            return 'E-mail: ' . ($new['email'] ?? '—');
+            return __('audit.email_label') . ': ' . ($new['email'] ?? '—');
         }
 
         return '';
@@ -218,7 +225,7 @@ class AuditLogController extends Controller
         $parts = [];
         foreach (array_slice($new, 0, 4) as $field => $newVal) {
             $oldVal = $old[$field] ?? null;
-            $label  = self::FIELD_LABELS[$field] ?? $field;
+            $label  = $this->fieldLabel($field);
 
             $oldHuman = $this->humanizeValue($field, $oldVal, $lookups);
             $newHuman = $this->humanizeValue($field, $newVal, $lookups);
@@ -226,7 +233,7 @@ class AuditLogController extends Controller
             $parts[] = "<strong>{$label}:</strong> {$oldHuman} → {$newHuman}";
         }
         if (count($new) > 4) {
-            $parts[] = '+' . (count($new) - 4) . ' campos';
+            $parts[] = __('audit.more_fields', ['count' => count($new) - 4]);
         }
         return implode('<br>', $parts);
     }
@@ -234,7 +241,7 @@ class AuditLogController extends Controller
     private function humanizeValue(string $field, mixed $value, array $lookups): string
     {
         if ($value === null || $value === '') {
-            return '<span style="color:#97A3B7;">vazio</span>';
+            return '<span style="color:#97A3B7;">' . __('audit.empty_value') . '</span>';
         }
 
         // Resolve FK IDs
@@ -250,7 +257,7 @@ class AuditLogController extends Controller
 
         // Booleans
         if ($field === 'is_active' || $field === 'is_required') {
-            return $value ? 'Sim' : 'Não';
+            return $value ? __('audit.yes') : __('audit.no');
         }
 
         // Role
@@ -280,9 +287,9 @@ class AuditLogController extends Controller
     private function humanizeRole(string $role): string
     {
         return match ($role) {
-            'admin'   => 'Administrador',
-            'manager' => 'Gestor',
-            'viewer'  => 'Visualizador',
+            'admin'   => __('audit.role_admin'),
+            'manager' => __('audit.role_manager'),
+            'viewer'  => __('audit.role_viewer'),
             default   => $role,
         };
     }
@@ -292,7 +299,7 @@ class AuditLogController extends Controller
     {
         $result = [];
         foreach ($data as $field => $value) {
-            $label = self::FIELD_LABELS[$field] ?? $field;
+            $label = $this->fieldLabel($field);
             $result[$label] = $this->humanizeValue($field, $value, $lookups);
         }
         return $result;

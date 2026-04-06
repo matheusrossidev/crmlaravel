@@ -25,7 +25,7 @@
     $settingsTabs[] = ['route' => 'settings.pwa',               'match' => ['settings.pwa*'],                'label' => __('settings.pwa_title')];
 
     if ($isAdmin) {
-        $settingsTabs[] = ['route' => 'settings.audit-log', 'match' => ['settings.audit-log*'], 'label' => 'Auditoria'];
+        $settingsTabs[] = ['route' => 'settings.audit-log', 'match' => ['settings.audit-log*'], 'label' => __('audit.title')];
     }
 @endphp
 <div class="settings-nav-tabs">

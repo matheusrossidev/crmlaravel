@@ -423,6 +423,12 @@
                 <div class="af-block-item action" onclick="addActionBlock('create_task')">
                     <span class="af-block-icon"><i class="bi bi-check2-square"></i></span>{{ __('automations.sidebar_act_create_task') }}
                 </div>
+                <div class="af-block-item action" onclick="addActionBlock('ai_extract_fields')">
+                    <span class="af-block-icon"><i class="bi bi-magic"></i></span>{{ __('automations.sidebar_act_ai_extract_fields') }}
+                </div>
+                <div class="af-block-item action" onclick="addActionBlock('send_webhook')">
+                    <span class="af-block-icon"><i class="bi bi-broadcast"></i></span>{{ __('automations.sidebar_act_send_webhook') }}
+                </div>
             </div>
         </div>
 
@@ -477,6 +483,15 @@ const LEAD_TAGS      = @json($leadTags->values());
 const LEAD_SOURCES   = @json($leadSources->values());
 const WAPP_TAGS           = @json($whatsappTags->pluck('name')->values());
 const DATE_CUSTOM_FIELDS  = @json($dateCustomFields->map(fn($f) => ['id' => $f->id, 'label' => $f->label])->values());
+@php
+    $allCustomFieldsJs = $allCustomFields->map(fn($f) => [
+        'id' => $f->id,
+        'name' => $f->name,
+        'label' => $f->label,
+        'field_type' => $f->field_type,
+    ])->values();
+@endphp
+const ALL_CUSTOM_FIELDS = {!! json_encode($allCustomFieldsJs) !!};
 const ALL_LEAD_SOURCES    = @json($allLeadSources);
 const CAMPAIGNS           = @json($campaigns);
 const NOTE_VARS_HINT = @json($noteVarsHint);
@@ -786,6 +801,8 @@ const ACTION_META = {
     assign_campaign:           { icon:'bi-megaphone',   label: AUTLANG.sidebar_act_assign_campaign },
     set_utm_params:            { icon:'bi-link-45deg',  label: AUTLANG.sidebar_act_set_utm_params },
     create_task:               { icon:'bi-check2-square', label: AUTLANG.sidebar_act_create_task },
+    ai_extract_fields:         { icon:'bi-magic',         label: AUTLANG.sidebar_act_ai_extract_fields },
+    send_webhook:              { icon:'bi-broadcast',     label: AUTLANG.sidebar_act_send_webhook },
 };
 
 function addActionBlock(type, prefill) {
@@ -961,7 +978,363 @@ function buildActionBody(type, idx, prefill) {
                 ${USERS.map(u => `<option value="${u.id}" ${prefill.assigned_to==u.id?'selected':''}>${h(u.name)}</option>`).join('')}
             </select>`;
     }
+    if (type === 'ai_extract_fields') {
+        const initialFields = (prefill.fields && prefill.fields.length) ? prefill.fields : [];
+        const maxMsgs = prefill.max_messages || 50;
+        return `<div style="padding:8px 10px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;font-size:11.5px;color:#4338ca;margin-bottom:10px;">
+                <i class="bi bi-info-circle"></i> ${h(AUTLANG.aix_info)}
+            </div>
+            <label>${h(AUTLANG.aix_max_messages)} <small style="font-weight:400;color:#9ca3af;">(${h(AUTLANG.aix_max_messages_hint)})</small></label>
+            <input type="number" class="form-control" id="aixmax-${idx}" min="10" max="200" value="${maxMsgs}" style="margin-bottom:12px;">
+            <label style="margin-bottom:8px;">${h(AUTLANG.aix_fields_label)}</label>
+            <div id="aixFieldsList-${idx}"></div>
+            <button type="button" onclick="aixAddField(${idx})" class="af-add-action" style="margin-top:8px;padding:8px;font-size:12px;">
+                <i class="bi bi-plus-circle"></i> ${h(AUTLANG.aix_add_field)}
+            </button>
+            <script>setTimeout(() => {
+                const seed = ${JSON.stringify(initialFields)};
+                if (seed.length) seed.forEach(f => aixAddField(${idx}, f));
+                else aixAddField(${idx});
+            }, 20);<\/script>`;
+    }
+    if (type === 'send_webhook') {
+        const initialFields = (prefill.body_fields && prefill.body_fields.length) ? prefill.body_fields : [];
+        const initialHeaders = (prefill.headers && prefill.headers.length) ? prefill.headers : [];
+        const url = prefill.url || '';
+        const method = prefill.method || 'POST';
+        const bodyMode = prefill.body_mode || 'builder';
+        const bodyRaw = prefill.body_raw || '';
+        return `<label>${h(AUTLANG.wh_url_label)}</label>
+            <input type="text" class="form-control" id="whurl-${idx}" placeholder="https://api.exemplo.com/webhook" value="${h(url)}">
+
+            <div class="row-pair" style="margin-top:8px;">
+                <div>
+                    <label>${h(AUTLANG.wh_method_label)}</label>
+                    <select class="form-select" id="whmethod-${idx}">
+                        ${['POST','PUT','PATCH','GET','DELETE'].map(m => `<option value="${m}" ${method===m?'selected':''}>${m}</option>`).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label>${h(AUTLANG.wh_body_mode_label)}</label>
+                    <select class="form-select" id="whmode-${idx}" onchange="whToggleMode(${idx})">
+                        <option value="builder" ${bodyMode==='builder'?'selected':''}>${h(AUTLANG.wh_mode_builder)}</option>
+                        <option value="raw" ${bodyMode==='raw'?'selected':''}>${h(AUTLANG.wh_mode_raw)}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="whHeadersBlock-${idx}" style="margin-top:12px;">
+                <label>${h(AUTLANG.wh_headers_label)} <small style="font-weight:400;color:#9ca3af;">(${h(AUTLANG.wh_optional)})</small></label>
+                <div id="whHeadersList-${idx}"></div>
+                <button type="button" onclick="whAddHeader(${idx})" class="af-add-action" style="margin-top:6px;padding:6px;font-size:12px;">
+                    <i class="bi bi-plus"></i> ${h(AUTLANG.wh_add_header)}
+                </button>
+            </div>
+
+            <div id="whBuilderBlock-${idx}" style="margin-top:12px;display:${bodyMode==='builder'?'block':'none'};">
+                <label>${h(AUTLANG.wh_body_label)}</label>
+                <div id="whFieldsList-${idx}"></div>
+                <button type="button" onclick="whAddField(${idx})" class="af-add-action" style="margin-top:6px;padding:6px;font-size:12px;">
+                    <i class="bi bi-plus"></i> ${h(AUTLANG.wh_add_field)}
+                </button>
+                <label style="margin-top:10px;font-size:11px;color:#9ca3af;">${h(AUTLANG.wh_preview_label)}</label>
+                <pre id="whPreview-${idx}" style="background:#0f172a;color:#94e9b9;padding:10px 12px;border-radius:8px;font-size:11px;line-height:1.5;max-height:140px;overflow:auto;margin:0;font-family:monospace;">{}</pre>
+            </div>
+
+            <div id="whRawBlock-${idx}" style="margin-top:12px;display:${bodyMode==='raw'?'block':'none'};">
+                <label>${h(AUTLANG.wh_body_raw_label)} <small style="font-weight:400;color:#9ca3af;">(${h(AUTLANG.wh_raw_hint)})</small></label>
+                <textarea class="form-control" id="whbodyraw-${idx}" rows="6" style="font-family:monospace;font-size:12px;" placeholder='{"name": "@{{lead.name}}", "email": "@{{lead.email}}"}'>${h(bodyRaw)}</textarea>
+            </div>
+
+            <div style="margin-top:14px;display:flex;align-items:center;gap:8px;">
+                <button type="button" id="whtestbtn-${idx}" onclick="whTestWebhook(${idx})" style="background:#0085f3;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                    <i class="bi bi-play-circle"></i> ${h(AUTLANG.wh_test_button)}
+                </button>
+                <span style="font-size:11px;color:#9ca3af;">${h(AUTLANG.wh_test_hint)}</span>
+            </div>
+            <div id="whtestresult-${idx}" style="display:none;margin-top:10px;"></div>
+
+            <script>setTimeout(() => {
+                const seedFields = ${JSON.stringify(initialFields)};
+                const seedHeaders = ${JSON.stringify(initialHeaders)};
+                if (seedFields.length) seedFields.forEach(f => whAddField(${idx}, f));
+                else whAddField(${idx});
+                if (seedHeaders.length) seedHeaders.forEach(h => whAddHeader(${idx}, h));
+                whUpdatePreview(${idx});
+            }, 20);<\/script>`;
+    }
     return '';
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// AI Extract Fields helpers
+// ─────────────────────────────────────────────────────────────────────
+let _aixRowIdx = 0;
+function aixTargetOptions(selected) {
+    const standardLabels = {
+        'lead.name': AUTLANG.aix_target_name,
+        'lead.email': AUTLANG.aix_target_email,
+        'lead.phone': AUTLANG.aix_target_phone,
+        'lead.company': AUTLANG.aix_target_company,
+        'lead.instagram_username': AUTLANG.aix_target_instagram,
+        'lead.birthday': AUTLANG.aix_target_birthday,
+        'lead.value': AUTLANG.aix_target_value,
+        'lead.notes': AUTLANG.aix_target_notes,
+    };
+    let html = `<optgroup label="${h(AUTLANG.aix_target_group_lead)}">`;
+    for (const [val, label] of Object.entries(standardLabels)) {
+        html += `<option value="${val}" ${selected===val?'selected':''}>${h(label)}</option>`;
+    }
+    html += `</optgroup>`;
+    if (ALL_CUSTOM_FIELDS.length) {
+        html += `<optgroup label="${h(AUTLANG.aix_target_group_custom)}">`;
+        for (const cf of ALL_CUSTOM_FIELDS) {
+            const v = `custom:${cf.id}`;
+            html += `<option value="${v}" ${selected===v?'selected':''}>${h(cf.label)}</option>`;
+        }
+        html += `</optgroup>`;
+    }
+    return html;
+}
+function aixAddField(actIdx, prefill) {
+    prefill = prefill || {};
+    const list = document.getElementById(`aixFieldsList-${actIdx}`);
+    if (!list) return;
+    const rid = ++_aixRowIdx;
+    const row = document.createElement('div');
+    row.className = 'aix-row';
+    row.dataset.rowId = rid;
+    row.style.cssText = 'background:#f9fafb;border:1px solid #e8eaf0;border-radius:8px;padding:10px 12px;margin-bottom:8px;';
+    row.innerHTML = `
+        <div class="row-pair" style="margin-bottom:6px;">
+            <div>
+                <label style="font-size:11px;">${h(AUTLANG.aix_key_label)}</label>
+                <input type="text" class="form-control aix-key" placeholder="${h(AUTLANG.aix_key_placeholder)}" value="${h(prefill.key||'')}">
+            </div>
+            <div>
+                <label style="font-size:11px;">${h(AUTLANG.aix_target_label)}</label>
+                <select class="form-select aix-target">${aixTargetOptions(prefill.target)}</select>
+            </div>
+        </div>
+        <label style="font-size:11px;">${h(AUTLANG.aix_instruction_label)}</label>
+        <textarea class="form-control aix-instruction" rows="2" placeholder="${h(AUTLANG.aix_instruction_placeholder)}">${h(prefill.instruction||'')}</textarea>
+        <div style="text-align:right;margin-top:4px;">
+            <button type="button" onclick="this.closest('.aix-row').remove()" style="background:none;border:none;color:#dc2626;font-size:11px;cursor:pointer;">
+                <i class="bi bi-trash"></i> ${h(AUTLANG.aix_remove)}
+            </button>
+        </div>`;
+    list.appendChild(row);
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Webhook helpers
+// ─────────────────────────────────────────────────────────────────────
+function whSourceOptions(selected) {
+    const groups = [
+        [AUTLANG.wh_source_group_lead, [
+            ['lead.name', AUTLANG.wh_src_lead_name],
+            ['lead.email', AUTLANG.wh_src_lead_email],
+            ['lead.phone', AUTLANG.wh_src_lead_phone],
+            ['lead.company', AUTLANG.wh_src_lead_company],
+            ['lead.value', AUTLANG.wh_src_lead_value],
+            ['lead.source', AUTLANG.wh_src_lead_source],
+            ['lead.tags', AUTLANG.wh_src_lead_tags],
+            ['lead.instagram_username', AUTLANG.wh_src_lead_instagram],
+            ['lead.birthday', AUTLANG.wh_src_lead_birthday],
+            ['lead.id', AUTLANG.wh_src_lead_id],
+            ['lead.stage_name', AUTLANG.wh_src_lead_stage],
+            ['lead.pipeline_name', AUTLANG.wh_src_lead_pipeline],
+            ['lead.assigned_user_name', AUTLANG.wh_src_lead_user],
+            ['lead.notes', AUTLANG.wh_src_lead_notes],
+            ['lead.utm_source', 'UTM Source'],
+            ['lead.utm_medium', 'UTM Medium'],
+            ['lead.utm_campaign', 'UTM Campaign'],
+        ]],
+        [AUTLANG.wh_source_group_tenant, [
+            ['tenant.name', AUTLANG.wh_src_tenant_name],
+            ['tenant.id',   AUTLANG.wh_src_tenant_id],
+            ['tenant.slug', AUTLANG.wh_src_tenant_slug],
+        ]],
+        [AUTLANG.wh_source_group_system, [
+            ['system.now_iso',      AUTLANG.wh_src_system_now_iso],
+            ['system.now_unix',     AUTLANG.wh_src_system_now_unix],
+            ['system.trigger_type', AUTLANG.wh_src_system_trigger],
+        ]],
+    ];
+    let html = '';
+    for (const [label, opts] of groups) {
+        html += `<optgroup label="${h(label)}">`;
+        for (const [val, lbl] of opts) {
+            html += `<option value="${val}" ${selected===val?'selected':''}>${h(lbl)}</option>`;
+        }
+        html += `</optgroup>`;
+    }
+    if (ALL_CUSTOM_FIELDS.length) {
+        html += `<optgroup label="${h(AUTLANG.wh_source_group_custom)}">`;
+        for (const cf of ALL_CUSTOM_FIELDS) {
+            const v = `custom:${cf.id}`;
+            html += `<option value="${v}" ${selected===v?'selected':''}>${h(cf.label)}</option>`;
+        }
+        html += `</optgroup>`;
+    }
+    html += `<optgroup label="${h(AUTLANG.wh_source_group_other)}"><option value="literal" ${selected==='literal'?'selected':''}>${h(AUTLANG.wh_src_literal)}</option></optgroup>`;
+    return html;
+}
+let _whRowIdx = 0;
+function whAddField(actIdx, prefill) {
+    prefill = prefill || {};
+    const list = document.getElementById(`whFieldsList-${actIdx}`);
+    if (!list) return;
+    const rid = ++_whRowIdx;
+    const row = document.createElement('div');
+    row.className = 'wh-row';
+    row.dataset.actIdx = actIdx;
+    row.style.cssText = 'display:flex;gap:6px;align-items:flex-start;margin-bottom:6px;';
+    row.innerHTML = `
+        <input type="text" class="form-control wh-key" placeholder="${h(AUTLANG.wh_key_placeholder)}" value="${h(prefill.key||'')}" style="flex:1;min-width:0;" oninput="whUpdatePreview(${actIdx})">
+        <select class="form-select wh-src" onchange="whOnSrcChange(this, ${actIdx})" style="flex:1.4;min-width:0;">${whSourceOptions(prefill.source||'lead.name')}</select>
+        <input type="text" class="form-control wh-literal" placeholder="${h(AUTLANG.wh_literal_value)}" value="${h(prefill.value||'')}" style="flex:1;min-width:0;display:${prefill.source==='literal'?'':'none'};" oninput="whUpdatePreview(${actIdx})">
+        <button type="button" onclick="this.closest('.wh-row').remove();whUpdatePreview(${actIdx})" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;border-radius:6px;padding:6px 8px;cursor:pointer;flex-shrink:0;">
+            <i class="bi bi-x"></i>
+        </button>`;
+    list.appendChild(row);
+    whUpdatePreview(actIdx);
+}
+function whAddHeader(actIdx, prefill) {
+    prefill = prefill || {};
+    const list = document.getElementById(`whHeadersList-${actIdx}`);
+    if (!list) return;
+    const row = document.createElement('div');
+    row.className = 'wh-header-row';
+    row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;';
+    row.innerHTML = `
+        <input type="text" class="form-control wh-hkey" placeholder="${h(AUTLANG.wh_header_key_placeholder)}" value="${h(prefill.key||'')}" style="flex:1;min-width:0;">
+        <input type="text" class="form-control wh-hval" placeholder="${h(AUTLANG.wh_header_value_placeholder)}" value="${h(prefill.value||'')}" style="flex:1.4;min-width:0;">
+        <button type="button" onclick="this.closest('.wh-header-row').remove()" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;border-radius:6px;padding:6px 8px;cursor:pointer;flex-shrink:0;">
+            <i class="bi bi-x"></i>
+        </button>`;
+    list.appendChild(row);
+}
+function whOnSrcChange(sel, actIdx) {
+    const literalInput = sel.parentElement.querySelector('.wh-literal');
+    if (literalInput) literalInput.style.display = sel.value === 'literal' ? '' : 'none';
+    whUpdatePreview(actIdx);
+}
+function whToggleMode(actIdx) {
+    const mode = document.getElementById(`whmode-${actIdx}`).value;
+    document.getElementById(`whBuilderBlock-${actIdx}`).style.display = mode === 'builder' ? 'block' : 'none';
+    document.getElementById(`whRawBlock-${actIdx}`).style.display = mode === 'raw' ? 'block' : 'none';
+}
+function whUpdatePreview(actIdx) {
+    const list = document.getElementById(`whFieldsList-${actIdx}`);
+    if (!list) return;
+    const obj = {};
+    list.querySelectorAll('.wh-row').forEach(row => {
+        const k = row.querySelector('.wh-key')?.value.trim();
+        if (!k) return;
+        const src = row.querySelector('.wh-src')?.value;
+        if (src === 'literal') {
+            obj[k] = row.querySelector('.wh-literal')?.value || '';
+        } else {
+            obj[k] = `<${src}>`;
+        }
+    });
+    const preview = document.getElementById(`whPreview-${actIdx}`);
+    if (preview) preview.textContent = JSON.stringify(obj, null, 2);
+}
+
+function whCollectConfig(actIdx) {
+    const url = (document.getElementById(`whurl-${actIdx}`)?.value || '').trim();
+    const method = document.getElementById(`whmethod-${actIdx}`)?.value || 'POST';
+    const bodyMode = document.getElementById(`whmode-${actIdx}`)?.value || 'builder';
+    const headers = [];
+    document.querySelectorAll(`#whHeadersList-${actIdx} .wh-header-row`).forEach(row => {
+        const k = (row.querySelector('.wh-hkey')?.value || '').trim();
+        const v = (row.querySelector('.wh-hval')?.value || '').trim();
+        if (k) headers.push({ key: k, value: v });
+    });
+    const config = { url, method, body_mode: bodyMode, headers };
+    if (bodyMode === 'builder') {
+        config.body_fields = [];
+        document.querySelectorAll(`#whFieldsList-${actIdx} .wh-row`).forEach(row => {
+            const key = (row.querySelector('.wh-key')?.value || '').trim();
+            const source = row.querySelector('.wh-src')?.value || '';
+            if (!key || !source) return;
+            const item = { key, source };
+            if (source === 'literal') item.value = row.querySelector('.wh-literal')?.value || '';
+            config.body_fields.push(item);
+        });
+    } else {
+        config.body_raw = document.getElementById(`whbodyraw-${actIdx}`)?.value || '';
+    }
+    return config;
+}
+
+async function whTestWebhook(actIdx) {
+    const config = whCollectConfig(actIdx);
+    if (!config.url) { toastr.warning(AUTLANG.wh_validation_url_required); return; }
+    try { new URL(config.url); }
+    catch { toastr.warning(AUTLANG.wh_validation_url_invalid); return; }
+
+    const btn = document.getElementById(`whtestbtn-${actIdx}`);
+    const result = document.getElementById(`whtestresult-${actIdx}`);
+    btn.disabled = true;
+    const oldHtml = btn.innerHTML;
+    btn.innerHTML = `<i class="bi bi-arrow-clockwise"></i> ${h(AUTLANG.wh_test_loading)}`;
+    result.style.display = 'block';
+    result.innerHTML = `<div style="padding:10px;color:#6b7280;font-size:12px;"><i class="bi bi-hourglass-split"></i> ${h(AUTLANG.wh_test_loading)}</div>`;
+
+    try {
+        const res = await fetch('{{ route("settings.automations.test-webhook") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(config),
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+            result.innerHTML = `<div style="padding:10px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;font-size:12px;"><i class="bi bi-x-circle"></i> ${h(data.message || AUTLANG.wh_test_error)}</div>`;
+            return;
+        }
+
+        const status = data.status;
+        const isOk = data.error === null && status >= 200 && status < 300;
+        const statusColor = isOk ? '#059669' : (status && status >= 400 ? '#dc2626' : '#f59e0b');
+        const bgColor = isOk ? '#ecfdf5' : '#fef2f2';
+        const borderColor = isOk ? '#a7f3d0' : '#fecaca';
+        const icon = isOk ? 'bi-check-circle' : 'bi-x-circle';
+
+        let html = `<div style="padding:10px 12px;background:${bgColor};border:1px solid ${borderColor};border-radius:8px;font-size:12px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <i class="bi ${icon}" style="color:${statusColor};font-size:14px;"></i>
+                <strong style="color:${statusColor};">${data.error ? h(AUTLANG.wh_test_failed) : `HTTP ${status}`}</strong>
+                <span style="color:#6b7280;font-size:11px;">· ${data.duration_ms}ms · ${h(AUTLANG.wh_test_lead)}: #${data.lead_used.id} ${h(data.lead_used.name || '')}</span>
+            </div>`;
+        if (data.error) {
+            html += `<div style="color:#991b1b;font-family:monospace;font-size:11px;background:#fff;padding:6px 8px;border-radius:6px;margin-top:4px;">${h(data.error)}</div>`;
+        }
+        if (data.request_body) {
+            html += `<details style="margin-top:6px;"><summary style="cursor:pointer;color:#6b7280;font-size:11px;">${h(AUTLANG.wh_test_request)}</summary>
+                <pre style="background:#0f172a;color:#94e9b9;padding:8px 10px;border-radius:6px;font-size:10.5px;line-height:1.5;max-height:200px;overflow:auto;margin:4px 0 0;font-family:monospace;">${h(data.request_body)}</pre>
+            </details>`;
+        }
+        if (data.response_body) {
+            html += `<details style="margin-top:6px;" open><summary style="cursor:pointer;color:#6b7280;font-size:11px;">${h(AUTLANG.wh_test_response)}</summary>
+                <pre style="background:#fff;border:1px solid #e5e7eb;color:#374151;padding:8px 10px;border-radius:6px;font-size:10.5px;line-height:1.5;max-height:200px;overflow:auto;margin:4px 0 0;font-family:monospace;">${h(data.response_body)}</pre>
+            </details>`;
+        }
+        html += `</div>`;
+        result.innerHTML = html;
+    } catch (e) {
+        result.innerHTML = `<div style="padding:10px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;font-size:12px;"><i class="bi bi-x-circle"></i> ${h(AUTLANG.wh_test_error)}: ${h(e.message || '')}</div>`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
+    }
 }
 
 function removeActNode(idx) {
@@ -1177,6 +1550,71 @@ function saveAutomation() {
             config.due_date_offset = parseInt(document.getElementById(`ataskdays-${idx}`)?.value || '1');
             config.due_time        = document.getElementById(`atasktime-${idx}`)?.value || '09:00';
             config.assigned_to     = document.getElementById(`ataskuser-${idx}`)?.value || '';
+        } else if (type === 'ai_extract_fields') {
+            config.max_messages = parseInt(document.getElementById(`aixmax-${idx}`)?.value || '50') || 50;
+            config.fields = [];
+            const seenKeys = new Set();
+            body.querySelectorAll('.aix-row').forEach(row => {
+                const key = (row.querySelector('.aix-key')?.value || '').trim();
+                const target = row.querySelector('.aix-target')?.value || '';
+                const instruction = (row.querySelector('.aix-instruction')?.value || '').trim();
+                if (!key || !target) return;
+                if (!/^[a-z_][a-z0-9_]*$/i.test(key)) {
+                    toastr.warning(AUTLANG.aix_validation_key_format + ': ' + key);
+                    err = true; return;
+                }
+                if (seenKeys.has(key)) {
+                    toastr.warning(AUTLANG.aix_validation_duplicate_key + ': ' + key);
+                    err = true; return;
+                }
+                seenKeys.add(key);
+                config.fields.push({ key, target, instruction });
+            });
+            if (err) return;
+            if (!config.fields.length) {
+                toastr.warning(AUTLANG.aix_validation_no_fields);
+                err = true; return;
+            }
+        } else if (type === 'send_webhook') {
+            config.url = (document.getElementById(`whurl-${idx}`)?.value || '').trim();
+            if (!config.url) { toastr.warning(AUTLANG.wh_validation_url_required); err = true; return; }
+            try { new URL(config.url); }
+            catch { toastr.warning(AUTLANG.wh_validation_url_invalid); err = true; return; }
+            config.method = document.getElementById(`whmethod-${idx}`)?.value || 'POST';
+            config.body_mode = document.getElementById(`whmode-${idx}`)?.value || 'builder';
+            // Headers
+            config.headers = [];
+            body.querySelectorAll('.wh-header-row').forEach(row => {
+                const k = (row.querySelector('.wh-hkey')?.value || '').trim();
+                const v = (row.querySelector('.wh-hval')?.value || '').trim();
+                if (k) config.headers.push({ key: k, value: v });
+            });
+            if (config.body_mode === 'builder') {
+                config.body_fields = [];
+                const seen = new Set();
+                body.querySelectorAll('.wh-row').forEach(row => {
+                    const key = (row.querySelector('.wh-key')?.value || '').trim();
+                    const source = row.querySelector('.wh-src')?.value || '';
+                    if (!key || !source) return;
+                    if (seen.has(key)) {
+                        toastr.warning(AUTLANG.wh_validation_duplicate_key + ': ' + key);
+                        err = true; return;
+                    }
+                    seen.add(key);
+                    const item = { key, source };
+                    if (source === 'literal') {
+                        item.value = (row.querySelector('.wh-literal')?.value || '');
+                    }
+                    config.body_fields.push(item);
+                });
+                if (err) return;
+                if (!config.body_fields.length && ['POST','PUT','PATCH'].includes(config.method)) {
+                    toastr.warning(AUTLANG.wh_validation_no_fields);
+                    err = true; return;
+                }
+            } else {
+                config.body_raw = (document.getElementById(`whbodyraw-${idx}`)?.value || '');
+            }
         }
         actions.push({ type, config });
     });

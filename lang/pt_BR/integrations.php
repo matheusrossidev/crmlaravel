@@ -182,6 +182,10 @@ return [
     'fb_lead_connect'        => 'Conectar Facebook',
     'fb_lead_manage'         => 'Gerenciar Formulários',
     'fb_lead_disconnect'     => 'Desconectar',
+    'fb_lead_edit'           => 'Editar',
+    'fb_lead_delete'         => 'Excluir',
+    'fb_confirm_delete'      => 'Excluir este formulário configurado? Novos leads deste formulário não serão mais capturados.',
+    'fb_deleted_success'     => 'Formulário removido',
     'fb_lead_forms_count'    => ':count formulário(s) configurado(s)',
     'fb_lead_connected_ago'  => 'Conectado :time',
 

@@ -182,6 +182,10 @@ return [
     'fb_lead_connect'        => 'Connect Facebook',
     'fb_lead_manage'         => 'Manage Forms',
     'fb_lead_disconnect'     => 'Disconnect',
+    'fb_lead_edit'           => 'Edit',
+    'fb_lead_delete'         => 'Delete',
+    'fb_confirm_delete'      => 'Delete this configured form? New leads from this form will no longer be captured.',
+    'fb_deleted_success'     => 'Form removed',
     'fb_lead_forms_count'    => ':count form(s) configured',
     'fb_lead_connected_ago'  => 'Connected :time',
 
