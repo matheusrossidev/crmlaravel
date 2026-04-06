@@ -856,27 +856,34 @@ class IntegrationController extends Controller
         $clientId    = (string) config('services.whatsapp_cloud.app_id');
         $configId    = (string) config('services.whatsapp_cloud.config_id');
         $redirectUri = (string) config('services.whatsapp_cloud.redirect');
+        $apiVersion  = (string) config('services.whatsapp_cloud.api_version', 'v21.0');
 
-        if (! $clientId || ! $configId || ! $redirectUri) {
+        // Apenas app_id e redirect são obrigatórios.
+        // config_id é opcional — só usado se Embedded Signup configurado.
+        if (! $clientId || ! $redirectUri) {
             return redirect()
                 ->route('settings.integrations.index')
-                ->withErrors(['whatsapp_cloud' => 'WhatsApp Cloud API não está configurado no servidor (env vars faltando).']);
+                ->with('error', 'WhatsApp Cloud API não está configurado no servidor (WHATSAPP_CLOUD_APP_ID ou WHATSAPP_CLOUD_REDIRECT vazios).');
         }
 
         $state = bin2hex(random_bytes(16));
         session(['whatsapp_cloud_oauth_state' => $state]);
 
-        $params = http_build_query([
+        $params = [
             'client_id'     => $clientId,
             'redirect_uri'  => $redirectUri,
             'scope'         => 'whatsapp_business_management,whatsapp_business_messaging,business_management',
             'response_type' => 'code',
-            'config_id'     => $configId, // ← Embedded Signup config (modo Coexistence ativado lá)
             'state'         => $state,
-            'override_default_response_type' => true,
-        ]);
+        ];
 
-        return redirect("https://www.facebook.com/v21.0/dialog/oauth?{$params}");
+        // Embedded Signup (popup com Coexistence) só com config_id setado
+        if ($configId) {
+            $params['config_id'] = $configId;
+            $params['override_default_response_type'] = true;
+        }
+
+        return redirect("https://www.facebook.com/{$apiVersion}/dialog/oauth?" . http_build_query($params));
     }
 
     /**
