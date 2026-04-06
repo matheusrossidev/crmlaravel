@@ -146,19 +146,35 @@ class ProcessFacebookLeadgenWebhook implements ShouldQueue
         }
 
         // 7. Duplicate detection
-        $detector   = new DuplicateLeadDetector();
-        $duplicates = $detector->findDuplicatesFromData([
-            'name'  => $leadFields['name'] ?? '',
-            'phone' => $leadFields['phone'] ?? '',
-            'email' => $leadFields['email'] ?? '',
-        ], $tenantId);
+        // Tráfego pago: por padrão a connection vem com allow_duplicates=true,
+        // então cada submissão é capturada (pra não perder valor de mídia paga).
+        // Usuário pode desativar na configuração da form connection se quiser
+        // o comportamento legado de bloqueio.
+        if (! $connection->allow_duplicates) {
+            $detector   = new DuplicateLeadDetector();
+            $duplicates = $detector->findDuplicatesFromData([
+                'name'  => $leadFields['name'] ?? '',
+                'phone' => $leadFields['phone'] ?? '',
+                'email' => $leadFields['email'] ?? '',
+            ], $tenantId);
 
-        $strongDuplicate = $duplicates->filter(fn ($d) => $d['score'] >= 80)->first();
+            $strongDuplicate = $duplicates->filter(fn ($d) => $d['score'] >= 80)->first();
 
-        if ($strongDuplicate) {
-            $this->logEntry($connection, $leadgenId, $platform, $adId, $strongDuplicate['lead']->id, $leadData, 'duplicate', 'Score: ' . $strongDuplicate['score']);
-            Log::info('FacebookLeadgen: duplicate detected', ['leadgen_id' => $leadgenId, 'existing_lead' => $strongDuplicate['lead']->id]);
-            return;
+            // Safety net: se o "lead pai" for órfão (sem pipeline_id), é lixo de
+            // teste/import quebrado — não bloqueia.
+            if ($strongDuplicate && empty($strongDuplicate['lead']->pipeline_id)) {
+                Log::info('FacebookLeadgen: ignoring orphan duplicate', [
+                    'leadgen_id'   => $leadgenId,
+                    'orphan_lead'  => $strongDuplicate['lead']->id,
+                ]);
+                $strongDuplicate = null;
+            }
+
+            if ($strongDuplicate) {
+                $this->logEntry($connection, $leadgenId, $platform, $adId, $strongDuplicate['lead']->id, $leadData, 'duplicate', 'Score: ' . $strongDuplicate['score']);
+                Log::info('FacebookLeadgen: duplicate detected', ['leadgen_id' => $leadgenId, 'existing_lead' => $strongDuplicate['lead']->id]);
+                return;
+            }
         }
 
         // 8. Plan limit check

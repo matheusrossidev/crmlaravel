@@ -208,6 +208,8 @@ return [
     'fb_pipeline_label'      => 'Pipeline',
     'fb_stage_label'         => 'Initial stage',
     'fb_tags_label'          => 'Default tags (optional)',
+    'fb_allow_dup_label'     => 'Allow duplicate leads',
+    'fb_allow_dup_desc'      => 'Recommended for paid traffic — every submission is captured even if the name/phone/email already exists in the CRM. Disable only if you want to block AI-detected duplicates.',
     'fb_tags_placeholder'    => 'E.g.: facebook, lead-ad',
     'fb_mapping_title'       => 'Field mapping',
     'fb_mapping_form_col'    => 'Form field',

@@ -831,8 +831,8 @@
     </div>
 
     {{-- ─── Drawer Botão WhatsApp ──────────────────────────────────────── --}}
-    <div id="waBtnOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;" onclick="closeWaBtnDrawer()"></div>
-    <div id="waBtnDrawer" style="position:fixed;top:0;right:-500px;width:480px;max-width:100vw;height:100%;background:#fff;z-index:301;box-shadow:-4px 0 20px rgba(0,0,0,0.1);transition:right .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;">
+    <div id="waBtnOverlay" class="int-modal-overlay" onclick="closeWaBtnDrawer(event)"></div>
+    <div id="waBtnDrawer" class="int-modal int-modal-540">
         <div style="padding:20px 24px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;">
             <h4 id="waBtnDrawerTitle" style="margin:0;font-size:16px;font-weight:700;color:#1a1d23;">{{ __('integrations.wabtn_drawer_title') }}</h4>
             <button onclick="closeWaBtnDrawer()" style="background:none;border:none;font-size:20px;color:#9ca3af;cursor:pointer;padding:4px;"><i class="bi bi-x-lg"></i></button>
@@ -1001,8 +1001,8 @@
 
 {{-- ─── Facebook Lead Ads Drawer ──────────────────────────────────────── --}}
 @if($enabledIntegrations['facebook_leadads'] ?? false)
-<div id="fbLeadOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1040;" onclick="closeFbLeadDrawer()"></div>
-<div id="fbLeadDrawer" style="display:none;position:fixed;top:0;right:-560px;width:540px;height:100vh;background:#fff;z-index:1050;box-shadow:-4px 0 24px rgba(0,0,0,.12);transition:right .3s ease;overflow-y:auto;">
+<div id="fbLeadOverlay" class="int-modal-overlay int-modal-overlay-fb" onclick="closeFbLeadDrawer(event)"></div>
+<div id="fbLeadDrawer" class="int-modal int-modal-fb">
     <div style="padding:20px 24px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;">
         <div>
             <div style="font-size:16px;font-weight:700;color:#1a1d23;">{{ __('integrations.fb_drawer_title') }}</div>
@@ -1069,6 +1069,14 @@
 
         <label style="font-size:13px;font-weight:600;color:#1a1d23;display:block;margin-bottom:6px;">{{ __('integrations.fb_tags_label') }}</label>
         <input type="text" id="fbDefaultTags" placeholder="{{ __('integrations.fb_tags_placeholder') }}" style="width:100%;padding:10px 12px;border:1.5px solid #e8eaf0;border-radius:8px;font-size:13px;margin-bottom:16px;">
+
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;margin-bottom:16px;">
+            <input type="checkbox" id="fbAllowDuplicates" checked style="margin-top:2px;cursor:pointer;flex-shrink:0;">
+            <label for="fbAllowDuplicates" style="margin:0;cursor:pointer;flex:1;">
+                <div style="font-size:13px;font-weight:600;color:#1a1d23;">{{ __('integrations.fb_allow_dup_label') }}</div>
+                <div style="font-size:11.5px;color:#0369a1;margin-top:2px;line-height:1.4;">{{ __('integrations.fb_allow_dup_desc') }}</div>
+            </label>
+        </div>
 
         <div style="display:flex;justify-content:space-between;margin-top:8px;">
             <button onclick="fbGoStep(1)" class="fb-btn-secondary"><i class="bi bi-arrow-left"></i> {{ __('integrations.fb_btn_back') }}</button>
@@ -1685,13 +1693,14 @@ function openWaBtnDrawer(btnId) {
         trackSec.style.display = 'none';
     }
 
-    document.getElementById('waBtnOverlay').style.display = 'block';
-    setTimeout(function(){ document.getElementById('waBtnDrawer').style.right = '0'; }, 10);
+    document.getElementById('waBtnOverlay').classList.add('open');
+    document.getElementById('waBtnDrawer').classList.add('open');
 }
 
-function closeWaBtnDrawer() {
-    document.getElementById('waBtnDrawer').style.right = '-500px';
-    setTimeout(function(){ document.getElementById('waBtnOverlay').style.display = 'none'; }, 300);
+function closeWaBtnDrawer(e) {
+    if (e && e.target && e.target.id !== 'waBtnOverlay') return;
+    document.getElementById('waBtnOverlay').classList.remove('open');
+    document.getElementById('waBtnDrawer').classList.remove('open');
 }
 
 function saveWaButton() {
@@ -1742,6 +1751,69 @@ function deleteWaButton(btnId, phone) {
 <style>
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .spin { animation: spin .8s linear infinite; display: inline-block; }
+
+/* ── Integration drawers → modais centralizados ─────────────────── */
+.int-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .55);
+    z-index: 1040;
+    animation: intFadeIn .15s ease-out;
+}
+.int-modal-overlay-fb { z-index: 1040; }
+.int-modal-overlay.open { display: block; }
+
+.int-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(.97);
+    width: 540px;
+    max-width: calc(100vw - 40px);
+    max-height: 88vh;
+    height: auto;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+}
+.int-modal-540 { width: 540px; }
+.int-modal-fb  { width: 600px; }
+
+.int-modal.open {
+    visibility: visible;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    transition: opacity .2s ease, transform .2s ease, visibility 0s linear;
+}
+.int-modal > * { flex-shrink: 0; }
+.int-modal > .fb-panel,
+#waBtnDrawer > div:not(:first-child):not(:last-child) {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+@keyframes intFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (max-width: 640px) {
+    .int-modal,
+    .int-modal-540,
+    .int-modal-fb {
+        width: calc(100vw - 24px) !important;
+        max-height: 92vh !important;
+    }
+}
 </style>
 
 {{-- ─── Facebook Lead Ads JS ──────────────────────────────────────── --}}
@@ -1770,16 +1842,17 @@ let fbPageAccessToken = null;
 const CRM_FIELD_OPTIONS = {!! json_encode($crmFieldOptions) !!};
 @php
     $fbConnectionsJs = $fbLeadConnections->map(fn($c) => [
-        'id'              => $c->id,
-        'form_id'         => $c->form_id,
-        'form_name'       => $c->form_name,
-        'page_id'         => $c->page_id,
-        'page_name'       => $c->page_name,
-        'pipeline_id'     => $c->pipeline_id,
-        'stage_id'        => $c->stage_id,
-        'field_mapping'   => $c->field_mapping ?? [],
-        'default_tags'    => $c->default_tags ?? [],
-        'form_fields_json'=> $c->form_fields_json ?? [],
+        'id'               => $c->id,
+        'form_id'          => $c->form_id,
+        'form_name'        => $c->form_name,
+        'page_id'          => $c->page_id,
+        'page_name'        => $c->page_name,
+        'pipeline_id'      => $c->pipeline_id,
+        'stage_id'         => $c->stage_id,
+        'field_mapping'    => $c->field_mapping ?? [],
+        'default_tags'     => $c->default_tags ?? [],
+        'form_fields_json' => $c->form_fields_json ?? [],
+        'allow_duplicates' => (bool) $c->allow_duplicates,
     ])->keyBy('id');
 @endphp
 const FB_CONNECTIONS = {!! json_encode($fbConnectionsJs) !!};
@@ -1787,12 +1860,13 @@ let fbEditingId = null;
 
 function openFbLeadDrawer() {
     fbEditingId = null;
-    document.getElementById('fbLeadOverlay').style.display = 'block';
-    const drawer = document.getElementById('fbLeadDrawer');
-    drawer.style.display = 'block';
-    requestAnimationFrame(() => { drawer.style.right = '0'; });
+    document.getElementById('fbLeadOverlay').classList.add('open');
+    document.getElementById('fbLeadDrawer').classList.add('open');
     // Show step 1 (form/page picker)
     document.querySelector('.fb-step[data-step="1"]').style.display = '';
+    // Reset allow_duplicates to default (checked = true)
+    const allowDupEl = document.getElementById('fbAllowDuplicates');
+    if (allowDupEl) allowDupEl.checked = true;
     fbGoStep(1);
     loadFbPages();
 }
@@ -1810,11 +1884,9 @@ function editFbLeadConnection(id) {
         questions: Array.isArray(conn.form_fields_json) ? conn.form_fields_json : [],
     };
 
-    // Open drawer
-    document.getElementById('fbLeadOverlay').style.display = 'block';
-    const drawer = document.getElementById('fbLeadDrawer');
-    drawer.style.display = 'block';
-    requestAnimationFrame(() => { drawer.style.right = '0'; });
+    // Open modal
+    document.getElementById('fbLeadOverlay').classList.add('open');
+    document.getElementById('fbLeadDrawer').classList.add('open');
 
     // Hide step 1 — form/page locked in edit mode
     document.querySelector('.fb-step[data-step="1"]').style.display = 'none';
@@ -1825,6 +1897,8 @@ function editFbLeadConnection(id) {
     onPipelineSelected();
     document.getElementById('fbStageSelect').value = conn.stage_id;
     document.getElementById('fbDefaultTags').value = (conn.default_tags || []).join(', ');
+    const allowDupEl = document.getElementById('fbAllowDuplicates');
+    if (allowDupEl) allowDupEl.checked = conn.allow_duplicates !== false;
 
     // Jump straight to step 2
     fbGoStep(2);
@@ -1834,13 +1908,10 @@ function editFbLeadConnection(id) {
     window.__fbEditMapping = conn.field_mapping || {};
 }
 
-function closeFbLeadDrawer() {
-    const drawer = document.getElementById('fbLeadDrawer');
-    drawer.style.right = '-560px';
-    setTimeout(() => {
-        drawer.style.display = 'none';
-        document.getElementById('fbLeadOverlay').style.display = 'none';
-    }, 300);
+function closeFbLeadDrawer(e) {
+    if (e && e.target && e.target.id !== 'fbLeadOverlay') return;
+    document.getElementById('fbLeadOverlay').classList.remove('open');
+    document.getElementById('fbLeadDrawer').classList.remove('open');
 }
 
 function fbGoStep(step) {
@@ -2052,14 +2123,16 @@ function saveFbLeadConnection() {
 
     const tagsRaw = document.getElementById('fbDefaultTags').value;
     const defaultTags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const allowDuplicates = document.getElementById('fbAllowDuplicates')?.checked ?? true;
 
     if (fbEditingId) {
-        // EDIT mode — only update pipeline/stage/mapping/tags
+        // EDIT mode — only update pipeline/stage/mapping/tags/allow_duplicates
         const editPayload = {
             pipeline_id: document.getElementById('fbPipelineSelect').value,
             stage_id: document.getElementById('fbStageSelect').value,
             field_mapping: mapping,
             default_tags: defaultTags.length ? defaultTags : null,
+            allow_duplicates: allowDuplicates,
         };
         const url = '{{ route("settings.integrations.facebook-leadads.connections.update", ["connection" => "__ID__"]) }}'.replace('__ID__', fbEditingId);
         window.API.put(url, editPayload)
@@ -2087,6 +2160,7 @@ function saveFbLeadConnection() {
         stage_id: document.getElementById('fbStageSelect').value,
         field_mapping: mapping,
         default_tags: defaultTags.length ? defaultTags : null,
+        allow_duplicates: allowDuplicates,
     };
 
     window.API.post('{{ route("settings.integrations.facebook-leadads.connections.store") }}', payload)

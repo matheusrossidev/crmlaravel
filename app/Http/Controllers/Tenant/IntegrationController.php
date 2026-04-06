@@ -758,6 +758,7 @@ class IntegrationController extends Controller
             'field_mapping'      => 'required|array',
             'default_tags'       => 'nullable|array',
             'auto_assign_to'     => 'nullable|integer',
+            'allow_duplicates'   => 'nullable|boolean',
         ]);
 
         $conn = OAuthConnection::where('platform', 'facebook_leadads')
@@ -792,6 +793,7 @@ class IntegrationController extends Controller
                 'default_tags'        => $data['default_tags'] ?? null,
                 'auto_assign_to'      => $data['auto_assign_to'] ?? null,
                 'is_active'           => true,
+                'allow_duplicates'    => $data['allow_duplicates'] ?? true,
             ],
         );
 
@@ -803,12 +805,13 @@ class IntegrationController extends Controller
     public function updateFbLeadConnection(Request $request, FacebookLeadFormConnection $connection): JsonResponse
     {
         $data = $request->validate([
-            'pipeline_id'    => 'sometimes|exists:pipelines,id',
-            'stage_id'       => 'sometimes|integer',
-            'field_mapping'  => 'sometimes|array',
-            'default_tags'   => 'nullable|array',
-            'auto_assign_to' => 'nullable|integer',
-            'is_active'      => 'sometimes|boolean',
+            'pipeline_id'      => 'sometimes|exists:pipelines,id',
+            'stage_id'         => 'sometimes|integer',
+            'field_mapping'    => 'sometimes|array',
+            'default_tags'     => 'nullable|array',
+            'auto_assign_to'   => 'nullable|integer',
+            'is_active'        => 'sometimes|boolean',
+            'allow_duplicates' => 'sometimes|boolean',
         ]);
 
         $connection->update($data);

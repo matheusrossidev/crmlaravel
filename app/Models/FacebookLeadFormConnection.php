@@ -28,6 +28,7 @@ class FacebookLeadFormConnection extends Model
         'default_tags',
         'auto_assign_to',
         'is_active',
+        'allow_duplicates',
     ];
 
     protected $casts = [
@@ -36,6 +37,7 @@ class FacebookLeadFormConnection extends Model
         'form_fields_json'  => 'array',
         'page_access_token' => 'encrypted',
         'is_active'         => 'boolean',
+        'allow_duplicates'  => 'boolean',
     ];
 
     public function oauthConnection(): BelongsTo

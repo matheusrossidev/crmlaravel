@@ -54,7 +54,10 @@ return [
     // Notes
     'note_placeholder'  => 'Escreva uma nota...',
     'add_note'          => 'Adicionar Nota',
+    'edit_note_title'   => 'Editar nota',
     'delete_note_title' => 'Excluir nota',
+    'save_edit_note'    => 'Salvar',
+    'cancel_edit_note'  => 'Cancelar',
 
     // Attachments
     'drop_files'        => 'Clique ou arraste arquivos',
@@ -86,6 +89,7 @@ return [
     // JS messages
     'error_load'        => 'Erro ao carregar lead.',
     'error_add_note'    => 'Erro ao adicionar nota.',
+    'error_update_note' => 'Erro ao salvar nota.',
     'confirm_delete_note' => 'Excluir esta nota?',
     'error_delete_note' => 'Erro ao excluir nota.',
     'file_too_large'    => 'Arquivo muito grande (máx. 20 MB).',

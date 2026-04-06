@@ -488,6 +488,37 @@ class LeadController extends Controller
         ]);
     }
 
+    public function updateNote(Request $request, Lead $lead, LeadNote $note): JsonResponse
+    {
+        if ($note->lead_id !== $lead->id || $note->created_by !== auth()->id()) {
+            return response()->json(['success' => false, 'message' => 'Sem permissão.'], 403);
+        }
+
+        $data = $request->validate(['body' => 'required|string|max:1000000']);
+
+        $note->update(['body' => $data['body']]);
+        $note->load('author');
+
+        LeadEvent::create([
+            'lead_id'      => $lead->id,
+            'event_type'   => 'note_updated',
+            'description'  => 'Nota editada',
+            'performed_by' => auth()->id(),
+            'created_at'   => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'note'    => [
+                'id'         => $note->id,
+                'body'       => $note->body,
+                'author'     => $note->author?->name ?? 'Desconhecido',
+                'created_at' => $note->created_at?->format('d/m/Y H:i'),
+                'is_mine'    => true,
+            ],
+        ]);
+    }
+
     public function deleteNote(Request $request, Lead $lead, LeadNote $note): JsonResponse
     {
         if ($note->lead_id !== $lead->id || $note->created_by !== auth()->id()) {

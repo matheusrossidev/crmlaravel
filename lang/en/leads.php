@@ -54,7 +54,10 @@ return [
     // Notes
     'note_placeholder'  => 'Write a note...',
     'add_note'          => 'Add Note',
+    'edit_note_title'   => 'Edit note',
     'delete_note_title' => 'Delete note',
+    'save_edit_note'    => 'Save',
+    'cancel_edit_note'  => 'Cancel',
 
     // Attachments
     'drop_files'        => 'Click or drag files',
@@ -86,6 +89,7 @@ return [
     // JS messages
     'error_load'        => 'Error loading lead.',
     'error_add_note'    => 'Error adding note.',
+    'error_update_note' => 'Error saving note.',
     'confirm_delete_note' => 'Delete this note?',
     'error_delete_note' => 'Error deleting note.',
     'file_too_large'    => 'File too large (max 20 MB).',

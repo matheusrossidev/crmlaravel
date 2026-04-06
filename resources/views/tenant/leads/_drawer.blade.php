@@ -511,15 +511,43 @@
     }
     .note-author { font-size: 12px; font-weight: 700; color: #374151; }
     .note-date   { font-size: 11px; color: #9ca3af; flex: 1; }
+    .note-edit-btn,
     .note-del-btn {
-        background: none; border: none; padding: 0;
+        background: none; border: none; padding: 2px 4px;
         cursor: pointer; color: #d1d5db; font-size: 13px; line-height: 1;
+        border-radius: 4px; transition: color .12s, background .12s;
     }
-    .note-del-btn:hover { color: #ef4444; }
+    .note-edit-btn:hover { color: #0085f3; background: #eff6ff; }
+    .note-del-btn:hover { color: #ef4444; background: #fef2f2; }
     .note-body {
         font-size: 13px; color: #4b5563;
         white-space: pre-wrap; word-break: break-word; line-height: 1.5;
     }
+    .note-item.editing {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+    }
+    .note-edit-textarea {
+        width: 100%;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+    .note-edit-cancel,
+    .note-edit-save {
+        padding: 5px 12px; font-size: 12px; font-weight: 600;
+        border-radius: 6px; cursor: pointer; transition: all .12s;
+        font-family: inherit;
+        display: inline-flex; align-items: center; gap: 4px;
+    }
+    .note-edit-cancel {
+        background: #fff; color: #6b7280; border: 1px solid #e5e7eb;
+    }
+    .note-edit-cancel:hover { background: #f3f4f6; }
+    .note-edit-save {
+        background: #0085f3; color: #fff; border: none;
+    }
+    .note-edit-save:hover { background: #0070d1; }
+    .note-edit-save:disabled { opacity: .6; cursor: not-allowed; }
     .drawer-add-note-btn {
         display: flex; align-items: center; justify-content: center; gap: 5px;
         padding: 8px 14px; background: #eff6ff; color: #0085f3;
@@ -651,6 +679,7 @@ const CF_DEFS          = {!! json_encode($_cfDefsJson) !!};
 const CF_UPLOAD_URL    = '{{ route('leads.cf-upload') }}';
 const LEAD_TAGS        = {!! json_encode($_configuredTagsJson) !!};
 const LEAD_NOTE_STORE  = '{{ route('leads.notes.store',   ['lead' => '__ID__']) }}';
+const LEAD_NOTE_UPD    = '{{ route('leads.notes.update',  ['lead' => '__LEAD__', 'note' => '__NOTE__']) }}';
 const LEAD_NOTE_DEL    = '{{ route('leads.notes.destroy', ['lead' => '__LEAD__', 'note' => '__NOTE__']) }}';
 const LEAD_PROFILE     = '{{ route('leads.profile',       ['lead' => '__ID__']) }}';
 const ATTACH_STORE     = '{{ route('leads.attachments.store',   ['lead' => '__ID__']) }}';
@@ -949,22 +978,29 @@ function renderUtmSection(lead) {
 }
 
 // ── Notas múltiplas ───────────────────────────────────────────────────────
+function noteHtml(n) {
+    const actions = n.is_mine
+        ? `<button type="button" class="note-edit-btn" onclick="startEditNote(${n.id})" title="${DLANG.edit_note_title || 'Editar'}"><i class="bi bi-pencil"></i></button>
+           <button type="button" class="note-del-btn" onclick="deleteNote(${n.id})" title="${DLANG.delete_note_title}"><i class="bi bi-trash3"></i></button>`
+        : '';
+    return `
+        <div class="note-item" data-note-id="${n.id}">
+            <div class="note-header">
+                <span class="note-author">${escapeHtml(n.author)}</span>
+                <span class="note-date">${escapeHtml(n.created_at || '')}</span>
+                ${actions}
+            </div>
+            <div class="note-body" data-note-body="${n.id}">${escapeHtml(n.body)}</div>
+        </div>`;
+}
+
 function renderNotes(notes) {
     const list = document.getElementById('notesList');
     if (!notes.length) {
         list.innerHTML = `<p style="font-size:12px;color:#9ca3af;text-align:center;padding:6px 0 10px;">${DLANG.no_notes}</p>`;
         return;
     }
-    list.innerHTML = notes.map(n => `
-        <div class="note-item" data-note-id="${n.id}">
-            <div class="note-header">
-                <span class="note-author">${escapeHtml(n.author)}</span>
-                <span class="note-date">${escapeHtml(n.created_at || '')}</span>
-                ${n.is_mine ? `<button type="button" class="note-del-btn" onclick="deleteNote(${n.id})" title="${DLANG.delete_note_title}"><i class="bi bi-trash3"></i></button>` : ''}
-            </div>
-            <div class="note-body">${escapeHtml(n.body)}</div>
-        </div>
-    `).join('');
+    list.innerHTML = notes.map(noteHtml).join('');
 }
 
 function addNote() {
@@ -987,19 +1023,70 @@ function addNote() {
             const list     = document.getElementById('notesList');
             const emptyMsg = list.querySelector('p');
             if (emptyMsg) emptyMsg.remove();
-            const html = `
-                <div class="note-item" data-note-id="${res.note.id}">
-                    <div class="note-header">
-                        <span class="note-author">${escapeHtml(res.note.author)}</span>
-                        <span class="note-date">${escapeHtml(res.note.created_at || '')}</span>
-                        <button type="button" class="note-del-btn" onclick="deleteNote(${res.note.id})" title="${DLANG.delete_note_title}"><i class="bi bi-trash3"></i></button>
-                    </div>
-                    <div class="note-body">${escapeHtml(res.note.body)}</div>
-                </div>`;
-            list.insertAdjacentHTML('afterbegin', html);
+            list.insertAdjacentHTML('afterbegin', noteHtml(res.note));
         },
         error() { toastr.error(DLANG.error_add_note); },
         complete() { btn.disabled = false; },
+    });
+}
+
+function startEditNote(noteId) {
+    const item = document.querySelector(`.note-item[data-note-id="${noteId}"]`);
+    if (!item) return;
+    if (item.classList.contains('editing')) return; // já está editando
+
+    const bodyEl = item.querySelector('.note-body');
+    const currentText = bodyEl.textContent;
+
+    item.classList.add('editing');
+    bodyEl.dataset.original = currentText;
+    bodyEl.innerHTML = `
+        <textarea class="note-edit-textarea drawer-input" rows="3" style="resize:vertical;min-height:64px;font-family:inherit;">${escapeHtml(currentText)}</textarea>
+        <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end;">
+            <button type="button" class="note-edit-cancel" onclick="cancelEditNote(${noteId})">${escapeHtml(DLANG.cancel_edit_note || 'Cancelar')}</button>
+            <button type="button" class="note-edit-save" onclick="saveEditNote(${noteId})"><i class="bi bi-check2"></i> ${escapeHtml(DLANG.save_edit_note || 'Salvar')}</button>
+        </div>`;
+    const ta = bodyEl.querySelector('textarea');
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+}
+
+function cancelEditNote(noteId) {
+    const item = document.querySelector(`.note-item[data-note-id="${noteId}"]`);
+    if (!item) return;
+    const bodyEl = item.querySelector('.note-body');
+    const original = bodyEl.dataset.original ?? '';
+    bodyEl.textContent = original;
+    delete bodyEl.dataset.original;
+    item.classList.remove('editing');
+}
+
+function saveEditNote(noteId) {
+    const item = document.querySelector(`.note-item[data-note-id="${noteId}"]`);
+    if (!item) return;
+    const ta = item.querySelector('.note-edit-textarea');
+    if (!ta) return;
+    const body = ta.value.trim();
+    if (!body) { ta.focus(); return; }
+
+    const saveBtn = item.querySelector('.note-edit-save');
+    if (saveBtn) saveBtn.disabled = true;
+
+    $.ajax({
+        url:    LEAD_NOTE_UPD.replace('__LEAD__', _drawerLeadId).replace('__NOTE__', noteId),
+        method: 'PUT',
+        contentType: 'application/json',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+        data:   JSON.stringify({ body }),
+        success(res) {
+            if (!res.success) return;
+            // Replace the entire note item with the fresh one
+            item.outerHTML = noteHtml(res.note);
+        },
+        error(xhr) {
+            toastr.error(xhr.responseJSON?.message || DLANG.error_update_note || 'Erro ao salvar nota');
+            if (saveBtn) saveBtn.disabled = false;
+        },
     });
 }
 

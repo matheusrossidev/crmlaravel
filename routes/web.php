@@ -301,6 +301,7 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
 
         // Lead notes
         Route::post('/contatos/{lead}/notas', [LeadController::class, 'addNote'])->name('leads.notes.store');
+        Route::put('/contatos/{lead}/notas/{note}', [LeadController::class, 'updateNote'])->name('leads.notes.update');
         Route::delete('/contatos/{lead}/notas/{note}', [LeadController::class, 'deleteNote'])->name('leads.notes.destroy');
 
         // Lead contacts (people)
