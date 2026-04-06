@@ -33,17 +33,28 @@ class FacebookLeadgenWebhookController extends Controller
      */
     public function handle(Request $request): Response
     {
+        Log::info('FacebookLeadgen: webhook received', [
+            'has_signature' => $request->hasHeader('X-Hub-Signature-256'),
+            'body_size'     => strlen($request->getContent()),
+            'object'        => $request->input('object'),
+        ]);
+
         if (! $this->verifySignature($request)) {
-            Log::warning('FacebookLeadgen: invalid signature');
+            Log::warning('FacebookLeadgen: invalid signature', [
+                'signature' => $request->header('X-Hub-Signature-256'),
+                'body_preview' => substr($request->getContent(), 0, 200),
+            ]);
             return response('Invalid signature', 403);
         }
 
         $payload = $request->all();
 
         if (($payload['object'] ?? '') !== 'page') {
+            Log::info('FacebookLeadgen: ignoring non-page object', ['object' => $payload['object'] ?? 'null']);
             return response('OK', 200);
         }
 
+        $dispatched = 0;
         foreach ($payload['entry'] ?? [] as $entry) {
             foreach ($entry['changes'] ?? [] as $change) {
                 if (($change['field'] ?? '') !== 'leadgen') {
@@ -52,6 +63,7 @@ class FacebookLeadgenWebhookController extends Controller
 
                 $value = $change['value'] ?? [];
                 if (empty($value['leadgen_id']) || empty($value['form_id'])) {
+                    Log::warning('FacebookLeadgen: missing leadgen_id or form_id', ['value' => $value]);
                     continue;
                 }
 
@@ -63,12 +75,14 @@ class FacebookLeadgenWebhookController extends Controller
                         'ad_id'        => (string) ($value['ad_id'] ?? ''),
                         'created_time' => (int) ($value['created_time'] ?? 0),
                     ]);
+                    $dispatched++;
                 } catch (\Throwable $e) {
                     Log::error('FacebookLeadgen: dispatch failed', ['error' => $e->getMessage()]);
                 }
             }
         }
 
+        Log::info('FacebookLeadgen: webhook processed', ['dispatched' => $dispatched]);
         return response('OK', 200);
     }
 
