@@ -1072,9 +1072,16 @@ WEBCHAT;
             'sent_at'         => now(),
         ]);
 
+        // Track response time: first AI reply after customer inbound
+        $conv->refresh();
+        $convUpdates = ['last_message_at' => now()];
+        if ($conv->last_inbound_at && ! $conv->first_response_at) {
+            $convUpdates['first_response_at'] = now();
+        }
+
         WhatsappConversation::withoutGlobalScope('tenant')
             ->where('id', $conv->id)
-            ->update(['last_message_at' => now()]);
+            ->update($convUpdates);
 
         try {
             WhatsappMessageCreated::dispatch($message, $conv->tenant_id);
@@ -1184,9 +1191,16 @@ WEBCHAT;
             'sent_at'         => now(),
         ]);
 
+        // Track response time: first AI reply after customer inbound
+        $conv->refresh();
+        $convUpdates = ['last_message_at' => now()];
+        if ($conv->last_inbound_at && ! $conv->first_response_at) {
+            $convUpdates['first_response_at'] = now();
+        }
+
         WhatsappConversation::withoutGlobalScope('tenant')
             ->where('id', $conv->id)
-            ->update(['last_message_at' => now()]);
+            ->update($convUpdates);
 
         try {
             WhatsappMessageCreated::dispatch($message, $conv->tenant_id);
