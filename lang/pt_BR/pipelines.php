@@ -55,5 +55,28 @@ return [
     'req_priority_low'    => 'Baixa',
     'req_priority_medium' => 'Média',
     'req_priority_high'   => 'Alta',
+    'req_days_title'      => 'Dias após entrar na etapa',
     'index_subtitle'    => 'Configure funis e etapas de vendas.',
+
+    // Quick start (modal)
+    'quick_start_title'         => 'Como você quer começar?',
+    'quick_start_blank_title'   => 'Começar do zero',
+    'quick_start_blank_desc'    => 'Crie um funil personalizado etapa por etapa',
+    'quick_start_template_title'=> 'Usar um modelo',
+    'quick_start_template_desc' => 'Escolha entre 55+ funis prontos por nicho',
+
+    // Template browser
+    'template_library_title'    => 'Biblioteca de Funis',
+    'template_back'             => 'Voltar',
+    'template_use'              => 'Usar modelo',
+    'template_all'              => 'Todos',
+    'template_n_stages'         => ':n etapas',
+    'template_applied'          => 'Modelo aplicado',
+    'template_empty'            => 'Nenhum modelo nesta categoria',
+
+    // Required tasks button + sub-modal
+    'req_button_label'          => 'Tarefas obrigatórias',
+    'req_modal_title'           => 'Tarefas obrigatórias da etapa',
+    'req_modal_subtitle'        => 'Estas tarefas serão criadas automaticamente quando um lead entrar nesta etapa.',
+    'req_modal_save'            => 'Salvar tarefas',
 ];

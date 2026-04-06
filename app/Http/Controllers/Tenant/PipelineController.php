@@ -9,6 +9,7 @@ use App\Models\Pipeline;
 use App\Models\PipelineStage;
 use App\Models\StageRequiredTask;
 use App\Services\PlanLimitChecker;
+use App\Support\PipelineTemplates;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -19,7 +20,10 @@ class PipelineController extends Controller
     {
         $pipelines = Pipeline::with(['stages' => fn($q) => $q->orderBy('position')->with('requiredTasks')])->orderBy('sort_order')->get();
 
-        return view('tenant.settings.pipelines', compact('pipelines'));
+        $templates = PipelineTemplates::all();
+        $templateCategories = PipelineTemplates::categories();
+
+        return view('tenant.settings.pipelines', compact('pipelines', 'templates', 'templateCategories'));
     }
 
     public function store(Request $request): JsonResponse

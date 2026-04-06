@@ -500,6 +500,8 @@
         <button class="btn-primary-sm" id="btnCreateGoal" onclick="createGoal()"><i class="bi bi-check-lg"></i> {{ __('goals.create_goal') }}</button>
     </div>
 </div>
+
+@include('partials._drawer-as-modal')
 @endsection
 
 @push('scripts')

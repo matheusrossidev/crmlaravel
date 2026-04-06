@@ -96,31 +96,35 @@
     .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
     .section-title  { font-size: 15px; font-weight: 700; color: #1a1d23; }
 
-    /* ---- Drawer ---- */
-    .drawer-overlay {
+    /* ---- Modal (centralizado) ---- */
+    .pipeline-modal-overlay {
         display: none;
         position: fixed;
         inset: 0;
-        background: rgba(0,0,0,.45);
+        background: rgba(0,0,0,.5);
         z-index: 300;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        animation: fadeIn .15s ease-out;
     }
-    .drawer-overlay.open { display: block; }
+    .pipeline-modal-overlay.open { display: flex; }
 
-    .drawer {
-        position: fixed;
-        top: 0;
-        right: -480px;
-        width: 480px;
-        max-width: 95vw;
-        height: 100vh;
-        z-index: 301;
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    .pipeline-modal {
         background: #fff;
+        width: 720px;
+        max-width: 100%;
+        max-height: 88vh;
+        border-radius: 14px;
         display: flex;
         flex-direction: column;
-        box-shadow: -8px 0 30px rgba(0,0,0,.12);
-        transition: right .25s cubic-bezier(.4,0,.2,1);
+        box-shadow: 0 20px 60px rgba(0,0,0,.25);
+        animation: slideUp .25s cubic-bezier(.4,0,.2,1);
+        overflow: hidden;
     }
-    .drawer.open { right: 0; }
 
     .drawer-header {
         display: flex;
@@ -157,6 +161,194 @@
         padding: 16px 22px;
         border-top: 1px solid #f0f2f7;
         flex-shrink: 0;
+    }
+
+    /* ---- Quick start (top section, só ao criar) ---- */
+    .quick-start-section { margin-bottom: 18px; }
+    .quick-start-title {
+        font-size: 13px; font-weight: 700; color: #1a1d23;
+        margin-bottom: 12px;
+    }
+    .quick-start-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    .quick-card {
+        padding: 18px 16px;
+        border: 2px solid #e8eaf0;
+        border-radius: 12px;
+        background: #fff;
+        cursor: pointer;
+        transition: all .15s;
+        text-align: center;
+    }
+    .quick-card:hover { border-color: #0085f3; background: #f0f8ff; transform: translateY(-2px); }
+    .quick-card .qc-icon {
+        width: 44px; height: 44px; border-radius: 12px;
+        background: #eff6ff; color: #0085f3;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 20px; margin-bottom: 10px;
+    }
+    .quick-card .qc-title {
+        font-size: 14px; font-weight: 700; color: #1a1d23;
+        margin-bottom: 4px;
+    }
+    .quick-card .qc-desc {
+        font-size: 12px; color: #6b7280; line-height: 1.4;
+    }
+    @media (max-width: 540px) {
+        .quick-start-cards { grid-template-columns: 1fr; }
+    }
+
+    /* ---- Template browser ---- */
+    .template-browser-header {
+        display: flex; align-items: center; gap: 10px;
+        margin-bottom: 14px;
+    }
+    .template-back-btn {
+        background: #fff; border: 1.5px solid #e8eaf0;
+        border-radius: 9px; padding: 6px 12px;
+        font-size: 12.5px; color: #374151; font-weight: 600;
+        cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+        transition: all .15s;
+    }
+    .template-back-btn:hover { background: #f0f2f7; }
+    .template-browser-title { font-size: 15px; font-weight: 700; color: #1a1d23; flex: 1; }
+
+    .template-categories-row {
+        display: flex; gap: 6px; flex-wrap: wrap;
+        margin-bottom: 14px;
+    }
+    .template-cat-chip {
+        padding: 5px 12px; border-radius: 99px;
+        background: #f3f4f6; color: #6b7280;
+        border: 1px solid transparent;
+        font-size: 11.5px; font-weight: 600; cursor: pointer;
+        transition: all .12s;
+        white-space: nowrap;
+    }
+    .template-cat-chip:hover { background: #eff6ff; color: #0085f3; }
+    .template-cat-chip.active { background: #0085f3; color: #fff; border-color: #0085f3; }
+
+    .templates-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+    }
+    .template-card {
+        border: 1.5px solid #e8eaf0;
+        border-radius: 12px;
+        padding: 14px 12px 12px;
+        background: #fff;
+        display: flex; flex-direction: column;
+        transition: all .15s;
+    }
+    .template-card:hover { border-color: #93c5fd; box-shadow: 0 4px 14px rgba(0,133,243,.1); }
+    .template-card-icon {
+        width: 36px; height: 36px; border-radius: 9px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 16px; margin-bottom: 8px;
+    }
+    .template-card-name {
+        font-size: 13px; font-weight: 700; color: #1a1d23;
+        margin-bottom: 3px; line-height: 1.3;
+    }
+    .template-card-desc {
+        font-size: 11px; color: #6b7280; line-height: 1.4;
+        flex: 1; margin-bottom: 8px;
+    }
+    .template-card-meta {
+        font-size: 10.5px; color: #9ca3af;
+        margin-bottom: 8px;
+    }
+    .template-card-btn {
+        background: #eff6ff; color: #0085f3;
+        border: 1px solid #bfdbfe; border-radius: 7px;
+        padding: 6px 10px; font-size: 11.5px; font-weight: 600;
+        cursor: pointer; transition: all .12s;
+        display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+        width: 100%;
+    }
+    .template-card-btn:hover { background: #dbeafe; }
+
+    /* ---- Botão chamativo de tarefas obrigatórias por stage ---- */
+    .btn-req-prominent {
+        display: flex; align-items: center; justify-content: space-between;
+        width: 100%; padding: 9px 12px; margin-top: 8px;
+        background: #eff6ff; color: #1d4ed8;
+        border: 1.5px dashed #93c5fd; border-radius: 9px;
+        font-size: 12.5px; font-weight: 600; cursor: pointer;
+        transition: all .15s;
+    }
+    .btn-req-prominent:hover { background: #dbeafe; border-color: #60a5fa; border-style: solid; }
+    .btn-req-prominent.has-reqs {
+        background: #ecfdf5; color: #047857; border-color: #6ee7b7;
+        border-style: solid;
+    }
+    .btn-req-prominent.has-reqs:hover { background: #d1fae5; }
+    .btn-req-prominent .req-label {
+        display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-req-prominent .req-arrow { font-size: 11px; opacity: .7; }
+
+    /* ---- Sub-modal de tarefas obrigatórias ---- */
+    .req-modal-overlay {
+        display: none;
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,.55);
+        z-index: 400;
+        align-items: center; justify-content: center;
+        padding: 20px;
+    }
+    .req-modal-overlay.open { display: flex; }
+    .req-modal {
+        background: #fff;
+        width: 600px; max-width: 100%;
+        max-height: 86vh;
+        border-radius: 14px;
+        display: flex; flex-direction: column;
+        box-shadow: 0 20px 60px rgba(0,0,0,.3);
+        animation: slideUp .2s cubic-bezier(.4,0,.2,1);
+        overflow: hidden;
+    }
+    .req-modal-header {
+        padding: 18px 22px;
+        border-bottom: 1px solid #f0f2f7;
+        display: flex; align-items: center; justify-content: space-between;
+        flex-shrink: 0;
+    }
+    .req-modal-header h4 { margin: 0; font-size: 15px; font-weight: 700; color: #1a1d23; }
+    .req-modal-header h4 small { font-size: 12px; font-weight: 500; color: #6b7280; margin-left: 6px; }
+    .req-modal-body { flex: 1; overflow-y: auto; padding: 18px 22px; }
+    .req-modal-subtitle { font-size: 12.5px; color: #6b7280; margin-bottom: 14px; }
+    .req-modal-list { display: flex; flex-direction: column; gap: 8px; }
+    .req-modal-list .req-row {
+        background: #f9fafb;
+        border: 1px solid #e8eaf0;
+        border-radius: 9px;
+        padding: 10px 12px;
+        display: grid;
+        grid-template-columns: 1fr 110px 100px 70px 30px;
+        gap: 6px;
+        align-items: center;
+        margin-bottom: 0;
+    }
+    .req-modal-list .req-row input,
+    .req-modal-list .req-row select {
+        padding: 7px 10px; font-size: 12.5px;
+        border: 1px solid #e5e7eb; border-radius: 7px;
+        background: #fff; color: #1a1d23;
+    }
+    .req-modal-list .req-row input:focus,
+    .req-modal-list .req-row select:focus { outline: none; border-color: #0085f3; }
+    .req-modal-footer {
+        padding: 14px 22px; border-top: 1px solid #f0f2f7;
+        display: flex; gap: 8px; justify-content: space-between; align-items: center;
+        flex-shrink: 0;
+    }
+    @media (max-width: 640px) {
+        .req-modal-list .req-row { grid-template-columns: 1fr 1fr; }
     }
 
     .btn-cancel {
@@ -228,54 +420,21 @@
     }
     .btn-add-stage-drawer:hover { background: #dbeafe; border-color: #93c5fd; }
 
-    /* ---- Required tasks per stage ---- */
-    .stage-req-toggle {
-        width: 26px; height: 26px; border-radius: 6px; border: 1px solid #e8eaf0;
-        background: #fff; color: #9ca3af; display: flex; align-items: center; justify-content: center;
-        cursor: pointer; font-size: 12px; flex-shrink: 0; transition: all .15s; position: relative;
-    }
-    .stage-req-toggle:hover { background: #eff6ff; color: #0085f3; border-color: #bfdbfe; }
-    .stage-req-toggle.has-reqs { color: #0085f3; border-color: #bfdbfe; background: #eff6ff; }
-    .stage-req-toggle .req-count {
-        position: absolute; top: -5px; right: -5px; width: 14px; height: 14px;
-        border-radius: 50%; background: #0085f3; color: #fff; font-size: 8px; font-weight: 700;
-        display: flex; align-items: center; justify-content: center;
-    }
-    .stage-req-panel {
-        display: none; padding: 10px 10px 10px 30px; background: #f8fafc;
-        border: 1px solid #e8eaf0; border-top: none; border-radius: 0 0 8px 8px;
-        margin-top: -7px; margin-bottom: 6px;
-    }
-    .stage-req-panel.open { display: block; }
-    .stage-req-panel .req-title {
-        font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase;
-        letter-spacing: .04em; margin-bottom: 8px;
-    }
-    .req-row {
-        display: flex; gap: 6px; align-items: center; margin-bottom: 6px;
-    }
-    .req-row input, .req-row select {
-        padding: 5px 8px; font-size: 12px; border: 1px solid #e5e7eb;
-        border-radius: 6px; background: #fff; color: #1a1d23;
-    }
-    .req-row input:focus, .req-row select:focus { outline: none; border-color: #0085f3; }
-    .req-row .req-subject { flex: 1; min-width: 0; }
-    .req-row .req-type { width: 90px; }
-    .req-row .req-priority { width: 80px; }
-    .req-row .req-days { width: 55px; text-align: center; }
+    /* ---- Required tasks helpers (sub-modal) ---- */
     .req-del {
-        width: 22px; height: 22px; border-radius: 5px; border: none;
-        background: transparent; color: #d1d5db; cursor: pointer; font-size: 11px;
+        width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e8eaf0;
+        background: #fff; color: #9ca3af; cursor: pointer; font-size: 12px;
         display: flex; align-items: center; justify-content: center;
     }
-    .req-del:hover { color: #ef4444; background: #fee2e2; }
+    .req-del:hover { color: #ef4444; background: #fee2e2; border-color: #fca5a5; }
     .btn-add-req {
-        display: inline-flex; align-items: center; gap: 4px;
-        padding: 4px 10px; font-size: 11px; font-weight: 600; color: #0085f3;
-        cursor: pointer; border: 1px dashed #bfdbfe; border-radius: 6px;
-        background: #eff6ff; margin-top: 4px;
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 8px 14px; font-size: 12.5px; font-weight: 600; color: #0085f3;
+        cursor: pointer; border: 1.5px dashed #bfdbfe; border-radius: 9px;
+        background: #eff6ff; margin-top: 12px;
+        transition: all .15s;
     }
-    .btn-add-req:hover { background: #dbeafe; }
+    .btn-add-req:hover { background: #dbeafe; border-color: #93c5fd; }
 </style>
 @endpush
 
@@ -357,66 +516,123 @@
 
 </div>
 
-{{-- DRAWER: Pipeline + Stages --}}
-<div class="drawer-overlay" id="drawerOverlay"></div>
-<div class="drawer" id="drawerPipeline">
-    <div class="drawer-header">
-        <h4 id="drawerTitle">{{ __('pipelines.new_pipeline_title') }}</h4>
-        <button class="drawer-close" onclick="closeDrawer()"><i class="bi bi-x-lg"></i></button>
+{{-- MODAL: Pipeline + Stages --}}
+<div class="pipeline-modal-overlay" id="pipelineModalOverlay">
+    <div class="pipeline-modal" id="pipelineModal">
+        <div class="drawer-header">
+            <h4 id="drawerTitle">{{ __('pipelines.new_pipeline_title') }}</h4>
+            <button class="drawer-close" onclick="closePipelineModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="drawer-body">
+            <input type="hidden" id="pipelineId">
+
+            {{-- Quick start (só ao criar) --}}
+            <div class="quick-start-section" id="quickStartSection" style="display:none;">
+                <div class="quick-start-title">{{ __('pipelines.quick_start_title') }}</div>
+                <div class="quick-start-cards">
+                    <div class="quick-card" onclick="startBlankPipeline()">
+                        <div class="qc-icon"><i class="bi bi-pencil-square"></i></div>
+                        <div class="qc-title">{{ __('pipelines.quick_start_blank_title') }}</div>
+                        <div class="qc-desc">{{ __('pipelines.quick_start_blank_desc') }}</div>
+                    </div>
+                    <div class="quick-card" onclick="openTemplateBrowser()">
+                        <div class="qc-icon" style="background:#f3e8ff;color:#9333EA;"><i class="bi bi-collection"></i></div>
+                        <div class="qc-title">{{ __('pipelines.quick_start_template_title') }}</div>
+                        <div class="qc-desc">{{ __('pipelines.quick_start_template_desc') }}</div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Template browser (substitui o body temporariamente) --}}
+            <div id="templateBrowser" style="display:none;">
+                <div class="template-browser-header">
+                    <button type="button" class="template-back-btn" onclick="closeTemplateBrowser()">
+                        <i class="bi bi-arrow-left"></i> {{ __('pipelines.template_back') }}
+                    </button>
+                    <div class="template-browser-title">{{ __('pipelines.template_library_title') }}</div>
+                </div>
+                <div class="template-categories-row" id="templateCategories"></div>
+                <div class="templates-grid" id="templatesGrid"></div>
+            </div>
+
+            {{-- Pipeline form (escondido até escolher quick start) --}}
+            <div id="pipelineFormBody" style="display:none;">
+                <div class="form-group">
+                    <label class="form-label">{{ __('pipelines.pipeline_name') }}</label>
+                    <input type="text" id="pipelineName" class="form-control" placeholder="{{ __('pipelines.pipeline_name_ph') }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">{{ __('pipelines.color') }}</label>
+                    <div class="color-row">
+                        <input type="color" id="pipelineColor" class="color-input" value="#3B82F6">
+                        <input type="text" id="pipelineColorText" class="form-control" value="#3B82F6" placeholder="#3B82F6" style="flex:1;">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top:14px;">
+                    <label class="form-label" style="margin-bottom:8px;">{{ __('pipelines.auto_create_lead') }}</label>
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                        <label class="toggle">
+                            <input type="checkbox" id="autoCreateLead" checked onchange="toggleChannelToggles()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span style="font-size:12px;color:#374151;">{{ __('pipelines.create_on_message') }}</span>
+                    </div>
+                    <div id="channelToggles" style="display:flex;gap:16px;padding-left:4px;">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <label class="toggle">
+                                <input type="checkbox" id="autoCreateWhatsapp" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span style="font-size:12px;color:#6b7280;"><i class="bi bi-whatsapp" style="color:#25D366;"></i> WhatsApp</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <label class="toggle">
+                                <input type="checkbox" id="autoCreateInstagram" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span style="font-size:12px;color:#6b7280;"><i class="bi bi-instagram" style="color:#E1306C;"></i> Instagram</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Stages section --}}
+                <div class="drawer-stages-section">
+                    <div class="drawer-stages-title">{{ __('pipelines.stages') }}</div>
+                    <ul class="drawer-stages-list" id="drawerStagesList"></ul>
+                    <button type="button" class="btn-add-stage-drawer" onclick="addDrawerStageRow()">
+                        <i class="bi bi-plus-lg"></i> {{ __('pipelines.new_stage') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="drawer-footer">
+            <button class="btn-cancel" onclick="closePipelineModal()">{{ __('pipelines.cancel') }}</button>
+            <button class="btn-save" id="btnSaveDrawer" onclick="saveDrawer()">{{ __('pipelines.save') }}</button>
+        </div>
     </div>
-    <div class="drawer-body">
-        <input type="hidden" id="pipelineId">
+</div>
 
-        <div class="form-group">
-            <label class="form-label">{{ __('pipelines.pipeline_name') }}</label>
-            <input type="text" id="pipelineName" class="form-control" placeholder="{{ __('pipelines.pipeline_name_ph') }}">
+{{-- SUB-MODAL: Tarefas obrigatórias da etapa --}}
+<div class="req-modal-overlay" id="reqModalOverlay">
+    <div class="req-modal">
+        <div class="req-modal-header">
+            <h4>
+                {{ __('pipelines.req_modal_title') }}
+                <small id="reqModalStageName"></small>
+            </h4>
+            <button class="drawer-close" onclick="closeReqModal()"><i class="bi bi-x-lg"></i></button>
         </div>
-        <div class="form-group">
-            <label class="form-label">{{ __('pipelines.color') }}</label>
-            <div class="color-row">
-                <input type="color" id="pipelineColor" class="color-input" value="#3B82F6">
-                <input type="text" id="pipelineColorText" class="form-control" value="#3B82F6" placeholder="#3B82F6" style="flex:1;">
-            </div>
-        </div>
-        <div class="form-group" style="margin-top:14px;">
-            <label class="form-label" style="margin-bottom:8px;">{{ __('pipelines.auto_create_lead') }}</label>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-                <label class="toggle">
-                    <input type="checkbox" id="autoCreateLead" checked onchange="toggleChannelToggles()">
-                    <span class="toggle-slider"></span>
-                </label>
-                <span style="font-size:12px;color:#374151;">{{ __('pipelines.create_on_message') }}</span>
-            </div>
-            <div id="channelToggles" style="display:flex;gap:16px;padding-left:4px;">
-                <div style="display:flex;align-items:center;gap:6px;">
-                    <label class="toggle">
-                        <input type="checkbox" id="autoCreateWhatsapp" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span style="font-size:12px;color:#6b7280;"><i class="bi bi-whatsapp" style="color:#25D366;"></i> WhatsApp</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:6px;">
-                    <label class="toggle">
-                        <input type="checkbox" id="autoCreateInstagram" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span style="font-size:12px;color:#6b7280;"><i class="bi bi-instagram" style="color:#E1306C;"></i> Instagram</span>
-                </div>
-            </div>
-        </div>
-
-        {{-- Stages section --}}
-        <div class="drawer-stages-section">
-            <div class="drawer-stages-title">{{ __('pipelines.stages') }}</div>
-            <ul class="drawer-stages-list" id="drawerStagesList"></ul>
-            <button type="button" class="btn-add-stage-drawer" onclick="addDrawerStageRow()">
-                <i class="bi bi-plus-lg"></i> {{ __('pipelines.new_stage') }}
+        <div class="req-modal-body">
+            <div class="req-modal-subtitle">{{ __('pipelines.req_modal_subtitle') }}</div>
+            <div class="req-modal-list" id="reqModalList"></div>
+            <button type="button" class="btn-add-req" onclick="addReqRow()">
+                <i class="bi bi-plus-lg"></i> {{ __('pipelines.req_add') }}
             </button>
         </div>
-    </div>
-    <div class="drawer-footer">
-        <button class="btn-cancel" onclick="closeDrawer()">{{ __('pipelines.cancel') }}</button>
-        <button class="btn-save" id="btnSaveDrawer" onclick="saveDrawer()">{{ __('pipelines.save') }}</button>
+        <div class="req-modal-footer">
+            <button class="btn-cancel" onclick="closeReqModal()">{{ __('pipelines.cancel') }}</button>
+            <button class="btn-save" onclick="saveReqModal()">{{ __('pipelines.req_modal_save') }}</button>
+        </div>
     </div>
 </div>
 @endsection
@@ -434,7 +650,21 @@ const STAGE_DEL   = @json(route('settings.pipelines.stages.destroy',['pipeline' 
 const STAGE_REORD = @json(route('settings.pipelines.stages.reorder',['pipeline' => '__ID__']));
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
 
-/* ---- Pipelines data from server (for edit drawer) ---- */
+@php
+    $templatesJs = collect($templates)->map(fn($t) => [
+        'slug' => $t['slug'],
+        'category' => $t['category'],
+        'name' => $t['name'],
+        'icon' => $t['icon'],
+        'color' => $t['color'],
+        'description' => $t['description'],
+        'stages' => $t['stages'],
+    ])->values();
+@endphp
+const TEMPLATES = {!! json_encode($templatesJs) !!};
+const TEMPLATE_CATEGORIES = {!! json_encode($templateCategories) !!};
+
+/* ---- Pipelines data from server (for edit modal) ---- */
 const pipelinesData = {};
 @foreach($pipelines as $pipeline)
 pipelinesData[{{ $pipeline->id }}] = {
@@ -446,7 +676,16 @@ pipelinesData[{{ $pipeline->id }}] = {
     auto_create_from_instagram: {{ $pipeline->auto_create_from_instagram ? 'true' : 'false' }},
     stages: [
         @foreach($pipeline->stages as $stage)
-        { id: {{ $stage->id }}, name: @json($stage->name), color: @json($stage->color), is_won: {{ $stage->is_won ? 'true' : 'false' }}, is_lost: {{ $stage->is_lost ? 'true' : 'false' }} },
+        @php
+            $stageTasksJs = $stage->requiredTasks->map(fn($t) => [
+                'subject' => $t->subject,
+                'description' => $t->description,
+                'task_type' => $t->task_type,
+                'priority' => $t->priority,
+                'due_date_offset' => $t->due_date_offset,
+            ])->values();
+        @endphp
+        { id: {{ $stage->id }}, name: @json($stage->name), color: @json($stage->color), is_won: {{ $stage->is_won ? 'true' : 'false' }}, is_lost: {{ $stage->is_lost ? 'true' : 'false' }}, required_tasks: {!! json_encode($stageTasksJs) !!} },
         @endforeach
     ]
 };
@@ -483,20 +722,132 @@ function initSortable(el) {
     });
 }
 
-/* ---- Drawer open / close ---- */
-function openDrawer() {
-    document.getElementById('drawerOverlay').classList.add('open');
-    document.getElementById('drawerPipeline').classList.add('open');
+/* ---- Pipeline modal open / close ---- */
+function openPipelineModal() {
+    document.getElementById('pipelineModalOverlay').classList.add('open');
 }
 
-function closeDrawer() {
-    document.getElementById('drawerOverlay').classList.remove('open');
-    document.getElementById('drawerPipeline').classList.remove('open');
+function closePipelineModal() {
+    document.getElementById('pipelineModalOverlay').classList.remove('open');
 }
 
-document.getElementById('drawerOverlay').addEventListener('click', () => closeDrawer());
+document.getElementById('pipelineModalOverlay').addEventListener('click', e => {
+    if (e.target.id === 'pipelineModalOverlay') closePipelineModal();
+});
 
-/* ---- Drawer stage row counter ---- */
+/* ---- Quick start panels ---- */
+function showQuickStart() {
+    document.getElementById('quickStartSection').style.display = 'block';
+    document.getElementById('templateBrowser').style.display = 'none';
+    document.getElementById('pipelineFormBody').style.display = 'none';
+}
+
+function startBlankPipeline() {
+    document.getElementById('quickStartSection').style.display = 'none';
+    document.getElementById('templateBrowser').style.display = 'none';
+    document.getElementById('pipelineFormBody').style.display = 'block';
+    setTimeout(() => document.getElementById('pipelineName').focus(), 50);
+}
+
+/* ---- Template browser ---- */
+let _activeCategory = 'all';
+
+function openTemplateBrowser() {
+    document.getElementById('quickStartSection').style.display = 'none';
+    document.getElementById('templateBrowser').style.display = 'block';
+    document.getElementById('pipelineFormBody').style.display = 'none';
+    _activeCategory = 'all';
+    renderCategoryChips();
+    renderTemplatesGrid();
+}
+
+function closeTemplateBrowser() {
+    showQuickStart();
+}
+
+function renderCategoryChips() {
+    const row = document.getElementById('templateCategories');
+    let html = `<div class="template-cat-chip ${_activeCategory==='all'?'active':''}" onclick="filterTemplatesByCategory('all')">${escapeHtml(PLANG.template_all)}</div>`;
+    for (const [slug, label] of Object.entries(TEMPLATE_CATEGORIES)) {
+        html += `<div class="template-cat-chip ${_activeCategory===slug?'active':''}" onclick="filterTemplatesByCategory('${slug}')">${escapeHtml(label)}</div>`;
+    }
+    row.innerHTML = html;
+}
+
+function filterTemplatesByCategory(slug) {
+    _activeCategory = slug;
+    renderCategoryChips();
+    renderTemplatesGrid();
+}
+
+function renderTemplatesGrid() {
+    const grid = document.getElementById('templatesGrid');
+    const list = _activeCategory === 'all'
+        ? TEMPLATES
+        : TEMPLATES.filter(t => t.category === _activeCategory);
+
+    if (list.length === 0) {
+        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:#9ca3af;font-size:13px;">${escapeHtml(PLANG.template_empty || 'Sem templates')}</div>`;
+        return;
+    }
+
+    grid.innerHTML = list.map(t => {
+        const stagesLbl = (PLANG.template_n_stages || ':n etapas').replace(':n', t.stages.length);
+        return `
+            <div class="template-card">
+                <div class="template-card-icon" style="background:${hexToRgba(t.color, 0.12)};color:${t.color};">
+                    <i class="bi ${t.icon}"></i>
+                </div>
+                <div class="template-card-name">${escapeHtml(t.name)}</div>
+                <div class="template-card-desc">${escapeHtml(t.description)}</div>
+                <div class="template-card-meta"><i class="bi bi-list-ol"></i> ${escapeHtml(stagesLbl)}</div>
+                <button type="button" class="template-card-btn" onclick="applyTemplate('${t.slug}')">
+                    ${escapeHtml(PLANG.template_use)} <i class="bi bi-arrow-right"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+function hexToRgba(hex, a) {
+    if (!hex || hex[0] !== '#') return `rgba(0,133,243,${a})`;
+    const h = hex.slice(1);
+    const r = parseInt(h.substring(0,2), 16);
+    const g = parseInt(h.substring(2,4), 16);
+    const b = parseInt(h.substring(4,6), 16);
+    return `rgba(${r},${g},${b},${a})`;
+}
+
+function applyTemplate(slug) {
+    const t = TEMPLATES.find(x => x.slug === slug);
+    if (!t) return;
+
+    document.getElementById('templateBrowser').style.display = 'none';
+    document.getElementById('pipelineFormBody').style.display = 'block';
+
+    document.getElementById('pipelineName').value = t.name;
+    document.getElementById('pipelineColor').value = t.color;
+    document.getElementById('pipelineColorText').value = t.color;
+    document.getElementById('autoCreateLead').checked = true;
+    document.getElementById('autoCreateWhatsapp').checked = true;
+    document.getElementById('autoCreateInstagram').checked = true;
+    toggleChannelToggles();
+
+    clearDrawerStages();
+    t.stages.forEach(s => addDrawerStageRow({
+        name: s.name,
+        color: s.color,
+        is_won: s.is_won,
+        is_lost: s.is_lost,
+        required_tasks: s.required_tasks || [],
+    }));
+
+    if (typeof toastr !== 'undefined') {
+        toastr.success((PLANG.template_applied || 'Modelo aplicado') + ': ' + t.name);
+    }
+}
+
+/* ---- Stage row counter ---- */
 let drawerStageCounter = 0;
 
 function addDrawerStageRow(data) {
@@ -512,43 +863,38 @@ function addDrawerStageRow(data) {
     const wrapper = document.createElement('div');
     wrapper.className = 'drawer-stage-wrapper';
     wrapper.dataset.idx = idx;
+    wrapper.dataset.reqTasks = JSON.stringify(reqs);
 
     const li = document.createElement('div');
     li.className = 'drawer-stage-row';
     li.dataset.stageId = stageId;
     li.dataset.idx = idx;
 
-    const reqCount = reqs.length;
     li.innerHTML = `
         <i class="bi bi-grip-vertical stage-drag-handle"></i>
         <input type="text" class="form-control" style="flex:1;min-width:0;" placeholder="${escapeHtml(PLANG.stage_name_ph)}" value="${escapeHtml(name)}" data-field="name">
         <input type="color" class="color-input" value="${color}" data-field="color">
         <label class="drawer-stage-checkbox" title="${escapeHtml(PLANG.won_title)}"><input type="checkbox" data-field="is_won" ${isWon ? 'checked' : ''}> ${PLANG.won_abbr}</label>
         <label class="drawer-stage-checkbox" title="${escapeHtml(PLANG.lost_title)}"><input type="checkbox" data-field="is_lost" ${isLost ? 'checked' : ''}> ${PLANG.lost_abbr}</label>
-        <button type="button" class="stage-req-toggle ${reqCount > 0 ? 'has-reqs' : ''}" onclick="toggleReqPanel(this)" title="${PLANG.req_title}">
-            <i class="bi bi-list-check"></i>
-            ${reqCount > 0 ? '<span class="req-count">' + reqCount + '</span>' : ''}
-        </button>
         <button type="button" class="drawer-stage-delete" onclick="removeDrawerStageRow(this)" title="${escapeHtml(PLANG.remove_stage)}"><i class="bi bi-trash"></i></button>
     `;
 
-    const panel = document.createElement('div');
-    panel.className = 'stage-req-panel';
-    panel.dataset.idx = idx;
-    panel.innerHTML = `
-        <div class="req-title"><i class="bi bi-list-check"></i> ${PLANG.req_title}</div>
-        <div class="req-list"></div>
-        <button type="button" class="btn-add-req" onclick="addReqRow(this.closest('.stage-req-panel'))">
-            <i class="bi bi-plus"></i> ${PLANG.req_add}
-        </button>
+    const reqBtn = document.createElement('button');
+    reqBtn.type = 'button';
+    reqBtn.className = 'btn-req-prominent' + (reqs.length > 0 ? ' has-reqs' : '');
+    reqBtn.dataset.idx = idx;
+    reqBtn.onclick = () => openReqModal(idx);
+    reqBtn.innerHTML = `
+        <span class="req-label">
+            <i class="bi bi-list-check"></i>
+            ${escapeHtml(PLANG.req_button_label || 'Tarefas obrigatórias')} (<span class="req-count">${reqs.length}</span>)
+        </span>
+        <span class="req-arrow"><i class="bi bi-arrow-right"></i></span>
     `;
 
     wrapper.appendChild(li);
-    wrapper.appendChild(panel);
+    wrapper.appendChild(reqBtn);
     list.appendChild(wrapper);
-
-    // Populate existing requirements
-    reqs.forEach(r => addReqRow(panel, r));
 
     if (!list._sortable) {
         list._sortable = Sortable.create(list, {
@@ -559,65 +905,117 @@ function addDrawerStageRow(data) {
     }
 }
 
-function toggleReqPanel(btn) {
-    const wrapper = btn.closest('.drawer-stage-wrapper');
-    const panel = wrapper.querySelector('.stage-req-panel');
-    panel.classList.toggle('open');
-}
+/* ---- Required Tasks Sub-Modal ---- */
+let _editingReqStageIdx = null;
+let _reqDraft = [];
 
-function addReqRow(panel, data) {
-    const rl = panel.querySelector('.req-list');
-    const div = document.createElement('div');
-    div.className = 'req-row';
-    div.innerHTML = `
-        <input type="text" class="req-subject" placeholder="${PLANG.req_subject_ph}" value="${escapeHtml((data && data.subject) || '')}" data-req="subject">
-        <select class="req-type" data-req="task_type">
-            <option value="call" ${data?.task_type === 'call' ? 'selected' : ''}>${PLANG.req_type_call}</option>
-            <option value="email" ${data?.task_type === 'email' ? 'selected' : ''}>${PLANG.req_type_email}</option>
-            <option value="task" ${(!data || data.task_type === 'task') ? 'selected' : ''}>${PLANG.req_type_task}</option>
-            <option value="visit" ${data?.task_type === 'visit' ? 'selected' : ''}>${PLANG.req_type_visit}</option>
-            <option value="whatsapp" ${data?.task_type === 'whatsapp' ? 'selected' : ''}>${PLANG.req_type_whatsapp}</option>
-            <option value="meeting" ${data?.task_type === 'meeting' ? 'selected' : ''}>${PLANG.req_type_meeting}</option>
-        </select>
-        <select class="req-priority" data-req="priority">
-            <option value="low" ${data?.priority === 'low' ? 'selected' : ''}>${PLANG.req_priority_low}</option>
-            <option value="medium" ${(!data || data.priority === 'medium') ? 'selected' : ''}>${PLANG.req_priority_medium}</option>
-            <option value="high" ${data?.priority === 'high' ? 'selected' : ''}>${PLANG.req_priority_high}</option>
-        </select>
-        <input type="number" class="req-days" min="0" max="365" value="${(data && data.due_date_offset != null) ? data.due_date_offset : 1}" data-req="due_date_offset" title="Prazo em dias">
-        <button type="button" class="req-del" onclick="this.closest('.req-row').remove();updateReqCount(this)"><i class="bi bi-x-lg"></i></button>
-    `;
-    rl.appendChild(div);
-    updateReqCount(div);
-}
-
-function updateReqCount(el) {
-    const wrapper = el.closest('.drawer-stage-wrapper');
+function openReqModal(stageIdx) {
+    _editingReqStageIdx = stageIdx;
+    const wrapper = document.querySelector(`.drawer-stage-wrapper[data-idx="${stageIdx}"]`);
     if (!wrapper) return;
-    const count = wrapper.querySelectorAll('.req-row').length;
-    const toggle = wrapper.querySelector('.stage-req-toggle');
-    toggle.classList.toggle('has-reqs', count > 0);
-    const badge = toggle.querySelector('.req-count');
-    if (count > 0) {
-        if (badge) { badge.textContent = count; }
-        else { toggle.insertAdjacentHTML('beforeend', '<span class="req-count">' + count + '</span>'); }
-    } else if (badge) { badge.remove(); }
+    try {
+        _reqDraft = JSON.parse(wrapper.dataset.reqTasks || '[]');
+    } catch {
+        _reqDraft = [];
+    }
+
+    // Subtitle: stage name
+    const stageName = wrapper.querySelector('[data-field="name"]')?.value || '';
+    document.getElementById('reqModalStageName').textContent = stageName ? '— ' + stageName : '';
+
+    renderReqModalList();
+    document.getElementById('reqModalOverlay').classList.add('open');
+}
+
+function closeReqModal() {
+    _editingReqStageIdx = null;
+    _reqDraft = [];
+    document.getElementById('reqModalOverlay').classList.remove('open');
+}
+
+document.getElementById('reqModalOverlay').addEventListener('click', e => {
+    if (e.target.id === 'reqModalOverlay') closeReqModal();
+});
+
+function renderReqModalList() {
+    const list = document.getElementById('reqModalList');
+    list.innerHTML = '';
+    _reqDraft.forEach((task, i) => {
+        const row = document.createElement('div');
+        row.className = 'req-row';
+        row.dataset.taskIdx = i;
+        row.innerHTML = `
+            <input type="text" placeholder="${escapeHtml(PLANG.req_subject_ph)}" value="${escapeHtml(task.subject || '')}" data-req="subject" oninput="onReqDraftChange(${i}, 'subject', this.value)">
+            <select data-req="task_type" onchange="onReqDraftChange(${i}, 'task_type', this.value)">
+                <option value="call" ${task.task_type === 'call' ? 'selected' : ''}>${PLANG.req_type_call}</option>
+                <option value="email" ${task.task_type === 'email' ? 'selected' : ''}>${PLANG.req_type_email}</option>
+                <option value="task" ${(!task.task_type || task.task_type === 'task') ? 'selected' : ''}>${PLANG.req_type_task}</option>
+                <option value="visit" ${task.task_type === 'visit' ? 'selected' : ''}>${PLANG.req_type_visit}</option>
+                <option value="whatsapp" ${task.task_type === 'whatsapp' ? 'selected' : ''}>${PLANG.req_type_whatsapp}</option>
+                <option value="meeting" ${task.task_type === 'meeting' ? 'selected' : ''}>${PLANG.req_type_meeting}</option>
+            </select>
+            <select data-req="priority" onchange="onReqDraftChange(${i}, 'priority', this.value)">
+                <option value="low" ${task.priority === 'low' ? 'selected' : ''}>${PLANG.req_priority_low}</option>
+                <option value="medium" ${(!task.priority || task.priority === 'medium') ? 'selected' : ''}>${PLANG.req_priority_medium}</option>
+                <option value="high" ${task.priority === 'high' ? 'selected' : ''}>${PLANG.req_priority_high}</option>
+            </select>
+            <input type="number" min="0" max="365" value="${task.due_date_offset != null ? task.due_date_offset : 1}" data-req="due_date_offset" oninput="onReqDraftChange(${i}, 'due_date_offset', parseInt(this.value)||0)" title="${escapeHtml(PLANG.req_days_title || 'Dias')}">
+            <button type="button" class="req-del" onclick="removeReqDraft(${i})"><i class="bi bi-x-lg"></i></button>
+        `;
+        list.appendChild(row);
+    });
+}
+
+function addReqRow() {
+    _reqDraft.push({ subject: '', task_type: 'task', priority: 'medium', due_date_offset: 1 });
+    renderReqModalList();
+}
+
+function removeReqDraft(i) {
+    _reqDraft.splice(i, 1);
+    renderReqModalList();
+}
+
+function onReqDraftChange(i, field, value) {
+    if (!_reqDraft[i]) return;
+    _reqDraft[i][field] = value;
+}
+
+function saveReqModal() {
+    if (_editingReqStageIdx === null) { closeReqModal(); return; }
+    const wrapper = document.querySelector(`.drawer-stage-wrapper[data-idx="${_editingReqStageIdx}"]`);
+    if (!wrapper) { closeReqModal(); return; }
+
+    // Filter out empty subjects
+    const cleaned = _reqDraft.filter(t => (t.subject || '').trim() !== '');
+
+    wrapper.dataset.reqTasks = JSON.stringify(cleaned);
+
+    // Update button label
+    const btn = wrapper.querySelector('.btn-req-prominent');
+    if (btn) {
+        btn.classList.toggle('has-reqs', cleaned.length > 0);
+        const cntEl = btn.querySelector('.req-count');
+        if (cntEl) cntEl.textContent = cleaned.length;
+    }
+
+    closeReqModal();
 }
 
 function getStageRequiredTasks(wrapper) {
-    const rows = wrapper.querySelectorAll('.req-row');
-    const tasks = [];
-    rows.forEach(row => {
-        const subject = row.querySelector('[data-req="subject"]').value.trim();
-        if (!subject) return;
-        tasks.push({
-            subject: subject,
-            task_type: row.querySelector('[data-req="task_type"]').value,
-            priority: row.querySelector('[data-req="priority"]').value,
-            due_date_offset: parseInt(row.querySelector('[data-req="due_date_offset"]').value) || 1,
-        });
-    });
-    return tasks;
+    try {
+        const tasks = JSON.parse(wrapper.dataset.reqTasks || '[]');
+        return tasks
+            .filter(t => (t.subject || '').trim() !== '')
+            .map(t => ({
+                subject: t.subject,
+                task_type: t.task_type || 'task',
+                priority: t.priority || 'medium',
+                due_date_offset: parseInt(t.due_date_offset) || 1,
+            }));
+    } catch {
+        return [];
+    }
 }
 
 function removeDrawerStageRow(btn) {
@@ -639,7 +1037,7 @@ function clearDrawerStages() {
     drawerStageCounter = 0;
 }
 
-/* ---- Open drawer: New pipeline ---- */
+/* ---- Open modal: New pipeline ---- */
 document.getElementById('btnNovoPipeline').addEventListener('click', () => {
     document.getElementById('drawerTitle').textContent = PLANG.new_pipeline_title;
     document.getElementById('pipelineId').value = '';
@@ -651,11 +1049,11 @@ document.getElementById('btnNovoPipeline').addEventListener('click', () => {
     document.getElementById('autoCreateInstagram').checked = true;
     toggleChannelToggles();
     clearDrawerStages();
-    openDrawer();
-    setTimeout(() => document.getElementById('pipelineName').focus(), 100);
+    showQuickStart();
+    openPipelineModal();
 });
 
-/* ---- Open drawer: Edit existing pipeline ---- */
+/* ---- Open modal: Edit existing pipeline (skip quick start) ---- */
 function openEditPipelineDrawer(pipelineId) {
     const p = pipelinesData[pipelineId];
     if (!p) return;
@@ -673,7 +1071,11 @@ function openEditPipelineDrawer(pipelineId) {
     clearDrawerStages();
     p.stages.forEach(s => addDrawerStageRow(s));
 
-    openDrawer();
+    // Skip quick start — abre direto no form
+    document.getElementById('quickStartSection').style.display = 'none';
+    document.getElementById('templateBrowser').style.display = 'none';
+    document.getElementById('pipelineFormBody').style.display = 'block';
+    openPipelineModal();
 }
 
 /* ---- Toggle channel toggles ---- */
@@ -785,7 +1187,7 @@ async function saveDrawer() {
             });
         }
 
-        closeDrawer();
+        closePipelineModal();
 
         /* -- 3. Update DOM -- */
         if (id) {

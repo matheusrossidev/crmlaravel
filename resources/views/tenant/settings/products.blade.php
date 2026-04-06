@@ -236,7 +236,7 @@
     </div>
 </div>
 
-
+@include('partials._drawer-as-modal')
 @endsection
 
 @push('scripts')

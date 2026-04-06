@@ -39,7 +39,7 @@ class LeadController extends Controller
             'pipeline_id'  => 'required|integer|exists:pipelines,id',
             'stage_id'     => 'required|integer|exists:pipeline_stages,id',
             'campaign_id'  => 'nullable|integer|exists:campaigns,id',
-            'notes'        => 'nullable|string|max:2000',
+            'notes'        => 'nullable|string|max:1000000',
             'utm_source'   => 'nullable|string|max:100',
             'utm_medium'   => 'nullable|string|max:100',
             'utm_campaign' => 'nullable|string|max:200',

@@ -6,23 +6,10 @@
 --}}
 
 {{-- Overlay --}}
-<div id="drawerOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:199;transition:opacity .25s;" onclick="closeLeadDrawer()"></div>
+<div id="drawerOverlay" class="lead-modal-overlay" onclick="closeLeadDrawer()"></div>
 
-{{-- Drawer --}}
-<aside id="leadDrawer" style="
-    position:fixed;
-    top:0;right:0;
-    width:440px;
-    height:100vh;
-    background:#fff;
-    box-shadow:-4px 0 32px rgba(0,0,0,.1);
-    z-index:200;
-    display:flex;
-    flex-direction:column;
-    transform:translateX(100%);
-    transition:transform .25s cubic-bezier(.4,0,.2,1);
-    overflow:hidden;
-">
+{{-- Modal centralizado (originalmente um drawer lateral) --}}
+<aside id="leadDrawer" class="lead-modal">
 
     {{-- Header --}}
     <div style="padding:18px 22px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
@@ -309,6 +296,54 @@
 </aside>
 
 <style>
+    /* ── Modal centralizado (lead drawer) ──────────────────────────── */
+    .lead-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, .55);
+        z-index: 300;
+        animation: leadFadeIn .15s ease-out;
+    }
+    .lead-modal-overlay.open { display: block; }
+
+    .lead-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(.97);
+        width: 880px;
+        max-width: calc(100vw - 40px);
+        max-height: 88vh;
+        height: auto;
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+        z-index: 301;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+    }
+    .lead-modal.open {
+        visibility: visible;
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+        transition: opacity .2s ease, transform .2s ease, visibility 0s linear;
+    }
+    @keyframes leadFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @media (max-width: 900px) {
+        .lead-modal {
+            width: calc(100vw - 24px) !important;
+            max-height: 92vh !important;
+        }
+    }
+
     .drawer-section-label {
         font-size: 10.5px;
         font-weight: 700;
@@ -562,11 +597,8 @@
     }
     .cf-toggle.on .cf-toggle-thumb { transform: translateX(18px); }
 
-    /* ── Mobile: drawer full-width ── */
+    /* ── Mobile: modal padding/grid ── */
     @media (max-width: 768px) {
-        #leadDrawer {
-            width: 100vw !important;
-        }
         #drawerBody {
             padding: 16px !important;
         }
@@ -1211,14 +1243,14 @@ document.getElementById('btnDeleteLead')?.addEventListener('click', () => {
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function showDrawer() {
-    document.getElementById('drawerOverlay').style.display = 'block';
-    document.getElementById('leadDrawer').style.transform  = 'translateX(0)';
+    document.getElementById('drawerOverlay').classList.add('open');
+    document.getElementById('leadDrawer').classList.add('open');
     document.body.style.overflow = 'hidden';
 }
 
 function closeLeadDrawer() {
-    document.getElementById('drawerOverlay').style.display = 'none';
-    document.getElementById('leadDrawer').style.transform  = 'translateX(100%)';
+    document.getElementById('drawerOverlay').classList.remove('open');
+    document.getElementById('leadDrawer').classList.remove('open');
     document.body.style.overflow = '';
     resetDrawerForm();
 }

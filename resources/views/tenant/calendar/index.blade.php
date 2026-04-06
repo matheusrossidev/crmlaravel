@@ -764,6 +764,54 @@
 }
 .cal-sidebar-overlay.open { display: block; }
 
+/* ── Modal centralizado de evento (originalmente um drawer lateral) ── */
+.cal-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .55);
+    z-index: 1049;
+    animation: calFadeIn .15s ease-out;
+}
+.cal-modal-overlay.open { display: block; }
+
+.cal-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(.97);
+    width: 720px;
+    max-width: calc(100vw - 40px);
+    max-height: 88vh;
+    height: auto;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+}
+.cal-modal.open {
+    visibility: visible;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    transition: opacity .2s ease, transform .2s ease, visibility 0s linear;
+}
+@keyframes calFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@media (max-width: 768px) {
+    .cal-modal {
+        width: calc(100vw - 24px) !important;
+        max-height: 92vh !important;
+    }
+}
+
 /* ── Responsive ───────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
     .cal-layout { flex-direction: column; gap: 0; height: 100vh; }
@@ -803,7 +851,6 @@
 }
 @media (max-width: 480px) {
     .cal-main { }
-    #calDrawer { width: 100vw !important; }
     .cal-toolbar-title { font-size: 13px; }
     .cal-datetime-grid { grid-template-columns: 1fr !important; }
     .cal-inp[type="datetime-local"] { font-size: 13px; }
@@ -935,25 +982,10 @@
     <div id="popupBody"></div>
 </div>
 
-{{-- ── Overlay do drawer ──────────────────────────────────────────────── --}}
-<div id="calDrawerOverlay" onclick="closeCalDrawer()" style="
-    display:none; position:fixed; inset:0;
-    background:rgba(0,0,0,.35); z-index:1049;
-    transition:opacity .25s;
-"></div>
+{{-- ── Modal centralizado de evento (overlay + modal) ───────────────── --}}
+<div id="calDrawerOverlay" class="cal-modal-overlay" onclick="closeCalDrawer()"></div>
 
-{{-- ── Drawer de evento ───────────────────────────────────────────────── --}}
-<aside id="calDrawer" style="
-    position:fixed; top:0; right:0;
-    width:480px; max-width:100vw; height:100vh;
-    background:#fff;
-    box-shadow:-4px 0 32px rgba(0,0,0,.12);
-    z-index:1050;
-    display:flex; flex-direction:column;
-    transform:translateX(100%);
-    transition:transform .25s cubic-bezier(.4,0,.2,1);
-    overflow:hidden;
-">
+<aside id="calDrawer" class="cal-modal">
     {{-- Header --}}
     <div style="display:flex;align-items:center;justify-content:space-between;
                 padding:20px 24px;border-bottom:1px solid #e2e8f0;flex-shrink:0">
@@ -1542,14 +1574,14 @@ function esc(s) {
 
 // ── Drawer helpers ───────────────────────────────────────────────────────
 function openCalDrawer() {
-    document.getElementById('calDrawerOverlay').style.display = 'block';
-    document.getElementById('calDrawer').style.transform = 'translateX(0)';
+    document.getElementById('calDrawerOverlay').classList.add('open');
+    document.getElementById('calDrawer').classList.add('open');
     document.body.style.overflow = 'hidden';
 }
 
 function closeCalDrawer() {
-    document.getElementById('calDrawerOverlay').style.display = 'none';
-    document.getElementById('calDrawer').style.transform = 'translateX(100%)';
+    document.getElementById('calDrawerOverlay').classList.remove('open');
+    document.getElementById('calDrawer').classList.remove('open');
     document.body.style.overflow = '';
 }
 

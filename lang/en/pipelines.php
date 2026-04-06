@@ -55,5 +55,28 @@ return [
     'req_priority_low'    => 'Low',
     'req_priority_medium' => 'Medium',
     'req_priority_high'   => 'High',
+    'req_days_title'      => 'Days after entering stage',
     'index_subtitle'    => 'Configure sales funnels and stages.',
+
+    // Quick start (modal)
+    'quick_start_title'         => 'How do you want to start?',
+    'quick_start_blank_title'   => 'Start from scratch',
+    'quick_start_blank_desc'    => 'Build a custom pipeline stage by stage',
+    'quick_start_template_title'=> 'Use a template',
+    'quick_start_template_desc' => 'Pick from 55+ ready-to-use pipelines by industry',
+
+    // Template browser
+    'template_library_title'    => 'Pipeline Library',
+    'template_back'             => 'Back',
+    'template_use'              => 'Use template',
+    'template_all'              => 'All',
+    'template_n_stages'         => ':n stages',
+    'template_applied'          => 'Template applied',
+    'template_empty'            => 'No templates in this category',
+
+    // Required tasks button + sub-modal
+    'req_button_label'          => 'Required tasks',
+    'req_modal_title'           => 'Required tasks for this stage',
+    'req_modal_subtitle'        => 'These tasks will be created automatically when a lead enters this stage.',
+    'req_modal_save'            => 'Save tasks',
 ];

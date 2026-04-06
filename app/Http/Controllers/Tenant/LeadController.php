@@ -123,7 +123,7 @@ class LeadController extends Controller
             'pipeline_id' => 'required|integer|exists:pipelines,id',
             'stage_id'    => 'required|integer|exists:pipeline_stages,id',
             'campaign_id' => 'nullable|integer|exists:campaigns,id',
-            'notes'       => 'nullable|string|max:2000',
+            'notes'       => 'nullable|string|max:1000000',
             'birthday'    => 'nullable|date',
         ]);
 
@@ -335,7 +335,7 @@ class LeadController extends Controller
             'pipeline_id' => 'required|integer|exists:pipelines,id',
             'stage_id'    => 'required|integer|exists:pipeline_stages,id',
             'campaign_id' => 'nullable|integer|exists:campaigns,id',
-            'notes'       => 'nullable|string|max:2000',
+            'notes'       => 'nullable|string|max:1000000',
             'birthday'    => 'nullable|date',
         ]);
 
@@ -457,7 +457,8 @@ class LeadController extends Controller
 
     public function addNote(Request $request, Lead $lead): JsonResponse
     {
-        $request->validate(['body' => 'required|string|max:3000']);
+        // MEDIUMTEXT no DB suporta ~16M chars; cap em 1M já é absurdo pra texto livre
+        $request->validate(['body' => 'required|string|max:1000000']);
 
         $note = $lead->leadNotes()->create([
             'body'       => $request->body,
