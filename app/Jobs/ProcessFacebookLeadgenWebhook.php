@@ -200,6 +200,7 @@ class ProcessFacebookLeadgenWebhook implements ShouldQueue
 
         // 10. Create LeadEvent
         LeadEvent::create([
+            'tenant_id'    => $tenantId,
             'lead_id'      => $lead->id,
             'event_type'   => 'created',
             'description'  => $platform === 'ig'
