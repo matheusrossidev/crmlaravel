@@ -13,6 +13,20 @@
     </div>
 </div>
 
+{{-- Language tabs (PT_BR / EN) --}}
+<div style="display:flex;gap:8px;margin-bottom:18px;">
+    @foreach($availableLocales as $loc => $label)
+    <a href="{{ route('master.reengagement') }}?locale={{ $loc }}"
+       class="re-locale-tab {{ $currentLocale === $loc ? 'active' : '' }}">
+        @if($loc === 'pt_BR')
+            🇧🇷 {{ $label }}
+        @else
+            🇺🇸 {{ $label }}
+        @endif
+    </a>
+    @endforeach
+</div>
+
 {{-- Stage Tabs --}}
 <div style="display:flex;gap:0;border-bottom:2px solid #e8eaf0;margin-bottom:20px;">
     @foreach(['7d' => '7 dias sem login', '14d' => '14 dias sem login', '30d' => '30 dias sem login'] as $key => $label)
@@ -57,7 +71,7 @@
                     <button class="m-btn m-btn-outline" onclick="sendTest('{{ $stage }}', 'email')">
                         <i class="bi bi-send"></i> Enviar teste
                     </button>
-                    <a href="{{ route('master.reengagement.preview', ['stage' => $stage]) }}" target="_blank" class="m-btn m-btn-outline">
+                    <a href="{{ route('master.reengagement.preview', ['stage' => $stage, 'locale' => $currentLocale]) }}" target="_blank" class="m-btn m-btn-outline">
                         <i class="bi bi-eye"></i> Preview
                     </a>
                 </div>
@@ -146,6 +160,16 @@
     }
     .re-tab:hover { color:#374151; }
     .re-tab.active { color:#0085f3;border-bottom-color:#0085f3; }
+    .re-locale-tab {
+        display:inline-flex;align-items:center;gap:8px;
+        padding:8px 16px;font-size:13px;font-weight:600;color:#6b7280;
+        background:#f3f4f6;border:1.5px solid #e8eaf0;border-radius:9px;
+        text-decoration:none;cursor:pointer;transition:all .15s;
+    }
+    .re-locale-tab:hover { background:#eff6ff;color:#0085f3;border-color:#bfdbfe; }
+    .re-locale-tab.active {
+        background:#0085f3;color:#fff;border-color:#0085f3;
+    }
     .re-panel { display:none; }
     .re-panel.active { display:block; }
     .re-input {
@@ -207,9 +231,10 @@ function saveTemplates() {
 function sendTest(stage, channel) {
     testStage = stage;
     testChannel = channel;
-    document.getElementById('testModalTitle').textContent = 'Enviar teste — ' + stage;
-    document.getElementById('testModalLabel').textContent = channel === 'email' ? 'Email de teste' : 'Número WhatsApp (com DDD)';
-    document.getElementById('testTarget').placeholder = channel === 'email' ? 'email@exemplo.com' : '5547999991111';
+    var localeLabel = '{{ $availableLocales[$currentLocale] }}';
+    document.getElementById('testModalTitle').textContent = 'Enviar teste — ' + stage + ' (' + localeLabel + ')';
+    document.getElementById('testModalLabel').textContent = channel === 'email' ? 'Email de teste' : 'Número WhatsApp (qualquer formato — ex: (11) 99999-9999, +1 415 555 0100)';
+    document.getElementById('testTarget').placeholder = channel === 'email' ? 'email@exemplo.com' : '+55 11 99999-9999';
     document.getElementById('testTarget').value = '';
     document.getElementById('testModal').style.display = 'flex';
 }
@@ -221,7 +246,7 @@ function confirmSendTest() {
     fetch('{{ route("master.reengagement.test") }}', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': getCSRF() },
-        body: JSON.stringify({ stage: testStage, channel: testChannel, target: target })
+        body: JSON.stringify({ stage: testStage, channel: testChannel, target: target, locale: '{{ $currentLocale }}' })
     })
     .then(r => r.json())
     .then(data => {

@@ -20,14 +20,31 @@ class ReengagementController extends Controller
 {
     use Traits\ChecksMasterPermission;
 
-    public function index(): View
+    private const AVAILABLE_LOCALES = [
+        'pt_BR' => 'Português',
+        'en'    => 'English',
+    ];
+
+    public function index(Request $request): View
     {
         $this->authorizeModule('system');
 
-        $templates = ReengagementTemplate::all()->groupBy('stage');
+        $currentLocale = $request->input('locale', 'pt_BR');
+        if (!array_key_exists($currentLocale, self::AVAILABLE_LOCALES)) {
+            $currentLocale = 'pt_BR';
+        }
+
+        $templates = ReengagementTemplate::where('locale', $currentLocale)
+            ->get()
+            ->groupBy('stage');
         $variables = ReengagementTemplate::availableVariables();
 
-        return view('master.reengagement.index', compact('templates', 'variables'));
+        return view('master.reengagement.index', [
+            'templates'        => $templates,
+            'variables'        => $variables,
+            'currentLocale'    => $currentLocale,
+            'availableLocales' => self::AVAILABLE_LOCALES,
+        ]);
     }
 
     public function update(Request $request): JsonResponse
@@ -58,14 +75,19 @@ class ReengagementController extends Controller
      */
     public function preview(Request $request)
     {
-        $stage = $request->input('stage', '7d');
+        $stage  = $request->input('stage', '7d');
+        $locale = $request->input('locale', 'pt_BR');
+        if (!array_key_exists($locale, self::AVAILABLE_LOCALES)) {
+            $locale = 'pt_BR';
+        }
 
         $template = ReengagementTemplate::where('stage', $stage)
             ->where('channel', 'email')
+            ->where('locale', $locale)
             ->first();
 
         if (!$template) {
-            return 'Template não encontrado. Execute o seeder primeiro.';
+            return "Template não encontrado para stage={$stage} locale={$locale}. Execute o seeder primeiro.";
         }
 
         $mockVars = [
@@ -84,7 +106,7 @@ class ReengagementController extends Controller
         ];
 
         $mockUser   = new User(['name' => 'Matheus', 'email' => 'teste@syncro.chat']);
-        $mockTenant = new Tenant(['name' => 'Syncro Demo']);
+        $mockTenant = new Tenant(['name' => 'Syncro Demo', 'locale' => $locale]);
 
         $mailable = new ReengagementEmail($mockUser, $mockTenant, $template, $mockVars);
 
@@ -99,26 +121,40 @@ class ReengagementController extends Controller
             'stage'   => 'required|in:7d,14d,30d',
             'channel' => 'required|in:email,whatsapp',
             'target'  => 'required|string|max:50',
+            'locale'  => 'nullable|in:pt_BR,en',
         ]);
+
+        $locale = $data['locale'] ?? 'pt_BR';
 
         try {
             if ($data['channel'] === 'email') {
                 Artisan::call('users:send-reengagement', [
-                    '--test-email' => $data['target'],
-                    '--test-stage' => $data['stage'],
+                    '--test-email'  => $data['target'],
+                    '--test-stage'  => $data['stage'],
+                    '--test-locale' => $locale,
                 ]);
             } else {
                 Artisan::call('users:send-reengagement', [
-                    '--test-phone' => $data['target'],
-                    '--test-stage' => $data['stage'],
+                    '--test-phone'  => $data['target'],
+                    '--test-stage'  => $data['stage'],
+                    '--test-locale' => $locale,
                 ]);
+            }
+
+            // O command pode ter dado erro silencioso (return FAILURE) — checar saída
+            $output = Artisan::output();
+            if (str_contains($output, 'Invalid') || str_contains($output, 'No email template') || str_contains($output, 'No WhatsApp template')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trim($output),
+                ], 422);
             }
 
             return response()->json([
                 'success' => true,
                 'message' => $data['channel'] === 'email'
-                    ? "Teste enviado para {$data['target']}"
-                    : "WhatsApp enviado para {$data['target']}",
+                    ? "Teste enviado para {$data['target']} ({$locale})"
+                    : "WhatsApp enviado para {$data['target']} ({$locale})",
             ]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Reengagement test failed', [

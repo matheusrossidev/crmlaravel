@@ -14,13 +14,14 @@ use App\Models\User;
 use App\Models\WhatsappConversation;
 use App\Models\InstagramConversation;
 use App\Services\WahaService;
+use App\Support\PhoneNormalizer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class SendReengagement extends Command
 {
-    protected $signature = 'users:send-reengagement {--test-email= : Send test email to this address} {--test-phone= : Send test WA to this number} {--test-stage=7d : Stage for test}';
+    protected $signature = 'users:send-reengagement {--test-email= : Send test email to this address} {--test-phone= : Send test WA to this number} {--test-stage=7d : Stage for test} {--test-locale=pt_BR : Locale for test (pt_BR or en)}';
     protected $description = 'Send reengagement emails and WhatsApp to inactive users';
 
     private const STAGES = [
@@ -60,6 +61,9 @@ class SendReengagement extends Command
                 $vars   = $this->buildVariables($user, $tenant);
                 $locale = $tenant->locale ?? 'pt_BR';
 
+                $emailQueued = false;
+                $waSent      = false;
+
                 // Email
                 $emailTemplate = ReengagementTemplate::where('stage', $s['stage'])
                     ->where('channel', 'email')
@@ -78,6 +82,7 @@ class SendReengagement extends Command
                             new ReengagementEmail($user, $tenant, $emailTemplate, $vars)
                         );
                         $totalEmail++;
+                        $emailQueued = true;
                     } catch (\Throwable $e) {
                         Log::warning('Reengagement email failed', [
                             'user_id' => $user->id,
@@ -88,37 +93,51 @@ class SendReengagement extends Command
 
                 // WhatsApp (via tenant_12 official instance)
                 if ($user->phone) {
-                    $waTemplate = ReengagementTemplate::where('stage', $s['stage'])
-                        ->where('channel', 'whatsapp')
-                        ->where('locale', $locale)
-                        ->where('is_active', true)
-                        ->first()
-                        ?? ReengagementTemplate::where('stage', $s['stage'])
-                            ->where('channel', 'whatsapp')
-                            ->where('locale', 'pt_BR')
-                            ->where('is_active', true)
-                            ->first(); // fallback to PT if no translation
+                    $chatId = PhoneNormalizer::toWahaChatId($user->phone);
 
-                    if ($waTemplate) {
-                        try {
-                            $message = $waTemplate->render($vars);
-                            $chatId  = preg_replace('/\D/', '', $user->phone) . '@c.us';
-                            $waha    = new WahaService(self::WA_SESSION);
-                            $waha->sendText($chatId, $message);
-                            $totalWa++;
-                        } catch (\Throwable $e) {
-                            Log::warning('Reengagement WhatsApp failed', [
-                                'user_id' => $user->id,
-                                'error'   => $e->getMessage(),
-                            ]);
+                    if ($chatId === null) {
+                        Log::warning('Reengagement WhatsApp skipped: invalid phone format', [
+                            'user_id' => $user->id,
+                            'phone'   => $user->phone,
+                        ]);
+                    } else {
+                        $waTemplate = ReengagementTemplate::where('stage', $s['stage'])
+                            ->where('channel', 'whatsapp')
+                            ->where('locale', $locale)
+                            ->where('is_active', true)
+                            ->first()
+                            ?? ReengagementTemplate::where('stage', $s['stage'])
+                                ->where('channel', 'whatsapp')
+                                ->where('locale', 'pt_BR')
+                                ->where('is_active', true)
+                                ->first(); // fallback to PT if no translation
+
+                        if ($waTemplate) {
+                            try {
+                                $message = $waTemplate->render($vars);
+                                $waha    = new WahaService(self::WA_SESSION);
+                                $waha->sendText($chatId, $message);
+                                $totalWa++;
+                                $waSent = true;
+                            } catch (\Throwable $e) {
+                                Log::warning('Reengagement WhatsApp failed', [
+                                    'user_id' => $user->id,
+                                    'chat_id' => $chatId,
+                                    'error'   => $e->getMessage(),
+                                ]);
+                            }
                         }
                     }
                 }
 
-                $user->update([
-                    'last_reengagement_sent_at' => now(),
-                    'reengagement_stage'        => $s['stage'],
-                ]);
+                // Só "queima" o stage se PELO MENOS um canal teve sucesso.
+                // Senão deixa o user disponível pra próxima rodada (não perdemos o reengage).
+                if ($emailQueued || $waSent) {
+                    $user->update([
+                        'last_reengagement_sent_at' => now(),
+                        'reengagement_stage'        => $s['stage'],
+                    ]);
+                }
             }
         }
 
@@ -199,7 +218,13 @@ class SendReengagement extends Command
      */
     private function sendTest(): int
     {
-        $stage = $this->option('test-stage') ?: '7d';
+        $stage  = $this->option('test-stage')  ?: '7d';
+        $locale = $this->option('test-locale') ?: 'pt_BR';
+
+        if (!in_array($locale, ['pt_BR', 'en'], true)) {
+            $this->error("Invalid locale '{$locale}'. Use pt_BR or en.");
+            return self::FAILURE;
+        }
 
         $mockVars = [
             '{{nome}}'               => 'Matheus',
@@ -216,8 +241,6 @@ class SendReengagement extends Command
             '{{link_chats}}'         => 'https://app.syncro.chat/chats',
         ];
 
-        $locale = 'pt_BR';
-
         if ($email = $this->option('test-email')) {
             $template = ReengagementTemplate::where('stage', $stage)
                 ->where('channel', 'email')
@@ -225,15 +248,15 @@ class SendReengagement extends Command
                 ->first();
 
             if (!$template) {
-                $this->error("No email template for stage {$stage}. Run the seeder first.");
+                $this->error("No email template for stage {$stage} / locale {$locale}. Run the seeder first.");
                 return self::FAILURE;
             }
 
             $mockUser   = new User(['name' => 'Matheus', 'email' => $email]);
-            $mockTenant = new Tenant(['name' => 'Syncro Demo']);
+            $mockTenant = new Tenant(['name' => 'Syncro Demo', 'locale' => $locale]);
 
             Mail::to($email)->send(new ReengagementEmail($mockUser, $mockTenant, $template, $mockVars));
-            $this->info("Test email sent to {$email} (stage: {$stage})");
+            $this->info("Test email sent to {$email} (stage: {$stage}, locale: {$locale})");
         }
 
         if ($phone = $this->option('test-phone')) {
@@ -243,15 +266,20 @@ class SendReengagement extends Command
                 ->first();
 
             if (!$template) {
-                $this->error("No WhatsApp template for stage {$stage}. Run the seeder first.");
+                $this->error("No WhatsApp template for stage {$stage} / locale {$locale}. Run the seeder first.");
+                return self::FAILURE;
+            }
+
+            $chatId = PhoneNormalizer::toWahaChatId($phone);
+            if ($chatId === null) {
+                $this->error("Invalid phone format: {$phone}. Use international format (e.g. +55 11 99999-9999) or BR with DDD.");
                 return self::FAILURE;
             }
 
             $message = $template->render($mockVars);
-            $chatId  = preg_replace('/\D/', '', $phone) . '@c.us';
             $waha    = new WahaService(self::WA_SESSION);
             $waha->sendText($chatId, $message);
-            $this->info("Test WhatsApp sent to {$phone} (stage: {$stage})");
+            $this->info("Test WhatsApp sent to {$phone} → {$chatId} (stage: {$stage}, locale: {$locale})");
         }
 
         return self::SUCCESS;

@@ -36,14 +36,13 @@ class ReengagementEmail extends Mailable
 
     public function envelope(): Envelope
     {
+        // Subject vem do template (se setado) OU da lang key bilingual (fallback).
+        // A lang key `email.reengagement.title` existe em pt_BR e en, então o
+        // fallback respeita o locale setado no construtor via $this->locale().
         $subject = $this->template->subject
-            ? $this->template->render(array_merge($this->variables, [
-                // Subject also supports variables
-            ]))
-            : "Seus leads estão esperando, {$this->user->name}";
+            ?: __('email.reengagement.title', ['name' => $this->user->name]);
 
-        // Interpolate variables in subject
-        $subject = $this->template->subject ?? $subject;
+        // Interpolar variáveis ({{nome}}, {{empresa}}, etc) no subject
         foreach ($this->variables as $key => $value) {
             $subject = str_replace($key, (string) $value, $subject);
         }
