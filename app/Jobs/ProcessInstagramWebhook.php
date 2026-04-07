@@ -156,6 +156,25 @@ class ProcessInstagramWebhook implements ShouldQueue
             return;
         }
 
+        // Ignorar story mentions: a Meta NÃO grant consent pra User Profile API
+        // nesses casos (a pessoa só te marcou no story dela, não te mandou DM),
+        // então não conseguimos buscar nome/@username. Também não dá pra responder
+        // via API. O resultado seria um card vazio e inútil na inbox.
+        // Story replies (a pessoa respondendo ao SEU story via DM) NÃO caem aqui
+        // porque não usam attachment type='story_mention' — esses continuam funcionando.
+        // Docs: https://developers.facebook.com/docs/messenger-platform/instagram/features/webhook/
+        if (! empty($messageData['attachments'])) {
+            foreach ($messageData['attachments'] as $att) {
+                if (($att['type'] ?? '') === 'story_mention') {
+                    Log::channel('instagram')->info('Story mention ignorado', [
+                        'mid'       => $msgId,
+                        'sender_id' => $senderId,
+                    ]);
+                    return;
+                }
+            }
+        }
+
         // Se fromMe: verificar se já existe no banco (enviado pelo CRM)
         if ($isFromMe) {
             if ($msgId && InstagramMessage::withoutGlobalScope('tenant')

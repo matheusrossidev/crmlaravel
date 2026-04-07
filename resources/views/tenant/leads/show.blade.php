@@ -279,7 +279,8 @@ $pageIcon = 'person-badge';
 .lp-note-author { font-size: 13px; font-weight: 600; color: #1a1d23; }
 .lp-note-date   { font-size: 11px; color: #9ca3af; }
 .lp-note-body   { font-size: 13.5px; color: #374151; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
-.lp-note-del {
+.lp-note-del,
+.lp-note-edit {
     background: none;
     border: none;
     cursor: pointer;
@@ -289,7 +290,42 @@ $pageIcon = 'person-badge';
     border-radius: 4px;
     transition: color .15s;
 }
+.lp-note-edit:hover { color: #0085f3; }
 .lp-note-del:hover { color: #ef4444; }
+.lp-note-edit-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+    margin-top: 6px;
+}
+.lp-note-edit-cancel,
+.lp-note-edit-save {
+    padding: 6px 14px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    border: 1.5px solid transparent;
+    transition: all .15s;
+}
+.lp-note-edit-cancel { background: #fff; border-color: #e8eaf0; color: #6b7280; }
+.lp-note-edit-cancel:hover { background: #f0f2f7; }
+.lp-note-edit-save { background: #0085f3; border-color: #0085f3; color: #fff; display: flex; align-items: center; gap: 4px; }
+.lp-note-edit-save:hover { background: #006acf; }
+.lp-note-edit-save:disabled { opacity: .6; cursor: not-allowed; }
+.lp-note-edit-textarea {
+    width: 100%;
+    border: 1.5px solid #e8eaf0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13.5px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 64px;
+    box-sizing: border-box;
+}
+.lp-note-edit-textarea:focus { outline: none; border-color: #0085f3; }
 
 /* Note form */
 .lp-note-textarea {
@@ -1163,7 +1199,7 @@ $pageIcon = 'person-badge';
         <div class="lp-tab-panel" id="tab-notes">
             <div id="notesContainer">
                 @forelse($lead->leadNotes as $note)
-                <div class="lp-note-card" id="note-{{ $note->id }}">
+                <div class="lp-note-card" id="note-{{ $note->id }}" data-note-id="{{ $note->id }}">
                     <div class="lp-note-header">
                         <div class="lp-note-avatar">{{ strtoupper(substr($note->author?->name ?? '?', 0, 1)) }}</div>
                         <div class="lp-note-meta">
@@ -1171,12 +1207,15 @@ $pageIcon = 'person-badge';
                             <div class="lp-note-date">{{ $note->created_at->diffForHumans() }}</div>
                         </div>
                         @if($note->created_by === auth()->id())
+                        <button class="lp-note-edit" onclick="editPageNote({{ $note->id }})" title="{{ __('leads.edit_note_title') }}">
+                            <i class="bi bi-pencil"></i>
+                        </button>
                         <button class="lp-note-del" onclick="deletePageNote({{ $note->id }})" title="{{ __('leads.delete_note_title') }}">
                             <i class="bi bi-trash3"></i>
                         </button>
                         @endif
                     </div>
-                    <div class="lp-note-body">{{ $note->body }}</div>
+                    <div class="lp-note-body" data-note-body>{{ $note->body }}</div>
                 </div>
                 @empty
                 <div id="notesEmpty" style="text-align:center;padding:30px 20px;color:#9ca3af;">
@@ -2250,6 +2289,7 @@ async function addPageNote() {
         const card = document.createElement('div');
         card.className = 'lp-note-card';
         card.id = 'note-' + note.id;
+        card.dataset.noteId = note.id;
         card.innerHTML = `
             <div class="lp-note-header">
                 <div class="lp-note-avatar">${escapeHtml((note.author || '?').charAt(0).toUpperCase())}</div>
@@ -2257,11 +2297,14 @@ async function addPageNote() {
                     <div class="lp-note-author">${escapeHtml(note.author || LLANG.me)}</div>
                     <div class="lp-note-date">${LLANG.just_now}</div>
                 </div>
+                <button class="lp-note-edit" onclick="editPageNote(${note.id})" title="${LLANG.edit_note_title}">
+                    <i class="bi bi-pencil"></i>
+                </button>
                 <button class="lp-note-del" onclick="deletePageNote(${note.id})" title="${LLANG.delete_note_title}">
                     <i class="bi bi-trash3"></i>
                 </button>
             </div>
-            <div class="lp-note-body">${escapeHtml(note.body)}</div>
+            <div class="lp-note-body" data-note-body>${escapeHtml(note.body)}</div>
         `;
         container.prepend(card);
         textarea.value = '';
@@ -2308,6 +2351,76 @@ async function deletePageNote(noteId) {
         }
     } catch(e) {
         alert(LLANG.error_prefix + e.message);
+    }
+}
+
+function editPageNote(noteId) {
+    const card = document.querySelector(`.lp-note-card[data-note-id="${noteId}"]`);
+    if (!card || card.classList.contains('editing')) return;
+
+    const bodyEl = card.querySelector('[data-note-body]');
+    const currentText = bodyEl.textContent;
+
+    card.classList.add('editing');
+    bodyEl.dataset.original = currentText;
+    bodyEl.innerHTML = `
+        <textarea class="lp-note-edit-textarea" rows="3">${escapeHtml(currentText)}</textarea>
+        <div class="lp-note-edit-actions">
+            <button type="button" class="lp-note-edit-cancel" onclick="cancelEditPageNote(${noteId})">${escapeHtml(LLANG.cancel_edit_note || 'Cancelar')}</button>
+            <button type="button" class="lp-note-edit-save" onclick="saveEditPageNote(${noteId})"><i class="bi bi-check2"></i> ${escapeHtml(LLANG.save_edit_note || 'Salvar')}</button>
+        </div>`;
+    const ta = bodyEl.querySelector('textarea');
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+}
+
+function cancelEditPageNote(noteId) {
+    const card = document.querySelector(`.lp-note-card[data-note-id="${noteId}"]`);
+    if (!card) return;
+    const bodyEl = card.querySelector('[data-note-body]');
+    bodyEl.textContent = bodyEl.dataset.original ?? '';
+    delete bodyEl.dataset.original;
+    card.classList.remove('editing');
+}
+
+async function saveEditPageNote(noteId) {
+    const card = document.querySelector(`.lp-note-card[data-note-id="${noteId}"]`);
+    if (!card) return;
+    const ta = card.querySelector('.lp-note-edit-textarea');
+    if (!ta) return;
+    const body = ta.value.trim();
+    if (!body) { ta.focus(); return; }
+
+    const saveBtn = card.querySelector('.lp-note-edit-save');
+    if (saveBtn) saveBtn.disabled = true;
+
+    const url = LEAD_NOTE_UPD
+        .replace('__LEAD__', {{ $lead->id }})
+        .replace('__NOTE__', noteId);
+
+    try {
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': CSRF,
+            },
+            body: JSON.stringify({ body }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            throw new Error(data.message || LLANG.error_update_note || 'Erro ao salvar nota');
+        }
+
+        // Replace body with the fresh value, exit edit mode
+        const bodyEl = card.querySelector('[data-note-body]');
+        bodyEl.textContent = data.note.body;
+        delete bodyEl.dataset.original;
+        card.classList.remove('editing');
+    } catch (e) {
+        alert((LLANG.error_prefix || '') + e.message);
+        if (saveBtn) saveBtn.disabled = false;
     }
 }
 

@@ -486,82 +486,6 @@
         line-height: 1.6;
     }
 
-    /* ── Drawer criar pipeline ─────────────────────────────────────────────── */
-    #pipelineDrawerOverlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,.35);
-        z-index: 199;
-    }
-    #pipelineDrawerOverlay.open { display: block; }
-    #pipelineDrawer {
-        position: fixed;
-        top: 0; right: 0;
-        width: 440px;
-        height: 100vh;
-        background: #fff;
-        box-shadow: -4px 0 32px rgba(0,0,0,.1);
-        z-index: 200;
-        display: flex;
-        flex-direction: column;
-        transform: translateX(100%);
-        transition: transform .25s cubic-bezier(.4,0,.2,1);
-        overflow: hidden;
-    }
-    #pipelineDrawer.open { transform: translateX(0); }
-    .pd-header {
-        padding: 18px 22px;
-        border-bottom: 1px solid #f0f2f7;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-shrink: 0;
-    }
-    .pd-title { font-size: 15px; font-weight: 700; color: #1a1d23; }
-    .pd-close-btn {
-        background: none; border: none; font-size: 18px;
-        color: #9ca3af; cursor: pointer; width: 30px; height: 30px;
-        display: flex; align-items: center; justify-content: center;
-        border-radius: 6px; transition: all .15s;
-    }
-    .pd-close-btn:hover { background: #f3f4f6; color: #374151; }
-    .pd-body { flex: 1; overflow-y: auto; padding: 22px; }
-    .pd-footer {
-        padding: 16px 22px;
-        border-top: 1px solid #f0f2f7;
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        flex-shrink: 0;
-    }
-    .pd-group { margin-bottom: 18px; }
-    .pd-group label { display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em; }
-    .pd-input {
-        width: 100%; padding: 9px 12px;
-        border: 1.5px solid #e8eaf0; border-radius: 9px;
-        font-size: 13.5px; font-family: inherit;
-        outline: none; transition: border-color .15s; box-sizing: border-box;
-    }
-    .pd-input:focus { border-color: #0085f3; }
-    .pd-input.is-invalid { border-color: #ef4444; }
-    .pd-color-row { display: flex; gap: 8px; align-items: center; }
-    .pd-color-pick { width: 42px; height: 38px; padding: 2px; border: 1.5px solid #e8eaf0; border-radius: 9px; cursor: pointer; flex-shrink: 0; }
-    .pd-btn-cancel {
-        padding: 9px 20px; border-radius: 9px; border: 1.5px solid #e8eaf0;
-        background: #fff; font-size: 13px; font-weight: 600; color: #6b7280;
-        cursor: pointer; font-family: inherit; transition: all .15s;
-    }
-    .pd-btn-cancel:hover { background: #f0f2f7; }
-    .pd-btn-save {
-        padding: 9px 24px; border-radius: 9px; border: none;
-        background: #0085f3; color: #fff; font-size: 13px; font-weight: 600;
-        cursor: pointer; font-family: inherit; transition: background .15s;
-        display: flex; align-items: center; gap: 6px;
-    }
-    .pd-btn-save:hover { background: #006acf; }
-    .pd-btn-save:disabled { opacity: .6; cursor: not-allowed; }
-
     .fab-novo-lead {
         display: none;
         position: fixed; bottom: 24px; right: 20px; z-index: 90;
@@ -623,9 +547,9 @@
             <i class="bi bi-plus-lg"></i> {{ __('crm.new_lead') }}
         </button>
         @else
-        <button class="btn-primary-sm" onclick="openPipelineDrawer()" style="padding:6px 14px;font-size:12px;">
+        <a href="{{ route('settings.pipelines') }}?new=1" class="btn-primary-sm" style="padding:6px 14px;font-size:12px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
             <i class="bi bi-plus-lg"></i> {{ __('crm.create_pipeline') }}
-        </button>
+        </a>
         @endif
     </div>
 </div>
@@ -938,47 +862,13 @@
     <i class="bi bi-diagram-3 es-icon"></i>
     <h3>{{ __('crm.no_pipeline') }}</h3>
     <p>{{ __('crm.no_pipeline_desc') }}</p>
-    <button class="btn-primary-sm" onclick="openPipelineDrawer()" style="font-size:14px;padding:10px 28px;gap:8px;">
+    <a href="{{ route('settings.pipelines') }}?new=1" class="btn-primary-sm" style="font-size:14px;padding:10px 28px;gap:8px;text-decoration:none;display:inline-flex;align-items:center;">
         <i class="bi bi-plus-lg"></i>
         {{ __('crm.create_first_pipeline') }}
-    </button>
+    </a>
 </div>
 
 @endif
-
-{{-- Overlay + Drawer: Criar Pipeline ─────────────────────────────────────── --}}
-<div id="pipelineDrawerOverlay" onclick="closePipelineDrawer()"></div>
-
-<aside id="pipelineDrawer">
-    <div class="pd-header">
-        <span class="pd-title">{{ __('crm.create_new_pipeline') }}</span>
-        <button class="pd-close-btn" onclick="closePipelineDrawer()">
-            <i class="bi bi-x-lg"></i>
-        </button>
-    </div>
-
-    <div class="pd-body">
-        <div class="pd-group">
-            <label for="pdPipelineName">{{ __('crm.pipeline_name') }}</label>
-            <input type="text" id="pdPipelineName" class="pd-input" placeholder="{{ __('crm.pipeline_name_ph') }}" autocomplete="off">
-        </div>
-
-        <div class="pd-group">
-            <label for="pdPipelineColorText">{{ __('crm.color') }}</label>
-            <div class="pd-color-row">
-                <input type="color" id="pdPipelineColor" class="pd-color-pick" value="#0085f3">
-                <input type="text" id="pdPipelineColorText" class="pd-input" value="#0085f3" placeholder="#0085f3">
-            </div>
-        </div>
-    </div>
-
-    <div class="pd-footer">
-        <button class="pd-btn-cancel" onclick="closePipelineDrawer()">{{ __('crm.cancel') }}</button>
-        <button class="pd-btn-save" id="pdBtnSave" onclick="savePipelineDrawer()">
-            <i class="bi bi-check-lg"></i> {{ __('crm.create_pipeline_btn') }}
-        </button>
-    </div>
-</aside>
 
 {{-- Modal: Importar Leads ────────────────────────────────────────────────── --}}
 <div id="modalImport" style="display:none;position:fixed;inset:0;z-index:1060;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
@@ -1485,66 +1375,6 @@ function pollKanban() {
 setInterval(pollKanban, 10000);
 
 // ── Drawer: Criar Pipeline ─────────────────────────────────────────────────
-const CP_STORE_URL = @json(route('settings.pipelines.store'));
-const CP_CRM_URL   = @json(route('crm.kanban'));
-const CP_CSRF      = document.querySelector('meta[name="csrf-token"]')?.content;
-
-function openPipelineDrawer() {
-    document.getElementById('pdPipelineName').value      = '';
-    document.getElementById('pdPipelineColor').value     = '#0085f3';
-    document.getElementById('pdPipelineColorText').value = '#0085f3';
-    document.getElementById('pdPipelineName').classList.remove('is-invalid');
-    document.getElementById('pipelineDrawer').classList.add('open');
-    document.getElementById('pipelineDrawerOverlay').classList.add('open');
-    setTimeout(() => document.getElementById('pdPipelineName').focus(), 250);
-}
-
-function closePipelineDrawer() {
-    document.getElementById('pipelineDrawer').classList.remove('open');
-    document.getElementById('pipelineDrawerOverlay').classList.remove('open');
-}
-
-document.getElementById('pdPipelineColor').addEventListener('input', e => {
-    document.getElementById('pdPipelineColorText').value = e.target.value;
-});
-document.getElementById('pdPipelineColorText').addEventListener('input', e => {
-    if (/^#[0-9a-f]{6}$/i.test(e.target.value)) {
-        document.getElementById('pdPipelineColor').value = e.target.value;
-    }
-});
-
-async function savePipelineDrawer() {
-    const name  = document.getElementById('pdPipelineName').value.trim();
-    const color = document.getElementById('pdPipelineColorText').value.trim() || document.getElementById('pdPipelineColor').value;
-
-    if (!name) {
-        document.getElementById('pdPipelineName').classList.add('is-invalid');
-        document.getElementById('pdPipelineName').focus();
-        return;
-    }
-
-    const btn = document.getElementById('pdBtnSave');
-    btn.disabled = true;
-    btn.innerHTML = `<i class="bi bi-hourglass-split"></i> ${LANG.creating}`;
-
-    try {
-        const res  = await fetch(CP_STORE_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CP_CSRF, 'Accept': 'application/json' },
-            body: JSON.stringify({ name, color }),
-        });
-        const data = await res.json();
-        if (!res.ok || !data.success) throw new Error(data.message || LANG.error_create_pipeline);
-
-        window.location.href = `${CP_CRM_URL}?pipeline_id=${data.pipeline.id}`;
-
-    } catch (e) {
-        btn.disabled = false;
-        btn.innerHTML = `<i class="bi bi-check-lg"></i> ${LANG.create_pipeline_btn}`;
-        toastr.error(e.message || LANG.error_create_pipeline);
-    }
-}
-
 // ── Exportar / Importar Leads ──────────────────────────────────────────────
 const KANBAN_EXPORT_URL  = @json(route('crm.export'));
 const KANBAN_IMPORT_URL  = @json(route('crm.import'));

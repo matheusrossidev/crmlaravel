@@ -1053,6 +1053,13 @@ document.getElementById('btnNovoPipeline').addEventListener('click', () => {
     openPipelineModal();
 });
 
+/* ---- Auto-open modal when arriving from another page with ?new=1
+       (e.g. CRM kanban empty state link) ---- */
+if (new URLSearchParams(location.search).get('new') === '1') {
+    document.getElementById('btnNovoPipeline').click();
+    history.replaceState(null, '', location.pathname);
+}
+
 /* ---- Open modal: Edit existing pipeline (skip quick start) ---- */
 function openEditPipelineDrawer(pipelineId) {
     const p = pipelinesData[pipelineId];
