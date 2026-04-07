@@ -87,11 +87,10 @@ return [
     'no_limit'             => 'No limit',
 
     // Global score limits (Fix 7)
-    'global_limits'      => 'Global score limits',
-    'global_limits_help' => 'Applied to all leads in this tenant. Score never goes below the minimum nor exceeds the maximum.',
-    'score_min_label'    => 'Minimum score',
-    'score_max_label'    => 'Maximum score',
-    'no_max'             => 'No cap',
-    'save_limits'        => 'Save limits',
-    'limits_saved'       => 'Limits saved!',
+    'global_limits'   => 'Global score limits',
+    'score_min_label' => 'Minimum score',
+    'score_max_label' => 'Maximum score',
+    'no_max'          => 'No cap',
+    'save_limits'     => 'Save',
+    'limits_saved'    => 'Limits saved!',
 ];

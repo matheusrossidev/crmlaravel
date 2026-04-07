@@ -87,11 +87,10 @@ return [
     'no_limit'             => 'Sem limite',
 
     // Limites globais de score (Fix 7)
-    'global_limits'      => 'Limites globais de score',
-    'global_limits_help' => 'Aplica em todos os leads do tenant. O score nunca cai abaixo do mínimo nem ultrapassa o máximo.',
-    'score_min_label'    => 'Score mínimo',
-    'score_max_label'    => 'Score máximo',
-    'no_max'             => 'Sem teto',
-    'save_limits'        => 'Salvar limites',
-    'limits_saved'       => 'Limites salvos!',
+    'global_limits'   => 'Limites globais de score',
+    'score_min_label' => 'Score mínimo',
+    'score_max_label' => 'Score máximo',
+    'no_max'          => 'Sem teto',
+    'save_limits'     => 'Salvar',
+    'limits_saved'    => 'Limites salvos!',
 ];

@@ -124,6 +124,44 @@
     .empty-state i { font-size: 40px; color: #d1d5db; display: block; margin-bottom: 12px; }
     .empty-state p { color: #9ca3af; font-size: 13.5px; margin: 0; }
     .empty-state .sub { font-size: 12.5px; margin-top: 4px; }
+
+    /* Cog button + popover dos limites globais */
+    .btn-cog {
+        width: 38px; height: 38px; border-radius: 10px;
+        background: #fff; border: 1.5px solid #e8eaf0;
+        color: #6b7280; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; transition: all .15s;
+    }
+    .btn-cog:hover { background: #eff6ff; color: #0085f3; border-color: #bfdbfe; }
+    .btn-cog.active { background: #eff6ff; color: #0085f3; border-color: #0085f3; }
+
+    .limits-panel {
+        position: absolute; top: calc(100% + 8px); right: 0;
+        width: 320px; background: #fff;
+        border: 1px solid #e8eaf0; border-radius: 14px;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, .12);
+        z-index: 100;
+        animation: limitsPanelIn .15s ease-out;
+    }
+    @keyframes limitsPanelIn {
+        from { opacity: 0; transform: translateY(-6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .limits-panel-header {
+        padding: 14px 18px; border-bottom: 1px solid #f0f2f7;
+        font-size: 13.5px; font-weight: 700; color: #1a1d23;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .limits-panel-body { padding: 16px 18px; }
+    .limits-panel-body .form-group { margin-bottom: 12px; }
+    .limits-panel-body .form-group:last-child { margin-bottom: 0; }
+    .limits-panel-footer {
+        padding: 12px 18px; border-top: 1px solid #f0f2f7;
+        display: flex; gap: 8px; justify-content: flex-end;
+    }
+    .limits-panel-footer .btn-save,
+    .limits-panel-footer .btn-cancel { padding: 7px 14px; font-size: 12.5px; }
 </style>
 @endpush
 
@@ -137,31 +175,39 @@
                 <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('scoring.title') }}</h1>
                 <p style="font-size:13.5px;color:#677489;margin:0;">{{ __('scoring.subtitle') }}</p>
             </div>
-            <button class="btn-primary-sm" id="btnNewRule">
-                <i class="bi bi-plus-lg"></i> {{ __('scoring.new_rule') }}
-            </button>
-        </div>
-    </div>
+            <div style="display:flex;align-items:center;gap:8px;position:relative;">
+                {{-- Engrenagem dos limites globais (Fix 7) --}}
+                <button type="button" class="btn-cog" id="btnLimitsCog" onclick="toggleLimitsPanel(event)" title="{{ __('scoring.global_limits') }}">
+                    <i class="bi bi-gear"></i>
+                </button>
 
-    {{-- Limites globais de score (Fix 7) --}}
-    <div style="background:#fff;border:1px solid #e8eaf0;border-radius:14px;margin-bottom:18px;">
-        <div style="padding:14px 20px;border-bottom:1px solid #f0f2f7;font-size:14px;font-weight:700;color:#1a1d23;">
-            <i class="bi bi-shield-check" style="color:#0085f3;"></i> {{ __('scoring.global_limits') }}
-        </div>
-        <div style="padding:16px 20px;display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
-            <div style="flex:0 0 180px;">
-                <label class="form-label">{{ __('scoring.score_min_label') }}</label>
-                <input type="number" id="scoreMin" class="form-input" value="{{ $scoreSettings['min'] }}" placeholder="0">
-            </div>
-            <div style="flex:0 0 180px;">
-                <label class="form-label">{{ __('scoring.score_max_label') }}</label>
-                <input type="number" id="scoreMax" class="form-input" value="{{ $scoreSettings['max'] ?? '' }}" placeholder="{{ __('scoring.no_max') }}">
-            </div>
-            <button class="btn-save" onclick="saveScoreSettings()">
-                <i class="bi bi-check2"></i> {{ __('scoring.save_limits') }}
-            </button>
-            <div style="flex:1;font-size:11.5px;color:#9ca3af;align-self:center;min-width:200px;">
-                {{ __('scoring.global_limits_help') }}
+                {{-- Popover dos limites — escondido por padrão --}}
+                <div id="limitsPanel" class="limits-panel" style="display:none;">
+                    <div class="limits-panel-header">
+                        <i class="bi bi-shield-check" style="color:#0085f3;"></i>
+                        {{ __('scoring.global_limits') }}
+                    </div>
+                    <div class="limits-panel-body">
+                        <div class="form-group">
+                            <label class="form-label">{{ __('scoring.score_min_label') }}</label>
+                            <input type="number" id="scoreMin" class="form-input" value="{{ $scoreSettings['min'] }}" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">{{ __('scoring.score_max_label') }}</label>
+                            <input type="number" id="scoreMax" class="form-input" value="{{ $scoreSettings['max'] ?? '' }}" placeholder="{{ __('scoring.no_max') }}">
+                        </div>
+                    </div>
+                    <div class="limits-panel-footer">
+                        <button type="button" class="btn-cancel" onclick="closeLimitsPanel()">{{ __('scoring.btn_cancel') }}</button>
+                        <button type="button" class="btn-save" onclick="saveScoreSettings()">
+                            <i class="bi bi-check2"></i> {{ __('scoring.save_limits') }}
+                        </button>
+                    </div>
+                </div>
+
+                <button class="btn-primary-sm" id="btnNewRule">
+                    <i class="bi bi-plus-lg"></i> {{ __('scoring.new_rule') }}
+                </button>
             </div>
         </div>
     </div>
@@ -473,7 +519,32 @@ document.getElementById('rulePipelineId').addEventListener('change', () => {
     updateStageFilterVisibility();
 });
 
-/* ---- Salvar limites globais (Fix 7) ---- */
+/* ---- Limites globais (Fix 7) — popover ---- */
+function toggleLimitsPanel(ev) {
+    ev?.stopPropagation();
+    const panel = document.getElementById('limitsPanel');
+    const cog   = document.getElementById('btnLimitsCog');
+    const isOpen = panel.style.display === 'block';
+    if (isOpen) {
+        closeLimitsPanel();
+    } else {
+        panel.style.display = 'block';
+        cog.classList.add('active');
+    }
+}
+function closeLimitsPanel() {
+    document.getElementById('limitsPanel').style.display = 'none';
+    document.getElementById('btnLimitsCog').classList.remove('active');
+}
+// Fechar quando clica fora
+document.addEventListener('click', (e) => {
+    const panel = document.getElementById('limitsPanel');
+    const cog   = document.getElementById('btnLimitsCog');
+    if (!panel || panel.style.display !== 'block') return;
+    if (panel.contains(e.target) || cog.contains(e.target)) return;
+    closeLimitsPanel();
+});
+
 async function saveScoreSettings() {
     const min = document.getElementById('scoreMin').value.trim();
     const max = document.getElementById('scoreMax').value.trim();
@@ -490,6 +561,7 @@ async function saveScoreSettings() {
         const data = await res.json();
         if (!data.success) { toastr.error(data.message || SLANG.toast_error); return; }
         toastr.success(SLANG.limits_saved);
+        closeLimitsPanel();
     } catch (e) {
         toastr.error(SLANG.toast_error);
     }
