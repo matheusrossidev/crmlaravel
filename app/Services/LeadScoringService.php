@@ -41,6 +41,23 @@ class LeadScoringService
                     continue;
                 }
 
+                // Filtros estruturais (Fase 1)
+                if (!$this->matchesPipeline($rule, $lead)) {
+                    continue;
+                }
+
+                if (!$this->matchesStage($rule, $lead)) {
+                    continue;
+                }
+
+                if (!$this->passesValidity($rule)) {
+                    continue;
+                }
+
+                if (!$this->passesTriggerLimit($rule, $lead)) {
+                    continue;
+                }
+
                 if (!$this->passesCooldown($rule, $lead)) {
                     continue;
                 }
@@ -70,7 +87,7 @@ class LeadScoringService
         }
 
         if ($totalDelta !== 0) {
-            $newScore = max(0, $lead->score + $totalDelta);
+            $newScore = $this->applyScoreCap($lead, $lead->score + $totalDelta);
             $lead->update([
                 'score'            => $newScore,
                 'score_updated_at' => now(),
@@ -87,7 +104,7 @@ class LeadScoringService
             return;
         }
 
-        $newScore = max(0, $lead->score + $points); // points is negative
+        $newScore = $this->applyScoreCap($lead, $lead->score + $points); // points is negative
 
         LeadScoreLog::create([
             'tenant_id'       => $lead->tenant_id,
@@ -114,7 +131,7 @@ class LeadScoringService
             ->where('lead_id', $lead->id)
             ->sum('points');
 
-        $score = max(0, (int) $total);
+        $score = $this->applyScoreCap($lead, (int) $total);
 
         $lead->update([
             'score'            => $score,
@@ -230,5 +247,90 @@ class LeadScoringService
         Cache::put($cacheKey, 1, now()->addHours($rule->cooldown_hours));
 
         return true;
+    }
+
+    /**
+     * Fase 1 — Filtro por pipeline. Se a regra define pipeline_id, lead precisa estar nele.
+     */
+    private function matchesPipeline(ScoringRule $rule, Lead $lead): bool
+    {
+        if ($rule->pipeline_id === null) {
+            return true;
+        }
+
+        return (int) $lead->pipeline_id === (int) $rule->pipeline_id;
+    }
+
+    /**
+     * Fase 1 — Filtro por etapa. Aplica-se ao stage atual do lead.
+     * Pra eventos de stage_advanced/regressed, isso valida a NOVA etapa
+     * (o lead já foi movido antes do scoring rodar).
+     */
+    private function matchesStage(ScoringRule $rule, Lead $lead): bool
+    {
+        if ($rule->stage_id === null) {
+            return true;
+        }
+
+        return (int) $lead->stage_id === (int) $rule->stage_id;
+    }
+
+    /**
+     * Fase 1 — Validade temporal. Regra só dispara dentro da janela [valid_from, valid_until].
+     * Datas null = sem restrição naquela ponta.
+     */
+    private function passesValidity(ScoringRule $rule): bool
+    {
+        $today = now()->startOfDay();
+
+        if ($rule->valid_from && $today->lt($rule->valid_from->startOfDay())) {
+            return false;
+        }
+
+        if ($rule->valid_until && $today->gt($rule->valid_until->startOfDay())) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Fase 1 — Limite de disparos por lead na vida toda.
+     * Conta logs já criados pra esta combinação rule+lead.
+     * Diferente do cooldown (que é por janela de tempo).
+     */
+    private function passesTriggerLimit(ScoringRule $rule, Lead $lead): bool
+    {
+        if ($rule->max_triggers_per_lead === null) {
+            return true;
+        }
+
+        $count = LeadScoreLog::withoutGlobalScope('tenant')
+            ->where('lead_id', $lead->id)
+            ->where('scoring_rule_id', $rule->id)
+            ->count();
+
+        return $count < $rule->max_triggers_per_lead;
+    }
+
+    /**
+     * Fase 1 — Aplica score min/max global do tenant (Fix 7).
+     * Lê de tenants.settings_json:
+     *   - score_min (default 0): piso. Score nunca cai abaixo disso.
+     *   - score_max (default null): teto. Se null, sem teto.
+     */
+    private function applyScoreCap(Lead $lead, int $rawScore): int
+    {
+        $tenant = $lead->tenant;
+        $settings = $tenant?->settings_json ?? [];
+
+        $min = (int) ($settings['score_min'] ?? 0);
+        $score = max($min, $rawScore);
+
+        if (isset($settings['score_max']) && $settings['score_max'] !== null && $settings['score_max'] !== '') {
+            $score = min((int) $settings['score_max'], $score);
+        }
+
+        return $score;
     }
 }

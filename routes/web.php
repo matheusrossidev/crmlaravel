@@ -539,6 +539,8 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
 
             // Lead Scoring
             Route::post('scoring', [LeadScoringController::class, 'store'])->name('scoring.store');
+            // IMPORTANTE: rotas estáticas precisam vir ANTES da {rule} wildcard
+            Route::put('scoring/score-settings', [LeadScoringController::class, 'updateScoreSettings'])->name('scoring.score-settings');
             Route::put('scoring/{rule}', [LeadScoringController::class, 'update'])->name('scoring.update');
             Route::delete('scoring/{rule}', [LeadScoringController::class, 'destroy'])->name('scoring.destroy');
 

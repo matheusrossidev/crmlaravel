@@ -71,4 +71,27 @@ return [
     // Hours
     'hours_none' => 'No limit',
     'hours_unit' => ':count h',
+
+    // ===== Phase 1: Structural filters and global limits =====
+    'section_filters'      => 'Advanced filters and limits',
+    'pipeline_filter'      => 'Pipeline filter',
+    'pipeline_filter_help' => 'When set, this rule only fires for leads in this pipeline. Empty = any pipeline.',
+    'any_pipeline'         => 'Any pipeline',
+    'stage_filter'         => 'Stage filter',
+    'stage_filter_help'    => 'Restricts the rule to a specific stage of the chosen pipeline.',
+    'any_stage'            => 'Any stage',
+    'valid_from'           => 'Valid from',
+    'valid_until'          => 'Valid until',
+    'max_triggers'         => 'Lifetime limit per lead',
+    'max_triggers_help'    => 'How many times this rule can fire for the same lead. Empty = no limit.',
+    'no_limit'             => 'No limit',
+
+    // Global score limits (Fix 7)
+    'global_limits'      => 'Global score limits',
+    'global_limits_help' => 'Applied to all leads in this tenant. Score never goes below the minimum nor exceeds the maximum.',
+    'score_min_label'    => 'Minimum score',
+    'score_max_label'    => 'Maximum score',
+    'no_max'             => 'No cap',
+    'save_limits'        => 'Save limits',
+    'limits_saved'       => 'Limits saved!',
 ];

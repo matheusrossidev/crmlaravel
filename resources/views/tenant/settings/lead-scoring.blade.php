@@ -143,6 +143,29 @@
         </div>
     </div>
 
+    {{-- Limites globais de score (Fix 7) --}}
+    <div style="background:#fff;border:1px solid #e8eaf0;border-radius:14px;margin-bottom:18px;">
+        <div style="padding:14px 20px;border-bottom:1px solid #f0f2f7;font-size:14px;font-weight:700;color:#1a1d23;">
+            <i class="bi bi-shield-check" style="color:#0085f3;"></i> {{ __('scoring.global_limits') }}
+        </div>
+        <div style="padding:16px 20px;display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+            <div style="flex:0 0 180px;">
+                <label class="form-label">{{ __('scoring.score_min_label') }}</label>
+                <input type="number" id="scoreMin" class="form-input" value="{{ $scoreSettings['min'] }}" placeholder="0">
+            </div>
+            <div style="flex:0 0 180px;">
+                <label class="form-label">{{ __('scoring.score_max_label') }}</label>
+                <input type="number" id="scoreMax" class="form-input" value="{{ $scoreSettings['max'] ?? '' }}" placeholder="{{ __('scoring.no_max') }}">
+            </div>
+            <button class="btn-save" onclick="saveScoreSettings()">
+                <i class="bi bi-check2"></i> {{ __('scoring.save_limits') }}
+            </button>
+            <div style="flex:1;font-size:11.5px;color:#9ca3af;align-self:center;min-width:200px;">
+                {{ __('scoring.global_limits_help') }}
+            </div>
+        </div>
+    </div>
+
     <div class="scoring-table-wrap">
         <table class="scoring-table">
             <thead>
@@ -260,6 +283,52 @@
                 <div class="form-hint">{{ __('scoring.field_cooldown_help') }}</div>
             </div>
         </div>
+
+        {{-- ===== Fase 1: Filtros estruturais e limites ===== --}}
+
+        <div style="margin:18px 0 12px;padding-top:14px;border-top:1px dashed #e8eaf0;font-size:11.5px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">
+            {{ __('scoring.section_filters') }}
+        </div>
+
+        {{-- Filtro por Pipeline (Fix 1) --}}
+        <div class="form-group">
+            <label class="form-label">{{ __('scoring.pipeline_filter') }}</label>
+            <select id="rulePipelineId" class="form-select">
+                <option value="">{{ __('scoring.any_pipeline') }}</option>
+                @foreach($pipelines as $p)
+                    <option value="{{ $p->id }}">{{ $p->name }}</option>
+                @endforeach
+            </select>
+            <div class="form-hint">{{ __('scoring.pipeline_filter_help') }}</div>
+        </div>
+
+        {{-- Filtro por Etapa (Fix 2) — só visível quando event_type ∈ stage_advanced/regressed/inactive_7d --}}
+        <div class="form-group" id="stageFilterGroup" style="display:none;">
+            <label class="form-label">{{ __('scoring.stage_filter') }}</label>
+            <select id="ruleStageId" class="form-select">
+                <option value="">{{ __('scoring.any_stage') }}</option>
+            </select>
+            <div class="form-hint">{{ __('scoring.stage_filter_help') }}</div>
+        </div>
+
+        {{-- Validade (Fix 5) --}}
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">{{ __('scoring.valid_from') }}</label>
+                <input type="date" id="ruleValidFrom" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ __('scoring.valid_until') }}</label>
+                <input type="date" id="ruleValidUntil" class="form-input">
+            </div>
+        </div>
+
+        {{-- Limite de disparos (Fix 6) --}}
+        <div class="form-group">
+            <label class="form-label">{{ __('scoring.max_triggers') }}</label>
+            <input type="number" id="ruleMaxTriggers" class="form-input" min="1" max="1000" placeholder="{{ __('scoring.no_limit') }}">
+            <div class="form-hint">{{ __('scoring.max_triggers_help') }}</div>
+        </div>
     </div>
     <div class="drawer-footer">
         <button class="btn-cancel" onclick="closeDrawer()">{{ __('scoring.btn_cancel') }}</button>
@@ -278,12 +347,29 @@ const SLANG = @json(__('scoring'));
 const RULE_STORE = @json(route('settings.scoring.store'));
 const RULE_UPD   = @json(route('settings.scoring.update',  ['rule' => '__ID__']));
 const RULE_DEL   = @json(route('settings.scoring.destroy', ['rule' => '__ID__']));
+const SCORE_SETTINGS_URL = @json(route('settings.scoring.score-settings'));
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
 
-// Rule data cache for editing
+// Rule data cache for editing (Fase 1: incluir novos campos)
 const rulesData = {!! json_encode(
-    $rules->keyBy('id')->map(fn($r) => $r->only(['id','name','category','event_type','points','cooldown_hours','is_active','conditions']))
+    $rules->keyBy('id')->map(fn($r) => $r->only([
+        'id','name','category','event_type','pipeline_id','stage_id',
+        'points','cooldown_hours','is_active','conditions',
+        'valid_from','valid_until','max_triggers_per_lead'
+    ]))
 ) !!};
+
+// Pipelines + stages cache pra popular o select de stages dinamicamente
+const PIPELINES_DATA = {!! json_encode(
+    $pipelines->map(fn($p) => [
+        'id'     => $p->id,
+        'name'   => $p->name,
+        'stages' => $p->stages->map(fn($s) => ['id' => $s->id, 'name' => $s->name])->values(),
+    ])->keyBy('id')
+) !!};
+
+// Eventos onde o filtro por etapa faz sentido
+const STAGE_FILTER_EVENTS = ['stage_advanced','stage_regressed','inactive_7d'];
 
 const EVENT_LABELS = {
     message_received: SLANG.evt_message_received,
@@ -325,6 +411,13 @@ document.getElementById('btnNewRule').addEventListener('click', () => {
     document.getElementById('ruleEvent').value = 'message_received';
     document.getElementById('rulePoints').value = '5';
     document.getElementById('ruleCooldown').value = '0';
+    // Fase 1: zerar novos campos
+    document.getElementById('rulePipelineId').value = '';
+    document.getElementById('ruleStageId').innerHTML = `<option value="">${SLANG.any_stage}</option>`;
+    document.getElementById('ruleValidFrom').value = '';
+    document.getElementById('ruleValidUntil').value = '';
+    document.getElementById('ruleMaxTriggers').value = '';
+    updateStageFilterVisibility();
     openDrawer();
 });
 
@@ -339,7 +432,67 @@ function openEditRule(id) {
     document.getElementById('ruleEvent').value = r.event_type;
     document.getElementById('rulePoints').value = r.points;
     document.getElementById('ruleCooldown').value = r.cooldown_hours;
+    // Fase 1
+    document.getElementById('rulePipelineId').value = r.pipeline_id || '';
+    populateStageOptions(r.pipeline_id, r.stage_id);
+    document.getElementById('ruleValidFrom').value  = r.valid_from  ? r.valid_from.substring(0,10)  : '';
+    document.getElementById('ruleValidUntil').value = r.valid_until ? r.valid_until.substring(0,10) : '';
+    document.getElementById('ruleMaxTriggers').value = r.max_triggers_per_lead || '';
+    updateStageFilterVisibility();
     openDrawer();
+}
+
+/* ---- Fase 1 helpers ---- */
+
+// Popula o select de stages baseado no pipeline escolhido
+function populateStageOptions(pipelineId, selectedStageId = null) {
+    const stageSelect = document.getElementById('ruleStageId');
+    stageSelect.innerHTML = `<option value="">${SLANG.any_stage}</option>`;
+    if (!pipelineId || !PIPELINES_DATA[pipelineId]) return;
+    PIPELINES_DATA[pipelineId].stages.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.name;
+        if (selectedStageId && parseInt(selectedStageId) === parseInt(s.id)) opt.selected = true;
+        stageSelect.appendChild(opt);
+    });
+}
+
+// Mostra/esconde filtro de stage baseado no event_type E pipeline selecionado
+function updateStageFilterVisibility() {
+    const event = document.getElementById('ruleEvent').value;
+    const pipelineId = document.getElementById('rulePipelineId').value;
+    const showStage = STAGE_FILTER_EVENTS.includes(event) && pipelineId !== '';
+    document.getElementById('stageFilterGroup').style.display = showStage ? 'block' : 'none';
+}
+
+// Listeners pros campos que controlam visibilidade do stage filter
+document.getElementById('ruleEvent').addEventListener('change', updateStageFilterVisibility);
+document.getElementById('rulePipelineId').addEventListener('change', () => {
+    populateStageOptions(document.getElementById('rulePipelineId').value);
+    updateStageFilterVisibility();
+});
+
+/* ---- Salvar limites globais (Fix 7) ---- */
+async function saveScoreSettings() {
+    const min = document.getElementById('scoreMin').value.trim();
+    const max = document.getElementById('scoreMax').value.trim();
+    const payload = {
+        score_min: min === '' ? null : parseInt(min),
+        score_max: max === '' ? null : parseInt(max),
+    };
+    try {
+        const res = await fetch(SCORE_SETTINGS_URL, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+            body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!data.success) { toastr.error(data.message || SLANG.toast_error); return; }
+        toastr.success(SLANG.limits_saved);
+    } catch (e) {
+        toastr.error(SLANG.toast_error);
+    }
 }
 
 /* ---- Save ---- */
@@ -348,6 +501,12 @@ async function saveRule() {
     const name = document.getElementById('ruleName').value.trim();
     if (!name) { document.getElementById('ruleName').focus(); return; }
 
+    const pipelineId = document.getElementById('rulePipelineId').value;
+    const stageId    = document.getElementById('ruleStageId').value;
+    const validFrom  = document.getElementById('ruleValidFrom').value;
+    const validUntil = document.getElementById('ruleValidUntil').value;
+    const maxTrig    = document.getElementById('ruleMaxTriggers').value;
+
     const payload = {
         name,
         category: document.getElementById('ruleCategory').value,
@@ -355,6 +514,12 @@ async function saveRule() {
         points: parseInt(document.getElementById('rulePoints').value) || 0,
         cooldown_hours: parseInt(document.getElementById('ruleCooldown').value) || 0,
         is_active: true,
+        // Fase 1: filtros e limites
+        pipeline_id: pipelineId === '' ? null : parseInt(pipelineId),
+        stage_id:    stageId    === '' ? null : parseInt(stageId),
+        valid_from:  validFrom  || null,
+        valid_until: validUntil || null,
+        max_triggers_per_lead: maxTrig === '' ? null : parseInt(maxTrig),
     };
 
     const url    = id ? RULE_UPD.replace('__ID__', id) : RULE_STORE;

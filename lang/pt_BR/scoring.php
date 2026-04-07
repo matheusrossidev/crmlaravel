@@ -71,4 +71,27 @@ return [
     // Hours
     'hours_none' => 'Sem limite',
     'hours_unit' => ':count h',
+
+    // ===== Fase 1: Filtros estruturais e limites globais =====
+    'section_filters'      => 'Filtros e limites avançados',
+    'pipeline_filter'      => 'Filtro por funil',
+    'pipeline_filter_help' => 'Quando preenchido, a regra só dispara para leads desse funil. Vazio = qualquer funil.',
+    'any_pipeline'         => 'Qualquer funil',
+    'stage_filter'         => 'Filtro por etapa',
+    'stage_filter_help'    => 'Restringe a regra a uma etapa específica do funil escolhido acima.',
+    'any_stage'            => 'Qualquer etapa',
+    'valid_from'           => 'Válida a partir de',
+    'valid_until'          => 'Válida até',
+    'max_triggers'         => 'Limite por lead (vida toda)',
+    'max_triggers_help'    => 'Quantas vezes essa regra pode disparar para o mesmo lead. Vazio = sem limite.',
+    'no_limit'             => 'Sem limite',
+
+    // Limites globais de score (Fix 7)
+    'global_limits'      => 'Limites globais de score',
+    'global_limits_help' => 'Aplica em todos os leads do tenant. O score nunca cai abaixo do mínimo nem ultrapassa o máximo.',
+    'score_min_label'    => 'Score mínimo',
+    'score_max_label'    => 'Score máximo',
+    'no_max'             => 'Sem teto',
+    'save_limits'        => 'Salvar limites',
+    'limits_saved'       => 'Limites salvos!',
 ];
