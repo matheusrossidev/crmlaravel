@@ -17,7 +17,15 @@ $pageIcon = 'person-badge';
 @endsection
 
 @push('styles')
+{{-- Quill CSS+JS são carregados pelo _drawer.blade.php (incluído ao final desta view) --}}
 <style>
+/* ── Quill (notas) ── */
+.lp-note-editor, .lp-note-edit-quill { background:#fff; border-radius:9px; }
+.lp-note-editor .ql-container, .lp-note-edit-quill .ql-container { min-height:90px; font-size:13px; font-family:inherit; }
+.lp-note-editor .ql-toolbar, .lp-note-edit-quill .ql-toolbar { border-top-left-radius:9px;border-top-right-radius:9px; border-color:#e2e8f0; }
+.lp-note-editor .ql-container, .lp-note-edit-quill .ql-container { border-bottom-left-radius:9px;border-bottom-right-radius:9px; border-color:#e2e8f0; }
+.lp-note-body a { color:#0085f3; text-decoration:underline; }
+.lp-note-body p:last-child { margin-bottom:0; }
 /* ── Hero ── */
 .lp-hero {
     background: #fff;
@@ -1197,6 +1205,14 @@ $pageIcon = 'person-badge';
 
         {{-- ── Tab: Notas ── --}}
         <div class="lp-tab-panel" id="tab-notes">
+            {{-- Form nova nota (TOPO — pra não precisar rolar até o fim) --}}
+            <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #f0f2f7;">
+                <div id="newNoteEditor" class="lp-note-editor"></div>
+                <button class="lp-btn-add-note" id="btnAddNote" onclick="addPageNote()">
+                    <i class="bi bi-plus-lg"></i> {{ __('leads.add_note') }}
+                </button>
+            </div>
+
             <div id="notesContainer">
                 @forelse($lead->leadNotes as $note)
                 <div class="lp-note-card" id="note-{{ $note->id }}" data-note-id="{{ $note->id }}">
@@ -1215,7 +1231,7 @@ $pageIcon = 'person-badge';
                         </button>
                         @endif
                     </div>
-                    <div class="lp-note-body" data-note-body>{{ $note->body }}</div>
+                    <div class="lp-note-body" data-note-body>{!! $note->body !!}</div>
                 </div>
                 @empty
                 <div id="notesEmpty" style="text-align:center;padding:30px 20px;color:#9ca3af;">
@@ -1223,14 +1239,6 @@ $pageIcon = 'person-badge';
                     {{ __('leads.no_notes') }}
                 </div>
                 @endforelse
-            </div>
-
-            {{-- Form nova nota --}}
-            <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f2f7;">
-                <textarea id="newNoteBody" class="lp-note-textarea" placeholder="{{ __('leads.note_placeholder') }}"></textarea>
-                <button class="lp-btn-add-note" id="btnAddNote" onclick="addPageNote()">
-                    <i class="bi bi-plus-lg"></i> {{ __('leads.add_note') }}
-                </button>
             </div>
         </div>
 
@@ -2258,10 +2266,25 @@ document.querySelectorAll('.lp-tab-btn').forEach(btn => {
 // ── Notas ─────────────────────────────────────────────────────────────────
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
 
+// Quill editor instance pra "nova nota". Inicializado uma vez no DOMContentLoaded.
+let newNoteQuill = null;
+function initNewNoteEditor() {
+    if (newNoteQuill || typeof Quill === 'undefined') return;
+    const el = document.getElementById('newNoteEditor');
+    if (!el) return;
+    newNoteQuill = new Quill(el, {
+        theme: 'snow',
+        placeholder: LLANG.note_placeholder || 'Adicione uma nota...',
+        modules: { toolbar: ['bold', 'italic', 'underline', 'link'] },
+    });
+}
+document.addEventListener('DOMContentLoaded', initNewNoteEditor);
+
 async function addPageNote() {
-    const textarea = document.getElementById('newNoteBody');
-    const body     = textarea.value.trim();
-    if (!body) return;
+    if (!newNoteQuill) initNewNoteEditor();
+    const html = newNoteQuill ? newNoteQuill.root.innerHTML.trim() : '';
+    // Quill empty = "<p><br></p>"
+    if (!html || html === '<p><br></p>') return;
 
     const btn = document.getElementById('btnAddNote');
     btn.disabled = true;
@@ -2275,7 +2298,7 @@ async function addPageNote() {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': CSRF,
             },
-            body: JSON.stringify({ body }),
+            body: JSON.stringify({ body: html }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || LLANG.error_add_note);
@@ -2304,10 +2327,11 @@ async function addPageNote() {
                     <i class="bi bi-trash3"></i>
                 </button>
             </div>
-            <div class="lp-note-body" data-note-body>${escapeHtml(note.body)}</div>
+            <div class="lp-note-body" data-note-body>${note.body}</div>
         `;
         container.prepend(card);
-        textarea.value = '';
+        // Reset editor
+        newNoteQuill.setText('');
 
         // Update tab counter
         const tabBtn = document.querySelector('[data-tab="notes"]');
@@ -2354,42 +2378,55 @@ async function deletePageNote(noteId) {
     }
 }
 
+// Map de Quill instances ativas durante edição (noteId → Quill)
+const editNoteQuills = {};
+
 function editPageNote(noteId) {
     const card = document.querySelector(`.lp-note-card[data-note-id="${noteId}"]`);
     if (!card || card.classList.contains('editing')) return;
 
     const bodyEl = card.querySelector('[data-note-body]');
-    const currentText = bodyEl.textContent;
+    const currentHtml = bodyEl.innerHTML;
 
     card.classList.add('editing');
-    bodyEl.dataset.original = currentText;
+    bodyEl.dataset.original = currentHtml;
     bodyEl.innerHTML = `
-        <textarea class="lp-note-edit-textarea" rows="3">${escapeHtml(currentText)}</textarea>
+        <div class="lp-note-edit-quill" id="edit-quill-${noteId}"></div>
         <div class="lp-note-edit-actions">
             <button type="button" class="lp-note-edit-cancel" onclick="cancelEditPageNote(${noteId})">${escapeHtml(LLANG.cancel_edit_note || 'Cancelar')}</button>
             <button type="button" class="lp-note-edit-save" onclick="saveEditPageNote(${noteId})"><i class="bi bi-check2"></i> ${escapeHtml(LLANG.save_edit_note || 'Salvar')}</button>
         </div>`;
-    const ta = bodyEl.querySelector('textarea');
-    ta.focus();
-    ta.setSelectionRange(ta.value.length, ta.value.length);
+
+    if (typeof Quill !== 'undefined') {
+        const q = new Quill(`#edit-quill-${noteId}`, {
+            theme: 'snow',
+            modules: { toolbar: ['bold', 'italic', 'underline', 'link'] },
+        });
+        // Popular com o HTML atual da nota
+        q.clipboard.dangerouslyPasteHTML(0, currentHtml);
+        q.focus();
+        editNoteQuills[noteId] = q;
+    }
 }
 
 function cancelEditPageNote(noteId) {
     const card = document.querySelector(`.lp-note-card[data-note-id="${noteId}"]`);
     if (!card) return;
     const bodyEl = card.querySelector('[data-note-body]');
-    bodyEl.textContent = bodyEl.dataset.original ?? '';
+    bodyEl.innerHTML = bodyEl.dataset.original ?? '';
     delete bodyEl.dataset.original;
     card.classList.remove('editing');
+    delete editNoteQuills[noteId];
 }
 
 async function saveEditPageNote(noteId) {
     const card = document.querySelector(`.lp-note-card[data-note-id="${noteId}"]`);
     if (!card) return;
-    const ta = card.querySelector('.lp-note-edit-textarea');
-    if (!ta) return;
-    const body = ta.value.trim();
-    if (!body) { ta.focus(); return; }
+
+    const quill = editNoteQuills[noteId];
+    if (!quill) return;
+    const html = quill.root.innerHTML.trim();
+    if (!html || html === '<p><br></p>') { quill.focus(); return; }
 
     const saveBtn = card.querySelector('.lp-note-edit-save');
     if (saveBtn) saveBtn.disabled = true;
@@ -2406,18 +2443,19 @@ async function saveEditPageNote(noteId) {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': CSRF,
             },
-            body: JSON.stringify({ body }),
+            body: JSON.stringify({ body: html }),
         });
         const data = await res.json();
         if (!res.ok || !data.success) {
             throw new Error(data.message || LLANG.error_update_note || 'Erro ao salvar nota');
         }
 
-        // Replace body with the fresh value, exit edit mode
+        // Replace body com HTML sanitizado vindo do servidor, sair do modo edição
         const bodyEl = card.querySelector('[data-note-body]');
-        bodyEl.textContent = data.note.body;
+        bodyEl.innerHTML = data.note.body;
         delete bodyEl.dataset.original;
         card.classList.remove('editing');
+        delete editNoteQuills[noteId];
     } catch (e) {
         alert((LLANG.error_prefix || '') + e.message);
         if (saveBtn) saveBtn.disabled = false;

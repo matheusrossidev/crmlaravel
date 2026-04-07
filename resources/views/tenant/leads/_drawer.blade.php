@@ -1,9 +1,20 @@
 {{--
     Drawer compartilhado de Lead (criação + edição)
     Incluído no Kanban e na tela de Contatos.
-    Depende de: jQuery, Bootstrap 5, Toastr, window.escapeHtml
+    Depende de: jQuery, Bootstrap 5, Toastr, window.escapeHtml, Quill
     Espera que a página defina: LEAD_SHOW, LEAD_STORE, LEAD_UPD, LEAD_DEL
 --}}
+
+{{-- Quill (rich text pra notas) --}}
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+<style>
+.drawer-note-editor { background:#fff; border-radius:8px; }
+.drawer-note-editor .ql-toolbar { border-top-left-radius:8px;border-top-right-radius:8px; border-color:#e2e8f0; }
+.drawer-note-editor .ql-container { border-bottom-left-radius:8px;border-bottom-right-radius:8px; border-color:#e2e8f0; min-height:80px; font-size:13px; font-family:inherit; }
+.note-body a { color:#0085f3; text-decoration:underline; }
+.note-body p:last-child { margin-bottom:0; }
+</style>
 
 {{-- Overlay --}}
 <div id="drawerOverlay" class="lead-modal-overlay" onclick="closeLeadDrawer()"></div>
@@ -148,13 +159,14 @@
             {{-- Notas (múltiplas — só em modo edição) --}}
             <div id="notesSection" style="display:none;margin-top:18px;">
                 <div class="drawer-section-label">{{ __('leads.notes') }}</div>
-                <div id="notesList" style="margin-bottom:8px;"></div>
-                <div style="display:flex;flex-direction:column;gap:6px;">
-                    <textarea id="fNoteInput" placeholder="{{ __('leads.note_placeholder') }}" class="drawer-input" rows="2" style="resize:vertical;min-height:58px;"></textarea>
+                {{-- Form nova nota no TOPO (acima da lista) --}}
+                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">
+                    <div id="fNoteEditor" class="drawer-note-editor"></div>
                     <button type="button" onclick="addNote()" class="drawer-add-note-btn">
                         <i class="bi bi-plus-lg"></i> {{ __('leads.add_note') }}
                     </button>
                 </div>
+                <div id="notesList"></div>
             </div>
 
             {{-- Anexos (só em modo edição) --}}
@@ -977,12 +989,27 @@ function renderUtmSection(lead) {
     document.getElementById('fUtmTerm').value     = lead.utm_term     || '';
 }
 
-// ── Notas múltiplas ───────────────────────────────────────────────────────
+// ── Notas múltiplas (com Quill) ───────────────────────────────────────────
+let drawerNoteQuill = null;
+const drawerEditNoteQuills = {};
+
+function initDrawerNoteEditor() {
+    if (drawerNoteQuill || typeof Quill === 'undefined') return;
+    const el = document.getElementById('fNoteEditor');
+    if (!el) return;
+    drawerNoteQuill = new Quill(el, {
+        theme: 'snow',
+        placeholder: DLANG.note_placeholder || 'Adicione uma nota...',
+        modules: { toolbar: ['bold', 'italic', 'underline', 'link'] },
+    });
+}
+
 function noteHtml(n) {
     const actions = n.is_mine
         ? `<button type="button" class="note-edit-btn" onclick="startEditNote(${n.id})" title="${DLANG.edit_note_title || 'Editar'}"><i class="bi bi-pencil"></i></button>
            <button type="button" class="note-del-btn" onclick="deleteNote(${n.id})" title="${DLANG.delete_note_title}"><i class="bi bi-trash3"></i></button>`
         : '';
+    // n.body já vem sanitizado pelo backend (sanitizeNoteHtml)
     return `
         <div class="note-item" data-note-id="${n.id}">
             <div class="note-header">
@@ -990,7 +1017,7 @@ function noteHtml(n) {
                 <span class="note-date">${escapeHtml(n.created_at || '')}</span>
                 ${actions}
             </div>
-            <div class="note-body" data-note-body="${n.id}">${escapeHtml(n.body)}</div>
+            <div class="note-body" data-note-body="${n.id}">${n.body}</div>
         </div>`;
 }
 
@@ -1004,9 +1031,9 @@ function renderNotes(notes) {
 }
 
 function addNote() {
-    const input = document.getElementById('fNoteInput');
-    const body  = input.value.trim();
-    if (!body) { input.focus(); return; }
+    initDrawerNoteEditor();
+    const html = drawerNoteQuill ? drawerNoteQuill.root.innerHTML.trim() : '';
+    if (!html || html === '<p><br></p>') return;
 
     const btn = document.querySelector('.drawer-add-note-btn');
     btn.disabled = true;
@@ -1016,10 +1043,10 @@ function addNote() {
         method:      'POST',
         contentType: 'application/json',
         headers:     { 'Accept': 'application/json', 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-        data:        JSON.stringify({ body }),
+        data:        JSON.stringify({ body: html }),
         success(res) {
             if (!res.success) return;
-            input.value = '';
+            drawerNoteQuill.setText('');
             const list     = document.getElementById('notesList');
             const emptyMsg = list.querySelector('p');
             if (emptyMsg) emptyMsg.remove();
@@ -1033,41 +1060,49 @@ function addNote() {
 function startEditNote(noteId) {
     const item = document.querySelector(`.note-item[data-note-id="${noteId}"]`);
     if (!item) return;
-    if (item.classList.contains('editing')) return; // já está editando
+    if (item.classList.contains('editing')) return;
 
     const bodyEl = item.querySelector('.note-body');
-    const currentText = bodyEl.textContent;
+    const currentHtml = bodyEl.innerHTML;
 
     item.classList.add('editing');
-    bodyEl.dataset.original = currentText;
+    bodyEl.dataset.original = currentHtml;
     bodyEl.innerHTML = `
-        <textarea class="note-edit-textarea drawer-input" rows="3" style="resize:vertical;min-height:64px;font-family:inherit;">${escapeHtml(currentText)}</textarea>
+        <div class="note-edit-quill drawer-note-editor" id="drawer-edit-quill-${noteId}"></div>
         <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end;">
             <button type="button" class="note-edit-cancel" onclick="cancelEditNote(${noteId})">${escapeHtml(DLANG.cancel_edit_note || 'Cancelar')}</button>
             <button type="button" class="note-edit-save" onclick="saveEditNote(${noteId})"><i class="bi bi-check2"></i> ${escapeHtml(DLANG.save_edit_note || 'Salvar')}</button>
         </div>`;
-    const ta = bodyEl.querySelector('textarea');
-    ta.focus();
-    ta.setSelectionRange(ta.value.length, ta.value.length);
+
+    if (typeof Quill !== 'undefined') {
+        const q = new Quill(`#drawer-edit-quill-${noteId}`, {
+            theme: 'snow',
+            modules: { toolbar: ['bold', 'italic', 'underline', 'link'] },
+        });
+        q.clipboard.dangerouslyPasteHTML(0, currentHtml);
+        q.focus();
+        drawerEditNoteQuills[noteId] = q;
+    }
 }
 
 function cancelEditNote(noteId) {
     const item = document.querySelector(`.note-item[data-note-id="${noteId}"]`);
     if (!item) return;
     const bodyEl = item.querySelector('.note-body');
-    const original = bodyEl.dataset.original ?? '';
-    bodyEl.textContent = original;
+    bodyEl.innerHTML = bodyEl.dataset.original ?? '';
     delete bodyEl.dataset.original;
     item.classList.remove('editing');
+    delete drawerEditNoteQuills[noteId];
 }
 
 function saveEditNote(noteId) {
     const item = document.querySelector(`.note-item[data-note-id="${noteId}"]`);
     if (!item) return;
-    const ta = item.querySelector('.note-edit-textarea');
-    if (!ta) return;
-    const body = ta.value.trim();
-    if (!body) { ta.focus(); return; }
+
+    const quill = drawerEditNoteQuills[noteId];
+    if (!quill) return;
+    const html = quill.root.innerHTML.trim();
+    if (!html || html === '<p><br></p>') { quill.focus(); return; }
 
     const saveBtn = item.querySelector('.note-edit-save');
     if (saveBtn) saveBtn.disabled = true;
@@ -1077,10 +1112,10 @@ function saveEditNote(noteId) {
         method: 'PUT',
         contentType: 'application/json',
         headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-        data:   JSON.stringify({ body }),
+        data:   JSON.stringify({ body: html }),
         success(res) {
             if (!res.success) return;
-            // Replace the entire note item with the fresh one
+            delete drawerEditNoteQuills[noteId];
             item.outerHTML = noteHtml(res.note);
         },
         error(xhr) {
@@ -1333,6 +1368,8 @@ function showDrawer() {
     document.getElementById('drawerOverlay').classList.add('open');
     document.getElementById('leadDrawer').classList.add('open');
     document.body.style.overflow = 'hidden';
+    // Lazy-init Quill editor das notas (precisa esperar o drawer estar visível)
+    setTimeout(initDrawerNoteEditor, 100);
 }
 
 function closeLeadDrawer() {

@@ -323,8 +323,11 @@ class LeadController extends Controller
 
     public function update(Request $request, Lead $lead): JsonResponse
     {
+        // `sometimes` permite update parcial: chamadas como `updateLeadTags` na
+        // página do lead enviam só {name, tags}, sem pipeline/stage. Antes da
+        // mudança, o `required` quebrava esses cenários com 422.
         $data = $request->validate([
-            'name'        => 'required|string|max:255',
+            'name'        => 'sometimes|required|string|max:255',
             'phone'       => 'nullable|string|max:20',
             'email'       => 'nullable|email|max:191',
             'company'     => 'nullable|string|max:191',
@@ -332,8 +335,8 @@ class LeadController extends Controller
             'source'      => 'nullable|string|max:100',
             'tags'        => 'nullable|array',
             'tags.*'      => 'string|max:50',
-            'pipeline_id' => 'required|integer|exists:pipelines,id',
-            'stage_id'    => 'required|integer|exists:pipeline_stages,id',
+            'pipeline_id' => 'sometimes|required|integer|exists:pipelines,id',
+            'stage_id'    => 'sometimes|required|integer|exists:pipeline_stages,id',
             'campaign_id' => 'nullable|integer|exists:campaigns,id',
             'notes'       => 'nullable|string|max:1000000',
             'birthday'    => 'nullable|date',
@@ -342,8 +345,8 @@ class LeadController extends Controller
         $oldStageId    = $lead->stage_id;
         $oldAssignedTo = $lead->assigned_to;
 
-        // Check mandatory tasks before allowing stage exit
-        if ($oldStageId !== (int) $data['stage_id']) {
+        // Check mandatory tasks before allowing stage exit (só quando stage muda)
+        if (isset($data['stage_id']) && $oldStageId !== (int) $data['stage_id']) {
             $reqService = new StageRequirementService();
             $check = $reqService->canLeaveStage($lead, $oldStageId);
             if (!$check['allowed']) {
@@ -361,7 +364,7 @@ class LeadController extends Controller
         $this->saveCustomFields($lead, $request->input('custom_fields', []));
 
         $agencyPrefix = session()->has('impersonating_tenant_id') ? 'Agência parceira: ' : '';
-        if ($oldStageId !== (int) $data['stage_id']) {
+        if (isset($data['stage_id']) && $oldStageId !== (int) $data['stage_id']) {
             $newStage = PipelineStage::find($data['stage_id']);
             LeadEvent::create([
                 'lead_id'      => $lead->id,
@@ -461,7 +464,7 @@ class LeadController extends Controller
         $request->validate(['body' => 'required|string|max:1000000']);
 
         $note = $lead->leadNotes()->create([
-            'body'       => $request->body,
+            'body'       => $this->sanitizeNoteHtml($request->body),
             'created_by' => auth()->id(),
         ]);
 
@@ -496,12 +499,14 @@ class LeadController extends Controller
 
         $data = $request->validate(['body' => 'required|string|max:1000000']);
 
-        $note->update(['body' => $data['body']]);
+        $note->update(['body' => $this->sanitizeNoteHtml($data['body'])]);
         $note->load('author');
 
+        // 'note_updated' NÃO existe no enum lead_events.event_type — usar 'updated' genérico.
+        // A descrição mantém o contexto pra história do lead.
         LeadEvent::create([
             'lead_id'      => $lead->id,
-            'event_type'   => 'note_updated',
+            'event_type'   => 'updated',
             'description'  => 'Nota editada',
             'performed_by' => auth()->id(),
             'created_at'   => now(),
@@ -528,6 +533,31 @@ class LeadController extends Controller
         $note->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Sanitiza HTML de nota de lead. Whitelist mínima: negrito, itálico, sublinhado,
+     * link, quebra de linha, parágrafo. Tudo o mais é removido (incluindo <script>).
+     * Links têm href validado (só http/https/mailto) e ganham target=_blank rel=noopener.
+     */
+    private function sanitizeNoteHtml(string $html): string
+    {
+        // Whitelist de tags permitidas — qualquer outra coisa (script, iframe, img, etc) é removida
+        $clean = strip_tags($html, '<b><strong><i><em><u><a><br><p>');
+
+        // Sanitizar atributos de <a>: aceitar só http(s)/mailto, adicionar rel + target seguros
+        $clean = preg_replace_callback('/<a\s+([^>]*)>/i', function (array $m): string {
+            if (preg_match('/href\s*=\s*["\']([^"\']*)["\']/i', $m[1], $hm)) {
+                $url = trim($hm[1]);
+                if (preg_match('/^(https?:\/\/|mailto:)/i', $url)) {
+                    return '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8')
+                         . '" target="_blank" rel="noopener noreferrer nofollow">';
+                }
+            }
+            return '<a>';
+        }, $clean) ?? $clean;
+
+        return $clean;
     }
 
     public function export(Request $request)

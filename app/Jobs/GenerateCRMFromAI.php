@@ -286,10 +286,10 @@ Return a JSON object with this EXACT structure:
   ],
   "ai_agent": {
     "name": "Agent name",
-    "objective": "Agent objective",
-    "persona_description": "How the agent should behave",
-    "communication_style": "professional|friendly|casual",
-    "knowledge_base": "Key information about the business"
+    "objective": "sales|support|general",
+    "persona_description": "How the agent should behave (free text, can be a paragraph)",
+    "communication_style": "formal|normal|casual",
+    "knowledge_base": "Key information about the business (free text)"
   },
   "quick_messages": [
     {"title": "Template title", "body": "Template body with {{nome}} variable"}
@@ -503,18 +503,18 @@ PROMPT;
         if ($isEn) {
             return [
                 'name'                => 'Sales Assistant',
-                'objective'           => 'Qualify leads, answer common questions, schedule meetings',
-                'persona_description' => 'Friendly, professional, helpful. Always greets the lead by name.',
-                'communication_style' => 'friendly',
+                'objective'           => 'sales', // ENUM: sales|support|general
+                'persona_description' => 'Qualify leads, answer common questions, schedule meetings. Friendly, professional, helpful. Always greets the lead by name.',
+                'communication_style' => 'casual', // ENUM: formal|normal|casual
                 'knowledge_base'      => 'You are a sales assistant. Be helpful, ask qualifying questions, and route complex requests to a human.',
             ];
         }
 
         return [
             'name'                => 'Assistente de Vendas',
-            'objective'           => 'Qualificar leads, responder perguntas comuns, agendar reuniões',
-            'persona_description' => 'Amigável, profissional e prestativo. Sempre cumprimenta o lead pelo nome.',
-            'communication_style' => 'friendly',
+            'objective'           => 'sales', // ENUM: sales|support|general
+            'persona_description' => 'Qualificar leads, responder perguntas comuns, agendar reuniões. Amigável, profissional e prestativo. Sempre cumprimenta o lead pelo nome.',
+            'communication_style' => 'casual', // ENUM: formal|normal|casual
             'knowledge_base'      => 'Você é um assistente de vendas. Seja prestativo, faça perguntas de qualificação e transfira casos complexos para um humano.',
         ];
     }
@@ -721,12 +721,37 @@ PROMPT;
             return ['name' => null];
         }
 
+        // ai_agents.objective é ENUM('sales','support','general') —
+        // qualquer outro valor causa "Data truncated" no MySQL e quebra o job inteiro.
+        // Whitelist hardcoded; default 'sales' pra agente de onboarding.
+        $rawObjective = strtolower(trim((string) ($data['objective'] ?? '')));
+        $objective    = in_array($rawObjective, ['sales', 'support', 'general'], true)
+            ? $rawObjective
+            : 'sales';
+
+        // ai_agents.communication_style é ENUM('formal','normal','casual') —
+        // mesma armadilha. 'friendly' (valor antigo do código) NÃO é válido.
+        $rawStyle = strtolower(trim((string) ($data['communication_style'] ?? '')));
+        // Aliases comuns que a IA pode retornar
+        $styleAliases = ['friendly' => 'casual', 'professional' => 'formal', 'polite' => 'formal'];
+        $rawStyle     = $styleAliases[$rawStyle] ?? $rawStyle;
+        $style        = in_array($rawStyle, ['formal', 'normal', 'casual'], true)
+            ? $rawStyle
+            : 'casual';
+
+        // Se o valor original do "objective" era texto descritivo (não enum válido),
+        // preserva ele no início da persona_description pra não perder a info.
+        $persona = (string) ($data['persona_description'] ?? '');
+        if ($rawObjective !== '' && $objective !== $rawObjective && strlen($rawObjective) > 12) {
+            $persona = trim($rawObjective . "\n\n" . $persona);
+        }
+
         AiAgent::create([
             'tenant_id'              => $this->tenant->id,
             'name'                   => $data['name'],
-            'objective'              => $data['objective'] ?? '',
-            'persona_description'    => $data['persona_description'] ?? '',
-            'communication_style'    => $data['communication_style'] ?? 'friendly',
+            'objective'              => $objective,
+            'persona_description'    => $persona,
+            'communication_style'    => $style,
             'knowledge_base'         => $data['knowledge_base'] ?? '',
             'is_active'              => true,
             'enable_pipeline_tool'   => true,
