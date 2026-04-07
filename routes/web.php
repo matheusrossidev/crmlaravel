@@ -156,6 +156,7 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
 
     Route::get('onboarding',             [OnboardingController::class, 'show'])->name('onboarding.show');
     Route::post('onboarding/generate',  [OnboardingController::class, 'generate'])->name('onboarding.generate');
+    Route::post('onboarding/retry',     [OnboardingController::class, 'retry'])->name('onboarding.retry');
     Route::get('onboarding/loading',    [OnboardingController::class, 'loading'])->name('onboarding.loading');
     Route::get('onboarding/progress',   [OnboardingController::class, 'progress'])->name('onboarding.progress');
     Route::get('onboarding/result',     [OnboardingController::class, 'result'])->name('onboarding.result');

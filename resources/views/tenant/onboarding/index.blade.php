@@ -104,6 +104,15 @@
             margin-bottom: 28px;
         }
 
+        .onb-section-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #6B7280;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 10px;
+        }
+
         /* ── Form elements ── */
         .form-label {
             display: block;
@@ -567,6 +576,7 @@
                 <div class="onb-dot" data-dot="3"></div>
                 <div class="onb-dot" data-dot="4"></div>
                 <div class="onb-dot" data-dot="5"></div>
+                <div class="onb-dot" data-dot="6"></div>
             </div>
 
             <!-- Error alert -->
@@ -576,7 +586,7 @@
             <!-- STEP 1: Nome da empresa + logo -->
             <!-- ─────────────────────────────────────────────── -->
             <div class="onb-step active fade-in" id="step1">
-                <div class="onb-step-label">{{ __('onboarding.step_1_of_5') }}</div>
+                <div class="onb-step-label">{{ __('onboarding.step_1_of_6') }}</div>
                 <h1 class="onb-title">{{ __('onboarding.step1_title') }}</h1>
                 <p class="onb-subtitle">{{ __('onboarding.step1_subtitle') }}</p>
 
@@ -616,7 +626,7 @@
             <!-- STEP 2: Nicho de mercado -->
             <!-- ─────────────────────────────────────────────── -->
             <div class="onb-step" id="step2">
-                <div class="onb-step-label">{{ __('onboarding.step_2_of_5') }}</div>
+                <div class="onb-step-label">{{ __('onboarding.step_2_of_6') }}</div>
                 <h1 class="onb-title">{{ __('onboarding.step2_title') }}</h1>
                 <p class="onb-subtitle">{{ __('onboarding.step2_subtitle') }}</p>
 
@@ -703,10 +713,60 @@
             </div>
 
             <!-- ─────────────────────────────────────────────── -->
-            <!-- STEP 3: Canais de entrada -->
+            <!-- STEP 3: Template picker + Sales process (NOVA) -->
             <!-- ─────────────────────────────────────────────── -->
             <div class="onb-step" id="step3">
-                <div class="onb-step-label">{{ __('onboarding.step_3_of_5') }}</div>
+                <div class="onb-step-label">{{ __('onboarding.step_3_of_6') }}</div>
+                <h1 class="onb-title">{{ __('onboarding.step3_title') }}</h1>
+                <p class="onb-subtitle">{{ __('onboarding.step3_subtitle') }}</p>
+
+                {{-- Template picker — populated via JS based on selected niche --}}
+                <div id="templatePickerContainer">
+                    <div class="onb-section-label">{{ __('onboarding.template_picker_label') }}</div>
+                    <div class="niche-grid" id="templateGrid">
+                        {{-- cards injetados via JS conforme nicho selecionado --}}
+                    </div>
+                    <div id="templatePickerNoMatch" style="display:none;background:#FEF3C7;border:1px solid #FDE68A;border-radius:10px;padding:10px 14px;font-size:13px;color:#92400E;margin-top:8px;">
+                        <i class="bi bi-info-circle" style="margin-right:4px;"></i>{{ __('onboarding.template_picker_no_match') }}
+                    </div>
+
+                    {{-- Always-available "use AI" card --}}
+                    <div class="niche-card" data-template-slug="" onclick="selectTemplate(null, this)" style="margin-top:10px;width:100%;">
+                        <div class="niche-card-icon" style="color:#8b5cf6;"><i class="bi bi-stars"></i></div>
+                        <div class="niche-card-body">
+                            <div class="niche-card-name">{{ __('onboarding.template_use_ai') }}</div>
+                            <div class="niche-card-desc">{{ __('onboarding.template_use_ai_desc') }}</div>
+                        </div>
+                        <div class="niche-check"><i class="bi bi-check"></i></div>
+                    </div>
+                </div>
+
+                {{-- Sales process textarea (optional) --}}
+                <div style="margin-top:20px;">
+                    <label for="salesProcessTextarea" style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">
+                        {{ __('onboarding.sales_process_label') }}
+                    </label>
+                    <textarea id="salesProcessTextarea" rows="3" maxlength="500"
+                        placeholder="{{ __('onboarding.sales_process_ph') }}"
+                        style="width:100%;border:1.5px solid #e8eaf0;border-radius:10px;padding:10px 14px;font-size:13.5px;font-family:inherit;resize:vertical;box-sizing:border-box;outline:none;transition:border-color .15s;"
+                        onfocus="this.style.borderColor='#0085f3'"
+                        onblur="this.style.borderColor='#e8eaf0'"></textarea>
+                    <p style="font-size:11.5px;color:#9ca3af;margin-top:4px;">{{ __('onboarding.sales_process_hint') }}</p>
+                </div>
+
+                <div class="onb-nav">
+                    <button class="btn-back" onclick="goBack()"><i class="bi bi-arrow-left"></i> {{ __('onboarding.back') }}</button>
+                    <button class="btn-next" onclick="goNext()">
+                        {{ __('onboarding.continue') }} <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ─────────────────────────────────────────────── -->
+            <!-- STEP 4: Canais de entrada -->
+            <!-- ─────────────────────────────────────────────── -->
+            <div class="onb-step" id="step4">
+                <div class="onb-step-label">{{ __('onboarding.step_4_of_6') }}</div>
                 <h1 class="onb-title">{{ __('onboarding.step2_title') }}</h1>
                 <p class="onb-subtitle">{{ __('onboarding.step2_subtitle') }}</p>
 
@@ -768,10 +828,10 @@
             </div>
 
             <!-- ─────────────────────────────────────────────── -->
-            <!-- STEP 4: Maior dificuldade -->
+            <!-- STEP 5: Maior dificuldade -->
             <!-- ─────────────────────────────────────────────── -->
-            <div class="onb-step" id="step4">
-                <div class="onb-step-label">{{ __('onboarding.step_4_of_5') }}</div>
+            <div class="onb-step" id="step5">
+                <div class="onb-step-label">{{ __('onboarding.step_5_of_6') }}</div>
                 <h1 class="onb-title">{{ __('onboarding.step4_title') }}</h1>
                 <p class="onb-subtitle">{{ __('onboarding.step4_subtitle') }}</p>
 
@@ -822,10 +882,10 @@
             </div>
 
             <!-- ─────────────────────────────────────────────── -->
-            <!-- STEP 5: Equipe + Resumo + Gerar -->
+            <!-- STEP 6: Equipe + Resumo + Gerar -->
             <!-- ─────────────────────────────────────────────── -->
-            <div class="onb-step" id="step5">
-                <div class="onb-step-label">{{ __('onboarding.step_5_of_5') }}</div>
+            <div class="onb-step" id="step6">
+                <div class="onb-step-label">{{ __('onboarding.step_6_of_6') }}</div>
                 <h1 class="onb-title">{{ __('onboarding.step5_title') }}</h1>
                 <p class="onb-subtitle">{{ __('onboarding.step5_subtitle') }}</p>
 
@@ -1017,12 +1077,18 @@ const NICHE_DATA = {
 };
 
 let currentStep      = 1;
-const totalSteps     = 5;
+const totalSteps     = 6;
 let selectedNiche    = null;
 let logoFile         = null;
 let selectedChannels    = [];
 let selectedDifficulties = [];
 let selectedTeam        = null;
+let selectedTemplateSlug = null;          // null = "deixar IA criar"
+let templateSelectionMade = false;        // user confirmou explicitamente uma escolha?
+
+// Pipeline templates carregados do PipelineTemplates::all() via OnboardingController
+const PIPELINE_TEMPLATES = @json($pipelineTemplates ?? []);
+const NICHE_TO_CATEGORY  = @json($nicheToCategory ?? []);
 
 function toggleChannel(card) {
     card.classList.toggle('selected');
@@ -1065,16 +1131,21 @@ function goNext() {
             showError(OBLANG.error_select_niche);
             return;
         }
+        // Pré-popula templates pra step 3 (caso o user já tenha escolhido nicho antes)
+        populateTemplatesForNiche(selectedNiche);
     }
 
-    if (currentStep === 3) {
+    // Step 3 (template picker + sales process): nada é obrigatório.
+    // Se o user não clicou em nada, assume "deixar IA criar do zero" (selectedTemplateSlug = null).
+
+    if (currentStep === 4) {
         if (selectedChannels.length === 0) {
             showError(OBLANG.error_select_channel || 'Selecione pelo menos um canal.');
             return;
         }
     }
 
-    if (currentStep === 4) {
+    if (currentStep === 5) {
         if (selectedDifficulties.length === 0) {
             showError(OBLANG.error_difficulty || 'Selecione pelo menos uma dificuldade.');
             return;
@@ -1117,6 +1188,65 @@ function selectNiche(key) {
     document.querySelectorAll('.niche-card[data-niche]').forEach(card => {
         card.classList.toggle('selected', card.dataset.niche === key);
     });
+    // Limpa seleção de template quando muda de nicho (templates de outro nicho não fazem sentido)
+    selectedTemplateSlug = null;
+    templateSelectionMade = false;
+    populateTemplatesForNiche(key);
+}
+
+/**
+ * Renderiza os cards de templates do PipelineTemplates filtrados pelo nicho
+ * selecionado. Chamado quando o user escolhe um nicho ou avança pra step 3.
+ */
+function populateTemplatesForNiche(niche) {
+    const grid     = document.getElementById('templateGrid');
+    const noMatch  = document.getElementById('templatePickerNoMatch');
+    if (!grid) return;
+
+    const category = NICHE_TO_CATEGORY[niche] ?? null;
+    const filtered = category
+        ? PIPELINE_TEMPLATES.filter(t => t.category === category)
+        : [];
+
+    grid.innerHTML = '';
+
+    if (filtered.length === 0) {
+        noMatch.style.display = '';
+        return;
+    }
+    noMatch.style.display = 'none';
+
+    filtered.forEach(t => {
+        const stagesCount = (t.stages || []).length;
+        const card = document.createElement('div');
+        card.className = 'niche-card';
+        card.dataset.templateSlug = t.slug;
+        card.style.width = '100%';
+        card.onclick = () => selectTemplate(t.slug, card);
+        card.innerHTML = `
+            <div class="niche-card-icon" style="color:${t.color || '#0085f3'};"><i class="bi ${t.icon || 'bi-diagram-3'}"></i></div>
+            <div class="niche-card-body">
+                <div class="niche-card-name">${escapeHtmlSimple(t.name)}</div>
+                <div class="niche-card-desc">${escapeHtmlSimple(t.description || '')} · ${stagesCount} ${OBLANG.template_card_stages.replace(':count', '').trim()}</div>
+            </div>
+            <div class="niche-check"><i class="bi bi-check"></i></div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function selectTemplate(slug, cardEl) {
+    selectedTemplateSlug = slug; // null pra "deixar IA criar"
+    templateSelectionMade = true;
+    // Visual: limpa todas as seleções e marca o clicado
+    document.querySelectorAll('#step3 .niche-card').forEach(c => c.classList.remove('selected'));
+    if (cardEl) cardEl.classList.add('selected');
+}
+
+function escapeHtmlSimple(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? '';
+    return div.innerHTML;
 }
 
 function handleLogoUpload(input) {
@@ -1139,13 +1269,15 @@ async function submitOnboarding() {
     }
 
     // Save answers to sessionStorage and redirect to loading page
+    const salesProcessText = (document.getElementById('salesProcessTextarea')?.value || '').trim();
     const answers = {
         company_name: document.getElementById('companyName').value.trim(),
         niche: selectedNiche || 'outro',
         channels: selectedChannels,
-        sales_process: selectedNiche || 'outro',
+        sales_process: salesProcessText, // string vazia se user não preencheu (campo é opcional agora)
         difficulty: selectedDifficulties.join(',') || 'followup',
         team_size: selectedTeam || 'solo',
+        pipeline_template_slug: selectedTemplateSlug, // null se "deixar IA criar do zero"
     };
     sessionStorage.setItem('onboarding_answers', JSON.stringify(answers));
     if (logoFile) {

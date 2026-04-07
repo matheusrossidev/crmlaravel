@@ -231,10 +231,18 @@ if (answers.company_name) {
     formData.append('_token', CSRF_TOKEN);
     formData.append('company_name', answers.company_name);
     formData.append('niche', answers.niche || 'outro');
-    formData.append('sales_process', answers.sales_process || answers.niche || 'outro');
+    // sales_process: agora opcional. Só envia se o user preencheu o textarea no wizard.
+    if (answers.sales_process) {
+        formData.append('sales_process', answers.sales_process);
+    }
     formData.append('difficulty', answers.difficulty || 'followup');
     formData.append('team_size', answers.team_size || 'solo');
     (answers.channels || []).forEach(ch => formData.append('channels[]', ch));
+    // pipeline_template_slug: opcional. Quando preenchido, backend usa o template
+    // do PipelineTemplates direto e a IA não gera pipeline (só sequences/scoring/etc).
+    if (answers.pipeline_template_slug) {
+        formData.append('pipeline_template_slug', answers.pipeline_template_slug);
+    }
 
     fetch(GENERATE_URL, {
         method: 'POST',

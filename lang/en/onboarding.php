@@ -9,11 +9,24 @@ return [
     'back'              => 'Back',
 
     // ── Progress ──
-    'step_1_of_5' => 'Step 1 of 5',
-    'step_2_of_5' => 'Step 2 of 5',
-    'step_3_of_5' => 'Step 3 of 5',
-    'step_4_of_5' => 'Step 4 of 5',
-    'step_5_of_5' => 'Step 5 of 5',
+    'step_1_of_6' => 'Step 1 of 6',
+    'step_2_of_6' => 'Step 2 of 6',
+    'step_3_of_6' => 'Step 3 of 6',
+    'step_4_of_6' => 'Step 4 of 6',
+    'step_5_of_6' => 'Step 5 of 6',
+    'step_6_of_6' => 'Step 6 of 6',
+
+    // ── Step 3 (NEW): Template picker + sales process ──
+    'step3_title'              => 'How do you want to start?',
+    'step3_subtitle'           => 'Pick a ready-made template for your industry or let AI build it from scratch.',
+    'template_picker_label'    => 'Templates for this industry',
+    'template_picker_no_match' => "We don't have specific templates for this industry. AI will build from scratch.",
+    'template_card_stages'     => ':count stages',
+    'template_use_ai'          => 'Let AI build from scratch',
+    'template_use_ai_desc'     => 'AI generates a custom pipeline based on your business.',
+    'sales_process_label'      => 'How does your sales process work today? (optional)',
+    'sales_process_ph'         => 'E.g.: I get leads on Instagram, qualify them on WhatsApp, schedule a call and send a proposal...',
+    'sales_process_hint'       => 'The more details you give, the more personalized the AI output will be.',
 
     // ── Step 1: Company ──
     'step1_title'              => "Let's set up your company",
@@ -158,4 +171,25 @@ return [
     'action_open_chat' => 'Open chat',
     'action_invite'    => 'Invite',
     'action_import'    => 'Import',
+
+    // ── Result page — real generation results ──
+    'result_section_title'       => 'What was generated for you',
+    'result_pipeline_created'    => '<strong>:name</strong> with :count stages',
+    'result_sequences_created'   => ':count nurture sequence created|:count nurture sequences created',
+    'result_automations_created' => ':count active automation|:count active automations',
+    'result_scoring_created'     => ':count scoring rule|:count scoring rules',
+    'result_ai_agent_created'    => 'AI Agent <strong>:name</strong> configured',
+    'result_quick_msgs_created'  => ':count quick message|:count quick messages',
+    'result_tags_created'        => ':count tags created',
+    'result_reasons_created'     => ':count loss reasons',
+    'result_nothing'             => 'No :item generated',
+    'result_template_used'       => 'Pipeline created from template <strong>:name</strong>',
+    'result_fallback_used'       => "AI didn't respond, so we used ready-made templates based on your industry.",
+
+    // Error states
+    'ai_failed_title'   => "AI couldn't generate everything",
+    'ai_failed_desc'    => 'Some items were created with default templates. You can try again or adjust manually later.',
+    'ai_error_label'    => 'Technical error:',
+    'retry_btn'         => 'Try again',
+    'retry_btn_loading' => 'Trying...',
 ];

@@ -9,11 +9,24 @@ return [
     'back'              => 'Voltar',
 
     // ── Progress ──
-    'step_1_of_5' => 'Passo 1 de 5',
-    'step_2_of_5' => 'Passo 2 de 5',
-    'step_3_of_5' => 'Passo 3 de 5',
-    'step_4_of_5' => 'Passo 4 de 5',
-    'step_5_of_5' => 'Passo 5 de 5',
+    'step_1_of_6' => 'Passo 1 de 6',
+    'step_2_of_6' => 'Passo 2 de 6',
+    'step_3_of_6' => 'Passo 3 de 6',
+    'step_4_of_6' => 'Passo 4 de 6',
+    'step_5_of_6' => 'Passo 5 de 6',
+    'step_6_of_6' => 'Passo 6 de 6',
+
+    // ── Step 3 (NOVA): Template picker + sales process ──
+    'step3_title'              => 'Como você quer começar?',
+    'step3_subtitle'           => 'Escolha um template pronto pro seu nicho ou deixe a IA criar tudo do zero.',
+    'template_picker_label'    => 'Templates pra esse nicho',
+    'template_picker_no_match' => 'Não temos templates específicos pra esse nicho. A IA vai criar do zero.',
+    'template_card_stages'     => ':count etapas',
+    'template_use_ai'          => 'Deixar a IA criar do zero',
+    'template_use_ai_desc'     => 'A IA gera um pipeline personalizado baseado no seu negócio.',
+    'sales_process_label'      => 'Como funciona seu processo de vendas hoje? (opcional)',
+    'sales_process_ph'         => 'Ex: Recebo lead pelo Instagram, qualifico no WhatsApp, agendo uma reunião e mando proposta...',
+    'sales_process_hint'       => 'Quanto mais detalhes você der, mais personalizado fica o que a IA gera.',
 
     // ── Step 1: Empresa ──
     'step1_title'              => 'Vamos configurar sua empresa',
@@ -162,4 +175,25 @@ return [
     'action_open_chat' => 'Abrir chat',
     'action_invite'    => 'Convidar',
     'action_import'    => 'Importar',
+
+    // ── Result page — real generation results ──
+    'result_section_title'       => 'O que foi gerado pra você',
+    'result_pipeline_created'    => '<strong>:name</strong> com :count etapas',
+    'result_sequences_created'   => ':count sequência de nutrição criada|:count sequências de nutrição criadas',
+    'result_automations_created' => ':count automação ativa|:count automações ativas',
+    'result_scoring_created'     => ':count regra de pontuação|:count regras de pontuação',
+    'result_ai_agent_created'    => 'Agente de IA <strong>:name</strong> configurado',
+    'result_quick_msgs_created'  => ':count mensagem rápida|:count mensagens rápidas',
+    'result_tags_created'        => ':count tags criadas',
+    'result_reasons_created'     => ':count motivos de perda',
+    'result_nothing'             => 'Nenhum :item gerado',
+    'result_template_used'       => 'Pipeline criado a partir do template <strong>:name</strong>',
+    'result_fallback_used'       => 'A IA não respondeu, então usamos templates pré-prontos baseados no seu nicho.',
+
+    // Error states
+    'ai_failed_title'  => 'A IA não conseguiu gerar tudo',
+    'ai_failed_desc'   => 'Algumas coisas foram criadas com templates padrão. Você pode tentar de novo ou ajustar manualmente depois.',
+    'ai_error_label'   => 'Erro técnico:',
+    'retry_btn'        => 'Tentar novamente',
+    'retry_btn_loading' => 'Tentando...',
 ];
