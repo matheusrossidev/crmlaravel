@@ -1391,7 +1391,8 @@ function resetDrawerForm() {
     document.getElementById('eventsList').innerHTML = '';
     document.getElementById('notesSection').style.display = 'none';
     document.getElementById('notesList').innerHTML = '';
-    document.getElementById('fNoteInput').value = '';
+    // Reset Quill editor (substituiu o textarea fNoteInput)
+    if (drawerNoteQuill) drawerNoteQuill.setText('');
     document.getElementById('customFieldsSection').style.display = 'none';
     document.getElementById('customFieldsContainer').innerHTML = '';
     document.getElementById('attachmentsSection').style.display = 'none';
