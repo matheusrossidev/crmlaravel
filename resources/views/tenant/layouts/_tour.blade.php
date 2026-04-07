@@ -68,13 +68,11 @@
         $tourPage = 'audit_log';
     } elseif (request()->routeIs('settings.ig-automations*') && !($toursCompleted['ig_automations'] ?? false)) {
         $tourPage = 'ig_automations';
-    } elseif (request()->routeIs('partner.dashboard') && !($toursCompleted['partner_dashboard'] ?? false)) {
-        $tourPage = 'partner_dashboard';
-    } elseif (request()->routeIs('partner.resources.*') && !($toursCompleted['partner_resources'] ?? false)) {
-        $tourPage = 'partner_resources';
-    } elseif (request()->routeIs('partner.courses.*') && !($toursCompleted['partner_courses'] ?? false)) {
-        $tourPage = 'partner_courses';
     }
+    // Partner tours desabilitados — estavam disparando em loop porque a página
+    // de parceiros usa um layout próprio e a chamada done() do tour.complete
+    // não estava marcando tours_completed. Remove manually se quiser reativar
+    // depois de corrigir o problema do layout.
 @endphp
 
 @if($tourPage)
@@ -240,22 +238,9 @@ document.addEventListener('DOMContentLoaded', function() {
             ['.current-plan-card,.billing-sidebar', 'billing_plan_title', 'billing_plan_desc'],
             ['.plan-card,.billing-main', 'billing_upgrade_title', 'billing_upgrade_desc'],
         ],
-        partner_dashboard: [
-            ['.ph-dark,.ph-rank-section', 'partner_dashboard_rank_title', 'partner_dashboard_rank_desc'],
-            ['.ph-kpi-row', 'partner_dashboard_kpis_title', 'partner_dashboard_kpis_desc'],
-            ['.ph-link-box', 'partner_dashboard_code_title', 'partner_dashboard_code_desc'],
-            ['.ph-card table,.client-table', 'partner_dashboard_clients_title', 'partner_dashboard_clients_desc'],
-            ['[onclick*="saque"],.btn-withdraw', 'partner_dashboard_withdraw_title', 'partner_dashboard_withdraw_desc'],
-        ],
-        partner_resources: [
-            ['.res-grid', 'partner_resources_grid_title', 'partner_resources_grid_desc'],
-            ['.res-filter', 'partner_resources_filters_title', 'partner_resources_filters_desc'],
-        ],
-        partner_courses: [
-            ['.course-grid', 'partner_courses_grid_title', 'partner_courses_grid_desc'],
-            ['.course-progress,.course-bar', 'partner_courses_progress_title', 'partner_courses_progress_desc'],
-            ['.course-cert-badge', 'partner_courses_certificate_title', 'partner_courses_certificate_desc'],
-        ],
+        // partner_dashboard / partner_resources / partner_courses removidos
+        // — o tour estava em loop infinito porque o layout das páginas de
+        // parceiros não persistia tours_completed corretamente.
         products: [
             ['table,.content-card', 'products_table_title', 'products_table_desc'],
             ['.btn-primary-sm', 'products_new_title', 'products_new_desc'],
