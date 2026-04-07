@@ -1357,18 +1357,20 @@
     {{-- ════════════════════════════════════════════════════════════ --}}
     {{-- PRODUTOS MAIS VENDIDOS (lado a lado com Origem acima)       --}}
     {{-- ════════════════════════════════════════════════════════════ --}}
-    @if(isset($topProducts) && $topProducts->isNotEmpty())
     @php
-        $topProdMax = $topProducts->max('total_value') ?: 1;
-        $topProdRevenue = $topProducts->sum('total_value');
+        $topProducts    = $topProducts ?? collect();
+        $topProdMax     = $topProducts->max('total_value') ?: 1;
+        $topProdRevenue = (float) $topProducts->sum('total_value');
     @endphp
     <div class="report-section" style="margin-bottom:0;">
         <div class="report-section-header">
             <i class="bi bi-box-seam"></i>
             {{ __('reports.product_performance') }}
+            @if($topProdRevenue > 0)
             <span style="margin-left:auto;font-size:12px;font-weight:500;color:#9ca3af;">
                 {{ __('reports.total_revenue') }} <strong style="color:#10B981;">{{ __('common.currency') }} {{ number_format((float)$topProdRevenue, 2, __('common.decimal_sep'), __('common.thousands_sep')) }}</strong>
             </span>
+            @endif
         </div>
         <div style="overflow-x:auto;">
             <table class="report-table">
@@ -1383,7 +1385,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($topProducts as $i => $prod)
+                    @forelse($topProducts as $i => $prod)
                     @php
                         $isChamp = $i === 0;
                         $prodPct = $topProdRevenue > 0 ? round($prod->total_value / $topProdRevenue * 100, 1) : 0;
@@ -1417,12 +1419,15 @@
                             </div>
                         </td>
                     </tr>
-                    @endforeach
+                    @empty
+                    <tr class="empty-row">
+                        <td colspan="6">{{ __('reports.no_product_data') }}</td>
+                    </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
     </div>
-    @endif
 
     </div>{{-- /report-double-grid --}}
 
