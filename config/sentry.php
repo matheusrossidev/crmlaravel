@@ -11,20 +11,9 @@ return [
     'dsn' => env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN')),
 
     // Anexa contexto multi-tenant em todos os eventos enviados ao Sentry.
-    // Filtragem de exceptions ruidosas (404, validation, throttle) é feita
-    // pela chave `ignore_exceptions` mais abaixo — não aqui.
-    'before_send' => function (\Sentry\Event $event): ?\Sentry\Event {
-        if (function_exists('auth') && auth()->check()) {
-            $user = auth()->user();
-            $event->setUser(\Sentry\UserDataBag::createFromArray([
-                'id'    => $user->id,
-                'email' => $user->email,
-            ]));
-            $event->setTag('tenant_id',   (string) ($user->tenant_id ?? 'none'));
-            $event->setTag('tenant_name', optional($user->tenant)->name ?? 'none');
-        }
-        return $event;
-    },
+    // Implementado como callable [Class, method] (não closure) pra ser
+    // serializável pelo `php artisan config:cache`. Ver app/Sentry/BeforeSend.php
+    'before_send' => [\App\Sentry\BeforeSend::class, 'handle'],
 
     // @see https://spotlightjs.com/
     // 'spotlight' => env('SENTRY_SPOTLIGHT', false),
