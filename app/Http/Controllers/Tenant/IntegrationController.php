@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\ImportWhatsappHistory;
-use App\Jobs\SyncCampaignsJob;
 use App\Models\FacebookLeadFormConnection;
 use App\Models\FeatureFlag;
 use App\Models\InstagramInstance;
@@ -110,51 +109,7 @@ class IntegrationController extends Controller
         ));
     }
 
-    // ── Facebook ──────────────────────────────────────────────────────────────
-
-    public function redirectFacebook(): RedirectResponse
-    {
-        return Socialite::driver('facebook')
-            ->setScopes(['public_profile', 'ads_read'])
-            ->redirect();
-    }
-
-    public function callbackFacebook(): RedirectResponse
-    {
-        try {
-            $user = Socialite::driver('facebook')->user();
-        } catch (\Throwable) {
-            return redirect()->route('settings.integrations.index')
-                ->with('error', 'Autenticação com o Facebook falhou. Tente novamente.');
-        }
-
-        // Troca short-lived token por long-lived (60 dias)
-        $longLived = $this->exchangeFacebookToken($user->token);
-
-        $tenant = activeTenant();
-
-        OAuthConnection::updateOrCreate(
-            ['tenant_id' => $tenant->id, 'platform' => 'facebook'],
-            [
-                'platform_user_id'   => $user->getId(),
-                'platform_user_name' => $user->getName(),
-                'access_token'       => $longLived['token'] ?? $user->token,
-                'refresh_token'      => null,
-                'token_expires_at'   => isset($longLived['expires_in'])
-                    ? now()->addSeconds((int) $longLived['expires_in'])
-                    : now()->addDays(60),
-                'scopes_json'        => ['public_profile', 'ads_read'],
-                'status'             => 'active',
-            ]
-        );
-
-        SyncCampaignsJob::dispatch($tenant, 'facebook');
-
-        return redirect()->route('settings.integrations.index')
-            ->with('success', 'Facebook Ads conectado com sucesso!');
-    }
-
-    // ── Google ────────────────────────────────────────────────────────────────
+    // ── Google (Calendar) ─────────────────────────────────────────────────────
 
     public function redirectGoogle(): RedirectResponse
     {
@@ -195,13 +150,11 @@ class IntegrationController extends Controller
             ]
         );
 
-        SyncCampaignsJob::dispatch($tenant, 'google');
-
         return redirect()->route('settings.integrations.index')
-            ->with('success', 'Google Ads conectado com sucesso!');
+            ->with('success', 'Google Calendar conectado com sucesso!');
     }
 
-    // ── Disconnect / Sync ─────────────────────────────────────────────────────
+    // ── Disconnect ────────────────────────────────────────────────────────────
 
     public function disconnect(string $platform): JsonResponse
     {
@@ -209,21 +162,6 @@ class IntegrationController extends Controller
             ->update(['status' => 'revoked']);
 
         return response()->json(['success' => true]);
-    }
-
-    public function syncNow(string $platform): JsonResponse
-    {
-        $conn = OAuthConnection::where('platform', $platform)
-            ->whereIn('status', ['active', 'expired'])
-            ->first();
-
-        if (! $conn) {
-            return response()->json(['success' => false, 'message' => 'Nenhuma conexão ativa encontrada.'], 404);
-        }
-
-        SyncCampaignsJob::dispatch(activeTenant(), $platform);
-
-        return response()->json(['success' => true, 'message' => 'Sincronização iniciada.']);
     }
 
     // ── WhatsApp ──────────────────────────────────────────────────────────────

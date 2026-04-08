@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\Campaign;
 use App\Models\Lead;
 use App\Models\Pipeline;
 use App\Models\WebsiteConversation;
@@ -520,20 +519,6 @@ class WebsiteChatService
             ]));
         } else {
             $lead = Lead::withoutGlobalScope('tenant')->create($leadData);
-
-            // Auto-link campaign by utm_campaign value
-            if ($conv->utm_campaign) {
-                $campaign = Campaign::withoutGlobalScope('tenant')
-                    ->where('tenant_id', $conv->tenant_id)
-                    ->where(function ($q) use ($conv) {
-                        $q->whereRaw('LOWER(utm_campaign) = ?', [strtolower($conv->utm_campaign)])
-                          ->orWhereRaw('LOWER(name) = ?',        [strtolower($conv->utm_campaign)]);
-                    })
-                    ->first();
-                if ($campaign) {
-                    $lead->update(['campaign_id' => $campaign->id]);
-                }
-            }
         }
 
         WebsiteConversation::withoutGlobalScope('tenant')

@@ -17,7 +17,7 @@ class Sale extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'tenant_id', 'lead_id', 'campaign_id', 'pipeline_id',
+        'tenant_id', 'lead_id', 'pipeline_id',
         'value', 'closed_by', 'closed_at', 'notes',
     ];
 
@@ -30,11 +30,6 @@ class Sale extends Model
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);
-    }
-
-    public function campaign(): BelongsTo
-    {
-        return $this->belongsTo(Campaign::class);
     }
 
     public function pipeline(): BelongsTo

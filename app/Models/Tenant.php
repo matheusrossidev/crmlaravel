@@ -184,11 +184,6 @@ class Tenant extends Model
         return $this->hasMany(Lead::class);
     }
 
-    public function campaigns(): HasMany
-    {
-        return $this->hasMany(Campaign::class);
-    }
-
     public function apiKeys(): HasMany
     {
         return $this->hasMany(ApiKey::class);

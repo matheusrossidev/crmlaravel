@@ -1717,7 +1717,7 @@ $pageIcon = 'person-badge';
             <div class="lp-info-row">
                 <div class="lp-info-icon"><i class="bi bi-megaphone"></i></div>
                 <div class="lp-info-val">
-                    {{ $lead->campaign?->name ?? '—' }}
+                    {{ $lead->utm_campaign ?? '—' }}
                 </div>
             </div>
 

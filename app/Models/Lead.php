@@ -19,7 +19,7 @@ class Lead extends Model
     protected $fillable = [
         'tenant_id', 'name', 'phone', 'email', 'company', 'value',
         'source', 'tags', 'pipeline_id', 'stage_id',
-        'assigned_to', 'campaign_id', 'created_by', 'notes',
+        'assigned_to', 'created_by', 'notes',
         'instagram_username', 'exclude_from_pipeline',
         'utm_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid',
         'birthday',
@@ -55,11 +55,6 @@ class Lead extends Model
     public function assignedTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
-    }
-
-    public function campaign(): BelongsTo
-    {
-        return $this->belongsTo(Campaign::class);
     }
 
     public function createdBy(): BelongsTo

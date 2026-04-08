@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\ApiKey;
-use App\Models\Campaign;
 use App\Models\CustomFieldDefinition;
 use App\Models\Pipeline;
 use Illuminate\Http\JsonResponse;
@@ -24,12 +23,9 @@ class ApiKeyController extends Controller
         $pipelines    = Pipeline::with(['stages' => fn ($q) => $q->orderBy('position')])
                             ->orderBy('sort_order')
                             ->get();
-        $campaigns    = Campaign::where('status', 'active')
-                            ->orderBy('name')
-                            ->get(['id', 'name', 'type', 'utm_campaign']);
         $tags         = \App\Models\WhatsappTag::orderBy('sort_order')->get(['name', 'color']);
 
-        return view('tenant.settings.api-keys', compact('apiKeys', 'customFields', 'pipelines', 'campaigns', 'tags'));
+        return view('tenant.settings.api-keys', compact('apiKeys', 'customFields', 'pipelines', 'tags'));
     }
 
     public function store(Request $request): JsonResponse

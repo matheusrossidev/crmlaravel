@@ -43,7 +43,6 @@ class BackfillWonSales extends Command
                 'tenant_id'   => $lead->tenant_id,
                 'lead_id'     => $lead->id,
                 'pipeline_id' => $lead->pipeline_id,
-                'campaign_id' => $lead->campaign_id,
                 'value'       => $lead->value ?? 0,
                 'closed_by'   => null,
                 'closed_at'   => $lead->updated_at ?? now(),

@@ -23,7 +23,7 @@ namespace App\Support;
  *  - add_tag_lead, remove_tag_lead, add_tag_conversation, move_to_stage,
  *    set_lead_source, assign_to_user, add_note, assign_ai_agent,
  *    assign_chatbot_flow, close_conversation, send_whatsapp_message,
- *    schedule_whatsapp_message, assign_campaign, set_utm_params,
+ *    schedule_whatsapp_message, set_utm_params,
  *    transfer_to_department, create_task, enroll_sequence,
  *    ai_extract_fields, send_webhook
  *

@@ -712,16 +712,9 @@ function exportCSV() {
                 <option value="{{ $d }}" {{ $days == $d ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
-            <a href="{{ route('campaigns.reports.pdf', ['days' => $days]) }}" class="btn-primary-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 14px;">
-                <i class="bi bi-download"></i> {{ __('campaigns.download_report') }}
-            </a>
+            </div>
         </div>
     </div>
-
-    {{-- FAB download mobile --}}
-    <a href="{{ route('campaigns.reports.pdf', ['days' => $days]) }}" class="fab-download-report d-md-none" title="{{ __('campaigns.download_report') }}">
-        <i class="bi bi-download"></i>
-    </a>
 
     {{-- KPI Cards --}}
     <div class="kpi-grid">

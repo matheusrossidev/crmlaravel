@@ -94,7 +94,6 @@ return [
     'sidebar_act_close_conversation'    => 'Close conversation',
     'sidebar_act_send_whatsapp_message' => 'Send WhatsApp msg',
     'sidebar_act_schedule_whatsapp_message' => 'Schedule WhatsApp msg',
-    'sidebar_act_assign_campaign'       => 'Assign campaign',
     'sidebar_act_set_utm_params'        => 'Set UTM parameters',
     'sidebar_act_create_task'           => 'Create task',
     'sidebar_act_ai_extract_fields'     => 'Extract data with AI',
@@ -282,8 +281,6 @@ return [
     'label_department'          => 'Department',
     'no_departments'            => 'No active department.',
     'close_conversation_info'   => 'The conversation linked to the lead will be closed automatically.',
-    'label_campaign'            => 'Campaign',
-    'no_campaigns'              => 'No campaigns registered.',
 
     // ── Action config: UTM ──────────────────────────────────────────────
     'utm_source'                => 'UTM Source',
@@ -350,7 +347,6 @@ return [
     'validation_message_required' => 'Enter the message.',
     'validation_schedule_message_required' => 'Enter the message to schedule.',
     'validation_delay_min'      => 'Delay must be at least 1.',
-    'validation_select_campaign' => 'Select the campaign.',
     'validation_utm_required'   => 'Fill in at least one UTM field.',
     'validation_subject_required' => 'Enter the task subject.',
     'validation_action_required' => 'Add at least one action.',

@@ -19,7 +19,7 @@ class LeadsExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSiz
 
     public function query()
     {
-        $query = Lead::with(['stage', 'pipeline', 'campaign'])
+        $query = Lead::with(['stage', 'pipeline'])
             ->orderByDesc('created_at');
 
         if (!empty($this->filters['search'])) {
@@ -60,7 +60,7 @@ class LeadsExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSiz
 
     public function headings(): array
     {
-        return ['Nome', 'Telefone', 'E-mail', 'Valor', 'Origem', 'Tags', 'Pipeline', 'Etapa', 'Campanha', 'Notas', 'Criado em'];
+        return ['Nome', 'Telefone', 'E-mail', 'Valor', 'Origem', 'Tags', 'Pipeline', 'Etapa', 'UTM Campaign', 'Notas', 'Criado em'];
     }
 
     public function map($lead): array
@@ -74,7 +74,7 @@ class LeadsExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSiz
             is_array($lead->tags) ? implode(', ', $lead->tags) : '',
             $lead->pipeline?->name ?? '',
             $lead->stage?->name ?? '',
-            $lead->campaign?->name ?? '',
+            $lead->utm_campaign ?? '',
             $lead->notes ?? '',
             $lead->created_at?->format('d/m/Y H:i'),
         ];

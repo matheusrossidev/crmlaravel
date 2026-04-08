@@ -515,20 +515,6 @@
                                 <span style="font-size:10px;font-weight:400;color:#9ca3af;text-transform:none;letter-spacing:0;">{{ __('apikeys.builder_utm_hint') }}</span>
                             </div>
 
-                            @if($campaigns->count())
-                            <div class="bfield">
-                                <input type="checkbox" id="bld-campaign-on"
-                                       onchange="toggleBldInput('bld-campaign'); updateCreateCurl()">
-                                <span class="bfield-label">campaign_id</span>
-                                <select class="bselect" id="bld-campaign" disabled onchange="updateCreateCurl()">
-                                    <option value="">{{ __('apikeys.builder_campaign_none') }}</option>
-                                    @foreach($campaigns as $c)
-                                    <option value="{{ $c->id }}">{{ $c->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            @endif
-
                             <div class="bfield">
                                 <input type="checkbox" id="bld-utm_source-on"
                                        onchange="toggleBldInput('bld-utm_source'); updateCreateCurl()">
@@ -871,7 +857,6 @@ const CSRF            = document.querySelector('meta[name="csrf-token"]')?.conte
 
 const PIPELINES_DATA  = {!! json_encode($pipelines) !!};
 const CUSTOM_FIELDS   = {!! json_encode($customFields) !!};
-const CAMPAIGNS_DATA  = {!! json_encode($campaigns) !!};
 
 // ── Modal nova key ──────────────────────────────────────────────────────────
 function openNewKeyModal() {
@@ -1076,12 +1061,6 @@ function buildCreateCurl() {
         const selected = [];
         document.querySelectorAll('.bld-tag-cb:checked').forEach(cb => selected.push(cb.value));
         if (selected.length) body.tags = selected;
-    }
-
-    // campaign_id (optional toggle)
-    if (document.getElementById('bld-campaign-on')?.checked) {
-        const v = document.getElementById('bld-campaign')?.value;
-        if (v) body.campaign_id = parseInt(v);
     }
 
     // UTM fields (optional toggles)

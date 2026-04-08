@@ -93,8 +93,6 @@
                 <div class="report-period">{{ $dateFrom->format('d/m/Y') }} — {{ $dateTo->format('d/m/Y') }}</div>
                 <div class="report-filters">
                     @if($filterPipeline) Pipeline: {{ $pipelines->firstWhere('id', $filterPipeline)?->name ?? 'N/A' }} @else Pipeline: Todos @endif
-                    &bull;
-                    @if($filterCampaign) Campanha: {{ $campaigns->firstWhere('id', $filterCampaign)?->name ?? 'N/A' }} @else Campanha: Todas @endif
                 </div>
             </td>
         </tr>

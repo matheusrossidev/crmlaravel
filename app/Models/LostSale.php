@@ -16,7 +16,7 @@ class LostSale extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'tenant_id', 'lead_id', 'campaign_id', 'pipeline_id',
+        'tenant_id', 'lead_id', 'pipeline_id',
         'reason_id', 'reason_notes', 'lost_at', 'lost_by',
     ];
 
@@ -28,11 +28,6 @@ class LostSale extends Model
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);
-    }
-
-    public function campaign(): BelongsTo
-    {
-        return $this->belongsTo(Campaign::class);
     }
 
     public function pipeline(): BelongsTo

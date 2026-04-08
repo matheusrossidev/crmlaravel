@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\AiAgent;
-use App\Models\Campaign;
 use App\Models\ChatbotFlow;
 use App\Models\Lead;
 use App\Models\InstagramConversation;
@@ -844,19 +843,6 @@ class WhatsappController extends Controller
             ]);
             if ($utmUpdate) {
                 $lead->update($utmUpdate);
-            }
-
-            if (! $lead->campaign_id && $websiteConversation->utm_campaign) {
-                $campaign = Campaign::withoutGlobalScope('tenant')
-                    ->where('tenant_id', $lead->tenant_id)
-                    ->where(function ($q) use ($websiteConversation) {
-                        $q->whereRaw('LOWER(utm_campaign) = ?', [strtolower($websiteConversation->utm_campaign)])
-                          ->orWhereRaw('LOWER(name) = ?',        [strtolower($websiteConversation->utm_campaign)]);
-                    })
-                    ->first();
-                if ($campaign) {
-                    $lead->update(['campaign_id' => $campaign->id]);
-                }
             }
         }
 

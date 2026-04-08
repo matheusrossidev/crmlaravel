@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
-use App\Models\Campaign;
 use App\Models\Lead;
 use App\Models\LeadList;
 use App\Models\Pipeline;
@@ -30,7 +29,6 @@ class LeadListController extends Controller
         $stages    = PipelineStage::whereHas('pipeline', fn ($q) => $q->where('tenant_id', activeTenantId()))
             ->orderBy('position')->get(['id', 'name', 'pipeline_id']);
         $users     = User::where('tenant_id', activeTenantId())->orderBy('name')->get(['id', 'name']);
-        $campaigns = Campaign::orderBy('name')->get(['id', 'name']);
 
         // Tags: configured + from leads
         $configuredTags = WhatsappTag::orderBy('sort_order')->get(['name', 'color']);
@@ -46,7 +44,7 @@ class LeadListController extends Controller
         $sources = Lead::distinct()->pluck('source')->filter()->sort()->values();
 
         return view('tenant.lists.index', compact(
-            'lists', 'pipelines', 'stages', 'users', 'campaigns', 'tags', 'sources',
+            'lists', 'pipelines', 'stages', 'users', 'tags', 'sources',
         ));
     }
 

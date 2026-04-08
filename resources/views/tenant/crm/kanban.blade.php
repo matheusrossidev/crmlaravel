@@ -535,7 +535,7 @@
             @endforeach
         </select>
         <button class="topbar-btn hide-mobile" title="{{ __('crm.filters') }}" id="btnToggleFilters" style="width:32px;height:32px;">
-            <i class="bi bi-funnel{{ request()->hasAny(['source','date_from','date_to','campaign_id','tag']) ? '-fill' : '' }}"></i>
+            <i class="bi bi-funnel{{ request()->hasAny(['source','date_from','date_to','tag']) ? '-fill' : '' }}"></i>
         </button>
         <button class="topbar-btn hide-mobile" title="{{ __('crm.export_leads') }}" onclick="exportarLeads()" style="width:32px;height:32px;">
             <i class="bi bi-download"></i>
@@ -559,7 +559,7 @@
     @if(request('pipeline_id'))
     <input type="hidden" name="pipeline_id" value="{{ request('pipeline_id') }}">
     @endif
-    <div class="kanban-filter-bar{{ request()->hasAny(['source','date_from','date_to','campaign_id','tag','responsible']) ? ' visible' : '' }}" id="filterBar">
+    <div class="kanban-filter-bar{{ request()->hasAny(['source','date_from','date_to','tag','responsible']) ? ' visible' : '' }}" id="filterBar">
         <select name="source" class="filter-control" onchange="this.form.submit()">
             <option value="">{{ __('crm.all_sources') }}</option>
             @foreach(['manual','api','facebook','google','instagram','whatsapp','indicacao','site'] as $src)
@@ -610,7 +610,7 @@
 
         <button type="submit" class="btn-primary-sm" style="padding:6px 14px;">{{ __('crm.apply') }}</button>
 
-        @if(request()->hasAny(['source','date_from','date_to','campaign_id','tag','responsible']))
+        @if(request()->hasAny(['source','date_from','date_to','tag','responsible']))
         <a href="{{ route('crm.kanban', request()->only('pipeline_id')) }}" class="filter-clear">
             <i class="bi bi-x"></i> {{ __('crm.clear') }}
         </a>
@@ -1386,7 +1386,7 @@ function exportarLeads() {
     const params = new URLSearchParams();
     if (pipelineId) params.set('pipeline_id', pipelineId);
     const urlParams = new URLSearchParams(window.location.search);
-    ['source', 'campaign_id', 'date_from', 'date_to', 'tag'].forEach(k => {
+    ['source', 'date_from', 'date_to', 'tag'].forEach(k => {
         const v = urlParams.get(k);
         if (v) params.set(k, v);
     });

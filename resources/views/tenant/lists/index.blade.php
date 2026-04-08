@@ -226,7 +226,6 @@ const DELETE_URL  = @json(route('lists.destroy', ['list' => '__ID__']));
 const PIPELINES  = {!! json_encode($pipelines) !!};
 const STAGES     = {!! json_encode($stages) !!};
 const USERS      = {!! json_encode($users) !!};
-const CAMPAIGNS  = {!! json_encode($campaigns) !!};
 const TAGS       = {!! json_encode($tags->map(fn($t) => ['name' => $t->name, 'color' => $t->color ?? null])) !!};
 const SOURCES    = {!! json_encode($sources) !!};
 
@@ -237,7 +236,6 @@ const FIELDS = [
     { value: 'stage_id',     label: 'Etapa do funil',      valType: 'select', options: STAGES.map(s => ({v: s.id, l: s.name})) },
     { value: 'tag',          label: 'Tag',                 valType: 'select', options: TAGS.map(t => ({v: t.name, l: t.name})), ops: ['eq'] },
     { value: 'assigned_to',  label: 'Responsável',         valType: 'select', options: USERS.map(u => ({v: u.id, l: u.name})) },
-    { value: 'campaign_id',  label: 'Campanha',            valType: 'select', options: CAMPAIGNS.map(c => ({v: c.id, l: c.name})), ops: ['eq'] },
     { value: 'created_at',   label: 'Data de criação',     valType: 'date' },
     { value: 'value',        label: 'Valor (R$)',          valType: 'number' },
     { value: 'email',        label: 'Tem email',           valType: 'exists', ops: ['not_null','is_null'] },

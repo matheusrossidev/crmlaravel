@@ -40,7 +40,7 @@ class LeadController extends Controller
     {
         $allowedPipelineIds = auth()->user()->allowedPipelineIds();
 
-        $query = Lead::with(['stage', 'pipeline', 'campaign', 'assignedTo', 'whatsappConversation.aiAgent'])
+        $query = Lead::with(['stage', 'pipeline', 'assignedTo', 'whatsappConversation.aiAgent'])
             ->where(fn ($q) => $q->where('exclude_from_pipeline', false)->orWhereNull('exclude_from_pipeline'))
             ->where(fn ($q) => $q->where('status', '!=', 'merged')->orWhereNull('status'))
             ->when($allowedPipelineIds, fn ($q) => $q->whereIn('pipeline_id', $allowedPipelineIds))
@@ -122,7 +122,6 @@ class LeadController extends Controller
             'tags.*'      => 'string|max:50',
             'pipeline_id' => 'required|integer|exists:pipelines,id',
             'stage_id'    => 'required|integer|exists:pipeline_stages,id',
-            'campaign_id' => 'nullable|integer|exists:campaigns,id',
             'notes'       => 'nullable|string|max:1000000',
             'birthday'    => 'nullable|date',
         ]);
@@ -173,7 +172,6 @@ class LeadController extends Controller
             Sale::firstOrCreate(
                 ['lead_id' => $lead->id, 'pipeline_id' => $data['pipeline_id']],
                 [
-                    'campaign_id' => $lead->campaign_id,
                     'value'       => $lead->value,
                     'closed_by'   => auth()->id(),
                     'closed_at'   => now(),
@@ -183,7 +181,6 @@ class LeadController extends Controller
             LostSale::firstOrCreate(
                 ['lead_id' => $lead->id, 'pipeline_id' => $data['pipeline_id']],
                 [
-                    'campaign_id' => $lead->campaign_id,
                     'lost_at'     => now(),
                     'lost_by'     => auth()->id(),
                 ]
@@ -206,7 +203,7 @@ class LeadController extends Controller
             ], activeTenantId(), excludeUserId: auth()->id());
         } catch (\Throwable) {}
 
-        $lead->load(['stage', 'pipeline', 'campaign', 'assignedTo']);
+        $lead->load(['stage', 'pipeline', 'assignedTo']);
 
         return response()->json(['success' => true, 'lead' => $this->formatLead($lead)]);
     }
@@ -274,7 +271,6 @@ class LeadController extends Controller
             'pipeline.stages',
             'stage',
             'assignedTo',
-            'campaign',
             'leadNotes.author',
             'events.performedBy',
             'customFieldValues.fieldDefinition',
@@ -337,7 +333,6 @@ class LeadController extends Controller
             'tags.*'      => 'string|max:50',
             'pipeline_id' => 'sometimes|required|integer|exists:pipelines,id',
             'stage_id'    => 'sometimes|required|integer|exists:pipeline_stages,id',
-            'campaign_id' => 'nullable|integer|exists:campaigns,id',
             'notes'       => 'nullable|string|max:1000000',
             'birthday'    => 'nullable|date',
         ]);
@@ -426,7 +421,7 @@ class LeadController extends Controller
             } catch (\Throwable) {}
         }
 
-        $lead->load(['stage', 'pipeline', 'campaign', 'assignedTo']);
+        $lead->load(['stage', 'pipeline', 'assignedTo']);
 
         return response()->json(['success' => true, 'lead' => $this->formatLead($lead)]);
     }

@@ -1,7 +1,7 @@
 # Syncro CRM — Guia Completo da Plataforma
 
 > Este documento é a referência definitiva para qualquer dev ou IA que trabalhe neste codebase.
-> Última atualização: 2026-04-01
+> Última atualização: 2026-04-06
 
 ---
 
@@ -9,14 +9,19 @@
 
 **Syncro** é uma plataforma 360 de marketing e CRM multi-tenant com:
 - Pipeline de vendas (Kanban)
-- Chat inbox unificado (WhatsApp + Instagram + Website)
+- Chat inbox unificado (WhatsApp WAHA + WhatsApp Cloud API oficial Meta + Instagram + Website)
 - Agentes de IA com memória e tools (via microsserviço Agno)
+- Sophia — assistente IA interna com execução de actions no CRM
 - Chatbot builder visual multi-canal (React Flow)
-- Automações por trigger
+- Automações por trigger + send_webhook + extract_lead_data via IA
 - Campanhas com rastreamento UTM
+- Facebook Lead Ads — captura automática via webhook + form mapping
 - Billing via Asaas (PIX, cartão) e Stripe (internacional)
 - Programa de parceiros com comissões e cursos
 - Tasks, produtos, lead scoring, nurture sequences, NPS, metas de vendas
+- Feature Flags — gating de features por tenant via painel master
+- Reengagement — emails/WA automáticos pra usuários inativos
+- Global search (Cmd+K) + tour interativo (Driver.js)
 
 ### Stack
 
@@ -28,14 +33,17 @@
 | Frontend | AdminLTE 4.0.0-rc6, Bootstrap 5, jQuery, Chart.js, Toastr, DataTables, React (chatbot builder only) |
 | Build | Vite |
 | Real-time | Laravel Reverb (WebSocket) |
-| WhatsApp | WAHA Plus (GOWS engine) |
+| WhatsApp | WAHA Plus (GOWS engine) **+** WhatsApp Cloud API oficial Meta (Coexistence via Embedded Signup) |
+| Lead Ads | Facebook Lead Ads (webhook + Business Login + form mapping) |
 | Pagamentos | Asaas (Brasil), Stripe (internacional) |
 | IA | Agno (FastAPI + pgvector), OpenAI/Anthropic/Gemini |
+| Tour | Driver.js v1 (onboarding interativo) |
+| Email | Laravel Mail + layout shared bilingual (pt_BR / en) |
 | Deploy | Docker Swarm, Portainer, Traefik SSL |
 | CI/CD | GitHub Actions → Docker Hub → Portainer |
 
 ### Stats
-~89 models, 36 services, 10 jobs, 20 commands, 6 events, 11 notifications
+~93 models, ~42 services, ~14 jobs, ~22 commands, 6 events, 11 notifications, ~50 controllers, 100+ migrations
 
 ### URLs
 - **Dev**: `http://localhost/crm/public`
@@ -61,7 +69,14 @@
 - Suporta impersonação de agências via `session('impersonating_tenant_id')`
 
 ### Models SEM tenant (globais)
-`Tenant`, `User`, `PipelineStage`, `AiConfiguration`, `PlanDefinition`, `TokenIncrementPlan`, `UpsellTrigger`, `WebhookLog`, `AuditLog`, `PartnerRank`, `PartnerResource`, `PartnerCourse`, `PartnerLesson`, `MasterNotification`
+`Tenant`, `User`, `PipelineStage`, `AiConfiguration`, `PlanDefinition`, `TokenIncrementPlan`, `UpsellTrigger`, `WebhookLog`, `AuditLog`, `PartnerRank`, `PartnerResource`, `PartnerCourse`, `PartnerLesson`, `MasterNotification`, `FeatureFlag`, `ReengagementTemplate`
+
+### Feature Flags
+- Modelo `FeatureFlag` (slug, label, description, is_enabled_globally, sort_order) + pivot `feature_tenant`
+- Helper: `\App\Models\FeatureFlag::isEnabled('whatsapp_cloud_api', $tenantId)` retorna bool
+- Painel: `/master/features` (super_admin) — toggle global ou per-tenant
+- Auto-seed via `FeatureFlagSeeder` (rodado no entrypoint do Docker)
+- Usado pra rollout gradual de features novas (ex: WhatsApp Cloud API saiu primeiro só pro tenant 12)
 
 ### Middleware Chain
 ```
@@ -131,10 +146,10 @@ web → auth → tenant → role:admin → plan.limit:leads
 - **SalesGoal** — user_id, type (sales_count/sales_value/leads_created/conversion_rate), period, target_value, start_date, end_date, is_recurring, growth_rate, bonus_tiers (JSON)
 - **SalesGoalSnapshot** — goal_id, user_id, type, period, target_value, achieved_value, percentage
 
-### WhatsApp
-- **WhatsappInstance** — session_name (WAHA), phone_number, history_imported flag
-- **WhatsappConversation** — phone, lid (interno), status (open/closed/expired), tags (JSON), assigned_user_id, department_id, ai_agent_id, chatbot_flow_id/node_id/variables, followup counters
-- **WhatsappMessage** — waha_message_id (UNIQUE), direction, type, body, media_url, ack, sent_at
+### WhatsApp (WAHA + Cloud API dual-provider)
+- **WhatsappInstance** — `provider` ('waha' ou 'cloud_api'), `session_name` (WAHA), `phone_number`, `phone_number_id` (Cloud API), `waba_id`, `business_account_id`, `access_token` (cast `encrypted`, Cloud API), `token_expires_at`, `history_imported` flag, `display_name`, `label`. Helpers: `isWaha()`, `isCloudApi()`
+- **WhatsappConversation** — `instance_id` (FK!), phone, lid (interno), status (open/closed/expired), tags (JSON), assigned_user_id, department_id, ai_agent_id, chatbot_flow_id/node_id/variables, followup counters, response_time_seconds
+- **WhatsappMessage** — `waha_message_id` (UNIQUE) **OU** `cloud_message_id` (índice) — provider determina qual coluna popular. direction, type, body, media_url, ack, sent_at
 
 ### Instagram
 - **InstagramInstance** — ig_business_account_id, username, access_token (encrypted), status
@@ -173,10 +188,12 @@ web → auth → tenant → role:admin → plan.limit:leads
 - **TenantTokenIncrement** — Tokens comprados (asaas_payment_id, status, paid_at)
 - **PaymentLog** — tenant_id, type, description, amount, asaas_payment_id, status, paid_at
 
-### Campanhas
-- **Campaign** — platform, external_id, utm_*, metrics_json, budget
-- **AdSpend** — Gasto por campanha/dia
-- **OAuthConnection** — Tokens OAuth (encrypted) para Facebook/Google/Instagram
+### Relatórios UTM (NÃO existe módulo Campanhas — só relatórios read-only)
+- **NÃO existe** model `Campaign` nem tabela `campaigns`. Foi removido em abril/2026 (commit "clean Campanhas").
+- **NÃO existe** integração com Meta Ads ou Google Ads. NÃO existe `FacebookAdsService`, `GoogleAdsService`, `SyncCampaignsJob`, `AdSpend`.
+- **OAuthConnection** continua existindo, mas é usado APENAS pelo Google Calendar (escopo `https://www.googleapis.com/auth/calendar`).
+- A página `/campanhas` é puramente relatório agregando UTMs (`utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`, `fbclid`, `gclid`) capturados na tabela `leads` pelos widgets de chatbot.
+- Não há `Lead.campaign_id`, `Sale.campaign_id`, `LostSale.campaign_id`, nem `WhatsappConversation.referral_campaign_id`.
 
 ### Automações
 - **Automation** — trigger_type, conditions, actions (JSON), run_count
@@ -192,6 +209,14 @@ web → auth → tenant → role:admin → plan.limit:leads
 - **PartnerLessonProgress** — tenant_id, lesson_id, completed_at
 - **PartnerCertificate** — tenant_id, course_id, certificate_code, issued_at
 
+### Facebook Lead Ads
+- **FacebookLeadFormConnection** — tenant_id, oauth_connection_id, page_id, page_name, page_access_token (encrypted), form_id, form_name, form_fields_json (cache de questions), pipeline_id, stage_id, field_mapping (JSON {meta_field → crm_field}), default_tags (JSON), auto_assign_to, allow_duplicates, is_active
+- **FacebookLeadFormEntry** — tenant_id, connection_id, meta_lead_id, lead_id (nullable), platform (fb/ig), ad_id, campaign_name_meta, raw_data (JSON), status (processed/failed/duplicate/skipped), error_message
+
+### Feature Flags & Reengajamento
+- **FeatureFlag** — slug (whatsapp_cloud_api, facebook_leadads, etc), label, description, is_enabled_globally, sort_order. Pivot `feature_tenant` (feature_id, tenant_id, is_enabled)
+- **ReengagementTemplate** — stage (7d/14d/30d), channel (email/whatsapp), subject, body com `{{variables}}`, locale (pt_BR/en), is_active
+
 ### Outros
 - **ScheduledMessage** — Mensagens agendadas
 - **ApiKey** — Chaves API com permissions_json
@@ -201,6 +226,7 @@ web → auth → tenant → role:admin → plan.limit:leads
 - **ElevenlabsUsageLog** — tenant_id, agent_id, conversation_id, characters_used
 - **UserConsent** — user_id, consent_type, policy_version, accepted_at
 - **MasterNotification** — tenant_id, title, body, type
+- **User** — fields novos: `phone`, `last_reengagement_sent_at`, `reengagement_stage` (pra reengagement system)
 
 ---
 
@@ -223,6 +249,9 @@ web → auth → tenant → role:admin → plan.limit:leads
 | GET | `/dashboard/leads-chart` | dashboard.leads-chart |
 | POST | `/help-chat` | help.chat |
 | POST | `/help-chat/execute` | help.execute |
+| GET | `/busca` | global.search (Cmd+K global search) |
+| POST | `/tour/complete` | tour.complete |
+| POST | `/tour/reset` | tour.reset |
 
 ### CRM Kanban (`/crm`)
 | Método | URI | Nome |
@@ -284,15 +313,18 @@ web → auth → tenant → role:admin → plan.limit:leads
 | DELETE | `/ia/agentes/{agent}` | ai.agents.destroy |
 | POST | `/ia/agentes/{agent}/test-chat` | ai.agents.testChat |
 
-### Campanhas (`/campanhas`)
-- CRUD + reports + drill-down + analytics + PDF export
+### Relatórios UTM (`/campanhas`) — somente leitura
+- `GET /campanhas` — relatório UTM agregado (KPIs + breakdown por source/medium/campaign)
+- `GET /campanhas/drill-down` (AJAX) — leads de uma combinação UTM específica
+- `GET /campanhas/analytics` (AJAX) — analytics por dimensão/comparação/funil/tendência
+- **NÃO há POST/PUT/DELETE.** Não há CRUD. Não há integração com Meta/Google Ads.
 
 ### Metas de Vendas (`/metas`)
 - CRUD metas + snapshots + alertas de performance
 
 ### Configurações (`/configuracoes`)
 - **Perfil**: `/configuracoes/perfil`
-- **Pipelines**: `/configuracoes/pipelines` + stages
+- **Pipelines**: `/configuracoes/pipelines` + stages (com modal de criação + biblioteca de templates de `app/Support/PipelineTemplates.php`)
 - **Motivos de perda**: `/configuracoes/motivos-perda`
 - **Usuários**: `/configuracoes/usuarios`
 - **Departamentos**: `/configuracoes/departamentos`
@@ -304,11 +336,24 @@ web → auth → tenant → role:admin → plan.limit:leads
 - **Pesquisas NPS**: `/configuracoes/pesquisas` (CRUD + envio)
 - **Botões WhatsApp**: `/configuracoes/botoes-whatsapp` (CRUD + tracking)
 - **API Keys**: `/configuracoes/api-keys`
-- **Integrações**: `/configuracoes/integracoes` (Facebook, Google, WhatsApp, Instagram OAuth)
+- **Integrações**: `/configuracoes/integracoes` (Facebook, Google, WhatsApp WAHA, **WhatsApp Cloud API BETA**, Instagram OAuth, **Facebook Lead Ads**)
 - **Automações IG**: `/configuracoes/instagram-automacoes`
-- **Automações**: `/configuracoes/automacoes`
+- **Automações**: `/configuracoes/automacoes` (com novas actions: `extract_lead_data`, `send_webhook`)
 - **Notificações**: `/configuracoes/notificacoes`
 - **Cobrança**: `/configuracoes/cobranca`
+
+### Integrações — sub-rotas (`/configuracoes/integracoes`)
+**WhatsApp Cloud API** (`whatsapp-cloud.*`, gated por feature flag `whatsapp_cloud_api`):
+- `GET whatsapp-cloud/redirect` — OAuth redirect (fallback velho)
+- `GET whatsapp-cloud/callback` — OAuth callback (fallback velho, popup)
+- `POST whatsapp-cloud/exchange` — AJAX endpoint do FB Embedded Signup (Coexistence)
+- `DELETE whatsapp-cloud/{instance}` — desconecta
+
+**Facebook Lead Ads** (`facebook-leadads.*`):
+- `GET/POST facebook-leadads/redirect|callback` — OAuth Business Login
+- `GET facebook-leadads/pages|forms|search-page` — listagem de páginas e forms via Graph API
+- CRUD `facebook-leadads/connections` — vincula página/form ao pipeline+stage com field mapping
+- `DELETE facebook-leadads` — desconecta
 
 ### Parceiros (`/parceiro`)
 - **Dashboard**: `/parceiro` (stats, rank, comissões)
@@ -321,7 +366,7 @@ web → auth → tenant → role:admin → plan.limit:leads
 - CRUD feedbacks dos usuários
 
 ### Master (`/master`, `super_admin`)
-- Dashboard, Empresas (tenants), Planos, Usuários, Token Increments, Upsell Triggers, Uso, Logs, Sistema, Ferramentas, Notificações
+- Dashboard, Empresas (tenants), Planos, Usuários, Token Increments, Upsell Triggers, Uso, Logs, Sistema, Ferramentas, Notificações, **Features** (`/master/features`), **Reengajamento** (`/master/reengajamento` — CRUD templates + envio de teste + preview)
 
 ### API (`/api`)
 - **Widget** (público): `/api/widget/{token}/*`
@@ -329,12 +374,14 @@ web → auth → tenant → role:admin → plan.limit:leads
 - **Internal Agno**: `/api/internal/agno/*`
 
 ### Webhooks (público)
-| URI | Handler |
-|-----|---------|
-| `POST /api/webhook/waha` | WhatsappWebhookController |
-| `GET/POST /api/webhook/instagram` | InstagramWebhookController |
-| `POST /api/webhook/asaas` | AsaasWebhookController |
-| `POST /api/webhook/stripe` | StripeWebhookController |
+| URI | Handler | HMAC |
+|-----|---------|------|
+| `POST /api/webhook/waha` | WhatsappWebhookController | `WAHA_WEBHOOK_SECRET` |
+| `GET/POST /api/webhook/whatsapp-cloud` | WhatsappCloudWebhookController | `WHATSAPP_CLOUD_APP_SECRET` (X-Hub-Signature-256) |
+| `GET/POST /api/webhook/instagram` | InstagramWebhookController | `INSTAGRAM_APP_SECRET` (X-Hub-Signature-256) |
+| `GET/POST /api/webhook/facebook/leadgen` | FacebookLeadgenWebhookController | `FACEBOOK_APP_SECRET` (X-Hub-Signature-256) |
+| `POST /api/webhook/asaas` | AsaasWebhookController | token na URL |
+| `POST /api/webhook/stripe` | StripeWebhookController | Stripe signature header |
 
 ---
 
@@ -381,6 +428,76 @@ O WAHA GOWS engine pode enviar `from: XXX@lid` em vez de `@c.us`. O LID é um id
 
 ### Import de Histórico
 Job `ImportWhatsappHistory`: busca conversas e mensagens via WAHA API, cria WhatsappConversation + WhatsappMessage. Flag `history_imported` na instance.
+
+### Provider Abstraction (WAHA + Cloud API)
+A partir de 2026-04-06, WhatsApp suporta 2 providers em paralelo via abstração:
+
+```php
+$service = \App\Services\WhatsappServiceFactory::for($instance);
+// retorna WhatsappCloudService se $instance->provider === 'cloud_api'
+// retorna WahaService caso contrário (default 'waha' ou NULL pra rows legadas)
+$service->sendText($chatId, $body);
+```
+
+- **`app/Contracts/WhatsappServiceContract.php`** — interface comum: `sendText`, `sendImage`, `sendImageBase64`, `sendVoice`, `sendVoiceBase64`, `sendFileBase64`, `sendList`, `sendReaction`, `getProviderName`
+- **`app/Services/WhatsappServiceFactory.php`** — match no `$instance->provider`
+- **`app/Services/WahaService.php`** — implementa o contrato (zero behavior change)
+- **`app/Services/WhatsappCloudService.php`** — Graph API v22.0, upload via `/media`, lista interativa, download de mídia inbound, `subscribeApp()`
+
+**Pattern crítico** (regression-tested em commit `9daa89d`): SEMPRE resolver instance via `conversation.instance_id`, NÃO via `WhatsappInstance::first()`. Helper de referência: `WhatsappMessageController::resolveInstance($conversation)`.
+
+### WhatsApp Cloud API (Meta Oficial)
+Modo **Coexistence** — cliente conecta o WhatsApp Business do celular via QR scan no Embedded Signup, e o número fica vinculado à Cloud API mantendo o app do celular funcionando (mensagens espelhadas via echoes).
+
+**Fluxo**:
+```
+Frontend FB JS SDK → FB.login({config_id, featureType:'whatsapp_business_app_onboarding'})
+  → janelinha Embedded Signup com QR scan
+  → postMessage WA_EMBEDDED_SIGNUP {phone_number_id, waba_id, business_id}
+  → POST /configuracoes/integracoes/whatsapp-cloud/exchange (AJAX)
+    → IntegrationController::exchangeWhatsappCloud()
+      → troca code → access_token (oauth/access_token, sem redirect_uri)
+      → cria WhatsappInstance(provider='cloud_api')
+      → POST /{phone_number_id}/register
+      → POST /{waba_id}/subscribed_apps (registra webhook)
+```
+
+**Webhook inbound**:
+```
+Meta → POST /api/webhook/whatsapp-cloud
+  → WhatsappCloudWebhookController::handle()
+    → Valida HMAC SHA256 com app_secret (X-Hub-Signature-256)
+    → ProcessWhatsappCloudWebhook::dispatchSync($payload)
+      → entry → changes → value → messages|statuses
+      → Dedup via cache + cloud_message_id
+      → Cria WhatsappConversation + WhatsappMessage (mesmas tabelas do WAHA)
+      → Download de mídia inbound via Graph API → storage local
+      → Dispara automações conversation_created/message_received
+```
+
+**Pré-requisitos pro cliente final**:
+- WhatsApp Business app v2.24.17+ no celular
+- Número ativo no WhatsApp Business há 7+ dias
+- País suportado (Brasil ✅, EUA, México, Índia, Indonésia, HK, Singapura)
+- Throughput: 20 mps (limite específico de números Coexistence)
+
+**Pré-requisitos do app no Meta Developer Portal**:
+- WhatsApp product adicionado ✅
+- Business Verification ✅
+- **`whatsapp_business_messaging` aprovado em App Review** (necessário pra criar Embedded Signup Configuration com Solution Type = Coexistence)
+- **`config_id`** copiado pra `WHATSAPP_CLOUD_CONFIG_ID` no Portainer
+
+**Env vars**:
+```
+WHATSAPP_CLOUD_APP_ID=<app_id>
+WHATSAPP_CLOUD_APP_SECRET=<app_secret>
+WHATSAPP_CLOUD_CONFIG_ID=<embedded_signup_config_id>  # vazio = fallback OAuth velho
+WHATSAPP_CLOUD_VERIFY_TOKEN=<webhook_verify_token>
+WHATSAPP_CLOUD_API_VERSION=v22.0
+WHATSAPP_CLOUD_REDIRECT=<callback URL pro fallback velho>
+```
+
+**Feature flag**: `FeatureFlag::isEnabled('whatsapp_cloud_api', $tenantId)` controla se o card aparece no `/configuracoes/integracoes`. Lançado primeiro só pro tenant 12 (Plataforma 360) via `/master/features`.
 
 ---
 
@@ -500,18 +617,20 @@ Mensagem chega → ProcessWahaWebhook verifica ai_agent_id
 
 ---
 
-## 9. Campanhas e UTM
+## 9. UTM Tracking (sem módulo Campanhas)
+
+> ⚠️ **NOTA HISTÓRICA**: Anteriormente esse módulo tinha aspirações de integração com Meta Ads e Google Ads (services, sync jobs, OAuth flows, tabela `campaigns`). Tudo isso foi removido em abril/2026 porque nunca foi finalizado nem usado em produção. O que sobrou é puramente relatório agregando UTMs capturados na tabela `leads`. Se quiser reintroduzir integração com plataformas de Ads, precisa começar do zero — não confie em código antigo no histórico do git.
 
 ### Captura
 Campos no Lead: `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`, `fbclid`, `gclid`
 
 O chatbot do site captura UTMs automaticamente do `window.location.search`.
 
-### Sync
-`SyncCampaignsJob` roda via scheduler, puxa campanhas de `OAuthConnection` (Facebook/Google).
+### Relatórios
+A página `/campanhas` agrega esses UTMs por dimensão (source/medium/campaign) e mostra leads/conversões/receita. Sem integração com plataformas externas. Sem CRUD. A action de automação `set_utm_params` permite sobrescrever UTMs no lead manualmente.
 
 ### Atribuição
-Lead.campaign_id → quando fecha venda, Sale herda a campanha → relatórios de ROI.
+Não há relacionamento `Lead → Campaign` (a tabela e a coluna foram dropadas). A "atribuição" é puramente baseada em UTM string matching nas queries de relatório.
 
 ---
 
@@ -553,6 +672,102 @@ Lead.campaign_id → quando fecha venda, Sale herda a campanha → relatórios d
 - nginx faz proxy de `/app/` e `/apps/` para `reverb:8080`
 - Frontend: `window.reverbConfig` injetado via Blade (NUNCA usar VITE_* em prod)
 - Eventos broadcasted: `WhatsappMessageCreated`, `WhatsappConversationUpdated`, `InstagramMessageCreated`, `InstagramConversationUpdated`
+
+---
+
+## 11.1 Facebook Lead Ads
+
+### Fluxo
+```
+Meta Ads → form submetido
+  → POST /api/webhook/facebook/leadgen
+    → FacebookLeadgenWebhookController::handle()
+      → Valida HMAC SHA256 (X-Hub-Signature-256 com FACEBOOK_APP_SECRET)
+      → ProcessFacebookLeadgenWebhook::dispatch($payload)
+        → Encontra FacebookLeadFormConnection por (page_id, form_id)
+        → Busca form fields no Meta Graph API com page_access_token
+        → Mapeia field_mapping (JSON) → Lead.{name, email, phone, custom_fields}
+        → Sanitiza phone/name/email pra respeitar column lengths
+        → Cria Lead com tenant_id + pipeline_id + stage_id da connection
+        → Aplica default_tags
+        → Auto-assign user (assign_to)
+        → Se allow_duplicates=false, dedup por phone/email no tenant
+        → Cria FacebookLeadFormEntry (audit log)
+```
+
+### Componentes
+- **`app/Http/Controllers/FacebookLeadgenWebhookController.php`** — webhook entry
+- **`app/Jobs/ProcessFacebookLeadgenWebhook.php`** — processamento
+- **`app/Services/FacebookLeadAdsService.php`** — Graph API client (subscribed_apps, get pages, get forms, get lead by ID)
+- **`app/Models/FacebookLeadFormConnection.php`** + **`FacebookLeadFormEntry.php`**
+
+### Setup pelo usuário
+1. `/configuracoes/integracoes` → "Facebook Lead Ads" → Conectar (OAuth Business Login)
+2. Lista páginas autorizadas via `/me/accounts` (com fallback `business_management` scope + busca direta por page ID/URL)
+3. Lista forms da página via Graph API
+4. Mapeia cada `meta_field` → `crm_field` (name, email, phone, custom field, etc.)
+5. Define pipeline + stage de destino + default_tags + auto_assign
+6. Salva como `FacebookLeadFormConnection` (page_access_token encrypted)
+
+### Pré-requisitos no Meta Dashboard
+- App Facebook com produtos "Webhooks" + "Facebook Login for Business"
+- Permissões: `pages_show_list`, `pages_manage_metadata`, `pages_read_engagement`, `leads_retrieval`, `business_management`
+- Subscribed app no webhook `leadgen`
+
+---
+
+## 11.2 Sistema de Reengajamento
+
+### O quê
+Emails (e/ou WhatsApp) automáticos pra usuários que não fazem login há X dias, separados em estágios 7d / 14d / 30d.
+
+### Componentes
+- **`app/Models/ReengagementTemplate.php`** — stage, channel, subject, body com `{{variables}}`, locale, is_active
+- **`app/Mail/ReengagementEmail.php`** + **`resources/views/emails/reengagement.blade.php`** (estende `_layout.blade.php` shared bilingual)
+- **`app/Console/Commands/SendReengagement.php`** — comando que escaneia users com `last_login_at < threshold` e dispara
+- **`app/Http/Controllers/Master/ReengagementController.php`** — `/master/reengajamento` (CRUD templates + preview + sendTest)
+
+### Campos novos em `users`
+- `phone` — pra envio via WhatsApp se preferir
+- `last_reengagement_sent_at` — pra evitar reenvio no mesmo período
+- `reengagement_stage` — qual estágio o user está atualmente
+
+### Variáveis disponíveis no template
+- `{{name}}`, `{{email}}`, `{{tenant_name}}`, `{{days_inactive}}`, `{{login_url}}`
+
+### Locale
+Templates têm coluna `locale` (`pt_BR` ou `en`) — `SendReengagement` escolhe baseado em `users.locale`.
+
+---
+
+## 11.3 Sophia AI Assistant
+
+(Já documentado na Seção 7 — Agentes de IA, sub-seção "Sophia". Resumo aqui pra discoverability.)
+
+Widget flutuante de IA interna que executa actions no CRM do tenant via whitelist + rate limit + confirmação. Pode criar scoring rules, sequences, pipelines, automações, custom fields, tasks, leads, e fazer queries de leads/performance.
+
+---
+
+## 11.4 Global Search (Cmd+K)
+
+### Componentes
+- **`app/Http/Controllers/Tenant/GlobalSearchController.php`** — endpoint `GET /busca?q=...`
+- Frontend: shortcut Cmd+K (Mac) / Ctrl+K (Win) abre overlay
+- Indexa: leads, conversas WhatsApp, conversas Instagram, tasks, products, automations, chatbot flows
+- Limit 10 por categoria, ordenação por relevância
+- Resultados clicáveis levam direto pra entidade
+
+---
+
+## 11.5 Tour Interativo (Driver.js)
+
+### Componentes
+- **Driver.js v1** carregado via CDN no layout principal
+- **`app/Http/Controllers/Tenant/TourController.php`** — `POST /tour/complete` + `POST /tour/reset`
+- **`resources/views/tenant/layouts/_tour.blade.php`** — definição dos passos
+- **`lang/{pt_BR,en}/tour.php`** — strings traduzidas
+- Coluna `users.tour_completed_at` (booleano de "viu o tour")
+- Reset disponível em `/configuracoes/perfil` (botão "Refazer tour")
 
 ---
 
@@ -615,6 +830,20 @@ Push ao `main` → build image → push Docker Hub → Portainer puxa
 - API helper global: `window.API.get()`, `.post()`, `.put()`, `.delete()`
 - `window.escapeHtml()` para sanitizar
 - Drawer compartilhado: definir `LEAD_SHOW`, `LEAD_STORE`, `LEAD_UPD`, `LEAD_DEL` por página
+- **Drawer→Modal pattern**: páginas grandes (12+ páginas) trocaram drawer lateral por modal centrado via `partials/_drawer-as-modal.blade.php`
+- **Cmd+K**: shortcut global pra busca via `GET /busca?q=...` (controller `GlobalSearchController`)
+- **Tour interativo**: Driver.js v1, definir steps em `_tour.blade.php`, marca completion via `POST /tour/complete`
+
+### WhatsApp (WAHA + Cloud API)
+- **NUNCA** usar `WhatsappInstance::first()` pra resolver instance ao enviar mensagem — sempre via `$conversation->instance_id`. Helper de referência: `WhatsappMessageController::resolveInstance($conversation)`. Bug histórico: commit `9daa89d`.
+- **NUNCA** instanciar `new WahaService(...)` direto em código novo se a operação for envio outbound. Use o factory: `\App\Services\WhatsappServiceFactory::for($instance)` — devolve o service correto baseado no `provider`.
+- Operações **WAHA-specific** (createSession, QR, history import, group ops, master toolbox) podem continuar chamando `WahaService` direto.
+- Listagens da página de Integrações: SEMPRE filtrar por `provider='waha'` OR `NULL` no card WAHA, e `provider='cloud_api'` no card Cloud API. Bug histórico: commit `2535d46`.
+
+### Feature Flags
+- Pra esconder UI condicional por tenant: `@if(\App\Models\FeatureFlag::isEnabled('slug', $tenantId)) ... @endif` no Blade
+- Pra bloquear backend: same helper no controller. Não usar permissões nem roles pra isso — feature flag é a fonte da verdade.
+- Toggle no painel master `/master/features`. NÃO hardcode flags em código.
 
 ---
 
@@ -663,7 +892,6 @@ Push ao `main` → build image → push Docker Hub → Portainer puxa
 | `whatsapp:send-event-reminders` | A cada minuto | Envia lembretes pendentes de eventos |
 | `automations:process-date-triggers` | Diário 08:00 | Automações por data |
 | `ai:followup` | A cada 10 min | Follow-up automático de IA |
-| `campaigns:sync` | Hourly | Sync Facebook/Google Ads |
 | `scoring:decay` | Diário 02:00 | Aplica decay de score para leads inativos |
 | `sequences:process` | A cada 5 min | Processa steps de nurture sequences |
 | `goals:process-recurrence` | Diário 00:30 | Snapshots e renovação de metas recorrentes |
@@ -672,6 +900,7 @@ Push ao `main` → build image → push Docker Hub → Portainer puxa
 | `master:weekly-report` | Semanal (segunda 09:00) | Relatório semanal para grupo WhatsApp master |
 | `upsell:evaluate` | A cada 6 horas | Avalia triggers de upsell por tenant |
 | `leads:detect-duplicates` | Diário 03:30 | Detecta duplicatas de leads por phone/email |
+| `users:send-reengagement` | Diário 10:00 | Envia emails/WA de reengajamento (7d/14d/30d) pra usuários inativos |
 
 ---
 
@@ -680,66 +909,93 @@ Push ao `main` → build image → push Docker Hub → Portainer puxa
 ```
 app/
   Http/Controllers/
-    Tenant/          — ~45 controllers (dashboard, CRM, leads, chats, chatbot, IA, tasks, products, scoring, sequences, NPS, goals, settings)
+    Tenant/          — ~50 controllers (dashboard, CRM, leads, chats, chatbot, IA, tasks, products, scoring, sequences, NPS, goals, settings)
     Tenant/LeadMergeController.php
-    Master/          — ~15 controllers (tenants, plans, toolbox, logs, system, partners)
+    Tenant/GlobalSearchController.php   — Busca global Cmd+K
+    Tenant/TourController.php           — Tour interativo (complete/reset)
+    Master/          — ~16 controllers (tenants, plans, toolbox, logs, system, partners)
+    Master/FeatureController.php        — Painel de feature flags
+    Master/ReengagementController.php   — Templates de reengajamento
     Auth/            — 2 controllers (login, register, agency register)
     Api/             — ~7 controllers (leads API, widget, agno tools, stripe webhook)
-    WhatsappWebhookController.php
+    WhatsappWebhookController.php       — Webhook WAHA
+    WhatsappCloudWebhookController.php  — Webhook WhatsApp Cloud API (Meta)
     InstagramWebhookController.php
+    FacebookLeadgenWebhookController.php — Webhook Facebook Lead Ads
     AsaasWebhookController.php
     StripeWebhookController.php
-  Console/Commands/  — 20 commands (billing, whatsapp, ai, scoring, sequences, goals, partners, upsell, master)
+  Contracts/
+    WhatsappServiceContract.php — Interface comum WAHA + Cloud API
+  Console/Commands/  — ~22 commands (billing, whatsapp, ai, scoring, sequences, goals, partners, upsell, master, reengagement)
     DetectDuplicateLeads.php        — Scan diário de duplicatas
+    SendReengagement.php            — Envio de emails/WA de reengajamento
   Jobs/
-    ProcessWahaWebhook.php      — Webhook WhatsApp (core)
-    ProcessInstagramWebhook.php — Webhook Instagram
-    ProcessAiResponse.php       — Resposta IA com debounce
-    ProcessChatbotStep.php      — Execução de fluxo chatbot
-    ImportWhatsappHistory.php   — Import de histórico WA
-    SyncCampaignsJob.php        — Sync campanhas
-    ProcessNurtureStep.php      — Execução de nurture sequence step
-    ProcessScoringEvent.php     — Cálculo de lead score
-    SendEventReminder.php       — Envio de lembretes de eventos
-    ProcessGoalRecurrence.php   — Snapshots e renovação de metas
+    ProcessWahaWebhook.php             — Webhook WhatsApp WAHA (core)
+    ProcessWhatsappCloudWebhook.php    — Webhook WhatsApp Cloud API (Meta)
+    ProcessInstagramWebhook.php        — Webhook Instagram
+    ProcessFacebookLeadgenWebhook.php  — Webhook Facebook Lead Ads
+    ProcessAiResponse.php              — Resposta IA com debounce
+    ProcessChatbotStep.php             — Execução de fluxo chatbot
+    ImportWhatsappHistory.php          — Import de histórico WA
+    ProcessNurtureStep.php             — Execução de nurture sequence step
+    ProcessScoringEvent.php            — Cálculo de lead score
+    SendEventReminder.php              — Envio de lembretes de eventos
+    ProcessGoalRecurrence.php          — Snapshots e renovação de metas
+    DispatchAutomationWebhookJob.php   — Action `send_webhook` das automações
+    ExtractLeadDataJob.php             — Action `extract_lead_data` (IA extrai campos da conversa)
   Services/
-    WahaService.php             — API client WAHA
-    InstagramService.php        — API client Meta/Instagram
-    AgnoService.php             — API client Agno (IA)
-    AiAgentService.php          — Builder de system prompt
-    AutomationEngine.php        — Motor de automações
-    ChatbotVariableService.php  — Variáveis de chatbot
-    AsaasService.php            — Gateway Asaas
-    StripeService.php           — Gateway Stripe
-    ScoringService.php          — Motor de lead scoring
-    NurtureService.php          — Motor de nurture sequences
-    NpsService.php              — Envio e processamento NPS
-    SalesGoalService.php        — Cálculo de metas de vendas
-    TaskService.php             — CRUD e lógica de tasks
-    ProductService.php          — CRUD de produtos e catálogo
-    PartnerService.php          — Comissões e saques de parceiros
-    LeadListService.php         — Listas estáticas e dinâmicas
-    ElevenLabsService.php       — Text-to-speech via ElevenLabs
-    EventReminderService.php    — Lembretes de eventos Google Calendar
-    WhatsappButtonService.php   — Botões WhatsApp para sites
-    ExportService.php           — Exportação de dados
-    ReportService.php           — Geração de relatórios
-    DashboardService.php        — Dados do dashboard
-    CampaignReportService.php   — Relatórios de campanhas
-    NotificationService.php     — Envio de notificações
-    WebhookDeliveryService.php  — Entrega de webhooks de saída
+    WahaService.php                 — API client WAHA (implements WhatsappServiceContract)
+    WhatsappCloudService.php        — API client Meta Graph v22.0 (implements WhatsappServiceContract)
+    WhatsappServiceFactory.php      — Factory: retorna service correto por $instance->provider
+    FacebookLeadAdsService.php      — Graph API client pra Lead Ads (pages, forms, lead retrieval)
+    InstagramService.php            — API client Meta/Instagram
+    AgnoService.php                 — API client Agno (IA)
+    AiAgentService.php              — Builder de system prompt
+    LeadDataExtractorService.php    — IA extrai campos do lead a partir do histórico de conversa
+    AutomationEngine.php            — Motor de automações
+    WebhookDispatcherService.php    — Dispatcher de webhooks de saída (HMAC + retry)
+    TokenQuotaService.php           — Controle de quota de tokens IA por tenant
+    ChatbotVariableService.php      — Variáveis de chatbot
+    AsaasService.php                — Gateway Asaas
+    StripeService.php               — Gateway Stripe
+    ScoringService.php              — Motor de lead scoring
+    NurtureService.php              — Motor de nurture sequences
+    NpsService.php                  — Envio e processamento NPS
+    SalesGoalService.php            — Cálculo de metas de vendas
+    TaskService.php                 — CRUD e lógica de tasks
+    ProductService.php              — CRUD de produtos e catálogo
+    PartnerService.php              — Comissões e saques de parceiros
+    LeadListService.php             — Listas estáticas e dinâmicas
+    ElevenLabsService.php           — Text-to-speech via ElevenLabs
+    EventReminderService.php        — Lembretes de eventos Google Calendar
+    WhatsappButtonService.php       — Botões WhatsApp para sites
+    ExportService.php               — Exportação de dados
+    ReportService.php               — Geração de relatórios
+    DashboardService.php            — Dados do dashboard
+    NotificationService.php         — Envio de notificações
+    WebhookDeliveryService.php      — Entrega de webhooks de saída
     DuplicateLeadDetector.php       — Detecção fuzzy de leads duplicados (phone/email/name)
     LeadMergeService.php            — Merge atômico de leads (21 relações)
     SophiaActionExecutor.php        — Executor de ações da Sophia (whitelist + rate limit)
+  Mail/
+    ReengagementEmail.php           — Email de reengajamento (usa _layout shared)
+  Rules/
+    SafeFile.php                    — Validação de upload sem MIME malicioso
+    SafeImage.php                   — Validação de imagem
+  Support/
+    PipelineTemplates.php           — Biblioteca de templates de pipeline (i18n via lang/pipeline_templates.php)
   Events/           — 6 eventos broadcasted (WhatsApp/Instagram message/conversation created/updated)
   Notifications/    — 11 notifications (goal alerts, NPS, partner, billing, system)
   Models/
-    Traits/BelongsToTenant.php  — Global Scope multi-tenant
-    Lead.php, WhatsappConversation.php, AiAgent.php, ChatbotFlow.php, Task.php,
-    Product.php, ScoringRule.php, NurtureSequence.php, NpsSurvey.php, SalesGoal.php,
-    PartnerCommission.php, WhatsappButton.php, EventReminder.php, LeadDuplicate.php, etc.
+    Traits/BelongsToTenant.php      — Global Scope multi-tenant
+    Lead.php, WhatsappConversation.php, WhatsappInstance.php (provider+cloud_api fields),
+    AiAgent.php, ChatbotFlow.php, Task.php, Product.php, ScoringRule.php,
+    NurtureSequence.php, NpsSurvey.php, SalesGoal.php, PartnerCommission.php,
+    WhatsappButton.php, EventReminder.php, LeadDuplicate.php,
+    FeatureFlag.php, ReengagementTemplate.php,
+    FacebookLeadFormConnection.php, FacebookLeadFormEntry.php, etc.
   Providers/
-    AppServiceProvider.php      — defaultStringLength(191)
+    AppServiceProvider.php          — defaultStringLength(191)
 
 agno-service/
   main.py              — FastAPI endpoints
@@ -751,16 +1007,24 @@ agno-service/
 
 resources/
   js/
-    app.js                      — API helper global + escapeHtml
-    chatbot-builder.jsx         — React Flow chatbot builder visual
+    app.js                          — API helper global + escapeHtml + Cmd+K global search
+    chatbot-builder.jsx             — React Flow chatbot builder visual
   views/
-    tenant/layouts/app.blade.php  — Layout principal
-    tenant/crm/kanban.blade.php   — Kanban board
+    tenant/layouts/app.blade.php    — Layout principal
+    tenant/layouts/_tour.blade.php  — Tour Driver.js (definição dos passos)
+    tenant/crm/kanban.blade.php     — Kanban board
     tenant/whatsapp/index.blade.php — Chat inbox
     tenant/chatbot/builder.blade.php — Chatbot builder (host React)
-    tenant/tasks/index.blade.php  — Lista de tarefas
-    tenant/goals/index.blade.php  — Metas de vendas
+    tenant/tasks/index.blade.php    — Lista de tarefas
+    tenant/goals/index.blade.php    — Metas de vendas
     tenant/leads/duplicates.blade.php — Fila de duplicatas para revisão
+    tenant/settings/integrations.blade.php — Cards de integração (WhatsApp WAHA + Cloud API + Lead Ads + etc.)
+    tenant/settings/_wacloud-callback.blade.php — View do popup callback OAuth (fallback velho)
+    partials/_drawer-as-modal.blade.php — Partial reusável: drawer responsivo que vira modal centrado em desktop
+    emails/_layout.blade.php        — Layout email shared (header/footer bilingual)
+    emails/reengagement.blade.php   — Template de reengajamento
+    master/features/index.blade.php — Painel master de feature flags (toggle global/per-tenant)
+    master/reengagement/index.blade.php — Painel master de templates de reengajamento
 
 public/widget.js         — Widget de chat para sites
 bootstrap/app.php        — Middleware + Schedule

@@ -380,7 +380,7 @@
                         @endif
                     </td>
                     <td><span class="source-pill">{{ $lead->source ?? 'manual' }}</span></td>
-                    <td>{{ $lead->campaign?->name ?? '—' }}</td>
+                    <td>{{ $lead->utm_campaign ?? '—' }}</td>
                     <td style="white-space:nowrap;color:#9ca3af;">{{ $lead->created_at->format('d/m/Y') }}</td>
                 </tr>
                 @empty

@@ -114,7 +114,6 @@ class KanbanImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
                     LostSale::create([
                         'lead_id'     => $lead->id,
                         'pipeline_id' => $this->pipelineId,
-                        'campaign_id' => null,
                         'reason_id'   => null,
                         'lost_at'     => $createdAt ?? now(),
                         'lost_by'     => auth()->id(),

@@ -261,7 +261,6 @@ class AutomationEngine
             'close_conversation'  => $this->actionCloseConversation($ctx),
             'send_whatsapp_message'         => $this->actionSendWhatsappMessage($config, $ctx, $automation),
             'schedule_whatsapp_message'     => $this->actionScheduleWhatsappMessage($config, $ctx),
-            'assign_campaign'               => $this->actionAssignCampaign($config, $ctx),
             'set_utm_params'                => $this->actionSetUtmParams($config, $ctx),
             'transfer_to_department'        => $this->actionTransferToDepartment($config, $ctx),
             'create_task'                   => $this->actionCreateTask($config, $ctx),
@@ -631,17 +630,6 @@ class AutomationEngine
             'send_at'         => $sendAt,
             'status'          => 'pending',
         ]);
-    }
-
-    private function actionAssignCampaign(array $config, array $ctx): void
-    {
-        $lead = $this->resolveLead($ctx);
-        if (! $lead || empty($config['campaign_id'])) {
-            return;
-        }
-        Lead::withoutGlobalScope('tenant')
-            ->where('id', $lead->id)
-            ->update(['campaign_id' => (int) $config['campaign_id']]);
     }
 
     private function actionSetUtmParams(array $config, array $ctx): void

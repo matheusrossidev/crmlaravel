@@ -250,7 +250,6 @@ class KanbanController extends Controller
                 Sale::firstOrCreate(
                     ['lead_id' => $lead->id, 'pipeline_id' => $data['pipeline_id']],
                     [
-                        'campaign_id' => $lead->campaign_id,
                         'value'       => $data['value'] ?? $lead->value,
                         'closed_by'   => auth()->id(),
                         'closed_at'   => now(),
@@ -265,7 +264,6 @@ class KanbanController extends Controller
                 LostSale::firstOrCreate(
                     ['lead_id' => $lead->id, 'pipeline_id' => $data['pipeline_id']],
                     [
-                        'campaign_id' => $lead->campaign_id,
                         'reason_id'   => !empty($data['lost_reason_id']) ? $data['lost_reason_id'] : null,
                         'lost_at'     => now(),
                         'lost_by'     => auth()->id(),
@@ -489,7 +487,7 @@ class KanbanController extends Controller
 
         $sinceDate = Carbon::createFromTimestamp($since);
 
-        $leads = Lead::with(['campaign', 'assignedTo', 'customFieldValues.fieldDefinition', 'stage', 'whatsappConversation.aiAgent', 'activeSequence'])
+        $leads = Lead::with(['assignedTo', 'customFieldValues.fieldDefinition', 'stage', 'whatsappConversation.aiAgent', 'activeSequence'])
             ->whereHas('stage', fn ($q) => $q->where('pipeline_id', $pipelineId))
             ->where(fn ($q) => $q
                 ->where('created_at', '>', $sinceDate)
@@ -536,8 +534,6 @@ class KanbanController extends Controller
             'tags'             => $lead->tags ?? [],
             'stage_id'         => $lead->stage_id,
             'pipeline_id'      => $lead->pipeline_id,
-            'campaign_id'      => $lead->campaign_id,
-            'campaign'         => $lead->campaign ? ['id' => $lead->campaign->id, 'name' => $lead->campaign->name] : null,
             'cf_flat'          => $cfFlat,
             'assigned_to_name'     => $lead->assignedTo?->name,
             'assigned_to_avatar'   => $lead->assignedTo?->avatar ? asset($lead->assignedTo->avatar) : null,

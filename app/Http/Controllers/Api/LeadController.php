@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Campaign;
 use App\Models\CustomFieldDefinition;
 use App\Models\CustomFieldValue;
 use App\Models\Lead;
@@ -38,7 +37,6 @@ class LeadController extends Controller
             'tags.*'       => 'string|max:50',
             'pipeline_id'  => 'required|integer|exists:pipelines,id',
             'stage_id'     => 'required|integer|exists:pipeline_stages,id',
-            'campaign_id'  => 'nullable|integer|exists:campaigns,id',
             'notes'        => 'nullable|string|max:1000000',
             'utm_source'   => 'nullable|string|max:100',
             'utm_medium'   => 'nullable|string|max:100',
@@ -48,14 +46,6 @@ class LeadController extends Controller
         ]);
 
         $data['created_by'] = auth()->id();
-
-        // Auto-associate campaign by utm_campaign if campaign_id not provided
-        if (empty($data['campaign_id']) && !empty($data['utm_campaign'])) {
-            $matched = Campaign::where('utm_campaign', $data['utm_campaign'])->first();
-            if ($matched) {
-                $data['campaign_id'] = $matched->id;
-            }
-        }
 
         $lead = Lead::create($data);
 
@@ -75,7 +65,6 @@ class LeadController extends Controller
             Sale::firstOrCreate(
                 ['lead_id' => $lead->id, 'pipeline_id' => $data['pipeline_id']],
                 [
-                    'campaign_id' => $lead->campaign_id,
                     'value'       => $lead->value,
                     'closed_by'   => auth()->id(),
                     'closed_at'   => now(),
@@ -85,14 +74,13 @@ class LeadController extends Controller
             LostSale::firstOrCreate(
                 ['lead_id' => $lead->id, 'pipeline_id' => $data['pipeline_id']],
                 [
-                    'campaign_id' => $lead->campaign_id,
                     'lost_at'     => now(),
                     'lost_by'     => auth()->id(),
                 ]
             );
         }
 
-        $lead->load(['stage', 'pipeline', 'campaign']);
+        $lead->load(['stage', 'pipeline']);
 
         return response()->json([
             'success' => true,
@@ -103,7 +91,7 @@ class LeadController extends Controller
     // ── GET /api/v1/leads/{lead} ──────────────────────────────────────────
     public function show(Lead $lead): JsonResponse
     {
-        $lead->load(['stage', 'pipeline', 'campaign', 'events', 'customFieldValues.fieldDefinition']);
+        $lead->load(['stage', 'pipeline', 'events', 'customFieldValues.fieldDefinition']);
 
         return response()->json([
             'success' => true,
@@ -191,7 +179,6 @@ class LeadController extends Controller
         if (! $existingSale) {
             Sale::create([
                 'lead_id'     => $lead->id,
-                'campaign_id' => $lead->campaign_id,
                 'pipeline_id' => $lead->pipeline_id,
                 'value'       => $data['value'] ?? $lead->value ?? 0,
                 'closed_by'   => auth()->id(),
@@ -245,7 +232,6 @@ class LeadController extends Controller
             LostSale::create([
                 'lead_id'     => $lead->id,
                 'pipeline_id' => $lead->pipeline_id,
-                'campaign_id' => $lead->campaign_id,
                 'reason_id'   => $data['reason_id'] ?? null,
                 'lost_at'     => now(),
                 'lost_by'     => auth()->id(),
@@ -285,7 +271,6 @@ class LeadController extends Controller
             'tags'          => $lead->tags ?? [],
             'pipeline_id'   => $lead->pipeline_id,
             'stage_id'      => $lead->stage_id,
-            'campaign_id'   => $lead->campaign_id,
             'notes'         => $lead->notes,
             'utm_source'    => $lead->utm_source,
             'utm_medium'    => $lead->utm_medium,

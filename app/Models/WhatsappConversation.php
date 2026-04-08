@@ -20,7 +20,7 @@ class WhatsappConversation extends Model
     protected $fillable = [
         'tenant_id', 'instance_id', 'lead_id', 'phone', 'lid', 'is_group',
         'contact_name', 'contact_picture_url', 'tags',
-        'whatsapp_message_id', 'referral_source', 'referral_campaign_id',
+        'whatsapp_message_id',
         'status', 'assigned_user_id', 'department_id', 'ai_agent_id',
         'chatbot_flow_id', 'chatbot_node_id', 'chatbot_variables',
         'unread_count', 'started_at', 'last_message_at', 'last_inbound_at', 'first_response_at', 'closed_at',
@@ -54,11 +54,6 @@ class WhatsappConversation extends Model
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);
-    }
-
-    public function referralCampaign(): BelongsTo
-    {
-        return $this->belongsTo(Campaign::class, 'referral_campaign_id');
     }
 
     public function assignedUser(): BelongsTo

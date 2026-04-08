@@ -1210,7 +1210,6 @@ document.addEventListener('keydown', function(e) {
 @endif
 <script>
 const ILANG = @json(__('integrations'));
-const SYNC_URL            = @json(route('settings.integrations.sync',       ['platform' => '__P__']));
 const DISCONNECT_URL      = @json(route('settings.integrations.disconnect', ['platform' => '__P__']));
 const WA_CONNECT_URL      = @json(route('settings.integrations.whatsapp.connect'));
 const WA_BASE_URL         = @json(rtrim(route('settings.integrations.whatsapp.connect'), '/connect'));
@@ -1657,34 +1656,6 @@ function updateProgressUI(data) {
         document.getElementById('importProgressSubtitle').textContent = data.error || ILANG.import_error_default;
         document.getElementById('importProgressBar').style.background = '#dc2626';
         document.getElementById('importCurrentChat').textContent = '';
-    }
-}
-
-async function syncNow(platform, btn) {
-    const url = SYNC_URL.replace('__P__', platform);
-    btn.disabled = true;
-    const icon = btn.querySelector('i');
-    icon.className = 'bi bi-arrow-clockwise spin';
-
-    try {
-        const res  = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json',
-            },
-        });
-        const data = await res.json();
-        if (data.success) {
-            toastr.success(ILANG.toast_sync_started);
-        } else {
-            toastr.error(data.message || ILANG.toast_sync_error);
-        }
-    } catch (e) {
-        toastr.error(ILANG.toast_conn_error);
-    } finally {
-        btn.disabled = false;
-        icon.className = 'bi bi-arrow-clockwise';
     }
 }
 

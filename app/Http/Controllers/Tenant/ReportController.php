@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
-use App\Models\Campaign;
 use App\Models\Lead;
 use App\Models\LeadEvent;
 use App\Models\LostSale;
@@ -60,12 +59,10 @@ class ReportController extends Controller
         $prevFrom = (clone $prevTo)->subDays($days - 1)->startOfDay();
 
         // ── Filtros opcionais ──────────────────────────────────────────────────
-        $filterCampaign  = $request->get('campaign_id') ?: null;
         $filterPipeline  = $request->get('pipeline_id') ?: null;
         $filterUser      = $request->get('user_id') ?: null;
 
         // ── Selectbox options ──────────────────────────────────────────────────
-        $campaigns = Campaign::orderBy('name')->get(['id', 'name', 'platform']);
         $pipelines = Pipeline::orderBy('sort_order')->get(['id', 'name']);
 
         // ══════════════════════════════════════════════════════════════════════
@@ -74,20 +71,17 @@ class ReportController extends Controller
 
         $leadQuery = fn () => Lead::where('exclude_from_pipeline', false)
             ->whereBetween('created_at', [$dateFrom, $dateTo])
-            ->when($filterCampaign, fn ($q) => $q->where('campaign_id', $filterCampaign))
             ->when($filterPipeline, fn ($q) => $q->where('pipeline_id', $filterPipeline))
             ->when($filterUser,     fn ($q) => $q->where('assigned_to', $filterUser));
 
         $totalLeads  = $leadQuery()->count();
         $prevLeads   = Lead::where('exclude_from_pipeline', false)
             ->whereBetween('created_at', [$prevFrom, $prevTo])
-            ->when($filterCampaign, fn ($q) => $q->where('campaign_id', $filterCampaign))
             ->when($filterPipeline, fn ($q) => $q->where('pipeline_id', $filterPipeline))
             ->when($filterUser,     fn ($q) => $q->where('assigned_to', $filterUser))
             ->count();
 
         $saleQuery = fn () => Sale::whereBetween('closed_at', [$dateFrom, $dateTo])
-            ->when($filterCampaign, fn ($q) => $q->where('campaign_id', $filterCampaign))
             ->when($filterPipeline, fn ($q) => $q->where('pipeline_id', $filterPipeline))
             ->when($filterUser,     fn ($q) => $q->where('closed_by', $filterUser));
 
@@ -97,7 +91,6 @@ class ReportController extends Controller
         $convRate     = $totalLeads > 0 ? round($salesCount / $totalLeads * 100, 1) : 0;
 
         $prevRevenue  = (float) (Sale::whereBetween('closed_at', [$prevFrom, $prevTo])
-            ->when($filterCampaign, fn ($q) => $q->where('campaign_id', $filterCampaign))
             ->when($filterPipeline, fn ($q) => $q->where('pipeline_id', $filterPipeline))
             ->when($filterUser,     fn ($q) => $q->where('closed_by', $filterUser))
             ->sum('value') ?? 0);
@@ -225,7 +218,6 @@ class ReportController extends Controller
         // ══════════════════════════════════════════════════════════════════════
 
         $lostQuery = fn () => LostSale::whereBetween('lost_at', [$dateFrom, $dateTo])
-            ->when($filterCampaign, fn ($q) => $q->where('campaign_id', $filterCampaign))
             ->when($filterPipeline, fn ($q) => $q->where('pipeline_id', $filterPipeline))
             ->when($filterUser,     fn ($q) => $q->where('lost_by', $filterUser));
 
@@ -247,18 +239,6 @@ class ReportController extends Controller
                 'reason' => $row->reason?->name ?? 'Sem motivo',
                 'total'  => $row->total,
                 'pct'    => $totalLost > 0 ? round($row->total / $totalLost * 100, 1) : 0,
-            ]);
-
-        // Por campanha
-        $lostByCampaign = $lostQuery()
-            ->selectRaw('campaign_id, COUNT(*) as total')
-            ->groupBy('campaign_id')
-            ->orderByDesc('total')
-            ->with('campaign')
-            ->get()
-            ->map(fn ($row) => [
-                'campaign' => $row->campaign?->name ?? 'Sem campanha',
-                'total'    => $row->total,
             ]);
 
         // Por vendedor
@@ -283,7 +263,6 @@ class ReportController extends Controller
         $allUsers = User::where('tenant_id', $tenantId)->orderBy('name')->get();
 
         $vendorLeadCounts = Lead::whereBetween('created_at', [$dateFrom, $dateTo])
-            ->when($filterCampaign, fn ($q) => $q->where('campaign_id', $filterCampaign))
             ->when($filterPipeline, fn ($q) => $q->where('pipeline_id', $filterPipeline))
             ->whereNotNull('assigned_to')
             ->selectRaw('assigned_to, COUNT(*) as total')
@@ -291,7 +270,6 @@ class ReportController extends Controller
             ->pluck('total', 'assigned_to');
 
         $vendorSaleData = Sale::whereBetween('closed_at', [$dateFrom, $dateTo])
-            ->when($filterCampaign, fn ($q) => $q->where('campaign_id', $filterCampaign))
             ->when($filterPipeline, fn ($q) => $q->where('pipeline_id', $filterPipeline))
             ->whereNotNull('closed_by')
             ->selectRaw('closed_by, COUNT(*) as cnt, SUM(value) as revenue')
@@ -483,19 +461,19 @@ class ReportController extends Controller
 
         return compact(
             // filtros aplicados
-            'dateFrom', 'dateTo', 'filterCampaign', 'filterPipeline', 'filterUser',
-            'campaigns', 'pipelines',
+            'dateFrom', 'dateTo', 'filterPipeline', 'filterUser',
+            'pipelines',
             // visão geral
             'totalLeads', 'prevLeads', 'deltaLeads',
             'salesCount', 'totalRevenue', 'prevRevenue', 'deltaRevenue',
             'avgTicket', 'convRate',
             'chartDates', 'chartLeads', 'leadsBySource',
-            // campanhas
+            // campanhas (UTM agg, sem model Campaign)
             'campaignRows',
             // funil
             'pipelineRows',
             // perdidos
-            'totalLost', 'lostPotentialValue', 'lostByReason', 'lostByCampaign', 'lostByVendedor',
+            'totalLost', 'lostPotentialValue', 'lostByReason', 'lostByVendedor',
             // vendedores
             'vendedores',
             // whatsapp

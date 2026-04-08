@@ -74,8 +74,6 @@ class AutomationController extends Controller
             ->sort()
             ->values();
 
-        $campaigns = \App\Models\Campaign::orderBy('name')->get(['id', 'name']);
-
         $dateCustomFields = \App\Models\CustomFieldDefinition::where('is_active', true)
             ->where('field_type', 'date')
             ->orderBy('sort_order')
@@ -92,7 +90,7 @@ class AutomationController extends Controller
 
         return compact('pipelines', 'users', 'aiAgents', 'chatbotFlows', 'wahaConnected',
                        'whatsappInstances', 'whatsappTags', 'leadTags', 'leadSources',
-                       'allLeadSources', 'campaigns', 'dateCustomFields', 'allCustomFields',
+                       'allLeadSources', 'dateCustomFields', 'allCustomFields',
                        'departments');
     }
 

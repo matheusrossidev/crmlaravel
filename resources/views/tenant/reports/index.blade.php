@@ -568,16 +568,6 @@
             </div>
 
             <div>
-                <label>{{ __('reports.campaign') }}</label>
-                <select name="campaign_id">
-                    <option value="">{{ __('reports.all_campaigns') }}</option>
-                    @foreach($campaigns as $camp)
-                    <option value="{{ $camp->id }}" @selected($filterCampaign == $camp->id)>{{ $camp->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div>
                 <label>{{ __('reports.pipeline') }}</label>
                 <select name="pipeline_id">
                     <option value="">{{ __('reports.all_pipelines') }}</option>
@@ -592,7 +582,7 @@
                     <i class="bi bi-funnel"></i> {{ __('reports.apply') }}
                 </button>
 
-                @if($filterCampaign || $filterPipeline || $filterUser || request('date_from') || request('date_to'))
+                @if($filterPipeline || $filterUser || request('date_from') || request('date_to'))
                 <a href="{{ route('reports.index') }}" class="btn-clear">
                     <i class="bi bi-x"></i> {{ __('reports.clear') }}
                 </a>
@@ -959,25 +949,6 @@
                     <span style="font-size:10px;color:#9ca3af;">{{ __('reports.heatmap_more') }}</span>
                 </div>
                 @endif
-            </div>
-
-            {{-- Por Campanha (heatmap) --}}
-            <div>
-                <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">{{ __('reports.by_campaign') }}</div>
-                @php $maxCampLost = collect($lostByCampaign)->max('total') ?: 1; @endphp
-                @forelse($lostByCampaign as $row)
-                @php
-                    $cRatio = $row['total'] / $maxCampLost;
-                    $cHeatBg = $cRatio >= 0.8 ? '#A32D2D' : ($cRatio >= 0.6 ? '#E24B4A' : ($cRatio >= 0.4 ? '#F09595' : ($cRatio >= 0.2 ? '#F7C1C1' : '#FCEBEB')));
-                    $cHeatFg = $cRatio >= 0.6 ? '#fff' : '#A32D2D';
-                @endphp
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                    <span style="font-size:12px;color:#374151;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $row['campaign'] }}</span>
-                    <span style="min-width:36px;height:26px;border-radius:5px;background:{{ $cHeatBg }};color:{{ $cHeatFg }};font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">{{ $row['total'] }}</span>
-                </div>
-                @empty
-                <p style="color:#9ca3af;font-size:13px;">—</p>
-                @endforelse
             </div>
 
             {{-- Por Vendedor (avatar + barra azul neutra) --}}

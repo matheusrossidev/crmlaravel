@@ -414,9 +414,6 @@
                 <div class="af-block-item action" onclick="addActionBlock('schedule_whatsapp_message')">
                     <span class="af-block-icon"><i class="bi bi-clock"></i></span>{{ __('automations.sidebar_act_schedule_whatsapp_message') }}
                 </div>
-                <div class="af-block-item action" onclick="addActionBlock('assign_campaign')">
-                    <span class="af-block-icon"><i class="bi bi-megaphone"></i></span>{{ __('automations.sidebar_act_assign_campaign') }}
-                </div>
                 <div class="af-block-item action" onclick="addActionBlock('set_utm_params')">
                     <span class="af-block-icon"><i class="bi bi-link-45deg"></i></span>{{ __('automations.sidebar_act_set_utm_params') }}
                 </div>
@@ -494,7 +491,6 @@ const DATE_CUSTOM_FIELDS  = @json($dateCustomFields->map(fn($f) => ['id' => $f->
 @endphp
 const ALL_CUSTOM_FIELDS = {!! json_encode($allCustomFieldsJs) !!};
 const ALL_LEAD_SOURCES    = @json($allLeadSources);
-const CAMPAIGNS           = @json($campaigns);
 const NOTE_VARS_HINT = @json($noteVarsHint);
 const MSG_VARS_HINT  = @json($msgVarsHint);
 const AUTOMATION_DATA = {!! $automation_json !!};
@@ -813,7 +809,6 @@ const ACTION_META = {
     close_conversation:    { icon:'bi-lock',              label: AUTLANG.sidebar_act_close_conversation },
     send_whatsapp_message:     { icon:'bi-whatsapp',    label: AUTLANG.sidebar_act_send_whatsapp_message },
     schedule_whatsapp_message: { icon:'bi-clock',       label: AUTLANG.sidebar_act_schedule_whatsapp_message },
-    assign_campaign:           { icon:'bi-megaphone',   label: AUTLANG.sidebar_act_assign_campaign },
     set_utm_params:            { icon:'bi-link-45deg',  label: AUTLANG.sidebar_act_set_utm_params },
     create_task:               { icon:'bi-check2-square', label: AUTLANG.sidebar_act_create_task },
     ai_extract_fields:         { icon:'bi-magic',         label: AUTLANG.sidebar_act_ai_extract_fields },
@@ -912,12 +907,6 @@ function buildActionBody(type, idx, prefill) {
     }
     if (type === 'close_conversation') {
         return `<p style="font-size:12px;color:#6b7280;margin:0;"><i class="bi bi-info-circle me-1"></i>${h(AUTLANG.close_conversation_info)}</p>`;
-    }
-    if (type === 'assign_campaign') {
-        if (!CAMPAIGNS.length) return `<p style="font-size:12px;color:#9ca3af;margin:0;">${h(AUTLANG.no_campaigns)}</p>`;
-        const cOpts = CAMPAIGNS.map(c => `<option value="${c.id}" ${prefill.campaign_id==c.id?'selected':''}>${h(c.name)}</option>`).join('');
-        return `<label>${h(AUTLANG.label_campaign)}</label><select class="form-select" id="aval-${idx}">
-            <option value="">${h(AUTLANG.placeholder_select)}</option>${cOpts}</select>`;
     }
     if (type === 'set_utm_params') {
         const fields = [
@@ -1547,9 +1536,6 @@ function saveAutomation() {
             config.delay_value = parseInt(document.getElementById(`adelay-${idx}`)?.value || '1');
             config.delay_unit  = document.getElementById(`adelayunit-${idx}`)?.value || 'days';
             if (config.delay_value < 1) { toastr.warning(AUTLANG.validation_delay_min); err = true; return; }
-        } else if (type === 'assign_campaign') {
-            config.campaign_id = parseInt(document.getElementById(`aval-${idx}`)?.value || 0);
-            if (!config.campaign_id) { toastr.warning(AUTLANG.validation_select_campaign); err = true; return; }
         } else if (type === 'set_utm_params') {
             document.querySelectorAll(`#actBody-${idx} .utm-field`).forEach(el => {
                 const name = el.dataset.utm;

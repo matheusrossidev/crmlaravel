@@ -333,24 +333,16 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
     Route::get('/relatorios', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/relatorios/pdf', [ReportController::class, 'exportPdf'])->name('reports.pdf');
 
-    // Campanhas (leitura para todos, escrita admin+manager)
+    // Relatórios UTM (read-only — antigo módulo "Campanhas" sem CRUD)
     Route::get('/campanhas',                     [CampaignController::class, 'index'])->name('campaigns.index');
-    Route::get('/campanhas/relatorios',          [CampaignController::class, 'reports'])->name('campaigns.reports');
-    Route::get('/campanhas/relatorios/pdf',      [CampaignController::class, 'exportReportPdf'])->name('campaigns.reports.pdf');
     Route::get('/campanhas/drill-down',          [CampaignController::class, 'drillDown'])->name('campaigns.drill-down');
     Route::get('/campanhas/analytics',           [CampaignController::class, 'analytics'])->name('campaigns.analytics');
-    Route::middleware('role:admin,manager')->group(function () {
-        Route::post  ('/campanhas',                     [CampaignController::class, 'store'])->name('campaigns.store');
-        Route::put   ('/campanhas/{campaign}',          [CampaignController::class, 'update'])->name('campaigns.update');
-        Route::delete('/campanhas/{campaign}',          [CampaignController::class, 'destroy'])->name('campaigns.destroy');
-    });
 
     // Integrações (leitura para todos, escrita admin only)
     Route::prefix('configuracoes/integracoes')->name('settings.integrations.')->group(function () {
         Route::get('/',                 [IntegrationController::class, 'index'])->name('index');
         Route::middleware('role:admin')->group(function () {
-            Route::get('facebook/redirect', [IntegrationController::class, 'redirectFacebook'])->name('facebook.redirect');
-            Route::get('facebook/callback', [IntegrationController::class, 'callbackFacebook'])->name('facebook.callback');
+            // Google OAuth (somente pra Calendar — não havia Ads sync)
             Route::get('google/redirect',   [IntegrationController::class, 'redirectGoogle'])->name('google.redirect');
             Route::get('google/callback',   [IntegrationController::class, 'callbackGoogle'])->name('google.callback');
             // WhatsApp
@@ -387,7 +379,6 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::delete('whatsapp-cloud/{instance}',                      [IntegrationController::class, 'disconnectWhatsappCloud'])->name('whatsapp-cloud.disconnect');
             // Wildcards (OAuth)
             Route::delete('{platform}',     [IntegrationController::class, 'disconnect'])->name('disconnect');
-            Route::post('{platform}/sync',  [IntegrationController::class, 'syncNow'])->name('sync');
         });
     });
 
