@@ -532,7 +532,7 @@
                 <i class="bi bi-chat-quote"></i> {{ __('ai_agents.edit_sect_persona') }}
             </button>
             <button type="button" class="ae-sect-item" data-pane="flow" onclick="switchPane('flow', this)">
-                <i class="bi bi-signpost-split"></i> {{ __('ai_agents.s3_title') }}
+                <i class="bi bi-signpost-split"></i> {{ __('ai_agents.edit_sect_flow') }}
             </button>
             <button type="button" class="ae-sect-item" data-pane="stages" onclick="switchPane('stages', this)">
                 <i class="bi bi-list-ol"></i> {{ __('ai_agents.edit_sect_stages') }}

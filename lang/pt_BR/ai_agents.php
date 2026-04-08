@@ -613,6 +613,7 @@ return [
     // =========================================================================
     // EDIT FORM SIDEBAR-TABS (agents/form.blade.php refactor)
     // =========================================================================
+    'edit_sect_flow'        => 'Fluxo do Atendimento',
     'edit_sect_identity'    => 'Identidade',
     'edit_sect_persona'     => 'Persona',
     'edit_sect_channel'     => 'Canal',
