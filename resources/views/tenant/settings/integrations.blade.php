@@ -1056,6 +1056,58 @@
     </div>
 </div>
 
+{{-- ── Botao WhatsApp pra sites — drawer/modal ───────────────────────────── --}}
+<div id="waBtnOverlay" class="int-modal-overlay" onclick="closeWaBtnDrawer(event)"></div>
+<div id="waBtnDrawer" class="int-modal int-modal-540">
+    <div style="padding:20px 24px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;">
+        <h4 id="waBtnDrawerTitle" style="margin:0;font-size:16px;font-weight:700;color:#1a1d23;">{{ __('integrations.wabtn_drawer_title') }}</h4>
+        <button onclick="closeWaBtnDrawer()" style="background:none;border:none;font-size:20px;color:#9ca3af;cursor:pointer;padding:4px;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px 24px;">
+        <input type="hidden" id="waBtnEditId" value="">
+        <div style="margin-bottom:14px;">
+            <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">{{ __('integrations.wabtn_phone') }}</label>
+            <input type="text" id="waBtnPhone" class="form-control" placeholder="{{ __('integrations.wabtn_phone_ph') }}" style="font-size:13px;">
+        </div>
+        <div style="margin-bottom:14px;">
+            <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">{{ __('integrations.wabtn_label') }}</label>
+            <input type="text" id="waBtnLabel" class="form-control" placeholder="{{ __('integrations.wabtn_label_ph') }}" style="font-size:13px;">
+        </div>
+        <div style="margin-bottom:14px;">
+            <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">{{ __('integrations.wabtn_message') }}</label>
+            <textarea id="waBtnMessage" class="form-control" rows="3" placeholder="{{ __('integrations.wabtn_message_ph') }}" style="font-size:13px;resize:vertical;"></textarea>
+        </div>
+        <div style="margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="waBtnFloating" checked style="width:16px;height:16px;">
+            <label for="waBtnFloating" style="font-size:12.5px;color:#374151;cursor:pointer;">{{ __('integrations.wabtn_floating') }}</label>
+        </div>
+        <div style="margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="waBtnActive" checked style="width:16px;height:16px;">
+            <label for="waBtnActive" style="font-size:12.5px;color:#374151;cursor:pointer;">{{ __('integrations.wabtn_active') }}</label>
+        </div>
+        <div id="waBtnEmbedSection" style="display:none;padding-top:16px;border-top:1px solid #f0f2f7;">
+            <label style="font-size:13px;font-weight:700;color:#1a1d23;display:block;margin-bottom:6px;"><i class="bi bi-code-slash"></i> {{ __('integrations.wabtn_embed') }}</label>
+            <p style="font-size:11.5px;color:#6b7280;margin-bottom:8px;">Cole antes do <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:10.5px;">&lt;/body&gt;</code> do seu site.</p>
+            <div style="position:relative;">
+                <textarea id="waBtnEmbed" readonly onclick="this.select()" style="width:100%;height:50px;font-family:monospace;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 70px 10px 10px;resize:none;color:#334155;"></textarea>
+                <button onclick="navigator.clipboard.writeText(document.getElementById('waBtnEmbed').value);toastr.success(ILANG.toast_copied)" style="position:absolute;top:8px;right:8px;background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="bi bi-clipboard"></i> {{ __('integrations.wabtn_copy') }}</button>
+            </div>
+        </div>
+        <div id="waBtnTrackSection" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid #f0f2f7;">
+            <label style="font-size:13px;font-weight:700;color:#1a1d23;display:block;margin-bottom:6px;"><i class="bi bi-link-45deg"></i> {{ __('integrations.wabtn_tracking') }}</label>
+            <p style="font-size:11.5px;color:#6b7280;margin-bottom:8px;">{{ __('integrations.wabtn_tracking_hint') }}</p>
+            <div style="position:relative;">
+                <input type="text" id="waBtnTrackLink" readonly onclick="this.select()" style="width:100%;font-family:monospace;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 70px 10px 10px;color:#334155;">
+                <button onclick="navigator.clipboard.writeText(document.getElementById('waBtnTrackLink').value);toastr.success(ILANG.toast_link_copied)" style="position:absolute;top:6px;right:8px;background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="bi bi-clipboard"></i> {{ __('integrations.wabtn_copy') }}</button>
+            </div>
+        </div>
+    </div>
+    <div style="padding:16px 24px;border-top:1px solid #f0f2f7;display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="closeWaBtnDrawer()" style="padding:8px 20px;border:1px solid #e2e8f0;background:#fff;border-radius:100px;font-size:13px;cursor:pointer;color:#374151;">{{ __('integrations.wabtn_cancel') }}</button>
+        <button onclick="saveWaButton()" style="padding:8px 20px;background:#25D366;color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;"><i class="bi bi-check-lg"></i> {{ __('integrations.wabtn_save') }}</button>
+    </div>
+</div>
+
 <style>
 .fb-step { flex:1;text-align:center;padding:8px;border-radius:8px;font-size:12px;font-weight:600;color:#9ca3af;background:#f9fafb;transition:.2s; }
 .fb-step.active { background:#eff6ff;color:#1877F2; }
