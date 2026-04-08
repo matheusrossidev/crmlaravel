@@ -64,14 +64,21 @@ class GoogleCalendarService
     // ── Calendar API ────────────────────────────────────────────────────────
 
     /**
-     * Converte qualquer string de data para RFC3339 UTC ("Z") exigido pelo Google Calendar API.
-     * Motivo: quando o offset de fuso (ex: -03:00) é passado via query string pelo HTTP client,
-     * o ":" do offset fica URL-encoded como "%3A" e a API do Google retorna 400.
-     * Solução: sempre normalizar para UTC antes de enviar.
+     * Converte qualquer string de data para o formato local sem timezone (Y-m-d\TH:i:s)
+     * que é enviado junto com o campo `timeZone` no payload do Google Calendar API.
+     *
+     * BUG ANTERIOR (corrigido): o método chamava ->format() direto sobre o Carbon
+     * em UTC, retornando hora UTC. Como o payload manda timeZone='America/Sao_Paulo',
+     * o Google interpretava aquela hora UTC como se fosse São Paulo, dobrando o offset
+     * e criando eventos 3 horas adiantados (user digita 11:00, Google salva 14:00).
+     *
+     * Fix: ->setTimezone() converte pra timezone local da app ANTES do format,
+     * batendo com o `timeZone` enviado no payload.
      */
     private function normalizeDateTimeLocal(string $date): string
     {
-        return \Carbon\Carbon::parse($date)->format('Y-m-d\TH:i:s');
+        $tz = config('app.timezone', 'America/Sao_Paulo');
+        return \Carbon\Carbon::parse($date)->setTimezone($tz)->format('Y-m-d\TH:i:s');
     }
 
     private function toRfc3339(string $date): string
