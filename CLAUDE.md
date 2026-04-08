@@ -1,7 +1,7 @@
 # Syncro CRM — Guia Completo da Plataforma
 
 > Este documento é a referência definitiva para qualquer dev ou IA que trabalhe neste codebase.
-> Última atualização: 2026-04-06
+> Última atualização: 2026-04-08
 
 ---
 
@@ -9,7 +9,7 @@
 
 **Syncro** é uma plataforma 360 de marketing e CRM multi-tenant com:
 - Pipeline de vendas (Kanban)
-- Chat inbox unificado (WhatsApp WAHA + WhatsApp Cloud API oficial Meta + Instagram + Website)
+- Chat inbox para WhatsApp WAHA + WhatsApp Cloud API oficial Meta + Instagram + Website (UI unificada via `tenant/whatsapp/index.blade.php`; backend ainda fragmentado em 3 models, mas há `ConversationContract` + `ConversationResolver` pra abstração polimórfica)
 - Agentes de IA com memória e tools (via microsserviço Agno)
 - Sophia — assistente IA interna com execução de actions no CRM
 - Chatbot builder visual multi-canal (React Flow)
@@ -43,7 +43,7 @@
 | CI/CD | GitHub Actions → Docker Hub → Portainer |
 
 ### Stats
-~93 models, ~42 services, ~14 jobs, ~22 commands, 6 events, 11 notifications, ~50 controllers, 100+ migrations
+~94 models (+Tag), ~43 services (+ConversationResolver), ~14 jobs, ~23 commands (+BackfillTags), 6 events, 11 notifications, ~50 controllers, 100+ migrations, 2 contracts (WhatsappServiceContract + ConversationContract)
 
 ### URLs
 - **Dev**: `http://localhost/crm/public`
@@ -102,7 +102,7 @@ web → auth → tenant → role:admin → plan.limit:leads
 - **Department** — Setores com assignment_strategy (round_robin/least_busy), default_ai_agent_id
 
 ### Leads e Pipeline
-- **Lead** — phone, email, company, value, tags (JSON), custom fields, UTM tracking, pipeline_id, stage_id, status (active/archived/merged), merged_into, merged_at
+- **Lead** — phone, email, company, value, tags (coluna JSON legada **+** relação polimórfica via trait `HasTags` → tabela `taggables`; ver §3 abaixo), custom fields, UTM tracking, pipeline_id, stage_id, status (active/archived/merged), merged_into, merged_at. Trait `HasTags` em uso.
 - **Pipeline** — auto_create_from_whatsapp/instagram flags
 - **PipelineStage** — position, is_won, is_lost (sem timestamps)
 - **Sale** — Imutável (sem updated_at). value, closed_by, closed_at
@@ -148,18 +148,27 @@ web → auth → tenant → role:admin → plan.limit:leads
 
 ### WhatsApp (WAHA + Cloud API dual-provider)
 - **WhatsappInstance** — `provider` ('waha' ou 'cloud_api'), `session_name` (WAHA), `phone_number`, `phone_number_id` (Cloud API), `waba_id`, `business_account_id`, `access_token` (cast `encrypted`, Cloud API), `token_expires_at`, `history_imported` flag, `display_name`, `label`. Helpers: `isWaha()`, `isCloudApi()`
-- **WhatsappConversation** — `instance_id` (FK!), phone, lid (interno), status (open/closed/expired), tags (JSON), assigned_user_id, department_id, ai_agent_id, chatbot_flow_id/node_id/variables, followup counters, response_time_seconds
+- **WhatsappConversation** — `instance_id` (FK!), phone, lid (interno), status (open/closed/expired), tags (coluna JSON legada + trait `HasTags`), assigned_user_id, department_id, ai_agent_id, chatbot_flow_id/node_id/variables, followup counters, response_time_seconds. Implementa `ConversationContract` (`getChannelName(): 'whatsapp'`).
 - **WhatsappMessage** — `waha_message_id` (UNIQUE) **OU** `cloud_message_id` (índice) — provider determina qual coluna popular. direction, type, body, media_url, ack, sent_at
 
 ### Instagram
 - **InstagramInstance** — ig_business_account_id, username, access_token (encrypted), status
-- **InstagramConversation** — igsid, contact_name, contact_username, ai_agent_id, chatbot_flow_id
+- **InstagramConversation** — igsid, contact_name, contact_username, ai_agent_id, chatbot_flow_id, tags (coluna JSON legada + trait `HasTags`). Implementa `ConversationContract` (`getChannelName(): 'instagram'`).
 - **InstagramMessage** — ig_message_id (UNIQUE), direction, type, body, media
 - **InstagramAutomation** — Regras de auto-reply por post (keywords, reply_comment, dm_message arrays), media_type
 
 ### Website
-- **WebsiteConversation** — visitor_id, flow_id, ai_agent_id, UTM/fbclid/gclid tracking
+- **WebsiteConversation** — visitor_id, flow_id, ai_agent_id, UTM/fbclid/gclid tracking, tags (coluna JSON adicionada em 2026-04-08 + trait `HasTags`). Implementa `ConversationContract` (`getChannelName(): 'website'`).
 - **WebsiteMessage** — direction, type, body
+
+### Tags polimórficas (refactor 2026-04-08, em coexistência)
+- **Tag** — `tenant_id`, `name`, `color`, `sort_order`, `applies_to` enum (`lead`/`conversation`/`both`). Catálogo único por tenant. Substitui o velho `WhatsappTag`.
+- **Tabela `taggables`** — pivot polimórfica (`tag_id`, `taggable_type`, `taggable_id`, `tenant_id`). FK cascade em `tag_id` E `tenant_id` (deletar tag remove atribuições, deletar tenant remove tudo).
+- **WhatsappTag** — model legacy ainda existe e a tabela `whatsapp_tags` continua sendo lida em alguns spots de UI catalog (Fase 4 do refactor vai migrar). **NÃO use mais ele em código novo** — use `Tag::` direto.
+- A tag pode ser anexada a Lead E a qualquer Conversation (WhatsApp/Instagram/Website) **simultaneamente** — uma única row em `tags`, várias rows em `taggables`. É o desejo "tags omnichannel".
+- **Coexistência atual (Fase 3 do plano):** colunas JSON `tags` em leads/whatsapp_conversations/instagram_conversations/website_conversations **continuam sendo escritas em paralelo** com a pivot. JSON ainda é fonte autoritativa pras leituras (filtros, automation conditions, scoring, exports, webhooks). Pivot é dual-write.
+- **Comando manual:** `php artisan tags:backfill [--dry-run] [--tenant=N]` — idempotente. Migra `whatsapp_tags` + JSONs pra estrutura nova. Pode rodar várias vezes como reconciliador.
+- **Plano completo das 5 fases:** `~/.claude/plans/eager-seeking-corbato.md`. Hoje estamos no fim da Fase 3. Fase 4 = trocar leituras pra pivot. Fase 5 = drop colunas JSON + drop `whatsapp_tags` + rename `WhatsappController`→`InboxController`.
 
 ### Chatbot
 - **ChatbotFlow** — channel (whatsapp/instagram/website), steps (JSON), variables, trigger_keywords, trigger_type (keyword/instagram_comment), widget config, completions_count
@@ -292,6 +301,10 @@ web → auth → tenant → role:admin → plan.limit:leads
 - **Website**: Show/status/link lead
 - **Quick Messages**: CRUD mensagens rápidas
 - **AI Analyst**: Suggestions, approve/reject, trigger analysis
+- **Endpoint genérico de contato (NOVO 2026-04-08):** `PUT /chats/inbox/{channel}/{conversation}/contact` — funciona pros 3 canais via `ConversationResolver`. Atualiza `name`/`phone`/`tags` (com dual write JSON+pivot). É o que o front (`saveContact`/`saveTags` em `tenant/whatsapp/index.blade.php`) chama via helper `inboxContactUrl(id)`. Resolveu o bug latente do Instagram (endpoint específico nunca existiu) e habilita tags em Website pela primeira vez.
+- Rotas legacy `PUT /chats/conversations/{id}/contact` (só WhatsApp) ainda ativas pra coexistência. Serão removidas na Fase 5 do refactor.
+
+> ⚠️ **`WhatsappController` é o controller dos 3 canais.** Apesar do nome, ele responde rotas WhatsApp + Instagram + Website (métodos `show`, `showInstagram`, `showWebsite`, `updateConversationContact`, etc). Na Fase 5 do refactor de tags/inbox vai ser renomeado pra `InboxController` + pasta de views renomeada pra `tenant/inbox/`. Por enquanto vive em `app/Http/Controllers/Tenant/WhatsappController.php`. **`WhatsappMessageController` continua sendo WhatsApp-specific** (envio outbound) e fica.
 
 ### Chatbot (`/chatbot/fluxos`)
 | Método | URI | Nome |
@@ -328,7 +341,7 @@ web → auth → tenant → role:admin → plan.limit:leads
 - **Motivos de perda**: `/configuracoes/motivos-perda`
 - **Usuários**: `/configuracoes/usuarios`
 - **Departamentos**: `/configuracoes/departamentos`
-- **Tags**: `/configuracoes/tags`
+- **Tags**: `/configuracoes/tags` — atualmente ainda servido pelo `WhatsappTagController` em cima da tabela legacy `whatsapp_tags`. Será trocado pra `TagController` + `Tag` model na Fase 4 do refactor (URLs ficam idênticas).
 - **Campos extras**: `/configuracoes/campos-extras`
 - **Produtos**: `/configuracoes/produtos` (CRUD + categorias)
 - **Scoring**: `/configuracoes/scoring` (CRUD regras de pontuação)
@@ -845,6 +858,15 @@ Push ao `main` → build image → push Docker Hub → Portainer puxa
 - Pra bloquear backend: same helper no controller. Não usar permissões nem roles pra isso — feature flag é a fonte da verdade.
 - Toggle no painel master `/master/features`. NÃO hardcode flags em código.
 
+### Tags (refactor em coexistência — Fase 3)
+- Models que têm tags hoje: `Lead`, `WhatsappConversation`, `InstagramConversation`, `WebsiteConversation`. Todos usam o trait `App\Models\Traits\HasTags`.
+- **Pra LER tags em código novo:** prefira `$model->tagModels` (Eloquent collection) ou o accessor `$model->tag_names` (array de strings). Mas a coluna JSON `$model->tags` ainda funciona porque Fase 3 escreve nos dois lugares.
+- **Pra ESCREVER tags em código novo:** SEMPRE use os métodos do trait — `attachTagsByName(array $names)` (adiciona, mantém os existentes), `syncTagsByName(array $names)` (substitui o set inteiro), `detachTagsByName(array $names)`. **Adicionalmente** escreva também na coluna JSON pra dual write (dispatch é feito automaticamente nos pontos atuais — `LeadController`, `AutomationEngine`, `NurtureSequenceService`, `ConversationAnalystService`, `AiAgentWebChatService`, `ProcessFacebookLeadgenWebhook`, `KanbanImport`, `WhatsappController::updateContact` e `updateConversationContact`).
+- **NUNCA** criar tag manualmente via `WhatsappTag::create(...)` em código novo. Use `Tag::firstOrCreate(['tenant_id' => $t, 'name' => $n], ['color' => '#3B82F6', 'sort_order' => 0, 'applies_to' => 'both'])` — ou melhor, deixe o trait `HasTags` auto-criar via `attachTagsByName()`.
+- **Endpoint genérico do inbox:** `PUT /chats/inbox/{channel}/{conversation}/contact` (route name `chats.inbox.conversations.contact`) é o padrão pra atualizar nome/telefone/tags em qualquer canal. Não invente endpoint canal-específico novo.
+- **Conversation polimórfica:** se você precisa receber "uma conversa de qualquer canal", aceite `App\Contracts\ConversationContract` (interface) — não `WhatsappConversation` específico. Use `app(App\Services\ConversationResolver::class)->resolve($channel, $id)` quando precisar resolver por string de canal + ID.
+- Plano completo do refactor: `~/.claude/plans/eager-seeking-corbato.md`. Não pule fases sem ler o plano.
+
 ---
 
 ## 14. Toolbox Master (super_admin)
@@ -924,11 +946,10 @@ app/
     FacebookLeadgenWebhookController.php — Webhook Facebook Lead Ads
     AsaasWebhookController.php
     StripeWebhookController.php
-  Contracts/
-    WhatsappServiceContract.php — Interface comum WAHA + Cloud API
-  Console/Commands/  — ~22 commands (billing, whatsapp, ai, scoring, sequences, goals, partners, upsell, master, reengagement)
+  Console/Commands/  — ~23 commands (billing, whatsapp, ai, scoring, sequences, goals, partners, upsell, master, reengagement, tags backfill)
     DetectDuplicateLeads.php        — Scan diário de duplicatas
     SendReengagement.php            — Envio de emails/WA de reengajamento
+    BackfillTags.php                — Migra whatsapp_tags + colunas JSON `tags` pra estrutura polimórfica `tags`+`taggables`. Idempotente. `--dry-run` e `--tenant=N`.
   Jobs/
     ProcessWahaWebhook.php             — Webhook WhatsApp WAHA (core)
     ProcessWhatsappCloudWebhook.php    — Webhook WhatsApp Cloud API (Meta)
@@ -977,6 +998,10 @@ app/
     DuplicateLeadDetector.php       — Detecção fuzzy de leads duplicados (phone/email/name)
     LeadMergeService.php            — Merge atômico de leads (21 relações)
     SophiaActionExecutor.php        — Executor de ações da Sophia (whitelist + rate limit)
+    ConversationResolver.php        — Mapeia channel string ('whatsapp'|'instagram'|'website') + ID -> ConversationContract concreto. Usado pelo endpoint genérico do inbox.
+  Contracts/
+    WhatsappServiceContract.php     — Interface comum WAHA + Cloud API
+    ConversationContract.php        — Interface comum dos 3 conversation models (getChannelName, getContactName, getContactPhone, getContactPictureUrl, getDisplayLabel)
   Mail/
     ReengagementEmail.php           — Email de reengajamento (usa _layout shared)
   Rules/
@@ -988,6 +1013,9 @@ app/
   Notifications/    — 11 notifications (goal alerts, NPS, partner, billing, system)
   Models/
     Traits/BelongsToTenant.php      — Global Scope multi-tenant
+    Traits/HasTags.php              — Trait polimórfico de tags (tagModels(), attachTagsByName, syncTagsByName, detachTagsByName, accessor tag_names). Em uso por Lead + 3 conversation models.
+    Tag.php                         — Catálogo único de tags por tenant. 4 morphedByMany pros taggables. Substitui WhatsappTag.
+    WhatsappTag.php                 — LEGACY. Ainda existe, ainda usado pelo CRUD em /configuracoes/tags. Em código novo use Tag::.
     Lead.php, WhatsappConversation.php, WhatsappInstance.php (provider+cloud_api fields),
     AiAgent.php, ChatbotFlow.php, Task.php, Product.php, ScoringRule.php,
     NurtureSequence.php, NpsSurvey.php, SalesGoal.php, PartnerCommission.php,
