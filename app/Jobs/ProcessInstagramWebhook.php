@@ -358,10 +358,20 @@ class ProcessInstagramWebhook implements ShouldQueue
                 'has_pic'  => isset($profile['profile_pic']),
             ]);
 
+            // Baixa a foto pra storage local — URL do CDN do Meta expira em horas.
+            // Sem isso, o card da conversa fica sem avatar dias depois.
+            $remotePic = $profile['profile_pic'] ?? null;
+            $localPic  = \App\Support\ProfilePictureDownloader::download(
+                $remotePic,
+                'instagram',
+                $instance->tenant_id,
+                $igsid,
+            );
+
             return [
-                'name'     => $profile['name']        ?? null,
-                'username' => $profile['username']    ?? null,
-                'picture'  => $profile['profile_pic'] ?? null,
+                'name'     => $profile['name']     ?? null,
+                'username' => $profile['username'] ?? null,
+                'picture'  => $localPic,
             ];
         } catch (\Throwable $e) {
             Log::channel('instagram')->warning('Exceção ao buscar perfil do contato', [

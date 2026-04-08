@@ -491,11 +491,20 @@ class ProcessWahaWebhook implements ShouldQueue
         }
 
         if (! $conversation) {
-            // Tentar buscar foto de perfil do contato/grupo ao criar nova conversa
+            // Tentar buscar foto de perfil do contato/grupo ao criar nova conversa.
+            // Baixa pra storage local porque a URL do CDN do WhatsApp expira em horas.
             $pictureUrl = null;
             try {
                 $wahaForPic = new \App\Services\WahaService($instance->session_name);
-                $pictureUrl = $wahaForPic->getChatPicture($from);
+                $remotePic  = $wahaForPic->getChatPicture($from);
+                if ($remotePic) {
+                    $pictureUrl = \App\Support\ProfilePictureDownloader::download(
+                        $remotePic,
+                        'whatsapp',
+                        $instance->tenant_id,
+                        $phone ?: $from,
+                    );
+                }
             } catch (\Throwable) {}
 
             $conversation = WhatsappConversation::withoutGlobalScope('tenant')->create([
@@ -581,10 +590,18 @@ class ProcessWahaWebhook implements ShouldQueue
             $picCacheKey = "waha:pic_refresh:{$conversation->id}";
             if (! Cache::has($picCacheKey)) {
                 try {
-                    $wahaForPic  = new \App\Services\WahaService($instance->session_name);
-                    $pic         = $wahaForPic->getChatPicture($from);
-                    if ($pic && $pic !== $conversation->contact_picture_url) {
-                        $convUpdates['contact_picture_url'] = $pic;
+                    $wahaForPic = new \App\Services\WahaService($instance->session_name);
+                    $remotePic  = $wahaForPic->getChatPicture($from);
+                    if ($remotePic) {
+                        $localPic = \App\Support\ProfilePictureDownloader::download(
+                            $remotePic,
+                            'whatsapp',
+                            $instance->tenant_id,
+                            $phone ?: $from,
+                        );
+                        if ($localPic && $localPic !== $conversation->contact_picture_url) {
+                            $convUpdates['contact_picture_url'] = $localPic;
+                        }
                     }
                     Cache::put($picCacheKey, 1, 21600); // 6 horas
                 } catch (\Throwable) {

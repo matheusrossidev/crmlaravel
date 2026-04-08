@@ -83,7 +83,16 @@ class RepairInstagramContacts extends Command
                     $update['contact_username'] = $profile['username'];
                 }
                 if (! $conv->contact_picture_url && ! empty($profile['profile_pic'])) {
-                    $update['contact_picture_url'] = $profile['profile_pic'];
+                    // Baixa pra storage local — URL do CDN do Meta expira em horas
+                    $localPic = \App\Support\ProfilePictureDownloader::download(
+                        $profile['profile_pic'],
+                        'instagram',
+                        $conv->tenant_id,
+                        $conv->igsid,
+                    );
+                    if ($localPic) {
+                        $update['contact_picture_url'] = $localPic;
+                    }
                 }
 
                 if (! empty($update)) {
