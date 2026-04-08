@@ -96,11 +96,28 @@
                 <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('automations.title') }}</h1>
                 <p style="font-size:13.5px;color:#677489;margin:0;">{{ __('automations.subtitle') }}</p>
             </div>
-            <a href="{{ route('settings.automations.create') }}" class="btn-primary-sm" style="text-decoration:none;">
-                <i class="bi bi-plus-lg"></i> {{ __('automations.new_automation') }}
-            </a>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <button type="button" class="btn-templates-trigger" onclick="openTplLibrary('tplAutomationLibrary')">
+                    <i class="bi bi-collection"></i> {{ __('templates.btn_templates') }}
+                </button>
+                <a href="{{ route('settings.automations.create') }}" class="btn-primary-sm" style="text-decoration:none;">
+                    <i class="bi bi-plus-lg"></i> {{ __('automations.new_automation') }}
+                </a>
+            </div>
         </div>
     </div>
+
+    {{-- Modal de biblioteca de templates --}}
+    @include('tenant.settings._template_library_modal', [
+        'modalId'      => 'tplAutomationLibrary',
+        'title'        => __('templates.automation_modal_title'),
+        'subtitle'     => __('templates.automation_modal_subtitle'),
+        'templates'    => $templates,
+        'categories'   => $templateCategories,
+        'installRoute' => 'settings.automations.templates.install',
+        'onInstallJs'  => 'onAutomationTemplateInstalled',
+        'installedKey' => 'automation',
+    ])
 
     <div class="at-wrap">
         @if($automations->isEmpty())
@@ -189,5 +206,16 @@ function deleteAutomation(id) {
         else toastr.error(AUTLANG.toast_delete_error);
     });
 }
+
+/* ---- Template Library integration ---- */
+window.tplLibraryRoutes = window.tplLibraryRoutes || {};
+window.tplLibraryRoutes['tplAutomationLibrary'] = @json(route('settings.automations.templates.install', ['slug' => '__SLUG__']));
+
+window.onAutomationTemplateInstalled = function(automation) {
+    if (!automation) return;
+    // Recarrega a página pra mostrar a nova automação na listagem
+    // (a tabela tem muita lógica de render que seria custoso replicar via JS)
+    setTimeout(() => location.reload(), 600);
+};
 </script>
 @endsection

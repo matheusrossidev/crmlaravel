@@ -541,6 +541,7 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::post('scoring', [LeadScoringController::class, 'store'])->name('scoring.store');
             // IMPORTANTE: rotas estáticas precisam vir ANTES da {rule} wildcard
             Route::put('scoring/score-settings', [LeadScoringController::class, 'updateScoreSettings'])->name('scoring.score-settings');
+            Route::post('scoring/templates/{slug}/install', [LeadScoringController::class, 'installTemplate'])->name('scoring.templates.install');
             Route::put('scoring/{rule}', [LeadScoringController::class, 'update'])->name('scoring.update');
             Route::delete('scoring/{rule}', [LeadScoringController::class, 'destroy'])->name('scoring.destroy');
 
@@ -594,6 +595,8 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::get('automacoes/criar',                  [AutomationController::class, 'create'])->name('automations.create');
             Route::get('automacoes/{automation}/editar',    [AutomationController::class, 'edit'])->name('automations.edit');
             Route::post('automacoes',                       [AutomationController::class, 'store'])->name('automations.store');
+            // Template install (rota estática vem ANTES das wildcards)
+            Route::post('automacoes/templates/{slug}/install', [AutomationController::class, 'installTemplate'])->name('automations.templates.install');
             Route::put('automacoes/{automation}',           [AutomationController::class, 'update'])->name('automations.update');
             Route::delete('automacoes/{automation}',        [AutomationController::class, 'destroy'])->name('automations.destroy');
             Route::patch('automacoes/{automation}/toggle',  [AutomationController::class, 'toggle'])->name('automations.toggle');
@@ -604,6 +607,8 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::get('sequencias/criar',                    [NurtureSequenceController::class, 'create'])->name('sequences.create');
             Route::get('sequencias/{sequence}/editar',        [NurtureSequenceController::class, 'edit'])->name('sequences.edit');
             Route::post('sequencias',                         [NurtureSequenceController::class, 'store'])->name('sequences.store');
+            // Template install (rota estática vem ANTES das wildcards)
+            Route::post('sequencias/templates/{slug}/install', [NurtureSequenceController::class, 'installTemplate'])->name('sequences.templates.install');
             Route::put('sequencias/{sequence}',               [NurtureSequenceController::class, 'update'])->name('sequences.update');
             Route::delete('sequencias/{sequence}',            [NurtureSequenceController::class, 'destroy'])->name('sequences.destroy');
             Route::patch('sequencias/{sequence}/toggle',      [NurtureSequenceController::class, 'toggle'])->name('sequences.toggle');

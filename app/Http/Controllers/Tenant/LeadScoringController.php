@@ -7,6 +7,8 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Pipeline;
 use App\Models\ScoringRule;
+use App\Services\ScoringRuleTemplateInstaller;
+use App\Support\ScoringRuleTemplates;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -52,7 +54,28 @@ class LeadScoringController extends Controller
             'max' => $settings['score_max'] ?? null,
         ];
 
-        return view('tenant.settings.lead-scoring', compact('rules', 'pipelines', 'scoreSettings'));
+        // Templates de regras prontas (biblioteca)
+        $templates           = ScoringRuleTemplates::all();
+        $templateCategories  = ScoringRuleTemplates::categories();
+
+        return view('tenant.settings.lead-scoring', compact(
+            'rules', 'pipelines', 'scoreSettings', 'templates', 'templateCategories'
+        ));
+    }
+
+    /**
+     * Instala um template de regra de scoring (biblioteca de modelos).
+     * Idempotente: se já existe regra com mesmo nome no tenant, retorna a existente.
+     */
+    public function installTemplate(string $slug, ScoringRuleTemplateInstaller $installer): JsonResponse
+    {
+        try {
+            $tenantId = auth()->user()->tenant_id;
+            $rule     = $installer->install($tenantId, $slug);
+            return response()->json(['success' => true, 'rule' => $rule]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 404);
+        }
     }
 
     public function store(Request $request): JsonResponse

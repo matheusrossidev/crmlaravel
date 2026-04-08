@@ -14,6 +14,8 @@ use App\Models\Pipeline;
 use App\Models\User;
 use App\Models\WhatsappInstance;
 use App\Models\WhatsappTag;
+use App\Services\AutomationTemplateInstaller;
+use App\Support\AutomationTemplates;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -96,12 +98,32 @@ class AutomationController extends Controller
 
     public function index(): View
     {
-        $automations = Automation::orderByDesc('created_at')->get();
+        $automations         = Automation::orderByDesc('created_at')->get();
+        $templates           = AutomationTemplates::all();
+        $templateCategories  = AutomationTemplates::categories();
 
         return view('tenant.settings.automations', array_merge(
-            ['automations' => $automations],
+            [
+                'automations'        => $automations,
+                'templates'          => $templates,
+                'templateCategories' => $templateCategories,
+            ],
             $this->loadFormData()
         ));
+    }
+
+    /**
+     * Instala um template de automação (biblioteca de modelos).
+     */
+    public function installTemplate(string $slug, AutomationTemplateInstaller $installer): JsonResponse
+    {
+        try {
+            $tenantId   = activeTenantId();
+            $automation = $installer->install($tenantId, $slug);
+            return response()->json(['success' => true, 'automation' => $automation]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 404);
+        }
     }
 
     public function create(): View
@@ -121,7 +143,7 @@ class AutomationController extends Controller
     {
         $data = $request->validate([
             'name'           => 'required|string|max:100',
-            'trigger_type'   => 'required|string|in:message_received,conversation_created,lead_created,lead_stage_changed,lead_won,lead_lost,date_field',
+            'trigger_type'   => 'required|string|in:message_received,conversation_created,lead_created,lead_stage_changed,lead_won,lead_lost,date_field,recurring',
             'trigger_config' => 'nullable|array',
             'conditions'     => 'nullable|array',
             'actions'        => 'required|array|min:1',
@@ -138,7 +160,7 @@ class AutomationController extends Controller
     {
         $data = $request->validate([
             'name'           => 'required|string|max:100',
-            'trigger_type'   => 'required|string|in:message_received,conversation_created,lead_created,lead_stage_changed,lead_won,lead_lost,date_field',
+            'trigger_type'   => 'required|string|in:message_received,conversation_created,lead_created,lead_stage_changed,lead_won,lead_lost,date_field,recurring',
             'trigger_config' => 'nullable|array',
             'conditions'     => 'nullable|array',
             'actions'        => 'required|array|min:1',

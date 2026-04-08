@@ -205,12 +205,27 @@
                     </div>
                 </div>
 
+                <button type="button" class="btn-templates-trigger" onclick="openTplLibrary('tplScoringLibrary')">
+                    <i class="bi bi-collection"></i> {{ __('templates.btn_templates') }}
+                </button>
                 <button class="btn-primary-sm" id="btnNewRule">
                     <i class="bi bi-plus-lg"></i> {{ __('scoring.new_rule') }}
                 </button>
             </div>
         </div>
     </div>
+
+    {{-- Modal de biblioteca de templates --}}
+    @include('tenant.settings._template_library_modal', [
+        'modalId'      => 'tplScoringLibrary',
+        'title'        => __('templates.scoring_modal_title'),
+        'subtitle'     => __('templates.scoring_modal_subtitle'),
+        'templates'    => $templates,
+        'categories'   => $templateCategories,
+        'installRoute' => 'settings.scoring.templates.install',
+        'onInstallJs'  => 'onScoringTemplateInstalled',
+        'installedKey' => 'rule',
+    ])
 
     <div class="scoring-table-wrap">
         <table class="scoring-table">
@@ -689,5 +704,42 @@ function deleteRule(id, btn) {
 function escapeHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+/* ---- Template Library integration ---- */
+window.tplLibraryRoutes = window.tplLibraryRoutes || {};
+window.tplLibraryRoutes['tplScoringLibrary'] = @json(route('settings.scoring.templates.install', ['slug' => '__SLUG__']));
+
+window.onScoringTemplateInstalled = function(rule) {
+    if (!rule) return;
+    rulesData[rule.id] = rule;
+
+    // Se tabela já tem essa rule, não duplica (idempotente)
+    const existing = document.querySelector(`tr[data-rule-id="${rule.id}"]`);
+    if (existing) return;
+
+    document.getElementById('emptyRules')?.remove();
+    const body = document.getElementById('rulesBody');
+    const cls = rule.points >= 0 ? 'positive' : 'negative';
+    const prefix = rule.points >= 0 ? '+' : '';
+    body.insertAdjacentHTML('beforeend', `<tr data-rule-id="${rule.id}">
+        <td class="rule-name-cell">${escapeHtml(rule.name)}</td>
+        <td><span class="cat-badge ${rule.category}">${CAT_LABELS[rule.category] || rule.category}</span></td>
+        <td style="font-size:12.5px;color:#6b7280;">${EVENT_LABELS[rule.event_type] || rule.event_type}</td>
+        <td style="text-align:center;"><span class="points-badge ${cls}">${prefix}${rule.points}</span></td>
+        <td style="text-align:center;font-size:12.5px;color:#6b7280;">${rule.cooldown_hours > 0 ? rule.cooldown_hours + 'h' : '—'}</td>
+        <td style="text-align:center;">
+            <label class="toggle">
+                <input type="checkbox" ${rule.is_active ? 'checked' : ''} onchange="toggleRule(${rule.id},this.checked)">
+                <span class="toggle-slider"></span>
+            </label>
+        </td>
+        <td>
+            <div style="display:flex;gap:5px;justify-content:flex-end;">
+                <button class="btn-icon" onclick="openEditRule(${rule.id})"><i class="bi bi-pencil"></i></button>
+                <button class="btn-icon danger" onclick="deleteRule(${rule.id},this)"><i class="bi bi-trash"></i></button>
+            </div>
+        </td>
+    </tr>`);
+};
 </script>
 @endpush

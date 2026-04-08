@@ -12,6 +12,8 @@ use App\Models\NurtureSequenceStep;
 use App\Models\PipelineStage;
 use App\Models\User;
 use App\Services\NurtureSequenceService;
+use App\Services\SequenceTemplateInstaller;
+use App\Support\SequenceTemplates;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -27,7 +29,26 @@ class NurtureSequenceController extends Controller
         ->orderByDesc('updated_at')
         ->get();
 
-        return view('tenant.settings.sequences.index', compact('sequences'));
+        $templates          = SequenceTemplates::all();
+        $templateCategories = SequenceTemplates::categories();
+
+        return view('tenant.settings.sequences.index', compact(
+            'sequences', 'templates', 'templateCategories'
+        ));
+    }
+
+    /**
+     * Instala um template de sequence (biblioteca de modelos).
+     */
+    public function installTemplate(string $slug, SequenceTemplateInstaller $installer): JsonResponse
+    {
+        try {
+            $tenantId = activeTenant()->id;
+            $sequence = $installer->install($tenantId, $slug);
+            return response()->json(['success' => true, 'sequence' => $sequence->load('steps')]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 404);
+        }
     }
 
     public function create(): View

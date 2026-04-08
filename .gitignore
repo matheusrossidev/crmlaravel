@@ -26,3 +26,6 @@ portainer-stack.yml
 /.vscode
 /.zed
 /futureplans
+/docs
+
+.obsidian/

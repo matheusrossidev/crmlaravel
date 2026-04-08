@@ -72,11 +72,40 @@
                 <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('sequences.title') }}</h1>
                 <p style="font-size:13.5px;color:#677489;margin:0;">{{ __('sequences.subtitle') }}</p>
             </div>
-            <a href="{{ route('settings.sequences.create') }}" class="btn-primary-sm" style="text-decoration:none;">
-                <i class="bi bi-plus-lg"></i> {{ __('sequences.new') }}
-            </a>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <button type="button" class="btn-templates-trigger" onclick="openTplLibrary('tplSequenceLibrary')">
+                    <i class="bi bi-collection"></i> {{ __('templates.btn_templates') }}
+                </button>
+                <a href="{{ route('settings.sequences.create') }}" class="btn-primary-sm" style="text-decoration:none;">
+                    <i class="bi bi-plus-lg"></i> {{ __('sequences.new') }}
+                </a>
+            </div>
         </div>
     </div>
+
+    {{-- Modal de biblioteca de templates --}}
+    @include('tenant.settings._template_library_modal', [
+        'modalId'      => 'tplSequenceLibrary',
+        'title'        => __('templates.sequence_modal_title'),
+        'subtitle'     => __('templates.sequence_modal_subtitle'),
+        'templates'    => $templates,
+        'categories'   => $templateCategories,
+        'installRoute' => 'settings.sequences.templates.install',
+        'onInstallJs'  => 'onSequenceTemplateInstalled',
+        'installedKey' => 'sequence',
+    ])
+
+    {{-- JS de integração com a biblioteca de templates --}}
+    <script>
+    window.tplLibraryRoutes = window.tplLibraryRoutes || {};
+    window.tplLibraryRoutes['tplSequenceLibrary'] = @json(route('settings.sequences.templates.install', ['slug' => '__SLUG__']));
+
+    window.onSequenceTemplateInstalled = function(sequence) {
+        if (!sequence) return;
+        // Recarrega a página pra mostrar a nova sequência
+        setTimeout(() => location.reload(), 600);
+    };
+    </script>
 
     <div class="seq-table-wrap">
         <table class="seq-table">
