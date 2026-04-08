@@ -457,7 +457,11 @@
                             {{ __('settings.billing_subscribe') }}
                         </a>
                     @elseif($tenant->subscription_status === 'active' && $isStripe && $tenant->stripe_subscription_id)
-                        <a href="{{ route('billing.stripe.portal') }}" class="btn-subscribe" style="margin-bottom:8px;">
+                        <a href="{{ route('billing.checkout', ['plan' => $tenant->plan]) }}" class="btn-subscribe" style="margin-bottom:8px;">
+                            <i class="bi bi-arrow-left-right me-1"></i>
+                            {{ __('settings.billing_change_plan') }}
+                        </a>
+                        <a href="{{ route('billing.stripe.portal') }}" class="btn-subscribe" style="margin-bottom:8px;background:#f3f4f6;color:#374151;">
                             <i class="bi bi-gear me-1"></i>
                             {{ $isStripe ? 'Manage Subscription' : __('settings.billing_manage_sub') }}
                         </a>
@@ -466,6 +470,10 @@
                             {{ __('settings.billing_cancel_sub') }}
                         </button>
                     @elseif($tenant->subscription_status === 'active' && $tenant->asaas_subscription_id)
+                        <a href="{{ route('billing.checkout', ['plan' => $tenant->plan]) }}" class="btn-subscribe" style="margin-bottom:8px;">
+                            <i class="bi bi-arrow-left-right me-1"></i>
+                            {{ __('settings.billing_change_plan') }}
+                        </a>
                         <button class="btn-cancel-sub" onclick="confirmCancel()">
                             <i class="bi bi-x-circle me-1"></i>
                             {{ __('settings.billing_cancel_sub') }}
@@ -634,25 +642,31 @@ const SLANG = @json(__('settings'));
 const IS_STRIPE_BILLING = {{ $isStripe ? 'true' : 'false' }};
 
 async function confirmCancel() {
-    const msg = IS_STRIPE_BILLING ? 'Are you sure you want to cancel your subscription?' : SLANG.billing_confirm_cancel;
+    const msg = SLANG.billing_confirm_cancel
+        || (IS_STRIPE_BILLING
+            ? 'Are you sure? Your account will be blocked immediately.'
+            : 'Tem certeza? Sua conta será bloqueada imediatamente.');
     if (!confirm(msg)) return;
 
-    const cancelUrl = IS_STRIPE_BILLING
-        ? '{{ route('billing.stripe.cancel') }}'
-        : '{{ route('billing.cancel') }}';
-
-    const method = IS_STRIPE_BILLING ? 'GET' : 'POST';
-    const headers = { 'Content-Type': 'application/json' };
-    if (!IS_STRIPE_BILLING) headers['X-CSRF-TOKEN'] = document.querySelector('meta[name=csrf-token]')?.content;
-
+    // Sempre usa POST /cobranca/cancelar — o backend trata stripe E asaas no
+    // mesmo endpoint, baseado em billing_provider/subscription_id atual.
     try {
-        const res = await fetch(cancelUrl, { method, headers });
+        const res = await fetch('{{ route('billing.cancel') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content,
+            },
+            body: JSON.stringify({ confirm: true }),
+        });
         const data = await res.json();
         if (data.success) {
             toastr.success(data.message ?? (IS_STRIPE_BILLING ? 'Subscription cancelled.' : SLANG.billing_cancelled_toast));
-            setTimeout(() => window.location.reload(), 1500);
-        } else if (data.portal_url) {
-            window.location.href = data.portal_url;
+            // Backend retorna redirect_url pra /conta/suspensa
+            setTimeout(() => {
+                window.location.href = data.redirect_url || '/conta/suspensa';
+            }, 1200);
         } else {
             toastr.error(data.message ?? (IS_STRIPE_BILLING ? 'Error cancelling subscription.' : SLANG.billing_cancel_error));
         }
@@ -660,7 +674,5 @@ async function confirmCancel() {
         toastr.error(IS_STRIPE_BILLING ? 'Connection error. Try again.' : SLANG.billing_conn_error);
     }
 }
-
-
 </script>
 @endsection

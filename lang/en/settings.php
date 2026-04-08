@@ -264,6 +264,8 @@ return [
     'billing_active_since'  => 'Subscription active since :date',
     'billing_subscribe'     => 'Subscribe now',
     'billing_cancel_sub'    => 'Cancel subscription',
+    'billing_change_plan'   => 'Change plan',
+    'billing_confirm_cancel' => 'Are you sure? Your account will be blocked immediately. You can reactivate anytime by choosing a new plan.',
     'billing_other_plans'   => 'Other plans available',
     'billing_other_sub'     => 'Upgrade or downgrade at any time.',
     'billing_upgrade'       => 'Upgrade',

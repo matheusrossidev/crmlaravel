@@ -180,7 +180,9 @@ class AuthController extends Controller
                 'referred_by_agency_id' => $agencyCode?->tenant_id,
                 'partner_commission_pct' => $agencyCode?->tenant_id ? $this->getLockedCommissionPct($agencyCode->tenant_id) : null,
                 'locale'                => $request->input('locale', 'pt_BR'),
-                'billing_provider'      => $request->input('locale', 'pt_BR') === 'pt_BR' ? 'asaas' : 'stripe',
+                // Stripe pra TODOS os novos cadastros (BR e EN). Asaas vira read-only
+                // pra clientes legados que ja tem asaas_subscription_id.
+                'billing_provider'      => 'stripe',
                 'billing_country'       => $request->input('locale', 'pt_BR') === 'pt_BR' ? 'BR' : 'US',
                 'billing_currency'      => $request->input('locale', 'pt_BR') === 'pt_BR' ? 'BRL' : 'USD',
             ]);

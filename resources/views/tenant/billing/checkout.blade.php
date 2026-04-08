@@ -218,7 +218,20 @@
 
             @php
                 $isStripeCheckout = ($tenant->billing_provider ?? 'asaas') === 'stripe';
+                $tenantCurrency   = strtoupper($tenant->billing_currency ?? 'BRL');
+                $isUSD            = $tenantCurrency === 'USD';
+                $trialExpired     = $tenant->isTrialExpired();
             @endphp
+
+            @if($trialExpired)
+            <div style="background:#FEF3C7;border:1.5px solid #FCD34D;border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;">
+                <i class="bi bi-exclamation-triangle-fill" style="color:#D97706;font-size:20px;flex-shrink:0;"></i>
+                <div style="font-size:13px;color:#92400E;line-height:1.5;">
+                    <strong>{{ $isUSD ? 'Your trial has expired' : 'Seu período de teste expirou' }}</strong><br>
+                    {{ $isUSD ? 'Choose a plan below to keep using Syncro.' : 'Escolha um plano abaixo para continuar usando o Syncro.' }}
+                </div>
+            </div>
+            @endif
 
             @if(!$isStripeCheckout)
             {{-- Progress dots (Asaas multi-step only) --}}
@@ -229,8 +242,8 @@
             </div>
             @endif
 
-            <h2 class="auth-form-title" id="stepTitle">{{ $isStripeCheckout ? 'Choose your plan' : 'Escolha seu plano' }}</h2>
-            <p class="auth-form-sub" id="stepSub">{{ $isStripeCheckout ? 'Full platform access. Cancel anytime.' : 'Acesso completo à plataforma. Cancele quando quiser.' }}</p>
+            <h2 class="auth-form-title" id="stepTitle">{{ $isUSD ? 'Choose your plan' : 'Escolha seu plano' }}</h2>
+            <p class="auth-form-sub" id="stepSub">{{ $isUSD ? 'Full platform access. Cancel anytime.' : 'Acesso completo à plataforma. Cancele quando quiser.' }}</p>
 
             {{-- Alerts --}}
             <div class="auth-success" id="alertSuccess">
@@ -248,13 +261,15 @@
                     @foreach($plans as $p)
                     @php
                         $isSelected = ($plan?->name === $p->name) || ($loop->first && !$plan);
-                        $isStripe   = ($tenant->billing_provider ?? 'asaas') === 'stripe';
-                        $planPrice  = $isStripe ? ($p->price_usd ?? $p->price_monthly) : $p->price_monthly;
-                        $currency   = $isStripe ? '$' : __('common.currency');
-                        $decSep     = $isStripe ? '.' : __('common.decimal_sep');
-                        $thousSep   = $isStripe ? ',' : __('common.thousands_sep');
-                        $perMonth   = $isStripe ? '/mo' : __('common.per_month');
-                        $pFeatures  = $isStripe
+                        // Preco e formatacao baseados na moeda do tenant (nao no provider).
+                        // Stripe trabalha com 2 produtos diferentes (BRL e USD), entao a UI
+                        // mostra o valor correto pra cada caso.
+                        $planPrice  = $p->priceFor($tenantCurrency);
+                        $currency   = $isUSD ? '$' : 'R$';
+                        $decSep     = $isUSD ? '.' : ',';
+                        $thousSep   = $isUSD ? ',' : '.';
+                        $perMonth   = $isUSD ? '/mo' : '/mês';
+                        $pFeatures  = $isUSD
                             ? (($p->features_en_json['features_list'] ?? null) ?: ($p->features_json['features_list'] ?? []))
                             : ($p->features_json['features_list'] ?? []);
                     @endphp
@@ -439,13 +454,12 @@
 <script>
 const IS_STRIPE = {{ ($tenant->billing_provider ?? 'asaas') === 'stripe' ? 'true' : 'false' }};
 @php
-    $isStripeJs = ($tenant->billing_provider ?? 'asaas') === 'stripe';
-    $firstPlanPrice = $isStripeJs
-        ? ($plan?->price_usd ?? $plans->first()?->price_usd ?? 0)
-        : ($plan?->price_monthly ?? $plans->first()?->price_monthly ?? 0);
-    $jsCurrency = $isStripeJs ? '$' : __('common.currency');
-    $jsDecSep   = $isStripeJs ? '.' : ',';
-    $jsThSep    = $isStripeJs ? ',' : '.';
+    // Formatacao baseada na moeda do tenant — Stripe trabalha com BRL E USD
+    $firstPlan      = $plan ?? $plans->first();
+    $firstPlanPrice = $firstPlan ? $firstPlan->priceFor($tenantCurrency) : 0;
+    $jsCurrency = $isUSD ? '$' : 'R$';
+    $jsDecSep   = $isUSD ? '.' : ',';
+    $jsThSep    = $isUSD ? ',' : '.';
 @endphp
 const CURRENCY = '{{ $jsCurrency }}';
 const STEPS = IS_STRIPE ? ['plan'] : ['plan', 'holder', 'card'];
@@ -533,7 +547,12 @@ function selectPlan(card) {
     const preCard = document.querySelector('.plan-card[data-plan-name="{{ $preSelectedPlan->name }}"]');
     if (preCard) {
         selectPlan(preCard);
-        if (!IS_STRIPE) {
+        if (IS_STRIPE) {
+            // Stripe: o user ja escolheu o plano clicando em "Trocar plano" no billing.
+            // Pula o passo de selecao e dispara o checkout direto. UX = 1 click.
+            setTimeout(() => handleStripeSubscribe(), 100);
+        } else {
+            // Asaas: avanca pro passo 2 (dados do titular)
             currentIdx = 1;
             updateUI();
         }

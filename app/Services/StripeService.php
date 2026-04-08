@@ -50,6 +50,13 @@ class StripeService
     /**
      * Create a Stripe Checkout Session for a subscription.
      * Returns the Checkout URL to redirect the user to.
+     *
+     * NOTA: Stripe nao suporta PIX em mode=subscription (recurring) — so em
+     * mode=payment (one-time). Por isso `payment_method_types` aqui fica
+     * limitado a metodos compativeis com subscriptions: card (sempre) e
+     * outros como sepa_debit, boleto, etc se a moeda permitir. Pra novos
+     * brasileiros oferecemos so cartao em recurring; PIX so esta disponivel
+     * em compras one-time como token increments.
      */
     public function createSubscriptionCheckout(
         string $customerId,
@@ -57,11 +64,12 @@ class StripeService
         string $successUrl,
         string $cancelUrl,
         array $metadata = [],
+        array $paymentMethodTypes = ['card'],
     ): CheckoutSession {
         return CheckoutSession::create([
             'customer'             => $customerId,
             'mode'                 => 'subscription',
-            'payment_method_types' => ['card'],
+            'payment_method_types' => $paymentMethodTypes,
             'line_items'           => [
                 [
                     'price'    => $priceId,

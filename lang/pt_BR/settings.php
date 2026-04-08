@@ -264,6 +264,8 @@ return [
     'billing_active_since'  => 'Assinatura ativa desde :date',
     'billing_subscribe'     => 'Assinar agora',
     'billing_cancel_sub'    => 'Cancelar assinatura',
+    'billing_change_plan'   => 'Trocar plano',
+    'billing_confirm_cancel' => 'Tem certeza que quer cancelar? Sua conta será bloqueada imediatamente. Você pode reativar a qualquer momento escolhendo um novo plano.',
     'billing_other_plans'   => 'Outros planos disponíveis',
     'billing_other_sub'     => 'Faça upgrade ou downgrade a qualquer momento.',
     'billing_upgrade'       => 'Fazer upgrade',

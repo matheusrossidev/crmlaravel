@@ -71,8 +71,13 @@ class BillingController extends Controller
             ->orderBy('day')
             ->get();
 
-        // Buscar histórico de cobranças do Asaas
+        // Historico de cobrancas — unifica Asaas API + PaymentLog (Stripe).
+        // Asaas retorna direto da API (formato proprietario). Stripe a gente le do
+        // PaymentLog que o webhook ja popula em todos os 3 eventos relevantes
+        // (checkout.completed, invoice.payment_succeeded, subscription.deleted).
+        // Normalizamos pro mesmo shape pra view nao precisar saber a origem.
         $charges = collect();
+
         if ($tenant->asaas_customer_id) {
             try {
                 $asaas = app(AsaasService::class);
@@ -81,6 +86,33 @@ class BillingController extends Controller
             } catch (\Throwable $e) {
                 \Log::warning('BillingController: falha ao buscar cobranças Asaas', ['error' => $e->getMessage()]);
             }
+        }
+
+        if ($tenant->stripe_customer_id || $tenant->billing_provider === 'stripe') {
+            $stripeLogs = \App\Models\PaymentLog::where('tenant_id', $tenant->id)
+                ->where('type', 'subscription')
+                ->orderByDesc('paid_at')
+                ->limit(50)
+                ->get();
+
+            $stripeCharges = $stripeLogs->map(function ($log) {
+                return [
+                    'dateCreated' => $log->paid_at?->toIso8601String(),
+                    'description' => $log->description,
+                    'value'       => (float) $log->amount,
+                    'billingType' => 'CREDIT_CARD', // Stripe subscription = sempre cartao
+                    'status'      => match ($log->status) {
+                        'paid', 'confirmed', 'received' => 'CONFIRMED',
+                        'pending'                       => 'PENDING',
+                        'failed', 'overdue'             => 'OVERDUE',
+                        'refunded'                      => 'REFUNDED',
+                        default                         => strtoupper((string) $log->status),
+                    },
+                    'invoiceUrl'  => null, // PaymentLog nao guarda invoice URL hoje — futuro: salvar do webhook
+                ];
+            });
+
+            $charges = $charges->concat($stripeCharges)->sortByDesc('dateCreated')->values();
         }
 
         return view('tenant.settings.billing', compact(
@@ -98,11 +130,13 @@ class BillingController extends Controller
             return redirect()->route('dashboard');
         }
 
-        // Auto-correct billing_provider based on locale (only if no active subscription)
-        $expectedProvider = ($tenant->locale ?? 'pt_BR') === 'en' ? 'stripe' : 'asaas';
-        if (($tenant->billing_provider ?? 'asaas') !== $expectedProvider
-            && !$tenant->asaas_subscription_id && !$tenant->stripe_subscription_id) {
-            $tenant->update(['billing_provider' => $expectedProvider]);
+        // Tenant sem subscription ativa em nenhum gateway -> default Stripe.
+        // Tenants legados com asaas_subscription_id MANTEM Asaas (forever locked).
+        // Se a sub Asaas for cancelada/expirada, o proximo checkout vai pro Stripe.
+        if (! $tenant->asaas_subscription_id && ! $tenant->stripe_subscription_id) {
+            if (($tenant->billing_provider ?? '') !== 'stripe') {
+                $tenant->update(['billing_provider' => 'stripe']);
+            }
         }
 
         $plan = PlanDefinition::where('name', $tenant->plan)->first();
@@ -295,8 +329,20 @@ class BillingController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if (! $plan || ! $plan->stripe_price_id) {
-            return response()->json(['success' => false, 'message' => 'Plan not available for Stripe.'], 422);
+        if (! $plan) {
+            return response()->json(['success' => false, 'message' => 'Plano nao encontrado.'], 422);
+        }
+
+        // Resolve o price_id correto baseado na moeda do tenant.
+        // Cada plano tem 2 produtos no Stripe (BRL e USD) — sao prices diferentes.
+        $currency = strtoupper($tenant->billing_currency ?? 'BRL');
+        $priceId  = $plan->stripePriceIdFor($currency);
+
+        if (! $priceId) {
+            return response()->json([
+                'success' => false,
+                'message' => "Plano '{$plan->display_name}' ainda nao tem Stripe Price ID configurado para {$currency}. Avise o administrador.",
+            ], 422);
         }
 
         try {
@@ -311,15 +357,16 @@ class BillingController extends Controller
 
             $tenant->update(['stripe_customer_id' => $customer->id]);
 
-            // Create Checkout Session
+            // Create Checkout Session — passa o priceId correto pra moeda do tenant
             $session = $stripe->createSubscriptionCheckout(
                 $customer->id,
-                $plan->stripe_price_id,
+                $priceId,
                 route('billing.stripe.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 route('billing.stripe.cancel'),
                 [
                     'tenant_id' => (string) $tenant->id,
                     'plan_name' => $plan->name,
+                    'currency'  => $currency,
                 ],
             );
 
@@ -379,6 +426,12 @@ class BillingController extends Controller
 
     public function cancel(Request $request): JsonResponse
     {
+        // Defesa contra cancelamento acidental: o front DEVE enviar confirm=true
+        // junto com o submit. UI usa confirmAction() pra exigir confirmacao explicita.
+        $request->validate([
+            'confirm' => 'required|accepted',
+        ]);
+
         $tenant = activeTenant();
         $user   = auth()->user();
 
@@ -388,6 +441,9 @@ class BillingController extends Controller
         if (! $isStripe && ! $isAsaas) {
             return response()->json(['success' => false, 'message' => 'Nenhuma assinatura ativa.'], 422);
         }
+
+        $gateway = $isStripe ? 'stripe' : 'asaas';
+        $beforeStatus = $tenant->status;
 
         try {
             if ($isStripe) {
@@ -408,6 +464,15 @@ class BillingController extends Controller
                 ]);
             }
 
+            \Log::channel('whatsapp')->info('Tenant cancelou assinatura', [
+                'tenant_id'     => $tenant->id,
+                'tenant_name'   => $tenant->name,
+                'gateway'       => $gateway,
+                'before_status' => $beforeStatus,
+                'after_status'  => 'inactive',
+                'user_id'       => $user->id,
+            ]);
+
             try {
                 $plan = PlanDefinition::where('name', $tenant->plan)->first();
                 Mail::to($user->email)->send(new SubscriptionCancelled($user, $tenant, $plan));
@@ -416,8 +481,9 @@ class BillingController extends Controller
             }
 
             return response()->json([
-                'success' => true,
-                'message' => 'Assinatura cancelada com sucesso.',
+                'success'      => true,
+                'message'      => 'Assinatura cancelada com sucesso.',
+                'redirect_url' => route('account.suspended'),
             ]);
 
         } catch (\RuntimeException $e) {

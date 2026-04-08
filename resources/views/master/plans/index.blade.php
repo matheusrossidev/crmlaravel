@@ -59,11 +59,17 @@
                             <span style="color:#9ca3af;font-size:12px;">—</span>
                         @endif
                     </td>
-                    <td>
-                        @if($plan->stripe_price_id)
-                            <code style="font-size:11px;background:#f3f4f6;padding:2px 6px;border-radius:4px;">{{ Str::limit($plan->stripe_price_id, 18) }}</code>
-                        @else
-                            <span style="color:#9ca3af;font-size:12px;">—</span>
+                    <td style="font-size:11px;">
+                        @if($plan->stripe_price_id_brl)
+                            <div style="margin-bottom:2px;"><strong style="color:#16a34a;">BRL:</strong> <code style="background:#f3f4f6;padding:1px 5px;border-radius:4px;">{{ Str::limit($plan->stripe_price_id_brl, 14) }}</code></div>
+                        @endif
+                        @if($plan->stripe_price_id_usd)
+                            <div><strong style="color:#2563eb;">USD:</strong> <code style="background:#f3f4f6;padding:1px 5px;border-radius:4px;">{{ Str::limit($plan->stripe_price_id_usd, 14) }}</code></div>
+                        @endif
+                        @if(! $plan->stripe_price_id_brl && ! $plan->stripe_price_id_usd && ! $plan->stripe_price_id)
+                            <span style="color:#9ca3af;">—</span>
+                        @elseif(! $plan->stripe_price_id_brl && ! $plan->stripe_price_id_usd && $plan->stripe_price_id)
+                            <code style="background:#fef3c7;padding:1px 5px;border-radius:4px;color:#92400e;" title="Legacy field, edit to migrate">legacy</code>
                         @endif
                     </td>
                     <td>
@@ -178,14 +184,30 @@
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
             <div>
-                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Stripe Price ID</label>
-                <input type="text" id="planStripePriceId" class="form-control" placeholder="price_1Abc..." style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;">
-                <div style="font-size:11px;color:#9ca3af;margin-top:3px;">ID do preço no Stripe Dashboard</div>
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">
+                    <span style="color:#16a34a;">●</span> Stripe Price ID — BRL
+                </label>
+                <input type="text" id="planStripePriceIdBrl" class="form-control" placeholder="price_1Abc..." style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;">
+                <div style="font-size:11px;color:#9ca3af;margin-top:3px;">ID do produto recurring em Real (R$)</div>
             </div>
+            <div>
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">
+                    <span style="color:#2563eb;">●</span> Stripe Price ID — USD
+                </label>
+                <input type="text" id="planStripePriceIdUsd" class="form-control" placeholder="price_1Abc..." style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;">
+                <div style="font-size:11px;color:#9ca3af;margin-top:3px;">ID do produto recurring em Dólar ($)</div>
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
             <div>
                 <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Dias de trial gratuito</label>
                 <input type="number" id="planTrialDays" min="0" max="365" placeholder="ex: 14" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;">
                 <div style="font-size:11px;color:#9ca3af;margin-top:3px;">Vazio = sem período trial</div>
+            </div>
+            <div>
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Stripe Price ID (legacy)</label>
+                <input type="text" id="planStripePriceId" class="form-control" placeholder="(opcional, deprecado)" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;background:#f9fafb;color:#9ca3af;">
+                <div style="font-size:11px;color:#9ca3af;margin-top:3px;">Campo antigo. Use BRL/USD acima.</div>
             </div>
         </div>
 
@@ -405,6 +427,8 @@ function openNewPlan() {
     document.getElementById('planPrice').value = '0';
     document.getElementById('planPriceUsd').value = '';
     document.getElementById('planStripePriceId').value = '';
+    document.getElementById('planStripePriceIdBrl').value = '';
+    document.getElementById('planStripePriceIdUsd').value = '';
     document.getElementById('planTrialDays').value = '';
     document.getElementById('fMaxUsers').value = '5';
     document.getElementById('fMaxLeads').value = '1000';
@@ -442,6 +466,8 @@ function editPlan(id, plan) {
     document.getElementById('planPrice').value = plan.price_monthly;
     document.getElementById('planPriceUsd').value = plan.price_usd || '';
     document.getElementById('planStripePriceId').value = plan.stripe_price_id || '';
+    document.getElementById('planStripePriceIdBrl').value = plan.stripe_price_id_brl || '';
+    document.getElementById('planStripePriceIdUsd').value = plan.stripe_price_id_usd || '';
     document.getElementById('planTrialDays').value = (plan.trial_days !== null && plan.trial_days !== undefined) ? plan.trial_days : '';
     const f = plan.features_json || {};
     document.getElementById('fMaxUsers').value       = f.max_users ?? 5;
@@ -470,16 +496,20 @@ async function savePlan() {
 
     const trialRaw = document.getElementById('planTrialDays').value;
 
-    const priceUsdRaw = document.getElementById('planPriceUsd').value;
-    const stripePriceId = document.getElementById('planStripePriceId').value.trim();
+    const priceUsdRaw      = document.getElementById('planPriceUsd').value;
+    const stripePriceId    = document.getElementById('planStripePriceId').value.trim();
+    const stripePriceIdBrl = document.getElementById('planStripePriceIdBrl').value.trim();
+    const stripePriceIdUsd = document.getElementById('planStripePriceIdUsd').value.trim();
 
     const payload = {
-        name:             document.getElementById('planName').value,
-        display_name:     document.getElementById('planDisplayName').value,
-        price_monthly:    parseFloat(document.getElementById('planPrice').value) || 0,
-        price_usd:        priceUsdRaw !== '' ? parseFloat(priceUsdRaw) : null,
-        stripe_price_id:  stripePriceId || null,
-        trial_days:       trialRaw !== '' ? parseInt(trialRaw) : null,
+        name:                 document.getElementById('planName').value,
+        display_name:         document.getElementById('planDisplayName').value,
+        price_monthly:        parseFloat(document.getElementById('planPrice').value) || 0,
+        price_usd:            priceUsdRaw !== '' ? parseFloat(priceUsdRaw) : null,
+        stripe_price_id:      stripePriceId || null,
+        stripe_price_id_brl:  stripePriceIdBrl || null,
+        stripe_price_id_usd:  stripePriceIdUsd || null,
+        trial_days:           trialRaw !== '' ? parseInt(trialRaw) : null,
         is_active:        document.getElementById('fIsActive').checked ? 1 : 0,
         is_visible:       document.getElementById('fIsVisible').checked ? 1 : 0,
         features_json: {
