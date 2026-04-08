@@ -376,12 +376,17 @@
                     <div class="current-plan-label">{{ __('settings.billing_current_plan') }}</div>
                     <div class="current-plan-name">{{ $plan?->display_name ?? __('settings.billing_current_plan') }}</div>
                     @php
+                        // $isStripe = qual gateway processa o pagamento (stripe/asaas)
+                        // $isUSD    = qual moeda/idioma o tenant ve (BRL ou USD)
+                        // Os DOIS sao independentes — Stripe trabalha com BRL E USD.
+                        // Toda decisao de UI (cifrao, separadores, lingua) e baseada em isUSD.
                         $isStripe    = ($tenant->billing_provider ?? 'asaas') === 'stripe';
-                        $bCurrency   = $isStripe ? '$' : __('common.currency');
-                        $bDecSep     = $isStripe ? '.' : __('common.decimal_sep');
-                        $bThSep      = $isStripe ? ',' : __('common.thousands_sep');
-                        $bPerMonth   = $isStripe ? '/mo' : __('settings.billing_per_month');
-                        $bPlanPrice  = $isStripe ? ($plan?->price_usd ?? $plan?->price_monthly ?? 0) : ($plan?->price_monthly ?? 0);
+                        $isUSD       = strtoupper($tenant->billing_currency ?? 'BRL') === 'USD';
+                        $bCurrency   = $isUSD ? '$' : __('common.currency');
+                        $bDecSep     = $isUSD ? '.' : __('common.decimal_sep');
+                        $bThSep      = $isUSD ? ',' : __('common.thousands_sep');
+                        $bPerMonth   = $isUSD ? '/mo' : __('settings.billing_per_month');
+                        $bPlanPrice  = $isUSD ? ($plan?->price_usd ?? $plan?->price_monthly ?? 0) : ($plan?->price_monthly ?? 0);
                     @endphp
                     <div class="current-plan-price">
                         @if($plan && $bPlanPrice > 0)
@@ -416,7 +421,7 @@
 
                     {{-- Features list --}}
                     @php
-                        $featuresList = $isStripe
+                        $featuresList = $isUSD
                             ? (($plan?->features_en_json['features_list'] ?? null) ?: ($plan?->features_json['features_list'] ?? []))
                             : ($plan?->features_json['features_list'] ?? []);
                     @endphp
@@ -438,10 +443,10 @@
                     {{-- Meta info --}}
                     <div class="plan-meta">
                         @if($tenant->status === 'trial' && $tenant->trial_ends_at)
-                            {{ __('settings.billing_trial_expires', ['date' => $tenant->trial_ends_at->format($isStripe ? 'M d, Y' : 'd/m/Y')]) }}
+                            {{ __('settings.billing_trial_expires', ['date' => $tenant->trial_ends_at->format($isUSD ? 'M d, Y' : 'd/m/Y')]) }}
                             ({{ $tenant->trial_ends_at->diffForHumans() }})
                         @elseif($tenant->subscription_status === 'active' && ($tenant->asaas_subscription_id || $tenant->stripe_subscription_id))
-                            {{ __('settings.billing_active_since', ['date' => $tenant->updated_at->format($isStripe ? 'M d, Y' : 'd/m/Y')]) }}
+                            {{ __('settings.billing_active_since', ['date' => $tenant->updated_at->format($isUSD ? 'M d, Y' : 'd/m/Y')]) }}
                         @endif
                         @if($tenant->asaas_subscription_id)
                             <br>ID: <strong>{{ $tenant->asaas_subscription_id }}</strong>
@@ -463,7 +468,7 @@
                         </a>
                         <a href="{{ route('billing.stripe.portal') }}" class="btn-subscribe" style="margin-bottom:8px;background:#f3f4f6;color:#374151;">
                             <i class="bi bi-gear me-1"></i>
-                            {{ $isStripe ? 'Manage Subscription' : __('settings.billing_manage_sub') }}
+                            {{ $isUSD ? 'Manage Subscription' : __('settings.billing_manage_sub') }}
                         </a>
                         <button class="btn-cancel-sub" onclick="confirmCancel()">
                             <i class="bi bi-x-circle me-1"></i>
@@ -507,14 +512,14 @@
             </div>
 
             @php
-                $otherPlans = $plans->filter(fn($p) => $p->name !== $tenant->plan && ($isStripe ? ($p->price_usd ?? $p->price_monthly) : $p->price_monthly) > 0);
+                $otherPlans = $plans->filter(fn($p) => $p->name !== $tenant->plan && ($isUSD ? ($p->price_usd ?? $p->price_monthly) : $p->price_monthly) > 0);
             @endphp
 
             @if($otherPlans->isNotEmpty())
                 @foreach($otherPlans as $p)
                 @php
-                    $opPrice    = $isStripe ? ($p->price_usd ?? $p->price_monthly) : $p->price_monthly;
-                    $pFeatures  = $isStripe
+                    $opPrice    = $isUSD ? ($p->price_usd ?? $p->price_monthly) : $p->price_monthly;
+                    $pFeatures  = $isUSD
                         ? (($p->features_en_json['features_list'] ?? null) ?: ($p->features_json['features_list'] ?? []))
                         : ($p->features_json['features_list'] ?? []);
                 @endphp
@@ -606,7 +611,7 @@
                     };
                 @endphp
                 <tr>
-                    <td>{{ \Carbon\Carbon::parse($charge['dateCreated'] ?? $charge['created_at'] ?? now())->format($isStripe ? 'M d, Y' : 'd/m/Y') }}</td>
+                    <td>{{ \Carbon\Carbon::parse($charge['dateCreated'] ?? $charge['created_at'] ?? now())->format($isUSD ? 'M d, Y' : 'd/m/Y') }}</td>
                     <td>{{ $charge['description'] ?? '-' }}</td>
                     <td style="font-weight:600;">{{ $bCurrency }} {{ number_format((float)($charge['value'] ?? $charge['amount'] ?? 0), 2, $bDecSep, $bThSep) }}</td>
                     <td>
