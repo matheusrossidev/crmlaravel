@@ -124,6 +124,101 @@ $pageIcon = 'person-badge';
     white-space: nowrap;
 }
 .lp-seq-banner-link:hover { color: #059669; }
+.lp-seq-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.lp-seq-list .lp-seq-banner { margin-bottom: 0; }
+.lp-seq-banner-actions { display: flex; align-items: center; gap: 8px; }
+.lp-seq-unenroll-btn {
+    background: #fef2f2;
+    color: #ef4444;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 6px 9px;
+    cursor: pointer;
+    transition: .15s;
+    font-size: 12px;
+    line-height: 1;
+}
+.lp-seq-unenroll-btn:hover { background: #fee2e2; }
+.lp-seq-status-paused {
+    display: inline-block;
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 99px;
+    margin-left: 6px;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+}
+
+/* ── Botao + popover de inscricao manual em sequencia ── */
+.lp-seq-enroll-wrapper { position: relative; align-self: flex-start; }
+.lp-seq-enroll-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #eff6ff;
+    color: #0085f3;
+    border: 1.5px dashed #bfdbfe;
+    border-radius: 10px;
+    padding: 9px 16px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: .15s;
+}
+.lp-seq-enroll-btn:hover { background: #dbeafe; border-style: solid; }
+.lp-seq-enroll-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 50;
+    background: #fff;
+    border: 1px solid #e8eaf0;
+    border-radius: 12px;
+    padding: 14px;
+    width: 320px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+.lp-seq-enroll-popover[hidden] { display: none; }
+.lp-seq-enroll-popover-header {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1a1d23;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 8px;
+}
+.lp-seq-enroll-select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1.5px solid #e8eaf0;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+.lp-seq-enroll-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.lp-seq-enroll-cancel {
+    background: none;
+    border: 1px solid #e5e7eb;
+    color: #6b7280;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+}
+.lp-seq-enroll-confirm {
+    background: #0085f3;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.lp-seq-enroll-confirm:hover { background: #0070d1; }
 
 /* Collapsible UTM */
 .lp-utm-body { overflow: hidden; transition: max-height .25s ease; max-height: 500px; }
@@ -983,24 +1078,73 @@ $pageIcon = 'person-badge';
 </div>
 @endif
 
-{{-- ── Sequence Banner ── --}}
+{{-- ── Sequencias ativas (active + paused) ── --}}
 @php
-    $activeSeq = $lead->activeSequence;
+    $activeSeqs = $lead->leadSequences->whereIn('status', ['active', 'paused'])->values();
 @endphp
-@if($activeSeq && $activeSeq->sequence)
-<div class="lp-seq-banner">
-    <div class="lp-seq-banner-left">
-        <div class="lp-seq-banner-icon"><i class="bi bi-arrow-repeat"></i></div>
-        <div>
-            <div class="lp-seq-banner-name">{{ $activeSeq->sequence->name }}</div>
-            <div class="lp-seq-banner-step">{{ __('sequences.badge_step', ['current' => $activeSeq->current_step_position, 'total' => $activeSeq->sequence->steps->count()]) }}</div>
+<div class="lp-seq-list">
+    @foreach($activeSeqs as $ls)
+        @if($ls->sequence)
+        <div class="lp-seq-banner" data-ls-id="{{ $ls->id }}">
+            <div class="lp-seq-banner-left">
+                <div class="lp-seq-banner-icon"><i class="bi bi-arrow-repeat"></i></div>
+                <div>
+                    <div class="lp-seq-banner-name">
+                        {{ $ls->sequence->name }}
+                        @if($ls->status === 'paused')
+                            <span class="lp-seq-status-paused">{{ __('leads.seq_status_paused') }}</span>
+                        @endif
+                    </div>
+                    <div class="lp-seq-banner-step">
+                        {{ __('sequences.badge_step', ['current' => $ls->current_step_position, 'total' => $ls->sequence->steps->count()]) }}
+                        @if($ls->next_step_at)
+                            · {{ __('leads.seq_next_at', ['time' => $ls->next_step_at->diffForHumans()]) }}
+                        @endif
+                    </div>
+                </div>
+            </div>
+            <div class="lp-seq-banner-actions">
+                <a href="{{ route('settings.sequences.edit', $ls->sequence) }}" class="lp-seq-banner-link">
+                    {{ __('leads.view_sequence') }} <i class="bi bi-arrow-right"></i>
+                </a>
+                <button type="button"
+                        class="lp-seq-unenroll-btn js-seq-unenroll"
+                        data-sequence-id="{{ $ls->sequence->id }}"
+                        data-sequence-name="{{ $ls->sequence->name }}"
+                        title="{{ __('leads.unenroll_sequence') }}">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+        @endif
+    @endforeach
+
+    {{-- Botao + popover de inscricao manual em sequencia --}}
+    @if($activeNurtureSequences->isNotEmpty())
+    <div class="lp-seq-enroll-wrapper">
+        <button type="button" class="lp-seq-enroll-btn" id="leadEnrollSeqBtn">
+            <i class="bi bi-plus-lg"></i> {{ __('leads.enroll_in_sequence') }}
+        </button>
+        <div class="lp-seq-enroll-popover" id="leadEnrollSeqPopover" hidden>
+            <div class="lp-seq-enroll-popover-header">{{ __('leads.enroll_choose_sequence') }}</div>
+            <select class="lp-seq-enroll-select" id="leadEnrollSeqSelect">
+                <option value="">{{ __('leads.enroll_select_placeholder') }}</option>
+                @foreach($activeNurtureSequences as $seq)
+                    <option value="{{ $seq->id }}" data-name="{{ $seq->name }}">{{ $seq->name }}</option>
+                @endforeach
+            </select>
+            <div class="lp-seq-enroll-actions">
+                <button type="button" class="lp-seq-enroll-cancel" id="leadEnrollSeqCancel">
+                    {{ __('leads.enroll_cancel') }}
+                </button>
+                <button type="button" class="lp-seq-enroll-confirm" id="leadEnrollSeqConfirm">
+                    <i class="bi bi-check-lg"></i> {{ __('leads.enroll_confirm') }}
+                </button>
+            </div>
         </div>
     </div>
-    <a href="{{ route('settings.sequences.edit', $activeSeq->sequence) }}" class="lp-seq-banner-link">
-        {{ __('leads.view_sequence') }} <i class="bi bi-arrow-right"></i>
-    </a>
+    @endif
 </div>
-@endif
 
 {{-- ── Main grid ── --}}
 <div class="lp-grid">
@@ -2882,5 +3026,107 @@ function deleteContact(id) {
 
 // Load contacts on page ready
 document.addEventListener('DOMContentLoaded', loadContacts);
+
+// URL base das rotas de sequencia (resolve subpath /crm/public em dev)
+const SEQ_ENROLL_BASE   = @json(url('/configuracoes/sequencias'));
+
+// ── Enroll manual em sequencia (Nurture) ─────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    const enrollBtn     = document.getElementById('leadEnrollSeqBtn');
+    const popover       = document.getElementById('leadEnrollSeqPopover');
+    const enrollSelect  = document.getElementById('leadEnrollSeqSelect');
+    const enrollConfirm = document.getElementById('leadEnrollSeqConfirm');
+    const enrollCancel  = document.getElementById('leadEnrollSeqCancel');
+
+    if (!enrollBtn || !popover) return;
+
+    const LEAD_ID = {{ $lead->id }};
+    const CSRF    = document.querySelector('meta[name="csrf-token"]')?.content;
+
+    const closePopover = () => { popover.hidden = true; };
+    const openPopover  = () => { popover.hidden = false; enrollSelect.focus(); };
+
+    enrollBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (popover.hidden) openPopover(); else closePopover();
+    });
+
+    enrollCancel.addEventListener('click', closePopover);
+
+    // Fecha quando clica fora
+    document.addEventListener('click', (e) => {
+        if (popover.hidden) return;
+        if (popover.contains(e.target) || enrollBtn.contains(e.target)) return;
+        closePopover();
+    });
+
+    enrollConfirm.addEventListener('click', async () => {
+        const seqId = enrollSelect.value;
+        if (!seqId) {
+            if (typeof toastr !== 'undefined') toastr.warning(LLANG.enroll_select_placeholder || 'Escolha uma sequencia.');
+            return;
+        }
+        const seqName = enrollSelect.options[enrollSelect.selectedIndex]?.dataset.name || '';
+        try {
+            const res = await fetch(`${SEQ_ENROLL_BASE}/${seqId}/enroll`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': CSRF,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ lead_ids: [LEAD_ID] }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.success) {
+                if (data.enrolled === 0) {
+                    if (typeof toastr !== 'undefined') toastr.info(LLANG.enroll_already || 'O lead ja esta nessa sequencia.');
+                } else {
+                    if (typeof toastr !== 'undefined') toastr.success((LLANG.enroll_success || 'Lead inscrito em ":name".').replace(':name', seqName));
+                    setTimeout(() => location.reload(), 700);
+                }
+            } else {
+                if (typeof toastr !== 'undefined') toastr.error(LLANG.enroll_error || 'Erro ao inscrever.');
+            }
+        } catch (e) {
+            if (typeof toastr !== 'undefined') toastr.error(LLANG.enroll_error || 'Erro ao inscrever.');
+        }
+    });
+});
+
+// ── Unenroll de sequencia (Nurture) ──────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    const LEAD_ID = {{ $lead->id }};
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
+
+    document.querySelectorAll('.js-seq-unenroll').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const seqId = this.dataset.sequenceId;
+            const seqName = this.dataset.sequenceName || '';
+            const msg = (LLANG.confirm_unenroll || 'Tem certeza?').replace(':name', seqName);
+            if (!confirm(msg)) return;
+
+            try {
+                const res = await fetch(`${SEQ_ENROLL_BASE}/${seqId}/unenroll`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': CSRF,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ lead_id: LEAD_ID }),
+                });
+                if (res.ok) {
+                    if (typeof toastr !== 'undefined') toastr.success(LLANG.toast_unenrolled || 'OK');
+                    setTimeout(() => location.reload(), 600);
+                } else {
+                    if (typeof toastr !== 'undefined') toastr.error(LLANG.toast_unenroll_error || 'Erro');
+                }
+            } catch (e) {
+                if (typeof toastr !== 'undefined') toastr.error(LLANG.toast_unenroll_error || 'Erro');
+            }
+        });
+    });
+});
 </script>
 @endpush

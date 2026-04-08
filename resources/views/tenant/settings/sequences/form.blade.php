@@ -265,6 +265,7 @@ const INDEX_URL  = {!! json_encode(route('settings.sequences')) !!};
 
 const STEP_ICONS = { message: 'chat-dots', wait_reply: 'hourglass-split', action: 'lightning', condition: 'signpost-split' };
 const STEP_LABELS = { message: SLANG.step_message, wait_reply: SLANG.step_wait_reply, action: SLANG.step_action, condition: SLANG.step_condition };
+const WHATSAPP_INSTANCES = @json($whatsappInstances ?? []);
 
 let steps = [];
 let lastFocusedTextarea = null;
@@ -308,8 +309,21 @@ function renderSteps() {
         // Step config HTML
         let configHtml = '';
         if (step.type === 'message') {
+            const insOpts = WHATSAPP_INSTANCES.map(ins => {
+                const lbl = (ins.label || ins.phone_number || ('#' + ins.id)) + (ins.is_primary ? ' ★' : '');
+                const sel = (step.config.instance_id == ins.id) ? 'selected' : '';
+                return `<option value="${ins.id}" ${sel}>${escapeHtml(lbl)}</option>`;
+            }).join('');
+            const insBlock = WHATSAPP_INSTANCES.length > 0 ? `
+                <label class="fg-label">${SLANG.step_send_via || 'Enviar via'}</label>
+                <select class="fg-select" data-step="${i}"
+                        onchange="steps[${i}].config.instance_id = this.value ? parseInt(this.value) : null">
+                    <option value="">${SLANG.step_send_via_auto || 'Automático (conversa atual ou padrão do tenant)'}</option>
+                    ${insOpts}
+                </select>` : '';
             configHtml = `
-                <label class="fg-label">${SLANG.step_body}</label>
+                ${insBlock}
+                <label class="fg-label" style="margin-top:8px;">${SLANG.step_body}</label>
                 <textarea class="fg-textarea step-textarea" data-step="${i}" placeholder="${SLANG.step_body_ph}"
                     onfocus="lastFocusedTextarea=this">${escapeHtml(step.config.body || '')}</textarea>`;
         } else if (step.type === 'wait_reply') {

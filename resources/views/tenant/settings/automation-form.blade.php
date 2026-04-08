@@ -420,6 +420,9 @@
                 <div class="af-block-item action" onclick="addActionBlock('create_task')">
                     <span class="af-block-icon"><i class="bi bi-check2-square"></i></span>{{ __('automations.sidebar_act_create_task') }}
                 </div>
+                <div class="af-block-item action" onclick="addActionBlock('enroll_sequence')">
+                    <span class="af-block-icon"><i class="bi bi-arrow-repeat"></i></span>{{ __('automations.sidebar_act_enroll_sequence') }}
+                </div>
                 <div class="af-block-item action" onclick="addActionBlock('ai_extract_fields')">
                     <span class="af-block-icon"><i class="bi bi-magic"></i></span>{{ __('automations.sidebar_act_ai_extract_fields') }}
                 </div>
@@ -474,6 +477,7 @@ const PIPELINES      = @json($pipelinesJs);
 const USERS          = @json($users);
 const AI_AGENTS      = @json($aiAgents);
 const CHATBOT_FLOWS  = @json($chatbotFlows);
+const SEQUENCES      = @json($sequences ?? []);
 const DEPARTMENTS    = @json($departments);
 const WAHA_CONNECTED = {{ $wahaConnected ? 'true' : 'false' }};
 const WHATSAPP_INSTANCES = @json($whatsappInstances);
@@ -811,6 +815,7 @@ const ACTION_META = {
     schedule_whatsapp_message: { icon:'bi-clock',       label: AUTLANG.sidebar_act_schedule_whatsapp_message },
     set_utm_params:            { icon:'bi-link-45deg',  label: AUTLANG.sidebar_act_set_utm_params },
     create_task:               { icon:'bi-check2-square', label: AUTLANG.sidebar_act_create_task },
+    enroll_sequence:           { icon:'bi-arrow-repeat',  label: AUTLANG.sidebar_act_enroll_sequence },
     ai_extract_fields:         { icon:'bi-magic',         label: AUTLANG.sidebar_act_ai_extract_fields },
     send_webhook:              { icon:'bi-broadcast',     label: AUTLANG.sidebar_act_send_webhook },
 };
@@ -899,6 +904,12 @@ function buildActionBody(type, idx, prefill) {
         return `<label>${h(AUTLANG.label_flow)}</label><select class="form-select" id="aval-${idx}">
             <option value="">${h(AUTLANG.placeholder_select)}</option>${fOpts}</select>`;
     }
+    if (type === 'enroll_sequence') {
+        if (!SEQUENCES.length) return `<p style="font-size:12px;color:#9ca3af;margin:0;">${h(AUTLANG.no_sequences)}</p>`;
+        const sOpts = SEQUENCES.map(s => `<option value="${s.id}" ${prefill.sequence_id==s.id?'selected':''}>${h(s.name)}</option>`).join('');
+        return `<label>${h(AUTLANG.label_sequence)}</label><select class="form-select" id="aval-${idx}">
+            <option value="">${h(AUTLANG.placeholder_select)}</option>${sOpts}</select>`;
+    }
     if (type === 'transfer_to_department') {
         if (!DEPARTMENTS.length) return `<p style="font-size:12px;color:#9ca3af;margin:0;">${h(AUTLANG.no_departments)}</p>`;
         const dOpts = DEPARTMENTS.map(d => `<option value="${d.id}" ${prefill.department_id==d.id?'selected':''}>${h(d.name)}</option>`).join('');
@@ -924,12 +935,28 @@ function buildActionBody(type, idx, prefill) {
     }
     if (type === 'send_whatsapp_message') {
         if (!WAHA_CONNECTED) return `<p style="font-size:12px;color:#f59e0b;margin:0;"><i class="bi bi-exclamation-triangle me-1"></i>${h(AUTLANG.no_whatsapp_instance)}</p>`;
-        return `<label>${h(AUTLANG.label_message)} <small style="font-weight:400;color:#9ca3af;">(${MSG_VARS_HINT})</small></label>
+        const insOpts = WHATSAPP_INSTANCES.map(i => {
+            const lbl = i.label || i.phone_number || ('#' + i.id);
+            return `<option value="${i.id}" ${prefill.instance_id==i.id?'selected':''}>${h(lbl)}</option>`;
+        }).join('');
+        return `<label>${h(AUTLANG.label_instance || 'Enviar via')}</label>
+            <select class="form-control" id="ainstance-${idx}">
+                <option value="">${h(AUTLANG.instance_auto || 'Automático (conversa ou padrão do tenant)')}</option>${insOpts}
+            </select>
+            <label style="margin-top:8px;">${h(AUTLANG.label_message)} <small style="font-weight:400;color:#9ca3af;">(${MSG_VARS_HINT})</small></label>
             <textarea class="form-control" id="aval-${idx}" rows="2" placeholder="${h(AUTLANG.placeholder_message)}">${h(prefill.message||'')}</textarea>`;
     }
     if (type === 'schedule_whatsapp_message') {
         if (!WAHA_CONNECTED) return `<p style="font-size:12px;color:#f59e0b;margin:0;"><i class="bi bi-exclamation-triangle me-1"></i>${h(AUTLANG.no_whatsapp_instance)}</p>`;
-        return `<label>${h(AUTLANG.label_message)} <small style="font-weight:400;color:#9ca3af;">(${MSG_VARS_HINT})</small></label>
+        const insOpts = WHATSAPP_INSTANCES.map(i => {
+            const lbl = i.label || i.phone_number || ('#' + i.id);
+            return `<option value="${i.id}" ${prefill.instance_id==i.id?'selected':''}>${h(lbl)}</option>`;
+        }).join('');
+        return `<label>${h(AUTLANG.label_instance || 'Enviar via')}</label>
+            <select class="form-control" id="ainstance-${idx}">
+                <option value="">${h(AUTLANG.instance_auto || 'Automático (conversa ou padrão do tenant)')}</option>${insOpts}
+            </select>
+            <label style="margin-top:8px;">${h(AUTLANG.label_message)} <small style="font-weight:400;color:#9ca3af;">(${MSG_VARS_HINT})</small></label>
             <textarea class="form-control" id="aval-${idx}" rows="2" placeholder="${h(AUTLANG.placeholder_message)}">${h(prefill.message||'')}</textarea>
             <div style="display:flex;gap:8px;margin-top:8px;">
                 <div style="flex:1;">
@@ -1524,18 +1551,25 @@ function saveAutomation() {
         } else if (type === 'assign_chatbot_flow') {
             config.chatbot_flow_id = parseInt(document.getElementById(`aval-${idx}`)?.value || 0);
             if (!config.chatbot_flow_id) { toastr.warning(AUTLANG.validation_select_flow); err = true; return; }
+        } else if (type === 'enroll_sequence') {
+            config.sequence_id = parseInt(document.getElementById(`aval-${idx}`)?.value || 0);
+            if (!config.sequence_id) { toastr.warning(AUTLANG.validation_select_sequence); err = true; return; }
         } else if (type === 'transfer_to_department') {
             config.department_id = parseInt(document.getElementById(`aval-${idx}`)?.value || 0);
             if (!config.department_id) { toastr.warning(AUTLANG.validation_select_department); err = true; return; }
         } else if (type === 'send_whatsapp_message') {
             config.message = (document.getElementById(`aval-${idx}`)?.value || '').trim();
             if (!config.message) { toastr.warning(AUTLANG.validation_message_required); err = true; return; }
+            const insVal = document.getElementById(`ainstance-${idx}`)?.value || '';
+            if (insVal) config.instance_id = parseInt(insVal);
         } else if (type === 'schedule_whatsapp_message') {
             config.message = (document.getElementById(`aval-${idx}`)?.value || '').trim();
             if (!config.message) { toastr.warning(AUTLANG.validation_schedule_message_required); err = true; return; }
             config.delay_value = parseInt(document.getElementById(`adelay-${idx}`)?.value || '1');
             config.delay_unit  = document.getElementById(`adelayunit-${idx}`)?.value || 'days';
             if (config.delay_value < 1) { toastr.warning(AUTLANG.validation_delay_min); err = true; return; }
+            const insVal2 = document.getElementById(`ainstance-${idx}`)?.value || '';
+            if (insVal2) config.instance_id = parseInt(insVal2);
         } else if (type === 'set_utm_params') {
             document.querySelectorAll(`#actBody-${idx} .utm-field`).forEach(el => {
                 const name = el.dataset.utm;

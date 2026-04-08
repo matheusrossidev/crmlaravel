@@ -47,8 +47,12 @@ class IntegrationController extends Controller
             ->where(function ($q) {
                 $q->where('provider', 'waha')->orWhereNull('provider');
             })
+            ->with(['users:id,name'])
             ->orderBy('id')
             ->get();
+        $tenantUsers = \App\Models\User::where('tenant_id', activeTenant()->id)
+            ->orderBy('name')
+            ->get(['id', 'name']);
         $whatsapp          = $whatsappInstances->first(); // retrocompat
         $instagram         = InstagramInstance::where('status', '!=', 'disconnected')->first();
 
@@ -105,6 +109,7 @@ class IntegrationController extends Controller
             'facebook', 'google', 'facebookLeadAds', 'whatsapp', 'whatsappInstances', 'instagram',
             'enabledIntegrations', 'maxWhatsappInstances', 'whatsappInstancesRemain', 'waButtons',
             'fbLeadConnections', 'pipelines', 'customFields', 'cloudApiInstances',
+            'tenantUsers',
             'catalog', 'catalogJs'
         ));
     }
@@ -359,6 +364,48 @@ class IntegrationController extends Controller
         $instance->update(['label' => $request->input('label')]);
 
         return response()->json(['success' => true, 'label' => $instance->label]);
+    }
+
+    /**
+     * Sincroniza a lista de users com acesso a essa instancia (pivot).
+     * Body: { user_ids: [int, ...] }
+     * Lista vazia = nenhum user atribuido (cai no fallback de role/department).
+     */
+    public function syncWhatsappInstanceUsers(Request $request, WhatsappInstance $instance): JsonResponse
+    {
+        $data = $request->validate([
+            'user_ids'   => 'nullable|array',
+            'user_ids.*' => 'integer|exists:users,id',
+        ]);
+
+        $tenantUserIds = \App\Models\User::where('tenant_id', $instance->tenant_id)
+            ->pluck('id')
+            ->all();
+        $clean = array_values(array_intersect($data['user_ids'] ?? [], $tenantUserIds));
+
+        $instance->users()->sync($clean);
+
+        return response()->json([
+            'success'  => true,
+            'user_ids' => $clean,
+        ]);
+    }
+
+    /**
+     * Marca essa instancia como primary do tenant. Garante que apenas
+     * uma instancia por tenant tenha is_primary=true.
+     */
+    public function setPrimaryWhatsappInstance(WhatsappInstance $instance): JsonResponse
+    {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($instance): void {
+            WhatsappInstance::withoutGlobalScope('tenant')
+                ->where('tenant_id', $instance->tenant_id)
+                ->where('id', '!=', $instance->id)
+                ->update(['is_primary' => false]);
+            $instance->update(['is_primary' => true]);
+        });
+
+        return response()->json(['success' => true, 'is_primary' => true]);
     }
 
     // ── Instagram ─────────────────────────────────────────────────────────────

@@ -520,19 +520,26 @@ class AutomationEngine
             return;
         }
 
-        // Selecionar instância conectada — preferir a da conversa, senão primeira do tenant
+        // Selecionar instância conectada — prioridade:
+        // 1. instance_id explicito no config da action (escolha do user na UI)
+        // 2. Instancia da conversa (se ja existe)
+        // 3. Primary instance do tenant (resolvePrimary respeita is_primary + status)
         $instance = null;
-        if ($conv instanceof WhatsappConversation && $conv->instance_id) {
+        if (! empty($config['instance_id'])) {
+            $instance = WhatsappInstance::withoutGlobalScope('tenant')
+                ->where('id', (int) $config['instance_id'])
+                ->where('tenant_id', $automation->tenant_id)
+                ->where('status', 'connected')
+                ->first();
+        }
+        if (! $instance && $conv instanceof WhatsappConversation && $conv->instance_id) {
             $instance = WhatsappInstance::withoutGlobalScope('tenant')
                 ->where('id', $conv->instance_id)
                 ->where('status', 'connected')
                 ->first();
         }
         if (! $instance) {
-            $instance = WhatsappInstance::withoutGlobalScope('tenant')
-                ->where('tenant_id', $automation->tenant_id)
-                ->where('status', 'connected')
-                ->first();
+            $instance = WhatsappInstance::resolvePrimary($automation->tenant_id);
         }
 
         if (! $instance) {
@@ -620,7 +627,7 @@ class AutomationEngine
             return;
         }
 
-        // Encontrar a conversa WhatsApp do lead
+        // Encontrar a conversa WhatsApp do lead (opcional — pode nao existir)
         $conv = $ctx['conversation'] instanceof WhatsappConversation
             ? $ctx['conversation']
             : WhatsappConversation::withoutGlobalScope('tenant')
@@ -629,8 +636,25 @@ class AutomationEngine
                 ->latest('last_message_at')
                 ->first();
 
-        if (! $conv) {
-            return;
+        // Resolver instancia: config explicita > conversa > primary do tenant
+        $instanceId = null;
+        if (! empty($config['instance_id'])) {
+            $exists = WhatsappInstance::withoutGlobalScope('tenant')
+                ->where('id', (int) $config['instance_id'])
+                ->where('tenant_id', $lead->tenant_id)
+                ->exists();
+            if ($exists) {
+                $instanceId = (int) $config['instance_id'];
+            }
+        }
+        if (! $instanceId && $conv?->instance_id) {
+            $instanceId = $conv->instance_id;
+        }
+        if (! $instanceId) {
+            $instanceId = WhatsappInstance::resolvePrimary($lead->tenant_id)?->id;
+        }
+        if (! $instanceId) {
+            return; // Sem nenhuma instancia conectada — nao tem o que agendar
         }
 
         $delayValue = max(1, (int) ($config['delay_value'] ?? 1));
@@ -641,7 +665,8 @@ class AutomationEngine
         ScheduledMessage::create([
             'tenant_id'       => $lead->tenant_id,
             'lead_id'         => $lead->id,
-            'conversation_id' => $conv->id,
+            'conversation_id' => $conv?->id,
+            'instance_id'     => $instanceId,
             'created_by'      => null,
             'type'            => 'text',
             'body'            => $body,

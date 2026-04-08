@@ -96,6 +96,7 @@ return [
     'sidebar_act_schedule_whatsapp_message' => 'Schedule WhatsApp msg',
     'sidebar_act_set_utm_params'        => 'Set UTM parameters',
     'sidebar_act_create_task'           => 'Create task',
+    'sidebar_act_enroll_sequence'       => 'Enroll in sequence',
     'sidebar_act_ai_extract_fields'     => 'Extract data with AI',
     'sidebar_act_send_webhook'          => 'Send webhook',
 
@@ -280,6 +281,10 @@ return [
     'no_chatbot_flows'          => 'No active chatbot flow.',
     'label_department'          => 'Department',
     'no_departments'            => 'No active department.',
+    'label_sequence'            => 'Sequence',
+    'no_sequences'              => 'No active sequences yet. Create one in Settings → Sequences.',
+    'label_instance'            => 'Send via',
+    'instance_auto'             => 'Automatic (existing conversation or tenant default)',
     'close_conversation_info'   => 'The conversation linked to the lead will be closed automatically.',
 
     // ── Action config: UTM ──────────────────────────────────────────────
@@ -344,6 +349,7 @@ return [
     'validation_select_ai_agent' => 'Select the AI agent.',
     'validation_select_flow'    => 'Select the flow.',
     'validation_select_department' => 'Select the department.',
+    'validation_select_sequence' => 'Select the sequence.',
     'validation_message_required' => 'Enter the message.',
     'validation_schedule_message_required' => 'Enter the message to schedule.',
     'validation_delay_min'      => 'Delay must be at least 1.',

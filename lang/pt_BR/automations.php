@@ -96,6 +96,7 @@ return [
     'sidebar_act_schedule_whatsapp_message' => 'Agendar msg WhatsApp',
     'sidebar_act_set_utm_params'        => 'Definir parâmetros UTM',
     'sidebar_act_create_task'           => 'Criar tarefa',
+    'sidebar_act_enroll_sequence'       => 'Inscrever em sequência',
     'sidebar_act_ai_extract_fields'     => 'Extrair dados com IA',
     'sidebar_act_send_webhook'          => 'Enviar webhook',
 
@@ -280,6 +281,10 @@ return [
     'no_chatbot_flows'          => 'Nenhum fluxo de chatbot ativo.',
     'label_department'          => 'Departamento',
     'no_departments'            => 'Nenhum departamento ativo.',
+    'label_sequence'            => 'Sequência',
+    'no_sequences'              => 'Nenhuma sequência ativa cadastrada. Crie uma em Configurações → Sequências.',
+    'label_instance'            => 'Enviar via',
+    'instance_auto'             => 'Automático (conversa atual ou padrão do tenant)',
     'close_conversation_info'   => 'A conversa vinculada ao lead será fechada automaticamente.',
 
     // ── Action config: UTM ──────────────────────────────────────────────
@@ -344,6 +349,7 @@ return [
     'validation_select_ai_agent' => 'Selecione o agente de IA.',
     'validation_select_flow'    => 'Selecione o fluxo.',
     'validation_select_department' => 'Selecione o departamento.',
+    'validation_select_sequence' => 'Selecione a sequência.',
     'validation_message_required' => 'Informe a mensagem.',
     'validation_schedule_message_required' => 'Informe a mensagem para agendar.',
     'validation_delay_min'      => 'O delay deve ser ao menos 1.',

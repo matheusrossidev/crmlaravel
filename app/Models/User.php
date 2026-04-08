@@ -71,6 +71,32 @@ class User extends Authenticatable
     }
 
     /**
+     * Instancias WhatsApp que esse user pode ver/responder.
+     * Pivot: user_whatsapp_instance.
+     * Vazio = sem restricao por instancia (cai no fallback de role/department).
+     */
+    public function whatsappInstances(): BelongsToMany
+    {
+        return $this->belongsToMany(WhatsappInstance::class, 'user_whatsapp_instance');
+    }
+
+    /**
+     * IDs das instancias WhatsApp acessiveis. Retorna null se nao restrito
+     * (admin/manager/super_admin OU user sem nenhuma instancia atribuida — nesse
+     * caso o controle volta a ser por department/assigned_user_id).
+     *
+     * @return int[]|null
+     */
+    public function allowedWhatsappInstanceIds(): ?array
+    {
+        if ($this->is_super_admin || in_array($this->role, ['admin', 'manager'], true)) {
+            return null;
+        }
+        $ids = $this->whatsappInstances()->pluck('whatsapp_instances.id')->all();
+        return empty($ids) ? null : $ids;
+    }
+
+    /**
      * Retorna IDs das pipelines permitidas, ou null se sem restrição.
      * Admin sempre vê tudo. Se nenhuma pipeline atribuída = sem restrição.
      *

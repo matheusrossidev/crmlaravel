@@ -55,7 +55,14 @@ class WhatsappController extends Controller
 
         if ($connected) {
             $waQuery = WhatsappConversation::with(['latestMessage', 'assignedUser', 'department', 'instance:id,label,phone_number']);
-            if ($restrictByDept) {
+            // Visibilidade por instancia (pivot user_whatsapp_instance) +
+            // fallback de department/assigned_user_id pra users sem nenhuma
+            // instancia atribuida.
+            $waQuery->visibleToUser($authUser);
+            if ($restrictByDept && $authUser->allowedWhatsappInstanceIds() === null) {
+                // Esse user nao tem instancias atribuidas — mantem o filtro
+                // antigo de department + assigned. Se ele TEM instancias, o
+                // scope visibleToUser ja resolveu (com OR de assigned + dept).
                 $waQuery->where(function ($q) use ($authUser, $userDeptIds) {
                     $q->whereIn('department_id', $userDeptIds)
                       ->orWhereNull('department_id')

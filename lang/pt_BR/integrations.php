@@ -19,6 +19,14 @@ return [
     'wa_reconnect' => 'Reconectar',
     'wa_label_ph' => 'Dar um nome...',
     'wa_limit' => 'Limite de :max número(s)',
+    'wa_set_primary'         => 'Marcar como número padrão (usado pelo sistema quando precisa enviar mensagem sem instância explícita)',
+    'wa_primary_active'      => 'Este é o número padrão do tenant',
+    'wa_primary_label'       => 'Padrão',
+    'wa_users_btn'           => 'Quem pode atender este número',
+    'wa_users_none'          => 'Sem restrição (qualquer usuário pode ver)',
+    'wa_users_panel_title'   => 'Quem pode atender este número',
+    'wa_users_panel_desc'    => 'Marque os usuários que devem ver as mensagens recebidas neste número. Se ninguém for marcado, o controle volta a ser por departamento e por atribuição direta de conversa.',
+    'wa_users_save'          => 'Salvar acessos',
 
     // Google Calendar
     'gcal_title' => 'Google Calendar',
@@ -139,6 +147,8 @@ return [
     'toast_connect_error' => 'Erro ao iniciar conexão.',
     'toast_conn_error' => 'Erro de conexão.',
     'toast_wa_disconnected' => 'WhatsApp desconectado.',
+    'toast_wa_primary_set'  => 'Número padrão definido.',
+    'toast_wa_users_saved'  => 'Acessos atualizados.',
     'toast_disconnect_error' => 'Erro ao desconectar.',
     'toast_number_removed' => 'Número removido.',
     'toast_remove_error' => 'Erro ao remover.',

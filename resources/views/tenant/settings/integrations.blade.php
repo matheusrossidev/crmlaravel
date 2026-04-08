@@ -1543,6 +1543,61 @@ async function saveWaLabel(input) {
     }
 }
 
+// ── Multi-instance: primary toggle + users access ────────────────────────────
+async function toggleWaPrimary(instanceId, btn) {
+    try {
+        const res = await fetch(`${WA_BASE_URL}/${instanceId}/primary`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+        });
+        if (res.ok) {
+            if (typeof toastr !== 'undefined') toastr.success(ILANG.toast_wa_primary_set || 'Instância padrão definida.');
+            setTimeout(() => location.reload(), 600);
+        } else {
+            if (typeof toastr !== 'undefined') toastr.error('Erro');
+        }
+    } catch (e) {
+        if (typeof toastr !== 'undefined') toastr.error('Erro');
+    }
+}
+
+function toggleWaUsers(instanceId) {
+    const panel = document.getElementById(`waUsersPanel-${instanceId}`);
+    if (!panel) return;
+    panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
+}
+
+async function saveWaUsers(instanceId) {
+    const list = document.querySelector(`.wa-users-panel-list[data-instance-id="${instanceId}"]`);
+    if (!list) return;
+    const userIds = Array.from(list.querySelectorAll('input[type="checkbox"]:checked'))
+        .map(cb => parseInt(cb.value, 10))
+        .filter(Boolean);
+
+    try {
+        const res = await fetch(`${WA_BASE_URL}/${instanceId}/users`, {
+            method: 'PUT',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ user_ids: userIds }),
+        });
+        if (res.ok) {
+            if (typeof toastr !== 'undefined') toastr.success(ILANG.toast_wa_users_saved || 'Acesso atualizado.');
+            setTimeout(() => location.reload(), 600);
+        } else {
+            if (typeof toastr !== 'undefined') toastr.error('Erro');
+        }
+    } catch (e) {
+        if (typeof toastr !== 'undefined') toastr.error('Erro');
+    }
+}
+
 // Fechar modal clicando no overlay
 document.getElementById('waQrModal').addEventListener('click', function(e) {
     if (e.target === this) closeWaModal();

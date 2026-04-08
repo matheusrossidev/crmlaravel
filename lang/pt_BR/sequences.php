@@ -36,6 +36,8 @@ return [
     'step_action'        => 'Ação',
     'step_body'          => 'Texto da mensagem',
     'step_body_ph'       => 'Olá {{nome}}, tudo bem? ...',
+    'step_send_via'      => 'Enviar via',
+    'step_send_via_auto' => 'Automático (conversa atual ou padrão do tenant)',
     'step_timeout'       => 'Timeout (minutos)',
     'step_add'           => 'Adicionar Step',
     'step_remove'        => 'Remover',

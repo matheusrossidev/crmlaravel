@@ -129,6 +129,11 @@ class Lead extends Model
         return $this->hasOne(LeadSequence::class)->where('status', 'active');
     }
 
+    public function leadSequences(): HasMany
+    {
+        return $this->hasMany(LeadSequence::class);
+    }
+
     public function mergedInto(): BelongsTo
     {
         return $this->belongsTo(self::class, 'merged_into');

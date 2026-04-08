@@ -46,9 +46,23 @@ class SendScheduledMessages extends Command
 
     private function dispatch(ScheduledMessage $scheduled): void
     {
-        $instance = WhatsappInstance::where('tenant_id', $scheduled->tenant_id)
-            ->where('status', 'connected')
-            ->first();
+        // Resolver instancia: explicita do scheduled > conversa > primary do tenant
+        $instance = null;
+        if ($scheduled->instance_id) {
+            $instance = WhatsappInstance::withoutGlobalScope('tenant')
+                ->where('id', $scheduled->instance_id)
+                ->where('status', 'connected')
+                ->first();
+        }
+        if (! $instance && $scheduled->conversation?->instance_id) {
+            $instance = WhatsappInstance::withoutGlobalScope('tenant')
+                ->where('id', $scheduled->conversation->instance_id)
+                ->where('status', 'connected')
+                ->first();
+        }
+        if (! $instance) {
+            $instance = WhatsappInstance::resolvePrimary($scheduled->tenant_id);
+        }
 
         if (! $instance) {
             $scheduled->update([

@@ -13,7 +13,7 @@ class ScheduledMessage extends Model
     use BelongsToTenant;
 
     protected $fillable = [
-        'tenant_id', 'lead_id', 'conversation_id', 'created_by',
+        'tenant_id', 'lead_id', 'conversation_id', 'instance_id', 'created_by',
         'type', 'body', 'media_path', 'media_mime', 'media_filename',
         'quick_message_id', 'send_at', 'sent_at', 'status', 'error',
     ];
@@ -23,6 +23,7 @@ class ScheduledMessage extends Model
         'sent_at'          => 'datetime',
         'lead_id'          => 'integer',
         'conversation_id'  => 'integer',
+        'instance_id'      => 'integer',
         'created_by'       => 'integer',
         'quick_message_id' => 'integer',
     ];
@@ -35,6 +36,11 @@ class ScheduledMessage extends Model
     public function conversation(): BelongsTo
     {
         return $this->belongsTo(WhatsappConversation::class, 'conversation_id');
+    }
+
+    public function instance(): BelongsTo
+    {
+        return $this->belongsTo(WhatsappInstance::class, 'instance_id');
     }
 
     public function createdBy(): BelongsTo

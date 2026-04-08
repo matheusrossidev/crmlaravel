@@ -55,11 +55,16 @@ class NurtureSequenceController extends Controller
     {
         $stages = PipelineStage::withoutGlobalScope('tenant')->orderBy('position')->get(['id', 'name']);
         $users  = User::where('tenant_id', activeTenant()->id)->get(['id', 'name']);
+        $whatsappInstances = \App\Models\WhatsappInstance::where('status', 'connected')
+            ->orderByDesc('is_primary')
+            ->orderBy('id')
+            ->get(['id', 'label', 'phone_number', 'is_primary']);
 
         return view('tenant.settings.sequences.form', [
-            'sequence' => null,
-            'stages'   => $stages,
-            'users'    => $users,
+            'sequence'          => null,
+            'stages'            => $stages,
+            'users'             => $users,
+            'whatsappInstances' => $whatsappInstances,
         ]);
     }
 
@@ -102,11 +107,16 @@ class NurtureSequenceController extends Controller
         $sequence->load('steps');
         $stages = PipelineStage::withoutGlobalScope('tenant')->orderBy('position')->get(['id', 'name']);
         $users  = User::where('tenant_id', activeTenant()->id)->get(['id', 'name']);
+        $whatsappInstances = \App\Models\WhatsappInstance::where('status', 'connected')
+            ->orderByDesc('is_primary')
+            ->orderBy('id')
+            ->get(['id', 'label', 'phone_number', 'is_primary']);
 
         return view('tenant.settings.sequences.form', [
-            'sequence' => $sequence,
-            'stages'   => $stages,
-            'users'    => $users,
+            'sequence'          => $sequence,
+            'stages'            => $stages,
+            'users'             => $users,
+            'whatsappInstances' => $whatsappInstances,
         ]);
     }
 

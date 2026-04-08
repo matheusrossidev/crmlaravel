@@ -281,6 +281,7 @@ class LeadController extends Controller
             'customFieldValues.fieldDefinition',
             'attachments.uploader',
             'activeSequence.sequence.steps',
+            'leadSequences.sequence.steps',
             'sales.closedBy',
             'lostSales.reason',
             'products.product',
@@ -316,9 +317,15 @@ class LeadController extends Controller
         $tasks = $lead->tasks()->with('assignedTo:id,name')->get();
         $pendingTasksCount = $tasks->where('status', 'pending')->count();
 
+        // Sequencias ativas do tenant pra dropdown de inscricao manual no lead
+        $activeNurtureSequences = \App\Models\NurtureSequence::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return view('tenant.leads.show', compact(
             'lead', 'waConversation', 'igConversation', 'pipelines', 'cfDefs', 'users',
-            'scheduledMessages', 'quickMessages', 'tasks', 'pendingTasksCount'
+            'scheduledMessages', 'quickMessages', 'tasks', 'pendingTasksCount',
+            'activeNurtureSequences'
         ));
     }
 

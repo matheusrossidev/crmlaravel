@@ -89,6 +89,41 @@ class WhatsappConversation extends Model implements ConversationContract
                     ->latestOfMany('sent_at');
     }
 
+    /**
+     * Restringe a query as conversas visiveis pra um user.
+     *
+     * Regra:
+     * - Admin/manager/super_admin (allowedWhatsappInstanceIds == null pra esses)
+     *   nao filtra por instancia.
+     * - Outros users so veem conversas das instancias atribuidas a eles
+     *   (pivot user_whatsapp_instance), OU conversas onde ja sao
+     *   `assigned_user_id`, OU conversas do mesmo department deles.
+     *
+     * Tudo OR — uniao das fontes de visibilidade.
+     */
+    public function scopeVisibleToUser($query, ?\App\Models\User $user)
+    {
+        if (! $user) {
+            return $query;
+        }
+
+        $instanceIds = $user->allowedWhatsappInstanceIds();
+        if ($instanceIds === null) {
+            // Sem restricao por instancia (admin/manager/super)
+            return $query;
+        }
+
+        $deptIds = $user->departments()->pluck('departments.id')->all();
+
+        return $query->where(function ($q) use ($instanceIds, $deptIds, $user) {
+            $q->whereIn('instance_id', $instanceIds)
+              ->orWhere('assigned_user_id', $user->id);
+            if (! empty($deptIds)) {
+                $q->orWhereIn('department_id', $deptIds);
+            }
+        });
+    }
+
     // ── ConversationContract ─────────────────────────────────────────────────
 
     public function getChannelName(): string

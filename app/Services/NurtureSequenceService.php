@@ -173,10 +173,6 @@ class NurtureSequenceService
 
     private function executeMessage(NurtureSequenceStep $step, Lead $lead, ?WhatsappConversation $conv): void
     {
-        if (! $conv) {
-            return;
-        }
-
         $config = $step->config;
         $body   = $this->interpolate($config['body'] ?? '', $lead);
 
@@ -184,10 +180,35 @@ class NurtureSequenceService
             return;
         }
 
+        // Resolver instancia: config explicita > instancia da conversa > primary do tenant
+        // Isso permite que sequences disparem mensagem mesmo se o lead nao tem
+        // conversa WhatsApp previa (cenario: lead criado via formulario, sequence
+        // inicia o primeiro contato).
+        $instanceId = null;
+        if (! empty($config['instance_id'])) {
+            $exists = \App\Models\WhatsappInstance::withoutGlobalScope('tenant')
+                ->where('id', (int) $config['instance_id'])
+                ->where('tenant_id', $lead->tenant_id)
+                ->exists();
+            if ($exists) {
+                $instanceId = (int) $config['instance_id'];
+            }
+        }
+        if (! $instanceId && $conv?->instance_id) {
+            $instanceId = $conv->instance_id;
+        }
+        if (! $instanceId) {
+            $instanceId = \App\Models\WhatsappInstance::resolvePrimary($lead->tenant_id)?->id;
+        }
+        if (! $instanceId) {
+            return; // Sem instancia conectada — nao tem como enviar
+        }
+
         ScheduledMessage::create([
             'tenant_id'       => $lead->tenant_id,
             'lead_id'         => $lead->id,
-            'conversation_id' => $conv->id,
+            'conversation_id' => $conv?->id,
+            'instance_id'     => $instanceId,
             'created_by'      => null,
             'type'            => $config['media_type'] ?? 'text',
             'body'            => $body,

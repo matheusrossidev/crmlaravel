@@ -10,6 +10,7 @@ use App\Models\Automation;
 use App\Models\ChatbotFlow;
 use App\Models\Department;
 use App\Models\Lead;
+use App\Models\NurtureSequence;
 use App\Models\Pipeline;
 use App\Models\User;
 use App\Models\WhatsappInstance;
@@ -88,10 +89,14 @@ class AutomationController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        $sequences = NurtureSequence::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return compact('pipelines', 'users', 'aiAgents', 'chatbotFlows', 'wahaConnected',
                        'whatsappInstances', 'whatsappTags', 'leadTags', 'leadSources',
                        'allLeadSources', 'dateCustomFields', 'allCustomFields',
-                       'departments');
+                       'departments', 'sequences');
     }
 
     public function index(): View
