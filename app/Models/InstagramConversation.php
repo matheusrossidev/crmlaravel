@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Contracts\ConversationContract;
 use App\Models\Traits\BelongsToTenant;
+use App\Models\Traits\HasTags;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class InstagramConversation extends Model
+class InstagramConversation extends Model implements ConversationContract
 {
-    use BelongsToTenant;
+    use BelongsToTenant, HasTags;
 
     public $timestamps = false;
 
@@ -74,5 +76,33 @@ class InstagramConversation extends Model
     {
         return $this->hasOne(InstagramMessage::class, 'conversation_id')
                     ->latestOfMany('sent_at');
+    }
+
+    // ── ConversationContract ─────────────────────────────────────────────────
+
+    public function getChannelName(): string
+    {
+        return 'instagram';
+    }
+
+    public function getContactName(): ?string
+    {
+        return $this->contact_name ?: $this->contact_username;
+    }
+
+    public function getContactPhone(): ?string
+    {
+        return null;
+    }
+
+    public function getContactPictureUrl(): ?string
+    {
+        return $this->contact_picture_url;
+    }
+
+    public function getDisplayLabel(): string
+    {
+        return $this->contact_name
+            ?: ($this->contact_username ? '@' . $this->contact_username : 'Instagram #' . $this->id);
     }
 }

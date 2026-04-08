@@ -207,10 +207,21 @@ class NurtureSequenceService
 
         match ($actionType) {
             'move_stage' => $lead->update(['stage_id' => $params['stage_id'] ?? $lead->stage_id]),
-            'add_tag'    => $lead->update(['tags' => array_unique(array_merge($lead->tags ?? [], [$params['tag'] ?? '']))]),
+            'add_tag'    => $this->addTagToLead($lead, (string) ($params['tag'] ?? '')),
             'assign_user' => $lead->update(['assigned_to' => $params['user_id'] ?? $lead->assigned_to]),
             default => null,
         };
+    }
+
+    private function addTagToLead(Lead $lead, string $tag): void
+    {
+        $tag = trim($tag);
+        if ($tag === '') {
+            return;
+        }
+        // Dual write: JSON + pivot polimorfica
+        $lead->update(['tags' => array_values(array_unique(array_merge($lead->tags ?? [], [$tag])))]);
+        $lead->attachTagsByName([$tag]);
     }
 
     private function executeWaitReply(NurtureSequenceStep $step, LeadSequence $ls): void

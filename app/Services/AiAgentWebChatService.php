@@ -210,6 +210,8 @@ class AiAgentWebChatService
                             $existing = $lead->tags ?? [];
                             $merged   = array_values(array_unique(array_merge($existing, $tags)));
                             $lead->update(['tags' => $merged]);
+                            // Dual write: pivot polimorfica
+                            $lead->attachTagsByName($tags);
                         }
                     } catch (\Throwable $e) {
                         Log::warning('AiAgentWebChat: add_tags failed', ['error' => $e->getMessage()]);

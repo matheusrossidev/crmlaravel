@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Contracts\ConversationContract;
 use App\Models\Traits\BelongsToTenant;
+use App\Models\Traits\HasTags;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class WebsiteConversation extends Model
+class WebsiteConversation extends Model implements ConversationContract
 {
-    use BelongsToTenant;
+    use BelongsToTenant, HasTags;
 
     public $timestamps = false;
 
@@ -28,6 +30,7 @@ class WebsiteConversation extends Model
         'chatbot_node_id',
         'chatbot_cursor',
         'chatbot_variables',
+        'tags',
         'status',
         'unread_count',
         'started_at',
@@ -47,6 +50,7 @@ class WebsiteConversation extends Model
     protected $casts = [
         'chatbot_variables' => 'array',
         'chatbot_cursor'    => 'array',
+        'tags'              => 'array',
         'started_at'        => 'datetime',
         'last_message_at'   => 'datetime',
     ];
@@ -74,5 +78,33 @@ class WebsiteConversation extends Model
     public function latestMessage(): HasOne
     {
         return $this->hasOne(WebsiteMessage::class, 'conversation_id')->latestOfMany('sent_at');
+    }
+
+    // ── ConversationContract ─────────────────────────────────────────────────
+
+    public function getChannelName(): string
+    {
+        return 'website';
+    }
+
+    public function getContactName(): ?string
+    {
+        return $this->contact_name;
+    }
+
+    public function getContactPhone(): ?string
+    {
+        return $this->contact_phone;
+    }
+
+    public function getContactPictureUrl(): ?string
+    {
+        return null;
+    }
+
+    public function getDisplayLabel(): string
+    {
+        return $this->contact_name
+            ?: ($this->contact_email ?: 'Visitante #' . $this->id);
     }
 }

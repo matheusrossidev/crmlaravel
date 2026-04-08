@@ -52,6 +52,9 @@ class Tenant extends Model
             DB::table('whatsapp_conversations')->where('tenant_id', $id)->delete();
             DB::table('whatsapp_instances')->where('tenant_id', $id)->delete();
             DB::table('whatsapp_tags')->where('tenant_id', $id)->delete();
+            // Tags polimorficas (Fase 3 do refactor de tags). Taggables sao
+            // limpos via cascade FK em tags + cascade FK direta em tenant_id.
+            DB::table('tags')->where('tenant_id', $id)->delete();
             DB::table('whatsapp_quick_messages')->where('tenant_id', $id)->delete();
 
             // ── Instagram ─────────────────────────────────────────

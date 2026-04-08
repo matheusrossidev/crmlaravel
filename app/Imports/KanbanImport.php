@@ -92,6 +92,11 @@ class KanbanImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
                 'created_by'  => auth()->id(),
             ]);
 
+            // Dual write tags: pivot polimorfica
+            if (! empty($tags)) {
+                $lead->attachTagsByName($tags);
+            }
+
             // Sobrescreve created_at com data histórica fornecida na planilha
             if ($createdAt) {
                 $lead->timestamps = false;

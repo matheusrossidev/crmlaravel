@@ -214,6 +214,11 @@ class ProcessFacebookLeadgenWebhook implements ShouldQueue
             'utm_campaign' => $utmCampaign,
         ]);
 
+        // Dual write tags: pivot polimorfica
+        if (! empty($allTags)) {
+            $lead->attachTagsByName($allTags);
+        }
+
         // 10. Create LeadEvent
         LeadEvent::create([
             'tenant_id'    => $tenantId,

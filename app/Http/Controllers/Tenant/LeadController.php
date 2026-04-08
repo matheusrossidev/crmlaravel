@@ -155,6 +155,11 @@ class LeadController extends Controller
 
         $lead = Lead::create($data);
 
+        // Dual write tags: JSON ja foi salvo via fillable acima, agora popula pivot
+        if (array_key_exists('tags', $data)) {
+            $lead->syncTagsByName((array) $data['tags']);
+        }
+
         $this->saveCustomFields($lead, $request->input('custom_fields', []));
 
         $agencyPrefix = session()->has('impersonating_tenant_id') ? 'Agência parceira: ' : '';
@@ -355,6 +360,11 @@ class LeadController extends Controller
         }
 
         $lead->update($data);
+
+        // Dual write tags: sync na pivot polimorfica (Fase 3 do refactor de tags)
+        if (array_key_exists('tags', $data)) {
+            $lead->syncTagsByName((array) $data['tags']);
+        }
 
         $this->saveCustomFields($lead, $request->input('custom_fields', []));
 

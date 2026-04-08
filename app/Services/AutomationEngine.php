@@ -310,6 +310,12 @@ class AutomationEngine
         $current   = (array) ($lead->tags ?? []);
         $merged    = array_values(array_unique(array_merge($current, $tagsToAdd)));
         Lead::withoutGlobalScope('tenant')->where('id', $lead->id)->update(['tags' => json_encode($merged)]);
+
+        // Dual write: pivot polimorfica
+        $leadModel = Lead::withoutGlobalScope('tenant')->find($lead->id);
+        if ($leadModel) {
+            $leadModel->attachTagsByName($tagsToAdd);
+        }
     }
 
     private function actionRemoveTagLead(array $config, array $ctx): void
@@ -322,6 +328,12 @@ class AutomationEngine
         $current      = (array) ($lead->tags ?? []);
         $filtered     = array_values(array_filter($current, fn ($t) => ! in_array($t, $tagsToRemove, true)));
         Lead::withoutGlobalScope('tenant')->where('id', $lead->id)->update(['tags' => json_encode($filtered)]);
+
+        // Dual write: pivot polimorfica
+        $leadModel = Lead::withoutGlobalScope('tenant')->find($lead->id);
+        if ($leadModel) {
+            $leadModel->detachTagsByName($tagsToRemove);
+        }
     }
 
     private function actionAddTagConversation(array $config, array $ctx): void
@@ -338,10 +350,16 @@ class AutomationEngine
             WhatsappConversation::withoutGlobalScope('tenant')
                 ->where('id', $conv->id)
                 ->update(['tags' => json_encode($merged)]);
+            // Dual write
+            $fresh = WhatsappConversation::withoutGlobalScope('tenant')->find($conv->id);
+            $fresh?->attachTagsByName($tagsToAdd);
         } elseif ($conv instanceof InstagramConversation) {
             InstagramConversation::withoutGlobalScope('tenant')
                 ->where('id', $conv->id)
                 ->update(['tags' => json_encode($merged)]);
+            // Dual write
+            $fresh = InstagramConversation::withoutGlobalScope('tenant')->find($conv->id);
+            $fresh?->attachTagsByName($tagsToAdd);
         }
     }
 

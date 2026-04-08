@@ -409,6 +409,8 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::put('/conversations/{conversation}/link-lead',   [WhatsappController::class, 'linkLead'])->name('conversations.link-lead');
             Route::put('/conversations/{conversation}/unlink-lead',[WhatsappController::class, 'unlinkLead'])->name('conversations.unlink-lead');
             Route::put('/conversations/{conversation}/contact',    [WhatsappController::class, 'updateContact'])->name('conversations.contact');
+            // Endpoint generico do inbox: funciona pros 3 canais (whatsapp, instagram, website)
+            Route::put('/inbox/{channel}/{conversation}/contact',  [WhatsappController::class, 'updateConversationContact'])->name('inbox.conversations.contact');
             Route::post('/conversations/{conversation}/messages', [WhatsappMessageController::class, 'store'])->name('messages.store');
             Route::post('/conversations/{conversation}/react',    [WhatsappMessageController::class, 'react'])->name('messages.react');
             Route::put('/conversations/{conversation}/ai-agent',      [WhatsappController::class, 'assignAiAgent'])->name('conversations.ai-agent');

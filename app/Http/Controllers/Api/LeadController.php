@@ -49,6 +49,11 @@ class LeadController extends Controller
 
         $lead = Lead::create($data);
 
+        // Dual write tags: pivot polimorfica
+        if (array_key_exists('tags', $data)) {
+            $lead->syncTagsByName((array) $data['tags']);
+        }
+
         $this->saveCustomFields($lead, $request->input('custom_fields', []));
 
         LeadEvent::create([

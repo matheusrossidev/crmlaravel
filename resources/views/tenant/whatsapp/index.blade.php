@@ -1930,6 +1930,13 @@ $pageIcon = 'chat-dots';
         if (activeConvChannel === 'website')   return `${CHATS_BASE}/website-conversations/${id}`;
         return `${CHATS_BASE}/conversations/${id}`;
     }
+    // Endpoint generico do inbox (PUT /chats/inbox/{channel}/{conv}/contact).
+    // Funciona pros 3 canais — resolve o bug latente do Instagram nao salvar tags
+    // e habilita pela primeira vez tags em conversas de Website.
+    function inboxContactUrl(id) {
+        const ch = activeConvChannel || 'whatsapp';
+        return `${CHATS_BASE}/inbox/${ch}/${id}/contact`;
+    }
     let composeMode = 'reply';
     let mediaRecorder = null;
     let audioChunks = [];
@@ -3372,7 +3379,7 @@ $pageIcon = 'chat-dots';
         const phone = document.getElementById('editContactPhone').value.trim().replace(/\D/g, '');
         if (!name && !phone) return;
 
-        const res = await fetch(`${convBaseUrl(activeConvId)}/contact`, {
+        const res = await fetch(inboxContactUrl(activeConvId), {
             method: 'PUT',
             headers: {
                 'X-CSRF-TOKEN': CSRF,
@@ -3380,7 +3387,7 @@ $pageIcon = 'chat-dots';
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                contact_name: name,
+                name,
                 phone
             }),
         });
@@ -3462,7 +3469,7 @@ $pageIcon = 'chat-dots';
     }
 
     async function saveTags() {
-        await fetch(`${convBaseUrl(activeConvId)}/contact`, {
+        await fetch(inboxContactUrl(activeConvId), {
             method: 'PUT',
             headers: {
                 'X-CSRF-TOKEN': CSRF,

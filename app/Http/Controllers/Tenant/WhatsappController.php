@@ -21,8 +21,9 @@ use App\Models\WhatsappMessage;
 use App\Models\WhatsappQuickMessage;
 use App\Models\WhatsappTag;
 use App\Models\Department;
-use App\Support\TenantCache;
+use App\Services\ConversationResolver;
 use App\Services\InstagramService;
+use App\Support\TenantCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Jobs\ProcessAiResponse;
@@ -544,6 +545,10 @@ class WhatsappController extends Controller
             if ($conversation->lead && isset($data['phone'])) {
                 $conversation->lead->update(['phone' => $data['phone']]);
             }
+            // Dual write tags: pivot polimorfica
+            if (array_key_exists('tags', $data)) {
+                $conversation->syncTagsByName((array) ($data['tags'] ?? []));
+            }
         }
 
         return response()->json(['success' => true, 'conversation' => [
@@ -551,6 +556,94 @@ class WhatsappController extends Controller
             'phone'        => $conversation->phone,
             'tags'         => $conversation->tags ?? [],
         ]]);
+    }
+
+    /**
+     * Endpoint generico de update de contato pra qualquer canal do inbox.
+     * Substitui (em cobertura) o `updateContact` especifico de WhatsApp e
+     * habilita pela primeira vez o salvamento de tags em Instagram e Website.
+     *
+     * Rota: PUT /chats/inbox/{channel}/{conversation}/contact
+     */
+    public function updateConversationContact(
+        Request $request,
+        string $channel,
+        int $conversation,
+        ConversationResolver $resolver
+    ): JsonResponse {
+        if (! $resolver->isValidChannel($channel)) {
+            return response()->json(['success' => false, 'message' => 'Canal invalido.'], 404);
+        }
+
+        $conv = $resolver->resolve($channel, $conversation);
+        if (! $conv) {
+            return response()->json(['success' => false, 'message' => 'Conversa nao encontrada.'], 404);
+        }
+
+        // Garante isolamento de tenant (alem do GlobalScope, defesa em profundidade)
+        if ((int) $conv->tenant_id !== (int) auth()->user()->tenant_id) {
+            return response()->json(['success' => false, 'message' => 'Acesso negado.'], 403);
+        }
+
+        $data = $request->validate([
+            'name'   => 'nullable|string|max:191',
+            'phone'  => 'nullable|string|max:30',
+            'tags'   => 'nullable|array',
+            'tags.*' => 'string|max:50',
+        ]);
+
+        $update = [];
+
+        // contact_name e o campo padrao em todos os 3 conversation models
+        if (array_key_exists('name', $data) && in_array('contact_name', $conv->getFillable(), true)) {
+            $update['contact_name'] = $data['name'] ?: null;
+        }
+
+        // phone so existe em WhatsappConversation; WebsiteConversation usa contact_phone; IG nao tem
+        if (array_key_exists('phone', $data)) {
+            $cleanPhone = preg_replace('/\D/', '', (string) $data['phone']) ?: null;
+            if (in_array('phone', $conv->getFillable(), true)) {
+                $update['phone'] = $cleanPhone;
+            } elseif (in_array('contact_phone', $conv->getFillable(), true)) {
+                $update['contact_phone'] = $cleanPhone;
+            }
+        }
+
+        // tags como JSON (compat backward) — pivot e atualizada via syncTagsByName abaixo
+        $hasTagsKey = array_key_exists('tags', $data);
+        if ($hasTagsKey && in_array('tags', $conv->getFillable(), true)) {
+            $cleanTags = array_values(array_filter(array_map('trim', (array) $data['tags'])));
+            $update['tags'] = $cleanTags ?: null;
+        }
+
+        if (! empty($update)) {
+            $conv->update($update);
+        }
+
+        // Dual write: pivot polimorfica
+        if ($hasTagsKey) {
+            $cleanTags = $cleanTags ?? [];
+            $conv->syncTagsByName($cleanTags);
+        }
+
+        // Sincroniza nome do lead vinculado (mesmo comportamento do updateContact legado)
+        if (isset($update['contact_name']) && method_exists($conv, 'lead') && $conv->lead) {
+            $conv->lead->update(['name' => $update['contact_name']]);
+        }
+        if (isset($update['phone']) && method_exists($conv, 'lead') && $conv->lead) {
+            $conv->lead->update(['phone' => $update['phone']]);
+        }
+
+        return response()->json([
+            'success'      => true,
+            'channel'      => $channel,
+            'conversation' => [
+                'id'           => $conv->id,
+                'contact_name' => $conv->getContactName(),
+                'phone'        => $conv->getContactPhone(),
+                'tags'         => $conv->tag_names,
+            ],
+        ]);
     }
 
     public function assignAiAgent(WhatsappConversation $conversation, Request $request): JsonResponse

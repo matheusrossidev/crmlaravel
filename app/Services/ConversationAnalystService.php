@@ -341,6 +341,8 @@ PROMPT;
         if (! in_array($tag, $tags, true)) {
             $tags[] = $tag;
             $lead->update(['tags' => $tags]);
+            // Dual write: pivot polimorfica
+            $lead->attachTagsByName([$tag]);
         }
 
         LeadEvent::create([

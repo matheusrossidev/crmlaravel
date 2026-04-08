@@ -4,16 +4,18 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Contracts\ConversationContract;
 use App\Models\Traits\BelongsToTenant;
+use App\Models\Traits\HasTags;
 use App\Models\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class WhatsappConversation extends Model
+class WhatsappConversation extends Model implements ConversationContract
 {
-    use BelongsToTenant, LogsActivity;
+    use BelongsToTenant, LogsActivity, HasTags;
 
     public $timestamps = false;
 
@@ -85,5 +87,32 @@ class WhatsappConversation extends Model
     {
         return $this->hasOne(WhatsappMessage::class, 'conversation_id')
                     ->latestOfMany('sent_at');
+    }
+
+    // ── ConversationContract ─────────────────────────────────────────────────
+
+    public function getChannelName(): string
+    {
+        return 'whatsapp';
+    }
+
+    public function getContactName(): ?string
+    {
+        return $this->contact_name;
+    }
+
+    public function getContactPhone(): ?string
+    {
+        return $this->phone;
+    }
+
+    public function getContactPictureUrl(): ?string
+    {
+        return $this->contact_picture_url;
+    }
+
+    public function getDisplayLabel(): string
+    {
+        return $this->contact_name ?: ($this->phone ?: 'WhatsApp #' . $this->id);
     }
 }
