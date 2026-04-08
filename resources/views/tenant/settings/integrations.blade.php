@@ -6,6 +6,242 @@
 
 @push('styles')
 <style>
+    /* ========================================================================
+       Catálogo de integrações (refactor Agendor-style)
+       ======================================================================== */
+
+    .catalog-layout {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 24px;
+        align-items: start;
+    }
+    @media (max-width: 900px) {
+        .catalog-layout { grid-template-columns: 1fr; }
+        .catalog-sidebar { position: static !important; }
+    }
+
+    .catalog-sidebar {
+        background: #fff;
+        border: 1.5px solid #e8eaf0;
+        border-radius: 14px;
+        padding: 12px;
+        position: sticky;
+        top: 80px;
+    }
+    .cat-item {
+        display: flex; align-items: center; gap: 10px;
+        width: 100%; padding: 10px 14px;
+        background: none; border: none;
+        border-radius: 10px;
+        font-size: 13.5px; font-family: inherit;
+        color: #6b7280; cursor: pointer; text-align: left;
+        transition: all .15s; margin-bottom: 2px;
+    }
+    .cat-item i { font-size: 16px; }
+    .cat-item:hover { background: #f3f4f6; color: #374151; }
+    .cat-item.active { background: #eff6ff; color: #0085f3; font-weight: 600; }
+
+    .catalog-search {
+        width: 100%;
+        padding: 12px 18px 12px 42px;
+        border: 1.5px solid #e8eaf0;
+        border-radius: 12px;
+        font-size: 13.5px;
+        margin-bottom: 18px;
+        background: #fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af' stroke-width='2'><path stroke-linecap='round' stroke-linejoin='round' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/></svg>") no-repeat 14px center;
+        background-size: 18px;
+        outline: none;
+        transition: border-color .15s;
+    }
+    .catalog-search:focus { border-color: #0085f3; }
+
+    .catalog-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+    }
+    @media (max-width: 1100px) { .catalog-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 700px)  { .catalog-grid { grid-template-columns: 1fr; } }
+
+    .catalog-card {
+        background: #fff;
+        border: 1.5px solid #e8eaf0;
+        border-radius: 14px;
+        padding: 18px 18px 16px;
+        cursor: pointer;
+        transition: all .15s;
+        display: flex; flex-direction: column; gap: 10px;
+    }
+    .catalog-card:hover {
+        border-color: #0085f3;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0,133,243,.08);
+    }
+    .catalog-card .card-icon {
+        width: 48px; height: 48px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px;
+        background: #f8fafc;
+        border: 1px solid #f0f2f7;
+    }
+    .catalog-card .card-icon img {
+        width: 30px; height: 30px;
+        object-fit: contain;
+    }
+    .catalog-card .card-name {
+        font-size: 14.5px; font-weight: 700; color: #1a1d23;
+    }
+    .catalog-card .card-type-badge {
+        display: inline-flex;
+        padding: 3px 9px;
+        border-radius: 99px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        align-self: flex-start;
+    }
+    .card-type-badge.type-native  { background: #ecfdf5; color: #059669; }
+    .card-type-badge.type-partner { background: #f3f4f6; color: #6b7280; }
+    .card-type-badge.type-beta    { background: #fef3c7; color: #b45309; }
+    .catalog-card .card-desc {
+        font-size: 12.5px; color: #6b7280; line-height: 1.5;
+    }
+
+    .catalog-empty {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 60px 24px;
+        color: #9ca3af;
+        font-size: 14px;
+    }
+
+    /* ========== Modal de detalhes ========== */
+    .integration-modal { display: none; }
+    .integration-modal.open { display: block; }
+
+    .integration-modal .im-overlay {
+        position: fixed; inset: 0;
+        background: rgba(15,23,42,.55);
+        z-index: 9000;
+        animation: imFade .15s ease-out;
+    }
+    @keyframes imFade {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+    .integration-modal .im-shell {
+        position: fixed;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(960px, 94vw);
+        height: min(680px, 90vh);
+        background: #fff;
+        border-radius: 16px;
+        z-index: 9001;
+        display: flex;
+        overflow: hidden;
+        box-shadow: 0 24px 64px rgba(15,23,42,.2);
+        animation: imSlideIn .2s ease-out;
+    }
+    @keyframes imSlideIn {
+        from { opacity: 0; transform: translate(-50%, -45%); }
+        to   { opacity: 1; transform: translate(-50%, -50%); }
+    }
+    .im-sidebar {
+        flex: 0 0 280px;
+        padding: 32px 26px;
+        border-right: 1px solid #f0f2f7;
+        overflow-y: auto;
+        background: #fafbfd;
+    }
+    .im-icon {
+        width: 64px; height: 64px;
+        border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 30px;
+        margin-bottom: 18px;
+        background: #f8fafc;
+        border: 1px solid #f0f2f7;
+    }
+    .im-icon img {
+        width: 40px; height: 40px;
+        object-fit: contain;
+    }
+    .im-name {
+        font-size: 18px; font-weight: 700; color: #1a1d23;
+        margin: 0 0 10px;
+    }
+    .im-desc-long {
+        font-size: 13px; color: #6b7280; line-height: 1.55;
+        margin-bottom: 22px;
+    }
+    .im-section-label {
+        font-size: 11px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: .06em;
+        color: #97a3b7;
+        margin: 16px 0 8px;
+    }
+    .im-plans, .im-cats {
+        display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .im-plans .plan-badge {
+        background: #1a1d23; color: #fff;
+        padding: 5px 12px; border-radius: 6px;
+        font-size: 11px; font-weight: 600;
+    }
+    .im-cats .cat-tag {
+        background: #f3f4f6; color: #374151;
+        padding: 5px 12px; border-radius: 6px;
+        font-size: 11px; font-weight: 600;
+    }
+
+    .im-main {
+        flex: 1; padding: 28px 32px;
+        overflow-y: auto;
+    }
+    .im-close {
+        position: absolute; top: 14px; right: 14px;
+        width: 32px; height: 32px;
+        border-radius: 8px; border: none;
+        background: rgba(0,0,0,.04);
+        cursor: pointer; font-size: 18px;
+        z-index: 9002;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .im-close:hover { background: rgba(0,0,0,.08); }
+
+    /* Estilos compartilhados pelos panels */
+    .panel-header {
+        display: flex; align-items: center; gap: 14px;
+        margin-bottom: 16px;
+    }
+    .panel-header > div:first-child { flex: 1; min-width: 0; }
+    .panel-title  { font-size: 16px; font-weight: 700; color: #1a1d23; margin: 0 0 2px; }
+    .panel-subtitle { font-size: 12.5px; color: #6b7280; margin: 0; }
+
+    @media (max-width: 768px) {
+        .integration-modal .im-shell { flex-direction: column; height: 95vh; max-height: none; }
+        .im-sidebar { flex: 0 0 auto; max-height: 220px; border-right: none; border-bottom: 1px solid #f0f2f7; }
+    }
+
+    /* Containers escondidos com source HTML dos panels (não devem aparecer) */
+    [data-panel-for] { display: none; }
+
+    /* Boost z-index dos modais existentes pra não conflitar com o im-shell */
+    #waQrModal.wa-modal-overlay { z-index: 10000; }
+    #waImportModal.wa-modal-overlay { z-index: 10000; }
+    #fbLeadOverlay.int-modal-overlay { z-index: 10001; }
+    #fbLeadDrawer.int-modal { z-index: 10002; }
+    #waBtnOverlay.int-modal-overlay { z-index: 10001; }
+    #waBtnDrawer.int-modal { z-index: 10002; }
+
+    /* ========================================================================
+       Estilos legados (mantidos pros panels — não mexer)
+       ======================================================================== */
+
     .integrations-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -505,443 +741,105 @@
 
     @include('tenant.settings._tabs')
 
-    <div class="integrations-grid">
+    {{-- ============================================================
+         Catálogo de integrações (refactor Agendor-style)
+         ============================================================ --}}
+    <div class="catalog-layout">
 
-        {{-- ─── WhatsApp ─────────────────────────────────────────────────── --}}
-        @if($enabledIntegrations['whatsapp'])
-        <div class="integration-card">
-            <div class="integration-header">
-                <div class="integration-logo whatsapp">
-                    <i class="bi bi-whatsapp" style="font-size:20px;"></i>
-                </div>
-                <div class="integration-title">
-                    <h3>{{ __('integrations.wa_title') }}</h3>
-                    <p>{{ __('integrations.wa_subtitle') }}</p>
-                </div>
-                @php
-                    $waConnected = $whatsappInstances->where('status', 'connected')->count();
-                @endphp
-                @if($waConnected > 0)
-                    <span class="conn-badge conn-active">{{ __('integrations.wa_active', ['count' => $waConnected]) }}</span>
-                @else
-                    <span class="conn-badge conn-none">{{ __('integrations.wa_disconnected') }}</span>
-                @endif
-            </div>
-            <div class="integration-body">
-                <ul class="integration-features">
-                    <li>{{ __('integrations.wa_feat_1') }}</li>
-                    <li>{{ __('integrations.wa_feat_2') }}</li>
-                    <li>{{ __('integrations.wa_feat_3') }}</li>
-                    <li>{{ __('integrations.wa_feat_4') }}</li>
-                </ul>
+        {{-- Sidebar de categorias --}}
+        <aside class="catalog-sidebar">
+            @php
+                $categoryIcons = [
+                    'all'          => 'bi-grid-3x3-gap',
+                    'messaging'    => 'bi-whatsapp',
+                    'lead_capture' => 'bi-collection',
+                    'calendar'     => 'bi-calendar3',
+                ];
+            @endphp
+            @foreach(\App\Support\IntegrationCatalog::categories() as $catSlug => $catLangKey)
+                <button type="button"
+                        class="cat-item {{ $catSlug === 'all' ? 'active' : '' }}"
+                        data-category="{{ $catSlug }}">
+                    <i class="bi {{ $categoryIcons[$catSlug] ?? 'bi-circle' }}"></i>
+                    {{ __($catLangKey) }}
+                </button>
+            @endforeach
+        </aside>
 
-                {{-- Instâncias conectadas --}}
-                <div id="waInstancesList" style="margin-bottom:16px;">
-                @foreach($whatsappInstances as $inst)
-                    <div class="wa-instance-item" data-instance-id="{{ $inst->id }}">
-                        <span class="wa-dot {{ $inst->status === 'connected' ? 'connected' : ($inst->status === 'qr' ? 'qr' : 'offline') }}"></span>
-                        <div class="wa-instance-detail">
-                            <div class="wa-label-wrap">
-                                <input type="text" class="wa-label-input" value="{{ $inst->label ?? '' }}"
-                                       placeholder="{{ __('integrations.wa_label_ph') }}"
-                                       data-instance-id="{{ $inst->id }}" onblur="saveWaLabel(this)">
-                                <i class="bi bi-pencil wa-edit-icon"></i>
-                            </div>
-                            <span class="wa-instance-phone">{{ $inst->phone_number ?? $inst->display_name ?? $inst->session_name }}</span>
-                        </div>
-                        <div class="wa-instance-actions">
-                            @if($inst->status === 'connected')
-                                <button class="btn-sync" style="padding:5px 12px;font-size:11.5px;" onclick="openImportModal({{ $inst->id }})" title="{{ __('integrations.wa_import') }}">
-                                    <i class="bi bi-cloud-download"></i> {{ __('integrations.wa_import') }}
-                                </button>
-                                <button class="btn-disconnect" style="padding:5px 12px;font-size:11.5px;" onclick="disconnectWhatsapp(this, {{ $inst->id }})">
-                                    <i class="bi bi-x-circle"></i> {{ __('integrations.wa_disconnect') }}
-                                </button>
-                            @elseif($inst->status === 'qr')
-                                <button class="btn-connect" style="padding:5px 12px;font-size:11.5px;" onclick="openWaModal({{ $inst->id }})">
-                                    <i class="bi bi-qr-code"></i> {{ __('integrations.wa_qr') }}
-                                </button>
-                                <button class="btn-disconnect" style="padding:5px 8px;font-size:11.5px;" onclick="deleteWhatsappInstance(this, {{ $inst->id }})">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+        {{-- Conteúdo principal --}}
+        <main class="catalog-main">
+            <input type="text" id="catalogSearch" class="catalog-search"
+                   placeholder="{{ __('integrations.search_placeholder') }}"
+                   autocomplete="off">
+
+            <div class="catalog-grid" id="catalogGrid">
+                @forelse($catalog as $integration)
+                    <div class="catalog-card"
+                         data-slug="{{ $integration['slug'] }}"
+                         data-category="{{ $integration['category'] }}"
+                         data-name="{{ strtolower(__($integration['name'])) }}"
+                         onclick="openIntegrationModal('{{ $integration['slug'] }}')">
+                        <div class="card-icon">
+                            @if(!empty($integration['image']))
+                                <img src="{{ asset($integration['image']) }}" alt="{{ __($integration['name']) }}">
                             @else
-                                <button class="btn-connect" style="padding:5px 12px;font-size:11.5px;" onclick="reconnectWhatsapp(this, {{ $inst->id }})">
-                                    <i class="bi bi-arrow-clockwise"></i> {{ __('integrations.wa_reconnect') }}
-                                </button>
-                                <button class="btn-disconnect" style="padding:5px 8px;font-size:11.5px;" onclick="deleteWhatsappInstance(this, {{ $inst->id }})">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                                <i class="bi {{ $integration['icon'] }}" style="color:{{ $integration['icon_bg'] }};"></i>
                             @endif
                         </div>
-                    </div>
-                @endforeach
-                </div>
-
-                <div class="integration-actions">
-                    @if($whatsappInstancesRemain === null || $whatsappInstancesRemain > 0)
-                        <button class="btn-connect" id="btnAddWaNumber" onclick="startWhatsappConnect(this)">
-                            <i class="bi bi-plus-lg"></i> {{ __('integrations.wa_add_number') }}
-                        </button>
-                    @else
-                        <span class="btn-coming-soon">
-                            <i class="bi bi-lock"></i> {{ __('integrations.wa_limit', ['max' => $maxWhatsappInstances]) }}
+                        <div class="card-name">{{ __($integration['name']) }}</div>
+                        <span class="card-type-badge type-{{ $integration['type'] }}">
+                            {{ __('integrations.type_' . $integration['type']) }}
                         </span>
-                    @endif
-                </div>
-            </div>
-        </div>
-        @endif
-
-        {{-- ─── Google Calendar ──────────────────────────────────────────── --}}
-        @if($enabledIntegrations['google_calendar'])
-        @php
-            $hasCalendar   = $google && $google->status === 'active'
-                             && (in_array('https://www.googleapis.com/auth/calendar.events', (array) ($google->scopes_json ?? []), true)
-                              || in_array('https://www.googleapis.com/auth/calendar', (array) ($google->scopes_json ?? []), true));
-            $needsReconnect = $google && $google->status === 'active' && !$hasCalendar;
-        @endphp
-        <div class="integration-card">
-            <div class="integration-header">
-                <div class="integration-logo google">G</div>
-                <div class="integration-title">
-                    <h3>{{ __('integrations.gcal_title') }}</h3>
-                    <p>{{ __('integrations.gcal_subtitle') }}</p>
-                </div>
-                @if($hasCalendar)
-                    <span class="conn-badge conn-active">{{ __('integrations.gcal_connected') }}</span>
-                @elseif($needsReconnect)
-                    <span class="conn-badge conn-expired">{{ __('integrations.gcal_reconnect_badge') }}</span>
-                @else
-                    <span class="conn-badge conn-none">{{ __('integrations.gcal_disconnected') }}</span>
-                @endif
-            </div>
-            <div class="integration-body">
-                <ul class="integration-features">
-                    <li>{{ __('integrations.gcal_feat_1') }}</li>
-                    <li>{{ __('integrations.gcal_feat_2') }}</li>
-                    <li>{{ __('integrations.gcal_feat_3') }}</li>
-                    <li>{{ __('integrations.gcal_feat_4') }}</li>
-                </ul>
-
-                @if($hasCalendar && $google)
-                <div class="conn-detail">
-                    <strong>{{ $google->platform_user_name ?? __('integrations.gcal_default_name') }}</strong><br>
-                    <span>{{ __('integrations.gcal_ai_hint') }}</span>
-                </div>
-                @elseif($needsReconnect)
-                <div class="conn-detail" style="color:#b45309;">
-                    <i class="bi bi-exclamation-triangle me-1"></i>
-                    {{ __('integrations.gcal_needs_reconnect') }}
-                </div>
-                @else
-                <div class="conn-detail" style="color:#9ca3af;">
-                    {{ __('integrations.gcal_not_connected') }}
-                </div>
-                @endif
-
-                <div class="integration-actions">
-                    @if($hasCalendar)
-                        <a href="{{ route('calendar.index') }}" class="btn-sync" style="text-decoration:none;">
-                            <i class="bi bi-calendar3"></i> {{ __('integrations.gcal_open') }}
-                        </a>
-                        <button class="btn-disconnect" onclick="disconnectPlatform('google', this)">
-                            <i class="bi bi-x-circle"></i> {{ __('integrations.gcal_disconnect') }}
-                        </button>
-                    @else
-                        <a href="{{ route('settings.integrations.google.redirect') }}" class="btn-connect">
-                            <i class="bi bi-google"></i> {{ $needsReconnect ? __('integrations.gcal_reconnect') : __('integrations.gcal_connect') }}
-                        </a>
-                    @endif
-                </div>
-            </div>
-        </div>
-        @endif
-
-        {{-- ─── Instagram ──────────────────────────────────────────────── --}}
-        @if($enabledIntegrations['instagram'])
-        <div class="integration-card">
-            <div class="integration-header">
-                <div class="integration-logo instagram">
-                    <i class="bi bi-instagram" style="font-size:20px;"></i>
-                </div>
-                <div class="integration-title">
-                    <h3>{{ __('integrations.ig_title') }}</h3>
-                    <p>{{ __('integrations.ig_subtitle') }}</p>
-                </div>
-                @if($instagram && $instagram->status === 'connected')
-                    <span class="conn-badge conn-active">{{ __('integrations.ig_connected') }}</span>
-                @elseif($instagram)
-                    <span class="conn-badge conn-expired">{{ __('integrations.ig_reconnect') }}</span>
-                @else
-                    <span class="conn-badge conn-none">{{ __('integrations.ig_disconnected') }}</span>
-                @endif
-            </div>
-            <div class="integration-body">
-                <ul class="integration-features">
-                    <li>{{ __('integrations.ig_feat_1') }}</li>
-                    <li>{{ __('integrations.ig_feat_2') }}</li>
-                    <li>{{ __('integrations.ig_feat_3') }}</li>
-                    <li>{{ __('integrations.ig_feat_4') }}</li>
-                </ul>
-                @if($instagram)
-                <div class="conn-detail">
-                    <strong>{{ $instagram->username ?? __('integrations.ig_default_name') }}</strong><br>
-                    <span>{{ __('integrations.ig_connected') }} {{ $instagram->updated_at?->diffForHumans() ?? '' }}</span>
-                </div>
-                @else
-                <div class="conn-detail" style="color:#9ca3af;">
-                    {{ __('integrations.ig_not_connected') }}
-                </div>
-                @endif
-                <div class="integration-actions">
-                    @if($instagram)
-                        <button class="btn-disconnect" onclick="disconnectInstagram(this)">
-                            <i class="bi bi-x-circle"></i> {{ __('integrations.ig_disconnect') }}
-                        </button>
-                    @else
-                        <a href="{{ route('settings.integrations.instagram.redirect') }}" class="btn-connect">
-                            <i class="bi bi-instagram"></i> {{ __('integrations.ig_connect') }}
-                        </a>
-                    @endif
-                </div>
-            </div>
-        </div>
-        @endif
-
-    {{-- ─── Facebook/Instagram Lead Ads ──────────────────────────────── --}}
-    @if($enabledIntegrations['facebook_leadads'] ?? false)
-    <div class="integration-card">
-        <div class="integration-header">
-            <div class="integration-logo facebook">
-                <i class="bi bi-facebook" style="font-size:20px;"></i>
-            </div>
-            <div class="integration-title">
-                <h3>{{ __('integrations.fb_lead_title') }}</h3>
-                <p>{{ __('integrations.fb_lead_subtitle') }}</p>
-            </div>
-            @if($facebookLeadAds && $facebookLeadAds->status === 'active')
-                <span class="conn-badge conn-active">{{ __('integrations.fb_lead_connected') }}</span>
-            @else
-                <span class="conn-badge conn-none">{{ __('integrations.fb_lead_disconnected') }}</span>
-            @endif
-        </div>
-        <div class="integration-body">
-            <ul class="integration-features">
-                <li>{{ __('integrations.fb_lead_feat_1') }}</li>
-                <li>{{ __('integrations.fb_lead_feat_2') }}</li>
-                <li>{{ __('integrations.fb_lead_feat_3') }}</li>
-                <li>{{ __('integrations.fb_lead_feat_4') }}</li>
-            </ul>
-            @if($facebookLeadAds && $facebookLeadAds->status === 'active')
-                <div class="conn-detail">
-                    <strong>{{ $facebookLeadAds->platform_user_name ?? 'Facebook' }}</strong><br>
-                    <span>{{ __('integrations.fb_lead_connected_ago', ['time' => $facebookLeadAds->updated_at?->diffForHumans() ?? '']) }}</span>
-                </div>
-                @if($fbLeadConnections->isNotEmpty())
-                <div style="margin:10px 0;padding:10px 14px;background:#f0f4ff;border:1px solid #dbeafe;border-radius:8px;font-size:12.5px;">
-                    <strong style="color:#1a1d23;">{{ __('integrations.fb_lead_forms_count', ['count' => $fbLeadConnections->count()]) }}</strong>
-                    @foreach($fbLeadConnections as $fc)
-                    <div style="margin-top:6px;display:flex;align-items:center;gap:6px;color:#6b7280;">
-                        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $fc->form_name }} &rarr; {{ $fc->pipeline?->name }} / {{ $fc->stage?->name }}</span>
-                        <button type="button" onclick="editFbLeadConnection({{ $fc->id }})" title="{{ __('integrations.fb_lead_edit') }}" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1877F2;border-radius:6px;padding:3px 7px;cursor:pointer;font-size:11px;">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <button type="button" onclick="deleteFbLeadConnection({{ $fc->id }}, this)" title="{{ __('integrations.fb_lead_delete') }}" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;border-radius:6px;padding:3px 7px;cursor:pointer;font-size:11px;">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                        <div class="card-desc">{{ __($integration['description_short']) }}</div>
                     </div>
-                    @endforeach
+                @empty
+                    <div class="catalog-empty">{{ __('integrations.no_results') }}</div>
+                @endforelse
+
+                <div class="catalog-empty" id="catalogNoResults" style="display:none;">
+                    {{ __('integrations.no_results') }}
                 </div>
-                @endif
-                <div class="integration-actions" style="gap:8px;">
-                    <button class="btn-connect" onclick="openFbLeadDrawer()" style="background:#1877F2;">
-                        <i class="bi bi-gear"></i> {{ __('integrations.fb_lead_manage') }}
-                    </button>
-                    <button class="btn-disconnect" onclick="disconnectFbLeadAds(this)">
-                        <i class="bi bi-x-circle"></i> {{ __('integrations.fb_lead_disconnect') }}
-                    </button>
-                </div>
-            @else
-                <div class="conn-detail" style="color:#9ca3af;">{{ __('integrations.fb_lead_not_connected') }}</div>
-                <div class="integration-actions">
-                    <a href="{{ route('settings.integrations.facebook-leadads.redirect') }}" class="btn-connect" style="background:#1877F2;">
-                        <i class="bi bi-facebook"></i> {{ __('integrations.fb_lead_connect') }}
-                    </a>
-                </div>
-            @endif
-        </div>
+            </div>
+        </main>
     </div>
-    @endif
 
-    {{-- ─── WhatsApp Cloud API (Meta Oficial) — gated por Feature Flag ──────── --}}
-    @if($enabledIntegrations['whatsapp_cloud_api'] ?? false)
-    <div class="integration-card">
-        <div class="integration-header">
-            <div class="integration-logo" style="background:#dcfce7;color:#25D366;">
-                <i class="bi bi-whatsapp" style="font-size:20px;"></i>
-            </div>
-            <div class="integration-title">
-                <h3>WhatsApp Cloud API <span style="font-size:11px;color:#fff;background:#0085f3;padding:2px 7px;border-radius:99px;font-weight:600;margin-left:6px;vertical-align:middle;">BETA</span></h3>
-                <p>API oficial da Meta com modo Coexistência (use no celular e API ao mesmo tempo)</p>
-            </div>
-            @if($cloudApiInstances->isNotEmpty())
-                <span class="conn-badge conn-active">Conectado</span>
-            @else
-                <span class="conn-badge conn-none">Não conectado</span>
-            @endif
-        </div>
-        <div class="integration-body">
-            <ul class="integration-features">
-                <li>API oficial Meta — risco zero de banimento</li>
-                <li>Coexistência: WhatsApp no celular continua funcionando normalmente</li>
-                <li>Sincronização bidirecional entre app e Syncro</li>
-                <li>Templates aprovados, broadcast e métricas oficiais</li>
-            </ul>
-            @if($cloudApiInstances->isNotEmpty())
-                <div style="margin:10px 0;padding:10px 14px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;font-size:12.5px;">
-                    <strong style="color:#1a1d23;">{{ $cloudApiInstances->count() }} número(s) conectado(s)</strong>
-                    @foreach($cloudApiInstances as $ci)
-                    <div style="margin-top:6px;display:flex;align-items:center;gap:6px;color:#6b7280;">
-                        <i class="bi bi-whatsapp" style="color:#25D366;"></i>
-                        <span style="flex:1;min-width:0;">
-                            <strong>{{ $ci->label ?: ('+' . $ci->phone_number) }}</strong>
-                            <small style="color:#9ca3af;display:block;font-size:11px;">phone_number_id: {{ $ci->phone_number_id }}</small>
-                        </span>
-                        <button type="button" onclick="disconnectWaCloud({{ $ci->id }}, this)" title="Desconectar" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;border-radius:6px;padding:4px 9px;cursor:pointer;font-size:11px;">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                    @endforeach
-                </div>
-                <div class="integration-actions">
-                    <button type="button" class="btn-connect" onclick="connectWhatsappCloud()" style="background:#25D366;">
-                        <i class="bi bi-plus-lg"></i> Adicionar outro número
-                    </button>
-                </div>
-            @else
-                <div class="conn-detail" style="color:#9ca3af;">Conecte sua conta Meta Business para começar a receber leads via API oficial.</div>
-                <div class="integration-actions">
-                    <button type="button" class="btn-connect" onclick="connectWhatsappCloud()" style="background:#25D366;">
-                        <i class="bi bi-whatsapp"></i> Conectar com Meta
-                    </button>
-                </div>
-            @endif
-        </div>
-    </div>
-    @endif
+    {{-- ============================================================
+         Modal de detalhes da integração (single instance)
+         O conteúdo direito é populado via JS copiando de [data-panel-for]
+         ============================================================ --}}
+    <div id="integrationModal" class="integration-modal">
+        <div class="im-overlay" onclick="closeIntegrationModal()"></div>
+        <div class="im-shell">
+            <button type="button" class="im-close" onclick="closeIntegrationModal()" aria-label="Fechar">
+                <i class="bi bi-x-lg"></i>
+            </button>
 
-    {{-- ─── Botões WhatsApp (rastreamento de cliques) ──────────────────── --}}
-    <div class="integration-card">
-        <div class="integration-header">
-            <div class="integration-logo" style="background:#dcfce7;color:#25D366;">
-                <i class="bi bi-chat-dots-fill" style="font-size:20px;"></i>
-            </div>
-            <div class="integration-title">
-                <h3>{{ __('integrations.wabtn_title') }}</h3>
-                <p>{{ __('integrations.wabtn_subtitle') }}</p>
-            </div>
-            <span class="conn-badge {{ $waButtons->where('is_active', true)->count() > 0 ? 'conn-active' : 'conn-none' }}">
-                {{ $waButtons->count() }}/3
-            </span>
-        </div>
-        <div class="integration-body">
-            <ul class="integration-features">
-                <li>{{ __('integrations.wabtn_feat_1') }}</li>
-                <li>{{ __('integrations.wabtn_feat_2') }}</li>
-                <li>{{ __('integrations.wabtn_feat_3') }}</li>
-                <li>{{ __('integrations.wabtn_feat_4') }}</li>
-            </ul>
+            {{-- Lateral esquerda fixa --}}
+            <aside class="im-sidebar">
+                <div class="im-icon" id="imIcon"></div>
+                <h2 class="im-name" id="imName"></h2>
+                <p class="im-desc-long" id="imDescLong"></p>
 
-            {{-- Lista de botões existentes --}}
-            @forelse($waButtons as $waBtn)
-                @php $clicks7d = $waBtn->clicks()->where('clicked_at', '>=', now()->subDays(7))->count(); @endphp
-                <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#f9fafb;border:1px solid #e8eaf0;border-radius:10px;margin-bottom:8px;">
-                    <div style="width:36px;height:36px;border-radius:8px;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="bi bi-whatsapp" style="color:#25D366;font-size:16px;"></i>
-                    </div>
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-size:13px;font-weight:600;color:#1a1d23;">{{ $waBtn->phone_number }}</div>
-                        <div style="font-size:11px;color:#9ca3af;">{{ $clicks7d }} cliques (7 dias) · {{ $waBtn->button_label }}</div>
-                    </div>
-                    <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;{{ $waBtn->is_active ? 'background:#ecfdf5;color:#059669;' : 'background:#f3f4f6;color:#6b7280;' }}">
-                        {{ $waBtn->is_active ? 'Ativo' : 'Inativo' }}
-                    </span>
-                    <button onclick="openWaBtnDrawer({{ $waBtn->id }})" style="background:none;border:none;color:#0085f3;cursor:pointer;font-size:14px;padding:4px;" title="Editar">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button onclick="deleteWaButton({{ $waBtn->id }}, '{{ $waBtn->phone_number }}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;padding:4px;" title="Remover">
-                        <i class="bi bi-trash3"></i>
-                    </button>
-                </div>
-            @empty
-                <div class="conn-detail" style="color:#9ca3af;">{{ __('integrations.wabtn_no_button') }}</div>
-            @endforelse
+                <div class="im-section-label">{{ __('integrations.available_plans') }}</div>
+                <div class="im-plans" id="imPlans"></div>
 
-            @if($waButtons->count() < 3)
-            <div class="integration-actions">
-                <button class="btn-connect" style="background:#25D366;" onclick="openWaBtnDrawer(null)">
-                    <i class="bi bi-plus-lg"></i> Adicionar botão ({{ $waButtons->count() }}/3)
-                </button>
-            </div>
-            @endif
+                <div class="im-section-label">{{ __('integrations.categories_label') }}</div>
+                <div class="im-cats" id="imCats"></div>
+            </aside>
+
+            {{-- Lateral direita scrollável (conteúdo dinâmico) --}}
+            <main class="im-main" id="imMain">
+                {{-- Populado via JS ao abrir o modal --}}
+            </main>
         </div>
     </div>
 
-    {{-- ─── Drawer Botão WhatsApp ──────────────────────────────────────── --}}
-    <div id="waBtnOverlay" class="int-modal-overlay" onclick="closeWaBtnDrawer(event)"></div>
-    <div id="waBtnDrawer" class="int-modal int-modal-540">
-        <div style="padding:20px 24px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;">
-            <h4 id="waBtnDrawerTitle" style="margin:0;font-size:16px;font-weight:700;color:#1a1d23;">{{ __('integrations.wabtn_drawer_title') }}</h4>
-            <button onclick="closeWaBtnDrawer()" style="background:none;border:none;font-size:20px;color:#9ca3af;cursor:pointer;padding:4px;"><i class="bi bi-x-lg"></i></button>
+    {{-- Painéis source (escondidos) — JS copia o innerHTML pro modal ao abrir --}}
+    @foreach($catalog as $integration)
+        <div data-panel-for="{{ $integration['slug'] }}">
+            @include($integration['panel_partial'])
         </div>
-        <div style="flex:1;overflow-y:auto;padding:20px 24px;">
-            <input type="hidden" id="waBtnEditId" value="">
-            <div style="margin-bottom:14px;">
-                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">{{ __('integrations.wabtn_phone') }}</label>
-                <input type="text" id="waBtnPhone" class="form-control" placeholder="{{ __('integrations.wabtn_phone_ph') }}" style="font-size:13px;">
-            </div>
-            <div style="margin-bottom:14px;">
-                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">{{ __('integrations.wabtn_label') }}</label>
-                <input type="text" id="waBtnLabel" class="form-control" placeholder="{{ __('integrations.wabtn_label_ph') }}" style="font-size:13px;">
-            </div>
-            <div style="margin-bottom:14px;">
-                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">{{ __('integrations.wabtn_message') }}</label>
-                <textarea id="waBtnMessage" class="form-control" rows="3" placeholder="{{ __('integrations.wabtn_message_ph') }}" style="font-size:13px;resize:vertical;"></textarea>
-            </div>
-            <div style="margin-bottom:14px;display:flex;align-items:center;gap:8px;">
-                <input type="checkbox" id="waBtnFloating" checked style="width:16px;height:16px;">
-                <label for="waBtnFloating" style="font-size:12.5px;color:#374151;cursor:pointer;">{{ __('integrations.wabtn_floating') }}</label>
-            </div>
-            <div style="margin-bottom:14px;display:flex;align-items:center;gap:8px;">
-                <input type="checkbox" id="waBtnActive" checked style="width:16px;height:16px;">
-                <label for="waBtnActive" style="font-size:12.5px;color:#374151;cursor:pointer;">Botão ativo</label>
-            </div>
-
-            {{-- Embed code (shown after save, populated by JS) --}}
-            <div id="waBtnEmbedSection" style="display:none;padding-top:16px;border-top:1px solid #f0f2f7;">
-                <label style="font-size:13px;font-weight:700;color:#1a1d23;display:block;margin-bottom:6px;"><i class="bi bi-code-slash"></i> {{ __('integrations.wabtn_embed') }}</label>
-                <p style="font-size:11.5px;color:#6b7280;margin-bottom:8px;">Cole antes do <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:10.5px;">&lt;/body&gt;</code> do seu site.</p>
-                <div style="position:relative;">
-                    <textarea id="waBtnEmbed" readonly onclick="this.select()" style="width:100%;height:50px;font-family:monospace;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 70px 10px 10px;resize:none;color:#334155;"></textarea>
-                    <button onclick="navigator.clipboard.writeText(document.getElementById('waBtnEmbed').value.replace(/&lt;/g,'<').replace(/&gt;/g,'>'));toastr.success(ILANG.toast_copied)" style="position:absolute;top:8px;right:8px;background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="bi bi-clipboard"></i> {{ __('integrations.wabtn_copy') }}</button>
-                </div>
-            </div>
-            <div id="waBtnTrackSection" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid #f0f2f7;">
-                <label style="font-size:13px;font-weight:700;color:#1a1d23;display:block;margin-bottom:6px;"><i class="bi bi-link-45deg"></i> {{ __('integrations.wabtn_tracking') }}</label>
-                <p style="font-size:11.5px;color:#6b7280;margin-bottom:8px;">{{ __('integrations.wabtn_tracking_hint') }}</p>
-                <div style="position:relative;">
-                    <input type="text" id="waBtnTrackLink" readonly onclick="this.select()" style="width:100%;font-family:monospace;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 70px 10px 10px;color:#334155;">
-                    <button onclick="navigator.clipboard.writeText(document.getElementById('waBtnTrackLink').value);toastr.success(ILANG.toast_link_copied)" style="position:absolute;top:6px;right:8px;background:#0085f3;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;"><i class="bi bi-clipboard"></i> {{ __('integrations.wabtn_copy') }}</button>
-                </div>
-            </div>
-        </div>
-        <div style="padding:16px 24px;border-top:1px solid #f0f2f7;display:flex;gap:8px;justify-content:flex-end;">
-            <button onclick="closeWaBtnDrawer()" style="padding:8px 20px;border:1px solid #e2e8f0;background:#fff;border-radius:100px;font-size:13px;cursor:pointer;color:#374151;">{{ __('integrations.wabtn_cancel') }}</button>
-            <button onclick="saveWaButton()" style="padding:8px 20px;background:#25D366;color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;"><i class="bi bi-check-lg"></i> {{ __('integrations.wabtn_save') }}</button>
-        </div>
-    </div>
-
-    </div>{{-- fecha integrations-grid --}}
+    @endforeach
 
 </div>{{-- fecha page-container --}}
 
@@ -1179,6 +1077,107 @@
 @endsection
 
 @push('scripts')
+
+{{-- ============================================================
+     Catálogo de integrações — filtros + modal de detalhes
+     ============================================================ --}}
+<script>
+const CATALOG_DATA = @json($catalogJs);
+
+/* ---------- Filtros (categoria + busca) ---------- */
+let activeCategory = 'all';
+let searchTerm = '';
+
+function filterCatalogCards() {
+    let visible = 0;
+    document.querySelectorAll('.catalog-card').forEach(function(card) {
+        const cat = card.dataset.category;
+        const name = card.dataset.name;
+        const matchCat = activeCategory === 'all' || cat === activeCategory;
+        const matchSearch = searchTerm === '' || name.indexOf(searchTerm) !== -1;
+        const show = matchCat && matchSearch;
+        card.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+    const noResults = document.getElementById('catalogNoResults');
+    if (noResults) noResults.style.display = visible === 0 ? '' : 'none';
+}
+
+document.querySelectorAll('.cat-item').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.cat-item').forEach(function(x) { x.classList.remove('active'); });
+        btn.classList.add('active');
+        activeCategory = btn.dataset.category;
+        filterCatalogCards();
+    });
+});
+
+const searchInput = document.getElementById('catalogSearch');
+if (searchInput) {
+    searchInput.addEventListener('input', function(e) {
+        searchTerm = e.target.value.toLowerCase().trim();
+        filterCatalogCards();
+    });
+}
+
+/* ---------- Modal de detalhes ---------- */
+function openIntegrationModal(slug) {
+    const data = CATALOG_DATA[slug];
+    if (!data) return;
+
+    // Sidebar do modal — usa SVG (se tem 'image') ou Bootstrap Icon
+    const iconEl = document.getElementById('imIcon');
+    if (data.image) {
+        iconEl.innerHTML = '<img src="' + data.image + '" alt="' + data.name + '">';
+        iconEl.style.background = '#f8fafc';
+        iconEl.style.color = '';
+    } else {
+        iconEl.innerHTML = '<i class="bi ' + data.icon + '" style="color:' + data.icon_bg + ';"></i>';
+        iconEl.style.background = '#f8fafc';
+    }
+
+    document.getElementById('imName').textContent = data.name;
+    document.getElementById('imDescLong').textContent = data.description_long;
+
+    // Plans badges
+    const plansHtml = (data.plans || []).map(function(p) {
+        return '<span class="plan-badge">' + p.charAt(0).toUpperCase() + p.slice(1) + '</span>';
+    }).join('');
+    document.getElementById('imPlans').innerHTML = plansHtml;
+
+    // Categories tags
+    document.getElementById('imCats').innerHTML =
+        '<span class="cat-tag">' + (data.category_label || data.category) + '</span>';
+
+    // Conteúdo do painel direito: copia HTML do source escondido
+    const source = document.querySelector('[data-panel-for="' + slug + '"]');
+    document.getElementById('imMain').innerHTML = source ? source.innerHTML : '';
+
+    // Mostra modal
+    document.getElementById('integrationModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    // Init function opcional por integração (rebind handlers se necessário)
+    if (typeof window['init_' + slug] === 'function') {
+        try { window['init_' + slug](); } catch (e) { console.error(e); }
+    }
+}
+
+function closeIntegrationModal() {
+    document.getElementById('integrationModal').classList.remove('open');
+    document.body.style.overflow = '';
+    // Limpa o conteúdo pra não deixar handlers órfãos
+    document.getElementById('imMain').innerHTML = '';
+}
+
+// ESC fecha
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('integrationModal').classList.contains('open')) {
+        closeIntegrationModal();
+    }
+});
+</script>
+
 {{-- Facebook JS SDK pro Embedded Signup do WhatsApp Coexistence --}}
 @if($enabledIntegrations['whatsapp_cloud_api'] ?? false)
 <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>

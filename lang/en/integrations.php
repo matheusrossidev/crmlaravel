@@ -229,4 +229,52 @@ return [
     'fb_save_error'          => 'Error saving configuration',
     'fb_disconnected_success' => 'Disconnected',
     'fb_confirm_disconnect'  => 'Disconnect Facebook Lead Ads? All configured forms will be deactivated.',
+
+    // ===== Integration catalog (Agendor-style refactor) =====
+
+    // Sidebar categories
+    'cat_all'          => 'All categories',
+    'cat_messaging'    => 'Messaging',
+    'cat_lead_capture' => 'Lead capture',
+    'cat_calendar'     => 'Calendar',
+
+    // Catalog UI
+    'search_placeholder' => 'Search integration...',
+    'type_native'        => 'Native integration',
+    'type_partner'       => 'Partner',
+    'type_beta'          => 'Beta',
+    'btn_configure'      => 'Configure',
+    'available_plans'    => 'Available on plans',
+    'categories_label'   => 'Categories',
+    'no_results'         => 'No integrations found for your search.',
+
+    // ── WhatsApp WAHA ──
+    'cat_whatsapp_waha_name'  => 'WhatsApp Business',
+    'cat_whatsapp_waha_short' => 'Connect a WhatsApp number via QR code to receive and send messages directly from the CRM.',
+    'cat_whatsapp_waha_long'  => 'The WhatsApp Business integration lets you connect one or more numbers from your phone to Syncro through QR code. All conversations sync in real time, leads are auto-created, and you can assign AI agents, departments and chatbot flows to each number. Works with regular WhatsApp Business (unofficial), no Meta approval required.',
+
+    // ── WhatsApp Cloud API ──
+    'cat_whatsapp_cloud_name'  => 'WhatsApp Cloud API (Official)',
+    'cat_whatsapp_cloud_short' => 'Official version approved by Meta. Connection via Facebook Business login.',
+    'cat_whatsapp_cloud_long'  => 'The WhatsApp Cloud API integration is the official version approved by Meta. Unlike WAHA, it uses the Facebook Embedded Signup (you connect directly with your Business account), supports Coexistence (keeps the phone app working alongside the CRM) and offers advanced features like official templates. Still in BETA — contact support to enable.',
+
+    // ── Instagram ──
+    'cat_instagram_name'  => 'Instagram Direct',
+    'cat_instagram_short' => 'Receive and reply to Instagram DMs, comments and story mentions, all in the Syncro inbox.',
+    'cat_instagram_long'  => 'Connect your professional Instagram account (Business or Creator) to Syncro via Facebook OAuth. Instagram DMs appear in the same unified inbox alongside WhatsApp and website. Supports keyword automations on comments, Private Reply, and triggering chatbot flows from comments.',
+
+    // ── Facebook Lead Ads ──
+    'cat_fb_leadads_name'  => 'Facebook Lead Ads',
+    'cat_fb_leadads_short' => 'Capture leads from your Meta Ads forms automatically, no spreadsheet exports needed.',
+    'cat_fb_leadads_long'  => 'Connect Facebook and Instagram Lead Ads forms to Syncro. Every time someone fills out your ad, the lead lands instantly in the chosen pipeline, with tags, automatic assignment and form field mapping to the CRM custom fields. Supports multiple pages and multiple forms per page.',
+
+    // ── Google Calendar ──
+    'cat_gcal_name'  => 'Google Calendar',
+    'cat_gcal_short' => 'Sync CRM tasks and meetings with your Google calendar. Automatic email reminders.',
+    'cat_gcal_long'  => 'The Google Calendar integration makes tasks and meetings scheduled in the CRM appear automatically on your Google calendar. You get the native Google reminders (email, mobile push), can see upcoming appointments on the dashboard, and the AI can schedule meetings directly on your calendar when enabled with the calendar tool.',
+
+    // ── WhatsApp Button ──
+    'cat_wabtn_name'  => 'WhatsApp button for websites',
+    'cat_wabtn_short' => 'Add a floating WhatsApp button to your site and capture leads automatically before the first contact.',
+    'cat_wabtn_long'  => 'Create custom WhatsApp buttons to put on external sites. Each button has a unique tracking code: when someone clicks, you capture UTM, fbclid, gclid and the source page. The lead automatically appears in the chosen pipeline with all source info filled in. Includes click metrics by button, source and campaign.',
 ];

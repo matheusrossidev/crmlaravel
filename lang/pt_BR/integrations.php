@@ -229,4 +229,52 @@ return [
     'fb_save_error'          => 'Erro ao salvar configuração',
     'fb_disconnected_success' => 'Desconectado',
     'fb_confirm_disconnect'  => 'Desconectar Facebook Lead Ads? Todos os formulários configurados serão desativados.',
+
+    // ===== Catálogo de integrações (refactor Agendor-style) =====
+
+    // Categorias da sidebar
+    'cat_all'          => 'Todas as categorias',
+    'cat_messaging'    => 'Mensageria',
+    'cat_lead_capture' => 'Captação de leads',
+    'cat_calendar'     => 'Agenda',
+
+    // UI do catálogo
+    'search_placeholder' => 'Buscar integração...',
+    'type_native'        => 'Integração nativa',
+    'type_partner'       => 'Parceiro',
+    'type_beta'          => 'Beta',
+    'btn_configure'      => 'Configurar',
+    'available_plans'    => 'Disponível nos planos',
+    'categories_label'   => 'Categorias',
+    'no_results'         => 'Nenhuma integração encontrada para sua busca.',
+
+    // ── WhatsApp WAHA ──
+    'cat_whatsapp_waha_name'  => 'WhatsApp Business',
+    'cat_whatsapp_waha_short' => 'Conecte um número de WhatsApp via QR code para receber e enviar mensagens diretamente do CRM.',
+    'cat_whatsapp_waha_long'  => 'A integração com o WhatsApp Business permite que você conecte um ou mais números do seu celular ao Syncro através de QR code. Todas as conversas são sincronizadas em tempo real, leads são criados automaticamente, e você pode atribuir agentes de IA, departamentos e fluxos de chatbot a cada número. Funciona com WhatsApp Business comum (não-oficial), sem precisar passar pela aprovação do Meta.',
+
+    // ── WhatsApp Cloud API ──
+    'cat_whatsapp_cloud_name'  => 'WhatsApp Cloud API (Oficial)',
+    'cat_whatsapp_cloud_short' => 'Versão oficial homologada pelo Meta. Conexão via login do Facebook Business.',
+    'cat_whatsapp_cloud_long'  => 'A integração com a WhatsApp Cloud API é a versão oficial e homologada pelo Meta. Diferente do WAHA, ela usa o Embedded Signup do Facebook (você conecta diretamente com sua conta Business), suporta Coexistence (manter o app no celular funcionando junto com o CRM) e oferece recursos avançados como templates oficiais. Ainda em fase BETA — fale com o suporte para liberar.',
+
+    // ── Instagram ──
+    'cat_instagram_name'  => 'Instagram Direct',
+    'cat_instagram_short' => 'Receba e responda DMs do Instagram, comentários e menções em stories, tudo no inbox do Syncro.',
+    'cat_instagram_long'  => 'Conecte sua conta profissional do Instagram (Business ou Creator) ao Syncro via OAuth do Facebook. As DMs do Instagram aparecem no mesmo inbox unificado, junto com WhatsApp e website. Suporta automações por palavra-chave em comentários, respostas privadas (Private Reply) e disparo de fluxos de chatbot a partir de comentários.',
+
+    // ── Facebook Lead Ads ──
+    'cat_fb_leadads_name'  => 'Facebook Lead Ads',
+    'cat_fb_leadads_short' => 'Capture leads dos seus formulários do Meta Ads automaticamente, sem precisar exportar planilhas.',
+    'cat_fb_leadads_long'  => 'Conecte os formulários de Lead Ads do Facebook e Instagram ao Syncro. Toda vez que alguém preencher seu anúncio, o lead cai instantaneamente no funil escolhido, com tags, atribuição automática e mapeamento dos campos do formulário pros campos personalizados do CRM. Suporta múltiplas páginas e múltiplos formulários por página.',
+
+    // ── Google Calendar ──
+    'cat_gcal_name'  => 'Google Agenda',
+    'cat_gcal_short' => 'Sincronize tarefas e reuniões do CRM com sua agenda do Google. Lembretes automáticos por e-mail.',
+    'cat_gcal_long'  => 'A integração com o Google Agenda permite que tarefas e reuniões agendadas no CRM apareçam automaticamente no seu calendário do Google. Você recebe os lembretes nativos do Google (e-mail, push do celular), pode ver compromissos futuros no dashboard e a IA pode agendar reuniões diretamente na sua agenda quando habilitada com a tool de calendário.',
+
+    // ── Botão WhatsApp ──
+    'cat_wabtn_name'  => 'Botão WhatsApp para sites',
+    'cat_wabtn_short' => 'Adicione um botão flutuante de WhatsApp no seu site e capture leads automaticamente antes do primeiro contato.',
+    'cat_wabtn_long'  => 'Crie botões personalizados de WhatsApp pra colocar em sites externos. Cada botão tem um código de rastreamento exclusivo: quando alguém clica, você captura UTM, fbclid, gclid e a página de origem. O lead aparece automaticamente no funil escolhido com todas as informações de origem preenchidas. Inclui métricas de cliques por botão, fonte e campanha.',
 ];

@@ -19,6 +19,7 @@ use App\Services\FacebookLeadAdsService;
 use App\Services\InstagramService;
 use App\Services\PlanLimitChecker;
 use App\Services\WahaService;
+use App\Support\IntegrationCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -79,10 +80,33 @@ class IntegrationController extends Controller
         $pipelines    = Pipeline::with('stages:id,pipeline_id,name,position')->orderBy('sort_order')->get(['id', 'name']);
         $customFields = CustomFieldDefinition::where('is_active', true)->orderBy('sort_order')->get(['id', 'name', 'label', 'field_type']);
 
+        // Catálogo Agendor-style — filtra integrações por feature flag do tenant.
+        // O catálogo é hardcoded em App\Support\IntegrationCatalog.
+        $catalog = IntegrationCatalog::availableForTenant($tenant->id);
+
+        // Versão pra JS (com chaves traduzidas) — alimenta o objeto CATALOG_DATA
+        // do JS que popula o modal de detalhes ao clicar num card.
+        $catalogJs = collect($catalog)->map(function (array $i): array {
+            return [
+                'slug'              => $i['slug'],
+                'name'              => __($i['name']),
+                'description_short' => __($i['description_short']),
+                'description_long'  => __($i['description_long']),
+                'icon'              => $i['icon'],
+                'icon_bg'           => $i['icon_bg'],
+                'image'             => isset($i['image']) ? asset($i['image']) : null,
+                'category'          => $i['category'],
+                'category_label'    => __('integrations.cat_' . $i['category']),
+                'type'              => $i['type'],
+                'plans'             => $i['plans'],
+            ];
+        })->keyBy('slug')->toArray();
+
         return view('tenant.settings.integrations', compact(
             'facebook', 'google', 'facebookLeadAds', 'whatsapp', 'whatsappInstances', 'instagram',
             'enabledIntegrations', 'maxWhatsappInstances', 'whatsappInstancesRemain', 'waButtons',
-            'fbLeadConnections', 'pipelines', 'customFields', 'cloudApiInstances'
+            'fbLeadConnections', 'pipelines', 'customFields', 'cloudApiInstances',
+            'catalog', 'catalogJs'
         ));
     }
 
