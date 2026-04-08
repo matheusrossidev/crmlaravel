@@ -361,6 +361,7 @@
             <a href="{{ route('ai.agents.create') }}" class="btn-primary-sm" style="text-decoration:none;display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 14px;">
                 <i class="bi bi-plus-lg"></i> {{ __('ai_agents.new_agent') }}
             </a>
+            </div>
         </div>
     </div>
 
@@ -384,8 +385,13 @@
             $chIcon   = $agent->channel === 'whatsapp' ? 'whatsapp' : 'chat-dots';
         @endphp
         <div class="agent-card" style="padding:18px 22px;display:flex;flex-direction:column;gap:14px;overflow:visible;">
-                {{-- Header: name + toggle + menu --}}
-                <div style="display:flex;align-items:flex-start;gap:10px;">
+                {{-- Header: avatar + name + toggle + menu --}}
+                <div style="display:flex;align-items:flex-start;gap:12px;">
+                    <a href="{{ route('ai.agents.edit', $agent) }}" style="flex-shrink:0;text-decoration:none;">
+                        <img src="{{ asset($agent->display_avatar ?: \App\Support\AgentAvatars::default()) }}"
+                             alt="{{ $agent->name }}"
+                             style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #eff6ff;display:block;">
+                    </a>
                     <a href="{{ route('ai.agents.edit', $agent) }}" style="flex:1;min-width:0;text-decoration:none;color:inherit;">
                         <div class="agent-name" style="font-size:15px;margin-bottom:2px;">{{ $agent->name }}</div>
                         @if($agent->company_name)

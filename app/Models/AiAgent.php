@@ -22,7 +22,7 @@ class AiAgent extends Model
         'on_finish_action', 'on_transfer_message', 'on_invalid_response',
         'conversation_stages', 'knowledge_base',
         'max_message_length', 'response_delay_seconds', 'response_wait_seconds',
-        'channel', 'website_token', 'bot_name', 'bot_avatar',
+        'channel', 'website_token', 'bot_name', 'bot_avatar', 'display_avatar',
         'welcome_message', 'widget_type', 'widget_color',
         'is_active', 'auto_assign',
         'enable_pipeline_tool', 'enable_tags_tool', 'enable_intent_notify',

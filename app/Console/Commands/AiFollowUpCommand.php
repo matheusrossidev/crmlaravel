@@ -15,11 +15,14 @@ use Illuminate\Support\Facades\Log;
 
 class AiFollowUpCommand extends Command
 {
-    protected $signature   = 'ai:followup';
+    protected $signature   = 'ai:followup {--dry-run : Não envia mensagens, só simula} {--debug : Mostra motivo de cada skip}';
     protected $description = 'Envia mensagens de follow-up automático para conversas com clientes silenciosos';
 
     public function handle(): void
     {
+        $dryRun = (bool) $this->option('dry-run');
+        $debug  = (bool) $this->option('debug');
+
         $provider = (string) config('ai.provider', 'openai');
         $apiKey   = (string) config('ai.api_key', '');
         $model    = (string) config('ai.model', 'gpt-4o-mini');
@@ -27,6 +30,22 @@ class AiFollowUpCommand extends Command
 
         if ($apiKey === '') {
             $this->warn('LLM_API_KEY não configurado — follow-up abortado.');
+            return;
+        }
+
+        if ($dryRun) {
+            $this->warn('=== MODO DRY-RUN: nenhuma mensagem será enviada ===');
+        }
+
+        // Diagnóstico: quantos agentes têm followup ativado?
+        $agentsWithFollowup = \App\Models\AiAgent::withoutGlobalScopes()
+            ->where('is_active', true)
+            ->where('followup_enabled', true)
+            ->count();
+        $this->info("Agentes com followup_enabled=true e is_active=true: {$agentsWithFollowup}");
+
+        if ($agentsWithFollowup === 0) {
+            $this->warn('⚠ Nenhum agente tem followup ativado. Ative em /ia/agentes/{id}/editar → seção Follow-up.');
             return;
         }
 
@@ -44,11 +63,25 @@ class AiFollowUpCommand extends Command
 
         $this->info("Conversas candidatas: {$conversations->count()}");
 
+        $skipReasons = [
+            'max_count'        => 0,
+            'business_hours'   => 0,
+            'inside_window'    => 0,
+            'recent_followup'  => 0,
+            'last_msg_inbound' => 0,
+            'no_last_msg'      => 0,
+            'lock_collision'   => 0,
+            'empty_history'    => 0,
+        ];
+        $sentCount = 0;
+
         foreach ($conversations as $conv) {
             $agent = $conv->aiAgent;
 
             // Filtro de limite de tentativas (em PHP — evita JOIN cross-column)
             if ($conv->followup_count >= ($agent->followup_max_count ?? 3)) {
+                $skipReasons['max_count']++;
+                if ($debug) $this->line("  Skip conv #{$conv->id}: atingiu max_count ({$conv->followup_count}/{$agent->followup_max_count})");
                 continue;
             }
 
@@ -59,7 +92,9 @@ class AiFollowUpCommand extends Command
             $hourEnd   = $agent->followup_hour_end   ?? 18;
 
             if ($hourNow < $hourStart || $hourNow >= $hourEnd) {
-                continue; // Fora do horário comercial
+                $skipReasons['business_hours']++;
+                if ($debug) $this->line("  Skip conv #{$conv->id}: fora do horário comercial (agora={$hourNow}h, janela={$hourStart}h-{$hourEnd}h)");
+                continue;
             }
 
             // ── Verificar janela de tempo ─────────────────────────────────────
@@ -67,13 +102,23 @@ class AiFollowUpCommand extends Command
             $cutoff        = now()->subMinutes($delayMinutes);
             $lastMessageAt = $conv->last_message_at;
 
-            if (! $lastMessageAt || $lastMessageAt->gt($cutoff)) {
-                continue; // Ainda dentro da janela de espera
+            if (! $lastMessageAt) {
+                $skipReasons['no_last_msg']++;
+                if ($debug) $this->line("  Skip conv #{$conv->id}: sem last_message_at");
+                continue;
+            }
+
+            if ($lastMessageAt->gt($cutoff)) {
+                $skipReasons['inside_window']++;
+                if ($debug) $this->line("  Skip conv #{$conv->id}: ainda dentro da janela ({$delayMinutes}min) — última msg há {$lastMessageAt->diffInMinutes(now())}min");
+                continue;
             }
 
             // Respeitar intervalo entre follow-ups consecutivos
             $lastFollowupAt = $conv->last_followup_at;
             if ($lastFollowupAt && $lastFollowupAt->gt($cutoff)) {
+                $skipReasons['recent_followup']++;
+                if ($debug) $this->line("  Skip conv #{$conv->id}: followup recente em {$lastFollowupAt}");
                 continue;
             }
 
@@ -85,18 +130,31 @@ class AiFollowUpCommand extends Command
                 ->first();
 
             if (! $lastMsg || $lastMsg->direction !== 'outbound') {
-                continue; // Último a falar foi o cliente — nenhuma ação necessária
+                $skipReasons['last_msg_inbound']++;
+                if ($debug) $this->line("  Skip conv #{$conv->id}: última msg é inbound ou não existe (IA precisa ter falado por último)");
+                continue;
             }
 
             // ── Lock atômico: evita execução simultânea em múltiplas réplicas ─
             $lockKey = "followup:lock:{$conv->id}";
-            if (! Cache::add($lockKey, 1, now()->addMinutes(11))) {
-                continue; // Outra réplica já está processando esta conversa
+            if (! $dryRun && ! Cache::add($lockKey, 1, now()->addMinutes(11))) {
+                $skipReasons['lock_collision']++;
+                if ($debug) $this->line("  Skip conv #{$conv->id}: lock collision (outra réplica processando)");
+                continue;
             }
 
             // ── Chamar LLM: classificar + gerar follow-up em 1 chamada ──────
             $history = $service->buildHistory($conv, limit: 20);
             if (empty($history)) {
+                $skipReasons['empty_history']++;
+                if ($debug) $this->line("  Skip conv #{$conv->id}: histórico vazio");
+                continue;
+            }
+
+            // Em dry-run, não chamar LLM nem enviar — apenas reportar candidato
+            if ($dryRun) {
+                $sentCount++;
+                $this->info("  [DRY] Conv #{$conv->id} ({$conv->phone}) — ELEGÍVEL pra followup #" . ($conv->followup_count + 1) . "/{$agent->followup_max_count}");
                 continue;
             }
 
@@ -160,10 +218,16 @@ class AiFollowUpCommand extends Command
                 'max'             => $agent->followup_max_count,
             ]);
 
+            $sentCount++;
             $this->line("  ✓ Conv #{$conv->id} — follow-up " . ($conv->followup_count + 1) . "/{$agent->followup_max_count}");
         }
 
         $this->info('Follow-up concluído.');
+        $this->newLine();
+        $this->info("Resumo: {$sentCount} " . ($dryRun ? 'elegíveis (dry-run)' : 'enviados'));
+        if ($debug || $dryRun) {
+            $this->table(['Motivo do skip', 'Total'], collect($skipReasons)->map(fn($v, $k) => [$k, $v])->values()->all());
+        }
     }
 
     private function buildFollowUpPrompt(\App\Models\AiAgent $agent): string

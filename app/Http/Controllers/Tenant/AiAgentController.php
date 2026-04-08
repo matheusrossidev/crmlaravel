@@ -64,7 +64,8 @@ class AiAgentController extends Controller
         $departments    = $this->activeDepartments();
         $whatsappInstances = WhatsappInstance::orderBy('label')->get(['id', 'label', 'phone_number', 'session_name']);
 
-        return view('tenant.ai.agents.form', compact('agent', 'knowledgeFiles', 'users', 'departments', 'whatsappInstances'));
+        // Wizard multi-step pra criação (form sectioned é só pra edit)
+        return view('tenant.ai.agents.wizard', compact('agent', 'knowledgeFiles', 'users', 'departments', 'whatsappInstances'));
     }
 
     public function store(Request $request): JsonResponse|\Illuminate\Http\RedirectResponse
@@ -469,6 +470,8 @@ class AiAgentController extends Controller
             'reminder_offsets'           => 'nullable|array',
             'reminder_offsets.*'         => 'integer|min:1',
             'reminder_message_template'  => 'nullable|string|max:1000',
+            // Avatar decorativo admin-only (lista + sidebar do edit) — NÃO vai pro lead
+            'display_avatar'             => 'nullable|string|max:191',
             // Widget fields (web_chat channel)
             'bot_name'                   => 'nullable|string|max:100',
             'bot_avatar'                 => 'nullable|string|max:500',

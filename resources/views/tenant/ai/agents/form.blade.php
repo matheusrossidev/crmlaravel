@@ -10,28 +10,242 @@
 <style>
     .ai-form-wrap { width: 100%; }
 
-    .section-card {
-        background: #fff; border: 1px solid #e8eaf0;
-        border-radius: 14px; margin-bottom: 18px; overflow: hidden;
+    /* ═══════════════════════════════════════════════════════════════
+       SIDEBAR-TABS LAYOUT (estilo /configuracoes/integracoes)
+       ═══════════════════════════════════════════════════════════════ */
+    .ae-layout {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 20px;
+        align-items: start;
     }
-    .section-card-header {
-        display: flex; align-items: center; gap: 10px;
-        padding: 16px 20px; border-bottom: 1px solid #f0f2f7;
-        cursor: pointer; user-select: none; background: #fafafa;
-        transition: background .1s;
+
+    .ae-sidebar {
+        background: #fff;
+        border: 1px solid #e8eaf0;
+        border-radius: 14px;
+        padding: 20px 14px;
+        position: sticky;
+        top: 16px;
+        max-height: calc(100vh - 32px);
+        overflow-y: auto;
     }
-    .section-card-header:hover { background: #f5f7fb; }
-    .section-card-header .section-icon {
-        width: 32px; height: 32px; border-radius: 8px;
-        background: #eff6ff; color: #0085f3;
-        display: flex; align-items: center; justify-content: center;
+
+    @media (max-width: 900px) {
+        .ae-layout { grid-template-columns: 1fr; gap: 12px; }
+        .ae-sidebar {
+            position: static;
+            max-height: none;
+            padding: 16px 14px 14px;
+            overflow: visible;
+        }
+        /* Avatar centralizado + nome + status embaixo */
+        .ae-agent-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 6px 8px 16px;
+            margin-bottom: 14px;
+            border-bottom: 1px solid #f0f2f7;
+        }
+        .ae-agent-avatar { width: 64px; height: 64px; margin: 0 auto 8px; }
+        .ae-agent-name { text-align: center; }
+        .ae-agent-status { margin-top: 6px; }
+
+        /* Container das tabs com fade nas bordas (visual hint de scroll) */
+        .ae-sidebar-tabs-wrap {
+            position: relative;
+            margin: 0 -14px;
+        }
+        .ae-sidebar-tabs-wrap::after {
+            content: '';
+            position: absolute;
+            right: 0; top: 0; bottom: 4px;
+            width: 36px;
+            background: linear-gradient(90deg, transparent, #fff 70%);
+            pointer-events: none;
+            z-index: 2;
+        }
+        .ae-sidebar-tabs {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: thin;
+            padding: 0 14px 8px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+        .ae-sidebar-tabs::-webkit-scrollbar { height: 4px; }
+        .ae-sidebar-tabs::-webkit-scrollbar-thumb { background: #e8eaf0; border-radius: 4px; }
+        .ae-sect-item {
+            flex-shrink: 0;
+            margin-bottom: 0;
+            padding: 9px 16px;
+            white-space: nowrap;
+            border: 1.5px solid #e8eaf0;
+            background: #fff;
+            scroll-snap-align: start;
+            font-size: 12.5px;
+        }
+        .ae-sect-item.active {
+            border-color: #0085f3;
+            background: #eff6ff;
+        }
+        .ae-main { padding: 20px 18px; }
+    }
+
+    .ae-agent-card {
+        text-align: center;
+        padding: 6px 8px 16px;
+        border-bottom: 1px solid #f0f2f7;
+        margin-bottom: 12px;
+    }
+    .ae-agent-avatar {
+        width: 76px; height: 76px;
+        border-radius: 50%;
+        margin: 0 auto 10px;
+        object-fit: cover;
+        border: 3px solid #eff6ff;
+        display: block;
+        background: #f4f6fb;
+    }
+    .ae-agent-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1a1d23;
+        line-height: 1.3;
+        word-break: break-word;
+    }
+    .ae-agent-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 6px;
+        padding: 3px 10px;
+        border-radius: 99px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .ae-agent-status.on  { background: #d1fae5; color: #065f46; }
+    .ae-agent-status.off { background: #f3f4f6; color: #6b7280; }
+
+    .ae-sect-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 10px 12px;
+        margin-bottom: 2px;
+        background: none;
+        border: none;
+        border-radius: 9px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        cursor: pointer;
+        text-align: left;
+        font-family: inherit;
+        transition: all .15s;
+    }
+    .ae-sect-item:hover { background: #f3f4f6; color: #374151; }
+    .ae-sect-item.active {
+        background: #eff6ff;
+        color: #0085f3;
+    }
+    .ae-sect-item i {
         font-size: 15px;
+        width: 18px;
+        text-align: center;
     }
-    .section-card-title { font-size: 13.5px; font-weight: 700; color: #1a1d23; flex: 1; }
-    .section-card-body { padding: 20px; display: block; }
-    .section-card-body.collapsed { display: none; }
-    .chevron { transition: transform .2s; color: #9ca3af; }
-    .chevron.open { transform: rotate(180deg); }
+
+    .ae-main {
+        background: #fff;
+        border: 1px solid #e8eaf0;
+        border-radius: 14px;
+        padding: 28px 32px;
+        min-height: 400px;
+    }
+
+    .ae-pane { display: none; animation: ae-fade .25s ease; }
+    .ae-pane.active { display: block; }
+    @keyframes ae-fade {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .ae-pane-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #1a1d23;
+        margin: 0 0 4px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .ae-pane-sub {
+        font-size: 12.5px;
+        color: #9ca3af;
+        margin: 0 0 22px;
+    }
+    .ae-pane-divider {
+        height: 1px; background: #f0f2f7; margin: 24px 0;
+    }
+
+    /* Avatar grid (display_avatar — admin only) */
+    .ae-avatar-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+        gap: 10px;
+    }
+    .ae-avatar-opt {
+        cursor: pointer;
+        text-align: center;
+        padding: 6px 4px 8px;
+        border-radius: 12px;
+        border: 2px solid transparent;
+        transition: all .15s;
+        background: #fafbfd;
+    }
+    .ae-avatar-opt:hover { background: #eff6ff; }
+    .ae-avatar-opt.selected {
+        background: #eff6ff;
+        border-color: #0085f3;
+    }
+    .ae-avatar-opt img {
+        width: 48px; height: 48px; border-radius: 50%;
+        object-fit: cover; display: block; margin: 0 auto 4px;
+        border: 2px solid #fff;
+    }
+    .ae-avatar-opt .av-name { font-size: 10.5px; font-weight: 600; color: #6b7280; }
+    .ae-avatar-opt.selected .av-name { color: #0085f3; }
+
+    /* Sticky save bar */
+    .ae-save-bar {
+        position: sticky;
+        bottom: 0;
+        background: #fff;
+        border-top: 1px solid #f0f2f7;
+        padding: 16px 0 6px;
+        margin-top: 28px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    /* Section-cards funcionam como "panes" — só o ativo aparece */
+    .section-card {
+        background: transparent;
+        border: none;
+        margin: 0;
+        display: none;
+        animation: ae-fade .25s ease;
+    }
+    .section-card.active-pane { display: block; }
+    .section-card-header { display: none; }
+    .section-card-body { padding: 0 !important; display: block !important; }
+    .section-card-body.collapsed { display: block !important; }
+    .chevron { display: none; }
+    .section-card .form-row,
+    .section-card .form-group { margin-bottom: 14px; }
 
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
@@ -282,6 +496,77 @@
         </div>
     </div>
 
+    @php
+        $avatarsList = \App\Support\AgentAvatars::all();
+        $currentDisplayAvatar = old('display_avatar', $agent->display_avatar ?: \App\Support\AgentAvatars::default());
+    @endphp
+
+    <div class="ae-layout">
+
+        {{-- ═══════════════════════════════════════════════════════════════
+             SIDEBAR (esquerda) — preview do agente + tabs de seções
+             ═══════════════════════════════════════════════════════════════ --}}
+        <aside class="ae-sidebar">
+            @if($isEdit)
+            <div class="ae-agent-card">
+                <img class="ae-agent-avatar" id="aeAvatarPreview"
+                     src="{{ asset($currentDisplayAvatar) }}"
+                     alt="{{ $agent->name }}">
+                <div class="ae-agent-name">{{ $agent->name }}</div>
+                <div class="ae-agent-status {{ $agent->is_active ? 'on' : 'off' }}">
+                    <i class="bi bi-circle-fill" style="font-size:6px;"></i>
+                    {{ $agent->is_active ? __('ai_agents.badge_active') : __('ai_agents.badge_inactive') }}
+                </div>
+            </div>
+            @endif
+
+            <div class="ae-sidebar-tabs-wrap">
+            <div class="ae-sidebar-tabs">
+            <button type="button" class="ae-sect-item active" data-pane="identity" onclick="switchPane('identity', this)">
+                <i class="bi bi-person-badge"></i> {{ __('ai_agents.edit_sect_identity') }}
+            </button>
+            <button type="button" class="ae-sect-item" data-pane="channel" onclick="switchPane('channel', this)">
+                <i class="bi bi-broadcast"></i> {{ __('ai_agents.edit_sect_channel') }}
+            </button>
+            <button type="button" class="ae-sect-item" data-pane="persona" onclick="switchPane('persona', this)">
+                <i class="bi bi-chat-quote"></i> {{ __('ai_agents.edit_sect_persona') }}
+            </button>
+            <button type="button" class="ae-sect-item" data-pane="flow" onclick="switchPane('flow', this)">
+                <i class="bi bi-signpost-split"></i> {{ __('ai_agents.s3_title') }}
+            </button>
+            <button type="button" class="ae-sect-item" data-pane="stages" onclick="switchPane('stages', this)">
+                <i class="bi bi-list-ol"></i> {{ __('ai_agents.edit_sect_stages') }}
+            </button>
+            <button type="button" class="ae-sect-item" data-pane="kb" onclick="switchPane('kb', this)">
+                <i class="bi bi-database"></i> {{ __('ai_agents.edit_sect_kb') }}
+            </button>
+            @if($isEdit)
+            <button type="button" class="ae-sect-item" data-pane="media" onclick="switchPane('media', this)">
+                <i class="bi bi-images"></i> {{ __('ai_agents.edit_sect_media') }}
+            </button>
+            @endif
+            <button type="button" class="ae-sect-item" data-pane="tools" onclick="switchPane('tools', this)">
+                <i class="bi bi-tools"></i> {{ __('ai_agents.edit_sect_tools') }}
+            </button>
+            <button type="button" class="ae-sect-item" data-pane="followup" onclick="switchPane('followup', this)">
+                <i class="bi bi-arrow-repeat"></i> {{ __('ai_agents.edit_sect_followup') }}
+            </button>
+            <button type="button" class="ae-sect-item" data-pane="advanced" onclick="switchPane('advanced', this)">
+                <i class="bi bi-sliders"></i> {{ __('ai_agents.edit_sect_advanced') }}
+            </button>
+            <button type="button" class="ae-sect-item" id="aeWidgetTab" data-pane="widget" onclick="switchPane('widget', this)"
+                    style="{{ ($agent->channel ?? 'whatsapp') === 'web_chat' ? '' : 'display:none;' }}">
+                <i class="bi bi-window-stack"></i> {{ __('ai_agents.edit_sect_widget') }}
+            </button>
+            </div>{{-- /.ae-sidebar-tabs --}}
+            </div>{{-- /.ae-sidebar-tabs-wrap --}}
+        </aside>
+
+        {{-- ═══════════════════════════════════════════════════════════════
+             MAIN (direita) — content panes
+             ═══════════════════════════════════════════════════════════════ --}}
+        <main class="ae-main">
+
     <form method="POST"
           action="{{ $isEdit ? route('ai.agents.update', $agent) : route('ai.agents.store') }}"
           id="agentForm"
@@ -289,6 +574,12 @@
         @csrf
         @if($isEdit) @method('PUT') @endif
 
+        {{-- Hidden display_avatar (controlado pela seleção visual em Identidade) --}}
+        <input type="hidden" name="display_avatar" id="displayAvatarInput" value="{{ $currentDisplayAvatar }}">
+
+        {{-- ═══════════════ PANE: Channel + Toggles (movido pro pane "channel" via section-card) ═══════════════ --}}
+        <div class="section-card" id="card-channel" data-pane-name="channel">
+        <div class="section-card-body">
         {{-- Seletor de Canal --}}
         <div style="margin-bottom:16px;">
             <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">{{ __('ai_agents.channel_label') }}</div>
@@ -353,14 +644,32 @@
         </div>
         @endif
 
+        </div>{{-- /section-card-body channel --}}
+        </div>{{-- /section-card channel --}}
+
         {{-- 1. Identidade --}}
-        <div class="section-card">
+        <div class="section-card active-pane" data-pane-name="identity">
             <div class="section-card-header" onclick="toggleSection('identity')">
                 <div class="section-icon"><i class="bi bi-person-badge"></i></div>
                 <div class="section-card-title">{{ __('ai_agents.s1_title') }}</div>
                 <i class="bi bi-chevron-down chevron open" id="chevron-identity"></i>
             </div>
             <div class="section-card-body" id="body-identity">
+                {{-- Avatar selector (display_avatar — admin only, NÃO vai pro lead) --}}
+                <div class="form-group" style="margin-bottom:18px;">
+                    <label class="form-label">{{ __('ai_agents.edit_avatar_label') }}</label>
+                    <div class="ae-avatar-grid">
+                        @foreach($avatarsList as $av)
+                            <div class="ae-avatar-opt {{ $currentDisplayAvatar === $av['file'] ? 'selected' : '' }}"
+                                 data-file="{{ $av['file'] }}"
+                                 onclick="selectDisplayAvatar('{{ $av['file'] }}', this)">
+                                <img src="{{ asset($av['file']) }}" alt="{{ $av['name'] }}">
+                                <div class="av-name">{{ $av['name'] }}</div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">{{ __('ai_agents.s1_name') }}</label>
@@ -1042,9 +1351,9 @@
             </div>
         </div>
 
-        <div class="form-footer">
+        <div class="ae-save-bar">
             <button type="submit" class="btn-primary">
-                <i class="bi bi-floppy"></i> {{ $isEdit ? __('ai_agents.form_save') : __('ai_agents.form_create') }}
+                <i class="bi bi-floppy"></i> {{ $isEdit ? __('ai_agents.edit_save') : __('ai_agents.form_create') }}
             </button>
             <a href="{{ route('ai.agents.index') }}" class="btn-cancel">{{ __('ai_agents.form_cancel') }}</a>
             @if($isEdit)
@@ -1055,6 +1364,9 @@
         </div>
 
     </form>
+
+        </main>{{-- /.ae-main --}}
+    </div>{{-- /.ae-layout --}}
 
     @if($isEdit)
     {{-- Widget de teste --}}
@@ -1338,15 +1650,15 @@ function updateChannelCards() {
     document.querySelectorAll('.channel-card[data-channel]').forEach(card => {
         card.classList.toggle('selected', card.dataset.channel === selected);
     });
-    // Show/hide widget section
-    const widgetSection = document.getElementById('widgetSection');
-    if (widgetSection) {
-        widgetSection.style.display = selected === 'web_chat' ? '' : 'none';
-    }
     // Show/hide WhatsApp instances section
     const waSection = document.getElementById('whatsappInstancesSection');
     if (waSection) {
         waSection.style.display = selected === 'whatsapp' ? '' : 'none';
+    }
+    // Show/hide widget tab on sidebar
+    const widgetTab = document.getElementById('aeWidgetTab');
+    if (widgetTab) {
+        widgetTab.style.display = selected === 'web_chat' ? '' : 'none';
     }
 }
 
@@ -1543,13 +1855,42 @@ function toggleFollowup() {
     options.style.display = isOn ? 'none' : '';
 }
 
-/* ── Sections ── */
-function toggleSection(id) {
-    const body    = document.getElementById('body-' + id);
-    const chevron = document.getElementById('chevron-' + id);
-    const isOpen  = !body.classList.contains('collapsed');
-    body.classList.toggle('collapsed', isOpen);
-    chevron.classList.toggle('open', !isOpen);
+/* ── Sidebar pane switching (substitui toggleSection) ── */
+function switchPane(name, btn) {
+    document.querySelectorAll('.section-card').forEach(el => el.classList.remove('active-pane'));
+    // Match por data-pane-name OU pelo body-X interno (legado)
+    let target = document.querySelector('.section-card[data-pane-name="' + name + '"]');
+    if (!target) {
+        const body = document.getElementById('body-' + name);
+        if (body) target = body.closest('.section-card');
+    }
+    if (target) target.classList.add('active-pane');
+    // Atualiza sidebar
+    document.querySelectorAll('.ae-sect-item').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    // Calendar lazy-load se entrando em "tools"
+    if (name === 'tools' && document.getElementById('calendarToolInput')?.value === '1') {
+        loadAgentCalendars();
+    }
+    // Mobile: scroll pro main pra mostrar o pane recém-ativado
+    if (window.innerWidth <= 900) {
+        if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        const main = document.querySelector('.ae-main');
+        if (main) setTimeout(() => main.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250);
+    }
+}
+
+// Stub pra retrocompatibilidade — section headers estão escondidos via CSS, mas o JS antigo pode chamar
+function toggleSection(id) { /* no-op — sidebar agora controla visibility */ }
+
+/* ── Display avatar (admin-only) ── */
+function selectDisplayAvatar(file, el) {
+    document.getElementById('displayAvatarInput').value = file;
+    document.querySelectorAll('.ae-avatar-opt').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    // Atualiza preview na sidebar
+    const sidebarPreview = document.getElementById('aeAvatarPreview');
+    if (sidebarPreview) sidebarPreview.src = file;
 }
 
 /* ── Etapas dinâmicas ── */

@@ -577,4 +577,52 @@ return [
     'reminder_template_ph'         => 'Olá @{{lead_name}}! Lembrete: você tem @{{event_title}} agendado(a) para @{{event_date}} às @{{event_time}}.',
     'reminder_template_hint'       => 'Placeholders: @{{lead_name}}, @{{event_title}}, @{{event_date}}, @{{event_time}}, @{{event_location}}. Deixe vazio para usar o template padrão.',
     'index_subtitle'    => 'Configure agentes inteligentes para seu atendimento.',
+
+    // =========================================================================
+    // WIZARD MULTI-STEP (agents/wizard.blade.php) — Criação
+    // =========================================================================
+    'wz_step1_title'        => 'Quem é o seu agente?',
+    'wz_step1_sub'          => 'Comece escolhendo um avatar e dando um nome ao seu agente.',
+    'wz_avatar_label'       => 'Avatar do agente',
+    'wz_step2_title'        => 'Objetivo e personalidade',
+    'wz_step2_sub'          => 'Como o agente deve se comportar e o que ele faz?',
+    'wz_objective_label'    => 'Qual o objetivo principal?',
+    'wz_obj_sales_desc'     => 'Qualifica leads e ajuda a fechar vendas',
+    'wz_obj_support_desc'   => 'Atende dúvidas e resolve problemas',
+    'wz_obj_general_desc'   => 'Atendimento geral e direcionamento',
+    'wz_style_label'        => 'Como deve se comunicar?',
+    'wz_style_formal_desc'  => 'Profissional e respeitoso',
+    'wz_style_normal_desc'  => 'Cordial e claro',
+    'wz_style_casual_desc'  => 'Descontraído e amigável',
+    'wz_step3_title'        => 'Onde o agente vai atender?',
+    'wz_step3_sub'          => 'Escolha o canal e configure como ele recebe conversas.',
+    'wz_step4_title'        => 'Conhecimento e ferramentas',
+    'wz_step4_sub'          => 'O que o agente sabe e o que ele pode fazer no CRM.',
+    'wz_kb_hint'            => 'Cole textos sobre seu negócio, produtos, FAQs. Você poderá adicionar arquivos depois.',
+    'wz_tools_label'        => 'Ferramentas disponíveis para o agente',
+    'wz_step5_title'        => 'Follow-up e ajustes finais',
+    'wz_step5_sub'          => 'O agente pode retomar conversas silenciosas automaticamente.',
+    'wz_followup_title'     => 'Follow-up automático ativado',
+    'wz_followup_desc'      => 'O agente vai retomar conversas em que o lead parou de responder, dentro do horário comercial.',
+    'wz_advanced_label'     => 'Configurações avançadas',
+    'wz_back'               => 'Voltar',
+    'wz_continue'           => 'Continuar',
+    'wz_create_agent'       => 'Criar agente',
+    'wz_name_required'      => 'Dê um nome ao seu agente para continuar.',
+
+    // =========================================================================
+    // EDIT FORM SIDEBAR-TABS (agents/form.blade.php refactor)
+    // =========================================================================
+    'edit_sect_identity'    => 'Identidade',
+    'edit_sect_persona'     => 'Persona',
+    'edit_sect_channel'     => 'Canal',
+    'edit_sect_stages'      => 'Etapas',
+    'edit_sect_kb'          => 'Conhecimento',
+    'edit_sect_media'       => 'Mídias',
+    'edit_sect_tools'       => 'Ferramentas',
+    'edit_sect_followup'    => 'Follow-up',
+    'edit_sect_advanced'    => 'Avançado',
+    'edit_sect_widget'      => 'Widget Web',
+    'edit_avatar_label'     => 'Avatar (interno — não vai pro lead)',
+    'edit_save'             => 'Salvar alterações',
 ];
