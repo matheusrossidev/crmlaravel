@@ -207,6 +207,13 @@ class ProcessInstagramWebhook implements ShouldQueue
         [$type, $mediaUrl, $shareUrl] = $this->extractMedia($messageData);
         $body = $messageData['text'] ?? ($type === 'share' ? $shareUrl : null);
 
+        // Baixa midia inbound pra storage local — URLs do CDN do Meta
+        // (lookaside.fbsbx.com / cdninstagram.com) expiram em horas, entao
+        // se nao baixar agora o user perde a midia depois.
+        if ($mediaUrl && in_array($type, ['image', 'video', 'audio', 'document', 'sticker'], true)) {
+            $mediaUrl = $this->downloadMediaToStorage($mediaUrl, $type, $instance->tenant_id);
+        }
+
         // Fix fuso: converter timestamp UTC para o timezone da aplicação antes de salvar
         $sentAt = $timestamp
             ? \Carbon\Carbon::createFromTimestampMs((int) $timestamp)->setTimezone(config('app.timezone'))
@@ -348,13 +355,13 @@ class ProcessInstagramWebhook implements ShouldQueue
                 'igsid'    => $igsid,
                 'name'     => $profile['name'] ?? null,
                 'username' => $profile['username'] ?? null,
-                'has_pic'  => isset($profile['profile_picture_url']),
+                'has_pic'  => isset($profile['profile_pic']),
             ]);
 
             return [
                 'name'     => $profile['name']        ?? null,
                 'username' => $profile['username']    ?? null,
-                'picture'  => $profile['profile_picture_url'] ?? null,
+                'picture'  => $profile['profile_pic'] ?? null,
             ];
         } catch (\Throwable $e) {
             Log::channel('instagram')->warning('Exceção ao buscar perfil do contato', [
@@ -937,5 +944,58 @@ class ProcessInstagramWebhook implements ShouldQueue
             }
         }
         return false;
+    }
+
+    /**
+     * Baixa midia da URL do CDN do Meta (que expira em horas) e salva localmente
+     * em storage/app/public/instagram-media/ retornando a URL publica permanente.
+     *
+     * Retorna a URL original se o download falhar (degradacao graciosa).
+     * Equivalente ao que ProcessWhatsappCloudWebhook ja faz pra mensagens
+     * Cloud API (linhas 317-340 daquele job).
+     */
+    private function downloadMediaToStorage(string $remoteUrl, string $type, int $tenantId): string
+    {
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(30)->get($remoteUrl);
+
+            if (! $response->successful()) {
+                Log::channel('instagram')->warning('Download de midia inbound falhou', [
+                    'url'    => substr($remoteUrl, 0, 100),
+                    'status' => $response->status(),
+                    'type'   => $type,
+                ]);
+                return $remoteUrl;
+            }
+
+            $binary    = $response->body();
+            $extension = match ($type) {
+                'image'    => 'jpg',
+                'video'    => 'mp4',
+                'audio'    => 'm4a',
+                'document' => 'bin',
+                'sticker'  => 'webp',
+                default    => 'bin',
+            };
+
+            $filename = sprintf(
+                'instagram-media/%d/%s_%s.%s',
+                $tenantId,
+                now()->format('Y-m-d'),
+                \Illuminate\Support\Str::random(20),
+                $extension,
+            );
+
+            \Storage::disk('public')->put($filename, $binary);
+
+            return \Storage::disk('public')->url($filename);
+        } catch (\Throwable $e) {
+            Log::channel('instagram')->warning('Excecao ao baixar midia inbound', [
+                'url'   => substr($remoteUrl, 0, 100),
+                'error' => $e->getMessage(),
+                'type'  => $type,
+            ]);
+            return $remoteUrl;  // fallback graciosa: usa a URL original
+        }
     }
 }

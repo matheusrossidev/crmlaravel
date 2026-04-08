@@ -114,12 +114,19 @@ class InstagramService
 
     /**
      * Fetch basic profile info for an IGSID.
-     * Fields available: name, username, profile_pic
+     *
+     * IMPORTANTE: o campo da foto se chama `profile_pic` (sem _url), conforme
+     * doc oficial: developers.facebook.com/docs/messenger-platform/instagram/features/user-profile
+     * Ja tivemos esse bug antes (commits 536b03f e 7cd6d38 em fev/2026) — alguem
+     * acidentalmente trocou pra `profile_picture_url` (que NAO existe) durante
+     * algum refactor. Nao troque sem confirmar a doc.
+     *
+     * @return array{name?: string, username?: string, profile_pic?: string, follower_count?: int, error?: bool}
      */
     public function getProfile(string $igsid): array
     {
         return $this->get("/{$igsid}", [
-            'fields' => 'name,username,profile_picture_url',
+            'fields' => 'name,username,profile_pic,follower_count,is_user_follow_business,is_business_follow_user',
         ]);
     }
 
