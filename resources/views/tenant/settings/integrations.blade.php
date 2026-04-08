@@ -751,7 +751,7 @@
             @php
                 $categoryIcons = [
                     'all'          => 'bi-grid-3x3-gap',
-                    'messaging'    => 'bi-whatsapp',
+                    'messaging'    => 'bi-chat-dots',
                     'lead_capture' => 'bi-collection',
                     'calendar'     => 'bi-calendar3',
                 ];
