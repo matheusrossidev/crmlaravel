@@ -153,10 +153,25 @@ class BillingController extends Controller
                 ->get();
         }
 
-        // Pre-selected plan from billing page (skip plan selection step)
-        $preSelectedPlan = $request->query('plan')
-            ? $plans->firstWhere('name', $request->query('plan'))
-            : null;
+        // Pre-selected plan from billing page (skip plan selection step).
+        // Lookup tolerante a case e a planos que nao estao na lista visivel
+        // (ex: tenant em 'free' clica em "Trocar plano" passando plan=free —
+        // 'free' nao e visivel mas a gente quer pre-selecionar o primeiro
+        // plano pago disponivel pra disparar o checkout direto).
+        $preSelectedPlan = null;
+        $requestedPlan   = $request->query('plan');
+
+        if ($requestedPlan) {
+            $needle = strtolower(trim($requestedPlan));
+            $preSelectedPlan = $plans->first(fn ($p) => strtolower($p->name) === $needle);
+
+            // Fallback: se o plan param nao bate com nada visivel (ex: 'free'
+            // ou 'trial'), pre-seleciona o primeiro plano pago disponivel.
+            // Garante que clicar "Trocar plano" sempre dispara o checkout direto.
+            if (! $preSelectedPlan && $plans->isNotEmpty()) {
+                $preSelectedPlan = $plans->first();
+            }
+        }
 
         return view('tenant.billing.checkout', compact('tenant', 'plan', 'plans', 'preSelectedPlan'));
     }
@@ -387,17 +402,17 @@ class BillingController extends Controller
     {
         $sessionId = $request->query('session_id');
         if (! $sessionId) {
-            return redirect()->route('billing')->with('error', 'Invalid session.');
+            return redirect()->route('settings.billing')->with('error', 'Invalid session.');
         }
 
         // The webhook handles the actual activation.
         // This is just a redirect back to the billing page with a success message.
-        return redirect()->route('billing')->with('success', __('billing.stripe_success') ?? 'Subscription activated! Welcome aboard.');
+        return redirect()->route('settings.billing')->with('success', __('billing.stripe_success') ?? 'Subscription activated! Welcome aboard.');
     }
 
     public function stripeCancel(): RedirectResponse
     {
-        return redirect()->route('billing')->with('info', __('billing.stripe_cancelled') ?? 'Checkout cancelled.');
+        return redirect()->route('settings.billing')->with('info', __('billing.stripe_cancelled') ?? 'Checkout cancelled.');
     }
 
     public function stripePortal(): RedirectResponse
@@ -405,20 +420,20 @@ class BillingController extends Controller
         $tenant = activeTenant();
 
         if (! $tenant->stripe_customer_id) {
-            return redirect()->route('billing')->with('error', 'No Stripe account found.');
+            return redirect()->route('settings.billing')->with('error', 'No Stripe account found.');
         }
 
         try {
             $stripe  = new StripeService();
             $session = $stripe->createPortalSession(
                 $tenant->stripe_customer_id,
-                route('billing'),
+                route('settings.billing'),
             );
 
             return redirect($session->url);
         } catch (\Throwable $e) {
             \Log::error('BillingController::stripePortal error', ['error' => $e->getMessage()]);
-            return redirect()->route('billing')->with('error', 'Error opening customer portal.');
+            return redirect()->route('settings.billing')->with('error', 'Error opening customer portal.');
         }
     }
 

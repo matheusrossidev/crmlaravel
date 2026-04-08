@@ -537,9 +537,11 @@
                         @endif
                     </div>
                     <div class="other-plan-right">
-                        <a href="{{ route('billing.checkout', ['plan' => $p->name]) }}" class="btn-upgrade">
+                        <button type="button"
+                                onclick="goStripeCheckout('{{ $p->name }}', this)"
+                                class="btn-upgrade">
                             {{ $opPrice > $bPlanPrice ? __('settings.billing_upgrade') : __('settings.billing_select') }}
-                        </a>
+                        </button>
                     </div>
                 </div>
                 @endforeach
@@ -640,6 +642,39 @@
 <script>
 const SLANG = @json(__('settings'));
 const IS_STRIPE_BILLING = {{ $isStripe ? 'true' : 'false' }};
+
+// ── Click no card de plano vai DIRETO pro Stripe Checkout (sem passar pela
+// pagina /cobranca/checkout). UX = 1 click do dashboard de cobranca pro Stripe.
+async function goStripeCheckout(planName, btn) {
+    if (!planName) return;
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;"></span>';
+
+    try {
+        const res = await fetch('{{ route('billing.stripe.subscribe') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+            },
+            body: JSON.stringify({ plan_name: planName }),
+        });
+        const data = await res.json();
+        if (data.checkout_url) {
+            window.location.href = data.checkout_url;
+        } else {
+            toastr.error(data.message || 'Erro ao iniciar checkout.');
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    } catch (e) {
+        toastr.error('Erro de conexão. Tente novamente.');
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
+}
 
 async function confirmCancel() {
     const msg = SLANG.billing_confirm_cancel

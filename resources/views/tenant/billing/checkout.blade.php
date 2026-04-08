@@ -299,7 +299,7 @@
             @if(($tenant->billing_provider ?? 'asaas') === 'stripe')
             {{-- ══ STRIPE: Single-step — select plan + redirect to Stripe Checkout ══ --}}
             <button class="btn-submit" id="btnMain" onclick="handleStripeSubscribe()">
-                <span id="btnLabel">Subscribe</span>
+                <span id="btnLabel">{{ $isUSD ? 'Subscribe' : 'Assinar' }}</span>
                 <i class="bi bi-arrow-right" id="btnIcon"></i>
             </button>
 
@@ -462,17 +462,20 @@ const IS_STRIPE = {{ ($tenant->billing_provider ?? 'asaas') === 'stripe' ? 'true
     $jsThSep    = $isUSD ? ',' : '.';
 @endphp
 const CURRENCY = '{{ $jsCurrency }}';
+const IS_USD   = {{ $isUSD ? 'true' : 'false' }};
 const STEPS = IS_STRIPE ? ['plan'] : ['plan', 'holder', 'card'];
 const TITLES = IS_STRIPE
-    ? ['Choose your plan']
+    ? [IS_USD ? 'Choose your plan' : 'Escolha seu plano']
     : ['Escolha seu plano', 'Dados do titular', 'Pagamento'];
 const SUBS = IS_STRIPE
-    ? ['Full platform access. Cancel anytime.']
+    ? [IS_USD ? 'Full platform access. Cancel anytime.' : 'Acesso completo à plataforma. Cancele quando quiser.']
     : [
         'Acesso completo à plataforma. Cancele quando quiser.',
         'Informações para emissão da nota fiscal.',
         'Seus dados estão protegidos com criptografia.'
     ];
+const BTN_SUBSCRIBE_LABEL = IS_USD ? 'Subscribe' : 'Assinar';
+const BTN_REDIRECTING_LABEL = IS_USD ? 'Redirecting...' : 'Redirecionando...';
 let currentIdx = 0;
 let selectedPrice = '{{ number_format($firstPlanPrice, 2, $jsDecSep, $jsThSep) }}';
 
@@ -780,12 +783,12 @@ document.addEventListener('keydown', e => {
 // ── Stripe Subscribe ──
 async function handleStripeSubscribe() {
     const planName = document.getElementById('selectedPlan').value;
-    if (!planName) { showError('Please select a plan to continue.'); return; }
+    if (!planName) { showError(IS_USD ? 'Please select a plan to continue.' : 'Selecione um plano para continuar.'); return; }
 
     const btn = document.getElementById('btnMain');
     const lbl = document.getElementById('btnLabel');
     btn.disabled = true;
-    lbl.innerHTML = '<span style="width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;"></span>Redirecting...';
+    lbl.innerHTML = '<span style="width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;"></span>' + BTN_REDIRECTING_LABEL;
     hideAlerts();
 
     try {
@@ -798,12 +801,12 @@ async function handleStripeSubscribe() {
         if (data.checkout_url) {
             window.location.href = data.checkout_url;
         } else {
-            showError(data.message ?? 'Error creating checkout session.');
-            btn.disabled = false; lbl.textContent = 'Subscribe';
+            showError(data.message ?? (IS_USD ? 'Error creating checkout session.' : 'Erro ao criar sessão de checkout.'));
+            btn.disabled = false; lbl.textContent = BTN_SUBSCRIBE_LABEL;
         }
     } catch (e) {
-        showError('Connection error. Please try again.');
-        btn.disabled = false; lbl.textContent = 'Subscribe';
+        showError(IS_USD ? 'Connection error. Please try again.' : 'Erro de conexão. Tente novamente.');
+        btn.disabled = false; lbl.textContent = BTN_SUBSCRIBE_LABEL;
     }
 }
 
