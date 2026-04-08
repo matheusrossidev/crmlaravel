@@ -1013,8 +1013,8 @@ document.querySelectorAll('.sortable-zone').forEach(zone => {
         ghostClass:  'sortable-ghost',
         dragClass:   'sortable-drag',
         handle:    '.lead-card',
-        onStart: () => { window._kDragging = true; },
-        onEnd:   () => { setTimeout(() => { window._kDragging = false; }, 50); },
+        onStart: () => { window._kDragging = true; startBoardAutoScroll(); },
+        onEnd:   () => { setTimeout(() => { window._kDragging = false; }, 50); stopBoardAutoScroll(); },
         onAdd(evt) {
             const leadId    = evt.item.dataset.leadId;
             const stageId   = evt.to.dataset.stageId;
@@ -1041,6 +1041,64 @@ document.querySelectorAll('.sortable-zone').forEach(zone => {
     });
 });
 } // end if (!window.isViewer)
+
+// ── Auto-scroll horizontal do board enquanto arrasta um card ─────────────
+// Quando o cursor fica perto da borda esquerda/direita do board durante um
+// drag, faz o board rolar lateralmente proporcional a distancia da borda.
+// Resolve a UX de ter que largar o card no meio pra rolar e pegar de novo.
+let _kAutoScrollRaf = null;
+let _kPointerX      = 0;
+
+function _onPointerMove(e) { _kPointerX = e.clientX; }
+
+function startBoardAutoScroll() {
+    document.addEventListener('pointermove', _onPointerMove, { passive: true });
+    document.addEventListener('dragover',    _onPointerMove, { passive: true });
+
+    const board = document.getElementById('kanbanBoard');
+    if (!board) return;
+
+    const EDGE_PX        = 120; // largura da "zona quente" perto da borda
+    const MAX_SPEED      = 22;  // pixels por frame no maximo
+    const MIN_SPEED      = 2;   // pixels por frame no minimo dentro da zona
+
+    function tick() {
+        if (!window._kDragging) { _kAutoScrollRaf = null; return; }
+
+        const rect = board.getBoundingClientRect();
+        const x    = _kPointerX;
+
+        let delta = 0;
+
+        if (x > 0 && x < rect.left + EDGE_PX) {
+            // Perto da borda esquerda — rola pra esquerda
+            const intensity = 1 - ((x - rect.left) / EDGE_PX);
+            delta = -Math.max(MIN_SPEED, Math.round(intensity * MAX_SPEED));
+        } else if (x > rect.right - EDGE_PX && x < rect.right + 200) {
+            // Perto da borda direita — rola pra direita
+            const intensity = 1 - ((rect.right - x) / EDGE_PX);
+            delta = Math.max(MIN_SPEED, Math.round(intensity * MAX_SPEED));
+        }
+
+        if (delta !== 0) {
+            board.scrollLeft += delta;
+        }
+
+        _kAutoScrollRaf = requestAnimationFrame(tick);
+    }
+
+    if (_kAutoScrollRaf) cancelAnimationFrame(_kAutoScrollRaf);
+    _kAutoScrollRaf = requestAnimationFrame(tick);
+}
+
+function stopBoardAutoScroll() {
+    if (_kAutoScrollRaf) {
+        cancelAnimationFrame(_kAutoScrollRaf);
+        _kAutoScrollRaf = null;
+    }
+    document.removeEventListener('pointermove', _onPointerMove);
+    document.removeEventListener('dragover',    _onPointerMove);
+}
 
 function saveStageChange(leadId, stageId, pipId, extra = {}) {
     $.ajax({
@@ -1161,7 +1219,7 @@ document.addEventListener('click', e => {
     if (window._kDragging) return;
     if (e.target.closest('button, a, .card-tag-badge, .btn-add-in-col')) return;
     const card = e.target.closest('.lead-card[data-lead-id]');
-    if (card) window.location.href = '{{ url("/contatos") }}/' + card.dataset.leadId + '/perfil';
+    if (card) openLeadDrawer(card.dataset.leadId);
 });
 
 // ── Botão "Adicionar lead" por coluna ─────────────────────────────────────

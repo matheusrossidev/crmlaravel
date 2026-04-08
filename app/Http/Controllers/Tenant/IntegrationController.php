@@ -176,22 +176,49 @@ class IntegrationController extends Controller
         $tenant = activeTenant();
         $label  = $request->input('label', '');
 
+        $base = Str::slug($tenant->name, '_') . '_' . $tenant->id;
+
         // Se já existe alguma instância WAHA, verificar limite do plano
         // (Cloud API tem o card próprio e não conta pro limite do WAHA)
-        $existingCount = WhatsappInstance::where('tenant_id', $tenant->id)
+        $existingNames = WhatsappInstance::where('tenant_id', $tenant->id)
             ->where(function ($q) {
                 $q->where('provider', 'waha')->orWhereNull('provider');
             })
-            ->count();
-        if ($existingCount > 0) {
+            ->pluck('session_name');
+
+        if ($existingNames->isNotEmpty()) {
             $limitMsg = PlanLimitChecker::check('whatsapp_instances');
             if ($limitMsg) {
                 return response()->json(['success' => false, 'message' => $limitMsg, 'limit_reached' => true], 422);
             }
         }
 
-        $suffix  = $existingCount > 0 ? '_' . ($existingCount + 1) : '';
-        $session = Str::slug($tenant->name, '_') . '_' . $tenant->id . $suffix;
+        // Geracao de session_name baseada em max(sufixo) + 1, robusta a deletes.
+        // Usa count + 1 quebra quando uma instance do meio eh deletada — bug
+        // SQLSTATE[23000] duplicate entry. Aqui sempre cresce, sem reusar nomes.
+        if ($existingNames->isEmpty()) {
+            // Primeira instance do tenant — usa nome base sem sufixo (compat backward).
+            $session = $base;
+            $next    = 1;
+        } else {
+            $usedSuffixes = [];
+            foreach ($existingNames as $name) {
+                if ($name === $base) {
+                    $usedSuffixes[] = 1;
+                } elseif (preg_match('/^' . preg_quote($base, '/') . '_(\d+)$/', $name, $m)) {
+                    $usedSuffixes[] = (int) $m[1];
+                }
+            }
+            $next    = $usedSuffixes ? (max($usedSuffixes) + 1) : 2;
+            $session = $base . '_' . $next;
+        }
+
+        // Defesa em profundidade: race condition entre 2 requests simultaneos OU
+        // session_name preexistente fora do padrao. Incrementa ate achar livre.
+        while (WhatsappInstance::where('session_name', $session)->exists()) {
+            $next++;
+            $session = $base . '_' . $next;
+        }
 
         try {
             $instance = WhatsappInstance::create([
@@ -344,10 +371,25 @@ class IntegrationController extends Controller
 
     public function deleteWhatsappInstance(WhatsappInstance $instance): JsonResponse
     {
-        if ($instance->status === 'connected') {
-            $waha = new WahaService($instance->session_name);
-            $waha->stopSession();
-            $waha->deleteSession();
+        // Sempre tentar limpar a sessao no WAHA, independente do status no DB.
+        // Cenario real: instance ficou em 'disconnected' ou 'qr' por erro durante
+        // o connect — a sessao no WAHA pode estar viva mesmo assim. Se nao limpar
+        // aqui, fica orfa e o nome da session pode causar 422 ao recriar.
+        if (($instance->provider ?? 'waha') === 'waha') {
+            try {
+                $waha = new WahaService($instance->session_name);
+                $waha->stopSession();
+                $waha->deleteSession();
+            } catch (\Throwable $e) {
+                // Silenciar — sessao pode ja nao existir no WAHA, nao queremos
+                // bloquear o delete da row por causa disso.
+                Log::channel('whatsapp')->info('Cleanup WAHA falhou (ignorado)', [
+                    'instance_id'  => $instance->id,
+                    'session_name' => $instance->session_name,
+                    'status'       => $instance->status,
+                    'error'        => $e->getMessage(),
+                ]);
+            }
         }
 
         $instance->delete();

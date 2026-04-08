@@ -29,7 +29,7 @@
             <div id="drawerSub" style="font-size:12px;color:#9ca3af;margin-top:2px;"></div>
         </div>
         <div style="display:flex;gap:6px;align-items:center;">
-            <a id="drawerProfileLink" href="#" target="_blank" style="display:none;"
+            <a id="drawerProfileLink" href="#" style="display:none;"
                class="drawer-icon-btn" title="{{ __('leads.view_profile') }}">
                 <i class="bi bi-box-arrow-up-right"></i>
             </a>
