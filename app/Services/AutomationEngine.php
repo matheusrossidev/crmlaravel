@@ -634,6 +634,7 @@ class AutomationEngine
                     'direction'       => 'outbound',
                     'type'            => 'text',
                     'body'            => $text,
+                    'sent_by'         => 'automation',
                     'ack'             => 'sent',
                     'sent_at'         => now(),
                 ]);

@@ -1297,16 +1297,18 @@ class ProcessAiResponse implements ShouldQueue
 
         // Mensagem de evento visível no chat
         WhatsappMessage::withoutGlobalScope('tenant')->create([
-            'tenant_id'       => $conv->tenant_id,
-            'conversation_id' => $conv->id,
-            'waha_message_id' => null,
-            'direction'       => 'outbound',
-            'type'            => 'event',
-            'body'            => "Agente {$agent->name} moveu para etapa \"{$stageName}\"",
-            'media_filename'  => 'Etapa alterada',
-            'media_mime'      => 'ai_stage_changed',
-            'sent_at'         => now(),
-            'ack'             => 'delivered',
+            'tenant_id'        => $conv->tenant_id,
+            'conversation_id'  => $conv->id,
+            'waha_message_id'  => null,
+            'direction'        => 'outbound',
+            'type'             => 'event',
+            'body'             => "Agente {$agent->name} moveu para etapa \"{$stageName}\"",
+            'media_filename'   => 'Etapa alterada',
+            'media_mime'       => 'ai_stage_changed',
+            'sent_by'          => 'event',
+            'sent_by_agent_id' => $agent->id,
+            'sent_at'          => now(),
+            'ack'              => 'delivered',
         ]);
 
         Log::channel('whatsapp')->info('AI: lead movido de etapa', [
@@ -1375,16 +1377,18 @@ class ProcessAiResponse implements ShouldQueue
 
                 // Event message
                 WhatsappMessage::withoutGlobalScope('tenant')->create([
-                    'tenant_id'       => $conv->tenant_id,
-                    'conversation_id' => $conv->id,
-                    'waha_message_id' => null,
-                    'direction'       => 'outbound',
-                    'type'            => 'event',
-                    'body'            => "Agente {$agent->name} transferiu a conversa para o departamento {$dept->name}",
-                    'media_filename'  => "Transferido para {$dept->name}",
-                    'media_mime'      => 'ai_assign_human',
-                    'sent_at'         => now(),
-                    'ack'             => 'delivered',
+                    'tenant_id'        => $conv->tenant_id,
+                    'conversation_id'  => $conv->id,
+                    'waha_message_id'  => null,
+                    'direction'        => 'outbound',
+                    'type'             => 'event',
+                    'body'             => "Agente {$agent->name} transferiu a conversa para o departamento {$dept->name}",
+                    'media_filename'   => "Transferido para {$dept->name}",
+                    'media_mime'       => 'ai_assign_human',
+                    'sent_by'          => 'event',
+                    'sent_by_agent_id' => $agent->id,
+                    'sent_at'          => now(),
+                    'ack'              => 'delivered',
                 ]);
 
                 Log::channel('whatsapp')->info('AI: conversa transferida para departamento', [
@@ -1427,16 +1431,18 @@ class ProcessAiResponse implements ShouldQueue
 
         // Mensagem de evento visível no chat
         WhatsappMessage::withoutGlobalScope('tenant')->create([
-            'tenant_id'       => $conv->tenant_id,
-            'conversation_id' => $conv->id,
-            'waha_message_id' => null,
-            'direction'       => 'outbound',
-            'type'            => 'event',
-            'body'            => "Agente {$agent->name} transferiu a conversa para atendimento humano",
-            'media_filename'  => 'Transferido para humano',
-            'media_mime'      => 'ai_assign_human',
-            'sent_at'         => now(),
-            'ack'             => 'delivered',
+            'tenant_id'        => $conv->tenant_id,
+            'conversation_id'  => $conv->id,
+            'waha_message_id'  => null,
+            'direction'        => 'outbound',
+            'type'             => 'event',
+            'body'             => "Agente {$agent->name} transferiu a conversa para atendimento humano",
+            'media_filename'   => 'Transferido para humano',
+            'media_mime'       => 'ai_assign_human',
+            'sent_by'          => 'event',
+            'sent_by_agent_id' => $agent->id,
+            'sent_at'          => now(),
+            'ack'              => 'delivered',
         ]);
 
         Log::channel('whatsapp')->info('AI: conversa transferida para humano', [
@@ -1480,16 +1486,18 @@ class ProcessAiResponse implements ShouldQueue
             ? "tag \"{$newTags[0]}\""
             : count($newTags) . ' tags: ' . implode(', ', $newTags);
         WhatsappMessage::withoutGlobalScope('tenant')->create([
-            'tenant_id'       => $conv->tenant_id,
-            'conversation_id' => $conv->id,
-            'waha_message_id' => null,
-            'direction'       => 'outbound',
-            'type'            => 'event',
-            'body'            => "Agente {$agent->name} adicionou {$tagLabel}",
-            'media_filename'  => 'Tag adicionada',
-            'media_mime'      => 'ai_tag_added',
-            'sent_at'         => now(),
-            'ack'             => 'delivered',
+            'tenant_id'        => $conv->tenant_id,
+            'conversation_id'  => $conv->id,
+            'waha_message_id'  => null,
+            'direction'        => 'outbound',
+            'type'             => 'event',
+            'body'             => "Agente {$agent->name} adicionou {$tagLabel}",
+            'media_filename'   => 'Tag adicionada',
+            'media_mime'       => 'ai_tag_added',
+            'sent_by'          => 'event',
+            'sent_by_agent_id' => $agent->id,
+            'sent_at'          => now(),
+            'ack'              => 'delivered',
         ]);
 
         Log::channel('whatsapp')->info('AI: tags adicionadas', [
@@ -1568,16 +1576,18 @@ class ProcessAiResponse implements ShouldQueue
 
                     // Mensagem de evento visível no chat
                     WhatsappMessage::withoutGlobalScope('tenant')->create([
-                        'tenant_id'       => $conv->tenant_id,
-                        'conversation_id' => $conv->id,
-                        'waha_message_id' => null,
-                        'direction'       => 'outbound',
-                        'type'            => 'event',
-                        'body'            => "Agente agendou \"{$eventTitle}\" para {$dateFormatted}",
-                        'media_filename'  => 'Evento agendado',
-                        'media_mime'      => 'ai_calendar_create',
-                        'sent_at'         => now(),
-                        'ack'             => 'delivered',
+                        'tenant_id'        => $conv->tenant_id,
+                        'conversation_id'  => $conv->id,
+                        'waha_message_id'  => null,
+                        'direction'        => 'outbound',
+                        'type'             => 'event',
+                        'body'             => "Agente agendou \"{$eventTitle}\" para {$dateFormatted}",
+                        'media_filename'   => 'Evento agendado',
+                        'media_mime'       => 'ai_calendar_create',
+                        'sent_by'          => 'event',
+                        'sent_by_agent_id' => $conv->ai_agent_id,
+                        'sent_at'          => now(),
+                        'ack'              => 'delivered',
                     ]);
 
                     // Create WhatsApp reminders for the lead
@@ -1876,18 +1886,20 @@ class ProcessAiResponse implements ShouldQueue
 
         // Log message
         $msg = WhatsappMessage::withoutGlobalScope('tenant')->create([
-            'tenant_id'       => $conv->tenant_id,
-            'conversation_id' => $conv->id,
-            'waha_message_id' => $result['id'] ?? null,
-            'direction'       => 'outbound',
-            'type'            => $isImage ? 'image' : 'document',
-            'body'            => $caption,
-            'media_url'       => '/storage/' . $media->storage_path,
-            'media_mime'      => $media->mime_type,
-            'media_filename'  => $media->original_name,
-            'user_id'         => null,
-            'ack'             => 'sent',
-            'sent_at'         => now(),
+            'tenant_id'        => $conv->tenant_id,
+            'conversation_id'  => $conv->id,
+            'waha_message_id'  => $result['id'] ?? null,
+            'direction'        => 'outbound',
+            'type'             => $isImage ? 'image' : 'document',
+            'body'             => $caption,
+            'media_url'        => '/storage/' . $media->storage_path,
+            'media_mime'       => $media->mime_type,
+            'media_filename'   => $media->original_name,
+            'user_id'          => null,
+            'sent_by'          => 'ai_agent',
+            'sent_by_agent_id' => $agent->id,
+            'ack'              => 'sent',
+            'sent_at'          => now(),
         ]);
 
         try {

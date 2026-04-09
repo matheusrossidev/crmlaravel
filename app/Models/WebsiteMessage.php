@@ -15,6 +15,9 @@ class WebsiteMessage extends Model
         'conversation_id',
         'direction',
         'content',
+        'user_id',
+        'sent_by',
+        'sent_by_agent_id',
         'sent_at',
     ];
 
@@ -25,5 +28,15 @@ class WebsiteMessage extends Model
     public function conversation(): BelongsTo
     {
         return $this->belongsTo(WebsiteConversation::class, 'conversation_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function sentByAgent(): BelongsTo
+    {
+        return $this->belongsTo(AiAgent::class, 'sent_by_agent_id');
     }
 }

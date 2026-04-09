@@ -1086,15 +1086,17 @@ WEBCHAT;
         $wahaMessageId = $result['id'] ?? null;
 
         $message = WhatsappMessage::withoutGlobalScope('tenant')->create([
-            'tenant_id'       => $conv->tenant_id,
-            'conversation_id' => $conv->id,
-            'waha_message_id' => $wahaMessageId,
-            'direction'       => 'outbound',
-            'type'            => 'text',
-            'body'            => $text,
-            'user_id'         => null,
-            'ack'             => 'sent',
-            'sent_at'         => now(),
+            'tenant_id'        => $conv->tenant_id,
+            'conversation_id'  => $conv->id,
+            'waha_message_id'  => $wahaMessageId,
+            'direction'        => 'outbound',
+            'type'             => 'text',
+            'body'             => $text,
+            'user_id'          => null,
+            'sent_by'          => 'ai_agent',
+            'sent_by_agent_id' => $conv->ai_agent_id,
+            'ack'              => 'sent',
+            'sent_at'          => now(),
         ]);
 
         // Track response time: first AI reply after customer inbound
@@ -1202,18 +1204,20 @@ WEBCHAT;
         $wahaMessageId = $result['id'] ?? null;
 
         $message = WhatsappMessage::withoutGlobalScope('tenant')->create([
-            'tenant_id'       => $conv->tenant_id,
-            'conversation_id' => $conv->id,
-            'waha_message_id' => $wahaMessageId,
-            'direction'       => 'outbound',
-            'type'            => $isImage ? 'image' : 'document',
-            'body'            => $caption,
-            'media_url'       => '/storage/' . $media->storage_path,
-            'media_mime'      => $media->mime_type,
-            'media_filename'  => $media->original_name,
-            'user_id'         => null,
-            'ack'             => 'sent',
-            'sent_at'         => now(),
+            'tenant_id'        => $conv->tenant_id,
+            'conversation_id'  => $conv->id,
+            'waha_message_id'  => $wahaMessageId,
+            'direction'        => 'outbound',
+            'type'             => $isImage ? 'image' : 'document',
+            'body'             => $caption,
+            'media_url'        => '/storage/' . $media->storage_path,
+            'media_mime'       => $media->mime_type,
+            'media_filename'   => $media->original_name,
+            'user_id'          => null,
+            'sent_by'          => 'ai_agent',
+            'sent_by_agent_id' => $agent->id,
+            'ack'              => 'sent',
+            'sent_at'          => now(),
         ]);
 
         // Track response time: first AI reply after customer inbound

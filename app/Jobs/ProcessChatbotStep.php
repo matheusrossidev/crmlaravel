@@ -664,6 +664,7 @@ class ProcessChatbotStep
                 'direction'       => 'outbound',
                 'type'            => 'text',
                 'body'            => $text,
+                'sent_by'         => 'chatbot',
                 'ack'             => 'sent',
                 'sent_at'         => now(),
             ]);
@@ -681,6 +682,11 @@ class ProcessChatbotStep
                 return;
             }
 
+            // Registra intent ANTES de enviar — quando o webhook do WAHA voltar
+            // com fromMe=true (echo), ProcessWahaWebhook le esse cache e marca a
+            // mensagem como sent_by=chatbot. Sem isso, ela cairia em human_phone.
+            $this->cacheOutboundIntent($conv->id, $text, 'chatbot');
+
             $chatId = $this->resolveChatId($conv);
             $waha   = \App\Services\WhatsappServiceFactory::for($instance);
             $waha->sendText($chatId, $text);
@@ -693,6 +699,24 @@ class ProcessChatbotStep
         }
     }
 
+    /**
+     * Cache de intent: registra "essa mensagem vai sair pelo {sent_by}" antes
+     * de pedir pro WAHA enviar. Quando o webhook voltar com fromMe=true (echo),
+     * ProcessWahaWebhook le essa chave pra atribuir a autoria correta.
+     *
+     * Chave inclui conversation_id pra evitar colisao entre conversas
+     * diferentes que mandam o mesmo texto. TTL de 120s e mais que suficiente
+     * pro echo do WAHA voltar (normalmente em 1-3s).
+     */
+    private function cacheOutboundIntent(int $convId, string $body, string $sentBy, ?int $agentId = null): void
+    {
+        \Illuminate\Support\Facades\Cache::put(
+            "outbound_intent:{$convId}:" . md5(trim($body)),
+            ['sent_by' => $sentBy, 'sent_by_agent_id' => $agentId],
+            120
+        );
+    }
+
     private function sendWahaImage(WhatsappConversation $conv, string $imageUrl, string $caption = ''): void
     {
         try {
@@ -701,6 +725,9 @@ class ProcessChatbotStep
                 Log::channel('whatsapp')->warning('Chatbot: instância não encontrada para imagem', ['conv' => $conv->id]);
                 return;
             }
+
+            // Registra intent ANTES de enviar (caption serve como body pro hash)
+            $this->cacheOutboundIntent($conv->id, $caption ?: $imageUrl, 'chatbot');
 
             $chatId    = $this->resolveChatId($conv);
             $waha      = \App\Services\WhatsappServiceFactory::for($instance);
@@ -731,6 +758,9 @@ class ProcessChatbotStep
                 Log::channel('whatsapp')->warning('Chatbot: instância não encontrada para lista', ['conv' => $conv->id]);
                 return;
             }
+
+            // Registra intent ANTES de enviar
+            $this->cacheOutboundIntent($conv->id, $description, 'chatbot');
 
             $chatId = $this->resolveChatId($conv);
             $waha   = \App\Services\WhatsappServiceFactory::for($instance);

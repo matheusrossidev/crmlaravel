@@ -17,7 +17,9 @@ class InstagramMessage extends Model
     protected $fillable = [
         'tenant_id', 'conversation_id', 'ig_message_id',
         'direction', 'type', 'body', 'media_url',
-        'is_deleted', 'ack', 'user_id', 'sent_at',
+        'is_deleted', 'ack', 'user_id',
+        'sent_by', 'sent_by_agent_id',
+        'sent_at',
     ];
 
     protected $casts = [
@@ -33,5 +35,10 @@ class InstagramMessage extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function sentByAgent(): BelongsTo
+    {
+        return $this->belongsTo(AiAgent::class, 'sent_by_agent_id');
     }
 }

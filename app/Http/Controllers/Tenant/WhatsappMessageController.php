@@ -120,6 +120,7 @@ class WhatsappMessageController extends Controller
             'media_mime'      => $mediaMime,
             'media_filename'  => $mediaFilename,
             'user_id'         => auth()->id(),
+            'sent_by'         => 'human',
             'ack'             => $type === 'note' ? 'delivered' : 'sent',
             'sent_at'         => now(),
         ]);
@@ -174,6 +175,7 @@ class WhatsappMessageController extends Controller
             'type'            => 'reaction',
             'reaction_data'   => ['emoji' => $emoji, 'reactedToMessageId' => $wahaMessageId],
             'user_id'         => auth()->id(),
+            'sent_by'         => 'human',
             'ack'             => 'sent',
             'sent_at'         => now(),
         ]);

@@ -598,6 +598,50 @@ $pageIcon = 'chat-dots';
         font-size: 12.5px;
     }
 
+    /* ── Author badge (sent_by) ── */
+    .msg-author-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 10.5px;
+        font-weight: 700;
+        padding: 3px 9px 3px 4px;
+        border-radius: 11px;
+        margin-bottom: 4px;
+        line-height: 1;
+        max-width: fit-content;
+        align-self: flex-end;
+    }
+    .wa-msg.outbound .msg-author-badge { margin-left: auto; }
+    .msg-author-avatar {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        object-fit: cover;
+        flex-shrink: 0;
+        border: 1.5px solid #fff;
+    }
+    .msg-author-name { white-space: nowrap; }
+
+    .msg-author-ai_agent { background: #f3e8ff; color: #7c3aed; }
+    .msg-author-followup { background: #fed7aa; color: #9a3412; }
+    .msg-author-chatbot { background: #e0e7ff; color: #4338ca; padding-left: 9px; }
+    .msg-author-automation { background: #d1fae5; color: #065f46; padding-left: 9px; }
+    .msg-author-scheduled { background: #dbeafe; color: #1e40af; padding-left: 9px; }
+    .msg-author-human { background: #f3f4f6; color: #374151; padding-left: 9px; }
+    .msg-author-human_phone { background: #fef3c7; color: #92400e; padding-left: 9px; }
+    .msg-author-event { background: #fef3c7; color: #92400e; padding-left: 9px; }
+
+    /* Glow pulsante no primeiro render — chama atencao pra mensagem nova */
+    @keyframes msg-author-pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+        50% { box-shadow: 0 0 0 5px rgba(124, 58, 237, 0.18); }
+    }
+    .msg-author-badge.fresh.msg-author-ai_agent,
+    .msg-author-badge.fresh.msg-author-followup {
+        animation: msg-author-pulse 1.6s ease-in-out 1;
+    }
+
     /* Sender name label (group messages) */
     .wa-sender-label {
         font-size: 11px;
@@ -2363,6 +2407,48 @@ $pageIcon = 'chat-dots';
         lastPollAt = new Date().toISOString();
     }
 
+    // ── Author badge ──────────────────────────────────────────────────────────────
+    // Constroi um badge HTML pra mostrar quem enviou a mensagem outbound.
+    // IA/follow-up: avatar circular + nome do agente.
+    // Resto (chatbot, automation, scheduled, human, human_phone, event): label texto.
+    function buildAuthorBadge(msg) {
+        const labels = {
+            ai_agent: 'IA',
+            followup: 'Follow-up',
+            chatbot: 'Chatbot',
+            automation: 'Automacao',
+            scheduled: 'Agendada',
+            human: 'Voce',
+            human_phone: 'Celular',
+            event: 'Sistema',
+        };
+
+        const isAi = msg.sent_by === 'ai_agent' || msg.sent_by === 'followup';
+        const agent = msg.sent_by_agent;
+
+        const badge = document.createElement('div');
+        badge.className = `msg-author-badge msg-author-${msg.sent_by} fresh`;
+
+        if (isAi && agent && agent.name) {
+            const avatarUrl = agent.avatar || '/images/agents-avatar/default.png';
+            badge.innerHTML = `
+                <img src="${escHtml(avatarUrl)}" class="msg-author-avatar" alt="${escHtml(agent.name)}" onerror="this.style.display='none'">
+                <span class="msg-author-name">${escHtml(agent.name)}</span>
+            `;
+        } else if (msg.sent_by === 'human' && msg.user_name) {
+            badge.innerHTML = `<span class="msg-author-name">${escHtml(msg.user_name)}</span>`;
+        } else {
+            const label = labels[msg.sent_by] || msg.sent_by;
+            badge.innerHTML = `<span class="msg-author-name">${escHtml(label)}</span>`;
+        }
+
+        // Remove a classe 'fresh' depois de 2s pra animacao nao re-rodar em
+        // re-renders subsequentes (ex: mensagem mudou de ack ack)
+        setTimeout(() => badge.classList.remove('fresh'), 2000);
+
+        return badge;
+    }
+
     // ── Renderizar mensagens ──────────────────────────────────────────────────────
     function renderMessages(messages, clear = false) {
         const container = document.getElementById('messagesContainer');
@@ -2493,6 +2579,14 @@ $pageIcon = 'chat-dots';
             senderLabel.className = 'wa-sender-label';
             senderLabel.textContent = msg.sender_name;
             wrap.appendChild(senderLabel);
+        }
+
+        // Author badge (sent_by) — so pra outbound, mostra quem mandou:
+        // humano, IA, chatbot, automation, scheduled, follow-up.
+        // Mensagens antigas (sent_by null) ficam sem badge igual antes.
+        if (msg.direction === 'outbound' && msg.sent_by) {
+            const badge = buildAuthorBadge(msg);
+            if (badge) wrap.appendChild(badge);
         }
 
         const bubble = document.createElement('div');

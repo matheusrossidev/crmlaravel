@@ -167,7 +167,8 @@ class SendScheduledMessages extends Command
             'media_url'       => $scheduled->media_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($scheduled->media_path) : null,
             'media_mime'      => $scheduled->media_mime,
             'media_filename'  => $scheduled->media_filename,
-            'user_id'         => null,
+            'user_id'         => $scheduled->created_by,
+            'sent_by'         => 'scheduled',
             'ack'             => 'sent',
             'sent_at'         => now(),
         ]);

@@ -26,6 +26,8 @@ class WhatsappMessage extends Model
         'media_filename',
         'reaction_data',
         'user_id',
+        'sent_by',
+        'sent_by_agent_id',
         'ack',
         'is_deleted',
         'sent_at',
@@ -45,6 +47,15 @@ class WhatsappMessage extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Agente IA que enviou essa mensagem (quando sent_by = 'ai_agent' ou 'followup').
+     * Pra outros tipos retorna null.
+     */
+    public function sentByAgent(): BelongsTo
+    {
+        return $this->belongsTo(AiAgent::class, 'sent_by_agent_id');
     }
 
     /**

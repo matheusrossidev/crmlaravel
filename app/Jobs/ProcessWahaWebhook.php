@@ -790,19 +790,40 @@ class ProcessWahaWebhook implements ShouldQueue
             return;
         }
 
+        // Cache de intent: se o chatbot/automation/etc registrou intent ANTES de
+        // pedir o sendText pro WAHA, lemos aqui e marcamos o sent_by correto.
+        // Pra inbound nao tem intent. Pra outbound sem intent assumimos
+        // human_phone (mensagem mandada do celular do dono fora do CRM).
+        $sentBy = null;
+        $sentByAgentId = null;
+        if ($isFromMe && $body) {
+            $intent = \Illuminate\Support\Facades\Cache::pull(
+                "outbound_intent:{$conversation->id}:" . md5(trim($body))
+            );
+            if ($intent && is_array($intent)) {
+                $sentBy = $intent['sent_by'] ?? null;
+                $sentByAgentId = $intent['sent_by_agent_id'] ?? null;
+            } else {
+                // Echo sem intent registrado = mensagem mandada do celular do dono
+                $sentBy = 'human_phone';
+            }
+        }
+
         $message = WhatsappMessage::withoutGlobalScope('tenant')->create([
-            'tenant_id'       => $instance->tenant_id,
-            'conversation_id' => $conversation->id,
-            'waha_message_id' => $wahaId,
-            'direction'       => $isFromMe ? 'outbound' : 'inbound',
-            'sender_name'     => $messageSenderName ?? null,
-            'type'            => $type,
-            'body'            => $body,
-            'media_url'       => $mediaUrl,
-            'media_mime'      => $mediaMime,
-            'media_filename'  => $mediaFilename,
-            'ack'             => 'delivered',
-            'sent_at'         => isset($msg['timestamp'])
+            'tenant_id'        => $instance->tenant_id,
+            'conversation_id'  => $conversation->id,
+            'waha_message_id'  => $wahaId,
+            'direction'        => $isFromMe ? 'outbound' : 'inbound',
+            'sender_name'      => $messageSenderName ?? null,
+            'type'             => $type,
+            'body'             => $body,
+            'media_url'        => $mediaUrl,
+            'media_mime'       => $mediaMime,
+            'media_filename'   => $mediaFilename,
+            'sent_by'          => $sentBy,
+            'sent_by_agent_id' => $sentByAgentId,
+            'ack'              => 'delivered',
+            'sent_at'          => isset($msg['timestamp'])
                 ? \Carbon\Carbon::createFromTimestamp((int) $msg['timestamp'], config('app.timezone'))
                 : now(),
         ]);
