@@ -175,12 +175,25 @@ class InstagramService
     }
 
     /**
-     * @deprecated Endpoint NAO funciona no fluxo Instagram Login (caminho novo).
-     * Sempre retorna erro 100/33 "does not support this operation". Confirmado
-     * empiricamente em prod (08/04/2026) com IGSID de DM real legitima.
+     * Busca profile completo (name + username + profile_pic) do contato via IGSID.
      *
-     * Use listConversations() + getConversationParticipants() que e o caminho
-     * documentado oficialmente pra Instagram API with Instagram Login.
+     * Esse endpoint funciona pra instances criadas ANTES de ~28/03/2026 — depois
+     * dessa data a Meta passou a retornar erro 100/33 "does not support this
+     * operation" pra instances novas (mudanca silenciosa, sem aviso na doc).
+     * Confirmado empiricamente comparando instance #34 (27/03 — funciona) vs
+     * instance #37 (01/04 — falha).
+     *
+     * Estrategia recomendada: tentar esse endpoint primeiro (dados completos).
+     * Se voltar erro, usar listConversations() + getConversationParticipants()
+     * como fallback (so retorna username).
+     *
+     * Resposta esperada:
+     * {
+     *   "id": "<IGSID>",
+     *   "name": "Joao da Silva",
+     *   "username": "joaosilva",
+     *   "profile_pic": "https://scontent-gru1.cdninstagram.com/..."
+     * }
      */
     public function getProfile(string $igsid): array
     {

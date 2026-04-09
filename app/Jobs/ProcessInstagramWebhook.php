@@ -18,6 +18,7 @@ use App\Models\Tenant;
 use App\Services\AutomationEngine;
 use App\Services\InstagramService;
 use App\Services\PlanLimitChecker;
+use App\Support\ProfilePictureDownloader;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -313,51 +314,77 @@ class ProcessInstagramWebhook implements ShouldQueue
     }
 
     /**
-     * Busca username do contato no fluxo "Instagram API with Instagram Login".
+     * Busca contact info (name + username + profile_pic) via fluxo hybrid:
      *
-     * No fluxo novo (graph.instagram.com + scopes instagram_business_*) NAO
-     * existe endpoint pra fetch profile direto do IGSID — Meta retorna erro
-     * 100/33 "does not support this operation". O endpoint
-     * GET /{message_id}?fields=from tambem nao funciona (mesmo erro).
+     * 1) Tenta GET /{IGSID}?fields=name,username,profile_pic — retorna data
+     *    completa (nome real + foto). Funciona pra instances criadas antes
+     *    de ~28/03/2026.
      *
-     * O UNICO caminho documentado e:
-     *   1. GET /me/conversations?platform=instagram  -> lista conversations
-     *   2. GET /{conversation_id}?fields=participants -> retorna IGSID+username
-     *      de cada participante
+     * 2) Se falhar (Meta retorna 100/33 pra instances novas), cai pra
+     *    listConversations + getConversationParticipants — retorna so o
+     *    username. Pelo menos da pra mostrar @handle no card.
      *
-     * Estrategia: lista as conversations recentes (limit 20), procura a com
-     * participante de IGSID == $igsid. Cache em memoria por instance pra nao
-     * re-listar a cada mensagem do mesmo webhook batch.
-     *
-     * Limitacao: name (display name) e profile_pic NAO sao retornados pela
-     * Meta nesse fluxo. UI usa @username como label e avatar fica fallback
-     * de letra. Pra ter foto/nome real precisaria migrar pro caminho velho
-     * (Facebook Login + Page) — refactor enorme fora desse PR.
+     * Quando consegue foto, baixa pro storage local via ProfilePictureDownloader
+     * porque URLs do CDN do Meta (cdninstagram.com) expiram em horas.
      */
     private function fetchContactInfo(InstagramInstance $instance, string $igsid, ?string $messageId = null): array
     {
+        $result = ['name' => null, 'username' => null, 'picture' => null];
+
         try {
             $token   = decrypt($instance->access_token);
             $service = new InstagramService($token);
 
-            // Lista conversations recentes (Meta retorna em ordem decrescente
-            // por updated_time — a conversa que acabou de receber a mensagem
-            // praticamente sempre vai estar nas primeiras).
-            $list = $service->listConversations(20);
+            // ── Tentativa 1: endpoint direto /{IGSID} (full data) ────────
+            $profile = $service->getProfile($igsid);
 
-            if (! empty($list['error'])) {
-                Log::channel('instagram')->warning('Falha ao listar conversations', [
-                    'instance_id' => $instance->id,
-                    'igsid'       => $igsid,
-                    'status'      => $list['status'] ?? null,
-                    'body'        => $list['body'] ?? null,
+            if (empty($profile['error'])) {
+                $result['name']     = $profile['name']     ?? null;
+                $result['username'] = $profile['username'] ?? null;
+                $remotePic          = $profile['profile_pic'] ?? null;
+
+                if ($remotePic) {
+                    $localPic = ProfilePictureDownloader::download(
+                        $remotePic,
+                        'instagram',
+                        $instance->tenant_id,
+                        $igsid,
+                    );
+                    $result['picture'] = $localPic ?: $remotePic;
+                }
+
+                Log::channel('instagram')->info('Contact info obtido via /{IGSID}', [
+                    'igsid'    => $igsid,
+                    'name'     => $result['name'],
+                    'username' => $result['username'],
+                    'has_pic'  => (bool) $result['picture'],
                 ]);
-                return ['username' => null];
+
+                return $result;
             }
 
-            $conversations = $list['data'] ?? [];
+            // Endpoint direto falhou — log defensivo (so se nao for 100/33,
+            // que e o caso "esperado" pra instances novas)
+            $errorBody = $profile['body'] ?? '';
+            if (! str_contains($errorBody, '"code":100')) {
+                Log::channel('instagram')->warning('getProfile retornou erro inesperado', [
+                    'igsid'  => $igsid,
+                    'status' => $profile['status'] ?? null,
+                    'body'   => $errorBody,
+                ]);
+            }
 
-            foreach ($conversations as $conv) {
+            // ── Tentativa 2: fallback via /me/conversations + participants ──
+            $list = $service->listConversations(20);
+            if (! empty($list['error'])) {
+                Log::channel('instagram')->warning('Fallback listConversations tambem falhou', [
+                    'igsid'  => $igsid,
+                    'status' => $list['status'] ?? null,
+                ]);
+                return $result;
+            }
+
+            foreach ($list['data'] ?? [] as $conv) {
                 $convId = $conv['id'] ?? null;
                 if (! $convId) {
                     continue;
@@ -368,32 +395,29 @@ class ProcessInstagramWebhook implements ShouldQueue
                     continue;
                 }
 
-                $participants = $details['participants']['data'] ?? [];
-                foreach ($participants as $p) {
+                foreach ($details['participants']['data'] ?? [] as $p) {
                     if (($p['id'] ?? null) === $igsid) {
-                        $username = $p['username'] ?? null;
-                        Log::channel('instagram')->info('Username do contato obtido', [
-                            'igsid'           => $igsid,
-                            'username'        => $username,
-                            'conversation_id' => $convId,
+                        $result['username'] = $p['username'] ?? null;
+                        Log::channel('instagram')->info('Contact info obtido via fallback (participants)', [
+                            'igsid'    => $igsid,
+                            'username' => $result['username'],
                         ]);
-                        return ['username' => $username];
+                        return $result;
                     }
                 }
             }
 
-            Log::channel('instagram')->info('IGSID nao encontrado em nenhuma conversation recente', [
-                'igsid'           => $igsid,
-                'instance_id'     => $instance->id,
-                'conversations_checked' => count($conversations),
+            Log::channel('instagram')->info('IGSID nao encontrado em nenhum endpoint', [
+                'igsid'       => $igsid,
+                'instance_id' => $instance->id,
             ]);
-            return ['username' => null];
+            return $result;
         } catch (\Throwable $e) {
             Log::channel('instagram')->warning('Excecao ao buscar contact info', [
                 'igsid' => $igsid,
                 'error' => $e->getMessage(),
             ]);
-            return ['username' => null];
+            return $result;
         }
     }
 
@@ -409,42 +433,55 @@ class ProcessInstagramWebhook implements ShouldQueue
             ->first();
 
         if ($conversation) {
-            // Se conversa ja existe mas sem username, tentar atualizar (so se for inbound).
-            // Mensagem outbound (echo) tem from=business, nao da pra extrair
-            // username de contato a partir dela.
-            $needsUsername = ! $conversation->contact_username;
+            // Se conversa ja existe mas falta username/name/foto, tentar atualizar
+            // (so se for inbound — outbound echo tem from=business, nao da pra extrair).
+            $needsName    = ! $conversation->contact_name;
+            $needsUser    = ! $conversation->contact_username;
+            $needsPicture = ! $conversation->contact_picture_url;
 
-            if ($needsUsername && $isInbound && $messageId) {
+            if (($needsName || $needsUser || $needsPicture) && $isInbound) {
                 $info = $this->fetchContactInfo($instance, $igsid, $messageId);
-                if ($info['username']) {
-                    $update = ['contact_username' => $info['username']];
-                    // Usa username como display name (fallback) — Meta nao retorna
-                    // name no fluxo Instagram Login.
-                    if (! $conversation->contact_name) {
-                        $update['contact_name'] = $info['username'];
+
+                $update = [];
+                if ($needsUser && $info['username']) {
+                    $update['contact_username'] = $info['username'];
+                }
+                if ($needsName) {
+                    // name real se tiver, fallback pra username
+                    $name = $info['name'] ?? $info['username'] ?? null;
+                    if ($name) {
+                        $update['contact_name'] = $name;
                     }
+                }
+                if ($needsPicture && $info['picture']) {
+                    $update['contact_picture_url'] = $info['picture'];
+                }
+
+                if (! empty($update)) {
                     InstagramConversation::withoutGlobalScope('tenant')
                         ->where('id', $conversation->id)
                         ->update($update);
                     foreach ($update as $k => $v) {
                         $conversation->$k = $v;
                     }
-                    Log::channel('instagram')->info('Username do contato atualizado', [
+                    Log::channel('instagram')->info('Contact info atualizado em conv existente', [
                         'conversation_id' => $conversation->id,
-                        'username'        => $info['username'],
+                        'fields'          => array_keys($update),
                     ]);
                 }
             }
             return $conversation;
         }
 
-        // Conversa nova — buscar username do contato (so se for inbound)
-        $info = $isInbound && $messageId
+        // Conversa nova — buscar contact info (so se for inbound)
+        $info = $isInbound
             ? $this->fetchContactInfo($instance, $igsid, $messageId)
-            : ['username' => null];
+            : ['name' => null, 'username' => null, 'picture' => null];
+
         $contactUsername = $info['username'];
-        // Display name = username (fallback) — Meta nao retorna name real
-        $contactName = $contactUsername;
+        // Display name: name real se tiver, fallback pra username
+        $contactName     = $info['name'] ?? $contactUsername;
+        $contactPicture  = $info['picture'];
 
         $conversation = InstagramConversation::withoutGlobalScope('tenant')->create([
             'tenant_id'           => $instance->tenant_id,
@@ -452,7 +489,7 @@ class ProcessInstagramWebhook implements ShouldQueue
             'igsid'               => $igsid,
             'contact_name'        => $contactName,
             'contact_username'    => $contactUsername,
-            'contact_picture_url' => null, // limitacao do Instagram Login flow
+            'contact_picture_url' => $contactPicture,
             'status'              => 'open',
             'started_at'          => now(),
             'last_message_at'     => now(),
