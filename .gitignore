@@ -28,4 +28,11 @@ portainer-stack.yml
 /futureplans
 /docs
 
+# Obsidian config local do projeto root (preferencias UI por dev)
 .obsidian/
+
+# Obsidian vault do second brain — versionado, mas cache local de cada dev nao
+obsidian-vault/.obsidian/workspace.json
+obsidian-vault/.obsidian/workspace-mobile.json
+obsidian-vault/.obsidian/cache/
+obsidian-vault/.trash/
