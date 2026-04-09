@@ -313,7 +313,7 @@ class ProcessAiResponse implements ShouldQueue
         if (! $agent->use_agno || $reply === '') {
             // ── Caminho LLM direto (original) ────────────────────────────────
             $enableIntentNotify = (bool) ($agent->enable_intent_notify ?? false);
-            $system             = $service->buildSystemPrompt($agent, $stages, $availTags, $enableIntentNotify, $calendarEvents, $lead);
+            $system             = $service->buildSystemPrompt($agent, $stages, $availTags, $enableIntentNotify, $calendarEvents, $lead, $conv);
             $history = $service->buildHistory($conv, limit: 50);
 
             if (empty($history)) {

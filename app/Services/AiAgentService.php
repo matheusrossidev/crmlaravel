@@ -35,6 +35,7 @@ class AiAgentService
         bool    $enableIntentNotify = false,
         array   $calendarEvents     = [],
         ?Lead   $lead               = null,
+        ?\App\Models\WhatsappConversation $conv = null,
     ): string {
         $objective = match ($agent->objective) {
             'sales'   => 'vendas',
@@ -269,19 +270,34 @@ NOTES;
                 $lines[] = "Instruções específicas:\n{$agent->calendar_tool_instructions}";
             }
 
-            // Contexto do contato — e-mail pré-preenchido se disponível
+            // Contexto do contato — pre-preenchido pra evitar que o LLM precise
+            // perguntar dados que ja temos. CRITICO: o telefone aparece aqui pra
+            // o agente saber EXATAMENTE qual numero usar no description do evento.
+            // Sem isso, o vendedor que abre o Google Calendar nao tem como ligar
+            // pro cliente direto pelo evento.
             $contactCtx = [];
-            if ($lead) {
-                if ($lead->name)  $contactCtx[] = "Nome: {$lead->name}";
-                if ($lead->email) {
-                    $contactCtx[] = "E-mail: {$lead->email} ← USE ESTE para o convite (não pergunte novamente)";
-                } else {
-                    $contactCtx[] = "E-mail: não cadastrado → PERGUNTE ao contato antes de criar o evento";
-                }
+            $contactPhone = $lead?->phone ?? $conv?->phone ?? null;
+            $contactName  = $lead?->name  ?? $conv?->contact_name ?? null;
+            $contactEmail = $lead?->email ?? null;
+
+            if ($contactName) {
+                $contactCtx[] = "Nome: {$contactName}";
             }
-            if (! empty($contactCtx)) {
-                $lines[] = "Dados do contato desta conversa: " . implode(' | ', $contactCtx);
+            if ($contactPhone) {
+                $contactCtx[] = "Telefone: {$contactPhone} ← USE ESTE no campo description do calendar_create (obrigatorio)";
+            } else {
+                $contactCtx[] = "Telefone: nao disponivel (canal Instagram/Web) → omita a linha Telefone do description";
             }
+            if ($contactEmail) {
+                $contactCtx[] = "E-mail: {$contactEmail} ← USE ESTE para attendees do convite (nao pergunte novamente)";
+            } else {
+                $contactCtx[] = "E-mail: nao cadastrado → PERGUNTE ao contato antes de criar o evento";
+            }
+            if ($lead?->company) {
+                $contactCtx[] = "Empresa: {$lead->company}";
+            }
+
+            $lines[] = "Dados do contato desta conversa (use TAL E QUAL no description do evento): " . implode(' | ', $contactCtx);
 
             if (! empty($calendarEvents)) {
                 $lines[] = "\nCompromissos agendados (próximos 7 dias):";
@@ -355,24 +371,33 @@ Use sempre o nome do cliente no título quando disponível.
 NUNCA use apenas "Reunião", "Agendamento" ou "Evento" sem contexto adicional.
 
 DESCRIÇÃO DO EVENTO (obrigatório — resumo útil para quem consultar depois):
-Use este formato e preencha apenas o que tiver informação real:
+O vendedor vai abrir esse evento no Google Calendar pra ligar pro cliente.
+O TELEFONE PRECISA estar no description — sem isso o evento e inutil.
+
+Use este formato exato:
 
 Motivo / O que foi combinado:
 [Resumo em 1-3 frases do objetivo do encontro e o que foi discutido]
 
 Cliente:
-Nome: [nome]
-Telefone: [telefone se disponível]
-[Email: ... se disponível]
-[Empresa: ... se disponível]
+Nome: [nome — SEMPRE]
+Telefone: [telefone — OBRIGATORIO sempre que disponivel nos "Dados do contato desta conversa" acima. Copie o numero TAL E QUAL apareceu la, sem reformatar]
+[Email: ... se disponivel]
+[Empresa: ... se disponivel]
 
 Local / Endereço:
-[Se mencionado na conversa — omitir esta seção se não houver]
+[Se mencionado na conversa — omitir esta secao se nao houver]
 
 Observações:
-[Preferências, detalhes relevantes ou contexto mencionado na conversa — omitir se não houver]
+[Preferencias, detalhes relevantes ou contexto mencionado na conversa — omitir se nao houver]
 
-Não invente dados. Extraia apenas do que foi conversado.
+REGRAS DO TELEFONE NO DESCRIPTION:
+- Se "Dados do contato desta conversa" mostra "Telefone: <numero>", VOCE OBRIGATORIAMENTE inclui essa linha "Telefone: <numero>" no bloco "Cliente:"
+- So pode omitir a linha Telefone se "Dados do contato desta conversa" disser "Telefone: nao disponivel" (caso de Instagram/Web sem numero)
+- Nunca invente nem reformate o numero — copie igual ao que esta nos dados do contato
+- O bloco "Cliente:" e obrigatorio mesmo se voce ja mencionar dados em outras secoes
+
+Não invente dados. Extraia apenas do que foi conversado ou dos "Dados do contato desta conversa" acima.
 
 SCHEMAS:
 - check_calendar_availability: {"type":"check_calendar_availability","start":"YYYY-MM-DDTHH:MM","end":"YYYY-MM-DDTHH:MM"}
