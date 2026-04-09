@@ -84,6 +84,17 @@ if [ "${IS_APP}" = "true" ]; then
     php artisan route:cache   2>/dev/null || true
     php artisan view:cache    2>/dev/null || true
     php artisan storage:link --force 2>/dev/null || true
+
+    # ── Reconfigura agents no Agno (fire & forget, em background) ─────────────
+    # O Agno guarda o config dos agents em memoria (dict Python). Quando o
+    # container syncro_agno reinicia, perde tudo — e a proxima mensagem cai
+    # num agent generico ("Voce e Assistente, assistente de nossa empresa")
+    # que alucina identidade puxando contexto da memoria vetorial. Bug
+    # historico: 2026-04-09, Camila/Sophia respondendo como "Syncro CRM".
+    # Agora, todo boot do app, repopulamos o cache do Agno. Roda em background
+    # com --wait pra nao bloquear o startup do php-fpm caso o Agno demore.
+    echo "[entrypoint] Reconfiguring Agno agents in background..."
+    (php artisan agno:reconfigure-all --wait=60 2>&1 | sed 's/^/[agno-reconf] /' || true) &
 fi
 
 echo "[entrypoint] Setup complete. Starting: $@"

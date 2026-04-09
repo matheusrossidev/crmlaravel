@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\AiAgent;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -71,6 +72,45 @@ class AgnoService
                 'error'    => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Build the Agno config payload from an AiAgent model and push it.
+     *
+     * Centraliza o mapping AiAgent -> payload do Agno em UM lugar so. Antes
+     * isso vivia duplicado em AiAgentController::syncToAgno e teria que ser
+     * duplicado de novo em qualquer command/job que precise reconfigurar.
+     *
+     * O Agno guarda o config em memoria (dict Python). Quando o container
+     * reinicia, perde tudo — por isso temos um command que reconfigura todos
+     * os agents no boot do app pra repopular o cache.
+     */
+    public function configureFromAgent(AiAgent $agent): void
+    {
+        if (! $agent->use_agno) {
+            return;
+        }
+
+        $this->configureAgent($agent->id, [
+            'tenant_id'            => $agent->tenant_id,
+            'name'                 => $agent->name,
+            'objective'            => $agent->objective,
+            'company_name'         => $agent->company_name ?? '',
+            'industry'             => $agent->industry ?? '',
+            'communication_style'  => $agent->communication_style,
+            'persona_description'  => $agent->persona_description ?? '',
+            'behavior'             => $agent->behavior ?? '',
+            'max_message_length'   => $agent->max_message_length ?? 800,
+            'knowledge_base_text'  => $agent->knowledge_base ?? '',
+            'llm_provider'         => config('ai.provider', 'openai'),
+            'llm_model'            => config('ai.model', 'gpt-4o-mini'),
+            'llm_api_key'          => config('ai.api_key', ''),
+            'enable_pipeline_tool' => (bool) $agent->enable_pipeline_tool,
+            'enable_tags_tool'     => (bool) $agent->enable_tags_tool,
+            'enable_intent_notify' => (bool) $agent->enable_intent_notify,
+            'enable_calendar_tool' => (bool) $agent->enable_calendar_tool,
+            'language'             => $agent->language ?? 'pt-BR',
+        ]);
     }
 
     /**
