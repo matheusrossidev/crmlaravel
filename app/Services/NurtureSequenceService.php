@@ -119,7 +119,7 @@ class NurtureSequenceService
 
         $paused = LeadSequence::withoutGlobalScope('tenant')
             ->where('status', 'paused')
-            ->with('lead')
+            ->with(['lead' => fn ($q) => $q->withoutGlobalScope('tenant')])
             ->get();
 
         foreach ($paused as $ls) {
@@ -204,7 +204,7 @@ class NurtureSequenceService
             return; // Sem instancia conectada — nao tem como enviar
         }
 
-        ScheduledMessage::create([
+        ScheduledMessage::withoutGlobalScope('tenant')->create([
             'tenant_id'       => $lead->tenant_id,
             'lead_id'         => $lead->id,
             'conversation_id' => $conv?->id,
@@ -304,8 +304,11 @@ class NurtureSequenceService
             return false;
         }
 
-        // Check if there's an inbound message after the sequence started
+        // Check if there's an inbound message after the sequence started.
+        // withoutGlobalScope na query da relacao porque WhatsappMessage tem
+        // BelongsToTenant — defesa pra rodar em CLI sem auth.
         $hasReply = $conv->messages()
+            ->withoutGlobalScope('tenant')
             ->where('direction', 'inbound')
             ->where('sent_at', '>', $ls->started_at)
             ->exists();
@@ -316,6 +319,7 @@ class NurtureSequenceService
 
         // Check if a human sent a manual outbound message (user_id not null)
         $hasHumanMsg = $conv->messages()
+            ->withoutGlobalScope('tenant')
             ->where('direction', 'outbound')
             ->whereNotNull('user_id')
             ->where('sent_at', '>', $ls->started_at)

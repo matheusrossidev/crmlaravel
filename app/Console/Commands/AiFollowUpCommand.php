@@ -50,12 +50,16 @@ class AiFollowUpCommand extends Command
         }
 
         // Carregar todas as conversas abertas com agente de IA + follow-up ativado
+        // CRITICO: withoutGlobalScopes() em todos os pontos porque AiAgent tambem
+        // tem BelongsToTenant. Sem isso o whereHas/eager load podem retornar
+        // vazio em cenarios CLI.
         $conversations = WhatsappConversation::withoutGlobalScope('tenant')
-            ->with(['aiAgent'])
+            ->with(['aiAgent' => fn ($q) => $q->withoutGlobalScopes()])
             ->where('status', 'open')
             ->where('is_group', false)
             ->whereNotNull('ai_agent_id')
             ->whereHas('aiAgent', fn ($q) => $q
+                ->withoutGlobalScopes()
                 ->where('is_active', true)
                 ->where('followup_enabled', true)
             )

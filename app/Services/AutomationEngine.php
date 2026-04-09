@@ -627,7 +627,7 @@ class AutomationEngine
 
             // Salvar mensagem enviada no banco (para aparecer no chat)
             if (empty($result['error'])) {
-                \App\Models\WhatsappMessage::create([
+                \App\Models\WhatsappMessage::withoutGlobalScope('tenant')->create([
                     'tenant_id'       => $automation->tenant_id,
                     'conversation_id' => $conv->id,
                     'waha_message_id' => $result['id'] ?? ('auto_' . uniqid()),
@@ -700,7 +700,7 @@ class AutomationEngine
         $sendAt     = now()->add($delayValue, $delayUnit);
         $body       = $this->interpolate((string) $config['message'], $ctx);
 
-        ScheduledMessage::create([
+        ScheduledMessage::withoutGlobalScope('tenant')->create([
             'tenant_id'       => $lead->tenant_id,
             'lead_id'         => $lead->id,
             'conversation_id' => $conv?->id,

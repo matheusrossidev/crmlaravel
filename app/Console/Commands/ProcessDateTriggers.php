@@ -95,7 +95,11 @@ class ProcessDateTriggers extends Command
                 $query->whereDate('birthday', $targetDate->toDateString());
             }
 
-            return $query->with(['pipeline', 'stage', 'whatsappConversation'])->get();
+            return $query->with([
+                'pipeline'             => fn ($q) => $q->withoutGlobalScope('tenant'),
+                'stage'                => fn ($q) => $q->withoutGlobalScope('tenant'),
+                'whatsappConversation' => fn ($q) => $q->withoutGlobalScope('tenant'),
+            ])->get();
         }
 
         if (str_starts_with($dateField, 'cf:')) {
@@ -122,7 +126,11 @@ class ProcessDateTriggers extends Command
             return Lead::withoutGlobalScope('tenant')
                 ->whereIn('id', $leadIds)
                 ->where('tenant_id', $tenantId)
-                ->with(['pipeline', 'stage', 'whatsappConversation'])
+                ->with([
+                    'pipeline'             => fn ($q) => $q->withoutGlobalScope('tenant'),
+                    'stage'                => fn ($q) => $q->withoutGlobalScope('tenant'),
+                    'whatsappConversation' => fn ($q) => $q->withoutGlobalScope('tenant'),
+                ])
                 ->get();
         }
 

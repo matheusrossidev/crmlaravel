@@ -22,10 +22,17 @@ class ProcessNurtureSequences extends Command
         $resumed = $service->resumePaused();
 
         // 2. Process due steps
+        // CRITICO: withoutGlobalScope nos eager loads tambem, porque Lead e
+        // NurtureSequence tem BelongsToTenant. Sem isso, em algum cenario
+        // de CLI o eager load pode retornar null silenciosamente e o
+        // processStep ignora a sequence inteira (markExited).
         $due = LeadSequence::withoutGlobalScope('tenant')
             ->where('status', 'active')
             ->where('next_step_at', '<=', now())
-            ->with(['lead', 'sequence'])
+            ->with([
+                'lead'     => fn ($q) => $q->withoutGlobalScope('tenant'),
+                'sequence' => fn ($q) => $q->withoutGlobalScope('tenant'),
+            ])
             ->limit(100)
             ->get();
 
