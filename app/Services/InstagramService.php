@@ -113,40 +113,64 @@ class InstagramService
     // ── Profile ───────────────────────────────────────────────────────────────
 
     /**
-     * Fetch sender info from a message ID.
+     * Lista as conversations atuais da conta. UNICO caminho que funciona no fluxo
+     * "Instagram API with Instagram Login" (graph.instagram.com + scopes
+     * instagram_business_*) pra descobrir contatos.
      *
-     * Esse e o UNICO endpoint que funciona pra obter o username de um
-     * contato no fluxo "Instagram API with Instagram Login" que usamos
-     * (graph.instagram.com + scopes instagram_business_*).
-     *
-     * O endpoint GET /{IGSID} (que retornaria name+profile_pic) so funciona
-     * no caminho VELHO (Messenger Platform / Facebook Login + Page connection).
-     * No nosso fluxo, a Meta retorna erro 100/33 "does not support this
-     * operation". Confirmado empiricamente em prod (08/04/2026).
-     *
-     * IMPORTANTE: chamar APENAS pra mensagens inbound. Pra echo/outbound o
-     * `from` vai ser o proprio business — nao tem profile de contato
-     * pra extrair.
+     * Combinado com getConversationParticipants($conversationId), permite mapear
+     * IGSID -> username sem depender do endpoint GET /{IGSID} (que retorna
+     * 100/33 "does not support this operation" no fluxo novo) nem do endpoint
+     * GET /{message_id}?fields=from (que tambem retorna 100/33 — confirmado
+     * empiricamente em prod 08/04/2026).
      *
      * Doc oficial:
      * developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/conversations-api
      *
      * Resposta:
      * {
+     *   "data": [
+     *     { "id": "aWdGGiblWZ...", "updated_time": "..." },
+     *     ...
+     *   ],
+     *   "paging": { "cursors": { "before": "...", "after": "..." } }
+     * }
+     */
+    public function listConversations(int $limit = 20, ?string $after = null): array
+    {
+        $params = [
+            'platform' => 'instagram',
+            'limit'    => $limit,
+        ];
+        if ($after) {
+            $params['after'] = $after;
+        }
+        return $this->get('/me/conversations', $params);
+    }
+
+    /**
+     * Busca os participantes de uma conversation. Retorna o array completo de
+     * participants com `id` (IGSID) e `username` pra cada user (incluindo o
+     * proprio business).
+     *
+     * Resposta:
+     * {
      *   "id": "aWdGGiblWZ...",
-     *   "from": { "id": "<IGSID>", "username": "joao_silva" }
+     *   "participants": {
+     *     "data": [
+     *       { "id": "<IGSID_business>", "username": "syncrocrm" },
+     *       { "id": "<IGSID_contato>",  "username": "mrodriguesrossi" }
+     *     ]
+     *   }
      * }
      *
-     * Limitacao conhecida: "name" (display name real) e "profile_pic" NAO
-     * sao retornados — limitacao tecnica documentada do flow Instagram Login.
-     * UI usa @username como label e avatar fica fallback de letra.
-     *
-     * @return array{id?: string, from?: array{id?: string, username?: string}, error?: bool}
+     * Limitacao: NAO retorna name (display name) nem profile_pic — limitacao
+     * tecnica documentada do flow Instagram Login. UI usa @username como label
+     * e avatar fica fallback de letra.
      */
-    public function getMessageSender(string $messageId): array
+    public function getConversationParticipants(string $conversationId): array
     {
-        return $this->get("/{$messageId}", [
-            'fields' => 'id,from',
+        return $this->get("/{$conversationId}", [
+            'fields' => 'participants',
         ]);
     }
 
@@ -155,11 +179,8 @@ class InstagramService
      * Sempre retorna erro 100/33 "does not support this operation". Confirmado
      * empiricamente em prod (08/04/2026) com IGSID de DM real legitima.
      *
-     * Use getMessageSender(\$messageId) que e a alternativa documentada
-     * oficialmente pra Instagram API with Instagram Login.
-     *
-     * Mantido como dead method pra compat backward — algumas automacoes/jobs
-     * antigos podem ainda chamar. Vai ser removido em PR futuro.
+     * Use listConversations() + getConversationParticipants() que e o caminho
+     * documentado oficialmente pra Instagram API with Instagram Login.
      */
     public function getProfile(string $igsid): array
     {

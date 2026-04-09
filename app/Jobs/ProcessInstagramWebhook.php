@@ -52,42 +52,20 @@ class ProcessInstagramWebhook implements ShouldQueue
                 ->first();
 
             if (! $instance) {
-                // Auto-descoberta nível 1: instância conectada sem ig_business_account_id
-                $instance = InstagramInstance::withoutGlobalScope('tenant')
-                    ->where('status', 'connected')
-                    ->whereNull('ig_business_account_id')
-                    ->orderByDesc('updated_at')
-                    ->first();
-
-                if ($instance) {
-                    $instance->update(['ig_business_account_id' => $igAccountId]);
-                    Log::channel('instagram')->info('ig_business_account_id auto-descoberto e salvo', [
-                        'instance_id'            => $instance->id,
-                        'ig_business_account_id' => $igAccountId,
-                    ]);
-                } else {
-                    // Auto-descoberta nível 2: instância com ig_business_account_id mas sem ig_page_id
-                    // Meta envia webhooks com 2 IDs diferentes para a mesma conta (IG account + Page)
-                    $instance = InstagramInstance::withoutGlobalScope('tenant')
-                        ->where('status', 'connected')
-                        ->whereNotNull('ig_business_account_id')
-                        ->whereNull('ig_page_id')
-                        ->orderByDesc('updated_at')
-                        ->first();
-
-                    if ($instance) {
-                        $instance->update(['ig_page_id' => $igAccountId]);
-                        Log::channel('instagram')->info('ig_page_id auto-descoberto e salvo', [
-                            'instance_id' => $instance->id,
-                            'ig_page_id'  => $igAccountId,
-                        ]);
-                    } else {
-                        Log::channel('instagram')->debug('entry.id não corresponde a nenhuma instância', [
-                            'ig_account_id' => $igAccountId,
-                        ]);
-                        continue;
-                    }
-                }
+                // NAO auto-descobrir. A "auto-descoberta" antiga pegava a primeira
+                // instance conectada com ig_business_account_id null e atribuia o
+                // entry.id do webhook a ela — bug de cross-tenant. Webhooks de
+                // QUALQUER tenant podiam acabar grudados na instance errada.
+                //
+                // Pra resolver instances com IDs faltando, rode o command:
+                //   php artisan instagram:repair-instances
+                // que pega o token de cada instance, chama /me, e popula
+                // instagram_account_id + ig_business_account_id corretamente.
+                Log::channel('instagram')->warning('entry.id nao corresponde a nenhuma instance — webhook ignorado', [
+                    'ig_account_id' => $igAccountId,
+                    'hint'          => 'rode `php artisan instagram:repair-instances` se houver instances com IDs nulos',
+                ]);
+                continue;
             }
 
             // A entry do ig_page_id contém apenas outbound echoes com IGSIDs inválidos
@@ -335,59 +313,84 @@ class ProcessInstagramWebhook implements ShouldQueue
     }
 
     /**
-     * Busca username do contato via message ID. No fluxo Instagram Login
-     * (graph.instagram.com), nao existe endpoint pra fetch profile direto
-     * do IGSID — a Meta retorna erro 100/33. A unica forma documentada e
-     * via GET /{message_id}?fields=from que retorna { from: { id, username } }.
+     * Busca username do contato no fluxo "Instagram API with Instagram Login".
+     *
+     * No fluxo novo (graph.instagram.com + scopes instagram_business_*) NAO
+     * existe endpoint pra fetch profile direto do IGSID — Meta retorna erro
+     * 100/33 "does not support this operation". O endpoint
+     * GET /{message_id}?fields=from tambem nao funciona (mesmo erro).
+     *
+     * O UNICO caminho documentado e:
+     *   1. GET /me/conversations?platform=instagram  -> lista conversations
+     *   2. GET /{conversation_id}?fields=participants -> retorna IGSID+username
+     *      de cada participante
+     *
+     * Estrategia: lista as conversations recentes (limit 20), procura a com
+     * participante de IGSID == $igsid. Cache em memoria por instance pra nao
+     * re-listar a cada mensagem do mesmo webhook batch.
      *
      * Limitacao: name (display name) e profile_pic NAO sao retornados pela
      * Meta nesse fluxo. UI usa @username como label e avatar fica fallback
      * de letra. Pra ter foto/nome real precisaria migrar pro caminho velho
      * (Facebook Login + Page) — refactor enorme fora desse PR.
      */
-    private function fetchContactInfo(InstagramInstance $instance, string $igsid, ?string $messageId): array
+    private function fetchContactInfo(InstagramInstance $instance, string $igsid, ?string $messageId = null): array
     {
-        if (! $messageId) {
-            return ['username' => null];
-        }
-
         try {
             $token   = decrypt($instance->access_token);
             $service = new InstagramService($token);
-            $result  = $service->getMessageSender($messageId);
 
-            if (! empty($result['error'])) {
-                Log::channel('instagram')->warning('Falha ao buscar sender da mensagem', [
-                    'igsid'      => $igsid,
-                    'message_id' => $messageId,
-                    'status'     => $result['status'] ?? null,
-                    'body'       => $result['body'] ?? null,
+            // Lista conversations recentes (Meta retorna em ordem decrescente
+            // por updated_time — a conversa que acabou de receber a mensagem
+            // praticamente sempre vai estar nas primeiras).
+            $list = $service->listConversations(20);
+
+            if (! empty($list['error'])) {
+                Log::channel('instagram')->warning('Falha ao listar conversations', [
+                    'instance_id' => $instance->id,
+                    'igsid'       => $igsid,
+                    'status'      => $list['status'] ?? null,
+                    'body'        => $list['body'] ?? null,
                 ]);
                 return ['username' => null];
             }
 
-            $from     = $result['from'] ?? [];
-            $username = $from['username'] ?? null;
+            $conversations = $list['data'] ?? [];
 
-            // Sanity check: o IGSID retornado deve bater com o que estamos buscando
-            if (! empty($from['id']) && $from['id'] !== $igsid) {
-                Log::channel('instagram')->warning('IGSID mismatch ao buscar sender', [
-                    'expected' => $igsid,
-                    'got'      => $from['id'],
-                    'mid'      => $messageId,
-                ]);
+            foreach ($conversations as $conv) {
+                $convId = $conv['id'] ?? null;
+                if (! $convId) {
+                    continue;
+                }
+
+                $details = $service->getConversationParticipants($convId);
+                if (! empty($details['error'])) {
+                    continue;
+                }
+
+                $participants = $details['participants']['data'] ?? [];
+                foreach ($participants as $p) {
+                    if (($p['id'] ?? null) === $igsid) {
+                        $username = $p['username'] ?? null;
+                        Log::channel('instagram')->info('Username do contato obtido', [
+                            'igsid'           => $igsid,
+                            'username'        => $username,
+                            'conversation_id' => $convId,
+                        ]);
+                        return ['username' => $username];
+                    }
+                }
             }
 
-            Log::channel('instagram')->info('Username do contato obtido', [
-                'igsid'    => $igsid,
-                'username' => $username,
+            Log::channel('instagram')->info('IGSID nao encontrado em nenhuma conversation recente', [
+                'igsid'           => $igsid,
+                'instance_id'     => $instance->id,
+                'conversations_checked' => count($conversations),
             ]);
-
-            return ['username' => $username];
+            return ['username' => null];
         } catch (\Throwable $e) {
-            Log::channel('instagram')->warning('Excecao ao buscar sender', [
+            Log::channel('instagram')->warning('Excecao ao buscar contact info', [
                 'igsid' => $igsid,
-                'mid'   => $messageId,
                 'error' => $e->getMessage(),
             ]);
             return ['username' => null];
