@@ -21,6 +21,13 @@ class AiAgentKnowledgeFile extends Model
         'extracted_text',
         'status',
         'error_message',
+        'chunks_count',
+        'indexed_at',
+        'indexing_error',
+    ];
+
+    protected $casts = [
+        'indexed_at' => 'datetime',
     ];
 
     public function agent(): BelongsTo

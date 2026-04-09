@@ -94,7 +94,14 @@ if [ "${IS_APP}" = "true" ]; then
     # Agora, todo boot do app, repopulamos o cache do Agno. Roda em background
     # com --wait pra nao bloquear o startup do php-fpm caso o Agno demore.
     echo "[entrypoint] Reconfiguring Agno agents in background..."
-    (php artisan agno:reconfigure-all --wait=60 2>&1 | sed 's/^/[agno-reconf] /' || true) &
+    (
+        php artisan agno:reconfigure-all --wait=60 2>&1 | sed 's/^/[agno-reconf] /' || true
+        # Reindexa apenas arquivos sem indexed_at — idempotente e barato.
+        # Cobre arquivos uploaded antes do RAG existir + casos de pgvector
+        # ter perdido dados (volume corrompido). Re-index do mesmo file_id
+        # apaga chunks antigos e re-cria, entao tambem cobre re-deploy.
+        php artisan agno:reindex-knowledge --missing 2>&1 | sed 's/^/[agno-rag] /' || true
+    ) &
 fi
 
 echo "[entrypoint] Setup complete. Starting: $@"

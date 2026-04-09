@@ -1020,25 +1020,46 @@ class ProcessAiResponse implements ShouldQueue
             ];
         }
 
+        // RAG retrieval: busca top-K chunks da base de conhecimento mais relevantes
+        // pra mensagem atual do cliente. Vai como contexto pro Agno injetar no
+        // system prompt. Sem isso, o agente nao tem acesso aos arquivos PDF/DOCX
+        // que o cliente uploudou no painel. Bug historico: arquivos eram salvos
+        // mas /index-file no Agno era stub e nada chegava na IA.
+        $knowledgeChunks = [];
+        try {
+            $knowledgeChunks = app(AgnoService::class)->searchKnowledge(
+                $agent->id,
+                $agent->tenant_id,
+                $messageBody,
+                5
+            );
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->warning('AI job: searchKnowledge falhou, seguindo sem RAG', [
+                'agent_id' => $agent->id,
+                'error'    => $e->getMessage(),
+            ]);
+        }
+
         $agnoResult = app(AgnoService::class)->chat([
-            'agent_id'        => $agent->id,
-            'tenant_id'       => $agent->tenant_id,
-            'conversation_id' => $conv->id,
-            'contact_phone'   => $conv->phone,
+            'agent_id'         => $agent->id,
+            'tenant_id'        => $agent->tenant_id,
+            'conversation_id'  => $conv->id,
+            'contact_phone'    => $conv->phone,
             // CRITICO: WhatsappMessage usa 'body', nao 'content'. Bug historico.
-            'message'         => $messageBody,
-            'history'         => $history,
-            'history_limit'   => 20,
-            'pipeline_stages' => $stages,
-            'available_tags'  => $availTags,
-            'memories'        => $memories,
-            'lead_data'       => $leadData,
-            'custom_fields'   => $customFieldsCtx,
-            'lead_notes'      => $notesCtx,
-            'products'        => $productsCtx,
-            'lead_products'   => $leadProductsCtx,
-            'available_media' => $agentMediaCtx,
-            'language'        => $agent->language ?? 'pt-BR',
+            'message'          => $messageBody,
+            'history'          => $history,
+            'history_limit'    => 20,
+            'pipeline_stages'  => $stages,
+            'available_tags'   => $availTags,
+            'memories'         => $memories,
+            'knowledge_chunks' => $knowledgeChunks,
+            'lead_data'        => $leadData,
+            'custom_fields'    => $customFieldsCtx,
+            'lead_notes'       => $notesCtx,
+            'products'         => $productsCtx,
+            'lead_products'    => $leadProductsCtx,
+            'available_media'  => $agentMediaCtx,
+            'language'         => $agent->language ?? 'pt-BR',
         ]);
 
         // Flatten nested payload in actions to match the existing PHP action executor format.

@@ -282,7 +282,7 @@ class AiAgentController extends Controller
     public function uploadKnowledgeFile(Request $request, AiAgent $agent): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|max:20480|mimes:pdf,txt,csv,png,jpg,jpeg,webp,gif',
+            'file' => 'required|file|max:20480|mimes:pdf,doc,docx,txt,csv,png,jpg,jpeg,webp,gif',
         ]);
 
         $uploaded  = $request->file('file');
@@ -320,6 +320,17 @@ class AiAgentController extends Controller
                 }
                 // Trunca para não exceder tokens do LLM
                 $extractedText = mb_substr($text, 0, 100000);
+            } elseif (in_array($mime, [
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+                'application/msword', // .doc
+                'application/zip', // alguns .docx chegam como zip generico
+            ], true)) {
+                $fullPath = Storage::disk('public')->path($path);
+                $text     = $this->extractDocxText($fullPath);
+                if (mb_strlen(trim($text)) < 10) {
+                    throw new \RuntimeException('Documento Word sem texto legivel ou formato nao suportado.');
+                }
+                $extractedText = mb_substr($text, 0, 100000);
             } else {
                 // TXT, CSV e outros textos — leitura direta
                 $fullPath      = Storage::disk('public')->path($path);
@@ -333,12 +344,39 @@ class AiAgentController extends Controller
 
             // Indexar no Agno para RAG (se o agente usa Agno)
             if ($agent->use_agno && $extractedText) {
-                app(AgnoService::class)->indexFile(
+                $indexResult = app(AgnoService::class)->indexFile(
                     $agent->id,
                     $agent->tenant_id,
+                    $record->id,
                     $extractedText,
                     $origName,
                 );
+
+                if ($indexResult && ($indexResult['ok'] ?? false)) {
+                    $record->update([
+                        'chunks_count'   => $indexResult['chunks_count'] ?? 0,
+                        'indexed_at'     => now(),
+                        'indexing_error' => null,
+                    ]);
+
+                    // Loga consumo de tokens de embedding (text-embedding-3-small ~ $0.02/1M)
+                    try {
+                        \App\Models\AiUsageLog::create([
+                            'tenant_id'         => $agent->tenant_id,
+                            'conversation_id'   => null,
+                            'model'             => 'text-embedding-3-small',
+                            'provider'          => 'openai',
+                            'tokens_prompt'     => $indexResult['tokens_used'] ?? 0,
+                            'tokens_completion' => 0,
+                            'tokens_total'      => $indexResult['tokens_used'] ?? 0,
+                            'type'              => 'knowledge_indexing',
+                        ]);
+                    } catch (\Throwable) {}
+                } else {
+                    $record->update([
+                        'indexing_error' => $indexResult['error'] ?? 'Falha ao indexar no Agno',
+                    ]);
+                }
             }
         } catch (\Throwable $e) {
             Log::error('Knowledge file extraction failed', [
@@ -368,6 +406,11 @@ class AiAgentController extends Controller
     public function deleteKnowledgeFile(AiAgent $agent, AiAgentKnowledgeFile $file): JsonResponse
     {
         abort_unless($file->ai_agent_id === $agent->id, 404);
+
+        // Apaga chunks vetorizados no Agno antes de remover o arquivo
+        if ($agent->use_agno) {
+            app(AgnoService::class)->deleteKnowledgeFile($agent->id, $file->id);
+        }
 
         Storage::disk('public')->delete($file->storage_path);
         $file->delete();
@@ -412,6 +455,76 @@ class AiAgentController extends Controller
         );
 
         return $result['reply'] ?? '';
+    }
+
+    /**
+     * Extrai texto plano de um arquivo .docx ou .doc usando phpoffice/phpword.
+     * Itera todos os elementos do documento (paragrafos, tabelas, headers/footers,
+     * listas) e concatena o texto. Quebras de linha entre paragrafos preservadas.
+     */
+    private function extractDocxText(string $path): string
+    {
+        $phpWord = \PhpOffice\PhpWord\IOFactory::load($path);
+
+        $lines = [];
+        foreach ($phpWord->getSections() as $section) {
+            foreach ($section->getElements() as $element) {
+                $this->collectDocxText($element, $lines);
+            }
+        }
+
+        return trim(implode("\n", array_filter($lines, fn ($l) => trim($l) !== '')));
+    }
+
+    /**
+     * Recursivamente coleta texto de elementos do PhpWord. Suporta TextRun,
+     * Text, Table, ListItem, Title — e ignora silenciosamente o que nao tem texto
+     * (imagens, line breaks soltos, etc).
+     */
+    private function collectDocxText($element, array &$lines): void
+    {
+        // Text e TextBreak
+        if (method_exists($element, 'getText')) {
+            $text = $element->getText();
+            if (is_string($text) && trim($text) !== '') {
+                $lines[] = $text;
+                return;
+            }
+        }
+
+        // TextRun (paragrafo) — itera filhos
+        if (method_exists($element, 'getElements')) {
+            $buffer = [];
+            foreach ($element->getElements() as $child) {
+                $childLines = [];
+                $this->collectDocxText($child, $childLines);
+                $buffer = array_merge($buffer, $childLines);
+            }
+            if (! empty($buffer)) {
+                // Texto inline do mesmo paragrafo: junta com espaco
+                $lines[] = implode(' ', $buffer);
+            }
+            return;
+        }
+
+        // Table — itera linhas e celulas
+        if ($element instanceof \PhpOffice\PhpWord\Element\Table) {
+            foreach ($element->getRows() as $row) {
+                $rowParts = [];
+                foreach ($row->getCells() as $cell) {
+                    foreach ($cell->getElements() as $cellElement) {
+                        $cellLines = [];
+                        $this->collectDocxText($cellElement, $cellLines);
+                        if (! empty($cellLines)) {
+                            $rowParts[] = implode(' ', $cellLines);
+                        }
+                    }
+                }
+                if (! empty($rowParts)) {
+                    $lines[] = implode(' | ', $rowParts);
+                }
+            }
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

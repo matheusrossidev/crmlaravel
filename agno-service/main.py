@@ -7,12 +7,19 @@ from fastapi import FastAPI, HTTPException
 
 from agent_factory import AgnoReply, get_agent_config, get_or_create_agent, store_agent_config
 from formatter import format_as_whatsapp_blocks
+from knowledge_store import (
+    delete_chunks_by_file,
+    index_knowledge_file,
+    init_knowledge_tables,
+    search_knowledge,
+)
 from memory_store import init_memory_tables, search_memories, store_memory
 from schemas import (
     AgentResponse,
     ChatRequest,
     ConfigureRequest,
     IndexFileRequest,
+    KnowledgeSearchRequest,
     SearchMemoryRequest,
     StoreMemoryRequest,
 )
@@ -26,6 +33,11 @@ async def lifespan(app: FastAPI):
         print("Memory tables initialized.")
     except Exception as e:
         print(f"Warning: memory tables init failed: {e}")
+    try:
+        init_knowledge_tables()
+        print("Knowledge tables initialized.")
+    except Exception as e:
+        print(f"Warning: knowledge tables init failed: {e}")
     yield
     print("Agno service shutting down.")
 
@@ -61,6 +73,7 @@ async def chat(req: ChatRequest) -> AgentResponse:
             products=req.products if req.products else None,
             lead_products=req.lead_products if req.lead_products else None,
             available_media=req.available_media if req.available_media else None,
+            knowledge_chunks=req.knowledge_chunks if req.knowledge_chunks else None,
         )
 
         # Build input with conversation history for context
@@ -135,7 +148,40 @@ async def configure(agent_id: int, req: ConfigureRequest) -> dict:
 
 @app.post("/agents/{agent_id}/index-file")
 async def index_file(agent_id: int, req: IndexFileRequest) -> dict:
-    return {"ok": True, "agent_id": agent_id, "filename": req.filename, "note": "RAG indexing not yet enabled"}
+    """
+    Indexa um arquivo de knowledge no pgvector pra RAG.
+    Idempotente: re-chamar com o mesmo file_id apaga chunks antigos e re-indexa.
+    """
+    result = await index_knowledge_file(
+        tenant_id=req.tenant_id,
+        agent_id=agent_id,
+        file_id=req.file_id,
+        filename=req.filename,
+        text_input=req.text,
+    )
+    return {"agent_id": agent_id, **result}
+
+
+@app.post("/agents/{agent_id}/knowledge/search")
+async def knowledge_search(agent_id: int, req: KnowledgeSearchRequest) -> dict:
+    """
+    Busca top-K chunks mais relevantes pra query usando cosine similarity.
+    Chamado pelo PHP antes de cada /chat pra injetar contexto relevante.
+    """
+    chunks = await search_knowledge(
+        tenant_id=req.tenant_id,
+        agent_id=agent_id,
+        query=req.query,
+        top_k=req.top_k,
+    )
+    return {"chunks": chunks}
+
+
+@app.delete("/agents/{agent_id}/knowledge/{file_id}")
+async def delete_knowledge_file(agent_id: int, file_id: int) -> dict:
+    """Apaga todos os chunks de um arquivo (usado quando o user deleta o arquivo)."""
+    deleted = await delete_chunks_by_file(agent_id=agent_id, file_id=file_id)
+    return {"ok": True, "deleted": deleted}
 
 
 @app.post("/agents/{agent_id}/memories/store")

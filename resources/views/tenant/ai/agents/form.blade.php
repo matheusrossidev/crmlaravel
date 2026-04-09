@@ -833,7 +833,7 @@
                         <div style="font-size:11.5px;color:#9ca3af;margin-top:3px;">{{ __('ai_agents.s5_dropzone_hint') }}</div>
                     </div>
                     <input type="file" id="kbFileInput" style="display:none;"
-                           accept=".pdf,.txt,.csv,.png,.jpg,.jpeg,.webp,.gif"
+                           accept=".pdf,.doc,.docx,.txt,.csv,.png,.jpg,.jpeg,.webp,.gif"
                            onchange="uploadKbFile(this.files[0])">
 
                     {{-- Lista de arquivos --}}

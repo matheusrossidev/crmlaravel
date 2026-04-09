@@ -18,6 +18,7 @@ class ChatRequest(BaseModel):
     pipeline_stages: list[dict[str, Any]] = []
     available_tags: list[str] = []
     memories: list[str] = []
+    knowledge_chunks: list[dict[str, Any]] = []
     lead_data: dict[str, Any] | None = None
     custom_fields: list[dict[str, Any]] = []
     lead_notes: list[dict[str, Any]] = []
@@ -66,8 +67,15 @@ class ConfigureRequest(BaseModel):
 
 class IndexFileRequest(BaseModel):
     tenant_id: int
+    file_id: int
     text: str
     filename: str
+
+
+class KnowledgeSearchRequest(BaseModel):
+    tenant_id: int
+    query: str
+    top_k: int = 5
 
 
 class StoreMemoryRequest(BaseModel):

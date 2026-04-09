@@ -61,10 +61,13 @@ def get_or_create_agent(
     products: list[dict] | None = None,
     lead_products: list[dict] | None = None,
     available_media: list[dict] | None = None,
+    knowledge_chunks: list[dict] | None = None,
 ) -> Agent:
     """Return a cached Agent, creating it on first call or after config update."""
 
-    has_contextual = bool(lead_id or conversation_id or memories or lead_data)
+    has_contextual = bool(
+        lead_id or conversation_id or memories or lead_data or knowledge_chunks
+    )
     cache_key = _make_key(agent_id, tenant_id)
 
     if not has_contextual and cache_key in _agent_cache:
@@ -87,6 +90,7 @@ def get_or_create_agent(
         products or [],
         lead_products or [],
         available_media or [],
+        knowledge_chunks or [],
     )
 
     agent = Agent(
@@ -137,6 +141,7 @@ def _build_instructions(
     products: list[dict] | None = None,
     lead_products: list[dict] | None = None,
     available_media: list[dict] | None = None,
+    knowledge_chunks: list[dict] | None = None,
 ) -> str:
     name = config.get("name", "Assistente")
     objective = config.get("objective", "ajudar clientes")
@@ -179,6 +184,26 @@ Objetivo: {objective}
 BASE DE CONHECIMENTO
 ═══════════════════════════════════════
 {kb}""")
+
+    # ── RAG: chunks recuperados via similaridade vetorial pra ESTA mensagem ──
+    if knowledge_chunks:
+        chunks_text = "\n\n".join(
+            f"[Trecho de {c.get('filename', 'arquivo')}]\n{c.get('content', '')}"
+            for c in knowledge_chunks
+            if c.get("content")
+        )
+        if chunks_text:
+            sections.append(f"""
+═══════════════════════════════════════
+CONTEXTO RELEVANTE DA BASE DE CONHECIMENTO
+═══════════════════════════════════════
+Os trechos abaixo foram selecionados automaticamente como os mais relevantes
+para a mensagem atual do cliente. Use-os como FONTE DE VERDADE ao responder.
+Se o trecho cobre a pergunta, responda baseado nele. Se nao cobre, diga que
+nao tem essa informacao especifica em vez de inventar.
+
+{chunks_text}
+═══════════════════════════════════════""")
 
     sections.append(f"""
 ═══════════════════════════════════════

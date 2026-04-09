@@ -155,18 +155,73 @@ class AgnoService
     /**
      * Index a knowledge file in the Agno vector store (called after file upload).
      */
-    public function indexFile(int $agentId, int $tenantId, string $text, string $filename): void
+    /**
+     * Indexa um arquivo no Agno (chunkifica + embeda + salva no pgvector).
+     * Retorna {ok, chunks_count, tokens_used} ou null em caso de falha.
+     */
+    public function indexFile(int $agentId, int $tenantId, int $fileId, string $text, string $filename): ?array
     {
         try {
-            Http::timeout(60)->post("{$this->baseUrl}/agents/{$agentId}/index-file", [
+            $r = Http::timeout(120)->post("{$this->baseUrl}/agents/{$agentId}/index-file", [
                 'tenant_id' => $tenantId,
+                'file_id'   => $fileId,
                 'text'      => $text,
                 'filename'  => $filename,
             ]);
+            if ($r->failed()) {
+                Log::channel('whatsapp')->warning('AgnoService: indexFile non-2xx', [
+                    'agent_id' => $agentId,
+                    'file_id'  => $fileId,
+                    'status'   => $r->status(),
+                    'body'     => mb_substr($r->body(), 0, 500),
+                ]);
+                return null;
+            }
+            return $r->json();
         } catch (\Throwable $e) {
             Log::channel('whatsapp')->warning('AgnoService: indexFile failed', [
                 'agent_id' => $agentId,
+                'file_id'  => $fileId,
                 'filename' => $filename,
+                'error'    => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Busca top-K chunks relevantes pra uma query (RAG retrieval).
+     * Chamado antes de cada /chat pra injetar contexto da base de conhecimento.
+     */
+    public function searchKnowledge(int $agentId, int $tenantId, string $query, int $topK = 5): array
+    {
+        try {
+            $r = Http::timeout(10)->post("{$this->baseUrl}/agents/{$agentId}/knowledge/search", [
+                'tenant_id' => $tenantId,
+                'query'     => $query,
+                'top_k'     => $topK,
+            ]);
+            return $r->successful() ? ($r->json()['chunks'] ?? []) : [];
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->warning('AgnoService: searchKnowledge failed', [
+                'agent_id' => $agentId,
+                'error'    => $e->getMessage(),
+            ]);
+            return [];
+        }
+    }
+
+    /**
+     * Apaga todos os chunks de um arquivo (chamado quando o user deleta o arquivo).
+     */
+    public function deleteKnowledgeFile(int $agentId, int $fileId): void
+    {
+        try {
+            Http::timeout(10)->delete("{$this->baseUrl}/agents/{$agentId}/knowledge/{$fileId}");
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->warning('AgnoService: deleteKnowledgeFile failed', [
+                'agent_id' => $agentId,
+                'file_id'  => $fileId,
                 'error'    => $e->getMessage(),
             ]);
         }
