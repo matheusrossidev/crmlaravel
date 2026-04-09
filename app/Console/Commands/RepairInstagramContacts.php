@@ -94,19 +94,55 @@ class RepairInstagramContacts extends Command
                 continue;
             }
 
-            // Detecta de cara se essa instance suporta o endpoint direto:
-            // tenta com a primeira conv. Se voltar 100/33, usa so o fallback.
-            $useDirect = $this->probeDirectEndpoint($service, $convs->first()->igsid);
-            $this->line("  endpoint direto: " . ($useDirect ? 'OK (full data)' : 'falha 100/33 — usando fallback'));
+            // Probe: testa os primeiros 5 IGSIDs pra decidir o modo. A mudanca
+            // da Meta e POR IGSID, nao por instance — IGSIDs antigos funcionam
+            // mesmo em instances "novas" e vice-versa. Se ao menos 1 dos 5
+            // funcionar, vale a pena tentar direct pra todos (com fallback
+            // individual quando falhar). Se nenhum funcionar, so usar fallback.
+            $probeResults = 0;
+            foreach ($convs->take(5) as $probeConv) {
+                if ($this->probeDirectEndpoint($service, $probeConv->igsid)) {
+                    $probeResults++;
+                }
+            }
+            $tryDirect = $probeResults > 0;
+            $this->line("  probe: {$probeResults}/5 IGSIDs respondem ao endpoint direto" . ($tryDirect ? '' : ' — usando so fallback'));
 
-            // Pre-carrega mapa do fallback se vai precisar (uma vez por instance)
-            $fallbackMap = $useDirect ? [] : $this->buildFallbackMap($service);
+            // Pre-carrega mapa do fallback (lazy: so se precisar)
+            $fallbackMap     = null;
+            $loadFallbackMap = function () use ($service, &$fallbackMap) {
+                if ($fallbackMap === null) {
+                    $this->line('  carregando mapa fallback /me/conversations…');
+                    $fallbackMap = $this->buildFallbackMap($service);
+                    $this->line('  mapa fallback: ' . count($fallbackMap) . ' entradas');
+                }
+                return $fallbackMap;
+            };
+
+            // Se ja sabemos que tem que usar so fallback, carrega o mapa de cara
+            if (! $tryDirect) {
+                $loadFallbackMap();
+            }
 
             foreach ($convs as $conv) {
                 try {
-                    $info = $useDirect
-                        ? $this->fetchDirect($service, $conv->igsid)
-                        : ['name' => null, 'username' => $fallbackMap[$conv->igsid] ?? null, 'picture' => null];
+                    $info = ['name' => null, 'username' => null, 'picture' => null];
+
+                    // Tenta endpoint direto primeiro (se algum probe passou)
+                    if ($tryDirect) {
+                        $direct = $this->fetchDirect($service, $conv->igsid);
+                        if ($direct['name'] || $direct['username'] || $direct['picture']) {
+                            $info = $direct;
+                        }
+                    }
+
+                    // Fallback per-conv: se direct nao deu nada, tenta o mapa
+                    if (! $info['username']) {
+                        $map = $loadFallbackMap();
+                        if (isset($map[$conv->igsid])) {
+                            $info['username'] = $map[$conv->igsid];
+                        }
+                    }
 
                     if (! $info['name'] && ! $info['username'] && ! $info['picture']) {
                         $totalSkipped++;

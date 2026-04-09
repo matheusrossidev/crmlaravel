@@ -550,15 +550,21 @@ Meta → POST /api/webhook/instagram
 ### Contact fetch — IMPORTANTÍSSIMO (mudança silenciosa Meta 28/03/2026)
 
 A Meta mudou o comportamento do `GET /{IGSID}?fields=name,username,profile_pic`
-entre ~27/03 e 01/04/2026 SEM AVISO em changelog/doc:
+em algum momento entre ~27/03 e 01/04/2026 SEM AVISO em changelog/doc.
 
-- **Instances criadas ANTES de ~28/03**: endpoint retorna `{ name, username, profile_pic }` completo
-- **Instances criadas DEPOIS**: mesmo endpoint retorna erro `100/33 "does not support this operation"`
+**A mudança é POR IGSID, não por instance** (descoberto em 08/04/2026 ao rodar
+`instagram:repair-contacts` na instance #34 raulcanal):
 
-Confirmado empiricamente em 08/04/2026 comparando instance #34 (raulcanal, 27/03 — funciona)
-vs #37 (syncrocrm, 01/04 — falha 100/33) com smoke test direto. **535 conversations no
-banco populadas pelo commit `7cd6d38` (Feb 26)** com fotos cdninstagram válidas são prova
-histórica de que o endpoint funcionou normalmente até a mudança.
+- **IGSIDs já cadastrados antes de ~28/03**: endpoint retorna `{ name, username, profile_pic }` completo
+- **IGSIDs criados depois**: retornam erro `100/33 "does not support this operation"`,
+  mesmo em instances velhas
+
+Ou seja, uma instance pode ter um mix: as conversations antigas continuam recebendo
+foto+nome real via getProfile, as conversations novas só conseguem username via fallback.
+
+**535 conversations no banco populadas pelo commit `7cd6d38` (Feb 26)** com fotos
+cdninstagram válidas são prova histórica de que getProfile funcionou normalmente
+até a mudança.
 
 **Estratégia certa = HYBRID** (implementada em `ProcessInstagramWebhook::fetchContactInfo`):
 
