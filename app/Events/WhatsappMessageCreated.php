@@ -37,6 +37,10 @@ class WhatsappMessageCreated implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         $m = $this->message;
+        // Carrega lazy o agent se ainda nao foi carregado, pra incluir no payload
+        if ($m->sent_by_agent_id && ! $m->relationLoaded('sentByAgent')) {
+            $m->load('sentByAgent:id,name,display_avatar');
+        }
         return [
             'id'              => $m->id,
             'conversation_id' => $m->conversation_id,
@@ -52,6 +56,12 @@ class WhatsappMessageCreated implements ShouldBroadcastNow
             'is_deleted'      => $m->is_deleted,
             'sent_at'         => $m->sent_at?->toISOString(),
             'user_name'       => $m->user?->name,
+            'sent_by'         => $m->sent_by,
+            'sent_by_agent'   => $m->sentByAgent ? [
+                'id'     => $m->sentByAgent->id,
+                'name'   => $m->sentByAgent->name,
+                'avatar' => $m->sentByAgent->display_avatar,
+            ] : null,
         ];
     }
 }

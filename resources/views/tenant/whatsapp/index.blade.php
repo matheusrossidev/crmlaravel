@@ -587,7 +587,7 @@ $pageIcon = 'chat-dots';
         color: #fff;
     }
 
-    .wa-msg.outbound .wa-msg-meta { color: rgba(255,255,255,.65); }
+    .wa-msg.outbound .wa-msg-meta { color: rgb(0 0 0 / 40%); }
     .wa-msg.outbound .wa-ack.read i { color: rgba(255,255,255,.9); }
 
     .wa-msg.note .wa-bubble { display: none; }
@@ -598,28 +598,33 @@ $pageIcon = 'chat-dots';
         font-size: 12.5px;
     }
 
-    /* ── Author badge (sent_by) ── */
+    /* ── Author badge (sent_by) ──
+       Posicionado absolute pra "saltar" pra fora do canto superior da bolha,
+       meio dentro meio fora — visual mais slick que badge separado em cima. */
+    .wa-msg.outbound { padding-top: 10px; }
     .msg-author-badge {
+        position: absolute;
+        top: -2px;
+        right: 6px;
+        z-index: 2;
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        font-size: 10.5px;
+        font-size: 10px;
         font-weight: 700;
         padding: 3px 9px 3px 4px;
         border-radius: 11px;
-        margin-bottom: 4px;
         line-height: 1;
         max-width: fit-content;
-        align-self: flex-end;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        border: 1.5px solid #fff;
     }
-    .wa-msg.outbound .msg-author-badge { margin-left: auto; }
     .msg-author-avatar {
         width: 16px;
         height: 16px;
         border-radius: 50%;
         object-fit: cover;
         flex-shrink: 0;
-        border: 1.5px solid #fff;
     }
     .msg-author-name { white-space: nowrap; }
 
@@ -634,8 +639,8 @@ $pageIcon = 'chat-dots';
 
     /* Glow pulsante no primeiro render — chama atencao pra mensagem nova */
     @keyframes msg-author-pulse {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
-        50% { box-shadow: 0 0 0 5px rgba(124, 58, 237, 0.18); }
+        0%, 100% { box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        50% { box-shadow: 0 0 0 6px rgba(124, 58, 237, 0.18), 0 1px 3px rgba(0,0,0,0.08); }
     }
     .msg-author-badge.fresh.msg-author-ai_agent,
     .msg-author-badge.fresh.msg-author-followup {

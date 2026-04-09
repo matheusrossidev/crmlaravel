@@ -29,6 +29,14 @@ tags: [model, auto]
 - `extracted_text`
 - `status`
 - `error_message`
+- `chunks_count`
+- `indexed_at`
+- `indexing_error`
+
+## Casts
+| Coluna | Cast |
+|---|---|
+| `indexed_at` | `datetime` |
 
 ## Relações
 - `agent()` — BelongsTo

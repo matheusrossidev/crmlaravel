@@ -31,6 +31,8 @@ tags: [model, auto]
 - `is_deleted`
 - `ack`
 - `user_id`
+- `sent_by`
+- `sent_by_agent_id`
 - `sent_at`
 
 ## Casts
@@ -42,6 +44,7 @@ tags: [model, auto]
 ## Relações
 - `conversation()` — BelongsTo
 - `user()` — BelongsTo
+- `sentByAgent()` — BelongsTo
 
 ## Links sugeridos
 - Notas escritas à mão sobre esse model: procure no vault por `[[InstagramMessage]]`

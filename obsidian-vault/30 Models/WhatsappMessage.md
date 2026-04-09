@@ -34,6 +34,8 @@ tags: [model, auto]
 - `media_filename`
 - `reaction_data`
 - `user_id`
+- `sent_by`
+- `sent_by_agent_id`
 - `ack`
 - `is_deleted`
 - `sent_at`
@@ -48,6 +50,7 @@ tags: [model, auto]
 ## Relações
 - `conversation()` — BelongsTo
 - `user()` — BelongsTo
+- `sentByAgent()` — BelongsTo
 
 ## Links sugeridos
 - Notas escritas à mão sobre esse model: procure no vault por `[[WhatsappMessage]]`

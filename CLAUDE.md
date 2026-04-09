@@ -1,7 +1,7 @@
 # Syncro CRM — Guia Completo da Plataforma
 
 > Este documento é a referência definitiva para qualquer dev ou IA que trabalhe neste codebase.
-> Última atualização: 2026-04-08 (Instagram contact fetch hybrid + lição "verifique antes de declarar limitação")
+> Última atualização: 2026-04-09 (RAG real, DOCX support, agno reconfigure on boot, sent_by tracking nas mensagens, formatter dinamico, contexto temporal pro Agno)
 
 ---
 
@@ -429,6 +429,35 @@ O WAHA GOWS engine pode enviar `from: XXX@lid` em vez de `@c.us`. O LID é um id
 
 **IMPORTANTE**: Nunca usar `strlen($phone) > 13` para detectar LID — usar o flag `$fromIsLid` do sufixo `@lid`.
 
+### Autoria de mensagens (`sent_by` tracking)
+
+Toda `WhatsappMessage` (e `InstagramMessage`, `WebsiteMessage`) tem coluna `sent_by` (varchar 20, nullable) + `sent_by_agent_id` (FK pra `ai_agents`, nullable). Valores possíveis:
+
+- `human` — atendente clicou enviar pelo CRM (`user_id` também populado)
+- `human_phone` — mensagem mandada do celular do dono (echo do WAHA, sem intent registrado)
+- `ai_agent` — Camila/Sophia/qualquer agente IA respondendo (`sent_by_agent_id` populado)
+- `chatbot` — fluxo do chatbot builder
+- `automation` — `AutomationEngine` disparou
+- `scheduled` — comando `whatsapp:send-scheduled`
+- `followup` — IA reativando lead inativo
+- `event` — eventos de sistema gerados pela IA (stage changed, transferred, tags added)
+
+Como o `ProcessChatbotStep` para WhatsApp **não cria** `WhatsappMessage` direto (a mensagem nasce no banco quando o webhook do WAHA volta com `fromMe=true` via echo), foi implementado um **cache de intent**:
+
+```php
+// Antes de cada sendText do chatbot:
+Cache::put("outbound_intent:{$convId}:" . md5(trim($body)), [
+    'sent_by' => 'chatbot',
+    'sent_by_agent_id' => null,
+], 120);
+```
+
+E o `ProcessWahaWebhook`, ao salvar mensagem outbound do echo, faz `Cache::pull` da mesma chave. Se achar, usa. Se não achar, fallback `human_phone`. TTL 120s é suficiente pro echo voltar (1-3s normalmente). A chave inclui `conversation_id` pra evitar colisão entre conversas com mesmo `body`.
+
+Frontend renderiza um badge na bolha de cada mensagem outbound: pra IA mostra avatar + nome do agent (com animação `msg-author-pulse` no primeiro render); pra outros mostra label texto colorido. CSS em `tenant/whatsapp/index.blade.php` (`.msg-author-badge`, `.msg-author-{tipo}`).
+
+**Backfill** de mensagens antigas: `php artisan messages:backfill-authorship [--dry-run] [--tenant=N]`. Heurística: `outbound + user_id != null` → `human`; `outbound + type='event' + media_mime LIKE 'ai_%'` → `event`; resto fica null (sem badge).
+
 ### WahaService — Métodos principais
 - `sendText($session, $chatId, $text)` — Envia texto
 - `sendImage($session, $chatId, $url, $caption)` — Envia imagem por URL
@@ -619,12 +648,62 @@ Mensagem chega → ProcessWahaWebhook verifica ai_agent_id
 
 ### Microsserviço Agno (`agno-service/`)
 - **FastAPI** rodando em `http://agno:8000`
-- `main.py` — Endpoints: `/chat`, `/agents/{id}/configure`, `/agents/{id}/memories/*`
-- `agent_factory.py` — Cria/cacheia agentes por `tenant_id:agent_id`, monta instructions com contexto
-- `memory_store.py` — PostgreSQL + pgvector para memória de conversas
-- `schemas.py` — ChatRequest, AgentResponse (reply_blocks[], actions[])
-- `formatter.py` — Humaniza respostas, quebra em blocos de 150 chars
+- `main.py` — Endpoints: `/chat`, `/agents/{id}/configure`, `/agents/{id}/index-file`, `/agents/{id}/knowledge/search`, `DELETE /agents/{id}/knowledge/{file_id}`, `/agents/{id}/memories/*`
+- `agent_factory.py` — Cria/cacheia agentes por `tenant_id:agent_id`, monta instructions com contexto. Aceita kwargs `knowledge_chunks` (RAG) e `current_datetime/period_of_day/greeting` (contexto temporal) — esses contam como contextual e bypassam o cache
+- `memory_store.py` — PostgreSQL + pgvector para memória de conversas (resumos)
+- `knowledge_store.py` — **NOVO**: tabela `agent_knowledge_chunks` (RAG real). Funções `init_knowledge_tables()`, `index_knowledge_file()`, `search_knowledge()`, `delete_chunks_by_file()`. Reusa `generate_embedding` e engine SQLAlchemy do `memory_store.py`. Chunkifica em ~500 chars com overlap 50, índice ivfflat cosine
+- `schemas.py` — ChatRequest, AgentResponse, IndexFileRequest, KnowledgeSearchRequest. ChatRequest aceita `knowledge_chunks`, `current_datetime`, `period_of_day`, `greeting`
+- `formatter.py` — Second-pass LLM call que humaniza/quebra resposta. **`max_block` agora é parâmetro** (vem do `max_message_length` do agent), não mais `MAX_BLOCK = 150` hardcoded. Cada agente respeita o próprio limite (Camila clínica usa ~700, Sophia comercial usa ~200)
 - `tools/` — Tools disponíveis para function calling
+
+### RAG (Knowledge files) — fluxo completo
+
+1. **Upload** (PHP `AiAgentController::uploadKnowledgeFile`): aceita PDF/DOCX/DOC/TXT/CSV/imagens. Extrai texto via `Smalot\PdfParser` (PDF), `PhpOffice\PhpWord` (DOCX/DOC), leitura direta (TXT/CSV) ou descrição via LLM Vision (imagens). Salva texto extraído em `ai_agent_knowledge_files.extracted_text` e dispara `AgnoService::indexFile($agentId, $tenantId, $fileId, $text, $filename)`.
+
+2. **Indexação no Agno** (`POST /agents/{id}/index-file`): chama `index_knowledge_file()` que:
+   - Apaga chunks antigos do mesmo `(agent_id, file_id)` (re-index idempotente)
+   - Chunkifica via splitter recursivo (~500 chars, overlap 50, respeita parágrafos→sentenças→espaços)
+   - Gera embedding pra cada chunk via `generate_embedding()` (`text-embedding-3-small`, 1536 dim)
+   - Insere em `agent_knowledge_chunks` (pgvector + ivfflat cosine index)
+   - Retorna `{ok, chunks_count, tokens_used}`
+
+3. **Tracking** — PHP recebe `tokens_used` e cria `AiUsageLog` com `type='knowledge_indexing'`, `model='text-embedding-3-small'`. Custo OpenAI: $0.02/1M tokens (irrisório).
+
+4. **Retrieval** (no `ProcessAiResponse`, antes do `Agno::chat`): chama `AgnoService::searchKnowledge($agentId, $tenantId, $messageBody, top_k=5)`. Agno embeda a query e faz cosine similarity com filtro `tenant_id + agent_id`, threshold 0.25. Retorna top-K chunks `[{file_id, filename, content, similarity}]`.
+
+5. **Injeção** — PHP envia os chunks no payload do `/chat` como `knowledge_chunks`. `agent_factory._build_instructions` monta um bloco "CONTEXTO RELEVANTE DA BASE DE CONHECIMENTO" no system prompt com instrução explícita: "use como FONTE DE VERDADE, se não cobre a pergunta diga que não tem essa info ao invés de inventar".
+
+6. **Delete cascade** — `AiAgentController::deleteKnowledgeFile` chama `AgnoService::deleteKnowledgeFile()` antes de remover o arquivo. Agno faz `DELETE /agents/{id}/knowledge/{file_id}` que apaga todos os chunks vinculados.
+
+7. **Backfill / re-index** — comando `php artisan agno:reindex-knowledge {--agent= --file= --missing}`. Idempotente. `--missing` reindexa apenas arquivos sem `indexed_at`. Roda em background no entrypoint do app pra cobrir arquivos uploaded antes do RAG existir.
+
+### Reconfigure on boot — fix do cache in-memory
+
+O Agno guarda o config dos agents num `dict` Python in-memory (`_agent_configs` em `agent_factory.py`). **Quando o container `syncro_agno` reinicia**, perde tudo. A próxima `/chat` cai num fallback genérico (`{tenant_id, openai, gpt-4o-mini}`), monta um prompt vazio ("Você é Assistente, assistente de nossa empresa") e o LLM completa os buracos puxando contexto da memória vetorial — alucina identidade.
+
+**Fix permanente** (`docker/entrypoint.sh`): no boot do container `app`, roda em background:
+```bash
+php artisan agno:reconfigure-all --wait=60
+php artisan agno:reindex-knowledge --missing
+```
+
+`agno:reconfigure-all` itera todos os agents `use_agno=true AND is_active=true` e chama `AgnoService::configureFromAgent($agent)` (que faz o `POST /agents/{id}/configure` com o payload completo). Bug histórico: 2026-04-09, Camila e Sophia respondendo como "Syncro CRM" depois de um deploy.
+
+`AgnoService::configureFromAgent(AiAgent)` é o método único que monta o payload de config — não duplica lógica entre `AiAgentController::syncToAgno`, command de reconfigure, ou qualquer outro spot futuro.
+
+### Contexto temporal injetado a cada chat
+
+O Agno não sabia que horas eram (container roda em UTC, e config é estático). Resultado: Camila dizia "tenha um ótimo dia" às 19h. Fix: PHP (`ProcessAiResponse`) calcula no fuso do app:
+
+```php
+$now         = now();
+$hour        = (int) $now->format('H');
+$periodOfDay = $hour < 5 ? 'madrugada' : ($hour < 12 ? 'manha' : ($hour < 18 ? 'tarde' : 'noite'));
+$greeting    = $hour < 5 ? 'ola' : ($hour < 12 ? 'bom dia' : ($hour < 18 ? 'boa tarde' : 'boa noite'));
+$currentDt   = $now->locale('pt_BR')->isoFormat('DD/MM/YYYY (dddd) — HH:mm');
+```
+
+E envia no payload do `/chat`. `agent_factory._build_instructions` injeta um bloco "DATA E HORA ATUAL (CRÍTICO)" no system prompt com regras: NUNCA "bom dia" se não for manhã, NUNCA "tenha um ótimo dia" à noite (usa "tenha uma ótima noite" ou "até amanhã"), etc.
 
 ### Actions da IA
 | Action | O que faz |
@@ -906,6 +985,23 @@ Push ao `main` → build image → push Docker Hub → Portainer puxa
 - Operações **WAHA-specific** (createSession, QR, history import, group ops, master toolbox) podem continuar chamando `WahaService` direto.
 - Listagens da página de Integrações: SEMPRE filtrar por `provider='waha'` OR `NULL` no card WAHA, e `provider='cloud_api'` no card Cloud API. Bug histórico: commit `2535d46`.
 
+### Mensagens outbound (sent_by)
+- **TODA** criação direta de `WhatsappMessage::create(['direction' => 'outbound', ...])` (e equivalentes IG/Website) DEVE setar `sent_by` (e `sent_by_agent_id` quando aplicável). Spots já cobertos: ver seção 5 → "Autoria de mensagens".
+- Se a fonte automática **não cria** a mensagem direto (ex: chatbot WhatsApp manda via WAHA e o webhook salva via echo), DEVE registrar intent no cache antes do `sendText`:
+  ```php
+  Cache::put("outbound_intent:{$conv->id}:" . md5(trim($body)), [
+      'sent_by' => 'chatbot',
+      'sent_by_agent_id' => null,
+  ], 120);
+  ```
+  O `ProcessWahaWebhook` lê via `Cache::pull` quando salva mensagem outbound. Sem intent = `human_phone` (mandado do celular do dono). TTL 120s.
+
+### Agentes IA (Agno)
+- **NUNCA** instanciar config de agent in-memory expecting it to persist. O `_agent_configs` do `agno-service/agent_factory.py` é dict Python — perde tudo no restart do container. Pra adicionar novos agents, sempre via `AgnoService::configureFromAgent($agent)` (que faz POST `/agents/{id}/configure`). O `entrypoint.sh` reconfigura todos no boot via `agno:reconfigure-all`.
+- **NUNCA** duplicar a lógica de mapping AiAgent → payload Agno em novos comandos. Use `AgnoService::configureFromAgent(AiAgent $agent)` — método único centralizado.
+- **Knowledge files / RAG**: ao subir arquivo via `AiAgentController::uploadKnowledgeFile`, o controller já chama `AgnoService::indexFile($agent->id, $tenantId, $fileId, $text, $filename)` que indexa no pgvector. Pra forçar re-index: `php artisan agno:reindex-knowledge --file=N`. Pra apagar arquivo + chunks: `AiAgentController::deleteKnowledgeFile` (já chama `AgnoService::deleteKnowledgeFile()` em cascade).
+- **Custo de embeddings** é tracked via `AiUsageLog` com `type='knowledge_indexing'`, `model='text-embedding-3-small'`. Não esqueça de logar se criar novo spot que indexa.
+
 ### Feature Flags
 - Pra esconder UI condicional por tenant: `@if(\App\Models\FeatureFlag::isEnabled('slug', $tenantId)) ... @endif` no Blade
 - Pra bloquear backend: same helper no controller. Não usar permissões nem roles pra isso — feature flag é a fonte da verdade.
@@ -1003,6 +1099,9 @@ app/
     DetectDuplicateLeads.php        — Scan diário de duplicatas
     SendReengagement.php            — Envio de emails/WA de reengajamento
     BackfillTags.php                — Migra whatsapp_tags + colunas JSON `tags` pra estrutura polimórfica `tags`+`taggables`. Idempotente. `--dry-run` e `--tenant=N`.
+    ReconfigureAgnoAgents.php       — `agno:reconfigure-all`: itera todos agents `use_agno=true is_active=true` e reconfigura no Agno (POST /configure). Roda no entrypoint do app pra repopular cache in-memory perdido em restart.
+    ReindexAgnoKnowledge.php        — `agno:reindex-knowledge --agent= --file= --missing`: reindexa knowledge files no Agno (chunkifica + embeda + salva no pgvector). Idempotente. Roda no entrypoint com `--missing` pra cobrir arquivos uploaded antes do RAG.
+    BackfillMessageAuthorship.php   — `messages:backfill-authorship --dry-run --tenant=N`: preenche `sent_by` retroativo via heurística (`user_id != null` → human, eventos da IA → event).
   Jobs/
     ProcessWahaWebhook.php             — Webhook WhatsApp WAHA (core)
     ProcessWhatsappCloudWebhook.php    — Webhook WhatsApp Cloud API (Meta)
@@ -1023,8 +1122,8 @@ app/
     WhatsappServiceFactory.php      — Factory: retorna service correto por $instance->provider
     FacebookLeadAdsService.php      — Graph API client pra Lead Ads (pages, forms, lead retrieval)
     InstagramService.php            — API client Meta/Instagram
-    AgnoService.php                 — API client Agno (IA)
-    AiAgentService.php              — Builder de system prompt
+    AgnoService.php                 — API client Agno (IA): chat, configureAgent, configureFromAgent, indexFile, searchKnowledge, deleteKnowledgeFile, storeMemory
+    AiAgentService.php              — Builder de system prompt + buildHistory + sendWhatsappReply + sendMediaReply
     LeadDataExtractorService.php    — IA extrai campos do lead a partir do histórico de conversa
     AutomationEngine.php            — Motor de automações
     WebhookDispatcherService.php    — Dispatcher de webhooks de saída (HMAC + retry)
@@ -1079,11 +1178,12 @@ app/
     AppServiceProvider.php          — defaultStringLength(191)
 
 agno-service/
-  main.py              — FastAPI endpoints
-  agent_factory.py     — Criação/cache de agentes
-  memory_store.py      — pgvector memory
-  schemas.py           — Request/Response schemas
-  formatter.py         — Humanização de respostas
+  main.py              — FastAPI endpoints (chat, configure, index-file, knowledge/search, knowledge/{id} delete, memories/*)
+  agent_factory.py     — Criação/cache de agentes (in-memory, repopulado via agno:reconfigure-all no boot)
+  memory_store.py      — pgvector: agent_memories (resumos de conversa) + generate_embedding helper compartilhado
+  knowledge_store.py   — pgvector: agent_knowledge_chunks (RAG real). chunk_text, index_knowledge_file, search_knowledge, delete_chunks_by_file
+  schemas.py           — Request/Response schemas (ChatRequest agora aceita knowledge_chunks, current_datetime, period_of_day, greeting)
+  formatter.py         — Humanização de respostas. max_block agora é parâmetro (vem do max_message_length de cada agent), não constante
   tools/               — Function calling tools
 
 resources/

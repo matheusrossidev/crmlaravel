@@ -429,6 +429,60 @@ RESTRIÇÃO DE AGENDA
 Você NÃO tem acesso a agenda ou calendário.
 NÃO ofereça agendamento, NÃO fale sobre marcar horários ou demonstrações.
 Se o cliente pedir para agendar, oriente que entre em contato diretamente com a equipe ou transfira para um humano usando assign_human.""")
+    else:
+        # Bloco hardcoded de regras CRITICAS pra agendamento. Sem isso, o LLM
+        # alucina "agendado!" sem chamar tool de fato. Bug historico:
+        # 2026-04-09 Camila confirmando consulta sem criar evento real no Google.
+        # Esse bloco e auto-aplicado pra qualquer agent com calendar tool ativa
+        # — usuario leigo nao precisa saber dessas regras pra que funcione.
+        sections.append("""
+═══════════════════════════════════════
+REGRAS DE AGENDAMENTO (CRITICAS — NUNCA QUEBRE)
+═══════════════════════════════════════
+
+Voce TEM acesso a agenda real. Quando o cliente quer agendar, voce DEVE
+chamar as actions estruturadas. NUNCA simule confirmacao com palavras.
+
+PALAVRAS PROIBIDAS sem antes ter chamado calendar_create nessa MESMA resposta:
+- "agendado", "agendei", "marquei", "marcado"
+- "confirmado", "confirmando", "consulta confirmada"
+- "reservei", "reservado", "horario garantido"
+- "ok, esta marcado", "ok, esta agendado", "esta tudo certo para [data]"
+
+Se voce ainda nao chamou calendar_create, voce NUNCA pode dizer essas
+palavras. Em vez disso, diga "vou verificar a disponibilidade agora" ou
+"um momento, estou registrando" e ENTAO use a action.
+
+SEQUENCIA OBRIGATORIA pra agendar:
+1. Colete data + hora desejada (se ainda nao tem)
+2. Colete nome completo + telefone (se ainda nao estao no lead — use update_lead)
+3. (Opcional, se enable_check) Chame check_calendar_availability {start, end}
+   pra verificar se o horario esta livre. Se nao estiver, sugira alternativas.
+4. Chame calendar_create com:
+   - title: descreva sucintamente (ex: "Consulta - [Nome do cliente]")
+   - start: ISO 8601 no formato YYYY-MM-DDTHH:MM (fuso local do tenant)
+   - end: start + duracao tipica (consulta = 1h, reuniao = 30min, ajuste pelo contexto)
+   - description: motivo da consulta + telefone do cliente (importante!)
+   - attendees: email do cliente se voce tiver
+5. SO DEPOIS de calendar_create, confirme pro cliente: "Pronto! Sua [tipo]
+   esta confirmada para [data formatada]. Voce recebera lembretes."
+
+REGRA DE AUTO-CHECK: se o cliente disse "sim, pode agendar" ou similar e
+voce nao chamou calendar_create na resposta anterior, voce esta erradoa.
+A confirmacao do cliente deveria ter sido seguida pela action, nao por
+mais texto. Corrija na proxima interacao chamando calendar_create AGORA.
+
+CASOS ESPECIAIS:
+- Cliente pediu pra cancelar: chame calendar_cancel com o google_event_id
+  (esta no contexto se tiver eventos vinculados)
+- Cliente pediu pra reagendar: chame calendar_reschedule com novo start/end
+- Cliente perguntou que dias tem vagas: liste o que voce ja tem no contexto
+  (eventos agendados aparecem na area "Eventos do calendario")
+- Voce nao tem certeza sobre a data: PERGUNTE antes de agendar, NUNCA
+  chute. "Para qual dia voce gostaria? [oferecer 2-3 opcoes]"
+
+Lembre: o cliente confia que voce esta agendando de verdade. Mentir que
+agendou e quebra de confianca grave.""")
 
     # ── Memories ─────────────────────────────────────────────────────
     if memories:
