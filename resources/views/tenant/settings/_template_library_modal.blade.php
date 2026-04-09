@@ -315,8 +315,18 @@
             const matchCat = state.activeCat === 'all' || cardCat === state.activeCat;
             const matchSrc = term === '' || cardName.indexOf(term) !== -1;
             const show     = matchCat && matchSrc;
-            card.style.display = show ? '' : 'none';
-            if (show) visible++;
+
+            // CRITICO: o CSS de .tplib-shell .tplib-card tem `display: flex !important`,
+            // entao precisamos setar display com !important pra conseguir esconder
+            // o card. setProperty(prop, value, 'important') e a unica forma via JS.
+            // Sem isso o filtro "funciona" (state muda, classe active muda) mas
+            // os cards nunca somem visualmente — bug sutil que durou meses.
+            if (show) {
+                card.style.setProperty('display', 'flex', 'important');
+                visible++;
+            } else {
+                card.style.setProperty('display', 'none', 'important');
+            }
         });
 
         const noResults = document.getElementById(modalId + '-no-results');
