@@ -231,17 +231,17 @@
         <input type="text"
                class="tplib-search"
                id="{{ $modalId }}-search"
-               placeholder="{{ __('templates.search_placeholder') }}"
-               oninput="filterTplCards('{{ $modalId }}', this.value)">
+               data-tplib-search
+               placeholder="{{ __('templates.search_placeholder') }}">
     </div>
 
     <div class="tplib-body">
-        <aside class="tplib-cats" id="{{ $modalId }}-cats">
-            <button type="button" class="tplib-cat active" onclick="filterTplCategory('{{ $modalId }}', 'all', this)">
+        <aside class="tplib-cats" id="{{ $modalId }}-cats" data-active-cat="all">
+            <button type="button" class="tplib-cat active" data-tplib-cat="all">
                 {{ __('templates.cat_all') }}
             </button>
             @foreach($categories as $catSlug => $catLabel)
-                <button type="button" class="tplib-cat" onclick="filterTplCategory('{{ $modalId }}', '{{ $catSlug }}', this)">
+                <button type="button" class="tplib-cat" data-tplib-cat="{{ $catSlug }}">
                     {{ $catLabel }}
                 </button>
             @endforeach
@@ -279,39 +279,135 @@
 
 @once
 <script>
-function openTplLibrary(modalId) {
-    document.getElementById(modalId + '-overlay').classList.add('open');
-    document.getElementById(modalId + '-shell').classList.add('open');
-    document.body.style.overflow = 'hidden';
-    setTimeout(() => document.getElementById(modalId + '-search')?.focus(), 100);
-}
-function closeTplLibrary(modalId) {
-    document.getElementById(modalId + '-overlay').classList.remove('open');
-    document.getElementById(modalId + '-shell').classList.remove('open');
-    document.body.style.overflow = '';
-}
-function filterTplCategory(modalId, category, btn) {
-    document.querySelectorAll(`#${modalId}-cats .tplib-cat`).forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    applyTplFilters(modalId, category, document.getElementById(modalId + '-search').value);
-}
-function filterTplCards(modalId, search) {
-    const activeCat = document.querySelector(`#${modalId}-cats .tplib-cat.active`)?.getAttribute('onclick')?.match(/'([^']+)'/g)?.[1]?.replace(/'/g, '') || 'all';
-    applyTplFilters(modalId, activeCat, search);
-}
-function applyTplFilters(modalId, category, search) {
-    const term = (search || '').toLowerCase().trim();
-    let visible = 0;
-    document.querySelectorAll(`#${modalId}-grid .tplib-card`).forEach(card => {
-        const matchCat = category === 'all' || card.dataset.category === category;
-        const matchSearch = term === '' || card.dataset.name.indexOf(term) !== -1;
-        const show = matchCat && matchSearch;
-        card.style.display = show ? '' : 'none';
-        if (show) visible++;
-    });
-    const noResults = document.getElementById(modalId + '-no-results');
-    if (noResults) noResults.style.display = visible === 0 ? '' : 'none';
-}
+/**
+ * Template Library — versao refatorada (08/04/2026)
+ *
+ * Bug original: clique nos filtros de nicho nao filtrava nada. Causa raiz
+ * provavel: o JS antigo extraia a categoria ativa via regex no atributo
+ * `onclick` (`getAttribute('onclick')?.match(/'([^']+)'/g)?.[1]`) — fragil
+ * e quebrava silenciosamente. Alem disso, handlers inline `onclick="..."`
+ * misturavam state e logica.
+ *
+ * Refatoracao: event delegation no `tplib-cats` + state guardado em
+ * `data-active-cat`. Sem regex. Sem onclick inline. Sem fragilidade.
+ */
+
+(function () {
+    // Cada modal tem seu state em window pra os outros scripts (install handlers)
+    // poderem chamar. Mantemos as funcoes globais como wrappers pra compat.
+    window.__tplLib = window.__tplLib || {};
+
+    function getModalState(modalId) {
+        if (! window.__tplLib[modalId]) {
+            window.__tplLib[modalId] = { activeCat: 'all', search: '' };
+        }
+        return window.__tplLib[modalId];
+    }
+
+    function applyFilters(modalId) {
+        const state = getModalState(modalId);
+        const term  = (state.search || '').toLowerCase().trim();
+        let visible = 0;
+
+        document.querySelectorAll(`#${modalId}-grid .tplib-card`).forEach(card => {
+            const cardCat  = card.dataset.category || '';
+            const cardName = card.dataset.name     || '';
+            const matchCat = state.activeCat === 'all' || cardCat === state.activeCat;
+            const matchSrc = term === '' || cardName.indexOf(term) !== -1;
+            const show     = matchCat && matchSrc;
+            card.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        const noResults = document.getElementById(modalId + '-no-results');
+        if (noResults) noResults.style.display = visible === 0 ? '' : 'none';
+    }
+
+    function setActiveCat(modalId, cat) {
+        const state = getModalState(modalId);
+        state.activeCat = cat;
+
+        const cats = document.getElementById(modalId + '-cats');
+        if (cats) {
+            cats.dataset.activeCat = cat;
+            cats.querySelectorAll('.tplib-cat').forEach(b => {
+                b.classList.toggle('active', b.dataset.tplibCat === cat);
+            });
+        }
+
+        applyFilters(modalId);
+    }
+
+    function setSearch(modalId, value) {
+        getModalState(modalId).search = value;
+        applyFilters(modalId);
+    }
+
+    // Bind delegation por modal — chamado uma vez quando o modal abre
+    function bindModalEvents(modalId) {
+        const shell = document.getElementById(modalId + '-shell');
+        if (! shell || shell.dataset.tplibBound === '1') {
+            return;
+        }
+        shell.dataset.tplibBound = '1';
+
+        // Click nas categorias (event delegation)
+        const cats = document.getElementById(modalId + '-cats');
+        if (cats) {
+            cats.addEventListener('click', function (e) {
+                const btn = e.target.closest('.tplib-cat');
+                if (! btn) return;
+                e.preventDefault();
+                const cat = btn.dataset.tplibCat || 'all';
+                setActiveCat(modalId, cat);
+            });
+        }
+
+        // Input no search
+        const search = document.getElementById(modalId + '-search');
+        if (search) {
+            search.addEventListener('input', function (e) {
+                setSearch(modalId, e.target.value);
+            });
+        }
+    }
+
+    // ── API publica (mantida pra compat com onclick inline em outros lugares) ──
+
+    window.openTplLibrary = function (modalId) {
+        const overlay = document.getElementById(modalId + '-overlay');
+        const shell   = document.getElementById(modalId + '-shell');
+        if (! overlay || ! shell) {
+            console.warn('[tplLib] Modal nao encontrado:', modalId);
+            return;
+        }
+        bindModalEvents(modalId);
+        overlay.classList.add('open');
+        shell.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => document.getElementById(modalId + '-search')?.focus(), 100);
+    };
+
+    window.closeTplLibrary = function (modalId) {
+        document.getElementById(modalId + '-overlay')?.classList.remove('open');
+        document.getElementById(modalId + '-shell')?.classList.remove('open');
+        document.body.style.overflow = '';
+    };
+
+    // Wrappers de compat — alguma view antiga ou inline pode chamar
+    window.filterTplCategory = function (modalId, category) {
+        setActiveCat(modalId, category);
+    };
+    window.filterTplCards = function (modalId, search) {
+        setSearch(modalId, search);
+    };
+    window.applyTplFilters = function (modalId, category, search) {
+        const state = getModalState(modalId);
+        if (category !== undefined) state.activeCat = category;
+        if (search !== undefined)   state.search    = search;
+        applyFilters(modalId);
+    };
+})();
 async function installTplFromLib(modalId, slug, routeName, onInstallJs, installedKey, btn) {
     if (btn.disabled) return;
     const originalHtml = btn.innerHTML;
