@@ -830,7 +830,9 @@ class ProcessAiResponse implements ShouldQueue
             $agnoService = app(AgnoService::class);
             $memoryResults = $agnoService->searchMemories($agent->id, [
                 'tenant_id'     => $agent->tenant_id,
-                'query'         => $lastMessage->content ?? '',
+                // CRITICO: WhatsappMessage usa 'body', nao 'content'. Bug
+                // historico — content sempre era null e Agno recebia query vazia.
+                'query'         => $lastMessage->body ?? '',
                 'top_k'         => 3,
                 'contact_phone' => $conv->phone ?? null,
             ]);
@@ -966,12 +968,35 @@ class ProcessAiResponse implements ShouldQueue
             ])->toArray();
         } catch (\Throwable) {}
 
+        // Fix 3: validacao defensiva pre-Agno. Se message vazio, abortar
+        // em vez de gastar tokens com payload bugado. lastMessage->body pode
+        // ser vazio em casos como sticker/audio sem transcricao.
+        $messageBody = $lastMessage->body ?? '';
+        if ($messageBody === '') {
+            Log::channel('whatsapp')->warning('AI job: lastMessage->body vazio, abortando Agno call', [
+                'conversation_id' => $conv->id,
+                'agent_id'        => $agent->id,
+                'last_msg_id'     => $lastMessage->id,
+                'msg_type'        => $lastMessage->type,
+            ]);
+            return [
+                'reply_blocks'      => [],
+                'actions'           => [],
+                'tokens_prompt'     => 0,
+                'tokens_completion' => 0,
+                'tokens_total'      => 0,
+                'model'             => '',
+                'provider'          => '',
+            ];
+        }
+
         $agnoResult = app(AgnoService::class)->chat([
             'agent_id'        => $agent->id,
             'tenant_id'       => $agent->tenant_id,
             'conversation_id' => $conv->id,
             'contact_phone'   => $conv->phone,
-            'message'         => $lastMessage->content ?? '',
+            // CRITICO: WhatsappMessage usa 'body', nao 'content'. Bug historico.
+            'message'         => $messageBody,
             'history'         => $history,
             'history_limit'   => 20,
             'pipeline_stages' => $stages,

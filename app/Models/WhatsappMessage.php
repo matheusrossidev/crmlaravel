@@ -46,4 +46,31 @@ class WhatsappMessage extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * @deprecated Use ->body instead. Existe so como rede de seguranca pra
+     * pegar codigo legado que tente acessar ->content (campo de WebsiteMessage).
+     *
+     * Bug historico: ProcessAiResponse e outros spots usavam ->content em
+     * WhatsappMessage, retornando null silencioso e quebrando o Agno chat.
+     * Agora qualquer acesso a ->content gera warning no log com stack trace
+     * pra alguem encontrar o spot bugado IMEDIATAMENTE.
+     *
+     * Quando confirmar que zero codigo usa mais ->content, remover esse
+     * accessor (em PR futuro com padronizacao body/content entre os 3
+     * Message models).
+     */
+    public function getContentAttribute(): ?string
+    {
+        $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 4);
+        $caller = isset($bt[1]) ? ($bt[1]['file'] ?? '?') . ':' . ($bt[1]['line'] ?? '?') : 'unknown';
+        \Illuminate\Support\Facades\Log::channel('whatsapp')->warning(
+            'WhatsappMessage->content acessado (DEPRECATED, use ->body)',
+            [
+                'msg_id' => $this->id ?? null,
+                'caller' => $caller,
+            ]
+        );
+        return $this->body;
+    }
 }

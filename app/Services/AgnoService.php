@@ -39,6 +39,19 @@ class AgnoService
         $response = Http::timeout(30)->post("{$this->baseUrl}/chat", $payload);
 
         if ($response->failed()) {
+            // Log estruturado com detalhes pra facilitar debug. Antes, falha
+            // no Agno (ex: 422 Pydantic) so jogava status na exception sem
+            // body — diagnosticar bug do payload era impossivel sem reproduzir.
+            Log::channel('whatsapp')->error('AgnoService chat failed', [
+                'agent_id'    => $payload['agent_id']    ?? null,
+                'tenant_id'   => $payload['tenant_id']   ?? null,
+                'conv_id'     => $payload['conversation_id'] ?? null,
+                'status'      => $response->status(),
+                'body'        => mb_substr($response->body(), 0, 2000),
+                'msg_len'     => strlen($payload['message'] ?? ''),
+                'has_phone'   => ! empty($payload['contact_phone']),
+                'history_len' => count($payload['history'] ?? []),
+            ]);
             throw new \RuntimeException("Agno service error [{$response->status()}]: {$response->body()}");
         }
 
