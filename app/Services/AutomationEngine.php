@@ -373,6 +373,14 @@ class AutomationEngine
         if (! $stage) {
             return;
         }
+
+        // Idempotente: se o lead ja esta nesse stage, nao reatribui — evita criar
+        // LeadEvent duplicado + re-disparar StageRequirementService que pode
+        // gerar tasks duplicadas.
+        if ((int) $lead->stage_id === (int) $stage->id) {
+            return;
+        }
+
         Lead::withoutGlobalScope('tenant')->where('id', $lead->id)->update([
             'stage_id'    => $stage->id,
             'pipeline_id' => $stage->pipeline_id,
@@ -398,6 +406,12 @@ class AutomationEngine
         if (! $lead || empty($config['source'])) {
             return;
         }
+
+        // Idempotente
+        if ($lead->source === $config['source']) {
+            return;
+        }
+
         Lead::withoutGlobalScope('tenant')->where('id', $lead->id)->update(['source' => $config['source']]);
     }
 
@@ -408,9 +422,19 @@ class AutomationEngine
             return;
         }
         $userId = (int) $config['user_id'];
+
+        // Idempotente: se o lead ja esta atribuido a esse user, nao faz nada.
+        // Sem esse check, toda execucao da automacao fazia UPDATE + disparava
+        // notificacao "Lead atribuido a voce" mesmo quando nada mudava — causando
+        // spam de notificacoes pra automacoes que rodam em sequencia (ex: lead
+        // entra na conversa e cada disparo de message_received tentava reatribuir).
+        if ((int) $lead->assigned_to === $userId) {
+            return;
+        }
+
         Lead::withoutGlobalScope('tenant')->where('id', $lead->id)->update(['assigned_to' => $userId]);
 
-        // Notificação: lead atribuído via automação
+        // Notificação: lead atribuído via automação (so quando assignment mudou)
         try {
             (new NotificationDispatcher())->dispatch('lead_assigned', [
                 'lead_name'   => $lead->name,
@@ -441,7 +465,14 @@ class AutomationEngine
         if (! ($conv instanceof WhatsappConversation) || empty($config['ai_agent_id'])) {
             return;
         }
-        $agent = AiAgent::withoutGlobalScope('tenant')->find((int) $config['ai_agent_id']);
+        $agentId = (int) $config['ai_agent_id'];
+
+        // Idempotente: se o agent ja esta atribuido E nao tem chatbot pra limpar, skip
+        if ((int) $conv->ai_agent_id === $agentId && $conv->chatbot_flow_id === null) {
+            return;
+        }
+
+        $agent = AiAgent::withoutGlobalScope('tenant')->find($agentId);
         if (! $agent) {
             return;
         }
@@ -456,7 +487,14 @@ class AutomationEngine
         if (! ($conv instanceof WhatsappConversation) || empty($config['chatbot_flow_id'])) {
             return;
         }
-        $flow = ChatbotFlow::withoutGlobalScope('tenant')->find((int) $config['chatbot_flow_id']);
+        $flowId = (int) $config['chatbot_flow_id'];
+
+        // Idempotente: se o flow ja esta atribuido E nao tem ai_agent pra limpar, skip
+        if ((int) $conv->chatbot_flow_id === $flowId && $conv->ai_agent_id === null) {
+            return;
+        }
+
+        $flow = ChatbotFlow::withoutGlobalScope('tenant')->find($flowId);
         if (! $flow) {
             return;
         }
