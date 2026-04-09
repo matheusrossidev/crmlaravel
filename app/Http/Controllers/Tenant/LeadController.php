@@ -312,6 +312,15 @@ class LeadController extends Controller
             ->get();
         $quickMessages     = WhatsappQuickMessage::orderBy('sort_order')->get(['id', 'title', 'body']);
 
+        // Instances WhatsApp conectadas pra dropdown do modal "Agendar mensagem"
+        // Respeita restricoes de instance per-user (allowedWhatsappInstanceIds).
+        $allowedInstanceIds = auth()->user()->allowedWhatsappInstanceIds();
+        $whatsappInstances = \App\Models\WhatsappInstance::where('status', 'connected')
+            ->when($allowedInstanceIds, fn ($q) => $q->whereIn('id', $allowedInstanceIds))
+            ->orderByDesc('is_primary')
+            ->orderBy('id')
+            ->get(['id', 'label', 'phone_number', 'is_primary']);
+
         $tasks = $lead->tasks()->with('assignedTo:id,name')->get();
         $pendingTasksCount = $tasks->where('status', 'pending')->count();
 
@@ -322,8 +331,8 @@ class LeadController extends Controller
 
         return view('tenant.leads.show', compact(
             'lead', 'waConversation', 'igConversation', 'pipelines', 'cfDefs', 'users',
-            'scheduledMessages', 'quickMessages', 'tasks', 'pendingTasksCount',
-            'activeNurtureSequences'
+            'scheduledMessages', 'quickMessages', 'whatsappInstances',
+            'tasks', 'pendingTasksCount', 'activeNurtureSequences'
         ));
     }
 

@@ -2153,6 +2153,20 @@ $pageIcon = 'person-badge';
                 </select>
             </div>
             @endif
+            @if($whatsappInstances->count() > 1)
+            <div class="sched-form-group">
+                <label class="sched-form-label">WhatsApp</label>
+                <select id="schedInstance" class="sched-form-select">
+                    @foreach($whatsappInstances as $inst)
+                    <option value="{{ $inst->id }}" @if($inst->is_primary) selected @endif>
+                        {{ $inst->label ?: $inst->phone_number ?: ('Instância #' . $inst->id) }}@if($inst->is_primary) (padrão)@endif
+                    </option>
+                    @endforeach
+                </select>
+            </div>
+            @elseif($whatsappInstances->count() === 1)
+            <input type="hidden" id="schedInstance" value="{{ $whatsappInstances->first()->id }}">
+            @endif
             <div class="sched-form-group">
                 <label class="sched-form-label">{{ __('leads.message_type') }}</label>
                 <div class="sched-type-radios">
@@ -2290,6 +2304,10 @@ async function submitSchedule() {
     const fd = new FormData();
     fd.append('type', type);
     fd.append('send_at', sendAt);
+    const instEl = document.getElementById('schedInstance');
+    if (instEl && instEl.value) {
+        fd.append('instance_id', instEl.value);
+    }
     if (type === 'text') {
         fd.append('body', body);
     } else {

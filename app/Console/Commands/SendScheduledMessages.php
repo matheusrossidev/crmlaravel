@@ -19,9 +19,25 @@ class SendScheduledMessages extends Command
 
     public function handle(): int
     {
-        $pending = ScheduledMessage::with(['lead', 'conversation'])
+        // CRITICO: withoutGlobalScope('tenant') porque o command roda em CLI sem
+        // user logado. Sem isso, dependendo do flow do trait BelongsToTenant +
+        // eager loading, queries podem retornar vazio silenciosamente.
+        // Lead/Conversation tambem precisam de withoutGlobalScope no eager load
+        // porque tem BelongsToTenant.
+        $pending = ScheduledMessage::withoutGlobalScope('tenant')
+            ->with([
+                'lead' => fn ($q) => $q->withoutGlobalScope('tenant'),
+                'conversation' => fn ($q) => $q->withoutGlobalScope('tenant'),
+            ])
             ->pending()
             ->get();
+
+        // Heartbeat sempre, mesmo quando vazio — confirma que o cron roda
+        Log::channel('whatsapp')->info('SendScheduledMessages: tick', [
+            'pending_count' => $pending->count(),
+            'now'           => now()->toIso8601String(),
+            'app_tz'        => config('app.timezone'),
+        ]);
 
         if ($pending->isEmpty()) {
             return self::SUCCESS;
@@ -33,9 +49,11 @@ class SendScheduledMessages extends Command
             try {
                 $this->dispatch($scheduled);
             } catch (\Throwable $e) {
-                Log::error('SendScheduledMessages: erro inesperado', [
+                Log::channel('whatsapp')->error('SendScheduledMessages: erro inesperado', [
                     'scheduled_id' => $scheduled->id,
+                    'tenant_id'    => $scheduled->tenant_id,
                     'error'        => $e->getMessage(),
+                    'trace'        => $e->getTraceAsString(),
                 ]);
                 $scheduled->update(['status' => 'failed', 'error' => $e->getMessage()]);
             }
@@ -91,7 +109,8 @@ class SendScheduledMessages extends Command
             if ($conversation->is_group) {
                 $chatId = $rawPhone . '@g.us';
             } else {
-                $sampleId = WhatsappMessage::where('conversation_id', $conversation->id)
+                $sampleId = WhatsappMessage::withoutGlobalScope('tenant')
+                    ->where('conversation_id', $conversation->id)
                     ->whereNotNull('waha_message_id')
                     ->where('direction', 'inbound')
                     ->latest('sent_at')
@@ -138,7 +157,7 @@ class SendScheduledMessages extends Command
         // Salva como WhatsappMessage outbound
         $wahaMessageId = $result['id'] ?? null;
 
-        WhatsappMessage::create([
+        WhatsappMessage::withoutGlobalScope('tenant')->create([
             'tenant_id'       => $scheduled->tenant_id,
             'conversation_id' => $conversation?->id,
             'waha_message_id' => $wahaMessageId,

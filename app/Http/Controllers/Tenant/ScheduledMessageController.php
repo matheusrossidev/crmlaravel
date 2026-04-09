@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Lead;
 use App\Models\ScheduledMessage;
+use App\Models\WhatsappInstance;
 use App\Models\WhatsappQuickMessage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,6 +34,7 @@ class ScheduledMessageController extends Controller
             'file'             => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt|max:25600',
             'send_at'          => 'required|date|after:now',
             'quick_message_id' => 'nullable|integer|exists:whatsapp_quick_messages,id',
+            'instance_id'      => 'nullable|integer|exists:whatsapp_instances,id',
         ], [
             'type.required'       => 'Selecione o tipo de mensagem.',
             'type.in'             => 'Tipo inválido.',
@@ -51,6 +53,26 @@ class ScheduledMessageController extends Controller
             return response()->json(['error' => 'O arquivo é obrigatório para este tipo de mensagem.'], 422);
         }
 
+        // Resolver instance_id: explicito do form > conversa do lead > primary do tenant
+        $instanceId = $data['instance_id'] ?? null;
+        if (! $instanceId && $lead->whatsappConversation?->instance_id) {
+            $instanceId = $lead->whatsappConversation->instance_id;
+        }
+        if (! $instanceId) {
+            $instanceId = WhatsappInstance::resolvePrimary($lead->tenant_id)?->id;
+        }
+
+        // Validar que a instance pertence ao tenant do lead (defesa contra request forjado)
+        if ($instanceId) {
+            $owns = WhatsappInstance::withoutGlobalScope('tenant')
+                ->where('id', $instanceId)
+                ->where('tenant_id', $lead->tenant_id)
+                ->exists();
+            if (! $owns) {
+                return response()->json(['error' => 'Instância inválida.'], 422);
+            }
+        }
+
         $mediaPath     = null;
         $mediaMime     = null;
         $mediaFilename = null;
@@ -66,6 +88,7 @@ class ScheduledMessageController extends Controller
             'tenant_id'        => auth()->user()->tenant_id,
             'lead_id'          => $lead->id,
             'conversation_id'  => $lead->whatsappConversation?->id,
+            'instance_id'      => $instanceId,
             'created_by'       => auth()->id(),
             'type'             => $data['type'],
             'body'             => $data['body'] ?? null,
