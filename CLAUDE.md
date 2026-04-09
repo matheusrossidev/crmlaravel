@@ -1,7 +1,7 @@
 # Syncro CRM — Guia Completo da Plataforma
 
 > Este documento é a referência definitiva para qualquer dev ou IA que trabalhe neste codebase.
-> Última atualização: 2026-04-08
+> Última atualização: 2026-04-08 (Instagram contact fetch hybrid + lição "verifique antes de declarar limitação")
 
 ---
 
@@ -543,7 +543,54 @@ Meta → POST /api/webhook/instagram
 - `sendMessage($igsid, $text)` — DM regular
 - `sendPrivateReply($commentId, $text)` — Private Reply (abre janela de DM)
 - `replyToComment($commentId, $text)` — Resposta pública no comentário
-- `getProfile($igsid)` — Dados do contato
+- `getProfile($igsid)` — `GET /{IGSID}?fields=name,username,profile_pic` (data completa)
+- `listConversations($limit, $after)` — `GET /me/conversations?platform=instagram` (fallback)
+- `getConversationParticipants($convId)` — `GET /{conv}?fields=participants` (fallback)
+
+### Contact fetch — IMPORTANTÍSSIMO (mudança silenciosa Meta 28/03/2026)
+
+A Meta mudou o comportamento do `GET /{IGSID}?fields=name,username,profile_pic`
+entre ~27/03 e 01/04/2026 SEM AVISO em changelog/doc:
+
+- **Instances criadas ANTES de ~28/03**: endpoint retorna `{ name, username, profile_pic }` completo
+- **Instances criadas DEPOIS**: mesmo endpoint retorna erro `100/33 "does not support this operation"`
+
+Confirmado empiricamente em 08/04/2026 comparando instance #34 (raulcanal, 27/03 — funciona)
+vs #37 (syncrocrm, 01/04 — falha 100/33) com smoke test direto. **535 conversations no
+banco populadas pelo commit `7cd6d38` (Feb 26)** com fotos cdninstagram válidas são prova
+histórica de que o endpoint funcionou normalmente até a mudança.
+
+**Estratégia certa = HYBRID** (implementada em `ProcessInstagramWebhook::fetchContactInfo`):
+
+1. Tenta `getProfile($igsid)` primeiro → se voltar dados, usa name + username + foto
+   (download via `ProfilePictureDownloader` porque CDN do Meta expira em horas)
+2. Se voltar 100/33, fallback para `listConversations()` + `getConversationParticipants()` →
+   pega só `username` (sem name real, sem foto), pelo menos algo
+
+**Endpoints que NÃO funcionam (não re-introduzir):**
+- `GET /{message_id}?fields=from` — também retorna 100/33 nas instances novas
+- "Auto-discovery" no webhook que pegava primeira instance com `ig_business_account_id` NULL
+  e atribuía o `entry.id` do webhook nela — bug histórico de cross-tenant contamination,
+  removido em commit `fb32695`. Pra fixar instances com IDs nulos, rodar
+  `php artisan instagram:repair-instances` que usa o token DA própria instance pra
+  chamar `/me` e popular `ig_business_account_id` corretamente.
+
+**Comandos de manutenção:**
+```bash
+# Re-valida instances contra /me e corrige IDs nulos/errados
+php artisan instagram:repair-instances [--tenant=N] [--force] [--dry-run]
+
+# Re-busca name+username+foto pra conversas com dados faltando (probe per-instance)
+php artisan instagram:repair-contacts [--tenant=N] [--instance=N] [--dry-run]
+```
+
+**Regra de conduta pro próximo dev/IA**: NUNCA declare "endpoint X não funciona no fluxo
+Y" sem testar contra dado real do banco em pelo menos 2 instances de datas/tenants
+diferentes. Documentação oficial da Meta as vezes está desatualizada ou contradiz o que
+a API realmente retorna. Dado real do banco > doc oficial. Se uma instance funciona e
+outra falha, hipótese padrão é "Meta mudou silenciosamente" ou "scope diferente" — NÃO
+"endpoint não existe nesse fluxo". Sempre preferir hybrid (try A, fallback B) em vez de
+remover o caminho A.
 
 ---
 
