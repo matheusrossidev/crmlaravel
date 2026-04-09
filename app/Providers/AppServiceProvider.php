@@ -15,6 +15,7 @@ use Illuminate\Auth\Events\PasswordReset;
 use App\Http\ViewComposers\UpsellBannerComposer;
 use App\Models\Lead;
 use App\Models\LostSale;
+use App\Models\Product;
 use App\Models\Sale;
 use App\Observers\LeadObserver;
 use App\Observers\LostSaleObserver;
@@ -63,10 +64,19 @@ class AppServiceProvider extends ServiceProvider
         View::composer('tenant.layouts.app', UpsellBannerComposer::class);
 
         View::composer('tenant.leads._drawer', function ($view): void {
-            $tags = auth()->check()
-                ? WhatsappTag::orderBy('sort_order')->get(['name', 'color'])
-                : collect();
-            $view->with('_configuredTags', $tags);
+            if (! auth()->check()) {
+                $view->with('_configuredTags', collect())->with('allProducts', collect());
+                return;
+            }
+
+            $view->with('_configuredTags', WhatsappTag::orderBy('sort_order')->get(['name', 'color']));
+
+            // Catalogo de produtos pro modal "adicionar produto" no drawer.
+            // Antes era query inline na view (executava em toda inclusao —
+            // index, show, kanban). Centralizado aqui pra manter 1 query so.
+            $view->with('allProducts', Product::where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name', 'price', 'unit']));
         });
 
         $this->registerNotificationListeners();

@@ -72,7 +72,7 @@ class KanbanController extends Controller
                 }
 
                 if ($tag = $request->get('tag')) {
-                    $query->whereJsonContains('tags', $tag);
+                    $query->filterByTag($tag);
                 }
 
                 $responsible = $request->get('responsible', []);

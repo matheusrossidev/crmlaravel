@@ -159,6 +159,20 @@ class Lead extends Model
         return $query->where('status', '!=', 'merged');
     }
 
+    /**
+     * Filtra leads que tem uma tag especifica.
+     *
+     * Hoje le da coluna JSON `tags` (fase 3 — coexistencia). Quando a fase
+     * 4 do refactor de tags rodar, esse e o UNICO local que precisa trocar
+     * pra `whereHas('tagModels', fn ($q) => $q->where('name', $tag))` —
+     * em vez de mexer em LeadController, KanbanController e LeadsExport
+     * separadamente.
+     */
+    public function scopeFilterByTag($query, string $tag)
+    {
+        return $query->whereJsonContains('tags', $tag);
+    }
+
     public function getCustomFieldsAttribute(): array
     {
         return $this->customFieldValues

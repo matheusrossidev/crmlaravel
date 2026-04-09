@@ -9,11 +9,12 @@
 <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
 <style>
-.drawer-note-editor { background:#fff; border-radius:8px; }
-.drawer-note-editor .ql-toolbar { border-top-left-radius:8px;border-top-right-radius:8px; border-color:#e2e8f0; }
-.drawer-note-editor .ql-container { border-bottom-left-radius:8px;border-bottom-right-radius:8px; border-color:#e2e8f0; min-height:80px; font-size:13px; font-family:inherit; }
-.note-body a { color:#0085f3; text-decoration:underline; }
-.note-body p:last-child { margin-bottom:0; }
+/* ── Quill editor (notas) — base compartilhada entre show e drawer ── */
+.lp-note-editor, .lp-note-edit-quill, .drawer-note-editor { background:#fff; border-radius:9px; }
+.lp-note-editor .ql-toolbar, .lp-note-edit-quill .ql-toolbar, .drawer-note-editor .ql-toolbar { border-top-left-radius:9px; border-top-right-radius:9px; border-color:#e2e8f0; }
+.lp-note-editor .ql-container, .lp-note-edit-quill .ql-container, .drawer-note-editor .ql-container { border-bottom-left-radius:9px; border-bottom-right-radius:9px; border-color:#e2e8f0; min-height:90px; font-size:13px; font-family:inherit; }
+.note-body a, .lp-note-body a { color:#0085f3; text-decoration:underline; }
+.note-body p:last-child, .lp-note-body p:last-child { margin-bottom:0; }
 </style>
 
 {{-- Overlay --}}
@@ -1500,11 +1501,8 @@ function renderProductsList(products) {
     totalEl.style.display = '';
 }
 
-// Products catalog loaded from server
-@php
-    $allProducts = \App\Models\Product::where('is_active', true)->orderBy('name')->get(['id', 'name', 'price', 'unit']);
-@endphp
-const ALL_PRODUCTS = @json($allProducts);
+// Products catalog loaded from server (injetado via View::composer em AppServiceProvider)
+const ALL_PRODUCTS = @json($allProducts ?? []);
 
 function populateProductSelect() {
     const sel = document.getElementById('addProductSelect');

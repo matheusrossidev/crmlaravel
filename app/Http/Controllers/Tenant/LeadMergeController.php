@@ -110,8 +110,8 @@ class LeadMergeController extends Controller
             'email' => 'nullable|email|max:191',
         ]);
 
-        $detector = new DuplicateLeadDetector();
-        $duplicates = $detector->findDuplicatesFromData($data, auth()->user()->tenant_id);
+        $duplicates = app(DuplicateLeadDetector::class)
+            ->findDuplicatesFromData($data, auth()->user()->tenant_id);
 
         // Only return high-confidence matches (>= 70)
         $highConfidence = $duplicates->filter(fn ($d) => $d['score'] >= 70);

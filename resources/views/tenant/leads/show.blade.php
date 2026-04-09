@@ -17,15 +17,10 @@ $pageIcon = 'person-badge';
 @endsection
 
 @push('styles')
-{{-- Quill CSS+JS são carregados pelo _drawer.blade.php (incluído ao final desta view) --}}
+{{-- Quill CSS+JS sao carregados pelo _drawer.blade.php (incluido ao final desta view).
+     Estilos do Quill (.lp-note-editor / .lp-note-edit-quill / .drawer-note-editor)
+     foram unificados num bloco compartilhado dentro do _drawer.blade.php. --}}
 <style>
-/* ── Quill (notas) ── */
-.lp-note-editor, .lp-note-edit-quill { background:#fff; border-radius:9px; }
-.lp-note-editor .ql-container, .lp-note-edit-quill .ql-container { min-height:90px; font-size:13px; font-family:inherit; }
-.lp-note-editor .ql-toolbar, .lp-note-edit-quill .ql-toolbar { border-top-left-radius:9px;border-top-right-radius:9px; border-color:#e2e8f0; }
-.lp-note-editor .ql-container, .lp-note-edit-quill .ql-container { border-bottom-left-radius:9px;border-bottom-right-radius:9px; border-color:#e2e8f0; }
-.lp-note-body a { color:#0085f3; text-decoration:underline; }
-.lp-note-body p:last-child { margin-bottom:0; }
 /* ── Hero ── */
 .lp-hero {
     background: #fff;

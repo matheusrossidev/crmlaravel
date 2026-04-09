@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Exports\LeadsExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LeadRequest;
 use App\Imports\LeadsImport;
 use App\Models\CustomFieldDefinition;
 use App\Models\CustomFieldValue;
@@ -71,7 +72,7 @@ class LeadController extends Controller
         }
 
         if ($tag = $request->get('tag')) {
-            $query->whereJsonContains('tags', $tag);
+            $query->filterByTag($tag);
         }
 
         if ($assignedTo = $request->get('assigned_to')) {
@@ -104,32 +105,19 @@ class LeadController extends Controller
         return view('tenant.leads.index', compact('leads', 'stages', 'pipelines', 'sources', 'customFieldDefs', 'users'));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(LeadRequest $request): JsonResponse
     {
         $limitMsg = PlanLimitChecker::check('leads');
         if ($limitMsg) {
             return response()->json(['success' => false, 'message' => $limitMsg, 'limit_reached' => true], 422);
         }
 
-        $data = $request->validate([
-            'name'        => 'required|string|max:255',
-            'phone'       => 'nullable|string|max:20',
-            'email'       => 'nullable|email|max:191',
-            'company'     => 'nullable|string|max:191',
-            'value'       => 'nullable|numeric|min:0',
-            'source'      => 'nullable|string|max:100',
-            'tags'        => 'nullable|array',
-            'tags.*'      => 'string|max:50',
-            'pipeline_id' => 'required|integer|exists:pipelines,id',
-            'stage_id'    => 'required|integer|exists:pipeline_stages,id',
-            'notes'       => 'nullable|string|max:1000000',
-            'birthday'    => 'nullable|date',
-        ]);
+        $data = $request->validated();
 
         // Duplicate detection (skip if force=true)
         if (!$request->boolean('force')) {
-            $detector = new \App\Services\DuplicateLeadDetector();
-            $duplicates = $detector->findDuplicatesFromData($data, auth()->user()->tenant_id);
+            $duplicates = app(\App\Services\DuplicateLeadDetector::class)
+                ->findDuplicatesFromData($data, auth()->user()->tenant_id);
             $highConfidence = $duplicates->filter(fn ($d) => $d['score'] >= 70);
 
             if ($highConfidence->isNotEmpty()) {
@@ -198,7 +186,12 @@ class LeadController extends Controller
                 'tenant_id' => activeTenantId(),
                 'lead'      => $lead,
             ]);
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            \Log::warning('AutomationEngine falhou em lead_created', [
+                'lead_id' => $lead->id,
+                'error'   => $e->getMessage(),
+            ]);
+        }
 
         // Notificação: novo lead
         try {
@@ -206,7 +199,12 @@ class LeadController extends Controller
                 'lead_name' => $lead->name,
                 'url'       => route('leads.index', ['lead' => $lead->id]),
             ], activeTenantId(), excludeUserId: auth()->id());
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            \Log::warning('NotificationDispatcher falhou em new_lead', [
+                'lead_id' => $lead->id,
+                'error'   => $e->getMessage(),
+            ]);
+        }
 
         $lead->load(['stage', 'pipeline', 'assignedTo']);
 
@@ -329,25 +327,12 @@ class LeadController extends Controller
         ));
     }
 
-    public function update(Request $request, Lead $lead): JsonResponse
+    public function update(LeadRequest $request, Lead $lead): JsonResponse
     {
-        // `sometimes` permite update parcial: chamadas como `updateLeadTags` na
-        // página do lead enviam só {name, tags}, sem pipeline/stage. Antes da
-        // mudança, o `required` quebrava esses cenários com 422.
-        $data = $request->validate([
-            'name'        => 'sometimes|required|string|max:255',
-            'phone'       => 'nullable|string|max:20',
-            'email'       => 'nullable|email|max:191',
-            'company'     => 'nullable|string|max:191',
-            'value'       => 'nullable|numeric|min:0',
-            'source'      => 'nullable|string|max:100',
-            'tags'        => 'nullable|array',
-            'tags.*'      => 'string|max:50',
-            'pipeline_id' => 'sometimes|required|integer|exists:pipelines,id',
-            'stage_id'    => 'sometimes|required|integer|exists:pipeline_stages,id',
-            'notes'       => 'nullable|string|max:1000000',
-            'birthday'    => 'nullable|date',
-        ]);
+        // LeadRequest usa `sometimes|required` em PUT/PATCH, permitindo update
+        // parcial pra chamadas como `updateLeadTags` que enviam so {name, tags}
+        // sem pipeline/stage. POST forca campos required.
+        $data = $request->validated();
 
         $oldStageId    = $lead->stage_id;
         $oldAssignedTo = $lead->assigned_to;
@@ -415,7 +400,13 @@ class LeadController extends Controller
             // Create mandatory tasks for the new stage
             try {
                 (new StageRequirementService())->createRequiredTasks($lead->fresh(), $newStage);
-            } catch (\Throwable) {}
+            } catch (\Throwable $e) {
+                \Log::warning('StageRequirementService falhou em createRequiredTasks', [
+                    'lead_id'  => $lead->id,
+                    'stage_id' => $newStage?->id,
+                    'error'    => $e->getMessage(),
+                ]);
+            }
         } else {
             LeadEvent::create([
                 'lead_id'      => $lead->id,
@@ -435,7 +426,13 @@ class LeadController extends Controller
                     'assigned_by' => auth()->user()->name,
                     'url'         => route('leads.index', ['lead' => $lead->id]),
                 ], activeTenantId(), targetUserId: $newAssignedTo);
-            } catch (\Throwable) {}
+            } catch (\Throwable $e) {
+                \Log::warning('NotificationDispatcher falhou em lead_assigned', [
+                    'lead_id'        => $lead->id,
+                    'assigned_to'    => $newAssignedTo,
+                    'error'          => $e->getMessage(),
+                ]);
+            }
         }
 
         $lead->load(['stage', 'pipeline', 'assignedTo']);
@@ -628,7 +625,10 @@ class LeadController extends Controller
             'value'         => $lead->value,
             'value_fmt'     => $lead->value ? 'R$ ' . number_format((float) $lead->value, 2, ',', '.') : null,
             'source'        => $lead->source,
-            'tags'          => $lead->tags ?? [],
+            // Le do trait HasTags (pivot polimorfica) — dual-write garante
+            // que esta sincronizado com a coluna JSON legada `tags`. Quando
+            // a fase 4 dropar a coluna JSON, esse acesso continua funcionando.
+            'tags'          => $lead->tag_names,
             'pipeline_id'   => $lead->pipeline_id,
             'stage_id'      => $lead->stage_id,
             'notes'         => $lead->notes ?? null,
