@@ -3,17 +3,21 @@ import re
 
 import httpx
 
-MAX_BLOCK = 150
+# Default fallback caso o caller nao passe max_block (retro-compat).
+# Cada agente tem o seu max_message_length no banco — esse default so
+# entra em uso se alguem chamar a funcao sem especificar.
+DEFAULT_MAX_BLOCK = 150
 
 _PROMPT = """Você vai receber uma resposta de um assistente de WhatsApp.
-Divida ela em múltiplos blocos CURTOS e humanizados.
+Divida ela em blocos humanizados respeitando o limite de caracteres.
 
 REGRAS:
-- Máximo {max_block} caracteres por bloco
-- Nunca corte uma frase no meio — cada bloco é uma ideia COMPLETA
-- Cada item de uma lista = 1 bloco separado
-- Blocos curtos e diretos, como uma pessoa digitando no celular
-- Preserve emojis
+- Máximo {max_block} caracteres por bloco — use esse limite com sabedoria.
+- Se o texto cabe em poucos blocos, prefira blocos MAIORES com ideias completas
+  ao invés de picotar tudo em pedaços minusculos.
+- Nunca corte uma frase no meio — cada bloco é uma ideia COMPLETA.
+- Itens de uma lista podem ficar no mesmo bloco se couberem dentro do limite.
+- Preserve emojis e formatação natural.
 
 Retorne SOMENTE este JSON (sem texto extra antes ou depois):
 {{"reply_blocks": ["bloco 1", "bloco 2", "bloco 3"]}}
@@ -27,17 +31,22 @@ async def format_as_whatsapp_blocks(
     provider: str,
     model: str,
     api_key: str,
+    max_block: int = DEFAULT_MAX_BLOCK,
 ) -> list[str] | None:
     """
     Second-pass LLM that receives the raw agent response and splits it into
-    short humanized WhatsApp blocks (≤ MAX_BLOCK chars each).
+    humanized WhatsApp blocks respecting max_block chars each.
+
+    max_block vem do max_message_length do agent (config). Cada agente pode
+    ter seu proprio limite — Camila clinica usa ~700 pra explicar procedimentos
+    detalhadamente, Sophia comercial usa ~200 pra ser mais punchy.
 
     Returns None on any failure so the caller keeps the original blocks.
     """
     if not text.strip():
         return None
 
-    prompt = _PROMPT.format(max_block=MAX_BLOCK, text=text.strip())
+    prompt = _PROMPT.format(max_block=max_block, text=text.strip())
 
     try:
         if provider == "anthropic":

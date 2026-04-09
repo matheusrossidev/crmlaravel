@@ -26,6 +26,11 @@ class ChatRequest(BaseModel):
     lead_products: list[dict[str, Any]] = []
     available_media: list[dict[str, Any]] = []
     language: str = "pt-BR"
+    # Contexto temporal — PHP envia ja calculado no fuso do tenant pra evitar
+    # timezone do container Python (UTC) confundir o LLM
+    current_datetime: str = ""  # ex: "09/04/2026 (quinta-feira) — 19:00"
+    period_of_day: str = ""     # "manha" | "tarde" | "noite" | "madrugada"
+    greeting: str = ""          # "bom dia" | "boa tarde" | "boa noite"
 
 
 class AgentAction(BaseModel):

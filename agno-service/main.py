@@ -74,6 +74,9 @@ async def chat(req: ChatRequest) -> AgentResponse:
             lead_products=req.lead_products if req.lead_products else None,
             available_media=req.available_media if req.available_media else None,
             knowledge_chunks=req.knowledge_chunks if req.knowledge_chunks else None,
+            current_datetime=req.current_datetime or None,
+            period_of_day=req.period_of_day or None,
+            greeting=req.greeting or None,
         )
 
         # Build input with conversation history for context
@@ -101,6 +104,10 @@ async def chat(req: ChatRequest) -> AgentResponse:
 
         # Second-pass formatter: a dedicated LLM call that only splits and
         # humanizes the text — much more reliable than prompt instructions alone.
+        # max_block vem do max_message_length do agent (cada agent tem o seu),
+        # nao mais de uma constante hardcoded. Bug historico: 2026-04-09 a
+        # Camila era configurada pra 700 chars no painel mas o formatter
+        # ignorava e picotava em 150 chars de qualquer jeito.
         config = get_agent_config(req.agent_id)
         if config:
             raw_text = " ".join(reply_blocks)
@@ -109,6 +116,7 @@ async def chat(req: ChatRequest) -> AgentResponse:
                 provider=config.get("llm_provider", "openai"),
                 model=config.get("llm_model", "gpt-4o-mini"),
                 api_key=config.get("llm_api_key", ""),
+                max_block=int(config.get("max_message_length", 150)),
             )
             if formatted:
                 reply_blocks = formatted

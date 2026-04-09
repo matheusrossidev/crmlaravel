@@ -62,11 +62,15 @@ def get_or_create_agent(
     lead_products: list[dict] | None = None,
     available_media: list[dict] | None = None,
     knowledge_chunks: list[dict] | None = None,
+    current_datetime: str | None = None,
+    period_of_day: str | None = None,
+    greeting: str | None = None,
 ) -> Agent:
     """Return a cached Agent, creating it on first call or after config update."""
 
     has_contextual = bool(
-        lead_id or conversation_id or memories or lead_data or knowledge_chunks
+        lead_id or conversation_id or memories or lead_data
+        or knowledge_chunks or current_datetime
     )
     cache_key = _make_key(agent_id, tenant_id)
 
@@ -91,6 +95,9 @@ def get_or_create_agent(
         lead_products or [],
         available_media or [],
         knowledge_chunks or [],
+        current_datetime,
+        period_of_day,
+        greeting,
     )
 
     agent = Agent(
@@ -142,6 +149,9 @@ def _build_instructions(
     lead_products: list[dict] | None = None,
     available_media: list[dict] | None = None,
     knowledge_chunks: list[dict] | None = None,
+    current_datetime: str | None = None,
+    period_of_day: str | None = None,
+    greeting: str | None = None,
 ) -> str:
     name = config.get("name", "Assistente")
     objective = config.get("objective", "ajudar clientes")
@@ -177,6 +187,32 @@ Objetivo: {objective}
 {style_desc}
 {persona}
 {behavior}"""]
+
+    # ── Contexto temporal: data, hora, periodo do dia, saudacao correta ────
+    # Sem isso o LLM nao tem nocao de horario e diz "bom dia" as 19h ou
+    # "tenha um otimo dia" quando ja e noite. PHP envia tudo formatado no
+    # fuso correto do tenant, Python so injeta como instrucao.
+    if current_datetime:
+        greeting_text = greeting or "ola"
+        period_text = period_of_day or "dia"
+        sections.append(f"""
+═══════════════════════════════════════
+DATA E HORA ATUAL (CRITICO — RESPEITE)
+═══════════════════════════════════════
+Data e hora agora: {current_datetime}
+Periodo do dia: {period_text}
+Saudacao correta agora: "{greeting_text}"
+
+REGRAS DE SAUDACAO E DESPEDIDA — OBRIGATORIAS:
+- Se for cumprimentar, use SEMPRE "{greeting_text}" (nao outra saudacao).
+- NUNCA use "bom dia" se nao for manha (00h-12h).
+- NUNCA use "boa tarde" se nao for tarde (12h-18h).
+- NUNCA use "boa noite" se nao for noite (18h-24h).
+- Ao se DESPEDIR no periodo da NOITE, NUNCA diga "tenha um otimo dia".
+  Use "tenha uma otima noite", "ate amanha", ou "ate logo".
+- Ao se despedir de TARDE, prefira "tenha uma otima tarde" ou "ate logo".
+- Ao se despedir de MANHA, "tenha um otimo dia" e ok.
+═══════════════════════════════════════""")
 
     if kb:
         sections.append(f"""

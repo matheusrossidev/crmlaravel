@@ -1040,6 +1040,19 @@ class ProcessAiResponse implements ShouldQueue
             ]);
         }
 
+        // Contexto temporal — PHP calcula no fuso do app porque o container
+        // do Agno roda em UTC e nao sabe o fuso correto do tenant. Sem isso
+        // a IA dizia "bom dia" as 19h ou "tenha um otimo dia" a noite.
+        $now         = now();
+        $hour        = (int) $now->format('H');
+        $periodOfDay = $hour < 5 ? 'madrugada'
+                     : ($hour < 12 ? 'manha'
+                     : ($hour < 18 ? 'tarde' : 'noite'));
+        $greeting    = $hour < 5  ? 'ola'
+                     : ($hour < 12 ? 'bom dia'
+                     : ($hour < 18 ? 'boa tarde' : 'boa noite'));
+        $currentDt   = $now->locale('pt_BR')->isoFormat('DD/MM/YYYY (dddd) — HH:mm');
+
         $agnoResult = app(AgnoService::class)->chat([
             'agent_id'         => $agent->id,
             'tenant_id'        => $agent->tenant_id,
@@ -1060,6 +1073,9 @@ class ProcessAiResponse implements ShouldQueue
             'lead_products'    => $leadProductsCtx,
             'available_media'  => $agentMediaCtx,
             'language'         => $agent->language ?? 'pt-BR',
+            'current_datetime' => $currentDt,
+            'period_of_day'    => $periodOfDay,
+            'greeting'         => $greeting,
         ]);
 
         // Flatten nested payload in actions to match the existing PHP action executor format.
