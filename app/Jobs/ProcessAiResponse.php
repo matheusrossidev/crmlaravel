@@ -856,10 +856,40 @@ class ProcessAiResponse implements ShouldQueue
         // Build conversation history for Agno context
         $aiService = new AiAgentService();
         $rawHistory = $aiService->buildHistory($conv, limit: 20);
-        $history = array_map(fn ($m) => [
-            'role'    => $m['role'],
-            'content' => $m['content'],
-        ], $rawHistory);
+        // IMPORTANTE: o Agno espera content como STRING (Pydantic strict).
+        // buildHistory() devolve content como array multimodal (formato OpenAI vision)
+        // quando a mensagem tem imagem. Aqui achatamos pra string antes de mandar pro Agno,
+        // senao o Pydantic rejeita com 422 e o agente fica mudo.
+        $history = array_map(function ($m) {
+            $content = $m['content'];
+            if (is_array($content)) {
+                $parts = [];
+                foreach ($content as $block) {
+                    if (! is_array($block)) {
+                        $parts[] = (string) $block;
+                        continue;
+                    }
+                    $type = $block['type'] ?? null;
+                    if ($type === 'text' && isset($block['text'])) {
+                        $parts[] = (string) $block['text'];
+                    } elseif ($type === 'image_url') {
+                        $parts[] = '[imagem]';
+                    } elseif ($type === 'audio' || $type === 'input_audio') {
+                        $parts[] = '[audio]';
+                    } elseif (isset($block['text'])) {
+                        $parts[] = (string) $block['text'];
+                    }
+                }
+                $content = trim(implode(' ', array_filter($parts, fn ($p) => $p !== '')));
+                if ($content === '') {
+                    $content = '[midia]';
+                }
+            }
+            return [
+                'role'    => $m['role'],
+                'content' => (string) $content,
+            ];
+        }, $rawHistory);
 
         // ── Montar contexto do lead para o Agno ──────────────────────────────
         $leadData       = null;
