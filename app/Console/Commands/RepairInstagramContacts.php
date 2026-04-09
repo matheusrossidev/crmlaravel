@@ -6,14 +6,21 @@ namespace App\Console\Commands;
 
 use App\Models\InstagramConversation;
 use App\Models\InstagramInstance;
+use App\Models\InstagramMessage;
 use App\Services\InstagramService;
 use Illuminate\Console\Command;
 
 /**
- * Re-busca name/username/profile_pic via Graph API pra conversas Instagram
- * que estao com esses campos null. Use uma vez depois do fix do field
- * profile_pic (commits anteriores estavam pedindo profile_picture_url que
- * nao existe na API, deixando todos os campos null).
+ * Re-busca username via Graph API pra conversas Instagram que estao com
+ * contact_username null. Usa o endpoint GET /{message_id}?fields=from
+ * (unica forma documentada no fluxo Instagram API with Instagram Login).
+ *
+ * O endpoint GET /{IGSID} (que retornaria name+profile_pic) NAO funciona
+ * nesse fluxo — Meta retorna erro 100/33 "does not support this operation".
+ * Confirmado em prod 08/04/2026.
+ *
+ * Limitacao: name (display name) e profile_pic NAO sao disponiveis nesse
+ * fluxo. UI usa @username como label e avatar fica fallback de letra.
  *
  *   php artisan instagram:repair-contacts --dry-run
  *   php artisan instagram:repair-contacts
@@ -23,7 +30,7 @@ class RepairInstagramContacts extends Command
 {
     protected $signature = 'instagram:repair-contacts {--tenant= : Limita a um tenant_id especifico} {--dry-run : Nao escreve nada, so reporta o que faria}';
 
-    protected $description = 'Re-busca metadados (name/username/profile_pic) via Graph API pra conversas Instagram que estao com esses campos null.';
+    protected $description = 'Re-busca username via Graph API pra conversas Instagram que estao com contact_username null.';
 
     public function handle(): int
     {
@@ -34,12 +41,15 @@ class RepairInstagramContacts extends Command
             $this->warn('=== DRY RUN — nenhuma escrita sera feita ===');
         }
 
+        // So conversations sem username E que tem pelo menos uma mensagem
+        // inbound real (com mid valido). Conversations sem mensagem inbound
+        // nao tem como ter username obtido — fica skipped.
         $query = InstagramConversation::withoutGlobalScope('tenant')
             ->where(function ($q) {
                 $q->whereNull('contact_name')
-                  ->orWhereNull('contact_username')
-                  ->orWhereNull('contact_picture_url');
-            });
+                  ->orWhereNull('contact_username');
+            })
+            ->whereHas('messages', fn ($q) => $q->where('direction', 'inbound')->whereNotNull('ig_message_id'));
 
         if ($tenant) {
             $query->where('tenant_id', $tenant);
@@ -64,35 +74,42 @@ class RepairInstagramContacts extends Command
                 continue;
             }
 
+            // Busca a ultima mensagem inbound real (com mid) dessa conversa
+            $lastMsg = InstagramMessage::withoutGlobalScope('tenant')
+                ->where('conversation_id', $conv->id)
+                ->where('direction', 'inbound')
+                ->whereNotNull('ig_message_id')
+                ->latest('sent_at')
+                ->first();
+
+            if (! $lastMsg) {
+                $skipped++;
+                continue;
+            }
+
             try {
                 $token   = decrypt($instance->access_token);
                 $service = new InstagramService($token);
-                $profile = $service->getProfile($conv->igsid);
+                $result  = $service->getMessageSender($lastMsg->ig_message_id);
 
-                if (! empty($profile['error'])) {
-                    $this->warn("igsid {$conv->igsid}: API err " . ($profile['status'] ?? '?'));
+                if (! empty($result['error'])) {
+                    $this->warn("conv #{$conv->id} mid={$lastMsg->ig_message_id}: API err " . ($result['status'] ?? '?'));
                     $failed++;
                     continue;
                 }
 
+                $username = $result['from']['username'] ?? null;
+                if (! $username) {
+                    $skipped++;
+                    continue;
+                }
+
                 $update = [];
-                if (! $conv->contact_name && ! empty($profile['name'])) {
-                    $update['contact_name'] = $profile['name'];
+                if (! $conv->contact_username) {
+                    $update['contact_username'] = $username;
                 }
-                if (! $conv->contact_username && ! empty($profile['username'])) {
-                    $update['contact_username'] = $profile['username'];
-                }
-                if (! $conv->contact_picture_url && ! empty($profile['profile_pic'])) {
-                    // Baixa pra storage local — URL do CDN do Meta expira em horas
-                    $localPic = \App\Support\ProfilePictureDownloader::download(
-                        $profile['profile_pic'],
-                        'instagram',
-                        $conv->tenant_id,
-                        $conv->igsid,
-                    );
-                    if ($localPic) {
-                        $update['contact_picture_url'] = $localPic;
-                    }
+                if (! $conv->contact_name) {
+                    $update['contact_name'] = $username; // fallback display name
                 }
 
                 if (! empty($update)) {
@@ -100,11 +117,10 @@ class RepairInstagramContacts extends Command
                         $this->line("[DRY] conv #{$conv->id} igsid={$conv->igsid}: " . json_encode($update, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
                     } else {
                         $conv->update($update);
-                        $this->line("conv #{$conv->id}: ok (" . implode(', ', array_keys($update)) . ")");
+                        $this->line("conv #{$conv->id}: " . $username);
                     }
                     $fixed++;
                 } else {
-                    // API retornou mas sem novos dados — nada pra atualizar
                     $skipped++;
                 }
 

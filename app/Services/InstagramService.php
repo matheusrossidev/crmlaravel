@@ -113,20 +113,58 @@ class InstagramService
     // ── Profile ───────────────────────────────────────────────────────────────
 
     /**
-     * Fetch basic profile info for an IGSID.
+     * Fetch sender info from a message ID.
      *
-     * IMPORTANTE: o campo da foto se chama `profile_pic` (sem _url), conforme
-     * doc oficial: developers.facebook.com/docs/messenger-platform/instagram/features/user-profile
-     * Ja tivemos esse bug antes (commits 536b03f e 7cd6d38 em fev/2026) — alguem
-     * acidentalmente trocou pra `profile_picture_url` (que NAO existe) durante
-     * algum refactor. Nao troque sem confirmar a doc.
+     * Esse e o UNICO endpoint que funciona pra obter o username de um
+     * contato no fluxo "Instagram API with Instagram Login" que usamos
+     * (graph.instagram.com + scopes instagram_business_*).
      *
-     * @return array{name?: string, username?: string, profile_pic?: string, follower_count?: int, error?: bool}
+     * O endpoint GET /{IGSID} (que retornaria name+profile_pic) so funciona
+     * no caminho VELHO (Messenger Platform / Facebook Login + Page connection).
+     * No nosso fluxo, a Meta retorna erro 100/33 "does not support this
+     * operation". Confirmado empiricamente em prod (08/04/2026).
+     *
+     * IMPORTANTE: chamar APENAS pra mensagens inbound. Pra echo/outbound o
+     * `from` vai ser o proprio business — nao tem profile de contato
+     * pra extrair.
+     *
+     * Doc oficial:
+     * developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/conversations-api
+     *
+     * Resposta:
+     * {
+     *   "id": "aWdGGiblWZ...",
+     *   "from": { "id": "<IGSID>", "username": "joao_silva" }
+     * }
+     *
+     * Limitacao conhecida: "name" (display name real) e "profile_pic" NAO
+     * sao retornados — limitacao tecnica documentada do flow Instagram Login.
+     * UI usa @username como label e avatar fica fallback de letra.
+     *
+     * @return array{id?: string, from?: array{id?: string, username?: string}, error?: bool}
+     */
+    public function getMessageSender(string $messageId): array
+    {
+        return $this->get("/{$messageId}", [
+            'fields' => 'id,from',
+        ]);
+    }
+
+    /**
+     * @deprecated Endpoint NAO funciona no fluxo Instagram Login (caminho novo).
+     * Sempre retorna erro 100/33 "does not support this operation". Confirmado
+     * empiricamente em prod (08/04/2026) com IGSID de DM real legitima.
+     *
+     * Use getMessageSender(\$messageId) que e a alternativa documentada
+     * oficialmente pra Instagram API with Instagram Login.
+     *
+     * Mantido como dead method pra compat backward — algumas automacoes/jobs
+     * antigos podem ainda chamar. Vai ser removido em PR futuro.
      */
     public function getProfile(string $igsid): array
     {
         return $this->get("/{$igsid}", [
-            'fields' => 'name,username,profile_pic,follower_count,is_user_follow_business,is_business_follow_user',
+            'fields' => 'name,username,profile_pic',
         ]);
     }
 
