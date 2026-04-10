@@ -548,14 +548,10 @@ class AutomationEngine
             }
         }
 
-        // Determinar o telefone de destino (sanitizado pra formato WAHA)
-        $lead  = $this->resolveLead($ctx);
-        $phone = null;
-        if ($conv instanceof WhatsappConversation) {
-            $phone = $conv->phone; // já sanitizado pelo webhook
-        } elseif ($lead) {
-            $phone = \App\Support\PhoneNormalizer::toE164($lead->phone);
-        }
+        // Determinar o telefone de destino (SEMPRE sanitizado)
+        $lead    = $this->resolveLead($ctx);
+        $rawPhone = $conv instanceof WhatsappConversation ? $conv->phone : ($lead?->phone ?? null);
+        $phone    = \App\Support\PhoneNormalizer::toE164($rawPhone);
 
         if (! $phone) {
             Log::channel('whatsapp')->warning('AutomationEngine: send_whatsapp_message sem phone', [
