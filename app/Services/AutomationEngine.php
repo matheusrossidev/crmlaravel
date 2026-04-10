@@ -525,7 +525,13 @@ class AutomationEngine
 
     private function actionSendWhatsappMessage(array $config, array $ctx, Automation $automation): void
     {
+        Log::channel('whatsapp')->info('AutomationEngine: actionSendWhatsappMessage INICIADA', [
+            'automation_id' => $automation->id,
+            'has_message'   => !empty($config['message']),
+        ]);
+
         if (empty($config['message'])) {
+            Log::channel('whatsapp')->warning('AutomationEngine: message vazia, abortando');
             return;
         }
 
@@ -614,6 +620,14 @@ class AutomationEngine
         $text    = $this->interpolate((string) $config['message'], $ctx);
         $service = \App\Services\WhatsappServiceFactory::for($instance);
         $chatId  = $phone . '@c.us';
+
+        Log::channel('whatsapp')->info('AutomationEngine: enviando mensagem', [
+            'automation_id' => $automation->id,
+            'chatId'        => $chatId,
+            'instance_id'   => $instance->id,
+            'provider'      => $instance->provider ?? 'waha',
+            'text_len'      => mb_strlen($text),
+        ]);
 
         try {
             $result = $service->sendText($chatId, $text);
