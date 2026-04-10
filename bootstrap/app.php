@@ -53,12 +53,15 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule) {
         $schedule->command('billing:check-trials')->dailyAt('06:00');
-        $schedule->command('whatsapp:send-scheduled')->everyMinute()->withoutOverlapping();
-        $schedule->command('whatsapp:send-event-reminders')->everyMinute()->withoutOverlapping();
+        // withoutOverlapping(5) = mutex expira em 5 min se o processo crashar.
+        // Sem timeout, default é 24h — mutex travado = cron morto por 24h.
+        // Bug histórico: 2026-04-10, mensagens agendadas não enviaram por horas.
+        $schedule->command('whatsapp:send-scheduled')->everyMinute()->withoutOverlapping(5);
+        $schedule->command('whatsapp:send-event-reminders')->everyMinute()->withoutOverlapping(5);
         $schedule->command('automations:process-date-triggers')->dailyAt('08:00');
-        $schedule->command('automations:process-recurring')->hourly()->withoutOverlapping();
+        $schedule->command('automations:process-recurring')->hourly()->withoutOverlapping(30);
         $schedule->command('scoring:decay')->dailyAt('09:00');
-        $schedule->command('sequences:process')->everyMinute()->withoutOverlapping();
+        $schedule->command('sequences:process')->everyMinute()->withoutOverlapping(5);
         $schedule->command('master:weekly-report')->weeklyOn(5, '12:00'); // sexta ao meio-dia
         $schedule->command('goals:process-recurrence')->dailyAt('00:05');
         $schedule->command('goals:check-alerts')->dailyAt('09:00');
