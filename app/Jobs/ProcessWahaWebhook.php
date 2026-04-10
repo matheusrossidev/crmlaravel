@@ -768,13 +768,25 @@ class ProcessWahaWebhook implements ShouldQueue
             }
 
             if ($activeFlow) {
+                // Resolve o nó de start — sem isso o chatbot fica atribuído mas
+                // nunca dispara (linha ~915 requer AMBOS flow_id E node_id).
+                $startNode = ChatbotFlowNode::withoutGlobalScope('tenant')
+                    ->where('flow_id', $activeFlow->id)
+                    ->where('is_start', true)
+                    ->first();
+
                 WhatsappConversation::withoutGlobalScope('tenant')
                     ->where('id', $conversation->id)
-                    ->update(['chatbot_flow_id' => $activeFlow->id]);
+                    ->update([
+                        'chatbot_flow_id' => $activeFlow->id,
+                        'chatbot_node_id' => $startNode?->id,
+                    ]);
                 $conversation->chatbot_flow_id = $activeFlow->id;
+                $conversation->chatbot_node_id = $startNode?->id;
                 Log::channel('whatsapp')->info('Chatbot: flow auto-atribuído', [
                     'conversation_id' => $conversation->id,
                     'flow_id'         => $activeFlow->id,
+                    'start_node_id'   => $startNode?->id,
                     'match_type'      => $activeFlow->is_catch_all ? 'catch_all' : 'keyword',
                 ]);
             }

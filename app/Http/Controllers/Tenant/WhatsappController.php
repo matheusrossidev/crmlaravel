@@ -718,10 +718,19 @@ class WhatsappController extends Controller
 
         $flowId = $request->input('chatbot_flow_id');
 
+        // Resolve o nó de start do flow — sem isso o chatbot fica atribuído
+        // mas nunca dispara (ProcessWahaWebhook requer AMBOS flow_id E node_id).
+        $startNodeId = null;
+        if ($flowId) {
+            $startNodeId = \App\Models\ChatbotFlowNode::where('flow_id', $flowId)
+                ->where('is_start', true)
+                ->value('id');
+        }
+
         // Exclusividade: se atribuindo chatbot, limpa agente de IA ativo
         $updateData = [
             'chatbot_flow_id'   => $flowId,
-            'chatbot_node_id'   => null,
+            'chatbot_node_id'   => $startNodeId,
             'chatbot_variables' => null,
         ];
         if ($flowId && $conversation->ai_agent_id) {
