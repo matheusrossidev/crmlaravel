@@ -173,63 +173,13 @@ class AsaasWebhookController extends Controller
         }
 
         // Gera comissão para parceiro se tenant foi indicado
-        $this->generatePartnerCommission($tenant, $paymentValue, $paymentId);
+        \App\Services\PartnerCommissionService::generateCommission($tenant, (float) ($paymentValue ?? 0), $paymentId);
 
         \Log::info("AsaasWebhook: pagamento confirmado para tenant {$tenant->id}");
     }
 
-    private function generatePartnerCommission(Tenant $tenant, ?float $paymentValue, ?string $paymentId): void
-    {
-        if (!$paymentValue || $paymentValue <= 0 || !$tenant->referred_by_agency_id) {
-            return;
-        }
-
-        $partnerTenantId = $tenant->referred_by_agency_id;
-
-        // Avoid duplicate commission — atomic check with lock
-        if ($paymentId) {
-            $exists = \App\Models\PartnerCommission::where('asaas_payment_id', $paymentId)->lockForUpdate()->exists();
-            if ($exists) return;
-        }
-
-        // Use locked commission % from tenant (set at time of referral).
-        // If not set yet (legacy), calculate from current rank and lock it.
-        $commissionPct = (float) ($tenant->partner_commission_pct ?? 0);
-
-        if ($commissionPct <= 0) {
-            // Legacy or first payment — calculate from rank and lock
-            $activeClients = Tenant::withoutGlobalScope('tenant')
-                ->where('referred_by_agency_id', $partnerTenantId)
-                ->whereIn('status', ['active', 'partner', 'trial'])
-                ->count();
-
-            $rank = \App\Models\PartnerRank::forSalesCount($activeClients);
-            $commissionPct = (float) ($rank?->commission_pct ?? 0);
-
-            if ($commissionPct > 0) {
-                // Lock the rate on this tenant for all future payments
-                $tenant->update(['partner_commission_pct' => $commissionPct]);
-            }
-        }
-
-        if ($commissionPct <= 0) {
-            return;
-        }
-
-        $commissionAmount = round($paymentValue * ($commissionPct / 100), 2);
-        $graceDays = 30;
-
-        \App\Models\PartnerCommission::create([
-            'tenant_id'        => $partnerTenantId,
-            'client_tenant_id' => $tenant->id,
-            'asaas_payment_id' => $paymentId,
-            'amount'           => $commissionAmount,
-            'status'           => 'pending',
-            'available_at'     => now()->addDays($graceDays)->toDateString(),
-        ]);
-
-        \Log::info("PartnerCommission: R\${$commissionAmount} ({$commissionPct}% locked) para tenant {$partnerTenantId} de pagamento {$paymentId}");
-    }
+    // generatePartnerCommission() movido pra PartnerCommissionService::generateCommission()
+    // Centralizado pra ser chamado por AMBOS Asaas e Stripe webhooks.
 
     private function handlePaymentOverdue(Tenant $tenant): void
     {

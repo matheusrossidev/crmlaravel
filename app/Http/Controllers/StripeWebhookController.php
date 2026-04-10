@@ -106,6 +106,13 @@ class StripeWebhookController extends Controller
                 $session->id ?? null,
             );
 
+            // Gera comissão pra parceiro (se tenant foi indicado por um)
+            \App\Services\PartnerCommissionService::generateCommission(
+                $tenant,
+                ($session->amount_total ?? 0) / 100,
+                $session->id,
+            );
+
             Log::info('Stripe: subscription ativada', [
                 'tenant_id'       => $tenant->id,
                 'plan'            => $planName,
@@ -149,6 +156,13 @@ class StripeWebhookController extends Controller
             ($invoice->amount_paid ?? 0) / 100,
             'Stripe',
             $invoice->id ?? null,
+        );
+
+        // Gera comissão pra parceiro (pagamento recorrente)
+        \App\Services\PartnerCommissionService::generateCommission(
+            $tenant,
+            ($invoice->amount_paid ?? 0) / 100,
+            $invoice->id,
         );
 
         Log::info('Stripe: invoice paga', ['tenant_id' => $tenant->id, 'invoice_id' => $invoice->id]);
