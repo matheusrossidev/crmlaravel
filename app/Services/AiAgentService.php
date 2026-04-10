@@ -910,7 +910,7 @@ WEBCHAT;
     /**
      * Envia múltiplas partes de resposta com delay entre elas.
      */
-    public function sendWhatsappReplies(WhatsappConversation $conv, array $messages, int $delaySeconds = 2): void
+    public function sendWhatsappReplies(WhatsappConversation $conv, array $messages, int $delaySeconds = 2, ?int $agentId = null): void
     {
         // Resolver instância + chatId uma vez para enviar presence
         $instance = WhatsappInstance::withoutGlobalScope('tenant')
@@ -958,7 +958,7 @@ WEBCHAT;
                 sleep(2);
             }
 
-            $this->sendWhatsappReply($conv, $text);
+            $this->sendWhatsappReply($conv, $text, $agentId);
         }
     }
 
@@ -1037,7 +1037,7 @@ WEBCHAT;
     /**
      * Envia a resposta da IA pelo WhatsApp e salva como mensagem outbound.
      */
-    public function sendWhatsappReply(WhatsappConversation $conv, string $text): void
+    public function sendWhatsappReply(WhatsappConversation $conv, string $text, ?int $agentId = null): void
     {
         $instance = WhatsappInstance::withoutGlobalScope('tenant')
             ->where('id', $conv->instance_id)
@@ -1094,7 +1094,7 @@ WEBCHAT;
             'body'             => $text,
             'user_id'          => null,
             'sent_by'          => 'ai_agent',
-            'sent_by_agent_id' => $conv->ai_agent_id,
+            'sent_by_agent_id' => $agentId ?? $conv->ai_agent_id,
             'ack'              => 'sent',
             'sent_at'          => now(),
         ]);

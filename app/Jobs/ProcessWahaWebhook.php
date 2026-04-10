@@ -808,10 +808,18 @@ class ProcessWahaWebhook implements ShouldQueue
         // human_phone (mensagem mandada do celular do dono fora do CRM).
         $sentBy = null;
         $sentByAgentId = null;
-        if ($isFromMe && $body) {
-            $intent = \Illuminate\Support\Facades\Cache::pull(
-                "outbound_intent:{$conversation->id}:" . md5(trim($body))
-            );
+        if ($isFromMe) {
+            // Tenta intent exato por md5(body)
+            $intent = $body
+                ? \Illuminate\Support\Facades\Cache::pull("outbound_intent:{$conversation->id}:" . md5(trim($body)))
+                : null;
+
+            // Fallback: intent genérico por conversa (TTL 15s). Cobre casos onde
+            // o echo do WAHA vem com body diferente (ex: lista interativa).
+            if (! $intent || ! is_array($intent)) {
+                $intent = \Illuminate\Support\Facades\Cache::pull("outbound_intent_conv:{$conversation->id}");
+            }
+
             if ($intent && is_array($intent)) {
                 $sentBy = $intent['sent_by'] ?? null;
                 $sentByAgentId = $intent['sent_by_agent_id'] ?? null;

@@ -640,7 +640,11 @@ class ProcessAiResponse implements ShouldQueue
                 'delay_seconds'   => $delay,
             ]);
 
-            $service->sendWhatsappReplies($conv, $messages, $delay);
+            // Passa $agent->id explicitamente porque $conv->ai_agent_id pode
+            // ter sido limpado por assign_human durante execução de actions
+            // (a IA pode responder E transferir na mesma rodada). Sem isso,
+            // sent_by_agent_id ficaria null e o badge não mostra foto/nome.
+            $service->sendWhatsappReplies($conv, $messages, $delay, $agent->id);
         }
     }
 

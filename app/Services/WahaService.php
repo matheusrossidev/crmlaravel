@@ -302,19 +302,19 @@ class WahaService implements WhatsappServiceContract
      * User taps the button to open the list and selects a row.
      * Response body = selected row title.
      */
-    public function sendList(string $chatId, string $description, array $rows, ?string $title = null, string $buttonText = 'Selecione', ?string $footer = null): array
+    public function sendList(string $chatId, string $description, array $rows, ?string $title = null, string $buttonText = 'Ver opções', ?string $footer = null): array
     {
         return $this->post('/api/sendList', [
             'session' => $this->session,
             'chatId'  => $chatId,
             'message' => [
-                'title'       => $title ?? 'Menu',
+                'title'       => $title ?? '',
                 'description' => $description,
                 'footer'      => $footer ?? '',
                 'button'      => $buttonText,
                 'sections'    => [
                     [
-                        'title' => 'Opções',
+                        'title' => '',
                         'rows'  => $rows,
                     ],
                 ],

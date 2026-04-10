@@ -520,6 +520,23 @@ class ProcessChatbotStep
                     'agent_name'      => $aiAgent->name,
                 ]);
 
+                // Evento visível no chat — timeline clara de quem assumiu
+                if ($conv instanceof WhatsappConversation) {
+                    WhatsappMessage::withoutGlobalScope('tenant')->create([
+                        'tenant_id'        => $conv->tenant_id,
+                        'conversation_id'  => $conv->id,
+                        'direction'        => 'outbound',
+                        'type'             => 'event',
+                        'body'             => "Bot atribuiu conversa ao agente {$aiAgent->name}",
+                        'media_filename'   => "Atribuído a {$aiAgent->name}",
+                        'media_mime'       => 'chatbot_assign_ai',
+                        'sent_by'          => 'chatbot',
+                        'sent_by_agent_id' => $aiAgent->id,
+                        'sent_at'          => now(),
+                        'ack'              => 'delivered',
+                    ]);
+                }
+
                 // Dispara a IA imediatamente pra dar boas-vindas contextualizada.
                 // A IA le o historico de mensagens (que inclui toda conversa do bot)
                 // e responde como continuidade natural do atendimento.
@@ -788,10 +805,23 @@ class ProcessChatbotStep
      */
     private function cacheOutboundIntent(int $convId, string $body, string $sentBy, ?int $agentId = null): void
     {
+        $intent = ['sent_by' => $sentBy, 'sent_by_agent_id' => $agentId];
+
+        // Intent por md5(body) — pra texto puro que bate exato com o echo
         \Illuminate\Support\Facades\Cache::put(
             "outbound_intent:{$convId}:" . md5(trim($body)),
-            ['sent_by' => $sentBy, 'sent_by_agent_id' => $agentId],
+            $intent,
             120
+        );
+
+        // Intent genérico por conversa — fallback pra quando o echo do WAHA
+        // vem com body diferente (ex: lista interativa, imagem com caption
+        // reformatado). TTL curto de 15s pra não contaminar mensagens
+        // subsequentes de outros remetentes.
+        \Illuminate\Support\Facades\Cache::put(
+            "outbound_intent_conv:{$convId}",
+            $intent,
+            15
         );
     }
 
