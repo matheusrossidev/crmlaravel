@@ -17,6 +17,7 @@ bootstrap/cache/*.php
 .env
 .env.*
 !.env.example
+!.env.testing
 
 # Docker files (evitar recursão no build context)
 docker-compose*.yml
@@ -33,9 +34,7 @@ Thumbs.db
 *.swp
 *.swo
 
-# Tests
-tests/
-phpunit.xml
+# Tests cache
 .phpunit.cache
 
 # Documentation
