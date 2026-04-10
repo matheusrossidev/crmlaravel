@@ -88,22 +88,25 @@ class ProcessChatbotStep
                 return;
             }
 
-            // Limpa o nó de espera para avançar
-            $conv->chatbot_node_id = null;
-
             if ($waitingNode->type === 'input') {
+                // Nó de input: processa a resposta do user e avança pro próximo
+                $conv->chatbot_node_id = null;
                 [$nextNodeId, $vars] = $this->processInputReply($waitingNode, $conv, $vars);
+
+                if (! $nextNodeId) {
+                    $this->persistVars($conv, $vars);
+                    return;
+                }
+
+                $currentNode = ChatbotFlowNode::withoutGlobalScope('tenant')->find($nextNodeId);
             } else {
-                // Fallback: avança pelo handle default
-                $nextNodeId = $this->resolveEdge($flow->id, $waitingNodeId, 'default');
+                // Nó NÃO é input (ex: message, action, condition) — executa ele
+                // direto em vez de pular. Isso acontece quando o chatbot é atribuído
+                // via dropdown/auto-trigger e o node_id aponta pro nó de start, que
+                // é um nó de message (não de input). O correto é executar esse nó.
+                $conv->chatbot_node_id = null;
+                $currentNode = $waitingNode;
             }
-
-            if (! $nextNodeId) {
-                $this->persistVars($conv, $vars);
-                return;
-            }
-
-            $currentNode = ChatbotFlowNode::withoutGlobalScope('tenant')->find($nextNodeId);
         } else {
             // ── Início do fluxo: busca primeiro nó (sem incoming edge) ──────
             $currentNode = $this->findStartNode($flow->id);
