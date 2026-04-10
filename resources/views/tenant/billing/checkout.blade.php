@@ -198,8 +198,15 @@
     {{-- ── Painel esquerdo — Wizard ── --}}
     <div class="auth-left">
 
-        <div class="auth-brand">
+        <div class="auth-brand" style="display:flex;align-items:center;justify-content:space-between;">
             <img src="{{ asset('images/logo.png') }}" alt="Syncro">
+            <form method="POST" action="{{ route('logout') }}" style="margin:0;">
+                @csrf
+                <button type="submit" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;">
+                    <i class="bi bi-box-arrow-right"></i>
+                    Sair
+                </button>
+            </form>
         </div>
 
         @if(session('impersonating_tenant_id'))
