@@ -542,13 +542,13 @@ class AutomationEngine
             }
         }
 
-        // Determinar o telefone de destino
+        // Determinar o telefone de destino (sanitizado pra formato WAHA)
         $lead  = $this->resolveLead($ctx);
         $phone = null;
         if ($conv instanceof WhatsappConversation) {
-            $phone = $conv->phone;
+            $phone = $conv->phone; // já sanitizado pelo webhook
         } elseif ($lead) {
-            $phone = $lead->phone;
+            $phone = \App\Support\PhoneNormalizer::toE164($lead->phone);
         }
 
         if (! $phone) {
@@ -609,18 +609,11 @@ class AutomationEngine
                 'phone'           => $phone,
             ]);
 
-            // Vincular conversa ao lead se ainda não vinculado
-            if ($lead && ! $lead->whatsapp_conversation_id) {
-                Lead::withoutGlobalScope('tenant')
-                    ->where('id', $lead->id)
-                    ->whereNull('whatsapp_conversation_id')
-                    ->update([]);
-            }
         }
 
-        $text   = $this->interpolate((string) $config['message'], $ctx);
+        $text    = $this->interpolate((string) $config['message'], $ctx);
         $service = \App\Services\WhatsappServiceFactory::for($instance);
-        $chatId = $phone . '@c.us';
+        $chatId  = $phone . '@c.us';
 
         try {
             $result = $service->sendText($chatId, $text);

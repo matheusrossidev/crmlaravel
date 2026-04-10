@@ -449,10 +449,9 @@ class ProcessChatbotStep
                 if ($this->channel === 'whatsapp' && $conv instanceof WhatsappConversation) {
                     $phoneMode = $config['phone_mode'] ?? 'variable';
                     if ($phoneMode === 'custom' && ! empty($config['custom_phone'])) {
-                        $phone   = preg_replace('/\D/', '', (string) $config['custom_phone']);
+                        $chatId  = \App\Support\PhoneNormalizer::toWahaChatId((string) $config['custom_phone']);
                         $message = ChatbotVariableService::interpolate((string) ($config['message'] ?? ''), $vars);
-                        if ($message !== '') {
-                            $chatId = $phone . '@c.us';
+                        if ($message !== '' && $chatId) {
                             $instance = $conv->instance;
                             if ($instance) {
                                 try {

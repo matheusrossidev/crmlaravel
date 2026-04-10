@@ -574,7 +574,8 @@ class WebsiteChatService
 
         try {
             $waha = \App\Services\WhatsappServiceFactory::for($instance);
-            $waha->sendText($phone . '@c.us', $message);
+            $chatId = \App\Support\PhoneNormalizer::toWahaChatId($phone) ?? ($phone . '@c.us');
+            $waha->sendText($chatId, $message);
             Log::channel('whatsapp')->info('WebsiteChatService: WhatsApp enviado via chatbot', [
                 'conv'  => $conv->id,
                 'phone' => $phone,

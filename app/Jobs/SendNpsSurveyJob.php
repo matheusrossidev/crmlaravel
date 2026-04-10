@@ -80,11 +80,14 @@ class SendNpsSurveyJob implements ShouldQueue
             return;
         }
 
-        $waha = \App\Services\WhatsappServiceFactory::for($instance);
-        $phone = preg_replace('/\D/', '', $lead->phone);
+        $waha   = \App\Services\WhatsappServiceFactory::for($instance);
+        $chatId = \App\Support\PhoneNormalizer::toWahaChatId($lead->phone);
+        if (! $chatId) {
+            return;
+        }
 
         $waha->sendText(
-            "{$phone}@c.us",
+            $chatId,
             "Olá {$name}! 😊\n\nComo foi sua experiência conosco? Leva menos de 1 minuto para responder:\n\n👉 {$url}\n\nSua opinião é muito importante para nós!"
         );
     }
