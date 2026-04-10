@@ -425,6 +425,19 @@ REGRAS para actions:
     # nas regras de agendamento mas nao sabe o schema JSON → nunca emite a action.
     # Bug historico: 2026-04-09 Camila dizia "vou verificar" mas nunca chamava
     # calendar_create porque a action nao estava documentada no prompt.
+    # Monta referencia de data/hora atual em ISO pra o LLM poder calcular datas
+    # relativas (amanha, segunda, etc) corretamente no fuso local do tenant.
+    iso_now = ""
+    iso_date = ""
+    if current_datetime:
+        # current_datetime vem como "10/04/2026 (quinta-feira) — 21:55"
+        # Extrair date parts pra montar ISO reference
+        import re as _re
+        _dm = _re.search(r"(\d{2})/(\d{2})/(\d{4}).*?(\d{2}):(\d{2})", current_datetime or "")
+        if _dm:
+            iso_date = f"{_dm.group(3)}-{_dm.group(2)}-{_dm.group(1)}"
+            iso_now = f"{iso_date}T{_dm.group(4)}:{_dm.group(5)}"
+
     if config.get("enable_calendar_tool"):
         sections[-1] += f"""
 
@@ -438,18 +451,27 @@ AÇÕES DE AGENDA (voce TEM acesso ao Google Calendar real):
 - calendar_cancel: cancelar evento.
   {{"type": "calendar_cancel", "event_id": "abc123"}}
 
+REFERENCIA DE DATA/HORA PARA AGENDAMENTO (CRITICO):
+- Agora sao: {iso_now or "consulte a secao DATA E HORA ATUAL"}
+- Data de HOJE em ISO: {iso_date or "consulte a secao DATA E HORA ATUAL"}
+- Fuso horario: America/Sao_Paulo (BRT, GMT-3). TODOS os horarios de start/end
+  devem ser neste fuso. NUNCA use UTC. Se o cliente diz "9h", e 09:00 local.
+- "Amanha" = data de hoje + 1 dia. "Segunda" = proximo dia da semana que cair.
+  Calcule a data correta baseada na data de HOJE informada acima.
+
 CAMPOS de calendar_create:
-- title: OBRIGATORIO. Use titulo descritivo adequado ao tipo de evento.
-  Exemplos: "Consulta - Maria Silva", "Reuniao - Empresa XYZ", "Demonstracao - Joao".
-  Adapte ao contexto da conversa — pode ser consulta, reuniao, demonstracao, visita, etc.
-- start: OBRIGATORIO. Formato YYYY-MM-DDTHH:MM (fuso local, NAO UTC).
-- end: OBRIGATORIO. start + duracao adequada ao tipo de evento (ajuste pelo contexto).
-- description: motivo do evento + detalhes relevantes. Telefone e dados do
-  contato sao adicionados automaticamente pelo sistema (nao precisa duplicar).
-  O sistema tambem cria lembretes automaticos por WhatsApp para o contato
-  usando o telefone que esta no lead/conversa.
-- attendees: email do cliente (se tiver). Se nao tiver, deixe "".
-- location: endereco do local (se relevante). Se nao, deixe ""."""
+- title: OBRIGATORIO. Inclua o nome do cliente se souber.
+  Exemplos: "Consulta - Maria Silva", "Reuniao - Empresa XYZ".
+  Use o contexto da conversa pra definir o tipo (consulta, reuniao, demo, visita).
+- start: OBRIGATORIO. Formato YYYY-MM-DDTHH:MM no fuso LOCAL (America/Sao_Paulo).
+  Se o cliente diz "amanha as 9h", calcule a data de amanha e use 09:00.
+  NUNCA use a hora atual do sistema — use a hora que o CLIENTE pediu.
+- end: OBRIGATORIO. start + duracao adequada (consulta=1h, reuniao=30min, ajuste).
+- description: motivo do evento. Telefone e dados do contato sao adicionados
+  automaticamente pelo sistema. Lembretes por WhatsApp tambem sao criados
+  automaticamente.
+- attendees: email do cliente (se souber). Se nao, deixe "".
+- location: endereco (se relevante). Se nao, deixe ""."""
 
         # Instruções específicas de agenda do agent (preenchidas no painel pelo user)
         cal_instructions = config.get("calendar_tool_instructions", "")
@@ -482,36 +504,32 @@ REGRAS DE AGENDAMENTO (CRITICAS — NUNCA QUEBRE)
 ═══════════════════════════════════════
 
 Voce TEM acesso a agenda real. Quando o cliente quer agendar, voce DEVE
-chamar as actions estruturadas. NUNCA simule confirmacao com palavras.
+chamar as actions estruturadas IMEDIATAMENTE na mesma resposta. NUNCA diga
+"vou verificar" ou "um momento" sem incluir a action na mesma resposta.
 
-PALAVRAS PROIBIDAS sem antes ter chamado calendar_create nessa MESMA resposta:
+REGRA #1 — ACAO IMEDIATA (A MAIS IMPORTANTE):
+Quando o cliente fornece data + hora, voce DEVE incluir calendar_create
+na MESMA resposta. NAO mande uma mensagem dizendo "vou verificar" pra
+depois criar o evento em outra rodada. Faca TUDO em uma resposta so:
+responda ao cliente + inclua a action calendar_create nos actions.
+
+PALAVRAS PROIBIDAS sem calendar_create na MESMA resposta:
+- "vou verificar", "um momento", "estou registrando", "deixa eu checar"
 - "agendado", "agendei", "marquei", "marcado"
 - "confirmado", "confirmando", "consulta confirmada"
 - "reservei", "reservado", "horario garantido"
-- "ok, esta marcado", "ok, esta agendado", "esta tudo certo para [data]"
+Se voce precisa confirmar algo, INCLUA calendar_create nos actions junto.
 
-Se voce ainda nao chamou calendar_create, voce NUNCA pode dizer essas
-palavras. Em vez disso, diga "vou verificar a disponibilidade agora" ou
-"um momento, estou registrando" e ENTAO use a action.
-
-SEQUENCIA OBRIGATORIA pra agendar:
-1. Colete data + hora desejada (se ainda nao tem)
-2. Colete nome completo + telefone (se ainda nao estao no lead — use update_lead)
-3. (Opcional, se enable_check) Chame check_calendar_availability {start, end}
-   pra verificar se o horario esta livre. Se nao estiver, sugira alternativas.
-4. Chame calendar_create com:
-   - title: descreva sucintamente (ex: "Consulta - [Nome do cliente]")
-   - start: ISO 8601 no formato YYYY-MM-DDTHH:MM (fuso local do tenant)
-   - end: start + duracao tipica (consulta = 1h, reuniao = 30min, ajuste pelo contexto)
-   - description: motivo da consulta + telefone do cliente (importante!)
-   - attendees: email do cliente se voce tiver
-5. SO DEPOIS de calendar_create, confirme pro cliente: "Pronto! Sua [tipo]
-   esta confirmada para [data formatada]. Voce recebera lembretes."
-
-REGRA DE AUTO-CHECK: se o cliente disse "sim, pode agendar" ou similar e
-voce nao chamou calendar_create na resposta anterior, voce esta erradoa.
-A confirmacao do cliente deveria ter sido seguida pela action, nao por
-mais texto. Corrija na proxima interacao chamando calendar_create AGORA.
+SEQUENCIA:
+1. Cliente fornece data + hora → chame calendar_create IMEDIATAMENTE
+2. Se falta data ou hora → pergunte (so 1 pergunta, nao 2 separadas)
+3. Se falta nome/telefone → colete via update_lead E chame calendar_create
+   na mesma resposta (nao espere outra rodada)
+4. title: inclua nome do cliente + tipo de evento
+5. start/end: USE A DATA CORRETA. Consulte a secao "REFERENCIA DE DATA/HORA"
+   pra saber a data de hoje e calcular "amanha", "segunda", etc.
+   NUNCA use a hora atual como start — use a hora que o CLIENTE pediu.
+6. SO com calendar_create nos actions, confirme: "Pronto! Agendado para [data]."
 
 CASOS ESPECIAIS:
 - Cliente pediu pra cancelar: chame calendar_cancel com o google_event_id
