@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         // Expandir enum status para incluir 'partner'
-        DB::statement("ALTER TABLE tenants MODIFY status ENUM('active','inactive','trial','suspended','partner') NOT NULL DEFAULT 'trial'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE tenants MODIFY status ENUM('active','inactive','trial','suspended','partner') NOT NULL DEFAULT 'trial'");
+        }
 
         Schema::table('tenants', function (Blueprint $table) {
             $table->timestamp('trial_ends_at')->nullable()->after('status');
@@ -25,6 +27,8 @@ return new class extends Migration
             $table->dropColumn('trial_ends_at');
         });
 
-        DB::statement("ALTER TABLE tenants MODIFY status ENUM('active','inactive','trial','suspended') NOT NULL DEFAULT 'trial'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE tenants MODIFY status ENUM('active','inactive','trial','suspended') NOT NULL DEFAULT 'trial'");
+        }
     }
 };

@@ -9,6 +9,7 @@ use App\Models\Traits\BelongsToTenant;
 use App\Models\Traits\EnforcesExclusiveHandler;
 use App\Models\Traits\HasTags;
 use App\Models\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class WhatsappConversation extends Model implements ConversationContract
 {
-    use BelongsToTenant, EnforcesExclusiveHandler, LogsActivity, HasTags;
+    use BelongsToTenant, EnforcesExclusiveHandler, LogsActivity, HasTags, HasFactory;
 
     public $timestamps = false;
 

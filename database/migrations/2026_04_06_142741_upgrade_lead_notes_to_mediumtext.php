@@ -16,23 +16,31 @@ return new class extends Migration
     {
         // lead_notes.body — usado pelas notas múltiplas (LeadNote model)
         if (Schema::hasTable('lead_notes')) {
-            DB::statement('ALTER TABLE lead_notes MODIFY COLUMN body MEDIUMTEXT NOT NULL');
+            if (DB::getDriverName() === 'mysql') {
+                DB::statement('ALTER TABLE lead_notes MODIFY COLUMN body MEDIUMTEXT NOT NULL');
+            }
         }
 
         // leads.notes — campo legado do model Lead (usado em alguns lugares)
         if (Schema::hasColumn('leads', 'notes')) {
-            DB::statement('ALTER TABLE leads MODIFY COLUMN notes MEDIUMTEXT NULL');
+            if (DB::getDriverName() === 'mysql') {
+                DB::statement('ALTER TABLE leads MODIFY COLUMN notes MEDIUMTEXT NULL');
+            }
         }
     }
 
     public function down(): void
     {
         if (Schema::hasTable('lead_notes')) {
-            DB::statement('ALTER TABLE lead_notes MODIFY COLUMN body TEXT NOT NULL');
+            if (DB::getDriverName() === 'mysql') {
+                DB::statement('ALTER TABLE lead_notes MODIFY COLUMN body TEXT NOT NULL');
+            }
         }
 
         if (Schema::hasColumn('leads', 'notes')) {
-            DB::statement('ALTER TABLE leads MODIFY COLUMN notes TEXT NULL');
+            if (DB::getDriverName() === 'mysql') {
+                DB::statement('ALTER TABLE leads MODIFY COLUMN notes TEXT NULL');
+            }
         }
     }
 };

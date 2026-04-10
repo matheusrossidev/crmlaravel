@@ -10,8 +10,12 @@ return new class extends Migration
     public function up(): void
     {
         // Make platform (ENUM) and external_id nullable via raw statement
-        DB::statement("ALTER TABLE campaigns MODIFY COLUMN platform ENUM('facebook','google') NULL DEFAULT NULL");
-        DB::statement("ALTER TABLE campaigns MODIFY COLUMN external_id VARCHAR(191) NULL DEFAULT NULL");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE campaigns MODIFY COLUMN platform ENUM('facebook','google') NULL DEFAULT NULL");
+        }
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE campaigns MODIFY COLUMN external_id VARCHAR(191) NULL DEFAULT NULL");
+        }
 
         // Drop the old unique constraint (tenant_id, platform, external_id)
         Schema::table('campaigns', function (Blueprint $table) {
@@ -52,8 +56,12 @@ return new class extends Migration
         });
 
         // Restore NOT NULL
-        DB::statement("ALTER TABLE campaigns MODIFY COLUMN platform ENUM('facebook','google') NOT NULL");
-        DB::statement("ALTER TABLE campaigns MODIFY COLUMN external_id VARCHAR(191) NOT NULL");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE campaigns MODIFY COLUMN platform ENUM('facebook','google') NOT NULL");
+        }
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE campaigns MODIFY COLUMN external_id VARCHAR(191) NOT NULL");
+        }
 
         Schema::table('campaigns', function (Blueprint $table) {
             $table->unique(['tenant_id', 'platform', 'external_id']);

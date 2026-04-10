@@ -17,12 +17,14 @@ return new class extends Migration
         });
 
         // Backfill a partir do sales.closed_at para leads que já possuem venda registrada
-        DB::statement('
-            UPDATE leads l
-            INNER JOIN sales s ON s.lead_id = l.id
-            SET l.converted_at = s.closed_at
-            WHERE l.converted_at IS NULL
-        ');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('
+                UPDATE leads l
+                INNER JOIN sales s ON s.lead_id = l.id
+                SET l.converted_at = s.closed_at
+                WHERE l.converted_at IS NULL
+            ');
+        }
     }
 
     public function down(): void

@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PartnerWithdrawal extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'tenant_id', 'amount', 'status',
         'pix_key', 'pix_key_type', 'pix_holder_name', 'pix_holder_cpf_cnpj',

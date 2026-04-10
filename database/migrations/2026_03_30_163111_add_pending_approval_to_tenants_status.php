@@ -7,11 +7,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE tenants MODIFY COLUMN status ENUM('active','inactive','trial','suspended','partner','pending_approval','rejected') DEFAULT 'trial'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE tenants MODIFY COLUMN status ENUM('active','inactive','trial','suspended','partner','pending_approval','rejected') DEFAULT 'trial'");
+        }
     }
 
     public function down(): void
     {
-        DB::statement("ALTER TABLE tenants MODIFY COLUMN status ENUM('active','inactive','trial','suspended','partner') DEFAULT 'trial'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE tenants MODIFY COLUMN status ENUM('active','inactive','trial','suspended','partner') DEFAULT 'trial'");
+        }
     }
 };

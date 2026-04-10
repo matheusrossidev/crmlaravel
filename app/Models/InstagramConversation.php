@@ -8,6 +8,7 @@ use App\Contracts\ConversationContract;
 use App\Models\Traits\BelongsToTenant;
 use App\Models\Traits\EnforcesExclusiveHandler;
 use App\Models\Traits\HasTags;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class InstagramConversation extends Model implements ConversationContract
 {
-    use BelongsToTenant, EnforcesExclusiveHandler, HasTags;
+    use BelongsToTenant, EnforcesExclusiveHandler, HasTags, HasFactory;
 
     public $timestamps = false;
 

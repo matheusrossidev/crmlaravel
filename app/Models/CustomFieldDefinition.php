@@ -6,12 +6,13 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToTenant;
 use App\Models\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CustomFieldDefinition extends Model
 {
-    use BelongsToTenant, LogsActivity;
+    use BelongsToTenant, LogsActivity, HasFactory;
 
     protected $fillable = [
         'tenant_id', 'name', 'label', 'field_type', 'options_json',

@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
+use App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -11,34 +14,49 @@ use Illuminate\Support\Str;
  */
 class UserFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
     protected static ?string $password;
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
+            'tenant_id'         => Tenant::factory(),
+            'name'              => fake()->name(),
+            'email'             => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'password'          => static::$password ??= Hash::make('password'),
+            'remember_token'    => Str::random(10),
+            'role'                       => 'admin',
+            'is_super_admin'             => false,
+            'is_cs_agent'                => false,
+            'can_see_all_conversations'  => false,
         ];
     }
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
+    public function admin(): static
+    {
+        return $this->state(['role' => 'admin']);
+    }
+
+    public function manager(): static
+    {
+        return $this->state(['role' => 'manager']);
+    }
+
+    public function viewer(): static
+    {
+        return $this->state(['role' => 'viewer']);
+    }
+
+    public function superAdmin(): static
+    {
+        return $this->state([
+            'is_super_admin' => true,
+            'tenant_id'      => null,
+        ]);
+    }
+
     public function unverified(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
-        ]);
+        return $this->state(['email_verified_at' => null]);
     }
 }

@@ -1055,8 +1055,9 @@
         </div>
     </div>
 </div>
+@endif
 
-{{-- ── Botao WhatsApp pra sites — drawer/modal ───────────────────────────── --}}
+{{-- ── Botao WhatsApp pra sites — modal ──────────────────────────────────── --}}
 <div id="waBtnOverlay" class="int-modal-overlay" onclick="closeWaBtnDrawer(event)"></div>
 <div id="waBtnDrawer" class="int-modal int-modal-540">
     <div style="padding:20px 24px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;">
@@ -1124,7 +1125,6 @@
 .fb-mapping-row .fb-arrow { color:#9ca3af;font-size:14px; }
 .fb-mapping-row select { padding:8px 10px;border:1.5px solid #e8eaf0;border-radius:8px;font-size:12.5px;width:100%; }
 </style>
-@endif
 
 @endsection
 

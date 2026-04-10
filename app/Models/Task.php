@@ -7,12 +7,13 @@ namespace App\Models;
 use App\Models\Traits\BelongsToTenant;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Task extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, HasFactory;
 
     public const TYPES = ['call', 'email', 'task', 'visit', 'whatsapp', 'meeting'];
 
