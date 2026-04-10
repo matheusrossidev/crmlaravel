@@ -471,8 +471,27 @@
                 <label>{{ __('chatbot.form_trigger_keywords') }}</label>
                 <input type="text" name="trigger_keywords" class="field-input"
                     value="{{ old('trigger_keywords', $flow->trigger_keywords ? implode(', ', $flow->trigger_keywords) : '') }}"
-                    placeholder="{{ __('chatbot.form_trigger_placeholder') }}">
+                    placeholder="{{ __('chatbot.form_trigger_placeholder') }}"
+                    id="triggerKeywordsInput">
                 <div class="hint" id="triggerKeywordsHint">{{ __('chatbot.form_trigger_hint') }}</div>
+            </div>
+
+            <div class="form-group">
+                <div class="switch-row">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" name="is_catch_all" value="1"
+                            id="isCatchAll" style="width:38px;height:20px;cursor:pointer;"
+                            {{ old('is_catch_all', $flow->is_catch_all ?? false) ? 'checked' : '' }}
+                            onchange="document.getElementById('triggerKeywordsInput').disabled = this.checked;">
+                    </div>
+                    <div>
+                        <label for="isCatchAll" style="font-weight:600;">Responder qualquer mensagem</label>
+                        <div class="switch-desc" style="font-size:12px;color:#9ca3af;">
+                            Quando ativo, o fluxo dispara para qualquer mensagem recebida (não precisa de palavra-chave).
+                            Funciona como fallback: só dispara se nenhum outro fluxo com keyword específica bateu.
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {{-- Variáveis --}}

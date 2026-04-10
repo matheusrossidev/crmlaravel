@@ -115,7 +115,7 @@ class WhatsappController extends Controller
             AiAgent::where('is_active', true)->orderBy('name')->get(['id', 'name'])
         );
 
-        $chatbotFlows = TenantCache::remember('config:chatbotFlows', 1800, fn () =>
+        $chatbotFlows = TenantCache::remember('config:chatbotFlows', 600, fn () =>
             ChatbotFlow::where('is_active', true)->whereIn('channel', ['whatsapp', 'instagram'])
                 ->orderBy('name')->get(['id', 'name', 'channel'])
         );

@@ -79,6 +79,9 @@ class ChatbotFlowController extends Controller
                 ->update(['is_catch_all' => false]);
         }
 
+        // Invalida cache do dropdown de chatbot no chat inbox
+        \App\Support\TenantCache::forget('config:chatbotFlows');
+
         if ($request->expectsJson()) {
             return response()->json([
                 'success'      => true,
@@ -232,6 +235,9 @@ class ChatbotFlowController extends Controller
                 ->where('is_catch_all', true)
                 ->update(['is_catch_all' => false]);
         }
+
+        // Invalida cache do dropdown de chatbot no chat inbox
+        \App\Support\TenantCache::forget('config:chatbotFlows');
 
         return redirect()->route('chatbot.flows.edit', $flow)->with('success', 'Fluxo atualizado.');
     }
