@@ -1,7 +1,7 @@
 # Syncro CRM — Guia Completo da Plataforma
 
 > Este documento é a referência definitiva para qualquer dev ou IA que trabalhe neste codebase.
-> Última atualização: 2026-04-09 (RAG real, DOCX support, agno reconfigure on boot, sent_by tracking nas mensagens, formatter dinamico, contexto temporal pro Agno)
+> Última atualização: 2026-04-10 (inline edit leads, scheduler mutex fix, chatbot assign_ai_agent + node_id fix + lista interativa, calendar timezone + ação imediata, badge foto agente, logout checkout)
 
 ---
 
@@ -746,10 +746,10 @@ E envia no payload do `/chat`. `agent_factory._build_instructions` injeta um blo
 | Tipo | Função |
 |------|--------|
 | `message` | Envia texto/imagem/áudio |
-| `input` | Pergunta + branches (WhatsApp: lista, Instagram: quick replies) |
+| `input` | Pergunta + branches (WhatsApp: lista interativa, Instagram: quick replies) |
 | `cards` | Carrossel de cards com imagem (website only) |
 | `condition` | Avalia variável (equals, contains, gt, lt) |
-| `action` | Executa: change_stage, add_tag, assign_human, send_webhook, set_custom_field |
+| `action` | Executa: change_stage, add_tag, assign_human, **assign_ai_agent**, send_webhook, set_custom_field |
 | `delay` | Pausa N segundos |
 | `end` | Mensagem final, limpa fluxo |
 
@@ -759,6 +759,13 @@ E envia no payload do `/chat`. `agent_factory._build_instructions` injeta um blo
 - Variáveis de sessão em `conversation.chatbot_variables` (JSON)
 - Interpolação: `{{nome}}` no texto
 - Multi-canal: WhatsApp usa `sendList()`, Instagram usa quick replies, Website usa texto/cards
+- **Invariante**: chatbot e agente IA são **mutuamente exclusivos**. Trait `EnforcesExclusiveHandler` nos 3 conversation models dispara `DomainException` se ambos estiverem setados via Eloquent `save()`
+- **`assign_ai_agent`**: nova action que limpa chatbot, seta `ai_agent_id`, incrementa `completions_count`, cria evento no chat ("Bot atribuiu conversa ao agente X"), e dispara `ProcessAiResponse` imediatamente pra IA dar boas-vindas contextualizada. Loop do bot para (return) porque `chatbot_flow_id` ficou null
+- **`chatbot_node_id`**: ao atribuir flow (dropdown do chat ou auto-trigger por keyword), o node de start (`is_start=true`) é resolvido e setado junto. Bug histórico: antes só setava `chatbot_flow_id` e o bot nunca disparava porque `ProcessWahaWebhook` linha 915 exige ambos
+- **Nó de start não-input**: quando `chatbot_node_id` aponta pra um nó message (não input), o `ProcessChatbotStep` agora executa ele direto (antes tentava pular pro edge e silenciava)
+- **Lista interativa sem texto**: se o nó input tem branches mas `text` vazio, gera default "Escolha uma opção:" pra não silenciar
+- **`is_catch_all`**: checkbox no form de configurações do fluxo. Funciona como fallback: dispara pra qualquer mensagem se nenhum outro flow com keyword bateu
+- **Cache de chatbotFlows**: invalidado automaticamente ao salvar/criar flow (`TenantCache::forget`). TTL reduzido de 30min pra 10min
 
 ---
 
@@ -1056,6 +1063,8 @@ Push ao `main` → build image → push Docker Hub → Portainer puxa
 
 ## 16. Scheduled Tasks (Cron)
 
+**IMPORTANTE**: comandos que rodam a cada minuto usam `withoutOverlapping(5)` — se o processo crashar, o mutex no Redis expira em **5 minutos** (não 24h do default Laravel). Bug histórico: 2026-04-10, mensagens agendadas ficaram pending por horas porque o mutex de `whatsapp:send-scheduled` travou. Se suspeitar que o cron parou, rodar `php artisan schedule:clear-cache`.
+
 | Comando | Frequência | Função |
 |---------|-----------|--------|
 | `billing:check-trials` | Diário 06:00 | Verifica trials expirados |
@@ -1063,12 +1072,12 @@ Push ao `main` → build image → push Docker Hub → Portainer puxa
 | `whatsapp:send-event-reminders` | A cada minuto | Envia lembretes pendentes de eventos |
 | `automations:process-date-triggers` | Diário 08:00 | Automações por data |
 | `ai:followup` | A cada 10 min | Follow-up automático de IA |
-| `scoring:decay` | Diário 02:00 | Aplica decay de score para leads inativos |
-| `sequences:process` | A cada 5 min | Processa steps de nurture sequences |
-| `goals:process-recurrence` | Diário 00:30 | Snapshots e renovação de metas recorrentes |
+| `scoring:decay` | Diário 09:00 | Aplica decay de score para leads inativos |
+| `sequences:process` | A cada minuto | Processa steps de nurture sequences |
+| `goals:process-recurrence` | Diário 00:05 | Snapshots e renovação de metas recorrentes |
 | `goals:check-alerts` | Diário 09:00 | Alertas de performance de metas |
-| `partners:release-commissions` | Diário 06:00 | Libera comissões após período de carência |
-| `master:weekly-report` | Semanal (segunda 09:00) | Relatório semanal para grupo WhatsApp master |
+| `partners:release-commissions` | Diário 06:30 | Libera comissões após período de carência |
+| `master:weekly-report` | Semanal (sexta 12:00) | Relatório semanal para grupo WhatsApp master |
 | `upsell:evaluate` | A cada 6 horas | Avalia triggers de upsell por tenant |
 | `leads:detect-duplicates` | Diário 03:30 | Detecta duplicatas de leads por phone/email |
 | `users:send-reengagement` | Diário 10:00 | Envia emails/WA de reengajamento (7d/14d/30d) pra usuários inativos |
