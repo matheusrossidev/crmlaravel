@@ -75,6 +75,7 @@ const ACTION_TYPES = [
     { value: 'add_tag',            label: 'Adicionar tag'                   },
     { value: 'remove_tag',         label: 'Remover tag'                     },
     { value: 'assign_human',       label: 'Transferir para humano'          },
+    { value: 'assign_ai_agent',   label: 'Atribuir Agente IA'              },
     { value: 'close_conversation', label: 'Fechar conversa'                 },
     { value: 'save_variable',      label: 'Salvar variável'                 },
     { value: 'send_webhook',       label: 'Enviar Webhook (HTTP)'           },
@@ -1331,6 +1332,22 @@ function ActionForm({ data, update, pipelines, allVars, tags, users, customField
                         <option value="">— Qualquer humano disponível —</option>
                         {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                     </select>
+                </FieldGroup>
+            )}
+
+            {data.type === 'assign_ai_agent' && (
+                <FieldGroup label="Agente IA">
+                    <select
+                        style={field.input}
+                        value={data.agent_id || ''}
+                        onChange={e => update('agent_id', e.target.value ? parseInt(e.target.value) : null)}
+                    >
+                        <option value="">— Selecione o agente —</option>
+                        {((window.chatbotBuilderData || {}).aiAgents || []).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                    </select>
+                    <p style={{fontSize: 11, color: '#9ca3af', marginTop: 4}}>
+                        O chatbot será desativado e o agente IA assumirá a conversa imediatamente.
+                    </p>
                 </FieldGroup>
             )}
 

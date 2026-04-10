@@ -419,6 +419,47 @@ REGRAS para actions:
 - Se o campo já tem o mesmo valor, NÃO emita a ação.
 - Use "actions": [] quando nenhuma ação é necessária.""")
 
+    # ── Calendar actions (quando habilitado) ─────────────────────────
+    # Adicionamos as actions de agenda na lista SOMENTE se o agent tem
+    # calendar tool ativado. Sem isso, o LLM ve "calendar_create" mencionado
+    # nas regras de agendamento mas nao sabe o schema JSON → nunca emite a action.
+    # Bug historico: 2026-04-09 Camila dizia "vou verificar" mas nunca chamava
+    # calendar_create porque a action nao estava documentada no prompt.
+    if config.get("enable_calendar_tool"):
+        sections[-1] += f"""
+
+AÇÕES DE AGENDA (voce TEM acesso ao Google Calendar real):
+- calendar_create: criar evento na agenda.
+  {{"type": "calendar_create", "title": "Titulo do evento", "start": "2026-04-10T10:30", "end": "2026-04-10T11:30", "description": "Motivo/detalhes", "attendees": "email@cliente.com", "location": ""}}
+- check_calendar_availability: verificar se horario esta livre.
+  {{"type": "check_calendar_availability", "start": "2026-04-10T10:00", "end": "2026-04-10T11:00"}}
+- calendar_reschedule: reagendar evento existente.
+  {{"type": "calendar_reschedule", "event_id": "abc123", "start": "2026-04-11T14:00", "end": "2026-04-11T15:00"}}
+- calendar_cancel: cancelar evento.
+  {{"type": "calendar_cancel", "event_id": "abc123"}}
+
+CAMPOS de calendar_create:
+- title: OBRIGATORIO. Use titulo descritivo adequado ao tipo de evento.
+  Exemplos: "Consulta - Maria Silva", "Reuniao - Empresa XYZ", "Demonstracao - Joao".
+  Adapte ao contexto da conversa — pode ser consulta, reuniao, demonstracao, visita, etc.
+- start: OBRIGATORIO. Formato YYYY-MM-DDTHH:MM (fuso local, NAO UTC).
+- end: OBRIGATORIO. start + duracao adequada ao tipo de evento (ajuste pelo contexto).
+- description: motivo do evento + detalhes relevantes. Telefone e dados do
+  contato sao adicionados automaticamente pelo sistema (nao precisa duplicar).
+  O sistema tambem cria lembretes automaticos por WhatsApp para o contato
+  usando o telefone que esta no lead/conversa.
+- attendees: email do cliente (se tiver). Se nao tiver, deixe "".
+- location: endereco do local (se relevante). Se nao, deixe ""."""
+
+        # Instruções específicas de agenda do agent (preenchidas no painel pelo user)
+        cal_instructions = config.get("calendar_tool_instructions", "")
+        if cal_instructions:
+            sections.append(f"""
+═══════════════════════════════════════
+INSTRUÇÕES ESPECÍFICAS DE AGENDA (do proprietario do agente)
+═══════════════════════════════════════
+{cal_instructions}""")
+
     # ── Calendar restriction ──────────────────────────────────────────
     enable_calendar = config.get("enable_calendar_tool", False)
     if not enable_calendar:

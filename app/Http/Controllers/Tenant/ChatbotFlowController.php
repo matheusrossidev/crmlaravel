@@ -185,6 +185,11 @@ class ChatbotFlowController extends Controller
             ];
         }
 
+        // Agents IA ativos do tenant — pra action assign_ai_agent no builder
+        $aiAgents = \App\Models\AiAgent::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'display_avatar']);
+
         $builderData = [
             'flow'          => $flow->only(['id', 'name', 'channel', 'is_active', 'trigger_keywords', 'trigger_type', 'trigger_media_id', 'trigger_reply_comment']),
             'variables'     => $flow->variables ?? [],
@@ -192,6 +197,7 @@ class ChatbotFlowController extends Controller
             'edges'         => $rfEdges,
             'tags'          => $tags,
             'users'         => $users,
+            'aiAgents'      => $aiAgents,
             'customFieldDefs' => $customFieldDefs,
             'pipelines'     => $pipelines->map(fn ($p) => [
                 'id'     => $p->id,

@@ -139,7 +139,11 @@ class ProcessChatbotStep
                     break;
 
                 case 'action':
-                    $vars        = $this->executeAction($currentNode, $conv, $vars);
+                    $vars = $this->executeAction($currentNode, $conv, $vars);
+                    // Se a action desativou o chatbot (ex: assign_ai_agent), para o loop
+                    if ($conv->chatbot_flow_id === null) {
+                        return;
+                    }
                     $nextId      = $this->resolveEdge($flow->id, $currentNode->id, 'default');
                     $currentNode = $nextId ? ChatbotFlowNode::withoutGlobalScope('tenant')->find($nextId) : null;
                     break;
@@ -453,6 +457,68 @@ class ProcessChatbotStep
                             $this->sendWahaMessage($conv, $message);
                         }
                     }
+                }
+                break;
+
+            case 'assign_ai_agent':
+                $agentId = (int) ($config['agent_id'] ?? 0);
+                if ($agentId <= 0) break;
+
+                // Verificar que o agent existe, pertence ao tenant e está ativo
+                $aiAgent = \App\Models\AiAgent::withoutGlobalScope('tenant')
+                    ->where('id', $agentId)
+                    ->where('tenant_id', $conv->tenant_id)
+                    ->where('is_active', true)
+                    ->first();
+
+                if (! $aiAgent) {
+                    Log::channel($this->logChannel())->warning('Chatbot: assign_ai_agent falhou — agent não encontrado ou inativo', [
+                        'conversation_id' => $conv->id,
+                        'agent_id'        => $agentId,
+                    ]);
+                    break;
+                }
+
+                // INVARIANTE: chatbot e IA sao mutuamente exclusivos.
+                // Incrementa completions_count do flow (igual executeEnd faz).
+                if ($conv->chatbot_flow_id) {
+                    ChatbotFlow::withoutGlobalScope('tenant')
+                        ->where('id', $conv->chatbot_flow_id)
+                        ->increment('completions_count');
+                }
+
+                // Limpa chatbot e atribui agente IA
+                $model::withoutGlobalScope('tenant')
+                    ->where('id', $conv->id)
+                    ->update([
+                        'ai_agent_id'       => $aiAgent->id,
+                        'chatbot_flow_id'   => null,
+                        'chatbot_node_id'   => null,
+                        'chatbot_variables' => null,
+                    ]);
+
+                // Atualiza a instancia local pra o loop saber que o bot terminou
+                $conv->chatbot_flow_id = null;
+                $conv->chatbot_node_id = null;
+                $conv->ai_agent_id     = $aiAgent->id;
+
+                Log::channel($this->logChannel())->info('Chatbot: conversa atribuída a agente IA', [
+                    'conversation_id' => $conv->id,
+                    'agent_id'        => $aiAgent->id,
+                    'agent_name'      => $aiAgent->name,
+                ]);
+
+                // Dispara a IA imediatamente pra dar boas-vindas contextualizada.
+                // A IA le o historico de mensagens (que inclui toda conversa do bot)
+                // e responde como continuidade natural do atendimento.
+                try {
+                    $conv->refresh();
+                    (new ProcessAiResponse($conv->id, 0))->process();
+                } catch (\Throwable $e) {
+                    Log::channel($this->logChannel())->error('Chatbot: falha ao disparar IA apos assign_ai_agent', [
+                        'conversation_id' => $conv->id,
+                        'error'           => $e->getMessage(),
+                    ]);
                 }
                 break;
 

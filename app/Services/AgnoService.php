@@ -108,8 +108,9 @@ class AgnoService
             'enable_pipeline_tool' => (bool) $agent->enable_pipeline_tool,
             'enable_tags_tool'     => (bool) $agent->enable_tags_tool,
             'enable_intent_notify' => (bool) $agent->enable_intent_notify,
-            'enable_calendar_tool' => (bool) $agent->enable_calendar_tool,
-            'language'             => $agent->language ?? 'pt-BR',
+            'enable_calendar_tool'     => (bool) $agent->enable_calendar_tool,
+            'calendar_tool_instructions' => $agent->calendar_tool_instructions ?? '',
+            'language'                 => $agent->language ?? 'pt-BR',
         ]);
     }
 
