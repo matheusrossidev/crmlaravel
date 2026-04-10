@@ -2006,29 +2006,32 @@ $pageIcon = 'person-badge';
 
         {{-- Campos personalizados --}}
         @php $customFields = $lead->custom_fields; @endphp
-        @if(!empty($customFields))
+        @if(!empty($customFields) || $cfDefs->count() > 0)
         <div class="lp-info-section">
             <div class="lp-info-section-title">{{ __('leads.custom_fields') }}</div>
-            @foreach($customFields as $field)
+            @foreach($cfDefs->where('is_active', true) as $def)
+            @php
+                $cfVal  = collect($customFields)->firstWhere('name', $def->name);
+                $rawVal = $cfVal['value'] ?? '';
+                $cfType = $def->field_type;
+                // Pra multiselect, raw é JSON array
+                $rawStr = is_array($rawVal) ? implode(',', $rawVal) : (string) $rawVal;
+                // Display value
+                if ($cfType === 'checkbox') {
+                    $displayVal = $rawVal ? __('leads.yes') : ($rawVal === false || $rawVal === 0 || $rawVal === '0' ? __('leads.no') : '');
+                } elseif ($cfType === 'currency' && $rawVal !== '' && $rawVal !== null) {
+                    $displayVal = __('common.currency') . ' ' . number_format((float)$rawVal, 2, __('common.decimal_sep'), __('common.thousands_sep'));
+                } elseif ($cfType === 'multiselect' && is_array($rawVal)) {
+                    $displayVal = implode(', ', $rawVal);
+                } else {
+                    $displayVal = (string) $rawVal;
+                }
+            @endphp
             <div class="lp-info-row" style="align-items:flex-start;">
                 <div class="lp-info-icon"><i class="bi bi-input-cursor-text"></i></div>
-                <div class="lp-info-val">
-                    <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:2px;">{{ $field['label'] }}</div>
-                    @if($field['value'] !== null && $field['value'] !== '')
-                        @if($field['type'] === 'checkbox')
-                            {{ $field['value'] ? __('leads.yes') : __('leads.no') }}
-                        @elseif($field['type'] === 'currency')
-                            {{ __('common.currency') }} {{ number_format((float)$field['value'], 2, __('common.decimal_sep'), __('common.thousands_sep')) }}
-                        @elseif($field['type'] === 'multiselect' && is_array($field['value']))
-                            {{ implode(', ', $field['value']) }}
-                        @elseif($field['type'] === 'url')
-                            <a href="{{ $field['value'] }}" target="_blank">{{ $field['value'] }}</a>
-                        @else
-                            {{ $field['value'] }}
-                        @endif
-                    @else
-                        <span class="lp-info-empty">—</span>
-                    @endif
+                <div class="lp-info-val editable" data-field="cf_{{ $def->name }}" data-type="{{ $cfType }}" data-raw="{{ $rawStr }}" data-cf-name="{{ $def->name }}" data-cf-options="{{ $def->options_json ? json_encode($def->options_json) : '' }}">
+                    <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:2px;" class="cf-label">{{ $def->label }}</div>
+                    <span class="cf-display">{{ $displayVal ?: '—' }}</span>
                 </div>
             </div>
             @endforeach
@@ -2286,33 +2289,64 @@ const CURRENT_LEAD_ID = {{ $lead->id }};
             const field = el.dataset.field;
             const type  = el.dataset.type || 'text';
             const raw   = el.dataset.raw || '';
+            const cfOptions = el.dataset.cfOptions ? JSON.parse(el.dataset.cfOptions) : null;
+            const isCustomField = field.startsWith('cf_');
 
             const originalHTML = el.innerHTML;
 
-            // Cria input
+            // Preserva o label do custom field (fica acima do input)
+            var labelEl = el.querySelector('.cf-label');
+            var labelHTML = labelEl ? labelEl.outerHTML : '';
+
+            // Cria input baseado no tipo
             var input;
-            if (type === 'currency') {
+            if (type === 'select' && cfOptions) {
+                input = document.createElement('select');
+                var emptyOpt = document.createElement('option');
+                emptyOpt.value = '';
+                emptyOpt.textContent = '— Selecione —';
+                input.appendChild(emptyOpt);
+                cfOptions.forEach(function(o) {
+                    var opt = document.createElement('option');
+                    opt.value = typeof o === 'string' ? o : (o.value || o);
+                    opt.textContent = typeof o === 'string' ? o : (o.label || o.value || o);
+                    if (opt.value === raw) opt.selected = true;
+                    input.appendChild(opt);
+                });
+            } else if (type === 'checkbox') {
+                input = document.createElement('select');
+                ['', 'Sim', 'Não'].forEach(function(v, i) {
+                    var opt = document.createElement('option');
+                    opt.value = i === 0 ? '' : (i === 1 ? '1' : '0');
+                    opt.textContent = v || '— Selecione —';
+                    if ((raw === '1' && i === 1) || (raw === '0' && i === 2)) opt.selected = true;
+                    input.appendChild(opt);
+                });
+            } else if (type === 'currency' || type === 'number') {
                 input = document.createElement('input');
                 input.type = 'number';
-                input.step = '0.01';
+                input.step = type === 'currency' ? '0.01' : '1';
                 input.min  = '0';
                 input.value = raw;
             } else if (type === 'date') {
                 input = document.createElement('input');
                 input.type = 'date';
                 input.value = raw;
+            } else if (type === 'textarea') {
+                input = document.createElement('input');
+                input.type = 'text';
+                input.value = raw;
             } else {
                 input = document.createElement('input');
-                input.type = (type === 'tel') ? 'tel' : (type === 'email') ? 'email' : 'text';
+                input.type = (type === 'tel' || type === 'phone') ? 'tel' : (type === 'email') ? 'email' : (type === 'url') ? 'url' : 'text';
                 input.value = raw;
             }
             input.className = 'inline-edit-input';
-            input.placeholder = field;
 
-            el.textContent = '';
+            el.innerHTML = labelHTML;
             el.appendChild(input);
             input.focus();
-            input.select();
+            if (input.select) input.select();
 
             var saving = false;
 
@@ -2326,7 +2360,19 @@ const CURRENT_LEAD_ID = {{ $lead->id }};
                 el.classList.remove('editing');
 
                 var payload = {};
-                payload[field] = (type === 'currency') ? parseFloat(newValue) || 0 : newValue;
+                if (isCustomField) {
+                    var cfName = el.dataset.cfName || field.replace('cf_', '');
+                    payload.custom_fields = {};
+                    if (type === 'checkbox') {
+                        payload.custom_fields[cfName] = newValue === '1';
+                    } else if (type === 'currency' || type === 'number') {
+                        payload.custom_fields[cfName] = parseFloat(newValue) || 0;
+                    } else {
+                        payload.custom_fields[cfName] = newValue;
+                    }
+                } else {
+                    payload[field] = (type === 'currency' || type === 'number') ? parseFloat(newValue) || 0 : newValue;
+                }
 
                 var url = LEAD_UPD.replace('__ID__', CURRENT_LEAD_ID);
                 window.API.put(url, payload).then(function(res) {
@@ -2334,10 +2380,18 @@ const CURRENT_LEAD_ID = {{ $lead->id }};
                     if (res.success) {
                         // Atualiza o texto visivel
                         el.dataset.raw = newValue;
+                        var displayText = newValue || '—';
                         if (type === 'currency' && newValue) {
-                            el.textContent = 'R$ ' + parseFloat(newValue).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                            displayText = 'R$ ' + parseFloat(newValue).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                        } else if (type === 'checkbox') {
+                            displayText = newValue === '1' ? 'Sim' : (newValue === '0' ? 'Não' : '—');
+                        }
+
+                        if (isCustomField) {
+                            // Preserva label + atualiza display
+                            el.innerHTML = labelHTML + '<span class="cf-display">' + (displayText) + '</span>';
                         } else {
-                            el.textContent = newValue || '—';
+                            el.textContent = displayText;
                         }
                         el.classList.add('saved');
                         setTimeout(function() { el.classList.remove('saved'); }, 600);
