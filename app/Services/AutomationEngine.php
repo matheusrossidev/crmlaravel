@@ -535,23 +535,46 @@ class AutomationEngine
             return;
         }
 
-        // Resolver conversa: do contexto direto, ou buscar via lead
+        // Resolver conversa: do contexto direto, ou buscar via lead, ou via phone
         $conv = $ctx['conversation'] ?? null;
-        if (! ($conv instanceof WhatsappConversation)) {
-            $lead = $this->resolveLead($ctx);
-            if ($lead) {
-                $conv = WhatsappConversation::withoutGlobalScope('tenant')
-                    ->where('tenant_id', $automation->tenant_id)
-                    ->where('lead_id', $lead->id)
-                    ->latest('last_message_at')
-                    ->first();
+        $lead = $this->resolveLead($ctx);
+
+        if (! ($conv instanceof WhatsappConversation) && $lead) {
+            // 1. Busca por lead_id direto
+            $conv = WhatsappConversation::withoutGlobalScope('tenant')
+                ->where('tenant_id', $automation->tenant_id)
+                ->where('lead_id', $lead->id)
+                ->latest('last_message_at')
+                ->first();
+
+            // 2. Se não achou, busca pelo phone (com e sem nono dígito BR)
+            if (! $conv && $lead->phone) {
+                $e164 = \App\Support\PhoneNormalizer::toE164($lead->phone);
+                if ($e164) {
+                    $phoneVariants = [$e164];
+                    // Nono dígito BR: 55 + 2 DDD + 9 + 8 dígitos = 13 chars
+                    // Sem nono:       55 + 2 DDD + 8 dígitos     = 12 chars
+                    if (strlen($e164) === 13 && str_starts_with($e164, '55')) {
+                        $withoutNine = substr($e164, 0, 4) . substr($e164, 5); // remove o 9 após DDD
+                        $phoneVariants[] = $withoutNine;
+                    } elseif (strlen($e164) === 12 && str_starts_with($e164, '55')) {
+                        $withNine = substr($e164, 0, 4) . '9' . substr($e164, 4); // adiciona 9 após DDD
+                        $phoneVariants[] = $withNine;
+                    }
+
+                    $conv = WhatsappConversation::withoutGlobalScope('tenant')
+                        ->where('tenant_id', $automation->tenant_id)
+                        ->whereIn('phone', $phoneVariants)
+                        ->latest('last_message_at')
+                        ->first();
+                }
             }
         }
 
-        // Determinar o telefone de destino (SEMPRE sanitizado)
-        $lead    = $this->resolveLead($ctx);
-        $rawPhone = $conv instanceof WhatsappConversation ? $conv->phone : ($lead?->phone ?? null);
-        $phone    = \App\Support\PhoneNormalizer::toE164($rawPhone);
+        // Determinar o telefone — preferir o da conversa (é o que o WhatsApp conhece)
+        $phone = $conv instanceof WhatsappConversation
+            ? $conv->phone
+            : \App\Support\PhoneNormalizer::toE164($lead?->phone);
 
         if (! $phone) {
             Log::channel('whatsapp')->warning('AutomationEngine: send_whatsapp_message sem phone', [

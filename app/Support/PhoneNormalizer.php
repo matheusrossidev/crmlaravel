@@ -58,12 +58,31 @@ class PhoneNormalizer
             $proto = $util->parse($phone, $defaultRegion);
 
             if (!$util->isValidNumber($proto)) {
+                // Fallback: se já parece um número internacional (só dígitos, 10-15 chars),
+                // retorna como está — pode ser formato WAHA sem nono dígito que
+                // libphonenumber não reconhece.
+                $digits = preg_replace('/\D/', '', $phone);
+                if (strlen($digits) >= 10 && strlen($digits) <= 15) {
+                    // Remove nono dígito BR se presente
+                    if (strlen($digits) === 13 && str_starts_with($digits, '55') && $digits[4] === '9') {
+                        $digits = substr($digits, 0, 4) . substr($digits, 5);
+                    }
+                    return $digits;
+                }
                 return null;
             }
 
             // E164 = "+5511999999999"; tiramos o `+`
-            $e164 = $util->format($proto, PhoneNumberFormat::E164);
-            return ltrim($e164, '+');
+            $e164 = ltrim($util->format($proto, PhoneNumberFormat::E164), '+');
+
+            // WAHA/WhatsApp no Brasil usa 12 dígitos (sem nono dígito) pra celulares.
+            // libphonenumber retorna 13 dígitos (55 + DDD 2dig + 9 + 8dig).
+            // Remove o nono dígito (posição 4, o "9" após o DDD) pra ficar 12 dígitos.
+            if (strlen($e164) === 13 && str_starts_with($e164, '55') && $e164[4] === '9') {
+                $e164 = substr($e164, 0, 4) . substr($e164, 5);
+            }
+
+            return $e164;
         } catch (NumberParseException $e) {
             return null;
         }
