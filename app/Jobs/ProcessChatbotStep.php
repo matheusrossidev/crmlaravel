@@ -212,14 +212,23 @@ class ProcessChatbotStep
     {
         $text     = ChatbotVariableService::interpolate((string) ($node->config['text'] ?? ''), $vars);
         $imageUrl = (string) ($node->config['image_url'] ?? '');
+        $branches = $node->config['branches'] ?? [];
+
+        // Se tem branches com labels mas sem texto, gera texto default
+        // a partir dos labels. Sem isso, o nó de input ficava mudo
+        // (elseif text !== '' pulava tudo quando text era vazio).
+        if ($text === '' && ! empty($branches)) {
+            $labels = array_filter(array_map(fn ($b) => $b['label'] ?? '', $branches));
+            if (! empty($labels)) {
+                $text = 'Escolha uma opção:';
+            }
+        }
 
         if ($imageUrl !== '') {
             $this->sendImage($conv, $imageUrl, $text);
         } elseif ($text !== '') {
-            $branches = $node->config['branches'] ?? [];
-
             // Instagram: enviar buttons se há branches
-            if ($this->channel === 'instagram' && ! empty($branches) && $conv instanceof InstagramConversation) {
+            if ($this->channel === 'instagram' && !empty($branches) && $conv instanceof InstagramConversation) {
                 // Check if any branch has web_url type → use Button Template
                 $hasWebUrl = collect($branches)->contains(fn ($b) => ($b['button_type'] ?? 'postback') === 'web_url');
 
