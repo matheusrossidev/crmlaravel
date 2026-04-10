@@ -67,19 +67,33 @@
     .task-empty { text-align: center; padding: 48px 20px; color: #9ca3af; }
     .task-empty i { font-size: 36px; display: block; margin-bottom: 10px; }
 
-    /* ── Drawer lateral ── */
+    /* ── Modal central (migrado de drawer lateral) ── */
     #taskDrawerOverlay {
-        display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35);
-        z-index: 199; transition: opacity .25s;
+        display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
+        z-index: 300; animation: taskModalFade .15s ease-out;
     }
+    #taskDrawerOverlay.open { display: block; }
+    @keyframes taskModalFade { from { opacity: 0; } to { opacity: 1; } }
     #taskDrawer {
-        position: fixed; top: 0; right: 0; width: 440px; height: 100vh;
-        background: #fff; box-shadow: -4px 0 32px rgba(0,0,0,.1); z-index: 200;
+        position: fixed; top: 50%; left: 50%;
+        transform: translate(-50%, -50%) scale(.97);
+        width: 560px; max-width: calc(100vw - 40px); max-height: 88vh;
+        height: auto;
+        background: #fff; border-radius: 14px;
+        box-shadow: 0 20px 60px rgba(0,0,0,.25); z-index: 301;
         display: flex; flex-direction: column;
-        transform: translateX(100%); transition: transform .25s cubic-bezier(.4,0,.2,1);
         overflow: hidden;
+        visibility: hidden; opacity: 0;
+        transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
     }
-    #taskDrawer.open { transform: translateX(0); }
+    #taskDrawer.open {
+        visibility: visible; opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+        transition: opacity .2s ease, transform .2s ease, visibility 0s linear;
+    }
+    @media (max-width: 640px) {
+        #taskDrawer { width: calc(100vw - 24px); max-height: 92vh; }
+    }
     .td-header {
         padding: 18px 22px; border-bottom: 1px solid #f0f2f7;
         display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
@@ -456,7 +470,7 @@
             clearLeadSelection();
         }
 
-        document.getElementById('taskDrawerOverlay').style.display = 'block';
+        document.getElementById('taskDrawerOverlay').classList.add('open');
         requestAnimationFrame(function() {
             document.getElementById('taskDrawer').classList.add('open');
         });
@@ -465,7 +479,7 @@
     window.closeTaskDrawer = function() {
         document.getElementById('taskDrawer').classList.remove('open');
         setTimeout(function() {
-            document.getElementById('taskDrawerOverlay').style.display = 'none';
+            document.getElementById('taskDrawerOverlay').classList.remove('open');
         }, 250);
     };
 
@@ -592,7 +606,7 @@
             clearLeadSelection();
         }
 
-        document.getElementById('taskDrawerOverlay').style.display = 'block';
+        document.getElementById('taskDrawerOverlay').classList.add('open');
         requestAnimationFrame(function() { document.getElementById('taskDrawer').classList.add('open'); });
     };
 
