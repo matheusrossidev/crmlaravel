@@ -637,6 +637,55 @@ $pageIcon = 'person-badge';
 .lp-copy-btn:hover { background: #e2e8f0; color: #374151; }
 .lp-copy-btn.copied { background: #dcfce7; color: #16a34a; }
 
+/* ── Inline edit (click-to-edit) ── */
+.lp-info-val.editable {
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 2px 6px;
+    margin: -2px -6px;
+    transition: background .15s;
+    position: relative;
+}
+.lp-info-val.editable:hover { background: #f0f7ff; }
+.lp-info-val.editable:not(.editing)::after {
+    content: '\270E';
+    opacity: 0;
+    margin-left: 6px;
+    font-size: 11px;
+    color: #9ca3af;
+    transition: opacity .15s;
+}
+.lp-info-val.editable:hover:not(.editing)::after { opacity: 1; }
+.inline-edit-input {
+    width: 100%;
+    padding: 4px 8px;
+    font-size: 13.5px;
+    border: 1.5px solid #0085f3;
+    border-radius: 6px;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0,133,243,.12);
+    font-family: inherit;
+    color: #1a1d23;
+    background: #fff;
+}
+.inline-edit-input:focus { border-color: #0085f3; }
+.lp-info-val.saving { opacity: .5; pointer-events: none; }
+.lp-info-val.saved { animation: inlineSaveFlash .6s ease; }
+@keyframes inlineSaveFlash {
+    0%, 100% { background: transparent; }
+    30% { background: #d1fae5; }
+}
+.lp-info-val.edit-error { animation: inlineErrorShake .4s ease; }
+@keyframes inlineErrorShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+/* Hero name editable */
+.lp-hero-name.editable { cursor: pointer; border-radius: 8px; padding: 2px 8px; margin: -2px -8px; }
+.lp-hero-name.editable:hover { background: #f0f7ff; }
+.lp-hero-name .inline-edit-input { font-size: 20px; font-weight: 700; padding: 4px 10px; }
+
 .lp-tag-chip {
     display: inline-flex;
     align-items: center;
@@ -930,7 +979,7 @@ $pageIcon = 'person-badge';
     <div class="lp-hero-info" style="flex:1;">
         {{-- Name + quick action icons --}}
         <div style="display:flex;align-items:center;gap:8px;">
-            <h1 class="lp-hero-name">{{ $lead->name }}</h1>
+            <h1 class="lp-hero-name editable" data-field="name" data-type="text" data-raw="{{ $lead->name ?? '' }}">{{ $lead->name }}</h1>
             @if($lead->phone)
             <a href="https://wa.me/{{ preg_replace('/\D/', '', $lead->phone) }}" target="_blank" title="{{ __('leads.action_call_whatsapp') }}" style="color:#0085f3;font-size:13px;text-decoration:none;padding:2px;"><i class="bi bi-telephone"></i></a>
             @endif
@@ -1780,40 +1829,34 @@ $pageIcon = 'person-badge';
 
             <div class="lp-info-row">
                 <div class="lp-info-icon"><i class="bi bi-telephone"></i></div>
-                <div class="lp-info-val" style="display:flex;align-items:center;gap:6px;">
-                    @if($lead->phone)
-                    <a href="https://wa.me/{{ preg_replace('/\D/', '', $lead->phone) }}" target="_blank">
-                        {{ $lead->phone }}
-                    </a>
-                    <button class="lp-copy-btn" onclick="copyToClipboard('{{ $lead->phone }}', this)" title="Copiar">
-                        <i class="bi bi-clipboard"></i>
-                    </button>
-                    @else
-                    <span class="lp-info-empty">—</span>
-                    @endif
+                <div class="lp-info-val editable" data-field="phone" data-type="tel" data-raw="{{ $lead->phone ?? '' }}">
+                    {{ $lead->phone ?: '—' }}
                 </div>
+                @if($lead->phone)
+                <button class="lp-copy-btn" onclick="event.stopPropagation(); copyToClipboard('{{ $lead->phone }}', this)" title="Copiar">
+                    <i class="bi bi-clipboard"></i>
+                </button>
+                @endif
             </div>
 
             <div class="lp-info-row">
                 <div class="lp-info-icon"><i class="bi bi-envelope"></i></div>
-                <div class="lp-info-val" style="display:flex;align-items:center;gap:6px;">
-                    @if($lead->email)
-                    <a href="mailto:{{ $lead->email }}">{{ $lead->email }}</a>
-                    <button class="lp-copy-btn" onclick="copyToClipboard('{{ $lead->email }}', this)" title="Copiar">
-                        <i class="bi bi-clipboard"></i>
-                    </button>
-                    @else
-                    <span class="lp-info-empty">—</span>
-                    @endif
+                <div class="lp-info-val editable" data-field="email" data-type="email" data-raw="{{ $lead->email ?? '' }}">
+                    {{ $lead->email ?: '—' }}
                 </div>
+                @if($lead->email)
+                <button class="lp-copy-btn" onclick="event.stopPropagation(); copyToClipboard('{{ $lead->email }}', this)" title="Copiar">
+                    <i class="bi bi-clipboard"></i>
+                </button>
+                @endif
             </div>
 
-            @if($lead->company)
             <div class="lp-info-row">
                 <div class="lp-info-icon"><i class="bi bi-building"></i></div>
-                <div class="lp-info-val">{{ $lead->company }}</div>
+                <div class="lp-info-val editable" data-field="company" data-type="text" data-raw="{{ $lead->company ?? '' }}">
+                    {{ $lead->company ?: '—' }}
+                </div>
             </div>
-            @endif
 
             @if($lead->instagram_username)
             <div class="lp-info-row">
@@ -1833,23 +1876,19 @@ $pageIcon = 'person-badge';
 
             <div class="lp-info-row">
                 <div class="lp-info-icon"><i class="bi bi-currency-dollar"></i></div>
-                <div class="lp-info-val" style="font-weight:700;color:#10b981;">
+                <div class="lp-info-val editable" data-field="value" data-type="currency" data-raw="{{ $lead->value ?? '' }}" style="font-weight:700;color:#10b981;">
                     @if($lead->value)
                     {{ __('common.currency') }} {{ number_format((float)$lead->value, 2, __('common.decimal_sep'), __('common.thousands_sep')) }}
                     @else
-                    <span class="lp-info-empty">—</span>
+                    —
                     @endif
                 </div>
             </div>
 
             <div class="lp-info-row">
                 <div class="lp-info-icon"><i class="bi bi-tag"></i></div>
-                <div class="lp-info-val">
-                    @if($lead->source)
-                    <span class="source-pill">{{ $lead->source }}</span>
-                    @else
-                    <span class="lp-info-empty">—</span>
-                    @endif
+                <div class="lp-info-val editable" data-field="source" data-type="text" data-raw="{{ $lead->source ?? '' }}">
+                    {{ $lead->source ?: '—' }}
                 </div>
             </div>
 
@@ -2232,6 +2271,117 @@ const LEAD_SHOW  = '{{ route('leads.show',    ['lead' => '__ID__']) }}';
 const LEAD_STORE = '{{ route('leads.store') }}';
 const LEAD_UPD   = '{{ route('leads.update',  ['lead' => '__ID__']) }}';
 const LEAD_DEL   = '{{ route('leads.destroy', ['lead' => '__ID__']) }}';
+const CURRENT_LEAD_ID = {{ $lead->id }};
+
+// ── Inline edit (click-to-edit) ──────────────────────────────────────────
+(function() {
+    document.querySelectorAll('.editable[data-field]').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+            if (el.classList.contains('editing')) return;
+            if (e.target.closest('.lp-copy-btn')) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            el.classList.add('editing');
+            const field = el.dataset.field;
+            const type  = el.dataset.type || 'text';
+            const raw   = el.dataset.raw || '';
+
+            const originalHTML = el.innerHTML;
+
+            // Cria input
+            var input;
+            if (type === 'currency') {
+                input = document.createElement('input');
+                input.type = 'number';
+                input.step = '0.01';
+                input.min  = '0';
+                input.value = raw;
+            } else if (type === 'date') {
+                input = document.createElement('input');
+                input.type = 'date';
+                input.value = raw;
+            } else {
+                input = document.createElement('input');
+                input.type = (type === 'tel') ? 'tel' : (type === 'email') ? 'email' : 'text';
+                input.value = raw;
+            }
+            input.className = 'inline-edit-input';
+            input.placeholder = field;
+
+            el.textContent = '';
+            el.appendChild(input);
+            input.focus();
+            input.select();
+
+            var saving = false;
+
+            function save() {
+                if (saving) return;
+                saving = true;
+                var newValue = input.value.trim();
+                if (newValue === raw) { cancel(); return; }
+
+                el.classList.add('saving');
+                el.classList.remove('editing');
+
+                var payload = {};
+                payload[field] = (type === 'currency') ? parseFloat(newValue) || 0 : newValue;
+
+                var url = LEAD_UPD.replace('__ID__', CURRENT_LEAD_ID);
+                window.API.put(url, payload).then(function(res) {
+                    el.classList.remove('saving');
+                    if (res.success) {
+                        // Atualiza o texto visivel
+                        el.dataset.raw = newValue;
+                        if (type === 'currency' && newValue) {
+                            el.textContent = 'R$ ' + parseFloat(newValue).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                        } else {
+                            el.textContent = newValue || '—';
+                        }
+                        el.classList.add('saved');
+                        setTimeout(function() { el.classList.remove('saved'); }, 600);
+
+                        // Se editou o nome, atualiza o hero
+                        if (field === 'name') {
+                            var hero = document.querySelector('.lp-hero-name');
+                            if (hero && hero !== el) {
+                                hero.textContent = newValue;
+                                hero.dataset.raw = newValue;
+                            }
+                            document.title = newValue + ' — Lead';
+                        }
+
+                        toastr.success('Salvo');
+                    } else {
+                        cancel();
+                        toastr.error(res.message || 'Erro ao salvar');
+                    }
+                }).catch(function(err) {
+                    el.classList.remove('saving');
+                    el.classList.add('edit-error');
+                    setTimeout(function() { el.classList.remove('edit-error'); }, 400);
+                    cancel();
+                    toastr.error('Erro ao salvar');
+                });
+            }
+
+            function cancel() {
+                saving = true;
+                el.classList.remove('editing');
+                el.innerHTML = originalHTML;
+            }
+
+            input.addEventListener('blur', function() {
+                setTimeout(save, 100);
+            });
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+                if (e.key === 'Escape') { input.removeEventListener('blur', save); cancel(); }
+            });
+        });
+    });
+})();
 
 // Após salvar no drawer, recarregar a página
 window.onLeadSaved = function(lead, isNew) {
