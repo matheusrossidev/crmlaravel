@@ -172,10 +172,10 @@ class LeadMergeService
             ->where('lead_id', $sid)->update(['lead_id' => $pid]);
 
         // Custom fields — only migrate fields that primary doesn't have
-        $primaryFieldIds = $primary->customFieldValues()->pluck('custom_field_definition_id')->toArray();
+        $primaryFieldIds = $primary->customFieldValues()->pluck('field_id')->toArray();
         CustomFieldValue::withoutGlobalScope('tenant')
             ->where('lead_id', $sid)
-            ->whereNotIn('custom_field_definition_id', $primaryFieldIds)
+            ->whereNotIn('field_id', $primaryFieldIds)
             ->update(['lead_id' => $pid]);
         // Delete remaining custom fields from secondary (duplicates)
         CustomFieldValue::withoutGlobalScope('tenant')
