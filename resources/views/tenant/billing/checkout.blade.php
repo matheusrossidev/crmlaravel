@@ -802,7 +802,7 @@ async function handleStripeSubscribe() {
     try {
         const res = await fetch('{{ route('billing.stripe.subscribe') }}', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
             body: JSON.stringify({ plan_name: planName }),
         });
         const data = await res.json();

@@ -121,7 +121,7 @@ class TenantMiddleware
 
                 // Trial expirado sem assinatura ativa → redireciona para checkout
                 if ($tenant->isTrialExpired() && !$tenant->hasActiveSubscription()) {
-                    if (!$request->routeIs('billing.checkout', 'billing.subscribe', 'logout', 'account.suspended', 'agency.access.exit')) {
+                    if (!$request->routeIs('billing.checkout', 'billing.subscribe', 'billing.stripe.*', 'logout', 'account.suspended', 'agency.access.exit')) {
                         return redirect()->route('billing.checkout');
                     }
                 }
