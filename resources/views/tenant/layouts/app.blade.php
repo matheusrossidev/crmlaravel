@@ -1380,6 +1380,7 @@ document.addEventListener('click', function (e) {
             && $__tenant->status === 'trial'
             && $__tenant->trial_ends_at !== null
             && $__tenant->trial_ends_at->isPast()
+            && !request()->routeIs('billing.checkout', 'billing.stripe.*', 'billing.subscribe')
         ) {
             $trialExpired = true;
         }
