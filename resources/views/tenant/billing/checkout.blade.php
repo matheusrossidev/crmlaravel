@@ -276,7 +276,7 @@
                         $decSep     = $isUSD ? '.' : ',';
                         $thousSep   = $isUSD ? ',' : '.';
                         $perMonth   = $isUSD ? '/mo' : '/mês';
-                        $pFeatures  = $isUSD
+                        $pFeatures  = ($isUSD || app()->getLocale() === 'en')
                             ? (($p->features_en_json['features_list'] ?? null) ?: ($p->features_json['features_list'] ?? []))
                             : ($p->features_json['features_list'] ?? []);
                     @endphp

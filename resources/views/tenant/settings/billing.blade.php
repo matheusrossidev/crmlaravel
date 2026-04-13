@@ -421,7 +421,8 @@
 
                     {{-- Features list --}}
                     @php
-                        $featuresList = $isUSD
+                        $useEn = $isUSD || app()->getLocale() === 'en';
+                        $featuresList = $useEn
                             ? (($plan?->features_en_json['features_list'] ?? null) ?: ($plan?->features_json['features_list'] ?? []))
                             : ($plan?->features_json['features_list'] ?? []);
                     @endphp
@@ -519,7 +520,7 @@
                 @foreach($otherPlans as $p)
                 @php
                     $opPrice    = $isUSD ? ($p->price_usd ?? $p->price_monthly) : $p->price_monthly;
-                    $pFeatures  = $isUSD
+                    $pFeatures  = ($isUSD || app()->getLocale() === 'en')
                         ? (($p->features_en_json['features_list'] ?? null) ?: ($p->features_json['features_list'] ?? []))
                         : ($p->features_json['features_list'] ?? []);
                 @endphp
