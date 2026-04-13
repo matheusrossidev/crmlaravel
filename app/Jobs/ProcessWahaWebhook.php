@@ -856,13 +856,14 @@ class ProcessWahaWebhook implements ShouldQueue
             'has_media'       => $mediaUrl !== null,
         ]);
 
-        // Humano assumiu pelo celular → desativar agente IA automaticamente
-        if ($sentBy === 'human_phone' && $conversation->ai_agent_id) {
+        // Humano assumiu (celular ou plataforma) → desativar agente IA automaticamente
+        if (in_array($sentBy, ['human_phone', 'human'], true) && $conversation->ai_agent_id) {
             $agentId = $conversation->ai_agent_id;
             $conversation->update(['ai_agent_id' => null]);
-            Log::channel('whatsapp')->info('Agente IA desativado — humano assumiu pelo celular', [
+            Log::channel('whatsapp')->info('Agente IA desativado — humano assumiu', [
                 'conversation_id' => $conversation->id,
                 'agent_id'        => $agentId,
+                'via'             => $sentBy,
             ]);
         }
 
