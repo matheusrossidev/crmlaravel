@@ -8,6 +8,7 @@ echo "=============================="
 # Garantir que o storage seja gravável pelo www-data
 # (volumes Docker podem ser criados pelo daemon como root)
 chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+chmod -R 775 /var/www/storage/logs
 
 # Detectar se este container é o app principal (php-fpm) ou um worker
 CMD_ARG="${1:-}"
