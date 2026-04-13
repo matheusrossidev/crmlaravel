@@ -308,13 +308,13 @@ class WahaService implements WhatsappServiceContract
             'session' => $this->session,
             'chatId'  => $chatId,
             'message' => [
-                'title'       => $title ?? '',
-                'description' => $description,
+                'title'       => $title ?: 'Menu',
+                'description' => $description ?: ' ',
                 'footer'      => $footer ?? '',
                 'button'      => $buttonText,
                 'sections'    => [
                     [
-                        'title' => '',
+                        'title' => 'Opções',
                         'rows'  => $rows,
                     ],
                 ],
