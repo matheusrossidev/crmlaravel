@@ -856,6 +856,16 @@ class ProcessWahaWebhook implements ShouldQueue
             'has_media'       => $mediaUrl !== null,
         ]);
 
+        // Humano assumiu pelo celular → desativar agente IA automaticamente
+        if ($sentBy === 'human_phone' && $conversation->ai_agent_id) {
+            $agentId = $conversation->ai_agent_id;
+            $conversation->update(['ai_agent_id' => null]);
+            Log::channel('whatsapp')->info('Agente IA desativado — humano assumiu pelo celular', [
+                'conversation_id' => $conversation->id,
+                'agent_id'        => $agentId,
+            ]);
+        }
+
         // Transcrever áudio para texto via Whisper (apenas mensagens inbound com agente de IA ativo)
         // Whisper é um serviço OpenAI independente do provider principal do LLM
         if ($type === 'audio') {
