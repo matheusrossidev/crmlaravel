@@ -498,9 +498,10 @@ function updateUI() {
     document.getElementById('stepTitle').textContent = TITLES[currentIdx];
     document.getElementById('stepSub').textContent = SUBS[currentIdx];
 
-    // Progress dots
+    // Progress dots (only exist in Asaas multi-step checkout)
     for (let i = 0; i < STEPS.length; i++) {
         const dot = document.getElementById('dot-' + (i + 1));
+        if (!dot) continue;
         dot.className = 'step-dot-p';
         if (i < currentIdx) dot.classList.add('done');
         else if (i === currentIdx) dot.classList.add('active');
