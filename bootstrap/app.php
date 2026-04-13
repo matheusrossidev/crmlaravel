@@ -23,6 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
+        then: function () {
+            require __DIR__.'/../routes/forms.php';
+        },
     )
     ->withMiddleware(function (Middleware $middleware) {
         // Traefik termina SSL — confia em proxies da rede Docker overlay (10.0.0.0/8, 172.16-31.x)

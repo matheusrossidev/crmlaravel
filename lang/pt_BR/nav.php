@@ -12,6 +12,7 @@ return [
     'goals'          => 'Metas',
     'nps'            => 'NPS',
     'pipelines'      => 'Pipelines',
+    'forms'          => 'Formulários',
     'products'       => 'Produtos',
     'custom_fields'  => 'Campos Extras',
     'lost_reasons'   => 'Motivos de Perda',

@@ -12,6 +12,7 @@ return [
     'goals'          => 'Goals',
     'nps'            => 'NPS',
     'pipelines'      => 'Pipelines',
+    'forms'          => 'Forms',
     'products'       => 'Products',
     'custom_fields'  => 'Custom Fields',
     'lost_reasons'   => 'Lost Reasons',
