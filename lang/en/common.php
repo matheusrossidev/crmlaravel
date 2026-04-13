@@ -42,4 +42,13 @@ return [
     'language'         => 'Language',
     'portuguese'       => 'Português (Brasil)',
     'english'          => 'English',
+
+    // Trial expired modal
+    'trial_badge'          => 'Trial Expired',
+    'trial_title'          => 'Your free trial has ended',
+    'trial_message'        => 'The free trial for <strong>:name</strong> has expired.<br>Choose a plan to continue using the platform.',
+    'trial_choose_plan'    => 'Choose a plan',
+    'trial_logout'         => 'Sign out',
+    'trial_title_page'     => 'Your trial period has ended',
+    'trial_message_page'   => 'Your free trial has expired.<br>Choose a plan to continue using the platform.',
 ];

@@ -42,4 +42,13 @@ return [
     'language'         => 'Idioma',
     'portuguese'       => 'Português (Brasil)',
     'english'          => 'English',
+
+    // Trial expired modal
+    'trial_badge'          => 'Trial Expirado',
+    'trial_title'          => 'Seu período gratuito encerrou',
+    'trial_message'        => 'O trial gratuito da conta <strong>:name</strong> expirou.<br>Escolha um plano para continuar usando a plataforma.',
+    'trial_choose_plan'    => 'Escolher um plano',
+    'trial_logout'         => 'Sair da conta',
+    'trial_title_page'     => 'Seu período de teste encerrou',
+    'trial_message_page'   => 'O trial gratuito da sua conta expirou.<br>Escolha um plano para continuar usando a plataforma.',
 ];

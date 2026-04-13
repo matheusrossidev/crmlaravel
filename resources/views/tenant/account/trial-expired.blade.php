@@ -73,19 +73,23 @@
         <div class="icon-wrap">
             <i class="bi bi-clock-history" style="font-size:32px;color:#F97316;"></i>
         </div>
-        <div class="badge-trial">Trial expirado</div>
-        <h1>Seu período de teste encerrou</h1>
+        <div class="badge-trial">{{ __('common.trial_badge') }}</div>
+        <h1>{{ __('common.trial_title_page') }}</h1>
         <p>
-            O trial gratuito da sua conta expirou.<br>
-            Entre em contato com o suporte para ativar um plano e continuar usando a plataforma.
+            {!! __('common.trial_message_page') !!}
         </p>
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-            <button type="submit" class="btn-logout">
-                <i class="bi bi-box-arrow-right"></i>
-                Sair da conta
-            </button>
-        </form>
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
+            <a href="{{ route('billing.checkout') }}" style="display:inline-flex;align-items:center;gap:8px;padding:12px 32px;background:#0085f3;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;">
+                <i class="bi bi-credit-card"></i> {{ __('common.trial_choose_plan') }}
+            </a>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="btn-logout">
+                    <i class="bi bi-box-arrow-right"></i>
+                    {{ __('common.trial_logout') }}
+                </button>
+            </form>
+        </div>
     </div>
 </body>
 </html>

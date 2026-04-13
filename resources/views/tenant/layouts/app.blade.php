@@ -1394,19 +1394,23 @@ document.addEventListener('click', function (e) {
             <i class="bi bi-clock-history" style="font-size:32px;color:#f97316;"></i>
         </div>
         <div style="display:inline-block;background:#fff7ed;color:#f97316;border:1px solid #fdba74;border-radius:20px;font-size:12px;font-weight:700;padding:4px 14px;margin-bottom:16px;text-transform:uppercase;letter-spacing:.04em;">
-            Trial Expirado
+            {{ __('common.trial_badge') }}
         </div>
-        <h2 style="font-size:20px;font-weight:700;color:#1a1d23;margin:0 0 12px;">Seu período gratuito encerrou</h2>
+        <h2 style="font-size:20px;font-weight:700;color:#1a1d23;margin:0 0 12px;">{{ __('common.trial_title') }}</h2>
         <p style="font-size:14px;color:#677489;line-height:1.6;margin:0 0 28px;">
-            O trial gratuito da conta <strong>{{ auth()->user()->tenant->name }}</strong> expirou.<br>
-            Entre em contato com o suporte para ativar um plano e continuar usando a plataforma.
+            {!! __('common.trial_message', ['name' => auth()->user()->tenant->name]) !!}
         </p>
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-            <button type="submit" style="display:inline-flex;align-items:center;gap:8px;padding:11px 28px;background:transparent;color:#677489;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;">
-                <i class="bi bi-box-arrow-right"></i> Sair da conta
-            </button>
-        </form>
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center;">
+            <a href="{{ route('billing.checkout') }}" style="display:inline-flex;align-items:center;gap:8px;padding:11px 28px;background:#0085f3;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;transition:background .15s;">
+                <i class="bi bi-credit-card"></i> {{ __('common.trial_choose_plan') }}
+            </a>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" style="display:inline-flex;align-items:center;gap:8px;padding:11px 28px;background:transparent;color:#677489;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;">
+                    <i class="bi bi-box-arrow-right"></i> {{ __('common.trial_logout') }}
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 @endif
