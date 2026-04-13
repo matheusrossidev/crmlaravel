@@ -49,8 +49,22 @@ class StripeWebhookController extends Controller
         $metadata = (array) ($session->metadata ?? []);
         $tenantId = $metadata['tenant_id'] ?? null;
 
+        // Fallback: buscar tenant pelo stripe_customer_id quando metadata não tem tenant_id
+        // (pode acontecer se session foi criada antes do fix do metadata, ou por checkout externo)
+        if (! $tenantId && ! empty($session->customer)) {
+            $fallbackTenant = Tenant::where('stripe_customer_id', $session->customer)->first();
+            if ($fallbackTenant) {
+                $tenantId = $fallbackTenant->id;
+                Log::info('Stripe: tenant_id resolvido via stripe_customer_id fallback', [
+                    'tenant_id'   => $tenantId,
+                    'customer_id' => $session->customer,
+                    'session_id'  => $session->id,
+                ]);
+            }
+        }
+
         if (! $tenantId) {
-            Log::warning('Stripe checkout.session.completed sem tenant_id', ['session_id' => $session->id]);
+            Log::warning('Stripe checkout.session.completed sem tenant_id', ['session_id' => $session->id, 'customer' => $session->customer ?? null]);
             return;
         }
 
