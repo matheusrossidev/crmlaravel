@@ -10,6 +10,7 @@ use App\Jobs\ProcessAiResponse;
 use App\Jobs\ProcessChatbotStep;
 use App\Models\AiAgent;
 use App\Models\ChatbotFlow;
+use App\Models\ChatbotFlowNode;
 use App\Models\Lead;
 use App\Models\Pipeline;
 use App\Models\WhatsappConversation;
