@@ -90,8 +90,8 @@ services:
         --tries=3
         --backoff=5
         --sleep=3
-        --timeout=60
-        --memory=256
+        --timeout=900
+        --memory=512
     env_file:
       - .env
     environment:
