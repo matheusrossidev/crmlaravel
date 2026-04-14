@@ -54,8 +54,10 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', env('LOG_STACK', 'single')),
-            'ignore_exceptions' => false,
+            // Default inclui stderr como fallback — Docker captura, não depende
+            // de permissão de arquivo. Se volume de storage quebrar, stderr salva.
+            'channels' => explode(',', env('LOG_STACK', 'single,stderr')),
+            'ignore_exceptions' => true,
         ],
 
         'single' => [
@@ -127,7 +129,17 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        // Canais críticos: stack com `ignore_exceptions: true`. Se escrita em arquivo
+        // falhar (permissão, disco cheio, I/O), o canal NÃO joga exception — apenas
+        // o handler problemático é pulado e o resto continua (stderr sempre funciona
+        // dentro do Docker). Garante que webhooks inbound NUNCA caem por log.
         'whatsapp' => [
+            'driver' => 'stack',
+            'channels' => ['whatsapp_file', 'stderr'],
+            'ignore_exceptions' => true,
+        ],
+
+        'whatsapp_file' => [
             'driver' => 'daily',
             'path'   => storage_path('logs/whatsapp.log'),
             'level'  => 'debug',
@@ -135,6 +147,12 @@ return [
         ],
 
         'instagram' => [
+            'driver' => 'stack',
+            'channels' => ['instagram_file', 'stderr'],
+            'ignore_exceptions' => true,
+        ],
+
+        'instagram_file' => [
             'driver' => 'daily',
             'path'   => storage_path('logs/instagram.log'),
             'level'  => 'debug',
