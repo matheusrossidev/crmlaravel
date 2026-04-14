@@ -14,6 +14,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\MaxAttemptsExceededException;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -22,9 +24,24 @@ class ImportWhatsappHistory implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $timeout = 600;
-    public int $tries = 2;
-    public int $backoff = 60;
+    /**
+     * 15 min. Alinhado com o --timeout do worker em docker-compose.yml.
+     * Se infra tiver --timeout menor, worker mata o job antes → SIGALRM → retry.
+     */
+    public int $timeout = 900;
+
+    /**
+     * Sem retry: import é caro (500+ requests WAHA) e idempotente.
+     * Se falhou a primeira vez, re-disparar do zero vai falhar igual —
+     * user pode retentar manualmente pela UI.
+     */
+    public int $tries = 1;
+    public int $maxExceptions = 1;
+
+    /**
+     * Marca failed imediato quando estoura timeout (evita retry zumbi).
+     */
+    public bool $failOnTimeout = true;
 
     private string $cacheKey;
 
@@ -33,6 +50,28 @@ class ImportWhatsappHistory implements ShouldQueue
         private int $days = 30,
     ) {
         $this->onQueue('default');
+    }
+
+    /**
+     * Lock por instance_id pra evitar 2 workers importando a mesma WABA em paralelo
+     * (que dobraria o tráfego WAHA e poderia causar o próprio timeout).
+     */
+    public function middleware(): array
+    {
+        return [
+            (new WithoutOverlapping("wa-import:{$this->instance->id}"))
+                ->expireAfter(900)
+                ->dontRelease(),
+        ];
+    }
+
+    public function tags(): array
+    {
+        return [
+            'wa-import',
+            'instance:'.$this->instance->id,
+            'tenant:'.$this->instance->tenant_id,
+        ];
     }
 
     public function handle(): void
@@ -186,15 +225,22 @@ class ImportWhatsappHistory implements ShouldQueue
         $cacheKey = "wa_import:{$this->instance->id}";
         $existing = Cache::get($cacheKey, []);
 
+        // Mensagem amigável pro banner na UI — o user não precisa ver stack trace.
+        $userMessage = $exception instanceof MaxAttemptsExceededException
+            ? 'O import demorou demais e foi interrompido. Tente de novo em horário de menor tráfego ou reduza o período (ex: últimos 7 dias).'
+            : $exception->getMessage();
+
         Cache::put($cacheKey, array_merge($existing, [
             'status'      => 'failed',
-            'error'       => $exception->getMessage(),
+            'error'       => $userMessage,
             'finished_at' => now()->toISOString(),
-        ]), 300);
+        ]), 600);
 
         Log::channel('whatsapp')->error('Import history FAILED', [
-            'instance' => $this->instance->session_name,
-            'error'    => $exception->getMessage(),
+            'instance'  => $this->instance->session_name,
+            'tenant_id' => $this->instance->tenant_id,
+            'class'     => $exception::class,
+            'error'     => $exception->getMessage(),
         ]);
     }
 
@@ -238,7 +284,7 @@ class ImportWhatsappHistory implements ShouldQueue
                     }
                 } catch (\Throwable) {
                 }
-                usleep(200_000);
+                usleep(50_000);
 
                 // 3) Fallback: contacts API (método antigo)
                 if (ctype_digit($phone) && ($chatIsLid || strlen($phone) > 13)) {
@@ -253,7 +299,7 @@ class ImportWhatsappHistory implements ShouldQueue
                         }
                     } catch (\Throwable) {
                     }
-                    usleep(200_000);
+                    usleep(50_000);
                 }
             }
         }
@@ -275,7 +321,7 @@ class ImportWhatsappHistory implements ShouldQueue
                 $contactName = $info['name'] ?? $info['pushName'] ?? null;
             } catch (\Throwable) {
             }
-            usleep(200_000);
+            usleep(50_000);
         }
 
         // Se grupo sem nome, tentar buscar via WAHA API
@@ -297,7 +343,7 @@ class ImportWhatsappHistory implements ShouldQueue
         if (! $conv) {
             // Buscar foto via endpoint correto: /api/{session}/chats/{chatId}/picture
             $pictureUrl = $waha->getChatPicture($chatId);
-            usleep(200_000);
+            usleep(50_000);
 
             $conv = WhatsappConversation::withoutGlobalScope('tenant')->create([
                 'tenant_id'           => $this->instance->tenant_id,
@@ -327,7 +373,7 @@ class ImportWhatsappHistory implements ShouldQueue
                 if ($pic) {
                     $convUpdates['contact_picture_url'] = $pic;
                 }
-                usleep(200_000);
+                usleep(50_000);
             }
 
             // Salvar LID se não tinha
@@ -355,7 +401,7 @@ class ImportWhatsappHistory implements ShouldQueue
                     'chatId' => $chatId,
                     'since'  => $since,
                 ]);
-                usleep(200_000);
+                usleep(50_000);
                 $msgs = $waha->getChatMessages($chatId, 200, 0, false, null);
             }
 
@@ -378,7 +424,7 @@ class ImportWhatsappHistory implements ShouldQueue
             return ['chats' => $newChat ? 1 : 0, 'messages' => 0, 'skipped' => 0];
         }
 
-        usleep(200_000); // Rate limit: 200ms entre requests
+        usleep(50_000); // Rate limit: 50ms entre requests WAHA (Plus aguenta bem mais)
 
         // Verificar se a resposta é válida
         if (! is_array($msgs) || isset($msgs['error'])) {
