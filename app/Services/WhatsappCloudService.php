@@ -35,12 +35,29 @@ class WhatsappCloudService implements WhatsappServiceContract
         $this->baseUrl = "https://graph.facebook.com/{$version}";
         $this->phoneNumberId = (string) ($instance->phone_number_id ?? '');
         $this->wabaId = (string) ($instance->waba_id ?? '');
-        // O cast 'encrypted' do model decripta automaticamente ao acessar
-        $this->accessToken = (string) ($instance->access_token ?? '');
+
+        // Chain de fallback pro token (prioridade):
+        //   1. system_user_token da instância — token especificamente linkado a essa WABA
+        //      via nosso BM Syncro (Solution Partner). Permanente.
+        //   2. config('services.whatsapp_cloud.system_user_token') — token GLOBAL do BM
+        //      da Syncro. Permanente. Funciona pra qualquer WABA que tenha sido
+        //      adicionada como client_whatsapp_business_account no nosso BM.
+        //   3. instance->access_token — token de user do Embedded Signup. Expira em 60 dias.
+        //      Fallback de emergência se system tokens falharem.
+        //
+        // Casts 'encrypted' do model decriptam automaticamente ao acessar.
+        $this->accessToken = (string) (
+            ($instance->system_user_token ?? '')
+            ?: (string) config('services.whatsapp_cloud.system_user_token', '')
+            ?: ($instance->access_token ?? '')
+        );
 
         if ($this->phoneNumberId === '' || $this->accessToken === '') {
-            Log::warning('WhatsappCloudService: instância sem phone_number_id ou access_token', [
+            Log::warning('WhatsappCloudService: instância sem phone_number_id ou token utilizável', [
                 'instance_id' => $instance->id,
+                'has_system_token_instance' => ! empty($instance->system_user_token),
+                'has_system_token_global'   => ! empty(config('services.whatsapp_cloud.system_user_token')),
+                'has_access_token'          => ! empty($instance->access_token),
             ]);
         }
     }

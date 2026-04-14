@@ -17,9 +17,11 @@ use App\Models\Lead;
 use App\Models\LostSale;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\WhatsappInstance;
 use App\Observers\LeadObserver;
 use App\Observers\LostSaleObserver;
 use App\Observers\SaleObserver;
+use App\Observers\WhatsappInstanceObserver;
 use App\Models\WhatsappTag;
 use App\Services\NotificationDispatcher;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -47,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         Lead::observe(LeadObserver::class);
         Sale::observe(SaleObserver::class);
         LostSale::observe(LostSaleObserver::class);
+        WhatsappInstance::observe(WhatsappInstanceObserver::class);
 
         // Auth audit logging
         $authListener = new LogAuthEvents();

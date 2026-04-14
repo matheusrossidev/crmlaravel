@@ -91,3 +91,32 @@ if (! function_exists('whatsappUrl')) {
         return 'https://wa.me/' . $digits;
     }
 }
+
+if (! function_exists('tenantHasCloudApi')) {
+    /**
+     * Retorna true se o tenant atual tem pelo menos uma instância
+     * WhatsApp Cloud API (provider='cloud_api') conectada.
+     *
+     * Usado em menus, gates de UI e middleware pra esconder/bloquear
+     * funcionalidades específicas do Cloud API (templates HSM, etc.)
+     * pra tenants que só têm WAHA ou nenhuma integração.
+     *
+     * Cache de 60s pra não bater DB a cada render de menu.
+     * Invalidação via WhatsappInstanceObserver quando provider=cloud_api.
+     */
+    function tenantHasCloudApi(): bool
+    {
+        $tenantId = activeTenantId();
+        if (! $tenantId) {
+            return false;
+        }
+
+        return (bool) cache()->remember(
+            "tenant:{$tenantId}:has_cloud_api",
+            60,
+            fn () => \App\Models\WhatsappInstance::where('tenant_id', $tenantId)
+                ->where('provider', 'cloud_api')
+                ->exists(),
+        );
+    }
+}

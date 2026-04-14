@@ -1290,6 +1290,34 @@ $pageIcon = 'chat-dots';
 @section('content')
 <div class="wa-page">
 
+    {{-- Banner de alerta quando token Cloud API expirando/expirado/inválido.
+         Query esporádica (só instances cloud_api do tenant atual com status ruim).
+         Se não tem nenhuma, ignora silenciosamente. --}}
+    @php
+        $expiringCloudInstance = \App\Models\WhatsappInstance::where('tenant_id', activeTenantId())
+            ->where('provider', 'cloud_api')
+            ->whereIn('token_status', ['expiring', 'expired', 'invalid'])
+            ->first();
+    @endphp
+    @if($expiringCloudInstance)
+    <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:12px 16px;margin:14px 18px 0;display:flex;align-items:center;gap:12px;color:#991b1b;font-size:13px;">
+        <i class="bi bi-exclamation-triangle-fill" style="font-size:18px;color:#dc2626;flex-shrink:0;"></i>
+        <div style="flex:1;">
+            <strong>WhatsApp Cloud ({{ $expiringCloudInstance->label ?: $expiringCloudInstance->phone_number }})</strong>
+            @if($expiringCloudInstance->token_status === 'expired')
+                expirou. Envios e recebimentos bloqueados até reconectar.
+            @elseif($expiringCloudInstance->token_status === 'invalid')
+                está com token inválido. Reconecte pra restabelecer.
+            @else
+                expira em breve. Reconecte pra evitar interrupção.
+            @endif
+        </div>
+        <a href="{{ route('settings.integrations.index') }}" style="padding:7px 14px;background:#dc2626;color:#fff;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;flex-shrink:0;">
+            Reconectar
+        </a>
+    </div>
+    @endif
+
     @if(! $connected)
     {{-- ── Empty State: não conectado ───────────────────────────────────────────── --}}
     <div class="wa-empty-state">

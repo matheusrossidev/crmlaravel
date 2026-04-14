@@ -1226,6 +1226,13 @@ class IntegrationController extends Controller
                 Log::warning('WhatsappCloud(exchange): subscribeApp failed', ['error' => $e->getMessage()]);
             }
 
+            // 5. Linka a WABA do cliente ao BM da Syncro como client WABA, pro
+            //    System User Token global operar essa WABA sem precisar renovar.
+            //    Sem isso, o SYSTEM_USER_TOKEN só funciona pra WABAs "filhas"
+            //    cadastradas no nosso BM.
+            //    Ref: https://developers.facebook.com/docs/marketing-api/system-users
+            $this->linkWabaToSyncroBusinessManager($instance->fresh(), $apiVersion);
+
             return response()->json([
                 'success'     => true,
                 'instance_id' => $instance->id,
@@ -1241,6 +1248,66 @@ class IntegrationController extends Controller
                 'success' => false,
                 'message' => 'Erro ao conectar: ' . $e->getMessage(),
             ], 500);
+        }
+    }
+
+    /**
+     * Após o Embedded Signup concluir, registra a WABA do cliente como
+     * "client_whatsapp_business_account" do BM da Syncro. Isso permite que
+     * o System User Token global (permanent) opere em nome dessa WABA sem
+     * depender do access_token do user (que expira em 60 dias).
+     *
+     * Best-effort: falhar aqui não bloqueia a conexão — o access_token do
+     * user continua funcionando como fallback até expirar.
+     *
+     * Pré-requisitos:
+     *   - WHATSAPP_CLOUD_SYSTEM_USER_TOKEN configurado no env (token perma)
+     *   - WHATSAPP_CLOUD_SYNCRO_BUSINESS_ID configurado (id do BM Syncro)
+     *   - Cliente aceitou compartilhar o ativo no Embedded Signup
+     */
+    private function linkWabaToSyncroBusinessManager(
+        \App\Models\WhatsappInstance $instance,
+        string $apiVersion,
+    ): void {
+        $systemToken       = (string) config('services.whatsapp_cloud.system_user_token', '');
+        $syncroBusinessId  = (string) config('services.whatsapp_cloud.syncro_business_id', '');
+
+        if (! $systemToken || ! $syncroBusinessId || ! $instance->waba_id) {
+            Log::info('WhatsappCloud: skip link to Syncro BM (config ausente)', [
+                'has_system_token'       => (bool) $systemToken,
+                'has_syncro_business_id' => (bool) $syncroBusinessId,
+                'has_waba_id'            => (bool) $instance->waba_id,
+            ]);
+            return;
+        }
+
+        try {
+            // POST /{syncro_business_id}/client_whatsapp_business_accounts
+            //   body: whatsapp_business_account_id={client_waba_id}
+            //   auth: Bearer {system_user_token}
+            $res = \Illuminate\Support\Facades\Http::withToken($systemToken)
+                ->timeout(15)
+                ->post("https://graph.facebook.com/{$apiVersion}/{$syncroBusinessId}/client_whatsapp_business_accounts", [
+                    'whatsapp_business_account_id' => $instance->waba_id,
+                ]);
+
+            if ($res->successful()) {
+                Log::info('WhatsappCloud: WABA linkada ao BM Syncro', [
+                    'waba_id'     => $instance->waba_id,
+                    'instance_id' => $instance->id,
+                ]);
+            } else {
+                Log::warning('WhatsappCloud: link WABA ao BM Syncro retornou erro', [
+                    'waba_id' => $instance->waba_id,
+                    'status'  => $res->status(),
+                    'body'    => substr($res->body(), 0, 300),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('WhatsappCloud: link WABA ao BM Syncro exception', [
+                'error'   => $e->getMessage(),
+                'waba_id' => $instance->waba_id,
+            ]);
         }
     }
 

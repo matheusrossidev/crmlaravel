@@ -63,6 +63,19 @@ return [
         'verify_token' => env('WHATSAPP_CLOUD_VERIFY_TOKEN', 'syncro_wa_cloud_verify_2026'),
         'api_version'  => env('WHATSAPP_CLOUD_API_VERSION', 'v22.0'),
         'redirect'     => env('WHATSAPP_CLOUD_REDIRECT'),
+
+        // System User Token permanente do BM da Syncro (Solution Partner).
+        // Gerado UMA ÚNICA VEZ em business.facebook.com → Usuários do Sistema
+        // com permissões whatsapp_business_messaging, whatsapp_business_management,
+        // business_management e Expiração=Nunca. Usado como fallback primário
+        // pras chamadas à Graph API quando a instância não tem system_user_token
+        // próprio linkado. Permanente = todos os clientes continuam funcionando
+        // mesmo se o access_token do Embedded Signup (60 dias) expirar.
+        'system_user_token' => env('WHATSAPP_CLOUD_SYSTEM_USER_TOKEN'),
+
+        // Business ID do Syncro BM (usado pra linkar WABAs de clientes como
+        // client_whatsapp_business_accounts do nosso BM pro System User operar).
+        'syncro_business_id' => env('WHATSAPP_CLOUD_SYNCRO_BUSINESS_ID'),
     ],
 
     'instagram' => [

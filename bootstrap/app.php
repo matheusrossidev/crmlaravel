@@ -52,6 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'plan.limit'    => CheckPlanLimit::class,
             '2fa'           => TwoFactorMiddleware::class,
             'cs_agent'      => CsAgentMiddleware::class,
+            'requires.cloud_api' => \App\Http\Middleware\RequiresCloudApi::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {
@@ -72,6 +73,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('instagram:refresh-tokens')->dailyAt('03:00');
         $schedule->command('leads:detect-duplicates')->dailyAt('03:30');
         $schedule->command('users:send-reengagement')->dailyAt('10:00');
+        $schedule->command('whatsapp:cloud-token-health')->dailyAt('09:30');
     })
     ->withExceptions(function (Exceptions $exceptions) {
         Integration::handles($exceptions);

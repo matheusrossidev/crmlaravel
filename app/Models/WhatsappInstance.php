@@ -25,7 +25,10 @@ class WhatsappInstance extends Model
         'waba_id',
         'business_account_id',
         'access_token',
+        'system_user_token',
         'token_expires_at',
+        'token_last_checked_at',
+        'token_status',
         'display_name',
         'label',
         'is_primary',
@@ -33,10 +36,12 @@ class WhatsappInstance extends Model
     ];
 
     protected $casts = [
-        'history_imported' => 'boolean',
-        'is_primary'       => 'boolean',
-        'access_token'     => 'encrypted',
-        'token_expires_at' => 'datetime',
+        'history_imported'      => 'boolean',
+        'is_primary'            => 'boolean',
+        'access_token'          => 'encrypted',
+        'system_user_token'     => 'encrypted',
+        'token_expires_at'      => 'datetime',
+        'token_last_checked_at' => 'datetime',
     ];
 
     public function isWaha(): bool
@@ -47,6 +52,30 @@ class WhatsappInstance extends Model
     public function isCloudApi(): bool
     {
         return $this->provider === 'cloud_api';
+    }
+
+    /**
+     * True se o token user (access_token) está próximo de expirar ou já expirou.
+     * Usado pelo banner de alerta e notification de "reconectar".
+     * Não considera o system_user_token (esse é permanente).
+     */
+    public function needsTokenRefresh(): bool
+    {
+        return in_array($this->token_status, ['expiring', 'expired', 'invalid'], true);
+    }
+
+    /**
+     * True se a instância tem um token funcional pra operar (qualquer dos 3).
+     * Prioridade:
+     *   1. system_user_token da própria instância (linkado pro BM Syncro)
+     *   2. WHATSAPP_CLOUD_SYSTEM_USER_TOKEN global do env (permanente)
+     *   3. access_token do user (60 dias, fallback)
+     */
+    public function hasUsableToken(): bool
+    {
+        return ! empty($this->system_user_token)
+            || ! empty(config('services.whatsapp_cloud.system_user_token'))
+            || ! empty($this->access_token);
     }
 
     public function conversations(): HasMany
