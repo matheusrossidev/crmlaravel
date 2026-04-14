@@ -16,7 +16,7 @@ class Form extends Model
 
     protected $fillable = [
         'tenant_id', 'name', 'slug', 'type',
-        'fields', 'mappings',
+        'fields', 'mappings', 'conditional_logic', 'steps',
         'pipeline_id', 'stage_id', 'assigned_user_id', 'source_utm',
         'confirmation_type', 'confirmation_value',
         'notify_emails', 'sequence_id', 'list_id',
@@ -26,11 +26,16 @@ class Form extends Model
         'brand_color', 'background_color', 'card_color', 'input_bg_color',
         'input_text_color', 'label_color', 'input_border_color',
         'button_color', 'button_text_color', 'font_family', 'border_radius',
+        'layout', 'background_image_url', 'enable_logo', 'enable_background_image', 'color_preset',
+        'widget_trigger', 'widget_delay', 'widget_scroll_pct', 'widget_show_once', 'widget_position',
+        'views_count_hosted', 'views_count_inline', 'views_count_popup',
     ];
 
     protected $casts = [
         'fields'                 => 'array',
         'mappings'               => 'array',
+        'conditional_logic'      => 'array',
+        'steps'                  => 'array',
         'notify_emails'          => 'array',
         'is_active'              => 'boolean',
         'send_whatsapp_welcome'  => 'boolean',
@@ -40,6 +45,14 @@ class Form extends Model
         'task_days_offset'       => 'integer',
         'views_count'            => 'integer',
         'border_radius'          => 'integer',
+        'enable_logo'            => 'boolean',
+        'enable_background_image' => 'boolean',
+        'widget_show_once'       => 'boolean',
+        'widget_delay'           => 'integer',
+        'widget_scroll_pct'      => 'integer',
+        'views_count_hosted'     => 'integer',
+        'views_count_inline'     => 'integer',
+        'views_count_popup'      => 'integer',
     ];
 
     // ── Relations ────────────────────────────────────────────────────

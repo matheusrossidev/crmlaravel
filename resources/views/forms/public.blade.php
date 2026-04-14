@@ -12,11 +12,21 @@
         body {
             font-family: '{{ $form->font_family ?? 'Inter' }}', sans-serif;
             background: {{ $form->background_color ?? '#ffffff' }};
+            @if(($form->enable_background_image ?? false) && $form->background_image_url)
+            background-image: url('{{ $form->background_image_url }}');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            @endif
             min-height: 100vh;
             display: flex;
             align-items: center;
-            justify-content: center;
-            padding: 24px;
+            @php
+                $layoutJustify = match($form->layout ?? 'centered') { 'left' => 'flex-start', 'right' => 'flex-end', default => 'center' };
+                $layoutPad = match($form->layout ?? 'centered') { 'left' => '10%', 'right' => '10%', default => '24px' };
+            @endphp
+            justify-content: {{ $layoutJustify }};
+            padding: 24px {{ $layoutPad }};
         }
         .form-wrap {
             width: 100%;
@@ -103,7 +113,7 @@
 </head>
 <body>
     <div class="form-wrap">
-        @if($form->logo_url)
+        @if(($form->enable_logo ?? true) && $form->logo_url)
         <div class="form-logo">
             <img src="{{ $form->logo_url }}" alt="{{ $form->name }}">
         </div>
@@ -277,6 +287,30 @@
             btn.disabled = false;
             btn.textContent = '{{ __("forms.submit_button") }}';
         }
+    }
+
+    // Preview listener
+    if (new URLSearchParams(window.location.search).get('preview') === '1') {
+        window.addEventListener('message', function(e) {
+            if (e.data?.type !== 'form-preview-update') return;
+            const s = e.data.styles;
+            if (s.font_family) document.body.style.fontFamily = `'${s.font_family}', sans-serif`;
+            if (s.background_color) document.body.style.background = s.background_color;
+            const card = document.querySelector('.form-card');
+            if (card && s.card_color) card.style.background = s.card_color;
+            if (s.button_color) document.querySelectorAll('.btn-submit').forEach(el => { el.style.background = s.button_color; el.style.color = s.button_text_color || '#fff'; });
+            if (s.label_color) document.querySelectorAll('.form-title, .field-label').forEach(el => el.style.color = s.label_color);
+            if (s.input_bg_color) document.querySelectorAll('.field-input').forEach(el => el.style.background = s.input_bg_color);
+            if (s.input_border_color) document.querySelectorAll('.field-input').forEach(el => el.style.borderColor = s.input_border_color);
+            if (s.input_text_color) document.querySelectorAll('.field-input').forEach(el => el.style.color = s.input_text_color);
+            if (s.layout) {
+                const map = { left: ['flex-start', '10%'], right: ['flex-end', '10%'], centered: ['center', '24px'] };
+                const [j, p] = map[s.layout] || map.centered;
+                document.body.style.justifyContent = j;
+                document.body.style.paddingLeft = p;
+                document.body.style.paddingRight = p;
+            }
+        });
     }
     </script>
 </body>

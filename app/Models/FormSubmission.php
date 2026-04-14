@@ -15,6 +15,7 @@ class FormSubmission extends Model
     protected $fillable = [
         'form_id', 'tenant_id', 'lead_id',
         'data', 'ip_address', 'user_agent', 'submitted_at',
+        'embed_mode', 'referrer_url',
     ];
 
     protected $casts = [

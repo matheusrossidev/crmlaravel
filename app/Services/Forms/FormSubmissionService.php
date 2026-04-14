@@ -26,8 +26,14 @@ class FormSubmissionService
      * @throws ValidationException
      * @throws \RuntimeException
      */
-    public function process(Form $form, array $data, string $ip, ?string $userAgent): FormSubmission
-    {
+    public function process(
+        Form $form,
+        array $data,
+        string $ip,
+        ?string $userAgent,
+        string $embedMode = 'hosted',
+        ?string $referrerUrl = null,
+    ): FormSubmission {
         if (! $form->isAcceptingSubmissions()) {
             throw new \RuntimeException('Este formulário não está aceitando submissões no momento.');
         }
@@ -40,7 +46,7 @@ class FormSubmissionService
         // Validate required fields
         $this->validateRequiredFields($form, $data);
 
-        return DB::transaction(function () use ($form, $data, $ip, $userAgent) {
+        return DB::transaction(function () use ($form, $data, $ip, $userAgent, $embedMode, $referrerUrl) {
             // 1. Create lead
             $lead = $this->leadCreator->create($form, $data);
 
@@ -53,6 +59,8 @@ class FormSubmissionService
                 'ip_address'   => $ip,
                 'user_agent'   => $userAgent,
                 'submitted_at' => now(),
+                'embed_mode'   => in_array($embedMode, ['hosted', 'inline', 'popup'], true) ? $embedMode : 'hosted',
+                'referrer_url' => $referrerUrl ? substr($referrerUrl, 0, 500) : null,
             ]);
 
             // 3. Increment view→submission tracking
@@ -80,9 +88,20 @@ class FormSubmissionService
 
     private function validateRequiredFields(Form $form, array $data): void
     {
+        $conditions = $form->conditional_logic ?? [];
         $errors = [];
+
         foreach ($form->fields ?? [] as $field) {
-            if (($field['required'] ?? false) && empty($data[$field['id'] ?? ''])) {
+            if (! ($field['required'] ?? false)) {
+                continue;
+            }
+
+            // Skip validation for conditionally hidden fields
+            if ($this->isFieldHidden($field['id'], $conditions, $data)) {
+                continue;
+            }
+
+            if (empty($data[$field['id'] ?? ''])) {
                 $label = $field['label'] ?? $field['id'] ?? 'Campo';
                 $errors[$field['id']] = ["{$label} é obrigatório."];
             }
@@ -91,6 +110,27 @@ class FormSubmissionService
         if (! empty($errors)) {
             throw ValidationException::withMessages($errors);
         }
+    }
+
+    private function isFieldHidden(string $fieldId, array $conditions, array $data): bool
+    {
+        $cond = collect($conditions)->firstWhere('target_field_id', $fieldId);
+
+        if (! $cond || empty($cond['field_id'])) {
+            return false;
+        }
+
+        $val = $data[$cond['field_id']] ?? '';
+        $valStr = is_array($val) ? implode(',', $val) : (string) $val;
+
+        return match ($cond['operator'] ?? 'equals') {
+            'equals'     => $valStr !== ($cond['value'] ?? ''),
+            'not_equals' => $valStr === ($cond['value'] ?? ''),
+            'contains'   => ! str_contains(strtolower($valStr), strtolower($cond['value'] ?? '')),
+            'not_empty'  => $valStr === '',
+            'is_empty'   => $valStr !== '',
+            default      => false,
+        };
     }
 
     private function executePostActions(Form $form, Lead $lead): void

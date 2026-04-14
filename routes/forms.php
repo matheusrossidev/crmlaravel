@@ -16,6 +16,17 @@ Route::middleware('web')->group(function () {
         ->middleware('throttle:30,1');
 });
 
+// ── SDK / public API (no auth, no CSRF — pure JSON/JS, CORS enabled) ─────
+Route::prefix('api/form/{slug}')->group(function () {
+    Route::options('/{any?}', [FormPublicController::class, 'cors'])->where('any', '.*')->name('forms.sdk.cors');
+    Route::get('/config.json', [FormPublicController::class, 'config'])->name('forms.sdk.config');
+    Route::post('/submit', [FormPublicController::class, 'submit'])->name('forms.sdk.submit')
+        ->middleware('throttle:30,1');
+    Route::post('/track-view', [FormPublicController::class, 'trackView'])->name('forms.sdk.track')
+        ->middleware('throttle:120,1');
+});
+Route::get('/api/form/{slug}.js', [FormPublicController::class, 'script'])->name('forms.sdk.script');
+
 // ── Tenant routes (auth + tenant + locale) ───────────────────────────────
 Route::middleware(['web', 'auth', 'tenant', 'locale'])->group(function () {
 
@@ -29,6 +40,7 @@ Route::middleware(['web', 'auth', 'tenant', 'locale'])->group(function () {
         Route::delete('/formularios/{form}', [FormController::class, 'destroy'])->name('forms.destroy');
         Route::patch('/formularios/{form}/toggle', [FormController::class, 'toggle'])->name('forms.toggle');
         Route::post('/formularios/{form}/upload-logo', [FormController::class, 'uploadLogo'])->name('forms.upload-logo');
+        Route::post('/formularios/{form}/upload-background', [FormController::class, 'uploadBackground'])->name('forms.upload-background');
 
         // Builder
         Route::get('/formularios/{form}/builder', [FormBuilderController::class, 'edit'])->name('forms.builder');
