@@ -292,8 +292,10 @@ class ProcessWhatsappCloudWebhook implements ShouldQueue
 
         // Broadcast Reverb pra atualizar UI em real-time
         try {
-            broadcast(new \App\Events\WhatsappMessageCreated($message))->toOthers();
-        } catch (\Throwable) {}
+            broadcast(new \App\Events\WhatsappMessageCreated($message, $instance->tenant_id))->toOthers();
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->warning('WhatsappCloud: broadcast failed', ['error' => $e->getMessage()]);
+        }
     }
 
     /**
