@@ -112,6 +112,18 @@ interface WhatsappServiceContract
     public function sendReaction(string $messageId, string $emoji): array;
 
     /**
+     * Envia mensagem via Message Template HSM pré-aprovado pela Meta.
+     * Exclusivo Cloud API — WAHA retorna erro 'not_supported'.
+     *
+     * @param  string  $chatId
+     * @param  string  $templateName     nome exato registrado na Meta (snake_case)
+     * @param  string  $language         código BCP-47 (ex: pt_BR, en_US)
+     * @param  array   $components       payload já formatado conforme spec da Meta
+     * @return array
+     */
+    public function sendTemplate(string $chatId, string $templateName, string $language, array $components): array;
+
+    /**
      * Retorna 'waha' ou 'cloud_api'.
      */
     public function getProviderName(): string;

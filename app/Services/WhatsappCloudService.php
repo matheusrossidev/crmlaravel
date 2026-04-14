@@ -223,6 +223,24 @@ class WhatsappCloudService implements WhatsappServiceContract
         ]);
     }
 
+    public function sendTemplate(string $chatId, string $templateName, string $language, array $components): array
+    {
+        $payload = [
+            'messaging_product' => 'whatsapp',
+            'recipient_type'    => 'individual',
+            'to'                => $this->normalizeChatId($chatId),
+            'type'              => 'template',
+            'template'          => [
+                'name'     => $templateName,
+                'language' => ['code' => $language],
+            ],
+        ];
+        if (! empty($components)) {
+            $payload['template']['components'] = $components;
+        }
+        return $this->sendMessage($payload);
+    }
+
     public function sendReaction(string $messageId, string $emoji): array
     {
         // Cloud API: precisa do número do destinatário no payload — extraído da WhatsappMessage
@@ -303,6 +321,91 @@ class WhatsappCloudService implements WhatsappServiceContract
             $this->client()->get("{$this->baseUrl}/{$wabaId}/phone_numbers", [
                 'fields' => 'id,display_phone_number,verified_name,quality_rating,code_verification_status',
             ])
+        );
+    }
+
+    // ── Message Templates (HSM) ──────────────────────────────────────────────
+
+    /**
+     * Lista templates da WABA. Pagina via cursor até exaurir.
+     * @return array lista de objetos crus da Meta
+     */
+    public function listTemplates(): array
+    {
+        if ($this->wabaId === '') {
+            return ['error' => 'waba_id_missing', 'data' => []];
+        }
+
+        $all   = [];
+        $after = null;
+        $pages = 0;
+
+        do {
+            $query = [
+                'fields' => 'id,name,status,category,language,components,quality_score,rejected_reason',
+                'limit'  => 100,
+            ];
+            if ($after) {
+                $query['after'] = $after;
+            }
+
+            $resp = $this->parse(
+                $this->client()->get("{$this->baseUrl}/{$this->wabaId}/message_templates", $query)
+            );
+
+            if (isset($resp['error']) && $resp['error'] === true) {
+                return ['error' => true, 'status' => $resp['status'] ?? null, 'body' => $resp['body'] ?? null, 'data' => $all];
+            }
+
+            foreach ((array) ($resp['data'] ?? []) as $t) {
+                $all[] = $t;
+            }
+
+            $after = $resp['paging']['cursors']['after'] ?? null;
+            $next  = $resp['paging']['next'] ?? null;
+            $pages++;
+        } while ($after && $next && $pages < 20);
+
+        return ['data' => $all];
+    }
+
+    /**
+     * Cria um template na Meta. Retorna ['id' => ..., 'status' => 'PENDING', ...]
+     * ou ['error' => ..., 'message' => ...] se Meta rejeitar o formato.
+     */
+    public function createTemplate(string $name, string $language, string $category, array $components): array
+    {
+        if ($this->wabaId === '') {
+            return ['error' => 'waba_id_missing'];
+        }
+
+        return $this->parse(
+            $this->client()->post("{$this->baseUrl}/{$this->wabaId}/message_templates", [
+                'name'       => $name,
+                'language'   => $language,
+                'category'   => $category,
+                'components' => $components,
+            ])
+        );
+    }
+
+    /**
+     * Deleta template. Se hsmId for passado, deleta só aquele idioma específico;
+     * se só o name, deleta todos os idiomas daquele nome.
+     */
+    public function deleteTemplate(string $name, ?string $hsmId = null): array
+    {
+        if ($this->wabaId === '') {
+            return ['error' => 'waba_id_missing'];
+        }
+
+        $query = ['name' => $name];
+        if ($hsmId) {
+            $query['hsm_id'] = $hsmId;
+        }
+
+        return $this->parse(
+            $this->client()->delete("{$this->baseUrl}/{$this->wabaId}/message_templates", $query)
         );
     }
 

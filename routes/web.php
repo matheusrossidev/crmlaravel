@@ -31,6 +31,7 @@ use App\Http\Controllers\Tenant\ChatbotFlowController;
 use App\Http\Controllers\Tenant\WhatsappController;
 use App\Http\Controllers\Tenant\WhatsappMessageController;
 use App\Http\Controllers\Tenant\WhatsappTagController;
+use App\Http\Controllers\Tenant\WhatsappTemplateController;
 use App\Http\Controllers\Tenant\AiAnalystController;
 use App\Http\Controllers\Tenant\QuickMessageController;
 use App\Http\Controllers\Tenant\AutomationController;
@@ -415,6 +416,11 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::put('/inbox/{channel}/{conversation}/contact',  [WhatsappController::class, 'updateConversationContact'])->name('inbox.conversations.contact');
             Route::post('/conversations/{conversation}/messages', [WhatsappMessageController::class, 'store'])->name('messages.store');
             Route::post('/conversations/{conversation}/react',    [WhatsappMessageController::class, 'react'])->name('messages.react');
+            // Envio de Message Template HSM (Cloud API only)
+            Route::middleware('requires.cloud_api')->group(function () {
+                Route::post('/conversations/{conversation}/send-template', [WhatsappTemplateController::class, 'send'])->name('templates.send');
+                Route::get ('/templates',                                  [WhatsappTemplateController::class, 'apiList'])->name('templates.list');
+            });
             Route::put('/conversations/{conversation}/ai-agent',      [WhatsappController::class, 'assignAiAgent'])->name('conversations.ai-agent');
             Route::put('/conversations/{conversation}/chatbot-flow',   [WhatsappController::class, 'assignChatbotFlow'])->name('conversations.chatbot-flow');
             Route::put('/conversations/{conversation}/department',     [WhatsappController::class, 'assignDepartment'])->name('conversations.department');
@@ -609,6 +615,16 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::patch('sequencias/{sequence}/toggle',      [NurtureSequenceController::class, 'toggle'])->name('sequences.toggle');
             Route::post('sequencias/{sequence}/enroll',       [NurtureSequenceController::class, 'enroll'])->name('sequences.enroll');
             Route::delete('sequencias/{sequence}/unenroll',   [NurtureSequenceController::class, 'unenroll'])->name('sequences.unenroll');
+
+            // WhatsApp Message Templates (HSM) — só Cloud API
+            Route::middleware('requires.cloud_api')->prefix('whatsapp-templates')->name('whatsapp-templates.')->group(function () {
+                Route::get('/',              [WhatsappTemplateController::class, 'index'])->name('index');
+                Route::get('/criar',         [WhatsappTemplateController::class, 'create'])->name('create');
+                Route::post('/',             [WhatsappTemplateController::class, 'store'])->name('store');
+                Route::post('/sync',         [WhatsappTemplateController::class, 'sync'])->name('sync');
+                Route::get('/{template}',    [WhatsappTemplateController::class, 'show'])->name('show');
+                Route::delete('/{template}', [WhatsappTemplateController::class, 'destroy'])->name('destroy');
+            });
         });
     });
 

@@ -74,6 +74,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('leads:detect-duplicates')->dailyAt('03:30');
         $schedule->command('users:send-reengagement')->dailyAt('10:00');
         $schedule->command('whatsapp:cloud-token-health')->dailyAt('09:30');
+        $schedule->command('whatsapp:sync-templates')->dailyAt('04:00');
     })
     ->withExceptions(function (Exceptions $exceptions) {
         Integration::handles($exceptions);

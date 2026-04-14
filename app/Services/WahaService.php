@@ -444,4 +444,16 @@ class WahaService implements WhatsappServiceContract
     {
         return 'waha';
     }
+
+    /**
+     * WAHA não suporta Message Templates HSM da Meta.
+     * Retorna erro controlado pra quem chamar conseguir tratar.
+     */
+    public function sendTemplate(string $chatId, string $templateName, string $language, array $components): array
+    {
+        return [
+            'error'   => 'not_supported',
+            'message' => 'Templates HSM só disponíveis em instâncias Cloud API.',
+        ];
+    }
 }
