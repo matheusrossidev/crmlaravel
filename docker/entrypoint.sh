@@ -5,10 +5,18 @@ echo "=============================="
 echo "  CRM — Starting up"
 echo "=============================="
 
-# Garantir que o storage seja gravável pelo www-data
-# (volumes Docker podem ser criados pelo daemon como root)
-chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
-chmod -R 775 /var/www/storage/logs
+# Garantir que o storage seja gravável pelo www-data, agora E pros arquivos futuros.
+# Problema histórico: arquivos de log criados por um container (ex: scheduler/queue)
+# rodando com umask restritivo travavam os outros. A partir de 2026-04-14:
+#   - chown recursivo em tudo (arquivos já existentes)
+#   - setgid nos dirs (2775): novos arquivos herdam grupo www-data automaticamente
+#   - arquivos 664, dirs 2775
+#   - umask 002 exportado pro resto do processo (novos arquivos nascem 664)
+umask 002
+export UMASK=002
+chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache 2>/dev/null || true
+find /var/www/storage /var/www/bootstrap/cache -type d -exec chmod 2775 {} + 2>/dev/null || true
+find /var/www/storage /var/www/bootstrap/cache -type f -exec chmod 664 {} + 2>/dev/null || true
 
 # Detectar se este container é o app principal (php-fpm) ou um worker
 CMD_ARG="${1:-}"
