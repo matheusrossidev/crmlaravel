@@ -1,7 +1,7 @@
 # Syncro CRM — Guia Completo da Plataforma
 
 > Este documento é a referência definitiva para qualquer dev ou IA que trabalhe neste codebase.
-> Última atualização: 2026-04-10 (inline edit leads, scheduler mutex fix, chatbot assign_ai_agent + node_id fix + lista interativa, calendar timezone + ação imediata, badge foto agente, logout checkout)
+> Última atualização: 2026-04-14 (módulo Formulários completo Fase 1+2+3 — CRUD + conversational/multistep + SDK nativo + distribution analytics; fix permanente de permissão storage/logs via setgid 2775 + umask 002 no entrypoint)
 
 ---
 
@@ -923,6 +923,121 @@ Widget flutuante de IA interna que executa actions no CRM do tenant via whitelis
 
 ---
 
+## 11.6 Formulários (módulo nativo de captura de leads)
+
+Módulo isolado seguindo SOLID. Três fases completas em abril/2026.
+
+### Arquitetura
+- `app/Http/Controllers/Tenant/Forms/{FormController, FormBuilderController, FormMappingController, FormSubmissionController}.php` — admin (CRUD + builder + mapping + submissions)
+- `app/Http/Controllers/FormPublicController.php` — público (`show`, `submit`, `config`, `trackView`, `cors`, `script`) — SEM auth
+- `app/Services/Forms/{FormSubmissionService, FormLeadCreator, FormNotifier}.php`
+- `app/Models/{Form, FormSubmission}.php`
+- `routes/forms.php` — carregado via `then` callback em `bootstrap/app.php`
+
+### Tabela `forms` (campos relevantes)
+```
+name, slug (unique), type ENUM('classic','conversational','multistep','popup','embed')
+fields JSON              — array de field objects do builder
+mappings JSON            — field_id => 'name'|'phone'|'email'|'company'|'value'|'tags'|'source'|'notes'|'custom:N'
+conditional_logic JSON   — [{target_field_id, field_id, operator, value}] — 5 operators: equals/not_equals/contains/not_empty/is_empty
+steps JSON               — [{id, title}] para multistep; fields.step_id aponta pra cada
+pipeline_id, stage_id, assigned_user_id, source_utm, confirmation_type, confirmation_value, notify_emails JSON
+logo_url, logo_alignment, background_image_url, enable_logo, enable_background_image, color_preset
+brand_color, background_color, card_color, button_color, button_text_color, label_color,
+input_border_color, input_bg_color, input_text_color, font_family, border_radius, layout
+widget_trigger ENUM('immediate','time','scroll','exit'), widget_delay INT, widget_scroll_pct INT,
+widget_show_once BOOL, widget_position ENUM('center','bottom-right','bottom-left')
+views_count, views_count_hosted, views_count_inline, views_count_popup
+```
+
+### Tabela `form_submissions`
+```
+form_id, tenant_id, lead_id (nullable), data JSON, embed_mode ENUM('hosted','inline','popup'),
+referrer_url, ip_address, user_agent, submitted_at
+-- Index: (tenant_id, embed_mode)
+```
+
+### 3 tipos de formulário (renderização pública)
+- **classic** — `resources/views/forms/public.blade.php` — todos campos numa página só, com layout variants (left/centered/right) e bg image
+- **conversational** — `public-conversational.blade.php` — um campo por vez, fullscreen (`100dvh`), progress bar, auto-advance em select/radio, Typeform-style
+- **multistep** — `public-multistep.blade.php` — campos agrupados em steps, progress dots, navegação Voltar/Próximo
+
+Todas as 3 views ouvem `postMessage({type: 'form-preview-update', styles})` quando `?preview=1` — usado pelo iframe de preview do edit.
+
+### Admin — criar e editar
+- **Criar** (`resources/views/tenant/forms/create.blade.php`): wizard fullpage 5-step (padrão `wizard.blade.php` do AI Agent — dots no canto sup direito, back btn no canto sup esquerdo, múltiplos campos por step, card de branco com `#f6f9fd` gradient bg). Steps: Nome+Tipo+Layout / Cores+Fonte / Branding+Upload / Destino / Envio.
+- **Editar** (`edit.blade.php`): layout grid `240px 1fr 1fr` — sidebar tabs + settings + **iframe de preview ao vivo** (postMessage sync). Tabs: General / Layout / Cores / Branding / Destino / Envio / **Distribuição** / Avançado.
+- **Cores per-row**: cada cor (brand, bg, card, button, buttonText, label, inputBorder, inputBg, inputText) tem linha própria com ~7 presets contextuais em círculos 30x30 + botão `+` com `<input type="color">` embutido pra custom. HEX atual mostrado à direita do label.
+- **Mobile (≤900px)**: sidebar vira header compacto, quick links viram ícones horizontais, tabs em scroll-x, preview em `<details open>` (desktop sempre aberto via CSS, mobile colapsável).
+
+### Builder
+- `resources/views/tenant/forms/builder.blade.php` — sidebar (tipos de campo) + canvas (cards) + config panel (right)
+- Multistep: mostra grupos com step_id, permite adicionar/remover/reordenar steps, campos movem entre steps via select
+- Lógica condicional: checkbox "Conditional logic" no painel de config → escolhe field_id + operator + value; campos condicionais recebem badge roxo
+- Cards node-less (JS puro, sem React) — salva JSON via `PUT /formularios/{form}/builder`
+
+### Fase 3 — SDK nativo (sem iframe!)
+User rejeitou iframe explicitamente. Padrão RD Station/HubSpot: cola `<script>` e o form renderiza **nativamente no DOM do cliente**.
+
+- `FormPublicController@script` retorna ~400 linhas de JS self-contained (IIFE)
+- Lê `data-*` do próprio `<script>`: `data-mode` (`inline`/`popup`), `data-trigger`, `data-delay`, `data-scroll`, `data-position`, `data-show-once`
+- Fetcha `GET /api/form/{slug}/config.json` (JSON sanitizado — NÃO expõe mappings/notify_emails/assigned_user_id/pipeline_id/sequence_id/logo_url)
+- Injeta CSS scoped com prefixo `#syncro-form-{id}` (style isolation — não vaza pro host)
+- Renderiza **SEM chrome**: zero logo, zero título, zero "Criado com Syncro", só campos + botão submit
+- Suporta todos tipos de campo classic + lógica condicional
+- Modo popup: 4 triggers (`immediate`/`time`/`scroll`/`exit`), 3 posições (`center`/`bottom-right`/`bottom-left`), show-once via `localStorage.syncro_form_shown_{id}`
+- Submete via `POST /api/form/{slug}/submit` (JSON, sem CSRF — rota fora do middleware `web`)
+- Track view: `POST /api/form/{slug}/track-view` (1x por session via `sessionStorage`)
+
+**Rotas SDK (públicas, CORS `*`, fora do middleware web)**:
+```
+GET  /api/form/{slug}.js          → script    (SDK IIFE)
+GET  /api/form/{slug}/config.json → config    (JSON sanitizado)
+POST /api/form/{slug}/submit      → submit    (alias de /f/{slug} com CORS + embed_mode)
+POST /api/form/{slug}/track-view  → trackView (incrementa views_count_{mode})
+OPTIONS /api/form/{slug}/{any?}   → cors      (preflight)
+```
+
+SDK suporta **só `type=classic`** por ora. Conversational/multistep só via link hospedado (complexidade de slides não compensa).
+
+### Serviço de submissão
+`FormSubmissionService::process(Form, array data, string ip, ?string ua, string embedMode='hosted', ?string referrerUrl=null)`:
+1. Valida honeypot `_website_url` + required fields (pulando campos ocultos por condicional)
+2. Cria lead via `FormLeadCreator` (com checagem de `PlanLimitChecker`, captura UTMs, tags, custom fields)
+3. Salva `FormSubmission` com `embed_mode` + `referrer_url`
+4. Executa post-actions (nurture sequence enroll, static list, create_task)
+5. Dispara `FormNotifier` (email + WhatsApp welcome)
+
+Todo o server-side funciona igual pros 3 caminhos (hosted/inline/popup) — só o `embed_mode` muda.
+
+### Index (listagem)
+- Header com filtro de datas (default últimos 30 dias)
+- 5 KPI cards: Formulários ativos / Envios no período / Visualizações / Taxa de conversão / Leads criados
+- **3 gráficos** (Chart.js): line (tendência diária) + bar horizontal (top 8 forms) + **doughnut (envios por modo hosted/inline/popup)**
+- Tabela de forms configurados com: nome+data, tipo+pipeline, envios, views, conversion%, copy-link, status, ações (builder/envios/editar/delete)
+- Padrão visual do `/nps` (mesmas classes `.content-card`, `.nps-kpi-grid` renomeado pra `.fx-kpi-grid`)
+
+### Convenções
+- **"Submissões" → "Envios"** em toda a UI (decisão do user)
+- Rotas admin: `/formularios/*` (português); rotas SDK: `/api/form/*` (sem 's' no final — é pra ficar curto)
+- Slug gerado no store: `Str::slug($name) . '-' . Str::random(6)`
+- `FormFactory` não existe (fora de escopo)
+
+### Como embutir num site externo
+```html
+<!-- Inline: renderiza no lugar do script -->
+<script src="https://app.syncro.chat/api/form/SLUG.js" data-mode="inline" async></script>
+
+<!-- Popup com exit-intent -->
+<script src="https://app.syncro.chat/api/form/SLUG.js"
+        data-mode="popup"
+        data-trigger="exit"
+        data-show-once="true"
+        async></script>
+```
+
+---
+
 ## 12. Deploy e CI/CD
 
 ### Docker Image
@@ -950,6 +1065,25 @@ Push ao `main` → build image → push Docker Hub → Portainer puxa
 ### IMPORTANTE: VITE_* no Docker
 `npm run build` roda SEM build args. `VITE_*` do Portainer são RUNTIME only.
 **Padrão correto**: Injetar config no servidor via Blade (`window.reverbConfig`).
+
+### Permissão de storage/logs (fix permanente 2026-04-14)
+Bug histórico: arquivo de log criado por um container (scheduler ou queue) com umask restritivo travava os outros que tentavam escrever no mesmo arquivo → webhooks WAHA retornavam 500 → mensagens não chegavam no CRM. Antes era "correção" manual toda semana:
+```bash
+docker exec -u root $(docker ps -q -f name=syncro_app) chmod -R 775 /var/www/storage/logs
+```
+
+**Fix definitivo no `docker/entrypoint.sh`** (rodando em todo boot):
+```bash
+umask 002
+export UMASK=002
+chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+find /var/www/storage /var/www/bootstrap/cache -type d -exec chmod 2775 {} +
+find /var/www/storage /var/www/bootstrap/cache -type f -exec chmod 664 {} +
+```
+
+- **`2775` nos diretórios** — o `2` é **setgid**: arquivos novos criados dentro do dir **herdam o grupo** (`www-data`), independentemente do usuário que criou
+- **`664` nos arquivos** + **`umask 002`** — arquivos novos nascem `rw-rw-r--`, todos os processos do grupo `www-data` conseguem escrever
+- Não precisa mais chmod manual, **NUNCA**. Se ainda der problema, é caso novo pra investigar (não aplicar o workaround antigo — quebra o fix permanente).
 
 ---
 
@@ -1022,6 +1156,15 @@ Push ao `main` → build image → push Docker Hub → Portainer puxa
 - **Endpoint genérico do inbox:** `PUT /chats/inbox/{channel}/{conversation}/contact` (route name `chats.inbox.conversations.contact`) é o padrão pra atualizar nome/telefone/tags em qualquer canal. Não invente endpoint canal-específico novo.
 - **Conversation polimórfica:** se você precisa receber "uma conversa de qualquer canal", aceite `App\Contracts\ConversationContract` (interface) — não `WhatsappConversation` específico. Use `app(App\Services\ConversationResolver::class)->resolve($channel, $id)` quando precisar resolver por string de canal + ID.
 - Plano completo do refactor: `~/.claude/plans/eager-seeking-corbato.md`. Não pule fases sem ler o plano.
+
+### Formulários
+- **NUNCA reintroduza iframe** pra embed de formulário em site externo. User rejeitou explicitamente em 2026-04-14. O SDK nativo (`FormPublicController@script`) é a única via suportada — renderiza direto no DOM do cliente com CSS scoped `#syncro-form-{id}`.
+- **SDK SEMPRE sem chrome**: zero logo, zero título, zero "Criado com Syncro", zero card externo. Logo/footer só nas views hospedadas (`public*.blade.php`).
+- **Submissões via SDK** NÃO passam pelo middleware `web` (sem CSRF). Usam rotas `/api/form/{slug}/*` com CORS `*`. Confirmar que qualquer nova rota pro SDK seja pública, idempotente ao CSRF e retorne headers CORS.
+- **Config JSON do SDK** DEVE sanitizar: nunca expor `mappings`, `notify_emails`, `assigned_user_id`, `pipeline_id`, `stage_id`, `sequence_id`, `list_id` — esses são internos do CRM.
+- **Novos tipos de campo**: adicionar renderização em 4 lugares simultaneamente: `public.blade.php` (classic), `public-conversational.blade.php`, `public-multistep.blade.php` E no JS do SDK em `FormPublicController@buildSdkJs`. Se esquecer de 1, o tipo só funciona em alguns modos.
+- **UI do admin — "Submissões" NÃO, "Envios" SIM** — convenção do user desde abril/2026.
+- **Cores do form**: NÃO use preset único com 9 cores via um card só. Cada cor tem sua própria linha de bolinhas (7 presets contextuais) + botão `+` custom. Padrão em `edit.blade.php::buildColorRows()`. Se precisar de novo campo de cor, adicione em `COLOR_OPTIONS`.
 
 ---
 
