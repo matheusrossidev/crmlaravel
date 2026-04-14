@@ -26,13 +26,15 @@ class WhatsappCloudService implements WhatsappServiceContract
 {
     private string $baseUrl;
     private string $phoneNumberId;
+    private string $wabaId;
     private string $accessToken;
 
     public function __construct(WhatsappInstance $instance)
     {
-        $version = (string) config('services.whatsapp_cloud.api_version', 'v21.0');
+        $version = (string) config('services.whatsapp_cloud.api_version', 'v22.0');
         $this->baseUrl = "https://graph.facebook.com/{$version}";
         $this->phoneNumberId = (string) ($instance->phone_number_id ?? '');
+        $this->wabaId = (string) ($instance->waba_id ?? '');
         // O cast 'encrypted' do model decripta automaticamente ao acessar
         $this->accessToken = (string) ($instance->access_token ?? '');
 
@@ -242,8 +244,33 @@ class WhatsappCloudService implements WhatsappServiceContract
      */
     public function subscribeApp(): array
     {
+        // Meta exige WABA ID (não phone_number_id) no endpoint de subscribed_apps.
+        // Sem isso o webhook NUNCA é registrado e nenhuma mensagem inbound chega.
+        // Referência: https://developers.facebook.com/docs/graph-api/webhooks/reference/whatsapp-business-account/
+        if ($this->wabaId === '') {
+            Log::error('WhatsappCloudService::subscribeApp() — waba_id ausente na instância', [
+                'phone_number_id' => $this->phoneNumberId,
+            ]);
+            return ['error' => 'waba_id_missing'];
+        }
+
         return $this->parse(
-            $this->client()->post("{$this->baseUrl}/{$this->phoneNumberId}/subscribed_apps", [])
+            $this->client()->post("{$this->baseUrl}/{$this->wabaId}/subscribed_apps", [])
+        );
+    }
+
+    /**
+     * Remove a inscrição do app como receptor de webhooks desta WABA.
+     * Usado pelo disconnect pra não deixar "lixo" do lado da Meta.
+     */
+    public function unsubscribeApp(): array
+    {
+        if ($this->wabaId === '') {
+            return ['error' => 'waba_id_missing'];
+        }
+
+        return $this->parse(
+            $this->client()->delete("{$this->baseUrl}/{$this->wabaId}/subscribed_apps")
         );
     }
 

@@ -61,7 +61,7 @@ return [
         'app_secret'   => env('WHATSAPP_CLOUD_APP_SECRET', env('FACEBOOK_CLIENT_SECRET')),
         'config_id'    => env('WHATSAPP_CLOUD_CONFIG_ID'),
         'verify_token' => env('WHATSAPP_CLOUD_VERIFY_TOKEN', 'syncro_wa_cloud_verify_2026'),
-        'api_version'  => env('WHATSAPP_CLOUD_API_VERSION', 'v21.0'),
+        'api_version'  => env('WHATSAPP_CLOUD_API_VERSION', 'v22.0'),
         'redirect'     => env('WHATSAPP_CLOUD_REDIRECT'),
     ],
 

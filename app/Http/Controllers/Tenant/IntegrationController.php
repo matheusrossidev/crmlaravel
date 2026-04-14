@@ -926,7 +926,7 @@ class IntegrationController extends Controller
         $clientId    = (string) config('services.whatsapp_cloud.app_id');
         $configId    = (string) config('services.whatsapp_cloud.config_id');
         $redirectUri = (string) config('services.whatsapp_cloud.redirect');
-        $apiVersion  = (string) config('services.whatsapp_cloud.api_version', 'v21.0');
+        $apiVersion  = (string) config('services.whatsapp_cloud.api_version', 'v22.0');
 
         // Apenas app_id e redirect são obrigatórios.
         // config_id é opcional — só usado se Embedded Signup configurado.
@@ -1259,11 +1259,26 @@ class IntegrationController extends Controller
 
     /**
      * Desconecta uma instância Cloud API do tenant atual.
+     *
+     * Antes do delete local, tenta remover o webhook subscription na Meta
+     * pra não deixar "lixo" do lado deles (eles continuariam tentando mandar
+     * webhook mesmo após a gente deletar a instância).
      */
     public function disconnectWhatsappCloud(WhatsappInstance $instance): JsonResponse
     {
         if ($instance->tenant_id !== activeTenantId() || ! $instance->isCloudApi()) {
             return response()->json(['success' => false, 'message' => 'Não permitido'], 403);
+        }
+
+        // Tenta unsubscribe webhook na Meta (best-effort — não bloqueia o delete)
+        try {
+            $service = new \App\Services\WhatsappCloudService($instance);
+            $service->unsubscribeApp();
+        } catch (\Throwable $e) {
+            Log::warning('WhatsappCloud disconnect: unsubscribe failed (ignorando)', [
+                'instance_id' => $instance->id,
+                'error'       => $e->getMessage(),
+            ]);
         }
 
         $instance->delete();
