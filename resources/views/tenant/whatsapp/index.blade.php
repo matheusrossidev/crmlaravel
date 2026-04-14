@@ -1553,6 +1553,13 @@ $pageIcon = 'chat-dots';
                 <button onclick="cancelImagePreview()" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:16px;padding:4px;" title="Cancelar">&times;</button>
             </div>
 
+            <div id="waWindowClosedNotice" style="display:none;padding:10px 14px;margin:0 14px 8px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;color:#92400e;font-size:12.5px;line-height:1.45;">
+                <i class="bi bi-clock-history" style="margin-right:6px;"></i>
+                <span id="waWindowClosedText">{{ __('wa_templates.window_closed_notice') }}</span>
+                <button onclick="openTemplateModal()" style="background:#0085f3;color:#fff;border:0;padding:5px 12px;border-radius:7px;font-size:12px;font-weight:600;margin-left:10px;cursor:pointer;">
+                    {{ __('wa_templates.window_closed_cta') }}
+                </button>
+            </div>
             <div class="wa-compose-row" id="normalRow">
                 <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="previewImage(this)">
                 <input type="file" id="docInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.csv" style="display:none;" onchange="sendDocument(this)">
@@ -1575,6 +1582,9 @@ $pageIcon = 'chat-dots';
                         </button>
                         <button onclick="openQmModal();closeAttachMenu()" class="wa-attach-item" id="btnQuickMsgs">
                             <i class="bi bi-lightning-charge-fill" style="color:#f59e0b;"></i> {{ __('chat.quick_reply') }}
+                        </button>
+                        <button onclick="openTemplateModal();closeAttachMenu()" class="wa-attach-item" id="btnTemplate" style="display:none;">
+                            <i class="bi bi-card-text" style="color:#059669;"></i> {{ __('wa_templates.compose_template_btn') }}
                         </button>
                     </div>
                 </div>
@@ -1942,6 +1952,8 @@ $pageIcon = 'chat-dots';
         </button>
         <img id="waImgLightboxImg" class="wa-img-lightbox-img" src="" alt="">
     </div>
+
+    @include('tenant.whatsapp._template-modal')
 </div>
 @endsection
 
@@ -2394,6 +2406,18 @@ $pageIcon = 'chat-dots';
         renderTags(data.tags || []);
         const cardEl = document.querySelector(`[data-conv-id="${convId}"]`);
         if (cardEl) cardEl.dataset.tags = JSON.stringify(data.tags || []);
+
+        // WhatsApp Cloud API: detecta janela 24h + mostra botão de template
+        if (typeof window.setConvCloudApiState === 'function' && channel === 'whatsapp') {
+            window.setConvCloudApiState({
+                provider: data.provider,
+                instance_id: data.instance_id,
+                last_inbound_at: data.last_inbound_at,
+            });
+        } else if (typeof window.setConvCloudApiState === 'function') {
+            // IG/Website — garante que o UI de template não aparece
+            window.setConvCloudApiState({ provider: null, instance_id: null });
+        }
 
         // Atualiza select de atribuição
         const assignSel = document.getElementById('assignSelect');

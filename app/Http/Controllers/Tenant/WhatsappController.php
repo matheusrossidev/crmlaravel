@@ -431,6 +431,12 @@ class WhatsappController extends Controller
             'department_name'     => $conversation->department?->name,
             'department_color'    => $conversation->department?->color,
             'instance_label'      => $conversation->instance?->label,
+            'instance_id'         => $conversation->instance_id,
+            'provider'            => $conversation->instance?->provider,
+            'last_inbound_at'     => WhatsappMessage::where('conversation_id', $conversation->id)
+                                        ->where('direction', 'inbound')
+                                        ->latest('sent_at')
+                                        ->value('sent_at')?->toISOString(),
         ]);
     }
 

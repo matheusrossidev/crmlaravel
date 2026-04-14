@@ -13,6 +13,7 @@ use App\Services\Whatsapp\WhatsappTemplateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class WhatsappTemplateController extends Controller
@@ -57,6 +58,7 @@ class WhatsappTemplateController extends Controller
             'header.type'          => ['nullable', 'in:TEXT,IMAGE,VIDEO,DOCUMENT'],
             'header.text'          => ['nullable', 'string', 'max:60'],
             'header.sample'        => ['nullable', 'string', 'max:60'],
+            'header.sample_handle' => ['nullable', 'string', 'max:500'],
             'samples'              => ['nullable', 'array'],
             'samples.*'            => ['string', 'max:200'],
             'buttons'              => ['nullable', 'array', 'max:10'],
@@ -209,6 +211,29 @@ class WhatsappTemplateController extends Controller
                 'sent_at'    => $message->sent_at->toISOString(),
                 'user_name'  => auth()->user()->name,
             ],
+        ]);
+    }
+
+    /**
+     * Upload de mídia de exemplo pra submissão de template com header IMAGE/VIDEO/DOCUMENT.
+     * Meta exige URL pública no momento da criação do template — usamos storage público nosso.
+     */
+    public function uploadSample(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'max:16384', 'mimes:jpg,jpeg,png,webp,mp4,pdf'],
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->store('whatsapp-templates/samples', 'public');
+
+        return response()->json([
+            'success'       => true,
+            'url'           => Storage::disk('public')->url($path),
+            'path'          => $path,
+            'mime'          => $file->getMimeType(),
+            'original_name' => $file->getClientOriginalName(),
+            'size'          => $file->getSize(),
         ]);
     }
 

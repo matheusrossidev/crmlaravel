@@ -622,6 +622,7 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
                 Route::get('/criar',         [WhatsappTemplateController::class, 'create'])->name('create');
                 Route::post('/',             [WhatsappTemplateController::class, 'store'])->name('store');
                 Route::post('/sync',         [WhatsappTemplateController::class, 'sync'])->name('sync');
+                Route::post('/upload-sample',[WhatsappTemplateController::class, 'uploadSample'])->name('upload-sample');
                 Route::get('/{template}',    [WhatsappTemplateController::class, 'show'])->name('show');
                 Route::delete('/{template}', [WhatsappTemplateController::class, 'destroy'])->name('destroy');
             });

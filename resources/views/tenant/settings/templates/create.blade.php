@@ -7,7 +7,7 @@
 
 @push('styles')
 <style>
-    .tpl-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; align-items: start; }
+    .tpl-grid { display: grid; grid-template-columns: 70% 30%; gap: 24px; }
     @media (max-width: 900px) { .tpl-grid { grid-template-columns: 1fr; } }
 
     .card {
@@ -109,41 +109,120 @@
         gap: 8px;
         align-items: center;
     }
+    .btn-item > input,
+    .btn-item > select {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1.5px solid #e8eaf0;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #1a1d23;
+        background: #fff;
+        font-family: inherit;
+    }
+    .btn-item > input:focus,
+    .btn-item > select:focus { border-color: #0085f3; outline: none; }
     .btn-item .rm {
-        width: 26px; height: 26px; border-radius: 6px;
+        width: 28px; height: 28px; border-radius: 7px;
         border: 0; background: #fee2e2; color: #dc2626;
-        cursor: pointer;
+        cursor: pointer; font-size: 16px; line-height: 1;
+        display: inline-flex; align-items: center; justify-content: center;
+    }
+    .btn-item .rm:hover { background: #fecaca; }
+
+    /* Preview (live) — sticky + iPhone clay */
+    .preview-sticky { position: sticky; top: 80px; align-self: start; }
+
+    /* iPhone clay (plano, arredondado, sombras suaves) */
+    .iphone-frame {
+        width: 100%;
+        max-width: 280px;
+        margin: 0 auto;
+        aspect-ratio: 9 / 18.5;
+        background: linear-gradient(145deg, #e6e9f0 0%, #d7dce8 100%);
+        border-radius: 38px;
+        padding: 10px;
+        box-shadow:
+            0 30px 50px -20px rgba(15, 23, 42, .25),
+            0 12px 24px -8px rgba(15, 23, 42, .15),
+            inset 0 2px 4px rgba(255, 255, 255, .6),
+            inset 0 -2px 4px rgba(15, 23, 42, .08);
+        position: relative;
+    }
+    .iphone-frame::before {
+        content: '';
+        position: absolute;
+        top: 14px; left: 50%; transform: translateX(-50%);
+        width: 72px; height: 20px;
+        background: #1a1d23;
+        border-radius: 14px;
+        z-index: 3;
+    }
+    .iphone-screen {
+        width: 100%; height: 100%;
+        border-radius: 30px;
+        overflow: hidden;
+        background: #f0f2f5;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+    .iphone-topbar {
+        flex-shrink: 0;
+        background: #075e54;
+        padding: 36px 14px 8px;
+        display: flex; align-items: center; gap: 9px;
+        color: #fff;
+    }
+    .iphone-topbar .avatar {
+        width: 28px; height: 28px; border-radius: 50%;
+        background: rgba(255, 255, 255, .25);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 12px; font-weight: 700;
+    }
+    .iphone-topbar .contact-name { font-size: 11.5px; font-weight: 600; line-height: 1.2; }
+    .iphone-topbar .contact-status { font-size: 9px; opacity: .8; }
+
+    .wa-bubble-wrap {
+        flex: 1;
+        background-image: url('{{ asset('images/mocks/whatsapp-background.png') }}');
+        background-size: cover;
+        background-position: center;
+        padding: 14px 10px;
+        overflow-y: auto;
     }
 
-    /* Preview (live) */
-    .preview-sticky { position: sticky; top: 20px; }
-    .wa-bubble-wrap {
-        background: #e5ddd5;
-        padding: 24px 18px;
-        border-radius: 12px;
-        min-height: 360px;
-    }
     .wa-bubble {
         background: #dcf8c6;
-        border-radius: 12px;
-        padding: 10px 13px;
-        font-size: 14px;
-        line-height: 1.45;
-        max-width: 86%;
-        box-shadow: 0 1px 2px rgba(0,0,0,.12);
+        border-radius: 8px;
+        padding: 7px 9px 5px;
+        font-size: 11.5px;
+        line-height: 1.38;
+        max-width: 88%;
+        box-shadow: 0 1px 1px rgba(0, 0, 0, .12);
         color: #1a1d23;
+        position: relative;
+        margin-left: auto;
     }
-    .wa-header { font-weight: 700; margin-bottom: 6px; color: #0f172a; }
+    .wa-bubble::after {
+        content: '';
+        position: absolute;
+        right: -5px; top: 0;
+        width: 0; height: 0;
+        border-top: 8px solid #dcf8c6;
+        border-right: 6px solid transparent;
+    }
+    .wa-header { font-weight: 700; margin-bottom: 4px; color: #0f172a; font-size: 11.5px; }
     .wa-body   { white-space: pre-wrap; word-wrap: break-word; }
-    .wa-footer { font-size: 12px; color: #64748b; margin-top: 6px; }
+    .wa-footer { font-size: 9.5px; color: #64748b; margin-top: 4px; }
     .wa-buttons {
-        display: flex; flex-direction: column; gap: 3px;
-        margin-top: 8px;
+        display: flex; flex-direction: column; gap: 2px;
+        margin-top: 6px;
         border-top: 1px solid rgba(0,0,0,.07);
-        padding-top: 6px;
+        padding-top: 4px;
     }
-    .wa-btn { text-align: center; color: #0085f3; font-size: 14px; padding: 6px 0; }
-    .wa-var { background: #fef08a; padding: 1px 4px; border-radius: 3px; font-weight: 600; }
+    .wa-btn { text-align: center; color: #0085f3; font-size: 11px; padding: 4px 0; font-weight: 500; }
+    .wa-var { background: #fef08a; padding: 0 3px; border-radius: 3px; font-weight: 600; }
 
     .alert-err {
         background: #fef2f2; border: 1px solid #fecaca;
@@ -224,17 +303,17 @@
                             <label>{{ __('wa_templates.form_category') }}</label>
                             <div class="cat-cards">
                                 <div class="cat-card active" data-cat="UTILITY">
-                                    <span class="ico">✉️</span>
+                                    <span class="ico"><i class="bi bi-envelope" style="color:#0085f3;"></i></span>
                                     <div class="title">{{ __('wa_templates.cat_utility') }}</div>
                                     <div class="desc">{{ __('wa_templates.cat_utility_desc') }}</div>
                                 </div>
                                 <div class="cat-card" data-cat="MARKETING">
-                                    <span class="ico">🎁</span>
+                                    <span class="ico"><i class="bi bi-megaphone" style="color:#9333ea;"></i></span>
                                     <div class="title">{{ __('wa_templates.cat_marketing') }}</div>
                                     <div class="desc">{{ __('wa_templates.cat_marketing_desc') }}</div>
                                 </div>
                                 <div class="cat-card" data-cat="AUTHENTICATION">
-                                    <span class="ico">🔒</span>
+                                    <span class="ico"><i class="bi bi-shield-lock" style="color:#ea580c;"></i></span>
                                     <div class="title">{{ __('wa_templates.cat_authentication') }}</div>
                                     <div class="desc">{{ __('wa_templates.cat_authentication_desc') }}</div>
                                 </div>
@@ -260,14 +339,47 @@
                         <div class="form-row" id="headerTextRow" style="display:none;">
                             <label>Texto do cabeçalho</label>
                             <input type="text" name="header[text]" id="headerText" maxlength="60">
-                            <div class="hint">Máx 60 chars. Pode usar 1 variável {{ '{{1}}' }}.</div>
+                            <div class="hint">Máx 60 chars. Pode usar 1 variável @{{1}}.</div>
                         </div>
                         <div class="form-row" id="headerSampleRow" style="display:none;">
                             <label>Exemplo da variável do cabeçalho</label>
                             <input type="text" name="header[sample]" maxlength="60">
                         </div>
-                        <div class="hint" id="headerMediaHint" style="display:none;">
-                            {{ __('wa_templates.form_header_hint_media') }}
+                        <div class="form-row" id="headerMediaRow" style="display:none;">
+                            <label>Mídia de exemplo (pra aprovação da Meta)</label>
+
+                            <div id="sampleDropzone"
+                                 style="border:2px dashed #d1d5db;border-radius:10px;padding:22px 16px;text-align:center;cursor:pointer;transition:all .2s;"
+                                 onclick="document.getElementById('sampleFileInput').click()"
+                                 ondragover="event.preventDefault();this.style.borderColor='#0085f3';this.style.background='#eff6ff';"
+                                 ondragleave="this.style.borderColor='#d1d5db';this.style.background='';"
+                                 ondrop="handleSampleDrop(event)">
+                                <i class="bi bi-cloud-arrow-up" style="font-size:26px;color:#9ca3af;display:block;margin-bottom:6px;"></i>
+                                <div style="font-size:13px;color:#6b7280;font-weight:600;">Arraste o arquivo ou clique pra escolher</div>
+                                <div style="font-size:11.5px;color:#9ca3af;margin-top:3px;">JPG, PNG, WEBP, MP4 ou PDF — máx 16 MB</div>
+                            </div>
+                            <input type="file" id="sampleFileInput" style="display:none;"
+                                   accept="image/jpeg,image/png,image/webp,video/mp4,application/pdf"
+                                   onchange="uploadSampleFile(this.files[0])">
+
+                            <div id="sampleUploadedBox" style="display:none;margin-top:10px;padding:10px 12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:9px;display:none;align-items:center;gap:10px;">
+                                <i class="bi bi-check-circle-fill" style="color:#059669;font-size:18px;"></i>
+                                <div style="flex:1;min-width:0;">
+                                    <div id="sampleUploadedName" style="font-size:12.5px;font-weight:600;color:#065f46;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                                    <div id="sampleUploadedSize" style="font-size:11px;color:#047857;"></div>
+                                </div>
+                                <button type="button" onclick="removeSample()"
+                                        style="background:#fee2e2;color:#dc2626;border:0;width:26px;height:26px;border-radius:7px;cursor:pointer;font-size:14px;">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+
+                            <input type="hidden" name="header[sample_handle]" id="headerMediaUrl">
+
+                            <div class="hint" style="margin-top:8px;">
+                                <i class="bi bi-info-circle"></i>
+                                A Meta precisa de uma mídia de exemplo pra revisar. Ao enviar pro cliente no chat você escolhe a mídia real.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -281,7 +393,7 @@
                                 <span class="char-counter"><span id="bodyLen">0</span>/1024</span>
                             </label>
                             <textarea name="body" id="inputBody" required maxlength="1024"
-                                      placeholder="Olá {{ '{{1}}' }}, sua consulta é dia {{ '{{2}}' }}.">{{ old('body') }}</textarea>
+                                      placeholder="Olá @{{1}}, sua consulta é dia @{{2}}.">{{ old('body') }}</textarea>
                             <div class="hint">{{ __('wa_templates.form_body_hint') }}</div>
                         </div>
 
@@ -322,22 +434,31 @@
 
             <div>
                 <div class="preview-sticky">
-                    <div class="card">
-                        <div class="card-head">{{ __('wa_templates.preview_title') }}</div>
-                        <div class="card-body" style="padding: 0;">
+                    <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#97A3B7;text-align:center;margin-bottom:14px;">
+                        {{ __('wa_templates.preview_title') }}
+                    </div>
+                    <div class="iphone-frame">
+                        <div class="iphone-screen">
+                            <div class="iphone-topbar">
+                                <div class="avatar"><i class="bi bi-person-fill"></i></div>
+                                <div>
+                                    <div class="contact-name">Cliente</div>
+                                    <div class="contact-status">online</div>
+                                </div>
+                            </div>
                             <div class="wa-bubble-wrap">
                                 <div class="wa-bubble">
                                     <div class="wa-header" id="pvHeader" style="display:none;"></div>
-                                    <div id="pvMediaBox" style="display:none;background:rgba(0,0,0,.06);border-radius:8px;padding:14px;text-align:center;color:#64748b;font-size:12px;margin-bottom:6px;"></div>
+                                    <div id="pvMediaBox" style="display:none;background:rgba(0,0,0,.06);border-radius:6px;padding:10px;text-align:center;color:#64748b;font-size:10px;margin-bottom:4px;"></div>
                                     <div class="wa-body" id="pvBody">Digite o corpo da mensagem...</div>
                                     <div class="wa-footer" id="pvFooter" style="display:none;"></div>
                                     <div class="wa-buttons" id="pvButtons" style="display:none;"></div>
                                 </div>
                             </div>
-                            <div style="padding: 10px 14px;font-size: 11.5px; color: #9ca3af;border-top:1px solid #f0f2f7;">
-                                {{ __('wa_templates.preview_hint') }}
-                            </div>
                         </div>
+                    </div>
+                    <div style="font-size:11.5px;color:#9ca3af;text-align:center;margin-top:14px;line-height:1.4;">
+                        {{ __('wa_templates.preview_hint') }}
                     </div>
                 </div>
             </div>
@@ -359,25 +480,78 @@
     const headerType      = document.getElementById('headerType');
     const headerTextRow   = document.getElementById('headerTextRow');
     const headerSampleRow = document.getElementById('headerSampleRow');
-    const headerMediaHint = document.getElementById('headerMediaHint');
     const headerTextEl    = document.getElementById('headerText');
 
     function updateHeaderUi() {
         const v = headerType.value;
-        headerTextRow.style.display   = v === 'TEXT' ? 'block' : 'none';
-        headerMediaHint.style.display = (v === 'IMAGE' || v === 'VIDEO' || v === 'DOCUMENT') ? 'block' : 'none';
+        const isMedia = (v === 'IMAGE' || v === 'VIDEO' || v === 'DOCUMENT');
+        headerTextRow.style.display  = v === 'TEXT' ? 'block' : 'none';
+        document.getElementById('headerMediaRow').style.display = isMedia ? 'block' : 'none';
         updateHeaderSample();
         updatePreview();
     }
     headerType.addEventListener('change', updateHeaderUi);
 
     function updateHeaderSample() {
-        const show = headerType.value === 'TEXT' && headerTextEl.value.includes('{{1}}');
+        const show = headerType.value === 'TEXT' && /\{\{\s*1\s*\}\}/.test(headerTextEl.value);
         headerSampleRow.style.display = show ? 'block' : 'none';
     }
     headerTextEl.addEventListener('input', () => { updateHeaderSample(); updatePreview(); });
 
-    // Body variables — detecta {{N}}, cria inputs de exemplo
+    // Upload de mídia de exemplo (dropzone)
+    function handleSampleDrop(ev) {
+        ev.preventDefault();
+        ev.currentTarget.style.borderColor = '#d1d5db';
+        ev.currentTarget.style.background = '';
+        const file = ev.dataTransfer.files[0];
+        if (file) uploadSampleFile(file);
+    }
+
+    async function uploadSampleFile(file) {
+        if (!file) return;
+        const dz = document.getElementById('sampleDropzone');
+        dz.style.opacity = '.6';
+
+        const fd = new FormData();
+        fd.append('file', file);
+
+        try {
+            const res = await fetch(@json(route('settings.whatsapp-templates.upload-sample')), {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                body: fd,
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.message || 'falha');
+
+            document.getElementById('headerMediaUrl').value = data.url;
+            document.getElementById('sampleUploadedName').textContent = data.original_name;
+            document.getElementById('sampleUploadedSize').textContent = formatFileSize(data.size) + ' · ' + (data.mime || '');
+            document.getElementById('sampleUploadedBox').style.display = 'flex';
+            dz.style.display = 'none';
+            updatePreview();
+        } catch (e) {
+            toastr.error('Erro no upload: ' + (e.message || 'falha'));
+        } finally {
+            dz.style.opacity = '1';
+        }
+    }
+
+    function removeSample() {
+        document.getElementById('headerMediaUrl').value = '';
+        document.getElementById('sampleUploadedBox').style.display = 'none';
+        document.getElementById('sampleDropzone').style.display = 'block';
+        document.getElementById('sampleFileInput').value = '';
+        updatePreview();
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // Body variables: detecta placeholders e cria inputs de exemplo dinamicamente
     const bodyEl      = document.getElementById('inputBody');
     const bodyLen     = document.getElementById('bodyLen');
     const samplesRow  = document.getElementById('samplesRow');
@@ -408,7 +582,7 @@
         ids.forEach(id => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td class="vlabel">{{ '{{' }}${id}{{ '}}' }}</td>
+                <td class="vlabel">${'{' + '{'}${id}${'}' + '}'}</td>
                 <td><input type="text" name="samples[${id}]" data-vid="${id}"
                            value="${(existing[id] || '').replace(/"/g, '&quot;')}"
                            placeholder="Exemplo pra variável ${id}"
@@ -463,19 +637,30 @@
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
-        return escaped.replace(/\{\{\s*(\d+)\s*\}\}/g, '<span class="wa-var">{{ '{{' }}$1{{ '}}' }}</span>');
+        return escaped.replace(/\{\{\s*(\d+)\s*\}\}/g, '<span class="wa-var">' + '{' + '{$1}' + '}' + '</span>');
     }
 
     function updatePreview() {
         // Header
         const hType = headerType.value;
+        const mediaUrl = document.getElementById('headerMediaUrl')?.value.trim() || '';
+
         if (hType === 'TEXT' && headerTextEl.value.trim() !== '') {
             pvHeader.innerHTML = highlightVars(headerTextEl.value);
             pvHeader.style.display = 'block';
             pvMediaBox.style.display = 'none';
-        } else if (hType === 'IMAGE' || hType === 'VIDEO' || hType === 'DOCUMENT') {
-            pvMediaBox.textContent = hType.toLowerCase() + ' (a ser enviada pelo chat)';
+        } else if (hType === 'IMAGE' && mediaUrl) {
+            pvMediaBox.innerHTML = `<img src="${mediaUrl}" style="width:100%;border-radius:4px;display:block;" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{textContent:'imagem (preview)',style:'padding:12px;color:#94a3b8;font-size:10px;'}))">`;
             pvMediaBox.style.display = 'block';
+            pvMediaBox.style.padding = '0';
+            pvMediaBox.style.background = 'transparent';
+            pvHeader.style.display = 'none';
+        } else if (hType === 'IMAGE' || hType === 'VIDEO' || hType === 'DOCUMENT') {
+            const ico = hType === 'VIDEO' ? 'bi-camera-video' : (hType === 'DOCUMENT' ? 'bi-file-earmark-text' : 'bi-image');
+            pvMediaBox.innerHTML = `<i class="bi ${ico}" style="font-size:22px;color:#94a3b8;"></i><div style="margin-top:4px;">${hType.toLowerCase()}</div>`;
+            pvMediaBox.style.display = 'block';
+            pvMediaBox.style.padding = '14px';
+            pvMediaBox.style.background = 'rgba(0,0,0,.06)';
             pvHeader.style.display = 'none';
         } else {
             pvHeader.style.display = 'none';
