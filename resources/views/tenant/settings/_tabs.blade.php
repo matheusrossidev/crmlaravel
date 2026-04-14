@@ -19,6 +19,10 @@
 
     $settingsTabs[] = ['route' => 'settings.integrations.index', 'match' => ['settings.integrations*'],      'label' => __('integrations.title')];
 
+    if ($isAdmin && tenantHasCloudApi()) {
+        $settingsTabs[] = ['route' => 'settings.whatsapp-templates.index', 'match' => ['settings.whatsapp-templates*'], 'label' => __('wa_templates.menu_title')];
+    }
+
     $settingsTabs[] = ['route' => 'settings.departments',        'match' => ['settings.departments*'],        'label' => __('settings.dept_title')];
     $settingsTabs[] = ['route' => 'settings.billing',            'match' => ['settings.billing*', 'billing.*'], 'label' => __('settings.billing_title')];
     $settingsTabs[] = ['route' => 'settings.api-keys',           'match' => ['settings.api-keys*'],           'label' => __('apikeys.page_title')];
