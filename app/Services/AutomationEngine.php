@@ -261,6 +261,9 @@ class AutomationEngine
             'close_conversation'  => $this->actionCloseConversation($ctx),
             'send_whatsapp_message'         => $this->actionSendWhatsappMessage($config, $ctx, $automation),
             'schedule_whatsapp_message'     => $this->actionScheduleWhatsappMessage($config, $ctx),
+            'send_whatsapp_template'        => $this->actionSendWhatsappTemplate($config, $ctx, $automation),
+            'send_whatsapp_buttons'         => $this->actionSendWhatsappButtons($config, $ctx, $automation),
+            'send_whatsapp_list'            => $this->actionSendWhatsappList($config, $ctx, $automation),
             'set_utm_params'                => $this->actionSetUtmParams($config, $ctx),
             'transfer_to_department'        => $this->actionTransferToDepartment($config, $ctx),
             'create_task'                   => $this->actionCreateTask($config, $ctx),
@@ -636,9 +639,33 @@ class AutomationEngine
 
         }
 
-        $text    = $this->interpolate((string) $config['message'], $ctx);
+        $text = $this->interpolate((string) $config['message'], $ctx);
+
+        // B2/B4: se é Cloud API e janela 24h fechada, texto livre vai falhar no Meta.
+        // Opções: (1) pular se não tem fallback_template_id na config, (2) usar template.
+        $conv->setRelation('instance', $instance);
+        $checker = app(\App\Services\Whatsapp\ConversationWindowChecker::class);
+        if ($checker->isCloudApi($conv) && ! $checker->isOpen($conv)) {
+            $fallbackTplId = (int) ($config['fallback_template_id'] ?? 0);
+            if (! $fallbackTplId) {
+                Log::channel('whatsapp')->info('AutomationEngine: send_whatsapp_message pulado (janela 24h fechada, sem template fallback)', [
+                    'automation_id'   => $automation->id,
+                    'conversation_id' => $conv->id,
+                ]);
+                return;
+            }
+            // Delega pra action de template com o template do fallback.
+            $this->actionSendWhatsappTemplate(
+                ['template_id' => $fallbackTplId, 'instance_id' => $instance->id] + $config,
+                $ctx,
+                $automation,
+            );
+            return;
+        }
+
         $service = \App\Services\WhatsappServiceFactory::for($instance);
-        $chatId  = $phone . '@c.us';
+        $chatId  = app(\App\Services\Whatsapp\ChatIdResolver::class)
+            ->for($instance, (string) $phone, (bool) $conv->is_group, $conv);
 
         Log::channel('whatsapp')->info('AutomationEngine: enviando mensagem', [
             'automation_id' => $automation->id,
@@ -651,23 +678,14 @@ class AutomationEngine
         try {
             $result = $service->sendText($chatId, $text);
 
-            // Salvar mensagem enviada no banco (para aparecer no chat)
             if (empty($result['error'])) {
-                \App\Models\WhatsappMessage::withoutGlobalScope('tenant')->create([
-                    'tenant_id'       => $automation->tenant_id,
-                    'conversation_id' => $conv->id,
-                    'waha_message_id' => $result['id'] ?? ('auto_' . uniqid()),
-                    'direction'       => 'outbound',
-                    'type'            => 'text',
-                    'body'            => $text,
-                    'sent_by'         => 'automation',
-                    'ack'             => 'sent',
-                    'sent_at'         => now(),
-                ]);
-
-                WhatsappConversation::withoutGlobalScope('tenant')
-                    ->where('id', $conv->id)
-                    ->update(['last_message_at' => now()]);
+                app(\App\Services\Whatsapp\OutboundMessagePersister::class)->persist(
+                    conv: $conv,
+                    type: 'text',
+                    body: $text,
+                    sendResult: $result,
+                    sentBy: 'automation',
+                );
             }
 
             Log::channel('whatsapp')->info('AutomationEngine: mensagem enviada', [
@@ -683,6 +701,354 @@ class AutomationEngine
                 'error'           => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Action `send_whatsapp_template`: envia Message Template HSM aprovado.
+     * Exclusivo Cloud API (WAHA não suporta — retorna erro not_supported).
+     *
+     * Config esperada:
+     *   - template_id (int, obrigatório)       — ID do WhatsappTemplate APPROVED
+     *   - instance_id (int, opcional)          — força instância específica
+     *   - variable_mappings (array, opcional)  — ['1' => 'lead.name', '2' => 'lead.company']
+     *                                            se null, usa mapping padrão (1=nome, 2=company, 3=email)
+     */
+    private function actionSendWhatsappTemplate(array $config, array $ctx, Automation $automation): void
+    {
+        $templateId = (int) ($config['template_id'] ?? 0);
+        if (! $templateId) {
+            Log::channel('whatsapp')->warning('AutomationEngine: send_whatsapp_template sem template_id', [
+                'automation_id' => $automation->id,
+            ]);
+            return;
+        }
+
+        $template = \App\Models\WhatsappTemplate::withoutGlobalScope('tenant')
+            ->where('id', $templateId)
+            ->where('tenant_id', $automation->tenant_id)
+            ->where('status', 'APPROVED')
+            ->first();
+
+        if (! $template) {
+            Log::channel('whatsapp')->warning('AutomationEngine: template não encontrado ou não aprovado', [
+                'automation_id' => $automation->id,
+                'template_id'   => $templateId,
+            ]);
+            return;
+        }
+
+        [$conv, $instance, $phone] = $this->resolveWhatsappTarget($config, $ctx, $automation);
+        if (! $instance || ! $phone) {
+            return;
+        }
+        if (! $instance->supportsTemplates()) {
+            Log::channel('whatsapp')->warning('AutomationEngine: instância não suporta templates (não é Cloud API)', [
+                'automation_id' => $automation->id,
+                'instance_id'   => $instance->id,
+            ]);
+            return;
+        }
+
+        // Mapping: extrai variáveis do lead conforme config do user OU mapping padrão.
+        $lead = $this->resolveLead($ctx);
+        $variables = $this->buildTemplateVariables(
+            $template,
+            $lead,
+            $ctx,
+            (array) ($config['variable_mappings'] ?? []),
+        );
+
+        $result = app(\App\Services\Whatsapp\WhatsappTemplateService::class)
+            ->send($instance, (string) $phone, $template, $variables);
+
+        if (isset($result['error'])) {
+            Log::channel('whatsapp')->error('AutomationEngine: envio de template falhou', [
+                'automation_id' => $automation->id,
+                'template'      => $template->name,
+                'error'         => $result['error'],
+            ]);
+            return;
+        }
+
+        // Garante conversa criada + persiste msg local com preview.
+        if (! $conv instanceof WhatsappConversation) {
+            $conv = $this->findOrCreateConversation($automation, $instance, $phone, $lead);
+        }
+
+        $preview = $this->buildTemplatePreview($template, $variables);
+        app(\App\Services\Whatsapp\OutboundMessagePersister::class)->persist(
+            conv: $conv,
+            type: 'template',
+            body: $preview,
+            sendResult: $result,
+            sentBy: 'automation',
+        );
+    }
+
+    /**
+     * Action `send_whatsapp_buttons`: até 3 botões de resposta rápida.
+     * Exclusivo Cloud API (SupportsInteractiveMessages).
+     *
+     * Config:
+     *   - message (string, obrigatório)  — texto principal
+     *   - buttons (array, obrigatório)   — [['id' => 'yes', 'title' => 'Sim'], ...]
+     *   - footer (string, opcional)
+     *   - instance_id (int, opcional)
+     */
+    private function actionSendWhatsappButtons(array $config, array $ctx, Automation $automation): void
+    {
+        $body    = $this->interpolate((string) ($config['message'] ?? ''), $ctx);
+        $buttons = (array) ($config['buttons'] ?? []);
+        $footer  = ! empty($config['footer']) ? $this->interpolate((string) $config['footer'], $ctx) : null;
+
+        if ($body === '' || empty($buttons)) {
+            Log::channel('whatsapp')->warning('AutomationEngine: send_whatsapp_buttons sem body ou buttons', [
+                'automation_id' => $automation->id,
+            ]);
+            return;
+        }
+
+        [$conv, $instance, $phone] = $this->resolveWhatsappTarget($config, $ctx, $automation);
+        if (! $instance || ! $phone) {
+            return;
+        }
+        if (! $instance->supportsInteractiveButtons()) {
+            Log::channel('whatsapp')->warning('AutomationEngine: instância não suporta interactive buttons (não é Cloud API)', [
+                'automation_id' => $automation->id,
+                'instance_id'   => $instance->id,
+            ]);
+            return;
+        }
+
+        $service = \App\Services\WhatsappServiceFactory::for($instance);
+        if (! $service instanceof \App\Contracts\SupportsInteractiveMessages) {
+            return;
+        }
+
+        $chatId = app(\App\Services\Whatsapp\ChatIdResolver::class)
+            ->for($instance, (string) $phone, false, $conv instanceof WhatsappConversation ? $conv : null);
+
+        $result = $service->sendInteractiveButtons($chatId, $body, $buttons, $footer);
+
+        if (isset($result['error'])) {
+            Log::channel('whatsapp')->error('AutomationEngine: envio de buttons falhou', [
+                'automation_id' => $automation->id,
+                'error'         => $result['error'] ?? 'unknown',
+            ]);
+            return;
+        }
+
+        $lead = $this->resolveLead($ctx);
+        if (! $conv instanceof WhatsappConversation) {
+            $conv = $this->findOrCreateConversation($automation, $instance, $phone, $lead);
+        }
+
+        app(\App\Services\Whatsapp\OutboundMessagePersister::class)->persist(
+            conv: $conv,
+            type: 'interactive',
+            body: $body,
+            sendResult: $result,
+            sentBy: 'automation',
+        );
+    }
+
+    /**
+     * Action `send_whatsapp_list`: lista interativa com seções.
+     * Funciona no Cloud E no WAHA (sendList está no contrato base).
+     */
+    private function actionSendWhatsappList(array $config, array $ctx, Automation $automation): void
+    {
+        $description = $this->interpolate((string) ($config['message'] ?? ''), $ctx);
+        $rows        = (array) ($config['rows'] ?? []);
+        $buttonText  = (string) ($config['button_text'] ?? 'Selecione');
+        $title       = ! empty($config['title']) ? (string) $config['title'] : null;
+
+        if ($description === '' || empty($rows)) {
+            Log::channel('whatsapp')->warning('AutomationEngine: send_whatsapp_list sem description ou rows', [
+                'automation_id' => $automation->id,
+            ]);
+            return;
+        }
+
+        [$conv, $instance, $phone] = $this->resolveWhatsappTarget($config, $ctx, $automation);
+        if (! $instance || ! $phone) {
+            return;
+        }
+
+        $service = \App\Services\WhatsappServiceFactory::for($instance);
+        $chatId  = app(\App\Services\Whatsapp\ChatIdResolver::class)
+            ->for($instance, (string) $phone, false, $conv instanceof WhatsappConversation ? $conv : null);
+
+        $result = $service->sendList($chatId, $description, $rows, $title, $buttonText);
+
+        if (isset($result['error'])) {
+            Log::channel('whatsapp')->error('AutomationEngine: envio de list falhou', [
+                'automation_id' => $automation->id,
+                'error'         => $result['error'] ?? 'unknown',
+            ]);
+            return;
+        }
+
+        $lead = $this->resolveLead($ctx);
+        if (! $conv instanceof WhatsappConversation) {
+            $conv = $this->findOrCreateConversation($automation, $instance, $phone, $lead);
+        }
+
+        app(\App\Services\Whatsapp\OutboundMessagePersister::class)->persist(
+            conv: $conv,
+            type: 'interactive',
+            body: $description,
+            sendResult: $result,
+            sentBy: 'automation',
+        );
+    }
+
+    /**
+     * Helper: resolve (conversa, instância, phone) a partir do context + config.
+     * Usado pelas 3 actions Cloud-only pra não duplicar lógica de resolução.
+     * Retorna [null, null, null] se faltar alguma coisa crítica.
+     *
+     * @return array{0: ?WhatsappConversation, 1: ?WhatsappInstance, 2: ?string}
+     */
+    private function resolveWhatsappTarget(array $config, array $ctx, Automation $automation): array
+    {
+        $conv = $ctx['conversation'] ?? null;
+        $lead = $this->resolveLead($ctx);
+
+        if (! ($conv instanceof WhatsappConversation) && $lead) {
+            $conv = WhatsappConversation::withoutGlobalScope('tenant')
+                ->where('tenant_id', $automation->tenant_id)
+                ->where('lead_id', $lead->id)
+                ->latest('last_message_at')
+                ->first();
+        }
+
+        $phone = $conv instanceof WhatsappConversation
+            ? $conv->phone
+            : \App\Support\PhoneNormalizer::toE164($lead?->phone);
+
+        if (! $phone) {
+            return [null, null, null];
+        }
+
+        $instance = app(\App\Services\Whatsapp\InstanceSelector::class)->selectFor(
+            $automation->tenant_id,
+            [
+                'instance_id'  => $config['instance_id'] ?? null,
+                'conversation' => $conv instanceof WhatsappConversation ? $conv : null,
+            ],
+        );
+
+        if (! $instance) {
+            return [null, null, null];
+        }
+
+        return [$conv instanceof WhatsappConversation ? $conv : null, $instance, $phone];
+    }
+
+    /**
+     * Cria conversa mínima se ainda não existe — usado quando automação dispara
+     * antes do lead ter qualquer msg no whatsapp.
+     */
+    private function findOrCreateConversation(
+        Automation $automation,
+        WhatsappInstance $instance,
+        string $phone,
+        ?\App\Models\Lead $lead,
+    ): WhatsappConversation {
+        $existing = WhatsappConversation::withoutGlobalScope('tenant')
+            ->where('tenant_id', $automation->tenant_id)
+            ->where('instance_id', $instance->id)
+            ->where('phone', $phone)
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        return WhatsappConversation::withoutGlobalScope('tenant')->create([
+            'tenant_id'       => $automation->tenant_id,
+            'instance_id'     => $instance->id,
+            'phone'           => $phone,
+            'lead_id'         => $lead?->id,
+            'is_group'        => false,
+            'contact_name'    => $lead?->name ?? $phone,
+            'status'          => 'open',
+            'started_at'      => now(),
+            'last_message_at' => now(),
+            'unread_count'    => 0,
+        ]);
+    }
+
+    /**
+     * Monta o array de variáveis pro template baseado em mapping custom OU default.
+     *
+     *   mapping ['1' => 'lead.name', '2' => 'custom_field.data_consulta']
+     *   context tem $lead e $conv; custom fields vêm do lead relation.
+     *
+     * Default (quando mapping vazio): 1=name, 2=company, 3=email.
+     */
+    private function buildTemplateVariables(
+        \App\Models\WhatsappTemplate $template,
+        ?\App\Models\Lead $lead,
+        array $ctx,
+        array $mapping,
+    ): array {
+        $vars = [];
+        $tplVariables = $template->variables; // indices detectados no body do template
+
+        foreach ($tplVariables as $idx) {
+            $key = (string) $idx;
+            $path = $mapping[$key] ?? null;
+
+            if ($path) {
+                $vars[$key] = (string) ($this->resolveContextPath($path, $lead, $ctx) ?? '');
+            } else {
+                // Default posicional
+                $vars[$key] = match ($idx) {
+                    '1', 1 => (string) ($lead?->name    ?? ''),
+                    '2', 2 => (string) ($lead?->company ?? ''),
+                    '3', 3 => (string) ($lead?->email   ?? ''),
+                    default => '',
+                };
+            }
+        }
+
+        return $vars;
+    }
+
+    private function resolveContextPath(string $path, ?\App\Models\Lead $lead, array $ctx): ?string
+    {
+        // Suporta: lead.{field}, lead.custom_field.{slug}, conversation.{field}
+        if (str_starts_with($path, 'lead.') && $lead) {
+            $field = substr($path, 5);
+            if (str_starts_with($field, 'custom_field.')) {
+                $slug = substr($field, 13);
+                return $lead->customFields->firstWhere('slug', $slug)?->value;
+            }
+            return (string) ($lead->{$field} ?? '');
+        }
+
+        if (str_starts_with($path, 'conversation.') && isset($ctx['conversation'])) {
+            $field = substr($path, 13);
+            return (string) ($ctx['conversation']->{$field} ?? '');
+        }
+
+        return null;
+    }
+
+    private function buildTemplatePreview(\App\Models\WhatsappTemplate $template, array $variables): string
+    {
+        $body = '';
+        foreach ((array) $template->components as $c) {
+            if (strtoupper((string) ($c['type'] ?? '')) === 'BODY') {
+                $body = (string) ($c['text'] ?? '');
+                break;
+            }
+        }
+        return (string) preg_replace_callback('/\{\{\s*(\d+)\s*\}\}/', function ($m) use ($variables) {
+            return (string) ($variables[$m[1]] ?? $m[0]);
+        }, $body);
     }
 
     private function actionScheduleWhatsappMessage(array $config, array $ctx): void

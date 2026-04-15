@@ -48,7 +48,18 @@ class AutomationController extends Controller
 
         $whatsappInstances = WhatsappInstance::where('status', 'connected')
             ->orderBy('label')
-            ->get(['id', 'label', 'phone_number', 'session_name']);
+            ->get(['id', 'label', 'phone_number', 'session_name', 'provider']);
+
+        // Templates HSM aprovados — pros blocos send_whatsapp_template da UI.
+        $waTemplates = \App\Models\WhatsappTemplate::where('status', 'APPROVED')
+            ->orderBy('name')
+            ->get(['id', 'name', 'language', 'components'])
+            ->map(fn ($t) => [
+                'id'        => $t->id,
+                'name'      => $t->name,
+                'language'  => $t->language,
+                'variables' => $t->variables,  // accessor que extrai {{N}} do body
+            ]);
 
         $whatsappTags = WhatsappTag::orderBy('name')->get(['id', 'name', 'color']);
 
@@ -94,7 +105,7 @@ class AutomationController extends Controller
             ->get(['id', 'name']);
 
         return compact('pipelines', 'users', 'aiAgents', 'chatbotFlows', 'wahaConnected',
-                       'whatsappInstances', 'whatsappTags', 'leadTags', 'leadSources',
+                       'whatsappInstances', 'waTemplates', 'whatsappTags', 'leadTags', 'leadSources',
                        'allLeadSources', 'dateCustomFields', 'allCustomFields',
                        'departments', 'sequences');
     }

@@ -429,6 +429,20 @@
                 <div class="af-block-item action" onclick="addActionBlock('send_webhook')">
                     <span class="af-block-icon"><i class="bi bi-broadcast"></i></span>{{ __('automations.sidebar_act_send_webhook') }}
                 </div>
+                @if(tenantHasCloudApi())
+                    <div style="padding:8px 12px 4px;font-size:10.5px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-top:6px;border-top:1px solid #f0f2f7;">
+                        WhatsApp Cloud API
+                    </div>
+                    <div class="af-block-item action" onclick="addActionBlock('send_whatsapp_template')">
+                        <span class="af-block-icon"><i class="bi bi-card-text"></i></span>Enviar template HSM
+                    </div>
+                    <div class="af-block-item action" onclick="addActionBlock('send_whatsapp_buttons')">
+                        <span class="af-block-icon"><i class="bi bi-ui-radios-grid"></i></span>Botões de resposta rápida
+                    </div>
+                    <div class="af-block-item action" onclick="addActionBlock('send_whatsapp_list')">
+                        <span class="af-block-icon"><i class="bi bi-list-ul"></i></span>Lista interativa
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -481,6 +495,8 @@ const SEQUENCES      = @json($sequences ?? []);
 const DEPARTMENTS    = @json($departments);
 const WAHA_CONNECTED = {{ $wahaConnected ? 'true' : 'false' }};
 const WHATSAPP_INSTANCES = @json($whatsappInstances);
+const WA_TEMPLATES = @json($waTemplates ?? []);
+const TEMPLATES_URL = @json(route('settings.whatsapp-templates.index'));
 const LEAD_TAGS      = @json($leadTags->values());
 const LEAD_SOURCES   = @json($leadSources->values());
 const WAPP_TAGS           = @json($whatsappTags->pluck('name')->values());
@@ -818,6 +834,9 @@ const ACTION_META = {
     enroll_sequence:           { icon:'bi-arrow-repeat',  label: AUTLANG.sidebar_act_enroll_sequence },
     ai_extract_fields:         { icon:'bi-magic',         label: AUTLANG.sidebar_act_ai_extract_fields },
     send_webhook:              { icon:'bi-broadcast',     label: AUTLANG.sidebar_act_send_webhook },
+    send_whatsapp_template:    { icon:'bi-card-text',     label: 'Enviar template HSM' },
+    send_whatsapp_buttons:     { icon:'bi-ui-radios-grid',label: 'Botões de resposta rápida' },
+    send_whatsapp_list:        { icon:'bi-list-ul',       label: 'Lista interativa' },
 };
 
 function addActionBlock(type, prefill) {
@@ -971,6 +990,85 @@ function buildActionBody(type, idx, prefill) {
                     </select>
                 </div>
             </div>`;
+    }
+    if (type === 'send_whatsapp_template') {
+        // Só instâncias Cloud API (suportam templates) — filtradas abaixo
+        const cloudInsts = WHATSAPP_INSTANCES.filter(i => i.provider === 'cloud_api');
+        if (cloudInsts.length === 0) {
+            return `<p style="font-size:12px;color:#f59e0b;margin:0;"><i class="bi bi-exclamation-triangle me-1"></i>Nenhuma instância Cloud API conectada. Conecte em /configuracoes/integracoes.</p>`;
+        }
+        const insOpts = cloudInsts.map(i => {
+            const lbl = (i.label || i.phone_number || ('#' + i.id));
+            return `<option value="${i.id}" ${prefill.instance_id==i.id?'selected':''}>${h(lbl)}</option>`;
+        }).join('');
+        const tplOpts = (WA_TEMPLATES || []).map(t =>
+            `<option value="${t.id}" data-vars="${(t.variables||[]).length}" ${prefill.template_id==t.id?'selected':''}>${h(t.name)} (${h(t.language)})</option>`
+        ).join('');
+        if ((WA_TEMPLATES || []).length === 0) {
+            return `<p style="font-size:12px;color:#f59e0b;margin:0;"><i class="bi bi-exclamation-triangle me-1"></i>Nenhum template APPROVED. <a href="${TEMPLATES_URL}" style="color:#0085f3;">Criar template</a>.</p>`;
+        }
+        return `<label>Enviar via</label>
+            <select class="form-control" id="ainstance-${idx}">
+                <option value="">Automático (conversa ou padrão Cloud do tenant)</option>${insOpts}
+            </select>
+            <label style="margin-top:8px;">Template aprovado <span style="color:#dc2626;">*</span></label>
+            <select class="form-control atplselect" id="atplid-${idx}" data-idx="${idx}">
+                <option value="">— Escolha um template —</option>${tplOpts}
+            </select>
+            <div id="atplvars-${idx}" style="margin-top:8px;"></div>
+            <div style="font-size:11px;color:#9ca3af;margin-top:6px;">Variáveis são resolvidas automaticamente a partir do lead (nome→{{1}}, empresa→{{2}}, email→{{3}}). Mapeamento custom será liberado em versão futura.</div>`;
+    }
+    if (type === 'send_whatsapp_buttons') {
+        const cloudInsts = WHATSAPP_INSTANCES.filter(i => i.provider === 'cloud_api');
+        if (cloudInsts.length === 0) {
+            return `<p style="font-size:12px;color:#f59e0b;margin:0;"><i class="bi bi-exclamation-triangle me-1"></i>Botões interativos só em instâncias Cloud API.</p>`;
+        }
+        const insOpts = cloudInsts.map(i => {
+            const lbl = (i.label || i.phone_number || ('#' + i.id));
+            return `<option value="${i.id}" ${prefill.instance_id==i.id?'selected':''}>${h(lbl)}</option>`;
+        }).join('');
+        const btns = prefill.buttons || [{id:'btn_1', title:''}];
+        const btnRows = btns.slice(0,3).map((b,i) =>
+            `<div style="display:flex;gap:6px;margin-bottom:6px;">
+                <input type="text" class="form-control abtnid-${idx}" placeholder="id" maxlength="256" value="${h(b.id||'btn_'+(i+1))}" style="flex:0 0 110px;">
+                <input type="text" class="form-control abtntitle-${idx}" placeholder="Texto (máx 20)" maxlength="20" value="${h(b.title||'')}" style="flex:1;">
+            </div>`
+        ).join('');
+        return `<label>Enviar via</label>
+            <select class="form-control" id="ainstance-${idx}">
+                <option value="">Automático</option>${insOpts}
+            </select>
+            <label style="margin-top:8px;">Texto principal <small style="font-weight:400;color:#9ca3af;">(${MSG_VARS_HINT})</small></label>
+            <textarea class="form-control" id="aval-${idx}" rows="2" placeholder="Mensagem">${h(prefill.message||'')}</textarea>
+            <label style="margin-top:8px;">Botões (máx 3)</label>
+            <div id="abtnsbox-${idx}">${btnRows}</div>
+            <label style="margin-top:8px;">Rodapé <small style="font-weight:400;color:#9ca3af;">(opcional, máx 60)</small></label>
+            <input type="text" class="form-control" id="afooter-${idx}" maxlength="60" value="${h(prefill.footer||'')}">`;
+    }
+    if (type === 'send_whatsapp_list') {
+        if (!WAHA_CONNECTED) return `<p style="font-size:12px;color:#f59e0b;margin:0;"><i class="bi bi-exclamation-triangle me-1"></i>${h(AUTLANG.no_whatsapp_instance)}</p>`;
+        const insOpts = WHATSAPP_INSTANCES.map(i => {
+            const lbl = (i.label || i.phone_number || ('#' + i.id));
+            return `<option value="${i.id}" ${prefill.instance_id==i.id?'selected':''}>${h(lbl)}</option>`;
+        }).join('');
+        const rows = prefill.rows || [{id:'row_1', title:'', description:''}];
+        const rowRows = rows.slice(0,10).map((r,i) =>
+            `<div style="display:flex;gap:6px;margin-bottom:6px;">
+                <input type="text" class="form-control arowid-${idx}" placeholder="id" maxlength="200" value="${h(r.id||'row_'+(i+1))}" style="flex:0 0 100px;">
+                <input type="text" class="form-control arowtitle-${idx}" placeholder="Título (máx 24)" maxlength="24" value="${h(r.title||'')}" style="flex:1;">
+                <input type="text" class="form-control arowdesc-${idx}" placeholder="Descrição (opcional)" maxlength="72" value="${h(r.description||'')}" style="flex:1.5;">
+            </div>`
+        ).join('');
+        return `<label>Enviar via</label>
+            <select class="form-control" id="ainstance-${idx}">
+                <option value="">Automático</option>${insOpts}
+            </select>
+            <label style="margin-top:8px;">Texto principal <small style="font-weight:400;color:#9ca3af;">(${MSG_VARS_HINT})</small></label>
+            <textarea class="form-control" id="aval-${idx}" rows="2" placeholder="Descrição da lista">${h(prefill.message||'')}</textarea>
+            <label style="margin-top:8px;">Texto do botão</label>
+            <input type="text" class="form-control" id="abtntext-${idx}" maxlength="20" placeholder="Selecione" value="${h(prefill.button_text||'Selecione')}">
+            <label style="margin-top:8px;">Opções (máx 10)</label>
+            <div id="arowsbox-${idx}">${rowRows}</div>`;
     }
     if (type === 'create_task') {
         const ttypes = [['call', AUTLANG.task_type_call],['email', AUTLANG.task_type_email],['task', AUTLANG.task_type_task],['visit', AUTLANG.task_type_visit],['whatsapp', AUTLANG.task_type_whatsapp],['meeting', AUTLANG.task_type_meeting]];
@@ -1570,6 +1668,48 @@ function saveAutomation() {
             if (config.delay_value < 1) { toastr.warning(AUTLANG.validation_delay_min); err = true; return; }
             const insVal2 = document.getElementById(`ainstance-${idx}`)?.value || '';
             if (insVal2) config.instance_id = parseInt(insVal2);
+        } else if (type === 'send_whatsapp_template') {
+            const tplId = document.getElementById(`atplid-${idx}`)?.value || '';
+            if (!tplId) { toastr.warning('Escolha um template aprovado.'); err = true; return; }
+            config.template_id = parseInt(tplId);
+            const insTpl = document.getElementById(`ainstance-${idx}`)?.value || '';
+            if (insTpl) config.instance_id = parseInt(insTpl);
+        } else if (type === 'send_whatsapp_buttons') {
+            config.message = (document.getElementById(`aval-${idx}`)?.value || '').trim();
+            if (!config.message) { toastr.warning('Texto principal obrigatório.'); err = true; return; }
+            const ids    = body.querySelectorAll(`.abtnid-${idx}`);
+            const titles = body.querySelectorAll(`.abtntitle-${idx}`);
+            const buttons = [];
+            for (let i = 0; i < ids.length; i++) {
+                const t = (titles[i]?.value || '').trim();
+                if (t) buttons.push({ id: (ids[i]?.value || `btn_${i+1}`).trim(), title: t });
+            }
+            if (!buttons.length) { toastr.warning('Adicione pelo menos 1 botão com texto.'); err = true; return; }
+            config.buttons = buttons.slice(0, 3);
+            const footer = (document.getElementById(`afooter-${idx}`)?.value || '').trim();
+            if (footer) config.footer = footer;
+            const insBtn = document.getElementById(`ainstance-${idx}`)?.value || '';
+            if (insBtn) config.instance_id = parseInt(insBtn);
+        } else if (type === 'send_whatsapp_list') {
+            config.message = (document.getElementById(`aval-${idx}`)?.value || '').trim();
+            if (!config.message) { toastr.warning('Descrição da lista obrigatória.'); err = true; return; }
+            config.button_text = (document.getElementById(`abtntext-${idx}`)?.value || 'Selecione').trim();
+            const rIds    = body.querySelectorAll(`.arowid-${idx}`);
+            const rTitles = body.querySelectorAll(`.arowtitle-${idx}`);
+            const rDescs  = body.querySelectorAll(`.arowdesc-${idx}`);
+            const rows = [];
+            for (let i = 0; i < rIds.length; i++) {
+                const t = (rTitles[i]?.value || '').trim();
+                if (t) rows.push({
+                    id:          (rIds[i]?.value || `row_${i+1}`).trim(),
+                    title:       t,
+                    description: (rDescs[i]?.value || '').trim(),
+                });
+            }
+            if (!rows.length) { toastr.warning('Adicione pelo menos 1 opção com título.'); err = true; return; }
+            config.rows = rows.slice(0, 10);
+            const insLst = document.getElementById(`ainstance-${idx}`)?.value || '';
+            if (insLst) config.instance_id = parseInt(insLst);
         } else if (type === 'set_utm_params') {
             document.querySelectorAll(`#actBody-${idx} .utm-field`).forEach(el => {
                 const name = el.dataset.utm;
