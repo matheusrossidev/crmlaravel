@@ -628,7 +628,21 @@ class ProcessAiResponse implements ShouldQueue
             // ── Cliente mandou texto → responder SOMENTE com texto ───────────
             $delay = max(1, $agent->response_delay_seconds ?? 1);
 
-            $messages = $service->splitIntoMessages($reply, $maxLength);
+            // FIX #1: quando Agno retornou reply_blocks estruturados, usar
+            // DIRETO sem re-splitar. Agno já fez 2nd-pass LLM pra otimizar
+            // formatação — PHP re-aplicar splitIntoMessages destruiria essa
+            // estrutura (lista numerada vira parágrafos picotados).
+            // Só re-splita se:
+            //   (a) caminho direto sem Agno (reply único do LLM bruto)
+            //   (b) Agno devolveu 1 bloco só E ele está acima do max_message_length
+            //       (safety net: bloco gigante precisa quebrar pra não estourar WA)
+            if ($agent->use_agno && count($replyBlocks) >= 2) {
+                $messages = $replyBlocks;
+            } elseif ($agent->use_agno && count($replyBlocks) === 1 && mb_strlen($replyBlocks[0]) <= $maxLength) {
+                $messages = $replyBlocks;
+            } else {
+                $messages = $service->splitIntoMessages($reply, $maxLength);
+            }
 
             foreach ($extraMessages as $extra) {
                 $messages[] = $extra;

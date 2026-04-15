@@ -251,12 +251,27 @@ uma mensagem SEPARADA, com delay entre elas — exatamente como uma pessoa digit
 
 REGRAS ABSOLUTAS:
 - NUNCA coloque tudo em uma mensagem só.
-- NUNCA use markdown: sem **, sem __, sem #, sem listas com hífens.
 - Cada bloco deve ter no máximo {max_len} caracteres.
 - Cada bloco deve ser uma frase ou ideia COMPLETA — jamais corte no meio de uma frase.
 - Se uma ideia precisa de mais de {max_len} chars, divida em 2 blocos em pontos naturais.
+- Markdown: WhatsApp aceita *negrito* (1 asterisco) e _itálico_ (underscore).
+  Evite ** e __ duplos; use bullets com "- item" e numeração "1. item" pra listas.
 
-REGRA DE OURO: cada item de uma lista = 1 reply_block separado.""")
+LISTAS (importante):
+- Lista CURTA (até ~5 itens): TODOS os itens ficam no MESMO bloco, como lista
+  numerada "1. item\\n2. item\\n3. item" (bullets visuais).
+- Lista LONGA (mais de 5 itens): divida em blocos de até 5 itens cada, mas SEMPRE
+  comece cada bloco de continuação com um mini-cabeçalho recontextualizando
+  (ex: "Outras opções:" ou "Continuando nossa lista:"). Numeração deve ser
+  sequencial entre blocos (1-5, depois 6-10...). NUNCA coloque um item sozinho
+  sem contexto.
+
+Exemplo do que NÃO fazer:
+  ❌ Bloco 1: "7. Estética íntima\\n8. Endometriose"   ← sem contexto do 1-6!
+
+Exemplo correto:
+  ✅ Bloco 1: "A Dra. atende:\\n1. Consulta médica\\n2. Exames\\n3. Cirurgias\\n4. Pré-natal\\n5. Ginecologia"
+  ✅ Bloco 2: "Continuando:\\n6. Endocrinologia\\n7. Estética íntima\\n8. Laser\\n9. Vulvodínia\\n10. Atendimento a adolescentes\" """)
 
     # ── Pipeline stages ──────────────────────────────────────────────
     if pipeline_stages:

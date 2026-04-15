@@ -884,19 +884,35 @@ WEBCHAT;
     }
 
     /**
-     * Remove formatação markdown do texto para uso no WhatsApp.
+     * Remove markdown pesado, PRESERVANDO listas (bullets e numeração).
+     *
+     * WhatsApp aceita visualmente "- item" e "1. item" como bullet/numeração —
+     * não precisamos converter em parágrafo solto. Antes esse método removia
+     * os bullets `- *` do início da linha, o que destruía listas (user perguntava
+     * "quais consultas" e recebia "Consulta X\nConsulta Y\nConsulta Z" sem
+     * nenhum indicador visual de lista). Fix B2 do plano 2026-04-15.
+     *
+     * O que é removido (markdown que WA NÃO renderiza):
+     *  - **bold** e __bold__ (WA usa *bold* com 1 asterisco)
+     *  - *italic* (WA usa _italic_ com underscore)
+     *  - headers (# ## ###)
+     *  - blocos de código (``` ```) e inline (`code`)
+     *
+     * O que é PRESERVADO:
+     *  - "- item" / "* item" — WA renderiza como bullet
+     *  - "1. item" / "2." — numeração fica visível e ordenada
+     *  - Quebras de linha simples/duplas
      */
     public function cleanFormatting(string $text): string
     {
         // Remove **negrito** e __sublinhado__ (mantém o texto interno)
         $text = preg_replace('/\*\*(.+?)\*\*/su', '$1', $text);
         $text = preg_replace('/__(.+?)__/su', '$1', $text);
-        // Remove *itálico* (asterisco simples)
-        $text = preg_replace('/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/su', '$1', $text);
+        // Remove *itálico* (asterisco simples, NÃO no início de linha pra não comer bullet)
+        $text = preg_replace('/(?<!\*)(?<!^)(?<!\n)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/su', '$1', $text);
         // Remove headers markdown (###, ##, #)
         $text = preg_replace('/^#{1,6}\s+/mu', '', $text);
-        // Remove marcadores de lista no início de linha (- item / * item)
-        $text = preg_replace('/^[\-\*]\s+/mu', '', $text);
+        // NÃO remove "- item" nem "1. item" — ver docblock.
         // Remove blocos de código (``` ... ```)
         $text = preg_replace('/```[\s\S]*?```/u', '', $text);
         // Remove código inline (`code`)
@@ -926,10 +942,13 @@ WEBCHAT;
             $waha = \App\Services\WhatsappServiceFactory::for($instance);
         }
 
+        // Respeita config do agente. Default 2s se param chegou 0/null.
+        $sleepBetween = max(1, (int) ($delaySeconds ?: 2));
+
         foreach ($messages as $i => $text) {
             // Delay entre mensagens (pular na primeira)
             if ($i > 0) {
-                sleep(3);
+                sleep($sleepBetween);
             }
 
             // Typing presence como indicador visual (bônus — não bloqueia envio se falhar)

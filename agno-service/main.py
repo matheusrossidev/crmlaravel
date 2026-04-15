@@ -1,9 +1,14 @@
 import json
+import logging
 import os
 import re
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
+
+# Logger estruturado — substitui prints ad-hoc em pontos críticos
+logger = logging.getLogger("agno-service")
+logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"))
 
 from agent_factory import AgnoReply, get_agent_config, get_or_create_agent, store_agent_config
 from formatter import format_as_whatsapp_blocks
@@ -111,15 +116,28 @@ async def chat(req: ChatRequest) -> AgentResponse:
         config = get_agent_config(req.agent_id)
         if config:
             raw_text = " ".join(reply_blocks)
+            max_block_cfg = int(config.get("max_message_length", 150))
             formatted = await format_as_whatsapp_blocks(
                 text=raw_text,
                 provider=config.get("llm_provider", "openai"),
                 model=config.get("llm_model", "gpt-4o-mini"),
                 api_key=config.get("llm_api_key", ""),
-                max_block=int(config.get("max_message_length", 150)),
+                max_block=max_block_cfg,
             )
             if formatted:
                 reply_blocks = formatted
+            else:
+                # Fallback silencioso antes — agora avisamos pra alguém notar em prod.
+                logger.warning(
+                    "formatter returned None, keeping original blocks",
+                    extra={
+                        "agent_id":       req.agent_id,
+                        "tenant_id":      getattr(req, "tenant_id", None),
+                        "text_length":    len(raw_text),
+                        "max_block":      max_block_cfg,
+                        "blocks_before":  len(reply_blocks),
+                    },
+                )
 
         tokens_prompt = 0
         tokens_completion = 0
@@ -220,6 +238,13 @@ async def search_agent_memories(agent_id: int, req: SearchMemoryRequest) -> dict
     return {"ok": True, "memories": results}
 
 
+# Safety-net hardcoded pra função auxiliar _split_long_block.
+#
+# ATENÇÃO: isso NÃO é o tamanho usado pelo formatter principal. O formatter
+# usa max_message_length do agent (configurável pelo admin em /ia/agentes).
+# Esse valor aqui é só um último recurso caso o fallback parser (funções
+# _parse_agent_reply) receba um bloco muito grande sem ter passado pelo
+# formatter. Na prática só roda se `format_as_whatsapp_blocks` falhar.
 MAX_BLOCK_CHARS = 150
 
 
