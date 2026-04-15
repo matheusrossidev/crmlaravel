@@ -12,8 +12,19 @@
 <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@25.2.0/build/js/intlTelInputWithUtils.min.js" defer></script>
 
 <style>
+    /* Telefone: bandeira DENTRO do input (borda única, look da referência) */
     .iti { width: 100%; display: block; }
     .iti__country-list { font-size: 13.5px; max-height: 280px; z-index: 10000; }
+    .iti__search-input {
+        width: 100% !important;
+        padding: 10px 14px !important;
+        font-size: 14px !important;
+        border: none !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        box-sizing: border-box !important;
+        outline: none !important;
+    }
+    .iti__country { padding: 9px 14px; font-size: 13.5px; }
     .phone-err-msg { font-size: 12px; color: #dc2626; margin-top: 4px; display: none; }
 </style>
 
@@ -47,8 +58,8 @@ window.__syncroPhoneConfig = {
         var cfg = window.__syncroPhoneConfig || {};
         var opts = {
             initialCountry:   cfg.defaultCountry || 'br',
-            separateDialCode: true,
-            nationalMode:     true,
+            separateDialCode: false,        // bandeira dentro do mesmo input
+            nationalMode:     false,        // mostra +55 junto
             autoPlaceholder:  'aggressive',
             formatAsYouType:  true,
             strictMode:       true,

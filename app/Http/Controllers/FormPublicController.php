@@ -405,10 +405,13 @@ class FormPublicController extends Controller
             scope + ' .sfx-success { text-align:center; padding:20px; }',
             scope + ' .sfx-success-icon { width:52px; height:52px; border-radius:50%; background:#ecfdf5; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; color:#059669; font-size:26px; font-weight:700; }',
             scope + ' .sfx-honey { position:absolute; left:-9999px; }',
-            // intl-tel-input v25 — ajustes pra combinar com look do form
+            // intl-tel-input v25 — bandeira DENTRO do input (borda única).
             scope + ' .iti { width:100%; display:block; }',
             scope + ' .iti__tel-input { border-radius:' + r + 'px; }',
+            // Dropdown e busca (padding + font-size decentes)
             scope + ' .iti__country-list { font-size:13.5px; max-height:280px; }',
+            scope + ' .iti__search-input { width:100% !important; padding:10px 14px !important; font-size:14px !important; border:none !important; border-bottom:1px solid #e5e7eb !important; box-sizing:border-box !important; outline:none !important; }',
+            scope + ' .iti__country { padding:9px 14px; font-size:13.5px; }',
             // Popup overlay
             '.syncro-form-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:2147483600; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .25s; padding:16px; }',
             '.syncro-form-overlay.visible { opacity:1; }',
@@ -496,12 +499,12 @@ class FormPublicController extends Controller
         var phone = cfg.phone || {};
         var opts = {
             initialCountry:      phone.default_country || 'br',
-            separateDialCode:    true,
-            nationalMode:        true,
+            separateDialCode:    false,           // bandeira dentro do mesmo input — borda única
+            nationalMode:        false,           // aceita/exibe com +55 antes do número
             autoPlaceholder:     'aggressive',
             formatAsYouType:     true,
             strictMode:          true,
-            countryOrder:        ['br', 'us', 'pt'],   // populares no topo
+            countryOrder:        ['br', 'us', 'pt'],
         };
         var allowed = phone.allowed_countries || [];
         if (allowed.length > 0) opts.onlyCountries = allowed;
