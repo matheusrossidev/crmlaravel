@@ -87,20 +87,27 @@ class StripeWebhookController extends Controller
         if ($subscriptionId && $planName) {
             $plan = \App\Models\PlanDefinition::where('name', $planName)->first();
 
-            $tenant->update([
+            $updates = [
                 'stripe_customer_id'     => $customerId,
                 'stripe_subscription_id' => $subscriptionId,
                 'subscription_status'    => 'active',
                 'plan'                   => $planName,
                 'status'                 => $tenant->isPartner() ? 'partner' : 'active',
-                'max_users'              => $plan?->features_json['max_users'] ?? $tenant->max_users,
-                'max_leads'              => $plan?->features_json['max_leads'] ?? $tenant->max_leads,
-                'max_pipelines'          => $plan?->features_json['max_pipelines'] ?? $tenant->max_pipelines,
-                'max_custom_fields'      => $plan?->features_json['max_custom_fields'] ?? $tenant->max_custom_fields,
-                'max_chatbot_flows'      => $plan?->features_json['max_chatbot_flows'] ?? $tenant->max_chatbot_flows,
-                'max_ai_agents'          => $plan?->features_json['max_ai_agents'] ?? $tenant->max_ai_agents,
-                'max_departments'        => $plan?->features_json['max_departments'] ?? $tenant->max_departments,
-            ]);
+            ];
+
+            $features = $plan?->features_json ?? [];
+            foreach (config('plan_limits', []) as $key => $cfg) {
+                $column = $cfg['column'] ?? null;
+                if (!$column) continue;
+                // Suporta tanto features_json[key] (formato velho: 'max_users')
+                // quanto features_json[column] (que é a mesma coisa na prática).
+                $value = $features[$column] ?? $features[$key] ?? null;
+                if ($value !== null) {
+                    $updates[$column] = $value;
+                }
+            }
+
+            $tenant->update($updates);
 
             PaymentLog::create([
                 'tenant_id'        => $tenant->id,

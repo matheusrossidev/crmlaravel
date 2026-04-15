@@ -92,6 +92,58 @@ if (! function_exists('whatsappUrl')) {
     }
 }
 
+if (! function_exists('tenantHasFeature')) {
+    /**
+     * Resolve se uma feature está disponível pro tenant.
+     *
+     * Hierarquia:
+     *   1. Override individual em feature_tenant (is_enabled 0/1)
+     *   2. Plano do tenant lista a feature em features_json.features_enabled[]
+     *   3. Feature flag global (feature_flags.is_enabled_globally)
+     *
+     * Cache de 60s. Invalidar via `Cache::forget("feature:{$tenantId}:{$slug}")`
+     * quando mudar pivot ou plano.
+     */
+    function tenantHasFeature(string $slug, ?int $tenantId = null): bool
+    {
+        $tenantId ??= activeTenantId();
+        if (! $tenantId) {
+            return false;
+        }
+
+        return (bool) cache()->remember(
+            "feature:{$tenantId}:{$slug}",
+            60,
+            function () use ($slug, $tenantId) {
+                $flag = \App\Models\FeatureFlag::where('slug', $slug)->first();
+                if (! $flag) {
+                    return false;
+                }
+
+                $override = \Illuminate\Support\Facades\DB::table('feature_tenant')
+                    ->where('tenant_id', $tenantId)
+                    ->where('feature_id', $flag->id)
+                    ->value('is_enabled');
+                if ($override !== null) {
+                    return (bool) $override;
+                }
+
+                $tenant = \App\Models\Tenant::find($tenantId);
+                $planName = $tenant?->plan;
+                if ($planName) {
+                    $plan = \App\Models\PlanDefinition::where('name', $planName)->first();
+                    $enabled = $plan?->features_json['features_enabled'] ?? null;
+                    if (is_array($enabled) && in_array($slug, $enabled, true)) {
+                        return true;
+                    }
+                }
+
+                return (bool) $flag->is_enabled_globally;
+            },
+        );
+    }
+}
+
 if (! function_exists('tenantHasCloudApi')) {
     /**
      * Retorna true se o tenant atual tem pelo menos uma instância

@@ -34,7 +34,7 @@ Route::middleware(['web', 'auth', 'tenant', 'locale'])->group(function () {
         // CRUD
         Route::get('/formularios', [FormController::class, 'index'])->name('forms.index');
         Route::get('/formularios/criar', [FormController::class, 'create'])->name('forms.create');
-        Route::post('/formularios', [FormController::class, 'store'])->name('forms.store');
+        Route::post('/formularios', [FormController::class, 'store'])->middleware('plan.limit:forms')->name('forms.store');
         Route::get('/formularios/{form}/editar', [FormController::class, 'edit'])->name('forms.edit');
         Route::put('/formularios/{form}', [FormController::class, 'update'])->name('forms.update');
         Route::delete('/formularios/{form}', [FormController::class, 'destroy'])->name('forms.destroy');

@@ -211,53 +211,48 @@
             </div>
         </div>
 
-        <div style="font-size:12.5px;font-weight:600;color:#374151;margin-bottom:10px;">Limites e features</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div style="font-size:12.5px;font-weight:600;color:#374151;margin-bottom:10px;">Limites</div>
+        <div style="font-size:11.5px;color:#9ca3af;margin-bottom:12px;">
+            Vazio ou <code>0</code> = ilimitado. Campos renderizados dinamicamente de <code>config/plan_limits.php</code>.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;" id="limitsGrid">
+            @foreach($limits as $key => $cfg)
             <div>
-                <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Max usuários</label>
-                <input type="number" id="fMaxUsers" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
+                <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">{{ $cfg['label'] }}</label>
+                <input type="number" data-limit-column="{{ $cfg['column'] }}" data-limit-key="{{ $key }}" min="0"
+                       style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
             </div>
+            @endforeach
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
             <div>
-                <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Max leads</label>
-                <input type="number" id="fMaxLeads" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
-            </div>
-            <div>
-                <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Max pipelines</label>
-                <input type="number" id="fMaxPipelines" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
-            </div>
-            <div>
-                <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Max campos personalizados</label>
-                <input type="number" id="fMaxCustomFields" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
-            </div>
-            <div>
-                <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Max departamentos</label>
-                <input type="number" id="fMaxDepartments" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
-            </div>
-            <div>
-                <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Max números WhatsApp</label>
-                <input type="number" id="fMaxWhatsappInstances" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
-            </div>
-            <div>
-                <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Max agentes IA</label>
-                <input type="number" id="fMaxAiAgents" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
-            </div>
-            <div>
-                <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Max fluxos chatbot</label>
-                <input type="number" id="fMaxChatbotFlows" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
+                <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Tokens IA/mês</label>
+                <input type="number" id="fAiTokens" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
             </div>
             <div>
                 <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Caracteres ElevenLabs/mês</label>
                 <input type="number" id="fElevenLabsChars" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:100%;font-size:13px;">
             </div>
         </div>
-        <div style="margin-bottom:14px;">
-            <label style="font-size:11.5px;color:#6b7280;display:block;margin-bottom:4px;">Tokens IA/mês</label>
-            <input type="number" id="fAiTokens" min="0" style="border:1px solid #d1d5db;border-radius:7px;padding:7px 10px;width:200px;font-size:13px;">
+
+        <div style="border-top:1px solid #f3f4f6;padding-top:18px;margin-bottom:18px;">
+            <div style="font-size:12.5px;font-weight:600;color:#374151;margin-bottom:4px;">
+                <i class="bi bi-toggles" style="margin-right:4px;"></i> Features inclusas neste plano
+            </div>
+            <div style="font-size:11.5px;color:#9ca3af;margin-bottom:12px;">
+                Ativa/desativa integrações e módulos. Tenants com este plano terão acesso automático. Overrides individuais ficam em <em>Empresas → {tenant}</em>.
+            </div>
+            <div id="featuresEnabledGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                @foreach($features as $flag)
+                <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:7px 10px;">
+                    <input type="checkbox" class="feature-enabled-cb" value="{{ $flag->slug }}">
+                    <span>{{ $flag->label }}</span>
+                </label>
+                @endforeach
+            </div>
         </div>
+
         <div style="display:flex;gap:20px;margin-bottom:20px;flex-wrap:wrap;">
-            <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
-                <input type="checkbox" id="fInstagram"> Instagram
-            </label>
             <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
                 <input type="checkbox" id="fIsActive"> Plano ativo
             </label>
@@ -430,17 +425,10 @@ function openNewPlan() {
     document.getElementById('planStripePriceIdBrl').value = '';
     document.getElementById('planStripePriceIdUsd').value = '';
     document.getElementById('planTrialDays').value = '';
-    document.getElementById('fMaxUsers').value = '5';
-    document.getElementById('fMaxLeads').value = '1000';
-    document.getElementById('fMaxPipelines').value = '3';
-    document.getElementById('fMaxCustomFields').value = '10';
-    document.getElementById('fMaxDepartments').value = '5';
-    document.getElementById('fMaxWhatsappInstances').value = '1';
-    document.getElementById('fMaxAiAgents').value = '1';
-    document.getElementById('fMaxChatbotFlows').value = '1';
+    document.querySelectorAll('#limitsGrid input[data-limit-column]').forEach(el => { el.value = ''; });
     document.getElementById('fElevenLabsChars').value = '0';
     document.getElementById('fAiTokens').value = '500000';
-    document.getElementById('fInstagram').checked = false;
+    document.querySelectorAll('.feature-enabled-cb').forEach(cb => { cb.checked = false; });
     document.getElementById('fIsActive').checked = true;
     document.getElementById('fIsVisible').checked = true;
     document.getElementById('featureInput').value = '';
@@ -470,17 +458,18 @@ function editPlan(id, plan) {
     document.getElementById('planStripePriceIdUsd').value = plan.stripe_price_id_usd || '';
     document.getElementById('planTrialDays').value = (plan.trial_days !== null && plan.trial_days !== undefined) ? plan.trial_days : '';
     const f = plan.features_json || {};
-    document.getElementById('fMaxUsers').value       = f.max_users ?? 5;
-    document.getElementById('fMaxLeads').value       = f.max_leads ?? 1000;
-    document.getElementById('fMaxPipelines').value   = f.max_pipelines ?? 3;
-    document.getElementById('fMaxCustomFields').value = f.max_custom_fields ?? 10;
-    document.getElementById('fMaxDepartments').value = f.max_departments ?? 5;
-    document.getElementById('fMaxWhatsappInstances').value = f.max_whatsapp_instances ?? 1;
-    document.getElementById('fMaxAiAgents').value    = f.max_ai_agents ?? 0;
-    document.getElementById('fMaxChatbotFlows').value = f.max_chatbot_flows ?? 0;
+    document.querySelectorAll('#limitsGrid input[data-limit-column]').forEach(el => {
+        const col = el.dataset.limitColumn;
+        const key = el.dataset.limitKey;
+        const v = (f[col] !== undefined) ? f[col] : (f[key] !== undefined ? f[key] : '');
+        el.value = (v === null || v === undefined || v === false) ? '' : v;
+    });
     document.getElementById('fElevenLabsChars').value = f.elevenlabs_characters_monthly ?? 0;
     document.getElementById('fAiTokens').value    = f.ai_tokens_monthly ?? 0;
-    document.getElementById('fInstagram').checked  = !!f.instagram;
+    const enabled = Array.isArray(f.features_enabled) ? f.features_enabled : [];
+    document.querySelectorAll('.feature-enabled-cb').forEach(cb => {
+        cb.checked = enabled.includes(cb.value);
+    });
     document.getElementById('fIsActive').checked   = !!plan.is_active;
     document.getElementById('fIsVisible').checked  = plan.is_visible !== false && plan.is_visible !== 0;
     document.getElementById('featureInput').value = '';
@@ -512,22 +501,19 @@ async function savePlan() {
         trial_days:           trialRaw !== '' ? parseInt(trialRaw) : null,
         is_active:        document.getElementById('fIsActive').checked ? 1 : 0,
         is_visible:       document.getElementById('fIsVisible').checked ? 1 : 0,
-        features_json: {
-            max_users:          parseInt(document.getElementById('fMaxUsers').value) || 0,
-            max_leads:          parseInt(document.getElementById('fMaxLeads').value) || 0,
-            max_pipelines:      parseInt(document.getElementById('fMaxPipelines').value) || 0,
-            max_custom_fields:  parseInt(document.getElementById('fMaxCustomFields').value) || 0,
-            max_departments:    parseInt(document.getElementById('fMaxDepartments').value) || 0,
-            max_whatsapp_instances: parseInt(document.getElementById('fMaxWhatsappInstances').value) || 0,
-            max_ai_agents:      parseInt(document.getElementById('fMaxAiAgents').value) || 0,
-            max_chatbot_flows:  parseInt(document.getElementById('fMaxChatbotFlows').value) || 0,
-            elevenlabs_characters_monthly: parseInt(document.getElementById('fElevenLabsChars').value) || 0,
-            ai_tokens_monthly:  parseInt(document.getElementById('fAiTokens').value) || 0,
-            ai_agents:          (parseInt(document.getElementById('fMaxAiAgents').value) || 0) > 0,
-            instagram:          document.getElementById('fInstagram').checked,
-            chatbot:            (parseInt(document.getElementById('fMaxChatbotFlows').value) || 0) > 0,
-            features_list:      featuresList,
-        },
+        features_json: (() => {
+            const out = {};
+            document.querySelectorAll('#limitsGrid input[data-limit-column]').forEach(el => {
+                const col = el.dataset.limitColumn;
+                const raw = el.value.trim();
+                out[col] = raw === '' ? null : (parseInt(raw) || 0);
+            });
+            out.elevenlabs_characters_monthly = parseInt(document.getElementById('fElevenLabsChars').value) || 0;
+            out.ai_tokens_monthly             = parseInt(document.getElementById('fAiTokens').value) || 0;
+            out.features_enabled              = Array.from(document.querySelectorAll('.feature-enabled-cb:checked')).map(cb => cb.value);
+            out.features_list                 = featuresList;
+            return out;
+        })(),
         features_en_json: featuresEnList.length > 0 ? { features_list: featuresEnList } : null,
     };
 

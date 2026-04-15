@@ -53,6 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
             '2fa'           => TwoFactorMiddleware::class,
             'cs_agent'      => CsAgentMiddleware::class,
             'requires.cloud_api' => \App\Http\Middleware\RequiresCloudApi::class,
+            'requires.feature'   => \App\Http\Middleware\RequiresFeature::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {

@@ -116,10 +116,18 @@ class TenantController extends Controller
             'lost'   => $lostLeads,
         ];
 
-        $plans = PlanDefinition::orderBy('price_monthly')
-            ->get(['id', 'name', 'display_name', 'price_monthly', 'trial_days']);
+        $plans = PlanDefinition::orderBy('price_monthly')->get();
+        $limits = config('plan_limits', []);
+        $featureFlags = \App\Models\FeatureFlag::orderBy('sort_order')->get();
 
-        return view('master.tenants.show', compact('tenant', 'users', 'leadsStats', 'plans'));
+        $featureOverrides = \Illuminate\Support\Facades\DB::table('feature_tenant')
+            ->where('tenant_id', $tenant->id)
+            ->pluck('is_enabled', 'feature_id')
+            ->toArray();
+
+        return view('master.tenants.show', compact(
+            'tenant', 'users', 'leadsStats', 'plans', 'limits', 'featureFlags', 'featureOverrides'
+        ));
     }
 
     public function update(Request $request, Tenant $tenant): JsonResponse
@@ -131,34 +139,44 @@ class TenantController extends Controller
             'status'        => 'required|in:active,inactive,suspended,trial,partner',
             'plan'          => 'required|in:' . $validPlans,
             'trial_ends_at' => 'nullable|date',
-            'max_users'                  => 'nullable|integer|min:0',
-            'max_leads'                  => 'nullable|integer|min:0',
-            'max_pipelines'              => 'nullable|integer|min:0',
-            'max_custom_fields'          => 'nullable|integer|min:0',
-            'max_chatbot_flows'          => 'nullable|integer|min:0',
-            'max_ai_agents'              => 'nullable|integer|min:0',
-            'max_whatsapp_instances'     => 'nullable|integer|min:0',
-            'ai_analyst_enabled'            => 'nullable|boolean',
-            'integration_whatsapp'          => 'nullable|boolean',
-            'integration_google_calendar'   => 'nullable|boolean',
-            'integration_instagram'         => 'nullable|boolean',
-            'integration_facebook_ads'      => 'nullable|boolean',
-            'integration_google_ads'        => 'nullable|boolean',
-            'partner_billing_starts_at'     => 'nullable|date',
+            'partner_billing_starts_at' => 'nullable|date',
+            'limits'        => 'nullable|array',
+            'features'      => 'nullable|array',
         ]);
 
-        $settings = $tenant->settings_json ?? [];
-        $settings['ai_analyst_enabled']         = $request->boolean('ai_analyst_enabled');
-        $settings['integration_whatsapp']        = $request->boolean('integration_whatsapp');
-        $settings['integration_google_calendar'] = $request->boolean('integration_google_calendar');
-        $settings['integration_instagram']       = $request->boolean('integration_instagram');
-        $settings['integration_facebook_ads']    = $request->boolean('integration_facebook_ads');
-        $settings['integration_google_ads']      = $request->boolean('integration_google_ads');
+        $updates = $request->only('status', 'plan', 'trial_ends_at', 'partner_billing_starts_at');
 
-        $tenant->update(array_merge(
-            $request->only('status', 'plan', 'trial_ends_at', 'max_users', 'max_leads', 'max_pipelines', 'max_custom_fields', 'max_chatbot_flows', 'max_ai_agents', 'max_departments', 'max_whatsapp_instances', 'partner_billing_starts_at'),
-            ['settings_json' => $settings]
-        ));
+        // Limites dinâmicos via config/plan_limits.php
+        $limitsInput = $request->input('limits', []);
+        foreach (config('plan_limits', []) as $cfg) {
+            $col = $cfg['column'] ?? null;
+            if (!$col) continue;
+            if (!array_key_exists($col, $limitsInput)) continue;
+            $raw = $limitsInput[$col];
+            $updates[$col] = ($raw === '' || $raw === null) ? null : (int) $raw;
+        }
+
+        $tenant->update($updates);
+
+        // Feature overrides via pivot feature_tenant
+        $featuresInput = $request->input('features', []);
+        $flags = \App\Models\FeatureFlag::pluck('id', 'slug');
+        foreach ($featuresInput as $slug => $state) {
+            $flagId = $flags[$slug] ?? null;
+            if (!$flagId) continue;
+            if ($state === 'inherit' || $state === '' || $state === null) {
+                \Illuminate\Support\Facades\DB::table('feature_tenant')
+                    ->where('tenant_id', $tenant->id)
+                    ->where('feature_id', $flagId)
+                    ->delete();
+            } else {
+                \Illuminate\Support\Facades\DB::table('feature_tenant')->updateOrInsert(
+                    ['tenant_id' => $tenant->id, 'feature_id' => $flagId],
+                    ['is_enabled' => (bool) (int) $state, 'updated_at' => now(), 'created_at' => now()],
+                );
+            }
+            cache()->forget("feature:{$tenant->id}:{$slug}");
+        }
 
         return response()->json(['success' => true, 'message' => 'Empresa atualizada.']);
     }

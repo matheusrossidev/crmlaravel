@@ -17,9 +17,11 @@ class PlanController extends Controller
     public function index(): View
     {
         $this->authorizeModule('plans');
-        $plans = PlanDefinition::orderBy('price_monthly')->get();
+        $plans    = PlanDefinition::orderBy('price_monthly')->get();
+        $limits   = config('plan_limits', []);
+        $features = \App\Models\FeatureFlag::orderBy('sort_order')->get();
 
-        return view('master.plans.index', compact('plans'));
+        return view('master.plans.index', compact('plans', 'limits', 'features'));
     }
 
     public function store(Request $request): JsonResponse

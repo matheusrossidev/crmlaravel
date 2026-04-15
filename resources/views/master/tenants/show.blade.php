@@ -404,72 +404,59 @@
                             <option value="unlimited" {{ $tenant->plan === 'unlimited' ? 'selected' : '' }}>Unlimited (Ilimitado)</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>Máx. usuários <small style="color:#9ca3af;">(0 = ilimitado)</small></label>
-                        <input type="number" class="form-control" id="editMaxUsers"
-                               value="{{ $tenant->max_users ?? 0 }}" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Máx. leads <small style="color:#9ca3af;">(0 = ilimitado)</small></label>
-                        <input type="number" class="form-control" id="editMaxLeads"
-                               value="{{ $tenant->max_leads ?? 0 }}" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Máx. pipelines <small style="color:#9ca3af;">(0 = ilimitado)</small></label>
-                        <input type="number" class="form-control" id="editMaxPipelines"
-                               value="{{ $tenant->max_pipelines ?? 0 }}" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Máx. campos personalizados <small style="color:#9ca3af;">(0 = ilimitado)</small></label>
-                        <input type="number" class="form-control" id="editMaxCustomFields"
-                               value="{{ $tenant->max_custom_fields ?? 0 }}" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Máx. chatbots <small style="color:#9ca3af;">(0 = ilimitado)</small></label>
-                        <input type="number" class="form-control" id="editMaxChatbotFlows"
-                               value="{{ $tenant->max_chatbot_flows ?? 0 }}" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Máx. agentes IA <small style="color:#9ca3af;">(0 = ilimitado)</small></label>
-                        <input type="number" class="form-control" id="editMaxAiAgents"
-                               value="{{ $tenant->max_ai_agents ?? 0 }}" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Máx. números WhatsApp <small style="color:#9ca3af;">(0 = ilimitado)</small></label>
-                        <input type="number" class="form-control" id="editMaxWhatsappInstances"
-                               value="{{ $tenant->max_whatsapp_instances ?? 1 }}" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;font-size:13px;">
-                            <input type="checkbox" id="editAiAnalyst"
-                                   {{ ($tenant->settings_json['ai_analyst_enabled'] ?? false) ? 'checked' : '' }}
-                                   style="width:16px;height:16px;cursor:pointer;">
-                            IA Analista ativa
-                        </label>
-                        <small style="color:#9ca3af;display:block;margin-top:2px;">Analisa conversas a cada 30 min e gera sugestões automáticas para os leads.</small>
-                    </div>
-
-                    {{-- Integrações visíveis --}}
-                    <div class="form-group" style="margin-top:14px;padding-top:14px;border-top:1px solid #f0f2f7;">
-                        <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
-                            Integrações visíveis
+                    {{-- Limites (dinâmico a partir de config/plan_limits.php) --}}
+                    <div class="form-group" style="margin-top:6px;padding-top:14px;border-top:1px solid #f0f2f7;">
+                        <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+                            Limites do tenant
+                        </div>
+                        <div style="font-size:11.5px;color:#9ca3af;margin-bottom:10px;">
+                            Deixe em branco (ou 0) pra usar o padrão do plano. Valores aqui sobrescrevem o plano.
                         </div>
                         @php
-                            $si = $tenant->settings_json ?? [];
+                            $planDef = \App\Models\PlanDefinition::where('name', $tenant->plan)->first();
+                            $planFeatures = $planDef?->features_json ?? [];
                         @endphp
-                        @foreach([
-                            ['key' => 'integration_whatsapp',        'label' => 'WhatsApp Business', 'default' => true],
-                            ['key' => 'integration_google_calendar', 'label' => 'Google Calendar',   'default' => true],
-                            ['key' => 'integration_instagram',       'label' => 'Instagram',          'default' => true],
-                            ['key' => 'integration_facebook_ads',    'label' => 'Facebook Ads',       'default' => false],
-                            ['key' => 'integration_google_ads',      'label' => 'Google Ads',         'default' => false],
-                        ] as $int)
-                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;font-size:13px;margin-bottom:6px;">
-                                <input type="checkbox" id="edit_{{ $int['key'] }}"
-                                       style="width:16px;height:16px;cursor:pointer;"
-                                       {{ ($si[$int['key']] ?? $int['default']) ? 'checked' : '' }}>
-                                {{ $int['label'] }}
-                            </label>
+                        @foreach($limits as $key => $cfg)
+                            @php
+                                $col = $cfg['column'];
+                                $planVal = $planFeatures[$col] ?? $planFeatures[$key] ?? null;
+                                $planLabel = ($planVal === null || $planVal === 0) ? 'ilimitado' : $planVal;
+                            @endphp
+                            <div class="form-group" style="display:grid;grid-template-columns:1fr 110px;gap:10px;align-items:center;margin-bottom:8px;">
+                                <label style="margin:0;font-size:13px;">
+                                    {{ $cfg['label'] }}
+                                    <small style="color:#9ca3af;display:block;font-weight:400;">Plano: {{ $planLabel }}</small>
+                                </label>
+                                <input type="number" class="form-control" name="limits[{{ $col }}]"
+                                       data-limit-column="{{ $col }}"
+                                       value="{{ $tenant->{$col} }}" min="0" placeholder="herdar">
+                            </div>
+                        @endforeach
+                    </div>
+
+                    {{-- Features (override via feature_tenant pivot) --}}
+                    <div class="form-group" style="margin-top:14px;padding-top:14px;border-top:1px solid #f0f2f7;">
+                        <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+                            Features deste tenant
+                        </div>
+                        <div style="font-size:11.5px;color:#9ca3af;margin-bottom:10px;">
+                            <strong>Herdar</strong> usa o que o plano libera. <strong>Forçar ON</strong>/<strong>OFF</strong> sobrescreve só pra este tenant.
+                        </div>
+                        @foreach($featureFlags as $flag)
+                            @php
+                                $override = $featureOverrides[$flag->id] ?? null;
+                                $state = $override === null ? 'inherit' : (((int) $override) === 1 ? '1' : '0');
+                            @endphp
+                            <div class="form-group" style="display:grid;grid-template-columns:1fr 160px;gap:10px;align-items:center;margin-bottom:6px;">
+                                <label style="margin:0;font-size:13px;">{{ $flag->label }}
+                                    <small style="color:#9ca3af;display:block;font-weight:400;">{{ $flag->slug }}</small>
+                                </label>
+                                <select class="form-control" name="features[{{ $flag->slug }}]" data-feature-slug="{{ $flag->slug }}">
+                                    <option value="inherit" {{ $state === 'inherit' ? 'selected' : '' }}>Herdar do plano</option>
+                                    <option value="1"       {{ $state === '1' ? 'selected' : '' }}>Forçar ON</option>
+                                    <option value="0"       {{ $state === '0' ? 'selected' : '' }}>Forçar OFF</option>
+                                </select>
+                            </div>
                         @endforeach
                     </div>
 
@@ -696,19 +683,20 @@ async function updateTenant() {
                 status:          document.getElementById('editStatus').value,
                 plan:            document.getElementById('editPlan').value,
                 trial_ends_at:   document.getElementById('editTrialEndsAt').value || null,
-                max_users:          parseInt(document.getElementById('editMaxUsers').value) || 0,
-                max_leads:          parseInt(document.getElementById('editMaxLeads').value) || 0,
-                max_pipelines:      parseInt(document.getElementById('editMaxPipelines').value) || 0,
-                max_custom_fields:  parseInt(document.getElementById('editMaxCustomFields').value) || 0,
-                max_chatbot_flows:  parseInt(document.getElementById('editMaxChatbotFlows').value) || 0,
-                max_ai_agents:      parseInt(document.getElementById('editMaxAiAgents').value) || 0,
-                max_whatsapp_instances: parseInt(document.getElementById('editMaxWhatsappInstances').value) || 0,
-                ai_analyst_enabled:          document.getElementById('editAiAnalyst').checked,
-                integration_whatsapp:        document.getElementById('edit_integration_whatsapp').checked,
-                integration_google_calendar: document.getElementById('edit_integration_google_calendar').checked,
-                integration_instagram:       document.getElementById('edit_integration_instagram').checked,
-                integration_facebook_ads:    document.getElementById('edit_integration_facebook_ads').checked,
-                integration_google_ads:      document.getElementById('edit_integration_google_ads').checked,
+                limits:   (() => {
+                    const obj = {};
+                    document.querySelectorAll('input[data-limit-column]').forEach(el => {
+                        obj[el.dataset.limitColumn] = el.value.trim() === '' ? null : (parseInt(el.value) || 0);
+                    });
+                    return obj;
+                })(),
+                features: (() => {
+                    const obj = {};
+                    document.querySelectorAll('select[data-feature-slug]').forEach(el => {
+                        obj[el.dataset.featureSlug] = el.value;
+                    });
+                    return obj;
+                })(),
                 partner_billing_starts_at:   document.getElementById('editPartnerBillingStartsAt')?.value || null,
             }),
         });

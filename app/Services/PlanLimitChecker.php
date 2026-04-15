@@ -4,15 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\AiAgent;
-use App\Models\ChatbotFlow;
-use App\Models\CustomFieldDefinition;
-use App\Models\Department;
-use App\Models\Lead;
-use App\Models\Pipeline;
 use App\Models\Tenant;
-use App\Models\User;
-use App\Models\WhatsappInstance;
 
 class PlanLimitChecker
 {
@@ -20,7 +12,7 @@ class PlanLimitChecker
      * Verifica se o tenant atingiu o limite de um recurso.
      * Retorna null se OK, ou uma mensagem de erro se limite atingido.
      *
-     * @param string $resource  Ex: 'leads', 'users', 'pipelines', etc.
+     * @param string $resource  Chave de config/plan_limits.php (ex: 'leads', 'forms').
      * @param Tenant|null $tenant  Se null, usa o tenant do usuário logado.
      */
     public static function check(string $resource, ?Tenant $tenant = null): ?string
@@ -36,8 +28,8 @@ class PlanLimitChecker
         }
 
         $max = $config['max'];
-        if ($max <= 0) {
-            return null; // 0 = ilimitado
+        if ($max === null || $max <= 0) {
+            return null;
         }
 
         $current = ($config['count'])();
@@ -61,7 +53,7 @@ class PlanLimitChecker
 
         $config = self::getResourceConfig($resource, $tenant);
         if (!$config || $config['max'] === null || $config['max'] <= 0) {
-            return null; // ilimitado
+            return null;
         }
 
         $current = ($config['count'])();
@@ -70,53 +62,23 @@ class PlanLimitChecker
     }
 
     /**
-     * @return array{max: int, count: \Closure, label: string}|null
+     * @return array{max: int|null, count: \Closure, label: string}|null
      */
     private static function getResourceConfig(string $resource, Tenant $tenant): ?array
     {
-        $limits = [
-            'users' => [
-                'max'   => $tenant->max_users,
-                'count' => fn () => User::where('tenant_id', $tenant->id)->count(),
-                'label' => 'usuários',
-            ],
-            'leads' => [
-                'max'   => $tenant->max_leads,
-                'count' => fn () => Lead::where('tenant_id', $tenant->id)->count(),
-                'label' => 'leads',
-            ],
-            'pipelines' => [
-                'max'   => $tenant->max_pipelines,
-                'count' => fn () => Pipeline::where('tenant_id', $tenant->id)->count(),
-                'label' => 'pipelines',
-            ],
-            'custom_fields' => [
-                'max'   => $tenant->max_custom_fields,
-                'count' => fn () => CustomFieldDefinition::where('tenant_id', $tenant->id)->count(),
-                'label' => 'campos personalizados',
-            ],
-            'departments' => [
-                'max'   => $tenant->max_departments,
-                'count' => fn () => Department::where('tenant_id', $tenant->id)->count(),
-                'label' => 'departamentos',
-            ],
-            'chatbot_flows' => [
-                'max'   => $tenant->max_chatbot_flows,
-                'count' => fn () => ChatbotFlow::where('tenant_id', $tenant->id)->count(),
-                'label' => 'fluxos de chatbot',
-            ],
-            'ai_agents' => [
-                'max'   => $tenant->max_ai_agents ?: 1,
-                'count' => fn () => AiAgent::where('tenant_id', $tenant->id)->count(),
-                'label' => 'agentes de IA',
-            ],
-            'whatsapp_instances' => [
-                'max'   => $tenant->max_whatsapp_instances > 0 ? $tenant->max_whatsapp_instances : null,
-                'count' => fn () => WhatsappInstance::where('tenant_id', $tenant->id)->count(),
-                'label' => 'números de WhatsApp',
-            ],
-        ];
+        $cfg = config("plan_limits.{$resource}");
+        if (!$cfg || !isset($cfg['column'], $cfg['model'], $cfg['noun'])) {
+            return null;
+        }
 
-        return $limits[$resource] ?? null;
+        $column = $cfg['column'];
+        $model  = $cfg['model'];
+        $max    = $tenant->{$column} ?? null;
+
+        return [
+            'max'   => $max !== null ? (int) $max : null,
+            'count' => fn () => $model::where('tenant_id', $tenant->id)->count(),
+            'label' => $cfg['noun'],
+        ];
     }
 }

@@ -1151,6 +1151,10 @@ class IntegrationController extends Controller
             'business_id'     => 'nullable|string',
         ]);
 
+        if ($error = \App\Services\PlanLimitChecker::check('whatsapp_instances')) {
+            return response()->json(['success' => false, 'message' => $error], 422);
+        }
+
         $clientId     = (string) config('services.whatsapp_cloud.app_id');
         $clientSecret = (string) config('services.whatsapp_cloud.app_secret');
         $apiVersion   = (string) config('services.whatsapp_cloud.api_version', 'v22.0');

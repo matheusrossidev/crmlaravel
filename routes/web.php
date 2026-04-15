@@ -595,7 +595,7 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             // Automações
             Route::get('automacoes/criar',                  [AutomationController::class, 'create'])->name('automations.create');
             Route::get('automacoes/{automation}/editar',    [AutomationController::class, 'edit'])->name('automations.edit');
-            Route::post('automacoes',                       [AutomationController::class, 'store'])->name('automations.store');
+            Route::post('automacoes',                       [AutomationController::class, 'store'])->middleware('plan.limit:automations')->name('automations.store');
             // Template install (rota estática vem ANTES das wildcards)
             Route::post('automacoes/templates/{slug}/install', [AutomationController::class, 'installTemplate'])->name('automations.templates.install');
             Route::put('automacoes/{automation}',           [AutomationController::class, 'update'])->name('automations.update');
@@ -607,7 +607,7 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::get('sequencias',                          [NurtureSequenceController::class, 'index'])->name('sequences');
             Route::get('sequencias/criar',                    [NurtureSequenceController::class, 'create'])->name('sequences.create');
             Route::get('sequencias/{sequence}/editar',        [NurtureSequenceController::class, 'edit'])->name('sequences.edit');
-            Route::post('sequencias',                         [NurtureSequenceController::class, 'store'])->name('sequences.store');
+            Route::post('sequencias',                         [NurtureSequenceController::class, 'store'])->middleware('plan.limit:nurture_sequences')->name('sequences.store');
             // Template install (rota estática vem ANTES das wildcards)
             Route::post('sequencias/templates/{slug}/install', [NurtureSequenceController::class, 'installTemplate'])->name('sequences.templates.install');
             Route::put('sequencias/{sequence}',               [NurtureSequenceController::class, 'update'])->name('sequences.update');
@@ -620,7 +620,7 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
             Route::middleware('requires.cloud_api')->prefix('whatsapp-templates')->name('whatsapp-templates.')->group(function () {
                 Route::get('/',              [WhatsappTemplateController::class, 'index'])->name('index');
                 Route::get('/criar',         [WhatsappTemplateController::class, 'create'])->name('create');
-                Route::post('/',             [WhatsappTemplateController::class, 'store'])->name('store');
+                Route::post('/',             [WhatsappTemplateController::class, 'store'])->middleware('plan.limit:whatsapp_templates')->name('store');
                 Route::post('/sync',         [WhatsappTemplateController::class, 'sync'])->name('sync');
                 Route::post('/upload-sample',[WhatsappTemplateController::class, 'uploadSample'])->name('upload-sample');
                 Route::get('/{template}',    [WhatsappTemplateController::class, 'show'])->name('show');
