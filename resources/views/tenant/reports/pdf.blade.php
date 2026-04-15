@@ -1,290 +1,638 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Relatório de Desempenho — Syncro CRM</title>
-<style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Helvetica', 'Arial', sans-serif; color: #1a1d23; background: #fff; font-size: 11px; }
-    .report { padding: 28px 32px; }
+    <meta charset="UTF-8">
+    <title>Relatório de Performance</title>
+    <style>
+        @page { margin: 32px 28px; }
 
-    /* Header */
-    .report-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 2px solid #e8eaf0; margin-bottom: 20px; }
-    .report-header td { vertical-align: middle; }
-    .report-logo img { height: 32px; }
-    .report-title { font-size: 14px; font-weight: 700; color: #1a1d23; text-align: right; }
-    .report-period { font-size: 10px; color: #6b7280; text-align: right; }
-    .report-filters { font-size: 9px; color: #9ca3af; text-align: right; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'DejaVu Sans', sans-serif; color: #1a1d23; font-size: 11px; line-height: 1.4; }
 
-    /* Section */
-    .section { margin-bottom: 20px; page-break-inside: avoid; }
-    .section-title { font-size: 11px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #f0f2f7; }
+        /* ═══ Cover ═══ */
+        .cover {
+            height: 820px;
+            position: relative;
+            padding: 40px 0;
+        }
+        .cover-header { text-align: left; }
+        .cover-logo { height: 42px; margin-bottom: 48px; }
+        .cover-badge {
+            display: inline-block;
+            background: #eff6ff;
+            color: #0070d1;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            padding: 6px 14px;
+            border-radius: 4px;
+            margin-bottom: 18px;
+        }
+        .cover-title {
+            font-size: 38px;
+            font-weight: bold;
+            color: #0a0f1a;
+            line-height: 1.1;
+            margin-bottom: 18px;
+        }
+        .cover-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.6;
+            max-width: 480px;
+            margin-bottom: 80px;
+        }
+        .cover-meta {
+            border-top: 2px solid #0085f3;
+            padding-top: 20px;
+            font-size: 11px;
+            color: #374151;
+        }
+        .cover-meta-row { margin-bottom: 6px; display: block; }
+        .cover-meta-label {
+            color: #9ca3af;
+            text-transform: uppercase;
+            font-weight: bold;
+            font-size: 9px;
+            letter-spacing: 1px;
+            display: inline-block;
+            width: 110px;
+        }
+        .cover-meta-value { color: #1a1d23; font-weight: bold; }
+        .cover-footer {
+            font-size: 9px;
+            color: #9ca3af;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 14px;
+            margin-top: 40px;
+        }
 
-    /* KPI */
-    .kpi-table { width: 100%; margin-bottom: 20px; }
-    .kpi-table td { width: 25%; border: 1.5px solid #e8eaf0; border-radius: 8px; padding: 12px 14px; vertical-align: top; }
-    .kpi-label { font-size: 9px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
-    .kpi-value { font-size: 20px; font-weight: 800; color: #1a1d23; }
-    .kpi-value-green { font-size: 20px; font-weight: 800; color: #16a34a; }
-    .kpi-value-blue { font-size: 20px; font-weight: 800; color: #0085f3; }
-    .kpi-delta { font-size: 10px; font-weight: 600; margin-top: 3px; }
-    .kpi-delta-up { color: #16a34a; }
-    .kpi-delta-down { color: #ef4444; }
-    .kpi-delta-neutral { color: #9ca3af; }
-    .kpi-sub { font-size: 10px; color: #6b7280; margin-top: 3px; }
+        /* ═══ Section headers ═══ */
+        .section { page-break-before: always; padding-top: 8px; }
+        .section-number {
+            font-size: 10px;
+            color: #0085f3;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+        }
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #0a0f1a;
+            margin-bottom: 4px;
+        }
+        .section-desc {
+            font-size: 11px;
+            color: #6b7280;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #e5e7eb;
+        }
 
-    /* Tables */
-    table.data { width: 100%; border-collapse: collapse; font-size: 10.5px; }
-    table.data thead th { background: #f8fafc; color: #6b7280; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 6px 8px; text-align: left; border-bottom: 1px solid #e8eaf0; }
-    table.data thead th.right { text-align: right; }
-    table.data tbody td { padding: 7px 8px; border-bottom: 1px solid #f3f4f6; color: #374151; }
-    table.data tbody td.right { text-align: right; font-variant-numeric: tabular-nums; }
-    table.data tbody td.bold { font-weight: 700; color: #1a1d23; }
-    table.data tbody td.green { color: #16a34a; font-weight: 700; }
-    table.data tbody td.blue { color: #0085f3; font-weight: 700; }
-    table.data tbody tr:last-child td { border-bottom: none; }
+        /* ═══ KPI cards ═══ */
+        .kpi-grid {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 8px;
+            margin-bottom: 24px;
+        }
+        .kpi-cell {
+            width: 25%;
+            padding: 14px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #fff;
+            vertical-align: top;
+        }
+        .kpi-label {
+            font-size: 9px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .kpi-value {
+            font-size: 22px;
+            font-weight: bold;
+            color: #0a0f1a;
+            margin-bottom: 4px;
+            line-height: 1;
+        }
+        .kpi-delta {
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .kpi-delta.up { color: #059669; }
+        .kpi-delta.down { color: #dc2626; }
+        .kpi-delta.flat { color: #9ca3af; }
 
-    .badge { display: inline-block; padding: 1px 6px; border-radius: 100px; font-size: 9px; font-weight: 700; }
-    .badge-high { background: #d1fae5; color: #065f46; }
-    .badge-mid { background: #fef3c7; color: #92400e; }
-    .badge-low { background: #f3f4f6; color: #6b7280; }
+        /* ═══ Chart image wrapper ═══ */
+        .chart-box {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 14px;
+            background: #fff;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+        .chart-box img { max-width: 100%; height: auto; }
+        .chart-box-title {
+            text-align: left;
+            font-size: 11px;
+            font-weight: bold;
+            color: #374151;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
 
-    /* Funnel */
-    .funnel-table { width: 100%; margin-bottom: 0; }
-    .funnel-table td { width: 25%; text-align: center; padding: 12px 8px; border-radius: 8px; }
-    .funnel-count { font-size: 18px; font-weight: 800; }
-    .funnel-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
-    .funnel-pct { font-size: 9px; color: #6b7280; }
-    .f-total { background: #eff6ff; color: #1e40af; }
-    .f-open { background: #fffbeb; color: #92400e; }
-    .f-won { background: #f0fdf4; color: #166534; }
-    .f-lost { background: #fef2f2; color: #991b1b; }
+        /* ═══ Tables ═══ */
+        table.data {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10.5px;
+            margin-bottom: 18px;
+            page-break-inside: avoid;
+        }
+        table.data th {
+            background: #f8fafc;
+            color: #374151;
+            font-size: 9px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: left;
+            padding: 9px 11px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        table.data td {
+            padding: 9px 11px;
+            border-bottom: 1px solid #f0f2f7;
+            color: #1a1d23;
+        }
+        table.data tr:last-child td { border-bottom: 0; }
+        table.data td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        table.data td.pct { font-weight: bold; color: #0070d1; text-align: right; }
 
-    /* Reason bars */
-    .reason-label { display: inline-block; width: 120px; font-size: 10px; color: #374151; }
-    .reason-bar-bg { display: inline-block; width: 200px; height: 12px; background: #f3f4f6; border-radius: 3px; vertical-align: middle; overflow: hidden; }
-    .reason-bar { height: 100%; background: #ef4444; border-radius: 3px; }
-    .reason-pct { font-size: 9px; color: #6b7280; margin-left: 6px; }
+        /* ═══ Side-by-side layout (tabela + chart) ═══ */
+        .two-col { width: 100%; border-collapse: separate; border-spacing: 10px 0; margin-bottom: 18px; }
+        .two-col > tbody > tr > td { vertical-align: top; }
 
-    /* WA KPIs */
-    .wa-kpi-table td { width: 25%; border: 1px solid #e8eaf0; border-radius: 6px; padding: 10px 12px; }
-    .wa-val { font-size: 16px; font-weight: 800; color: #1a1d23; }
-    .wa-label { font-size: 9px; color: #6b7280; margin-top: 2px; }
+        /* ═══ Badges ═══ */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: bold;
+        }
+        .badge-green  { background: #d1fae5; color: #047857; }
+        .badge-blue   { background: #dbeafe; color: #1d4ed8; }
+        .badge-red    { background: #fee2e2; color: #b91c1c; }
+        .badge-yellow { background: #fef3c7; color: #92400e; }
+        .badge-gray   { background: #f3f4f6; color: #4b5563; }
 
-    /* Footer */
-    .report-footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #e8eaf0; font-size: 9px; color: #9ca3af; }
-    .report-footer table { width: 100%; }
-    .report-footer td { padding: 0; }
+        /* ═══ Bars (pra heatmap motivos) ═══ */
+        .bar-cell { position: relative; height: 14px; background: #f3f4f6; border-radius: 3px; overflow: hidden; }
+        .bar-fill { position: absolute; top: 0; left: 0; height: 100%; background: #ef4444; }
 
-    .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; }
-</style>
+        .empty {
+            padding: 24px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 11px;
+            font-style: italic;
+            border: 1px dashed #e5e7eb;
+            border-radius: 10px;
+        }
+    </style>
 </head>
 <body>
-<div class="report">
 
-    {{-- Header --}}
-    <table style="width:100%;margin-bottom:20px;border-bottom:2px solid #e8eaf0;padding-bottom:14px;">
-        <tr>
-            <td style="vertical-align:middle;">
-                <img src="{{ public_path('images/logo.png') }}" style="height:32px;" alt="Syncro">
-            </td>
-            <td style="text-align:right;vertical-align:middle;">
-                <div class="report-title">Relatório de Desempenho</div>
-                <div class="report-period">{{ $dateFrom->format('d/m/Y') }} — {{ $dateTo->format('d/m/Y') }}</div>
-                <div class="report-filters">
-                    @if($filterPipeline) Pipeline: {{ $pipelines->firstWhere('id', $filterPipeline)?->name ?? 'N/A' }} @else Pipeline: Todos @endif
-                </div>
-            </td>
-        </tr>
-    </table>
+{{-- ═════════════════════ CAPA ═════════════════════ --}}
+<div class="cover">
+    <div class="cover-header">
+        @if($tenant?->logo)
+            <img src="{{ $tenant->logo }}" alt="Logo" class="cover-logo">
+        @else
+            <img src="{{ public_path('images/logo.png') }}" alt="Syncro" class="cover-logo">
+        @endif
 
-    {{-- KPIs --}}
-    <table class="kpi-table">
+        <div class="cover-badge">RELATÓRIO</div>
+        <h1 class="cover-title">Performance<br>de Vendas</h1>
+        <p class="cover-subtitle">
+            Visão consolidada dos seus leads, conversões, equipe e canais de atendimento no período selecionado.
+        </p>
+    </div>
+
+    <div class="cover-meta">
+        <span class="cover-meta-row">
+            <span class="cover-meta-label">Empresa</span>
+            <span class="cover-meta-value">{{ $tenant?->name ?? '—' }}</span>
+        </span>
+        <span class="cover-meta-row">
+            <span class="cover-meta-label">Período</span>
+            <span class="cover-meta-value">{{ $dateFrom->format('d/m/Y') }} até {{ $dateTo->format('d/m/Y') }}</span>
+        </span>
+        @if($filterPipelineName)
+            <span class="cover-meta-row">
+                <span class="cover-meta-label">Pipeline</span>
+                <span class="cover-meta-value">{{ $filterPipelineName }}</span>
+            </span>
+        @endif
+        @if($filterUserName)
+            <span class="cover-meta-row">
+                <span class="cover-meta-label">Vendedor</span>
+                <span class="cover-meta-value">{{ $filterUserName }}</span>
+            </span>
+        @endif
+        <span class="cover-meta-row">
+            <span class="cover-meta-label">Gerado em</span>
+            <span class="cover-meta-value">{{ $generatedAt->format('d/m/Y H:i') }} por {{ $generatedBy }}</span>
+        </span>
+    </div>
+
+    <div class="cover-footer">
+        Syncro CRM · Plataforma 360 de Marketing e Vendas
+    </div>
+</div>
+
+{{-- ═════════════════════ RESUMO EXECUTIVO ═════════════════════ --}}
+<div class="section">
+    <div class="section-number">01</div>
+    <h2 class="section-title">Resumo executivo</h2>
+    <p class="section-desc">Indicadores-chave do período com comparação contra o período imediatamente anterior.</p>
+
+    <table class="kpi-grid">
         <tr>
-            <td>
+            <td class="kpi-cell">
                 <div class="kpi-label">Leads</div>
                 <div class="kpi-value">{{ number_format($totalLeads, 0, ',', '.') }}</div>
-                <div class="kpi-delta {{ $deltaLeads === null ? 'kpi-delta-neutral' : ($deltaLeads >= 0 ? 'kpi-delta-up' : 'kpi-delta-down') }}">
-                    @if($deltaLeads !== null) {{ $deltaLeads >= 0 ? '+' : '-' }}{{ number_format(abs($deltaLeads), 1, ',', '.') }}% vs anterior @else Sem dados anteriores @endif
-                </div>
+                @if($deltaLeads !== null)
+                    <div class="kpi-delta {{ $deltaLeads > 0 ? 'up' : ($deltaLeads < 0 ? 'down' : 'flat') }}">
+                        {{ $deltaLeads > 0 ? '+' : '' }}{{ $deltaLeads }}% vs período ant.
+                    </div>
+                @else
+                    <div class="kpi-delta flat">—</div>
+                @endif
             </td>
-            <td>
+            <td class="kpi-cell">
                 <div class="kpi-label">Receita</div>
-                <div class="kpi-value-green">{{ __('common.currency') }} {{ number_format($totalRevenue, 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</div>
-                <div class="kpi-delta {{ $deltaRevenue === null ? 'kpi-delta-neutral' : ($deltaRevenue >= 0 ? 'kpi-delta-up' : 'kpi-delta-down') }}">
-                    @if($deltaRevenue !== null) {{ $deltaRevenue >= 0 ? '+' : '-' }}{{ number_format(abs($deltaRevenue), 1, ',', '.') }}% vs anterior @else Sem dados anteriores @endif
-                </div>
+                <div class="kpi-value">R$ {{ number_format($totalRevenue, 0, ',', '.') }}</div>
+                @if($deltaRevenue !== null)
+                    <div class="kpi-delta {{ $deltaRevenue > 0 ? 'up' : ($deltaRevenue < 0 ? 'down' : 'flat') }}">
+                        {{ $deltaRevenue > 0 ? '+' : '' }}{{ $deltaRevenue }}% vs período ant.
+                    </div>
+                @else
+                    <div class="kpi-delta flat">—</div>
+                @endif
             </td>
-            <td>
-                <div class="kpi-label">Ticket Médio</div>
-                <div class="kpi-value-green">{{ __('common.currency') }} {{ number_format($avgTicket, 0, __('common.decimal_sep'), __('common.thousands_sep')) }}</div>
-                <div class="kpi-sub">{{ $salesCount }} venda(s) no período</div>
+            <td class="kpi-cell">
+                <div class="kpi-label">Ticket médio</div>
+                <div class="kpi-value">R$ {{ number_format($avgTicket, 0, ',', '.') }}</div>
+                <div class="kpi-delta flat">{{ $salesCount }} vendas</div>
             </td>
-            <td>
-                <div class="kpi-label">Taxa de Conversão</div>
-                <div class="kpi-value-blue">{{ number_format($convRate, 1, ',', '.') }}%</div>
-                <div class="kpi-sub">Leads → Vendas</div>
+            <td class="kpi-cell">
+                <div class="kpi-label">Conversão</div>
+                <div class="kpi-value">{{ number_format($convRate, 1, ',', '.') }}%</div>
+                <div class="kpi-delta flat">{{ $salesCount }} / {{ $totalLeads }}</div>
             </td>
         </tr>
     </table>
 
-    {{-- Funil --}}
-    <div class="section">
-        <div class="section-title">Funil de Conversão</div>
-        <table class="funnel-table">
-            <tr>
-                <td class="f-total"><div class="funnel-count">{{ $totalLeads }}</div><div class="funnel-label">Total</div><div class="funnel-pct">100%</div></td>
-                <td class="f-open"><div class="funnel-count">{{ $funnelEmAberto }}</div><div class="funnel-label">Em Aberto</div><div class="funnel-pct">{{ $totalLeads > 0 ? number_format($funnelEmAberto / $totalLeads * 100, 1, ',', '.') : 0 }}%</div></td>
-                <td class="f-won"><div class="funnel-count">{{ $salesCount }}</div><div class="funnel-label">Ganhos</div><div class="funnel-pct">{{ $totalLeads > 0 ? number_format($salesCount / $totalLeads * 100, 1, ',', '.') : 0 }}%</div></td>
-                <td class="f-lost"><div class="funnel-count">{{ $totalLost }}</div><div class="funnel-label">Perdidos</div><div class="funnel-pct">{{ $totalLeads > 0 ? number_format($totalLost / $totalLeads * 100, 1, ',', '.') : 0 }}%</div></td>
-            </tr>
-        </table>
-    </div>
+    @if($charts['leadsByDay'])
+        <div class="chart-box">
+            <div class="chart-box-title">Leads por dia</div>
+            <img src="{{ $charts['leadsByDay'] }}" alt="Leads por dia">
+        </div>
+    @endif
+</div>
 
-    {{-- Origem x Conversão --}}
-    @if($sourceConversion->isNotEmpty())
-    <div class="section">
-        <div class="section-title">Origem × Conversão</div>
+{{-- ═════════════════════ FUNIL & CONVERSÃO ═════════════════════ --}}
+<div class="section">
+    <div class="section-number">02</div>
+    <h2 class="section-title">Funil de conversão</h2>
+    <p class="section-desc">Fluxo dos leads pelos estágios do pipeline e resultado final.</p>
+
+    @if($charts['funnel'])
+        <div class="chart-box">
+            <div class="chart-box-title">Distribuição de leads</div>
+            <img src="{{ $charts['funnel'] }}" alt="Funil">
+        </div>
+    @endif
+
+    @foreach($pipelineRows as $p)
+        <h3 style="font-size:13px;font-weight:bold;color:#374151;margin:18px 0 10px;">
+            Pipeline: {{ $p['pipeline']->name }}
+        </h3>
         <table class="data">
-            <thead><tr><th>Origem</th><th class="right">Leads</th><th class="right">Vendas</th><th class="right">Conversão</th><th class="right">Receita</th></tr></thead>
-            <tbody>
-                @foreach($sourceConversion as $s)
+            <thead>
                 <tr>
-                    <td class="bold">{{ $s['source'] }}</td>
-                    <td class="right">{{ $s['leads'] }}</td>
-                    <td class="right">{{ $s['vendas'] }}</td>
-                    <td class="right"><span class="badge {{ $s['conv'] >= 25 ? 'badge-high' : ($s['conv'] >= 10 ? 'badge-mid' : 'badge-low') }}">{{ number_format($s['conv'], 1, ',', '.') }}%</span></td>
-                    <td class="right green">{{ $s['receita'] > 0 ? __('common.currency') . ' ' . number_format($s['receita'], 0, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}</td>
+                    <th>Etapa</th>
+                    <th class="num" style="width:80px;">Leads</th>
+                    <th class="num" style="width:80px;">%</th>
+                    <th class="num" style="width:120px;">Dias médios</th>
                 </tr>
+            </thead>
+            <tbody>
+                @foreach($p['stages'] as $s)
+                    <tr>
+                        <td>
+                            @if($s['stage']->is_won)
+                                <span class="badge badge-green">GANHO</span>
+                            @elseif($s['stage']->is_lost)
+                                <span class="badge badge-red">PERDIDO</span>
+                            @endif
+                            {{ $s['stage']->name }}
+                        </td>
+                        <td class="num">{{ $s['count'] }}</td>
+                        <td class="pct">{{ $p['total'] > 0 ? round($s['count'] / $p['total'] * 100, 1) : 0 }}%</td>
+                        <td class="num">{{ $s['avg_days'] !== null ? $s['avg_days'] . ' dias' : '—' }}</td>
+                    </tr>
                 @endforeach
             </tbody>
         </table>
-    </div>
+    @endforeach
+</div>
+
+{{-- ═════════════════════ ORIGEM & CANAIS ═════════════════════ --}}
+<div class="section">
+    <div class="section-number">03</div>
+    <h2 class="section-title">Origem e canais</h2>
+    <p class="section-desc">De onde vêm seus leads e como cada canal está performando.</p>
+
+    @if($charts['leadsBySource'] || $sourceConversion->count() > 0)
+        <table class="two-col">
+            <tr>
+                @if($charts['leadsBySource'])
+                    <td style="width:38%;">
+                        <div class="chart-box">
+                            <div class="chart-box-title">Distribuição</div>
+                            <img src="{{ $charts['leadsBySource'] }}" alt="Leads por origem">
+                        </div>
+                    </td>
+                @endif
+                <td>
+                    <table class="data">
+                        <thead>
+                            <tr>
+                                <th>Origem</th>
+                                <th class="num">Leads</th>
+                                <th class="num">Vendas</th>
+                                <th class="num">Conv.</th>
+                                <th class="num">Receita</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($sourceConversion as $row)
+                                <tr>
+                                    <td>{{ $row['source'] }}</td>
+                                    <td class="num">{{ $row['leads'] }}</td>
+                                    <td class="num">{{ $row['vendas'] }}</td>
+                                    <td class="pct">{{ $row['conv'] }}%</td>
+                                    <td class="num">R$ {{ number_format($row['receita'], 0, ',', '.') }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="5" class="empty">Sem dados no período.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        </table>
     @endif
 
-    {{-- Campanhas --}}
-    @if($campaignRows->isNotEmpty())
-    <div class="section">
-        <div class="section-title">Campanhas</div>
+    @if($campaignRows->count() > 0)
+        <h3 style="font-size:13px;font-weight:bold;color:#374151;margin:22px 0 10px;">Campanhas (UTM)</h3>
         <table class="data">
-            <thead><tr><th>Campanha</th><th class="right">Leads</th><th class="right">Conv.</th><th class="right">Conv.%</th><th class="right">Receita</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Campanha</th>
+                    <th>Fonte</th>
+                    <th class="num">Leads</th>
+                    <th class="num">Vendas</th>
+                    <th class="num">Conv.</th>
+                    <th class="num">Receita</th>
+                </tr>
+            </thead>
             <tbody>
                 @foreach($campaignRows as $c)
-                <tr>
-                    <td><strong>{{ $c['name'] }}</strong><br><span style="font-size:9px;color:#9ca3af;">{{ $c['source'] }}</span></td>
-                    <td class="right blue">{{ $c['leads_count'] }}</td>
-                    <td class="right">{{ $c['sales_count'] }}</td>
-                    <td class="right"><span class="badge {{ $c['conv'] >= 25 ? 'badge-high' : ($c['conv'] >= 10 ? 'badge-mid' : 'badge-low') }}">{{ number_format($c['conv'], 1, ',', '.') }}%</span></td>
-                    <td class="right green">{{ $c['revenue'] > 0 ? __('common.currency') . ' ' . number_format($c['revenue'], 0, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}</td>
-                </tr>
+                    <tr>
+                        <td style="font-weight:bold;">{{ $c['name'] }}</td>
+                        <td>{{ $c['source'] }}</td>
+                        <td class="num">{{ $c['leads_count'] }}</td>
+                        <td class="num">{{ $c['sales_count'] }}</td>
+                        <td class="pct">{{ $c['conv'] }}%</td>
+                        <td class="num">R$ {{ number_format($c['revenue'], 0, ',', '.') }}</td>
+                    </tr>
                 @endforeach
             </tbody>
         </table>
-    </div>
     @endif
 
-    {{-- Pipeline --}}
-    @foreach($pipelineRows as $pr)
-    <div class="section">
-        <div class="section-title">Pipeline — {{ $pr['pipeline']->name }}</div>
-        <table class="data">
-            <thead><tr><th>Etapa</th><th class="right">Leads</th><th class="right">% do Total</th></tr></thead>
-            <tbody>
-                @foreach($pr['stages'] as $s)
-                <tr>
-                    <td>
-                        <span class="dot" style="background:{{ $s['stage']->color ?? '#6b7280' }};"></span>
-                        <strong>{{ $s['stage']->name }}</strong>
-                        @if($s['stage']->is_won) <span class="badge badge-high" style="font-size:8px;">GANHO</span> @endif
-                        @if($s['stage']->is_lost) <span class="badge" style="background:#fef2f2;color:#991b1b;font-size:8px;">PERDIDO</span> @endif
-                    </td>
-                    <td class="right bold">{{ $s['count'] }}</td>
-                    <td class="right">{{ $pr['total'] > 0 ? number_format($s['count'] / $pr['total'] * 100, 1, ',', '.') : 0 }}%</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    @endforeach
+    @if($waClicksTotal > 0)
+        <h3 style="font-size:13px;font-weight:bold;color:#374151;margin:22px 0 10px;">
+            Botão WhatsApp · {{ $waClicksTotal }} cliques no período
+        </h3>
 
-    {{-- Perdidos --}}
-    @if($totalLost > 0)
-    <div class="section">
-        <div class="section-title">Motivos de Perda — {{ $totalLost }} leads ({{ __('common.currency') }} {{ number_format($lostPotentialValue, 0, __('common.decimal_sep'), __('common.thousands_sep')) }} potencial)</div>
-        @foreach($lostByReason as $r)
-        <div style="margin-bottom:5px;">
-            <span class="reason-label">{{ $r['reason'] }}</span>
-            <span class="reason-bar-bg"><span class="reason-bar" style="width:{{ $r['pct'] }}%;"></span></span>
-            <span class="reason-pct">{{ number_format($r['pct'], 0) }}%</span>
-        </div>
-        @endforeach
-    </div>
-    @endif
+        @if($charts['waClicks'])
+            <div class="chart-box">
+                <div class="chart-box-title">Cliques por dia</div>
+                <img src="{{ $charts['waClicks'] }}" alt="Cliques WA">
+            </div>
+        @endif
 
-    {{-- Vendedores --}}
-    @if($vendedores->isNotEmpty())
-    <div class="section">
-        <div class="section-title">Desempenho por Vendedor</div>
-        <table class="data">
-            <thead><tr><th>Vendedor</th><th class="right">Leads</th><th class="right">Vendas</th><th class="right">Conversão</th><th class="right">Receita</th></tr></thead>
-            <tbody>
-                @foreach($vendedores as $v)
-                <tr>
-                    <td class="bold">{{ $v['user']->name }}</td>
-                    <td class="right">{{ $v['leads'] }}</td>
-                    <td class="right">{{ $v['vendas'] }}</td>
-                    <td class="right"><span class="badge {{ $v['conv'] >= 25 ? 'badge-high' : ($v['conv'] >= 10 ? 'badge-mid' : 'badge-low') }}">{{ number_format($v['conv'], 1, ',', '.') }}%</span></td>
-                    <td class="right green">{{ $v['receita'] > 0 ? __('common.currency') . ' ' . number_format($v['receita'], 0, __('common.decimal_sep'), __('common.thousands_sep')) : '—' }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    @endif
-
-    {{-- WhatsApp --}}
-    @if(($waTotal ?? 0) > 0)
-    <div class="section">
-        <div class="section-title">WhatsApp — Atendimento</div>
-        <table class="wa-kpi-table" style="width:100%;">
+        <table class="two-col">
             <tr>
-                <td><div class="wa-val">{{ $waTotal }}</div><div class="wa-label">Conversas iniciadas</div></td>
-                <td><div class="wa-val">{{ $waFechadas }}</div><div class="wa-label">Fechadas ({{ $waTotal > 0 ? round($waFechadas / $waTotal * 100) : 0 }}%)</div></td>
-                <td><div class="wa-val">{{ $waComLead }}</div><div class="wa-label">Viraram lead ({{ $waTotal > 0 ? round($waComLead / $waTotal * 100) : 0 }}%)</div></td>
-                <td><div class="wa-val">{{ $waIA }}</div><div class="wa-label">Atendidas por IA ({{ $waTotal > 0 ? round($waIA / $waTotal * 100) : 0 }}%)</div></td>
+                <td style="width:50%;">
+                    <h4 style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;font-weight:bold;margin-bottom:8px;">Top fontes (UTM)</h4>
+                    <table class="data">
+                        <thead><tr><th>Fonte</th><th class="num">Cliques</th></tr></thead>
+                        <tbody>
+                            @forelse($waClicksBySource as $src => $total)
+                                <tr><td>{{ $src }}</td><td class="num">{{ $total }}</td></tr>
+                            @empty
+                                <tr><td colspan="2" class="empty">—</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </td>
+                <td>
+                    <h4 style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;font-weight:bold;margin-bottom:8px;">Top páginas</h4>
+                    <table class="data">
+                        <thead><tr><th>URL</th><th class="num">Cliques</th></tr></thead>
+                        <tbody>
+                            @forelse($waClicksByPage as $url => $total)
+                                <tr>
+                                    <td style="font-size:9.5px;word-break:break-all;">{{ \Illuminate\Support\Str::limit($url, 50) }}</td>
+                                    <td class="num">{{ $total }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="2" class="empty">—</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    @endif
+</div>
+
+{{-- ═════════════════════ EQUIPE ═════════════════════ --}}
+<div class="section">
+    <div class="section-number">04</div>
+    <h2 class="section-title">Equipe</h2>
+    <p class="section-desc">Performance individual dos vendedores no período.</p>
+
+    <table class="data">
+        <thead>
+            <tr>
+                <th>Vendedor</th>
+                <th class="num">Leads</th>
+                <th class="num">Vendas</th>
+                <th class="num">Conv.</th>
+                <th class="num">Receita</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($vendedores as $v)
+                <tr>
+                    <td style="font-weight:bold;">{{ $v['user']->name }}</td>
+                    <td class="num">{{ $v['leads'] }}</td>
+                    <td class="num">{{ $v['vendas'] }}</td>
+                    <td class="pct">{{ $v['conv'] }}%</td>
+                    <td class="num">R$ {{ number_format($v['receita'], 0, ',', '.') }}</td>
+                </tr>
+            @empty
+                <tr><td colspan="5" class="empty">Sem atividade no período.</td></tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    <h3 style="font-size:13px;font-weight:bold;color:#374151;margin:22px 0 10px;">Atendimento WhatsApp</h3>
+    <table class="kpi-grid">
+        <tr>
+            <td class="kpi-cell">
+                <div class="kpi-label">Conversas</div>
+                <div class="kpi-value">{{ $waTotal }}</div>
+                <div class="kpi-delta flat">no período</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-label">Com lead</div>
+                <div class="kpi-value">{{ $waComLead }}</div>
+                <div class="kpi-delta flat">{{ $waTotal > 0 ? round($waComLead / $waTotal * 100) : 0 }}% do total</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-label">Fechadas</div>
+                <div class="kpi-value">{{ $waFechadas }}</div>
+                <div class="kpi-delta flat">resolvidas</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-label">1ª resposta</div>
+                <div class="kpi-value">
+                    @if($avgFirstResponse !== null){{ $avgFirstResponse }}m @else — @endif
+                </div>
+                <div class="kpi-delta flat">tempo médio humano</div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+{{-- ═════════════════════ PRODUTOS ═════════════════════ --}}
+@if($topProducts->count() > 0)
+    <div class="section">
+        <div class="section-number">05</div>
+        <h2 class="section-title">Produtos mais vendidos</h2>
+        <p class="section-desc">Top 10 produtos por quantidade de vendas no período.</p>
+
+        <table class="data">
+            <thead>
+                <tr>
+                    <th style="width:30px;">#</th>
+                    <th>Produto</th>
+                    <th class="num">Preço</th>
+                    <th class="num">Vendas</th>
+                    <th class="num">Receita</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($topProducts as $idx => $prod)
+                    <tr>
+                        <td>{{ $idx + 1 }}{{ $idx === 0 ? ' ★' : '' }}</td>
+                        <td style="font-weight:{{ $idx === 0 ? 'bold' : 'normal' }};">{{ $prod->name }}</td>
+                        <td class="num">R$ {{ number_format((float) $prod->price, 0, ',', '.') }}</td>
+                        <td class="num">{{ $prod->won_count }}</td>
+                        <td class="num">R$ {{ number_format((float) $prod->total_value, 0, ',', '.') }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+@endif
+
+{{-- ═════════════════════ PERDAS ═════════════════════ --}}
+@if($totalLost > 0)
+    <div class="section">
+        <div class="section-number">{{ $topProducts->count() > 0 ? '06' : '05' }}</div>
+        <h2 class="section-title">Leads perdidos</h2>
+        <p class="section-desc">{{ $totalLost }} leads perdidos · valor potencial de R$ {{ number_format($lostPotentialValue, 0, ',', '.') }}</p>
+
+        <table class="two-col">
+            <tr>
+                <td style="width:55%;">
+                    <h4 style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;font-weight:bold;margin-bottom:8px;">Por motivo</h4>
+                    <table class="data">
+                        <thead>
+                            <tr>
+                                <th>Motivo</th>
+                                <th class="num" style="width:60px;">Qtd</th>
+                                <th style="width:90px;">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($lostByReason as $r)
+                                <tr>
+                                    <td>{{ $r['reason'] }}</td>
+                                    <td class="num">{{ $r['total'] }}</td>
+                                    <td>
+                                        <div class="bar-cell">
+                                            <div class="bar-fill" style="width:{{ $r['pct'] }}%;"></div>
+                                        </div>
+                                        <div style="font-size:9px;color:#6b7280;margin-top:2px;">{{ $r['pct'] }}%</div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </td>
+                <td>
+                    <h4 style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;font-weight:bold;margin-bottom:8px;">Por vendedor</h4>
+                    <table class="data">
+                        <thead>
+                            <tr>
+                                <th>Vendedor</th>
+                                <th class="num">Qtd</th>
+                                <th class="num">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($lostByVendedor as $v)
+                                <tr>
+                                    <td>{{ $v['user'] }}</td>
+                                    <td class="num">{{ $v['total'] }}</td>
+                                    <td class="pct">{{ $v['pct'] }}%</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </td>
             </tr>
         </table>
     </div>
-    @endif
+@endif
 
-    {{-- Atividade --}}
-    @if($teamActivity->isNotEmpty())
-    <div class="section">
-        <div class="section-title">Atividade da Equipe</div>
-        <table class="data">
-            <thead><tr><th>Usuário</th><th class="right">Msgs WhatsApp</th><th class="right">Eventos CRM</th><th class="right">Total</th></tr></thead>
-            <tbody>
-                @foreach($teamActivity as $t)
-                <tr>
-                    <td class="bold">{{ $t['user']->name }}</td>
-                    <td class="right">{{ number_format($t['msgs'], 0, ',', '.') }}</td>
-                    <td class="right">{{ number_format($t['events'], 0, ',', '.') }}</td>
-                    <td class="right blue">{{ number_format($t['total'], 0, ',', '.') }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    @endif
-
-    {{-- Footer --}}
-    <div class="report-footer">
-        <table><tr>
-            <td>Gerado em {{ now()->format('d/m/Y H:i') }} — Syncro CRM</td>
-            <td style="text-align:right;">{{ auth()->user()->name }} &bull; {{ auth()->user()->tenant->name ?? '' }}</td>
-        </tr></table>
-    </div>
-
-</div>
 </body>
 </html>
