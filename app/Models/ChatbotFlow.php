@@ -8,6 +8,7 @@ use App\Models\Traits\BelongsToTenant;
 use App\Models\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ChatbotFlow extends Model
@@ -15,7 +16,7 @@ class ChatbotFlow extends Model
     use BelongsToTenant, LogsActivity, HasFactory;
 
     protected $fillable = [
-        'tenant_id', 'name', 'slug', 'channel', 'website_token', 'description', 'is_active', 'is_catch_all',
+        'tenant_id', 'name', 'slug', 'channel', 'whatsapp_instance_id', 'website_token', 'description', 'is_active', 'is_catch_all',
         'trigger_keywords', 'trigger_type', 'trigger_media_id', 'trigger_media_thumbnail', 'trigger_media_caption', 'trigger_reply_comment', 'completions_count',
         'variables', 'steps',
         'bot_name', 'bot_avatar', 'welcome_message', 'widget_type', 'widget_color',
@@ -42,6 +43,17 @@ class ChatbotFlow extends Model
     public function conversations(): HasMany
     {
         return $this->hasMany(WhatsappConversation::class, 'chatbot_flow_id');
+    }
+
+    /**
+     * WhatsappInstance associada ao flow (nullable).
+     * Se NULL, o flow roda em TODAS as instâncias whatsapp do tenant (backward compat).
+     * Se preenchido, flow só dispara no match de trigger vinda dessa instance específica.
+     * Usado pelo ChatbotFlowService pra filtrar na hora do match.
+     */
+    public function instance(): BelongsTo
+    {
+        return $this->belongsTo(WhatsappInstance::class, 'whatsapp_instance_id');
     }
 
     public function websiteConversations(): HasMany

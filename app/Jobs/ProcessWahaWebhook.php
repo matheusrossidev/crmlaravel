@@ -751,20 +751,33 @@ class ProcessWahaWebhook implements ShouldQueue
         // Não ativar chatbot se a conversa já tem agente de IA — exclusividade mútua.
         if (! $isFromMe && ! $isGroup && (! $conversation->chatbot_flow_id || ! $conversation->chatbot_node_id) && ! $conversation->ai_agent_id) {
             $msgBodyLower = strtolower($body ?? '');
-            $activeFlow   = ChatbotFlow::withoutGlobalScope('tenant')
+
+            // Filtro por instance: flow com whatsapp_instance_id=NULL roda em todas
+            // as instâncias do tenant (backward compat). Se preenchido, só roda na
+            // instância correspondente. Permite "flow comercial" no número A e
+            // "flow suporte" no número B sem conflito.
+            $instanceFilter = function ($q) use ($instance) {
+                $q->whereNull('whatsapp_instance_id')
+                  ->orWhere('whatsapp_instance_id', $instance->id);
+            };
+
+            $activeFlow = ChatbotFlow::withoutGlobalScope('tenant')
                 ->where('tenant_id', $instance->tenant_id)
                 ->where('is_active', true)
                 ->whereNotNull('trigger_keywords')
+                ->where($instanceFilter)
                 ->get()
                 ->first(fn ($f) => collect($f->trigger_keywords)
                     ->contains(fn ($kw) => str_contains($msgBodyLower, strtolower($kw))));
 
             // Fallback: se nenhuma keyword bateu, usar catch-all do tenant
+            // (respeitando o mesmo filtro de instance).
             if (! $activeFlow) {
                 $activeFlow = ChatbotFlow::withoutGlobalScope('tenant')
                     ->where('tenant_id', $instance->tenant_id)
                     ->where('is_active', true)
                     ->where('is_catch_all', true)
+                    ->where($instanceFilter)
                     ->first();
             }
 

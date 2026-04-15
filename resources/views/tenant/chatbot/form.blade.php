@@ -239,6 +239,32 @@
                 </div>
             </div>
 
+            {{-- Instância WhatsApp (só visível se channel=whatsapp) --}}
+            @php
+                $waInstances = \App\Models\WhatsappInstance::query()
+                    ->where('status', 'connected')
+                    ->orderByDesc('is_primary')
+                    ->orderBy('label')
+                    ->get();
+                $currentInstanceId = old('whatsapp_instance_id', $flow->whatsapp_instance_id ?? '');
+            @endphp
+            <div id="waInstanceRow" class="form-group" style="{{ $currentChannel === 'whatsapp' ? '' : 'display:none;' }}">
+                <label>Aplicar em qual número?</label>
+                <select name="whatsapp_instance_id" class="field-input">
+                    <option value="">Todas as instâncias WhatsApp do tenant</option>
+                    @foreach($waInstances as $inst)
+                        <option value="{{ $inst->id }}" {{ (string) $currentInstanceId === (string) $inst->id ? 'selected' : '' }}>
+                            {{ $inst->label ?: $inst->phone_number }}
+                            @if($inst->isCloudApi()) · Cloud API Oficial @else · WAHA @endif
+                            @if($inst->supportsTemplates()) · templates @endif
+                        </option>
+                    @endforeach
+                </select>
+                <div style="font-size:11.5px;color:#9ca3af;margin-top:4px;line-height:1.4;">
+                    Deixe "Todas" se esse flow vale pra qualquer número. Escolha específico se você quer flows diferentes por número (ex: comercial vs suporte).
+                </div>
+            </div>
+
             {{-- Identificação --}}
             <div class="form-section-label">{{ __('chatbot.form_section_identification') }}</div>
 
@@ -561,10 +587,13 @@ function updateChatbotChannelCards() {
     });
     const isWebsite = selected === 'website';
     const isInstagram = selected === 'instagram';
+    const isWhatsapp = selected === 'whatsapp';
     const ws = document.getElementById('website-settings');
     const sf = document.getElementById('slug-field');
+    const wir = document.getElementById('waInstanceRow');
     if (ws) ws.style.display = isWebsite ? 'block' : 'none';
     if (sf) sf.style.display = isWebsite ? 'block' : 'none';
+    if (wir) wir.style.display = isWhatsapp ? '' : 'none';
 
     // Show/hide trigger type for Instagram
     const ttw = document.getElementById('triggerTypeWrap');

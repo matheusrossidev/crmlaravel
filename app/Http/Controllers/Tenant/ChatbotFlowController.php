@@ -710,6 +710,7 @@ class ChatbotFlowController extends Controller
         $data = $request->validate([
             'name'                    => 'required|string|max:100',
             'channel'                 => 'required|in:whatsapp,instagram,website',
+            'whatsapp_instance_id'    => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('whatsapp_instances', 'id')->where('tenant_id', activeTenantId())],
             'description'             => 'nullable|string|max:1000',
             'is_active'               => 'boolean',
             'is_catch_all'            => 'boolean',
@@ -729,6 +730,14 @@ class ChatbotFlowController extends Controller
         ]);
 
         $data['trigger_type'] = $data['trigger_type'] ?? 'keyword';
+
+        // whatsapp_instance_id só faz sentido pro channel whatsapp. Limpa pros outros
+        // pra evitar dado órfão no banco se user trocar canal sem recarregar a UI.
+        if (($data['channel'] ?? '') !== 'whatsapp') {
+            $data['whatsapp_instance_id'] = null;
+        } elseif (empty($data['whatsapp_instance_id'])) {
+            $data['whatsapp_instance_id'] = null;
+        }
 
         // Converter campos JSON string → array
         if (isset($data['trigger_keywords']) && is_string($data['trigger_keywords'])) {
