@@ -207,7 +207,7 @@ class FormPublicController extends Controller
         $trackUrl  = $base . '/api/form/' . $form->slug . '/track-view';
         $formId    = $form->id;
 
-        $js = $this->buildSdkJs($configUrl, $trackUrl, $formId);
+        $js = $this->buildSdkJs($configUrl, $trackUrl, $formId, $form->slug);
 
         return response($js, 200)
             ->header('Content-Type', 'application/javascript; charset=utf-8')
@@ -224,18 +224,43 @@ class FormPublicController extends Controller
         ]);
     }
 
-    private function buildSdkJs(string $configUrl, string $trackUrl, int $formId): string
+    private function buildSdkJs(string $configUrl, string $trackUrl, int $formId, string $slug): string
     {
         // SDK self-contained — renders form natively into host DOM, no iframe, no chrome.
+        //
+        // IMPORTANTE: com async=true o `document.currentScript` pode ser null em alguns browsers
+        // e o fallback `scripts[last]` pegava script alheio (GTM, Hotjar) resultando em form
+        // inserido em lugar errado ou invisível. Solução: identificamos o script pelo form_id
+        // (imutável — slug pode mudar se user renomear o form).
         return <<<JS
 (function() {
     'use strict';
-    var SCRIPT = document.currentScript || (function(){ var s = document.getElementsByTagName('script'); return s[s.length-1]; })();
-    if (!SCRIPT) return;
+    var FORM_ID    = {$formId};
+    var SLUG       = '{$slug}';
     var CONFIG_URL = '{$configUrl}';
     var TRACK_URL  = '{$trackUrl}';
-    var FORM_ID    = {$formId};
     var ROOT_ID    = 'syncro-form-' + FORM_ID;
+
+    // Resolução da tag script em ordem de confiabilidade:
+    // 1) currentScript quando disponível (raro ser null mesmo com async em browsers modernos)
+    // 2) Script com data-form-id igual ao nosso ID (forma robusta — ID é imutável)
+    // 3) Legacy data-form="slug" (embeds antigos antes da mudança pra ID)
+    // 4) Fallback: último script com src contendo o slug atual
+    var SCRIPT = document.currentScript
+        || document.querySelector('script[data-form-id="' + FORM_ID + '"]')
+        || document.querySelector('script[data-form="' + SLUG + '"]')
+        || (function(){
+            var all = document.getElementsByTagName('script');
+            for (var i = all.length - 1; i >= 0; i--) {
+                if (all[i].src && all[i].src.indexOf('/api/form/' + SLUG + '.js') !== -1) return all[i];
+            }
+            return null;
+        })();
+
+    if (!SCRIPT) {
+        console.warn('[Syncro Form] ID ' + FORM_ID + ' não conseguiu localizar a tag script. Adicione data-form-id="' + FORM_ID + '" na tag.');
+        return;
+    }
 
     var ds = SCRIPT.dataset || {};
     var mode       = (ds.mode || 'inline').toLowerCase();
