@@ -411,7 +411,7 @@ class FormPublicController extends Controller
             '.syncro-form-overlay.pos-bottom-right, .syncro-form-overlay.pos-bottom-left { background:transparent; pointer-events:none; } .syncro-form-overlay.pos-bottom-right > *, .syncro-form-overlay.pos-bottom-left > * { pointer-events:auto; }',
             '.syncro-form-close { position:absolute; top:10px; right:10px; width:28px; height:28px; border-radius:50%; border:none; background:rgba(0,0,0,.06); color:#374151; font-size:20px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:10; }',
             '.syncro-form-close:hover { background:rgba(0,0,0,.12); }',
-        ].join('\n');
+        ].join('\\n');
         document.head.appendChild(st);
     }
 
