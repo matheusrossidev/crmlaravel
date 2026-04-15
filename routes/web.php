@@ -294,7 +294,9 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
 
     // Lead write operations (admin + manager)
     Route::middleware('role:admin,manager')->group(function () {
-        Route::post('/contatos/importar', [LeadController::class, 'import'])->name('leads.import')->middleware('plan.limit:leads');
+        Route::post('/contatos/importar',         [LeadController::class, 'import'])->name('leads.import')->middleware('plan.limit:leads');
+        Route::post('/contatos/importar/preview', [LeadController::class, 'importPreview'])->name('leads.import.preview');
+        Route::post('/contatos/importar/execute', [LeadController::class, 'importExecute'])->name('leads.import.execute')->middleware('plan.limit:leads');
         Route::post('/contatos/custom-fields/upload', [LeadController::class, 'uploadCustomFieldFile'])->name('leads.cf-upload');
         Route::post('/contatos', [LeadController::class, 'store'])->name('leads.store')->middleware('plan.limit:leads');
         Route::put('/contatos/{lead}', [LeadController::class, 'update'])->name('leads.update');

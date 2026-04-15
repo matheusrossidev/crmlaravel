@@ -411,22 +411,62 @@
 {{-- Drawer compartilhado --}}
 @include('tenant.leads._drawer', ['pipelines' => $pipelines, 'customFieldDefs' => $customFieldDefs])
 
-{{-- Modal Import --}}
+{{-- Modal Import (wizard 3-step) --}}
 <div id="importModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:14px;padding:28px;width:440px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.18);">
-        <div style="font-size:16px;font-weight:700;color:#1a1d23;margin-bottom:6px;">{{ __('leads.import_title') }}</div>
-        <p style="font-size:13px;color:#6b7280;margin-bottom:18px;">
-            {!! __('leads.import_desc') !!}<br>
-            <code style="font-size:12px;background:#f4f6fb;padding:2px 6px;border-radius:5px;">{{ __('leads.import_columns') }}</code>
-        </p>
-        <form id="importForm" enctype="multipart/form-data">
+    <div id="importModalBox" style="background:#fff;border-radius:14px;padding:28px;width:820px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.18);">
+
+        {{-- Header --}}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <div>
+                <div style="font-size:16px;font-weight:700;color:#1a1d23;">{{ __('leads.import_title') }}</div>
+                <div id="importStepLabel" style="font-size:12px;color:#6b7280;margin-top:3px;">Passo 1 de 2 · Upload da planilha</div>
+            </div>
+            <button onclick="closeImportModal()" style="background:none;border:none;font-size:22px;color:#9ca3af;cursor:pointer;">×</button>
+        </div>
+
+        {{-- Progress bar --}}
+        <div style="background:#e8eaf0;border-radius:100px;height:4px;overflow:hidden;margin-bottom:22px;">
+            <div id="importProgressBar" style="height:100%;background:#0085f3;border-radius:100px;width:33%;transition:width .3s ease;"></div>
+        </div>
+
+        {{-- Step 1 — Upload --}}
+        <div id="importStep1">
+            <p style="font-size:13.5px;color:#374151;margin-bottom:16px;line-height:1.55;">
+                Envie uma planilha <strong>.xlsx</strong>, <strong>.xls</strong> ou <strong>.csv</strong>. No próximo passo você poderá mapear cada coluna manualmente.
+            </p>
             <input type="file" id="importFile" name="file" accept=".xlsx,.xls,.csv"
-                   style="width:100%;padding:10px;border:1.5px dashed #e8eaf0;border-radius:9px;font-size:13px;background:#fafafa;cursor:pointer;box-sizing:border-box;">
-        </form>
-        <div id="importResult" style="display:none;margin-top:14px;padding:10px 14px;border-radius:9px;font-size:13px;"></div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;">
-            <button onclick="closeImportModal()" style="padding:8px 18px;border-radius:100px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;">{{ __('leads.cancel') }}</button>
-            <button id="btnDoImport" onclick="doImport()" style="padding:8px 20px;border-radius:100px;border:none;background:#0085f3;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">{{ __('leads.import_btn') }}</button>
+                   style="width:100%;padding:14px;border:1.5px dashed #e8eaf0;border-radius:10px;font-size:13.5px;background:#fafafa;cursor:pointer;box-sizing:border-box;">
+            <div id="importStep1Error" style="display:none;margin-top:10px;padding:10px 14px;border-radius:9px;font-size:13px;background:#fee2e2;color:#991b1b;"></div>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:24px;">
+                <button onclick="closeImportModal()" style="padding:9px 20px;border-radius:100px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;">Cancelar</button>
+                <button id="btnImportStep1" onclick="importStep1Submit()" style="padding:9px 22px;border-radius:100px;border:none;background:#0085f3;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Próximo <i class="bi bi-arrow-right"></i></button>
+            </div>
+        </div>
+
+        {{-- Step 2 — Mapeamento --}}
+        <div id="importStep2" style="display:none;">
+            <p style="font-size:13.5px;color:#374151;margin-bottom:14px;line-height:1.55;">
+                Confirme pra qual campo do lead cada coluna da sua planilha corresponde. O sistema tentou adivinhar automaticamente — ajuste se necessário.
+            </p>
+            <div id="importMappingGrid" style="border:1px solid #e8eaf0;border-radius:10px;overflow:hidden;margin-bottom:14px;"></div>
+            <div id="importStep2Error" style="display:none;margin-top:10px;padding:10px 14px;border-radius:9px;font-size:13px;background:#fee2e2;color:#991b1b;"></div>
+
+            <div style="display:flex;gap:8px;justify-content:space-between;margin-top:22px;">
+                <button onclick="importBackToStep1()" style="padding:9px 18px;border-radius:100px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;"><i class="bi bi-arrow-left"></i> Voltar</button>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="closeImportModal()" style="padding:9px 18px;border-radius:100px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;">Cancelar</button>
+                    <button id="btnImportStep2" onclick="importStep2Submit()" style="padding:9px 22px;border-radius:100px;border:none;background:#10b981;color:#fff;font-size:13px;font-weight:600;cursor:pointer;"><i class="bi bi-check-lg"></i> Importar</button>
+                </div>
+            </div>
+        </div>
+
+        {{-- Step 3 — Resultado --}}
+        <div id="importStep3" style="display:none;">
+            <div id="importResult" style="padding:18px;border-radius:10px;font-size:14px;line-height:1.6;"></div>
+            <div style="display:flex;justify-content:flex-end;margin-top:18px;">
+                <button onclick="location.reload()" style="padding:9px 22px;border-radius:100px;border:none;background:#0085f3;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Ver leads importados</button>
+            </div>
         </div>
     </div>
 </div>
@@ -546,10 +586,15 @@ document.getElementById('searchInput')?.addEventListener('input', e => {
 // ── Import modal ──────────────────────────────────────────────────────────
 const IMPORT_URL = @json(route('leads.import'));
 
+// ══ Import Wizard ═════════════════════════════════════════════════════
+const IMPORT_PREVIEW_URL = @json(route('leads.import.preview'));
+const IMPORT_EXECUTE_URL = @json(route('leads.import.execute'));
+
+let importPreviewData = null; // { token, filename, columns, preview_rows, auto_mapping, available_fields }
+
 document.getElementById('btnImportLead')?.addEventListener('click', () => {
+    importResetWizard();
     document.getElementById('importModalOverlay').style.display = 'flex';
-    document.getElementById('importResult').style.display = 'none';
-    document.getElementById('importFile').value = '';
 });
 
 function closeImportModal() {
@@ -560,39 +605,178 @@ document.getElementById('importModalOverlay')?.addEventListener('click', e => {
     if (e.target === document.getElementById('importModalOverlay')) closeImportModal();
 });
 
-async function doImport() {
+function importResetWizard() {
+    importPreviewData = null;
+    document.getElementById('importStep1').style.display = 'block';
+    document.getElementById('importStep2').style.display = 'none';
+    document.getElementById('importStep3').style.display = 'none';
+    document.getElementById('importFile').value = '';
+    document.getElementById('importStep1Error').style.display = 'none';
+    document.getElementById('importStep2Error').style.display = 'none';
+    document.getElementById('importProgressBar').style.width = '33%';
+    document.getElementById('importStepLabel').textContent = 'Passo 1 de 2 · Upload da planilha';
+}
+
+function importBackToStep1() {
+    document.getElementById('importStep2').style.display = 'none';
+    document.getElementById('importStep1').style.display = 'block';
+    document.getElementById('importProgressBar').style.width = '33%';
+    document.getElementById('importStepLabel').textContent = 'Passo 1 de 2 · Upload da planilha';
+}
+
+async function importStep1Submit() {
     const file = document.getElementById('importFile').files[0];
-    if (!file) { alert(CLANG.select_file_alert); return; }
+    if (!file) {
+        const err = document.getElementById('importStep1Error');
+        err.textContent = 'Selecione um arquivo antes de continuar.';
+        err.style.display = 'block';
+        return;
+    }
 
-    const btn = document.getElementById('btnDoImport');
+    const btn = document.getElementById('btnImportStep1');
     btn.disabled = true;
-    btn.textContent = CLANG.importing;
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Analisando...';
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
 
     try {
-        const res  = await fetch(IMPORT_URL, { method: 'POST', body: formData });
+        const res = await fetch(IMPORT_PREVIEW_URL, { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (! data.success) {
+            const err = document.getElementById('importStep1Error');
+            err.textContent = data.message || 'Erro ao processar planilha.';
+            err.style.display = 'block';
+            return;
+        }
+
+        importPreviewData = data;
+        importRenderMappingGrid();
+        document.getElementById('importStep1').style.display = 'none';
+        document.getElementById('importStep2').style.display = 'block';
+        document.getElementById('importProgressBar').style.width = '66%';
+        document.getElementById('importStepLabel').textContent = 'Passo 2 de 2 · Mapeamento de colunas';
+    } catch (e) {
+        const err = document.getElementById('importStep1Error');
+        err.textContent = 'Erro de conexão.';
+        err.style.display = 'block';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Próximo <i class="bi bi-arrow-right"></i>';
+    }
+}
+
+function importRenderMappingGrid() {
+    const grid = document.getElementById('importMappingGrid');
+    const { columns, preview_rows, auto_mapping, available_fields } = importPreviewData;
+
+    // Monta HTML
+    let html = `
+        <div style="background:#f8fafc;padding:12px 16px;border-bottom:1.5px solid #e8eaf0;display:grid;grid-template-columns:1fr 220px;gap:14px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;">
+            <div>Sua coluna (com preview)</div>
+            <div>Mapear para</div>
+        </div>
+    `;
+
+    columns.forEach((col) => {
+        const previews = preview_rows.slice(0, 3).map((row) => {
+            const idx = columns.indexOf(col);
+            return (row[idx] ?? '').toString().substring(0, 40);
+        }).filter(v => v !== '').join(' · ');
+
+        const autoField = auto_mapping[col] || '__skip';
+
+        let options = available_fields.map((f) => {
+            const selected = (f.key === autoField) ? 'selected' : '';
+            const req = f.required ? ' *' : '';
+            return `<option value="${escapeAttr(f.key)}" ${selected}>${escapeHtml(f.label)}${req}</option>`;
+        }).join('');
+
+        html += `
+            <div style="padding:12px 16px;border-bottom:1px solid #f0f2f7;display:grid;grid-template-columns:1fr 220px;gap:14px;align-items:center;">
+                <div>
+                    <div style="font-size:13.5px;font-weight:600;color:#1a1d23;">${escapeHtml(col)}</div>
+                    <div style="font-size:11.5px;color:#9ca3af;margin-top:3px;">${escapeHtml(previews || 'sem preview')}</div>
+                </div>
+                <div>
+                    <select data-column="${escapeAttr(col)}" class="import-mapping-select" style="width:100%;padding:8px 10px;border:1.5px solid #e8eaf0;border-radius:8px;font-size:13px;background:#fff;cursor:pointer;">
+                        ${options}
+                    </select>
+                </div>
+            </div>
+        `;
+    });
+
+    grid.innerHTML = html;
+}
+
+function escapeHtml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function escapeAttr(str) { return escapeHtml(str); }
+
+async function importStep2Submit() {
+    const mapping = {};
+    document.querySelectorAll('.import-mapping-select').forEach((sel) => {
+        mapping[sel.dataset.column] = sel.value;
+    });
+
+    // Validação client-side — precisa mapear 'name'
+    const mappedFields = Object.values(mapping);
+    if (! mappedFields.includes('name')) {
+        const err = document.getElementById('importStep2Error');
+        err.textContent = 'Mapeie ao menos uma coluna como "Nome" (obrigatório).';
+        err.style.display = 'block';
+        return;
+    }
+    document.getElementById('importStep2Error').style.display = 'none';
+
+    const btn = document.getElementById('btnImportStep2');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Importando...';
+
+    try {
+        const res = await fetch(IMPORT_EXECUTE_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+            },
+            body: JSON.stringify({
+                token:    importPreviewData.token,
+                filename: importPreviewData.filename,
+                mapping:  mapping,
+            }),
+        });
         const data = await res.json();
 
         const resultEl = document.getElementById('importResult');
-        resultEl.style.display = 'block';
         if (data.success) {
             resultEl.style.background = '#d1fae5';
             resultEl.style.color = '#065f46';
-            resultEl.textContent = CLANG.import_success.replace(':imported', data.imported) + (data.skipped ? ' ' + CLANG.import_skipped.replace(':skipped', data.skipped) : '');
-            setTimeout(() => { closeImportModal(); location.reload(); }, 2000);
+            let msg = `<strong>${data.imported}</strong> leads importados com sucesso.`;
+            if (data.skipped > 0)       msg += `<br><span style="color:#92400e;">${data.skipped} linhas ignoradas (sem nome).</span>`;
+            if (data.limit_skipped > 0) msg += `<br><span style="color:#92400e;">${data.limit_skipped} ignoradas por limite do plano.</span>`;
+            if (data.duplicates_found)  msg += `<br><span style="color:#1d4ed8;">${data.duplicates_found} possível(is) duplicata(s) detectada(s) — revise em Contatos > Duplicatas.</span>`;
+            resultEl.innerHTML = msg;
         } else {
             resultEl.style.background = '#fee2e2';
             resultEl.style.color = '#991b1b';
-            resultEl.textContent = data.message || CLANG.import_error;
+            resultEl.textContent = data.message || 'Erro ao importar.';
         }
-    } catch(e) {
-        alert(CLANG.error_connection);
+
+        document.getElementById('importStep2').style.display = 'none';
+        document.getElementById('importStep3').style.display = 'block';
+        document.getElementById('importProgressBar').style.width = '100%';
+        document.getElementById('importStepLabel').textContent = 'Resultado';
+    } catch (e) {
+        alert('Erro de conexão: ' + e.message);
     } finally {
         btn.disabled = false;
-        btn.textContent = CLANG.import_btn;
+        btn.innerHTML = '<i class="bi bi-check-lg"></i> Importar';
     }
 }
 

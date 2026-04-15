@@ -1227,8 +1227,9 @@ function ActionForm({ data, update, pipelines, allVars, tags, users, customField
                         <select style={field.input} value={data.pipeline_id || ''} onChange={e => {
                             const p = pipelines.find(p => p.id === parseInt(e.target.value));
                             setSelectedPipeline(p || null);
-                            update('pipeline_id', p ? p.id : null);
-                            update('stage_id', null);
+                            // Atomic update — 2 chamadas separadas usam closure stale de data
+                            // e a segunda sobrescreve a primeira, resetando pipeline_id
+                            update({ pipeline_id: p ? p.id : null, stage_id: null });
                         }}>
                             <option value="">Selecione…</option>
                             {pipelines.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -1272,9 +1273,8 @@ function ActionForm({ data, update, pipelines, allVars, tags, users, customField
                         <select style={field.input} value={data.pipeline_id || ''} onChange={e => {
                             const p = pipelines.find(p => p.id === parseInt(e.target.value));
                             setSelectedPipeline(p || null);
-                            update('pipeline_id', p ? p.id : null);
-                            update('stage_id', null);
-                            update('stage_name', null);
+                            // Atomic update — múltiplos update() separados perdem estado (closure stale)
+                            update({ pipeline_id: p ? p.id : null, stage_id: null, stage_name: null });
                         }}>
                             <option value="">Selecione…</option>
                             {pipelines.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -1284,8 +1284,8 @@ function ActionForm({ data, update, pipelines, allVars, tags, users, customField
                         <FieldGroup label="Etapa">
                             <select style={field.input} value={data.stage_id || ''} onChange={e => {
                                 const st = selectedPipeline.stages.find(s => s.id === parseInt(e.target.value));
-                                update('stage_id', st ? st.id : null);
-                                update('stage_name', st ? st.name : null);
+                                // Atomic update pra evitar perda de stage_name no stale closure
+                                update({ stage_id: st ? st.id : null, stage_name: st ? st.name : null });
                             }}>
                                 <option value="">Selecione…</option>
                                 {selectedPipeline.stages.map(st => <option key={st.id} value={st.id}>{st.name}</option>)}
@@ -2506,7 +2506,8 @@ function ChatbotBuilder() {
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
     const [selectedNode, setSelectedNode] = useState(null);
-    const [variables, setVariables] = useState(cfg.flow?.variables || []);
+    // Bug 2 fix: controller passa `variables` no root do builderData, não em flow.*
+    const [variables, setVariables] = useState(cfg.variables || cfg.flow?.variables || []);
     const [triggerKeywords, setTriggerKeywords] = useState(cfg.flow?.trigger_keywords || []);
     const [pipelines, setPipelines] = useState([]);
     const tags            = cfg.tags            || [];

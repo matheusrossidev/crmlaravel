@@ -58,6 +58,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule) {
         $schedule->command('billing:check-trials')->dailyAt('06:00');
+        $schedule->command('import:cleanup-tmp')->hourly()->withoutOverlapping(5);
         // withoutOverlapping(5) = mutex expira em 5 min se o processo crashar.
         // Sem timeout, default é 24h — mutex travado = cron morto por 24h.
         // Bug histórico: 2026-04-10, mensagens agendadas não enviaram por horas.

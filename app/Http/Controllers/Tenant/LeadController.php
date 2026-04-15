@@ -585,6 +585,10 @@ class LeadController extends Controller
         return Excel::download(new LeadsExport($filters), 'leads-' . now()->format('Y-m-d') . '.xlsx');
     }
 
+    /**
+     * Import legado — um único step. Mantido pra retrocompatibilidade do modal antigo.
+     * Usa auto-detection interno do LeadsImport pra headers padrão.
+     */
     public function import(Request $request): JsonResponse
     {
         $request->validate([
@@ -600,9 +604,135 @@ class LeadController extends Controller
             ], 422);
         }
 
-        $import = new LeadsImport($remaining);
+        $import = new \App\Imports\LeadsImport($remaining);
         Excel::import($import, $request->file('file'));
 
+        return response()->json($this->buildImportResult($import, $remaining));
+    }
+
+    /**
+     * Wizard step 1 — recebe arquivo, retorna preview + headers + auto-mapping.
+     * Salva arquivo em storage/app/tmp/imports/ com token pra reuso no execute.
+     */
+    public function importPreview(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:5120', new \App\Rules\SafeFile],
+        ]);
+
+        $remaining = PlanLimitChecker::remaining('leads');
+        if ($remaining === 0) {
+            return response()->json([
+                'success'       => false,
+                'message'       => 'Limite de leads atingido no seu plano. Faça upgrade para importar.',
+                'limit_reached' => true,
+            ], 422);
+        }
+
+        // Salva arquivo em tmp storage com token UUID
+        $userId    = auth()->id();
+        $token     = \Illuminate\Support\Str::uuid()->toString();
+        $ext       = $request->file('file')->getClientOriginalExtension();
+        $filename  = "tmp/imports/{$userId}-{$token}.{$ext}";
+        \Illuminate\Support\Facades\Storage::disk('local')->putFileAs(
+            "tmp/imports",
+            $request->file('file'),
+            "{$userId}-{$token}.{$ext}",
+        );
+
+        // Lê headers + primeiras 5 linhas pro preview (sem importar)
+        $path = \Illuminate\Support\Facades\Storage::disk('local')->path($filename);
+
+        try {
+            $rows = Excel::toArray(new \stdClass, $path);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Storage::disk('local')->delete($filename);
+            return response()->json([
+                'success' => false,
+                'message' => 'Não foi possível ler o arquivo: ' . $e->getMessage(),
+            ], 422);
+        }
+
+        $sheet = $rows[0] ?? [];
+        if (count($sheet) < 2) {
+            \Illuminate\Support\Facades\Storage::disk('local')->delete($filename);
+            return response()->json([
+                'success' => false,
+                'message' => 'Arquivo vazio ou sem linhas de dados.',
+            ], 422);
+        }
+
+        $headers     = array_values(array_filter(array_map('strval', $sheet[0] ?? [])));
+        $previewRows = array_slice($sheet, 1, 5);
+        $autoMapping = \App\Services\LeadsImportMapper::autoDetect($headers);
+
+        return response()->json([
+            'success'          => true,
+            'token'            => $token,
+            'filename'         => $filename,
+            'columns'          => $headers,
+            'preview_rows'     => $previewRows,
+            'auto_mapping'     => $autoMapping,
+            'available_fields' => \App\Services\LeadsImportMapper::availableFields(),
+            'remaining_slots'  => $remaining,
+        ]);
+    }
+
+    /**
+     * Wizard step 2 — recebe token + mapping confirmado pelo user, executa o import.
+     */
+    public function importExecute(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'token'    => 'required|string|size:36',
+            'filename' => 'required|string',
+            'mapping'  => 'required|array',
+        ]);
+
+        // Valida que tem ao menos uma coluna mapeada pro campo obrigatório `name`
+        if (! in_array('name', array_values($data['mapping']), true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mapeie ao menos uma coluna como "Nome" (campo obrigatório).',
+            ], 422);
+        }
+
+        // Segurança: filename deve começar com "tmp/imports/{user_id}-"
+        $userId = auth()->id();
+        $expectedPrefix = "tmp/imports/{$userId}-";
+        if (! str_starts_with($data['filename'], $expectedPrefix)) {
+            return response()->json(['success' => false, 'message' => 'Token inválido.'], 403);
+        }
+
+        if (! \Illuminate\Support\Facades\Storage::disk('local')->exists($data['filename'])) {
+            return response()->json(['success' => false, 'message' => 'Arquivo expirou. Refaça o upload.'], 410);
+        }
+
+        $remaining = PlanLimitChecker::remaining('leads');
+        if ($remaining === 0) {
+            return response()->json([
+                'success'       => false,
+                'message'       => 'Limite de leads atingido no seu plano.',
+                'limit_reached' => true,
+            ], 422);
+        }
+
+        $path = \Illuminate\Support\Facades\Storage::disk('local')->path($data['filename']);
+
+        $import = new \App\Imports\LeadsImport($remaining, $data['mapping']);
+        Excel::import($import, $path);
+
+        // Cleanup imediato
+        \Illuminate\Support\Facades\Storage::disk('local')->delete($data['filename']);
+
+        return response()->json($this->buildImportResult($import, $remaining));
+    }
+
+    /**
+     * Monta o payload de resposta após import (shared entre legacy + wizard).
+     */
+    private function buildImportResult(\App\Imports\LeadsImport $import, ?int $remaining): array
+    {
         $result = [
             'success'  => true,
             'imported' => $import->getImported(),
@@ -620,7 +750,7 @@ class LeadController extends Controller
             $result['message'] = $msg . " {$import->getDuplicatesFound()} possível(is) duplicata(s) detectada(s) — revise em Contatos > Duplicatas.";
         }
 
-        return response()->json($result);
+        return $result;
     }
 
     private function formatLead(Lead $lead, bool $withNotes = false): array
