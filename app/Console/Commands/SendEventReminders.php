@@ -70,30 +70,13 @@ class SendEventReminders extends Command
             return;
         }
 
-        $chatId = $rawPhone . '@c.us';
         $conversation = $reminder->conversation;
-
-        if ($conversation) {
-            if ($conversation->is_group) {
-                $chatId = $rawPhone . '@g.us';
-            } else {
-                $sampleId = WhatsappMessage::withoutGlobalScope('tenant')
-                    ->where('conversation_id', $conversation->id)
-                    ->whereNotNull('waha_message_id')
-                    ->where('direction', 'inbound')
-                    ->latest('sent_at')
-                    ->value('waha_message_id');
-
-                if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
-                    $jid = $m[1];
-                    if (str_ends_with($jid, '@lid')) {
-                        $chatId = preg_replace('/[:@].+$/', '', $jid) . '@lid';
-                    } else {
-                        $chatId = preg_replace('/[:@].+$/', '', $jid) . '@c.us';
-                    }
-                }
-            }
-        }
+        $chatId = app(\App\Services\Whatsapp\ChatIdResolver::class)->for(
+            $instance,
+            $rawPhone,
+            (bool) ($conversation?->is_group ?? false),
+            $conversation,
+        );
 
         $waha   = \App\Services\WhatsappServiceFactory::for($instance);
         $result = $waha->sendText($chatId, $reminder->body);

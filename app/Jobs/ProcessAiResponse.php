@@ -714,27 +714,12 @@ class ProcessAiResponse implements ShouldQueue
                 return;
             }
 
-            $waha = new \App\Services\WahaService($instance->session_name);
+            // Factory em vez de `new WahaService` hardcoded — DIP: resolve por provider.
+            $waha = \App\Services\WhatsappServiceFactory::for($instance);
 
-            // Resolve chatId — mesma lógica do sendWhatsappReplies (suporta @lid e @c.us)
-            $chatId = null;
-            $lastMsg = WhatsappMessage::withoutGlobalScope('tenant')
-                ->where('conversation_id', $conv->id)
-                ->where('direction', 'inbound')
-                ->whereNotNull('waha_message_id')
-                ->latest('sent_at')
-                ->first();
-
-            if ($lastMsg?->waha_message_id && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $lastMsg->waha_message_id, $m)) {
-                $jid = $m[1];
-                $chatId = str_ends_with($jid, '@lid')
-                    ? preg_replace('/[:@].+$/', '', $jid) . '@lid'
-                    : preg_replace('/[:@].+$/', '', $jid) . '@c.us';
-            }
-
-            if (! $chatId) {
-                $chatId = $conv->phone . '@c.us';
-            }
+            // ChatIdResolver: formato certo por provider (Cloud=puro, WAHA=@c.us/@g.us/@lid).
+            $chatId = app(\App\Services\Whatsapp\ChatIdResolver::class)
+                ->for($instance, (string) $conv->phone, (bool) $conv->is_group, $conv);
 
             Log::channel('whatsapp')->info('TTS: enviando áudio ao WAHA', [
                 'conversation_id' => $conv->id,
@@ -1856,29 +1841,14 @@ class ProcessAiResponse implements ShouldQueue
 
         if (! $instance || $instance->status !== 'connected') return;
 
-        // Resolve chat ID
-        $sampleId = WhatsappMessage::withoutGlobalScope('tenant')
-            ->where('conversation_id', $conv->id)
-            ->whereNotNull('waha_message_id')
-            ->where('direction', 'inbound')
-            ->latest('sent_at')
-            ->value('waha_message_id');
-
-        $chatId = null;
-        if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
-            $jid    = $m[1];
-            $chatId = str_ends_with($jid, '@lid')
-                ? preg_replace('/[:@].+$/', '', $jid) . '@lid'
-                : preg_replace('/[:@].+$/', '', $jid) . '@c.us';
-        }
-        if (! $chatId) {
-            $chatId = ltrim((string) preg_replace('/[:@\s].+$/', '', $conv->phone), '+') . '@c.us';
-        }
+        // ChatIdResolver + Factory (DIP) — resolve por provider automaticamente.
+        $chatId = app(\App\Services\Whatsapp\ChatIdResolver::class)
+            ->for($instance, (string) $conv->phone, (bool) $conv->is_group, $conv);
 
         $localPath = Storage::disk('public')->path($media->storage_path);
         if (! file_exists($localPath)) return;
 
-        $waha    = new \App\Services\WahaService($instance->session_name);
+        $waha    = \App\Services\WhatsappServiceFactory::for($instance);
         $caption = $media->description ?? '';
         $isImage = str_starts_with($media->mime_type, 'image/');
 

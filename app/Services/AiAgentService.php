@@ -921,25 +921,8 @@ WEBCHAT;
         $waha   = null;
 
         if ($instance && $instance->status === 'connected') {
-            $sampleId = WhatsappMessage::withoutGlobalScope('tenant')
-                ->where('conversation_id', $conv->id)
-                ->whereNotNull('waha_message_id')
-                ->where('direction', 'inbound')
-                ->latest('sent_at')
-                ->value('waha_message_id');
-
-            if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
-                $jid = $m[1];
-                $chatId = str_ends_with($jid, '@lid')
-                    ? preg_replace('/[:@].+$/', '', $jid) . '@lid'
-                    : preg_replace('/[:@].+$/', '', $jid) . '@c.us';
-            }
-
-            if (! $chatId) {
-                $rawPhone = ltrim((string) preg_replace('/[:@\s].+$/', '', $conv->phone), '+');
-                $chatId   = $rawPhone . '@c.us';
-            }
-
+            $chatId = app(\App\Services\Whatsapp\ChatIdResolver::class)
+                ->for($instance, (string) $conv->phone, (bool) $conv->is_group, $conv);
             $waha = \App\Services\WhatsappServiceFactory::for($instance);
         }
 
@@ -1051,26 +1034,9 @@ WEBCHAT;
             return;
         }
 
-        // Derivar chatId a partir do waha_message_id de uma mensagem inbound existente
-        $sampleId = WhatsappMessage::withoutGlobalScope('tenant')
-            ->where('conversation_id', $conv->id)
-            ->whereNotNull('waha_message_id')
-            ->where('direction', 'inbound')
-            ->latest('sent_at')
-            ->value('waha_message_id');
-
-        $chatId = null;
-        if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
-            $jid = $m[1];
-            $chatId = str_ends_with($jid, '@lid')
-                ? preg_replace('/[:@].+$/', '', $jid) . '@lid'
-                : preg_replace('/[:@].+$/', '', $jid) . '@c.us';
-        }
-
-        if (! $chatId) {
-            $rawPhone = ltrim((string) preg_replace('/[:@\s].+$/', '', $conv->phone), '+');
-            $chatId   = $rawPhone . '@c.us';
-        }
+        // ChatIdResolver: Cloud → número puro; WAHA → @c.us/@g.us/@lid preservando histórico.
+        $chatId = app(\App\Services\Whatsapp\ChatIdResolver::class)
+            ->for($instance, (string) $conv->phone, (bool) $conv->is_group, $conv);
 
         $waha   = \App\Services\WhatsappServiceFactory::for($instance);
         $result = $waha->sendText($chatId, $text);
@@ -1154,26 +1120,9 @@ WEBCHAT;
             return;
         }
 
-        // Resolver chatId (mesmo padrão do sendWhatsappReply)
-        $sampleId = WhatsappMessage::withoutGlobalScope('tenant')
-            ->where('conversation_id', $conv->id)
-            ->whereNotNull('waha_message_id')
-            ->where('direction', 'inbound')
-            ->latest('sent_at')
-            ->value('waha_message_id');
-
-        $chatId = null;
-        if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
-            $jid = $m[1];
-            $chatId = str_ends_with($jid, '@lid')
-                ? preg_replace('/[:@].+$/', '', $jid) . '@lid'
-                : preg_replace('/[:@].+$/', '', $jid) . '@c.us';
-        }
-
-        if (! $chatId) {
-            $rawPhone = ltrim((string) preg_replace('/[:@\s].+$/', '', $conv->phone), '+');
-            $chatId   = $rawPhone . '@c.us';
-        }
+        // ChatIdResolver: delega escolha do formato por provider (SRP/DIP).
+        $chatId = app(\App\Services\Whatsapp\ChatIdResolver::class)
+            ->for($instance, (string) $conv->phone, (bool) $conv->is_group, $conv);
 
         $localPath = Storage::disk('public')->path($media->storage_path);
         if (! file_exists($localPath)) {
