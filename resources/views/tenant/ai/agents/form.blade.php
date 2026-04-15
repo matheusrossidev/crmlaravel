@@ -624,23 +624,59 @@
 
         {{-- Instâncias WhatsApp (visível apenas quando channel=whatsapp) --}}
         @if(isset($whatsappInstances) && $whatsappInstances->count() > 1)
-        @php $selectedInstances = $agent->whatsappInstances?->pluck('id')->toArray() ?? []; @endphp
-        <div id="whatsappInstancesSection" style="{{ $currentChannel === 'whatsapp' ? '' : 'display:none;' }}margin-top:6px;padding:12px 14px;background:#f9fafb;border-radius:10px;border:1px solid #e8eaf0;">
-            <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px;">
+        @php
+            $selectedInstances = $agent->whatsappInstances?->pluck('id')->toArray() ?? [];
+            $wahaInstances  = $whatsappInstances->where('provider', '!=', 'cloud_api')->values();
+            $cloudInstances = $whatsappInstances->where('provider', 'cloud_api')->values();
+        @endphp
+        <div id="whatsappInstancesSection" style="{{ $currentChannel === 'whatsapp' ? '' : 'display:none;' }}margin-top:6px;padding:14px 16px;background:#f9fafb;border-radius:10px;border:1px solid #e8eaf0;">
+            <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;">
                 <i class="bi bi-telephone" style="margin-right:4px;"></i> {{ __('ai_agents.wa_instances_title') }}
             </div>
-            <div style="font-size:11px;color:#6b7280;margin-bottom:8px;">{{ __('ai_agents.wa_instances_hint') }}</div>
-            @foreach($whatsappInstances as $inst)
-            <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
-                <input type="checkbox" name="whatsapp_instance_ids[]" value="{{ $inst->id }}"
-                       {{ in_array($inst->id, $selectedInstances) ? 'checked' : '' }}
-                       style="accent-color:#0085f3;width:16px;height:16px;">
-                <span style="font-size:13px;color:#1a1d23;font-weight:500;">{{ $inst->label ?: $inst->session_name }}</span>
-                @if($inst->phone_number)
-                <span style="font-size:11px;color:#6b7280;">({{ $inst->phone_number }})</span>
-                @endif
-            </label>
-            @endforeach
+            <div style="font-size:11px;color:#6b7280;margin-bottom:12px;line-height:1.4;">
+                {{ __('ai_agents.wa_instances_hint') }}
+                Deixe tudo desmarcado pra o agente responder em qualquer número. Marque específicos pra limitar.
+            </div>
+
+            @if($wahaInstances->isNotEmpty())
+                <div style="font-size:10.5px;font-weight:700;color:#0085f3;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px;display:flex;align-items:center;gap:6px;">
+                    <i class="bi bi-whatsapp"></i> WAHA (não-oficial)
+                </div>
+                @foreach($wahaInstances as $inst)
+                <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+                    <input type="checkbox" name="whatsapp_instance_ids[]" value="{{ $inst->id }}"
+                           {{ in_array($inst->id, $selectedInstances) ? 'checked' : '' }}
+                           style="accent-color:#0085f3;width:16px;height:16px;">
+                    <span style="font-size:13px;color:#1a1d23;font-weight:500;">{{ $inst->label ?: $inst->session_name }}</span>
+                    @if($inst->phone_number)
+                        <span style="font-size:11px;color:#6b7280;">({{ $inst->phone_number }})</span>
+                    @endif
+                </label>
+                @endforeach
+            @endif
+
+            @if($cloudInstances->isNotEmpty())
+                <div style="font-size:10.5px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px;display:flex;align-items:center;gap:6px;">
+                    <i class="bi bi-shield-check"></i> Cloud API Oficial (Meta)
+                </div>
+                @foreach($cloudInstances as $inst)
+                <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+                    <input type="checkbox" name="whatsapp_instance_ids[]" value="{{ $inst->id }}"
+                           {{ in_array($inst->id, $selectedInstances) ? 'checked' : '' }}
+                           style="accent-color:#0085f3;width:16px;height:16px;">
+                    <span style="font-size:13px;color:#1a1d23;font-weight:500;">{{ $inst->label ?: $inst->session_name }}</span>
+                    @if($inst->phone_number)
+                        <span style="font-size:11px;color:#6b7280;">({{ $inst->phone_number }})</span>
+                    @endif
+                    <span style="font-size:10px;background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;padding:1px 6px;border-radius:10px;font-weight:600;">templates</span>
+                    <span style="font-size:10px;background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;padding:1px 6px;border-radius:10px;font-weight:600;">buttons</span>
+                </label>
+                @endforeach
+                <div style="font-size:11px;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin-top:8px;line-height:1.4;">
+                    <i class="bi bi-info-circle"></i>
+                    Cloud API tem janela de 24h. Configure a estratégia de follow-up na seção "Follow-up Automático" abaixo pra evitar cobranças inesperadas.
+                </div>
+            @endif
         </div>
         @endif
 
