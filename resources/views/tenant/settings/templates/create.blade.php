@@ -534,6 +534,40 @@
     </form>
 </div>
 
+{{-- Modal de variável custom (sem prompt nativo) --}}
+<div id="customVarModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1050;align-items:center;justify-content:center;padding:20px;"
+     onclick="if(event.target===this) closeCustomVarModal()">
+    <div style="width:min(420px,100%);background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden;">
+        <div style="padding:16px 22px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+                <div style="font-size:15px;font-weight:700;color:#1a1d23;">Novo dado dinâmico</div>
+                <div style="font-size:12.5px;color:#9ca3af;margin-top:2px;">Dê um nome claro pra esse dado (ex: Número do pedido).</div>
+            </div>
+            <button type="button" onclick="closeCustomVarModal()" style="background:none;border:0;font-size:18px;color:#6b7280;cursor:pointer;">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div style="padding:18px 22px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;">Nome do dado</label>
+            <input type="text" id="customVarInput" maxlength="40"
+                   placeholder="Ex: Número do pedido"
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();confirmCustomVariable();}else if(event.key==='Escape'){closeCustomVarModal();}"
+                   style="width:100%;padding:10px 12px;border:1.5px solid #e8eaf0;border-radius:9px;font-size:13.5px;color:#1a1d23;background:#fff;font-family:inherit;">
+            <div style="font-size:11px;color:#9ca3af;margin-top:6px;">Máx 40 caracteres.</div>
+        </div>
+        <div style="padding:14px 22px;border-top:1px solid #f0f2f7;display:flex;justify-content:flex-end;gap:8px;">
+            <button type="button" onclick="closeCustomVarModal()"
+                    style="background:#f3f4f6;color:#374151;border:0;padding:9px 16px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;">
+                Cancelar
+            </button>
+            <button type="button" onclick="confirmCustomVariable()"
+                    style="background:#0085f3;color:#fff;border:0;padding:9px 20px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;">
+                <i class="bi bi-plus-lg"></i> Adicionar
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
     // Categoria — toggle cards
     document.querySelectorAll('.cat-card').forEach(el => {
@@ -625,9 +659,9 @@
     const samplesRow  = document.getElementById('samplesRow');
     const samplesTbl  = document.getElementById('samplesTable');
 
-    // Mapping id → label amigável. Popula ao clicar em "Inserir dado dinâmico".
-    // Persiste em hidden input pra survive submit (Meta só precisa do {{N}} no body,
-    // mas nós queremos mostrar "Nome do cliente" em vez de {{1}} na UI).
+    // Mapping id -> label amigavel. Popula ao clicar em "Inserir dado dinamico".
+    // Persiste em hidden input pra survive submit (Meta so precisa das chaves
+    // duplas com numero no body, mas a UI mostra "Nome do cliente").
     const varLabels = {};  // { 1: 'Nome do cliente', 2: 'Data', ... }
 
     // Ícone por tipo de label
@@ -651,9 +685,9 @@
         const placeholder = '[' + label + ']';
         insertAtCursor(bodyEl, placeholder);
 
-        // Troca o placeholder pelo {{N}} "real" — user vê [Nome do cliente] mas
-        // no submit vai {{N}} (o que Meta aceita). Usa data-attribute pra manter
-        // o mapping visual.
+        // Troca o placeholder pela chave dupla numerada "real" — user ve
+        // [Nome do cliente] mas no submit vai o formato que Meta aceita. Usa
+        // data-attribute pra manter o mapping visual.
         bodyEl.value = bodyEl.value.replace(placeholder, '{' + '{' + nextId + '}' + '}');
 
         bodyLen.textContent = bodyEl.value.length;
@@ -662,9 +696,26 @@
     }
 
     function insertCustomVariable() {
-        const custom = prompt('Nome do dado (ex: "Número do pedido", "Descrição"):');
-        if (!custom || !custom.trim()) return;
-        insertVariable(custom.trim().substring(0, 30));
+        const modal = document.getElementById('customVarModal');
+        const input = document.getElementById('customVarInput');
+        input.value = '';
+        modal.style.display = 'flex';
+        setTimeout(() => input.focus(), 50);
+    }
+
+    function closeCustomVarModal() {
+        document.getElementById('customVarModal').style.display = 'none';
+    }
+
+    function confirmCustomVariable() {
+        const input = document.getElementById('customVarInput');
+        const val = input.value.trim();
+        if (!val) {
+            input.focus();
+            return;
+        }
+        closeCustomVarModal();
+        insertVariable(val.substring(0, 40));
     }
 
     function insertAtCursor(el, text) {
@@ -778,7 +829,7 @@
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
-        // Usa labels amigáveis em vez do {{N}} técnico.
+        // Usa labels amigaveis em vez do placeholder tecnico.
         return escaped.replace(/\{\{\s*(\d+)\s*\}\}/g, (_, id) => {
             const lbl = labelFor(parseInt(id, 10));
             const sample = exampleFor(lbl);
