@@ -433,6 +433,82 @@ class WhatsappCloudService implements WhatsappServiceContract, SupportsMessageTe
     }
 
     /**
+     * Upload de mídia via Resumable Upload API pra obter handle `h:4:...` que o Meta
+     * exige no `example.header_handle` ao criar templates com header IMAGE/VIDEO/DOCUMENT.
+     *
+     * IMPORTANTE: URL pública simples no header_handle retorna erro 2388273
+     * ("Parâmetro de exemplo não fornecido"). Meta só aceita handle obtido via
+     * 2 chamadas:
+     *   1. POST /{app_id}/uploads    → retorna upload session id
+     *   2. POST /{upload_id} (body=binário) → retorna { h: "4:..." }
+     *
+     * Doc: https://developers.facebook.com/docs/graph-api/guides/upload
+     *
+     * @return string|null  handle Meta ("4:...") ou null se falhar
+     */
+    public function uploadToMetaResumable(string $filePath, string $mimeType): ?string
+    {
+        if (! is_file($filePath)) {
+            Log::warning('WhatsappCloud Resumable: arquivo não existe', ['path' => $filePath]);
+            return null;
+        }
+
+        $appId = (string) config('services.whatsapp_cloud.app_id');
+        if ($appId === '') {
+            Log::error('WhatsappCloud Resumable: WHATSAPP_CLOUD_APP_ID não configurado');
+            return null;
+        }
+
+        $fileSize = filesize($filePath);
+
+        // Step 1: criar sessão de upload.
+        try {
+            $sessionResp = Http::timeout(30)
+                ->acceptJson()
+                ->post("{$this->baseUrl}/{$appId}/uploads", [
+                    'file_length'  => $fileSize,
+                    'file_type'    => $mimeType,
+                    'access_token' => $this->accessToken,
+                ]);
+            $sessionData = $this->parse($sessionResp);
+        } catch (\Throwable $e) {
+            Log::warning('WhatsappCloud Resumable step1 exception', ['error' => $e->getMessage()]);
+            return null;
+        }
+
+        $uploadId = $sessionData['id'] ?? null;
+        if (! $uploadId) {
+            Log::warning('WhatsappCloud Resumable step1: sem upload id', ['response' => $sessionData]);
+            return null;
+        }
+
+        // Step 2: enviar binário. Meta exige header `Authorization: OAuth {token}`
+        // (não Bearer) e `file_offset: 0` pra chunk único.
+        try {
+            $uploadResp = Http::withHeaders([
+                'Authorization' => 'OAuth ' . $this->accessToken,
+                'file_offset'   => '0',
+                'Content-Type'  => $mimeType,
+            ])
+                ->timeout(120)
+                ->withBody(file_get_contents($filePath), $mimeType)
+                ->post("{$this->baseUrl}/{$uploadId}");
+            $uploadData = $this->parse($uploadResp);
+        } catch (\Throwable $e) {
+            Log::warning('WhatsappCloud Resumable step2 exception', ['error' => $e->getMessage()]);
+            return null;
+        }
+
+        $handle = $uploadData['h'] ?? null;
+        if (! $handle) {
+            Log::warning('WhatsappCloud Resumable step2: sem handle no retorno', ['response' => $uploadData]);
+            return null;
+        }
+
+        return (string) $handle;
+    }
+
+    /**
      * Deleta template. Se hsmId for passado, deleta só aquele idioma específico;
      * se só o name, deleta todos os idiomas daquele nome.
      */

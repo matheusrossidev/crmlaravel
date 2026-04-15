@@ -177,11 +177,44 @@ class WhatsappTemplateService
             ]);
         }
 
+        // Se header é mídia, converte URL do nosso storage em handle Meta via
+        // Resumable Upload API. Meta exige handle específico ("4:...") em
+        // example.header_handle — URL pública direto retorna erro 2388273.
+        $cloudService = new WhatsappCloudService($instance);
+        $headerType = strtoupper((string) ($data['header']['type'] ?? ''));
+        if (in_array($headerType, ['IMAGE', 'VIDEO', 'DOCUMENT'], true) && ! empty($data['header']['sample_handle'])) {
+            $sampleUrl = (string) $data['header']['sample_handle'];
+
+            // Handle já é Meta format? (raro — só se user forneceu manualmente)
+            if (str_starts_with($sampleUrl, '4:')) {
+                // já é handle, mantém
+            } else {
+                $localPath = $this->urlToLocalPath($sampleUrl);
+                if (! $localPath || ! is_file($localPath)) {
+                    throw ValidationException::withMessages([
+                        'header.sample_handle' => 'Arquivo de exemplo não encontrado no servidor. Faça upload de novo.',
+                    ]);
+                }
+
+                $mime   = mime_content_type($localPath) ?: 'application/octet-stream';
+                $handle = $cloudService->uploadToMetaResumable($localPath, $mime);
+
+                if (! $handle) {
+                    throw ValidationException::withMessages([
+                        'header.sample_handle' => 'Falha ao enviar mídia pra Meta. Verifique que WHATSAPP_CLOUD_APP_ID está configurado e o token tem permissão de upload.',
+                    ]);
+                }
+
+                // Substitui a URL pelo handle Meta antes de montar components.
+                $data['header']['sample_handle'] = $handle;
+            }
+        }
+
         // Monta components no formato Meta
         $components = $this->buildComponentsForSubmit($data, $samples);
 
         // Cria na Meta
-        $metaResp = (new WhatsappCloudService($instance))->createTemplate($name, $language, $category, $components);
+        $metaResp = $cloudService->createTemplate($name, $language, $category, $components);
 
         if (isset($metaResp['error'])) {
             $msg = is_array($metaResp['body'] ?? null)
@@ -253,6 +286,44 @@ class WhatsappTemplateService
 
         return WhatsappServiceFactory::for($instance)
             ->sendTemplate($toPhone, $template->name, $template->language, $components);
+    }
+
+    /**
+     * Converte URL pública do nosso storage (ex: https://app.syncro.chat/storage/x.jpg
+     * ou http://localhost/crm/public/storage/x.jpg) pro path absoluto no disco.
+     *
+     * Retorna null se URL não é do nosso storage (caso user colou URL externa —
+     * não daria pra ler o arquivo de qualquer jeito). Meta exige upload resumable
+     * de arquivo local, então URL externa alheia nunca vai funcionar aqui.
+     */
+    private function urlToLocalPath(string $url): ?string
+    {
+        // Normaliza barras e remove query string
+        $url = preg_replace('/\?.*$/', '', $url) ?: $url;
+
+        // Procura "/storage/" ou "storage/" na URL — funciona tanto em prod
+        // (app.syncro.chat/storage/...) quanto dev (localhost/crm/public/storage/...).
+        if (! preg_match('#/storage/(.+)$#', $url, $m)) {
+            return null;
+        }
+
+        $relativePath = $m[1];
+
+        // storage_path('app/public/') é o disk 'public' configurado no filesystems.
+        $absolute = storage_path('app/public/' . $relativePath);
+
+        // Resolve symlinks pra evitar path traversal acidental fora de storage/app/public
+        $real = realpath($absolute);
+        if (! $real) {
+            return null;
+        }
+
+        $storageRoot = realpath(storage_path('app/public'));
+        if (! $storageRoot || ! str_starts_with($real, $storageRoot)) {
+            return null;  // path traversal defense
+        }
+
+        return $real;
     }
 
     // ── Helpers privados ─────────────────────────────────────────────────────
