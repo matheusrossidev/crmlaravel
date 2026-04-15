@@ -588,9 +588,9 @@
                 </a>
                 @endif
 
-                <a href="{{ route('reports.pdf', request()->query()) }}" class="btn-apply" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
-                    <i class="bi bi-download"></i> {{ __('reports.download_report') }}
-                </a>
+                <button type="button" onclick="openGenerateReportModal()" class="btn-apply" style="display:inline-flex;align-items:center;gap:6px;">
+                    <i class="bi bi-file-earmark-plus"></i> Gerar Relatório
+                </button>
             </div>
 
         </div>
@@ -1479,6 +1479,118 @@
     </div>
     @endif
 
+    {{-- ══════════════ Relatórios gerados ══════════════ --}}
+    <div class="content-card" style="margin-top:24px;">
+        <div class="content-card-header" style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+                <h3 style="font-size:15px;font-weight:700;color:#1a1d23;margin:0 0 2px;">Relatórios gerados</h3>
+                <p style="font-size:12.5px;color:#6b7280;margin:0;">Links compartilháveis criados anteriormente</p>
+            </div>
+            <button type="button" onclick="refreshReportHistory()" class="btn-clear" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;">
+                <i class="bi bi-arrow-clockwise"></i> Atualizar
+            </button>
+        </div>
+        <div class="content-card-body" style="padding:0;">
+            <table id="reportHistoryTable" style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead>
+                    <tr style="background:#f8fafc;">
+                        <th style="text-align:left;padding:10px 14px;font-size:10.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.8px;border-bottom:1.5px solid #e5e7eb;">Título</th>
+                        <th style="text-align:left;padding:10px 14px;font-size:10.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.8px;border-bottom:1.5px solid #e5e7eb;">Período</th>
+                        <th style="text-align:left;padding:10px 14px;font-size:10.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.8px;border-bottom:1.5px solid #e5e7eb;">Gerado em</th>
+                        <th style="text-align:center;padding:10px 14px;font-size:10.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.8px;border-bottom:1.5px solid #e5e7eb;">Views</th>
+                        <th style="text-align:center;padding:10px 14px;font-size:10.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.8px;border-bottom:1.5px solid #e5e7eb;">Senha</th>
+                        <th style="padding:10px 14px;border-bottom:1.5px solid #e5e7eb;"></th>
+                    </tr>
+                </thead>
+                <tbody id="reportHistoryBody">
+                    <tr><td colspan="6" style="padding:32px;text-align:center;color:#9ca3af;font-style:italic;">Carregando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+{{-- ══════════════ Modal Gerar Relatório ══════════════ --}}
+<div id="generateReportModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:28px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.18);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+            <div>
+                <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin:0;">Gerar relatório</h3>
+                <p style="font-size:12.5px;color:#6b7280;margin:3px 0 0;">Cria um link público compartilhável com os filtros atuais</p>
+            </div>
+            <button onclick="closeGenerateReportModal()" style="background:none;border:none;font-size:22px;color:#9ca3af;cursor:pointer;">×</button>
+        </div>
+
+        {{-- Step 1: Form --}}
+        <div id="generateStep1">
+            <div style="margin-bottom:14px;">
+                <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:5px;">Título (opcional)</label>
+                <input type="text" id="reportTitle" maxlength="150" placeholder="Ex: Fechamento Q1 2026"
+                       style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13.5px;outline:none;">
+            </div>
+
+            <div style="margin-bottom:14px;">
+                <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:#374151;cursor:pointer;">
+                    <input type="checkbox" id="reportPasswordToggle" onchange="toggleReportPassword()" style="margin:0;">
+                    <i class="bi bi-shield-lock"></i> Proteger com senha
+                </label>
+                <div id="reportPasswordFields" style="display:none;margin-top:8px;">
+                    <input type="password" id="reportPassword" maxlength="100" placeholder="Senha (min 4 caracteres)"
+                           style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13.5px;outline:none;">
+                </div>
+            </div>
+
+            <div style="margin-bottom:18px;">
+                <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:5px;">Expiração</label>
+                <select id="reportExpires" style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13.5px;outline:none;background:#fff;">
+                    <option value="">Nunca expira</option>
+                    <option value="7">7 dias</option>
+                    <option value="30">30 dias</option>
+                    <option value="90">90 dias</option>
+                </select>
+            </div>
+
+            <div id="reportFormError" style="display:none;margin-bottom:12px;padding:9px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#b91c1c;font-size:12.5px;"></div>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button onclick="closeGenerateReportModal()" class="btn-clear">Cancelar</button>
+                <button id="btnGenerateReport" onclick="submitGenerateReport()" class="btn-apply">
+                    <i class="bi bi-file-earmark-plus"></i> Gerar
+                </button>
+            </div>
+        </div>
+
+        {{-- Step 2: Link gerado --}}
+        <div id="generateStep2" style="display:none;text-align:center;">
+            <div style="width:64px;height:64px;margin:0 auto 14px;border-radius:50%;background:#d1fae5;color:#059669;display:flex;align-items:center;justify-content:center;font-size:28px;">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <h3 style="font-size:16px;font-weight:700;color:#1a1d23;margin-bottom:6px;">Relatório criado!</h3>
+            <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">Compartilhe o link abaixo com quem precisar visualizar.</p>
+
+            <div id="reportHasPasswordBadge" style="display:none;margin-bottom:12px;">
+                <span style="display:inline-flex;align-items:center;gap:4px;background:#eff6ff;color:#0070d1;padding:4px 12px;border-radius:100px;font-size:11.5px;font-weight:600;">
+                    <i class="bi bi-shield-lock-fill"></i> Protegido por senha
+                </span>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-bottom:16px;">
+                <input type="text" id="reportGeneratedUrl" readonly
+                       style="flex:1;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;background:#f9fafb;font-family:monospace;">
+                <button onclick="copyReportUrl()" class="btn-apply" style="display:inline-flex;align-items:center;gap:4px;padding:10px 14px;">
+                    <i class="bi bi-clipboard"></i> Copiar
+                </button>
+            </div>
+
+            <div style="display:flex;gap:8px;justify-content:center;">
+                <button onclick="openReportInNewTab()" class="btn-clear" style="display:inline-flex;align-items:center;gap:4px;">
+                    <i class="bi bi-box-arrow-up-right"></i> Abrir em nova aba
+                </button>
+                <button onclick="closeGenerateReportModal(true)" class="btn-apply">Concluir</button>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
@@ -1486,6 +1598,208 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script>
+// ══ Modal Gerar Relatório + histórico ══
+const REPORTS_GENERATE_URL = @json(route('reports.generate'));
+const REPORTS_HISTORY_URL  = @json(route('reports.history'));
+const REPORTS_DELETE_URL   = (id) => `/relatorios/historicos/${id}`;
+const REPORTS_PASSWORD_URL = (id) => `/relatorios/historicos/${id}/senha`;
+const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+let _lastGeneratedUrl = '';
+
+function openGenerateReportModal() {
+    document.getElementById('generateReportModal').style.display = 'flex';
+    document.getElementById('generateStep1').style.display = 'block';
+    document.getElementById('generateStep2').style.display = 'none';
+    document.getElementById('reportTitle').value = '';
+    document.getElementById('reportPassword').value = '';
+    document.getElementById('reportPasswordToggle').checked = false;
+    document.getElementById('reportPasswordFields').style.display = 'none';
+    document.getElementById('reportExpires').value = '';
+    document.getElementById('reportFormError').style.display = 'none';
+}
+
+function closeGenerateReportModal(refresh = false) {
+    document.getElementById('generateReportModal').style.display = 'none';
+    if (refresh) refreshReportHistory();
+}
+
+function toggleReportPassword() {
+    const show = document.getElementById('reportPasswordToggle').checked;
+    document.getElementById('reportPasswordFields').style.display = show ? 'block' : 'none';
+    if (!show) document.getElementById('reportPassword').value = '';
+}
+
+async function submitGenerateReport() {
+    const title    = document.getElementById('reportTitle').value.trim();
+    const passOn   = document.getElementById('reportPasswordToggle').checked;
+    const password = passOn ? document.getElementById('reportPassword').value : '';
+    const expires  = document.getElementById('reportExpires').value;
+
+    if (passOn && (!password || password.length < 4)) {
+        const err = document.getElementById('reportFormError');
+        err.textContent = 'Senha precisa ter no mínimo 4 caracteres.';
+        err.style.display = 'block';
+        return;
+    }
+
+    // Herda filtros da URL atual
+    const urlParams = new URLSearchParams(window.location.search);
+    const payload = {
+        date_from:   urlParams.get('date_from') || '',
+        date_to:     urlParams.get('date_to')   || '',
+        pipeline_id: urlParams.get('pipeline_id') || '',
+        user_id:     urlParams.get('user_id')    || '',
+        title:       title || null,
+        password:    password || null,
+        expires_in:  expires || null,
+    };
+
+    const btn = document.getElementById('btnGenerateReport');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Gerando...';
+
+    try {
+        const res = await fetch(REPORTS_GENERATE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':CSRF_TOKEN },
+            body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+            const err = document.getElementById('reportFormError');
+            err.textContent = data.message || 'Erro ao gerar relatório.';
+            err.style.display = 'block';
+            return;
+        }
+
+        _lastGeneratedUrl = data.url;
+        document.getElementById('reportGeneratedUrl').value = data.url;
+        document.getElementById('reportHasPasswordBadge').style.display = data.has_password ? 'block' : 'none';
+        document.getElementById('generateStep1').style.display = 'none';
+        document.getElementById('generateStep2').style.display = 'block';
+    } catch (e) {
+        const err = document.getElementById('reportFormError');
+        err.textContent = 'Erro de conexão.';
+        err.style.display = 'block';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-file-earmark-plus"></i> Gerar';
+    }
+}
+
+function copyReportUrl() {
+    const input = document.getElementById('reportGeneratedUrl');
+    input.select();
+    navigator.clipboard.writeText(input.value).then(() => {
+        if (window.toastr) toastr.success('Link copiado!');
+    });
+}
+
+function openReportInNewTab() {
+    if (_lastGeneratedUrl) window.open(_lastGeneratedUrl, '_blank');
+}
+
+async function refreshReportHistory() {
+    const tbody = document.getElementById('reportHistoryBody');
+    try {
+        const res = await fetch(REPORTS_HISTORY_URL, { headers: { 'Accept':'application/json' } });
+        const data = await res.json();
+        const rows = data.reports || [];
+
+        if (rows.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="padding:32px;text-align:center;color:#9ca3af;font-style:italic;">Nenhum relatório gerado ainda.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = rows.map(r => `
+            <tr style="border-bottom:1px solid #f0f2f7;">
+                <td style="padding:12px 14px;">
+                    <div style="font-weight:600;color:#1a1d23;">${escapeHtml(r.title || 'Sem título')}</div>
+                    <div style="font-size:11px;color:#9ca3af;">por ${escapeHtml(r.user_name)}</div>
+                </td>
+                <td style="padding:12px 14px;font-size:12px;color:#6b7280;">
+                    ${r.period_from ? formatDate(r.period_from) + ' → ' + formatDate(r.period_to) : '—'}
+                </td>
+                <td style="padding:12px 14px;font-size:12px;color:#6b7280;">
+                    ${r.created_at}
+                    ${r.is_expired ? '<div style="color:#dc2626;font-weight:600;font-size:11px;">Expirado</div>' : (r.expires_at ? `<div style="font-size:11px;color:#9ca3af;">até ${r.expires_at}</div>` : '')}
+                </td>
+                <td style="padding:12px 14px;text-align:center;font-weight:600;">${r.views_count}</td>
+                <td style="padding:12px 14px;text-align:center;">
+                    ${r.has_password ? '<i class="bi bi-shield-lock-fill" style="color:#0070d1;" title="Protegido por senha"></i>' : '—'}
+                </td>
+                <td style="padding:12px 14px;text-align:right;white-space:nowrap;">
+                    <button onclick="copyHistoryUrl('${r.url}')" class="btn-clear" style="padding:6px 10px;font-size:11.5px;"><i class="bi bi-clipboard"></i></button>
+                    <a href="${r.url}" target="_blank" rel="noopener" class="btn-clear" style="padding:6px 10px;font-size:11.5px;text-decoration:none;display:inline-flex;align-items:center;"><i class="bi bi-box-arrow-up-right"></i></a>
+                    <button onclick="updateReportPassword(${r.id}, ${r.has_password})" class="btn-clear" style="padding:6px 10px;font-size:11.5px;" title="Gerenciar senha"><i class="bi bi-shield-lock"></i></button>
+                    <button onclick="deleteHistoryReport(${r.id})" class="btn-clear" style="padding:6px 10px;font-size:11.5px;color:#dc2626;"><i class="bi bi-trash3"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:#dc2626;">Erro ao carregar.</td></tr>';
+    }
+}
+
+function copyHistoryUrl(url) {
+    navigator.clipboard.writeText(url).then(() => {
+        if (window.toastr) toastr.success('Link copiado!');
+    });
+}
+
+async function deleteHistoryReport(id) {
+    if (!confirm('Excluir este relatório? O link ficará inacessível pra quem tinha acesso.')) return;
+    try {
+        const res = await fetch(REPORTS_DELETE_URL(id), {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept':'application/json' },
+        });
+        const data = await res.json();
+        if (data.success) {
+            if (window.toastr) toastr.success('Relatório excluído.');
+            refreshReportHistory();
+        }
+    } catch (e) { if (window.toastr) toastr.error('Erro ao excluir.'); }
+}
+
+async function updateReportPassword(id, hasPassword) {
+    const msg = hasPassword
+        ? 'Digite a nova senha (ou deixe vazio pra remover):'
+        : 'Digite a senha pra proteger este relatório (min 4 chars):';
+    const password = prompt(msg) || '';
+
+    if (password !== '' && password.length < 4) {
+        alert('Senha precisa ter no mínimo 4 caracteres.');
+        return;
+    }
+
+    try {
+        const res = await fetch(REPORTS_PASSWORD_URL(id), {
+            method: 'PUT',
+            headers: { 'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':CSRF_TOKEN },
+            body: JSON.stringify({ password: password || null }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            if (window.toastr) toastr.success(data.has_password ? 'Senha definida.' : 'Senha removida.');
+            refreshReportHistory();
+        }
+    } catch (e) { if (window.toastr) toastr.error('Erro.'); }
+}
+
+function escapeHtml(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function formatDate(iso) { return iso ? new Date(iso).toLocaleDateString('pt-BR') : '—'; }
+
+// Carrega histórico no load
+document.addEventListener('DOMContentLoaded', refreshReportHistory);
+
+// Fecha modal clicando no backdrop
+document.getElementById('generateReportModal')?.addEventListener('click', e => {
+    if (e.target.id === 'generateReportModal') closeGenerateReportModal();
+});
+
 // Desabilitar datalabels globalmente — só ativar nos charts que precisam
 if (window.ChartDataLabels) Chart.defaults.plugins.datalabels = { display: false };
 

@@ -335,6 +335,11 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
     // Relatórios
     Route::get('/relatorios', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/relatorios/pdf', [ReportController::class, 'exportPdf'])->name('reports.pdf');
+    // Relatórios públicos (snapshot compartilhável via /r/{hash})
+    Route::post('/relatorios/gerar',                     [ReportController::class, 'generate'])->name('reports.generate');
+    Route::get('/relatorios/historicos',                 [ReportController::class, 'history'])->name('reports.history');
+    Route::delete('/relatorios/historicos/{report}',     [ReportController::class, 'deleteHistory'])->name('reports.history.delete');
+    Route::put('/relatorios/historicos/{report}/senha',  [ReportController::class, 'updatePassword'])->name('reports.history.password');
 
     // Relatórios UTM (read-only — antigo módulo "Campanhas" sem CRUD)
     Route::get('/campanhas',                     [CampaignController::class, 'index'])->name('campaigns.index');
@@ -811,6 +816,12 @@ Route::middleware(['auth', 'super_admin', '2fa'])->prefix('master')->name('maste
 
 });
 // Configuração LLM (provider/api_key/model) via ENV: LLM_PROVIDER, LLM_API_KEY, LLM_MODEL
+
+// ── Relatórios públicos (link compartilhável /r/{hash}) ─────────────────────
+Route::middleware(['web', 'throttle:public-report'])->group(function () {
+    Route::get('/r/{hash}',        [\App\Http\Controllers\PublicReportController::class, 'show'])->name('public-report.show');
+    Route::post('/r/{hash}/unlock', [\App\Http\Controllers\PublicReportController::class, 'unlock'])->name('public-report.unlock');
+});
 
 // ── Webhook público WAHA (sem autenticação) ───────────────────────────────────
 Route::post('/webhook/whatsapp', [WhatsappWebhookController::class, 'handle'])

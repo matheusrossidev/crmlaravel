@@ -147,5 +147,10 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('widget', fn (Request $request) =>
             Limit::perMinute(20)->by($request->ip())
         );
+
+        // Relatório público /r/{hash}: 30/min por IP — previne scraping
+        RateLimiter::for('public-report', fn (Request $request) =>
+            Limit::perMinute(30)->by($request->ip())
+        );
     }
 }
