@@ -12,6 +12,8 @@ style-guide.html
 .env
 .env.backup
 .env.production
+.env.example
+.env.testing
 .phpactor.json
 .phpunit.result.cache
 Homestead.json
