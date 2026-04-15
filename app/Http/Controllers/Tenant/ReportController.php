@@ -33,8 +33,9 @@ class ReportController extends Controller
 
         // Info de quem gerou + quando + tenant
         $data['generatedAt'] = now();
-        $data['generatedBy'] = auth()->user()?->name ?? '—';
-        $data['tenant']      = auth()->user()?->tenant;
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $data['generatedBy'] = $user?->name ?? '—';
+        $data['tenant']      = $user?->tenant;
 
         // Resolve nomes dos filtros aplicados (pipeline + user)
         $data['filterPipelineName'] = $data['filterPipeline']
@@ -44,10 +45,10 @@ class ReportController extends Controller
             ? (\App\Models\User::find($data['filterUser'])?->name ?? '—')
             : null;
 
+        // Config dompdf tem `enable_remote=true` + `default_font=DejaVu Sans` global
+        // (ver config/dompdf.php). Sem setOption inline — config é single source of truth.
         $pdf = Pdf::loadView('tenant.reports.pdf', $data)
-            ->setPaper('a4', 'portrait')
-            ->setOption('isRemoteEnabled', true)
-            ->setOption('defaultFont', 'DejaVu Sans');
+            ->setPaper('a4', 'portrait');
 
         $filename = 'relatorio-' . now()->format('Y-m-d') . '.pdf';
 
