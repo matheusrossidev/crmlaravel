@@ -1,6 +1,6 @@
-@extends('master.layouts.app')
+@extends('tenant.layouts.app')
 @php
-    $title    = 'Códigos de Backup';
+    $title    = 'Códigos de Backup — 2FA';
     $pageIcon = 'key';
 @endphp
 
@@ -8,6 +8,6 @@
     @include('master.2fa._backup-codes-body', [
         'codes'       => $codes,
         'justEnabled' => $justEnabled,
-        'routePrefix' => $routePrefix ?? 'master.2fa',
+        'routePrefix' => $routePrefix,
     ])
 @endsection

@@ -18,14 +18,22 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasPushSubscriptions, LogsActivity;
 
+    /**
+     * Campos SENSÍVEIS removidos intencionalmente do $fillable pra prevenir
+     * mass-assignment via $request->all():
+     *   - is_super_admin, is_cs_agent, master_permissions
+     * Pra setar, usar atribuição explícita:
+     *   $user->is_super_admin = true; $user->save();
+     */
     protected $fillable = [
         'tenant_id', 'name', 'email', 'phone', 'password', 'role',
-        'is_super_admin', 'is_cs_agent', 'master_permissions', 'avatar', 'last_login_at', 'dashboard_config',
+        'avatar', 'last_login_at', 'dashboard_config',
         'notification_preferences',
         'email_verified_at', 'verification_token',
         'can_see_all_conversations',
         'totp_secret', 'totp_enabled', 'totp_backup_codes',
         'last_reengagement_sent_at', 'reengagement_stage',
+        'failed_login_attempts', 'locked_until',
     ];
 
     protected $hidden = [
@@ -37,6 +45,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'locked_until' => 'datetime',
+            'failed_login_attempts' => 'integer',
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
             'is_cs_agent' => 'boolean',

@@ -223,7 +223,7 @@ class WhatsappTemplateController extends Controller
     public function uploadSample(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => ['required', 'file', 'max:16384', 'mimes:jpg,jpeg,png,webp,mp4,pdf'],
+            'file' => ['required', 'file', 'max:16384', 'mimes:jpg,jpeg,png,webp,mp4,pdf', new \App\Rules\SafeFile],
         ]);
 
         $file = $request->file('file');

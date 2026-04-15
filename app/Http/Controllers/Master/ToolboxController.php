@@ -1560,11 +1560,13 @@ class ToolboxController extends Controller
             'name'        => $name,
             'email'       => $email,
             'password'    => $password,
-            'is_cs_agent' => true,
             'tenant_id'   => null,
             'role'        => 'viewer',
             'email_verified_at' => now(),
         ]);
+        // is_cs_agent não é mass-assignable (proteção contra escalação)
+        $user->is_cs_agent = true;
+        $user->save();
 
         return response()->json(['success' => true, 'lines' => [
             "[OK] Usuário CS criado com sucesso!",

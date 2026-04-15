@@ -31,7 +31,7 @@ class ScheduledMessageController extends Controller
         $data = $request->validate([
             'type'             => 'required|in:text,image,document',
             'body'             => 'nullable|string|max:4000',
-            'file'             => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt|max:25600',
+            'file'             => ['nullable', 'file', 'mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt', 'max:25600', new \App\Rules\SafeFile],
             'send_at'          => 'required|date|after:now',
             'quick_message_id' => 'nullable|integer|exists:whatsapp_quick_messages,id',
             'instance_id'      => 'nullable|integer|exists:whatsapp_instances,id',

@@ -43,8 +43,20 @@ class ProfilePictureDownloader
             return $remoteUrl;
         }
 
+        // SSRF protection (F-09): bloqueia IPs privados/loopback/metadata
+        $safety = \App\Support\UrlSafety::isSafeOutboundHttp($remoteUrl);
+        if (! $safety['safe']) {
+            Log::channel($channel)->warning('ProfilePictureDownloader: URL bloqueada por SSRF policy', [
+                'channel'    => $channel,
+                'tenant_id'  => $tenantId,
+                'contact_id' => $contactId,
+                'reason'     => $safety['reason'],
+            ]);
+            return null;
+        }
+
         try {
-            $response = Http::timeout(20)->get($remoteUrl);
+            $response = Http::timeout(20)->withoutRedirecting()->get($remoteUrl);
 
             if (! $response->successful()) {
                 Log::channel($channel)->warning('Download de foto de perfil falhou', [

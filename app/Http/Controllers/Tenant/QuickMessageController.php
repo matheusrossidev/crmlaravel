@@ -30,7 +30,7 @@ class QuickMessageController extends Controller
         $data = $request->validate([
             'title' => 'required|string|max:100',
             'body'  => 'nullable|string|max:2000',
-            'image' => 'nullable|file|max:5120|mimes:jpg,jpeg,png,webp,gif',
+            'image' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,webp,gif', new \App\Rules\SafeImage],
         ]);
 
         // Ao menos body ou image é obrigatório
@@ -59,7 +59,7 @@ class QuickMessageController extends Controller
         $data = $request->validate([
             'title'        => 'required|string|max:100',
             'body'         => 'nullable|string|max:2000',
-            'image'        => 'nullable|file|max:5120|mimes:jpg,jpeg,png,webp,gif',
+            'image'        => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,webp,gif', new \App\Rules\SafeImage],
             'remove_image' => 'nullable|boolean',
         ]);
 

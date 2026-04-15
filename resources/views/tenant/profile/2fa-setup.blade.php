@@ -1,4 +1,4 @@
-@extends('master.layouts.app')
+@extends('tenant.layouts.app')
 @php
     $title    = 'Autenticação em Dois Fatores';
     $pageIcon = 'shield-lock';
@@ -9,6 +9,6 @@
         'enabled'     => $enabled,
         'qrImage'     => $qrImage,
         'secret'      => $secret,
-        'routePrefix' => $routePrefix ?? 'master.2fa',
+        'routePrefix' => $routePrefix,
     ])
 @endsection

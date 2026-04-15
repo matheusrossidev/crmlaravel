@@ -114,7 +114,9 @@ class FormController extends Controller
             'color_preset'       => 'nullable|string|max:30',
         ]);
 
-        $data['slug'] = Str::slug($data['name']) . '-' . Str::random(6);
+        // Random(10) em vez de 6 — F-17. 10 chars base62 = ~59 bits de entropia,
+        // inviável de enumerar mesmo com throttle brando.
+        $data['slug'] = Str::slug($data['name']) . '-' . Str::random(10);
 
         $form = Form::create($data);
 
@@ -214,8 +216,10 @@ class FormController extends Controller
 
     public function uploadLogo(Request $request, Form $form): JsonResponse
     {
+        // SVG REMOVIDO (F-10): permitia XSS stored via <script> embutido no SVG.
+        // SafeImage já bloqueia SVG por magic bytes + valida extensão real.
         $request->validate([
-            'logo' => 'required|file|max:2048|mimes:png,jpg,jpeg,svg,webp',
+            'logo' => ['required', 'file', 'max:2048', 'mimes:png,jpg,jpeg,webp', new \App\Rules\SafeImage],
         ]);
 
         $path = $request->file('logo')->store("forms/{$form->id}", 'public');
@@ -229,7 +233,7 @@ class FormController extends Controller
     public function uploadBackground(Request $request, Form $form): JsonResponse
     {
         $request->validate([
-            'background' => 'required|file|max:5120|mimes:png,jpg,jpeg,webp',
+            'background' => ['required', 'file', 'max:5120', 'mimes:png,jpg,jpeg,webp', new \App\Rules\SafeImage],
         ]);
 
         $path = $request->file('background')->store("forms/{$form->id}/bg", 'public');

@@ -97,7 +97,14 @@ class TwoFactorController extends Controller
 
         $user->update(['last_login_at' => now()]);
 
-        return redirect()->intended(route('master.dashboard'));
+        // F-06: route por role — antes só redirecionava pro master dashboard
+        if ($user->isSuperAdmin()) {
+            return redirect()->intended(route('master.dashboard'));
+        }
+        if ($user->isCsAgent()) {
+            return redirect()->intended(route('cs.index'));
+        }
+        return redirect()->intended(route('dashboard'));
     }
 
     private function verifyBackupCode(User $user, string $code): bool
@@ -116,7 +123,18 @@ class TwoFactorController extends Controller
         return false;
     }
 
-    // ── Setup (inside master panel) ──────────────────────────────────────────
+    // ── Setup (master panel OR tenant /configuracoes/perfil) ─────────────────
+
+    /**
+     * Detecta se a request veio de /master/2fa/* (super_admin) ou de
+     * /configuracoes/perfil/2fa/* (qualquer usuário). Usado pra views que
+     * precisam saber qual route prefix usar pros forms.
+     */
+    private function routePrefix(Request $request = null): string
+    {
+        $routeName = optional(request()->route())->getName() ?? '';
+        return str_starts_with($routeName, 'master.') ? 'master.2fa' : 'settings.profile.2fa';
+    }
 
     public function showSetup(): View
     {
@@ -144,10 +162,14 @@ class TwoFactorController extends Controller
             $qrImage  = 'data:image/svg+xml;base64,' . base64_encode($writer->writeString($qrCodeUrl));
         }
 
-        return view('master.2fa.setup', [
-            'enabled'  => $user->totp_enabled,
-            'qrImage'  => $qrImage,
-            'secret'   => $secret,
+        $prefix = $this->routePrefix();
+        $view   = $prefix === 'settings.profile.2fa' ? 'tenant.profile.2fa-setup' : 'master.2fa.setup';
+
+        return view($view, [
+            'enabled'     => $user->totp_enabled,
+            'qrImage'     => $qrImage,
+            'secret'      => $secret,
+            'routePrefix' => $prefix,
         ]);
     }
 
@@ -179,7 +201,7 @@ class TwoFactorController extends Controller
         session()->forget('2fa:setup_secret');
         session(['2fa:verified' => true]);
 
-        return redirect()->route('master.2fa.backup-codes')
+        return redirect()->route($this->routePrefix() . '.backup-codes')
             ->with('backup_codes', $backupCodes)
             ->with('just_enabled', true);
     }
@@ -189,9 +211,13 @@ class TwoFactorController extends Controller
         $codes = session('backup_codes');
         $justEnabled = session('just_enabled', false);
 
-        return view('master.2fa.backup-codes', [
+        $prefix = $this->routePrefix();
+        $view   = $prefix === 'settings.profile.2fa' ? 'tenant.profile.2fa-backup-codes' : 'master.2fa.backup-codes';
+
+        return view($view, [
             'codes'       => $codes,
             'justEnabled' => $justEnabled,
+            'routePrefix' => $prefix,
         ]);
     }
 

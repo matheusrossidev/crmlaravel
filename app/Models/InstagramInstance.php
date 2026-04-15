@@ -29,6 +29,7 @@ class InstagramInstance extends Model
 
     protected $casts = [
         'token_expires_at' => 'datetime',
+        'access_token'     => 'encrypted',
     ];
 
     protected $hidden = ['access_token'];

@@ -16,13 +16,18 @@ class AsaasWebhookController extends Controller
 {
     public function handle(Request $request): Response
     {
-        // Validar token do webhook
+        // Validar token do webhook (fail-closed)
+        $expectedToken = config('services.asaas.webhook_token');
+        if (empty($expectedToken)) {
+            \Log::critical('AsaasWebhook: ASAAS_WEBHOOK_TOKEN não configurado — rejeitando webhook');
+            return response('Misconfigured', 500);
+        }
+
         $token = $request->header('asaas-access-token')
             ?? $request->header('userAuthToken')
             ?? $request->input('userAuthToken');
 
-        $expectedToken = config('services.asaas.webhook_token');
-        if ($expectedToken && $token !== $expectedToken) {
+        if (! is_string($token) || ! hash_equals($expectedToken, $token)) {
             \Log::warning('AsaasWebhook: token inválido', ['ip' => $request->ip()]);
             return response('Unauthorized', 401);
         }
@@ -30,7 +35,13 @@ class AsaasWebhookController extends Controller
         $payload = $request->all();
         $event   = $payload['event'] ?? null;
 
-        \Log::info("AsaasWebhook recebido: {$event}", ['payload' => $payload]);
+        // F-15: log sanitizado — não incluir payload completo (PII + dados de pagamento)
+        \Log::info("AsaasWebhook recebido: {$event}", [
+            'event'       => $event,
+            'payment_id'  => $payload['payment']['id']        ?? null,
+            'customer_id' => $payload['payment']['customer']  ?? null,
+            'status'      => $payload['payment']['status']    ?? null,
+        ]);
 
         try {
             $this->processEvent($event, $payload);

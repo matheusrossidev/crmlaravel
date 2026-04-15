@@ -522,6 +522,13 @@ Route::middleware(['auth', 'tenant', 'locale'])->group(function () {
         Route::put('perfil/idioma', [ProfileController::class, 'updateLocale'])->name('profile.locale');
         Route::post('perfil/avatar',         [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
 
+        // 2FA opt-in pra qualquer usuário autenticado (F-06)
+        Route::get('perfil/2fa',            [\App\Http\Controllers\Auth\TwoFactorController::class, 'showSetup'])->name('profile.2fa.setup');
+        Route::post('perfil/2fa',           [\App\Http\Controllers\Auth\TwoFactorController::class, 'confirmSetup'])->name('profile.2fa.confirm');
+        Route::post('perfil/2fa/disable',   [\App\Http\Controllers\Auth\TwoFactorController::class, 'disable'])->name('profile.2fa.disable');
+        Route::get('perfil/2fa/backup-codes',  [\App\Http\Controllers\Auth\TwoFactorController::class, 'showBackupCodes'])->name('profile.2fa.backup-codes');
+        Route::post('perfil/2fa/backup-codes', [\App\Http\Controllers\Auth\TwoFactorController::class, 'regenerateBackupCodes'])->name('profile.2fa.regenerate-codes');
+
         // Admin only — escrita em configurações
         Route::middleware('role:admin')->group(function () {
             // Pipelines + Stages

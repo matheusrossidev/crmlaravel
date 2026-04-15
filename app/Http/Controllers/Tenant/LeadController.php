@@ -691,7 +691,7 @@ class LeadController extends Controller
     public function uploadAttachment(Request $request, Lead $lead): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|max:20480|mimes:png,jpg,jpeg,webp,gif,pdf,doc,docx,xls,xlsx,csv,txt,zip,rar',
+            'file' => ['required', 'file', 'max:20480', 'mimes:png,jpg,jpeg,webp,gif,pdf,doc,docx,xls,xlsx,csv,txt,zip,rar', new \App\Rules\SafeFile],
         ]);
 
         $file = $request->file('file');

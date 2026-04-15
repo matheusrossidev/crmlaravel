@@ -168,7 +168,7 @@ class AiAgentController extends Controller
     public function uploadMedia(Request $request, AiAgent $agent): JsonResponse
     {
         $request->validate([
-            'file'        => 'required|file|max:20480|mimes:png,jpg,jpeg,webp,gif,pdf,doc,docx',
+            'file'        => ['required', 'file', 'max:20480', 'mimes:png,jpg,jpeg,webp,gif,pdf,doc,docx', new \App\Rules\SafeFile],
             'description' => 'required|string|max:500',
         ]);
 
@@ -282,7 +282,7 @@ class AiAgentController extends Controller
     public function uploadKnowledgeFile(Request $request, AiAgent $agent): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|max:20480|mimes:pdf,doc,docx,txt,csv,png,jpg,jpeg,webp,gif',
+            'file' => ['required', 'file', 'max:20480', 'mimes:pdf,doc,docx,txt,csv,png,jpg,jpeg,webp,gif', new \App\Rules\SafeFile],
         ]);
 
         $uploaded  = $request->file('file');

@@ -53,6 +53,17 @@ class WebhookDispatcherService
             return $result;
         }
 
+        // SSRF protection: bloqueia IPs privados/loopback/metadata (F-08)
+        $safety = \App\Support\UrlSafety::isSafeOutboundHttp($url);
+        if (! $safety['safe']) {
+            $result['error'] = 'ssrf_blocked: ' . ($safety['reason'] ?? 'unknown');
+            \Log::warning('WebhookDispatcher: URL bloqueada por SSRF policy', [
+                'url'    => $url,
+                'reason' => $safety['reason'],
+            ]);
+            return $result;
+        }
+
         $method = strtoupper((string) ($config['method'] ?? 'POST'));
         if (! in_array($method, ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], true)) {
             $method = 'POST';
@@ -92,7 +103,8 @@ class WebhookDispatcherService
 
         $start = microtime(true);
         try {
-            $request = Http::withHeaders($headers)->timeout(15);
+            // `withoutRedirecting` previne SSRF via 302 → IP privado após a validação inicial
+            $request = Http::withHeaders($headers)->timeout(15)->withoutRedirecting();
 
             if ($hasBody) {
                 if ($bodyMode === 'raw') {

@@ -86,6 +86,7 @@ return [
         'invalid_credentials'     => 'E-mail ou senha incorretos.',
         'email_not_verified'      => 'Confirme seu email antes de continuar. Verifique sua caixa de entrada.',
         'account_suspended'       => 'Sua conta está suspensa. Entre em contato com o suporte.',
+        'account_locked'          => 'Conta bloqueada por segurança após várias tentativas falhas. Tente novamente em :minutes minutos ou recupere a senha.',
         'tenant_name_required'    => 'Informe o nome da empresa.',
         'tenant_name_max'         => 'O nome da empresa pode ter no máximo 255 caracteres.',
         'name_required'           => 'Informe seu nome.',

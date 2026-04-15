@@ -8,6 +8,7 @@ use App\Models\ApiKey;
 use App\Models\Tenant;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Symfony\Component\HttpFoundation\Response;
 
 class ApiKeyMiddleware
@@ -55,6 +56,17 @@ class ApiKeyMiddleware
                 'required_permission' => $requiredPermission,
             ], 403);
         }
+
+        // Rate limit por API Key (F-12): 60 req/min por key independente de IP
+        $limiterKey = "api-key:{$apiKey->id}";
+        if (RateLimiter::tooManyAttempts($limiterKey, 60)) {
+            $retryAfter = RateLimiter::availableIn($limiterKey);
+            return response()->json([
+                'message'     => 'Rate limit excedido para esta API Key.',
+                'retry_after' => $retryAfter,
+            ], 429)->header('Retry-After', (string) $retryAfter);
+        }
+        RateLimiter::hit($limiterKey, 60);
 
         $apiKey->update(['last_used_at' => now()]);
 

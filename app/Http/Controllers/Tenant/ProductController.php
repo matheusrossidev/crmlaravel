@@ -107,7 +107,7 @@ class ProductController extends Controller
         }
 
         $request->validate([
-            'file'        => 'required|file|max:10240|mimes:jpg,jpeg,png,webp,gif,mp4,mov,pdf',
+            'file'        => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp,gif,mp4,mov,pdf', new \App\Rules\SafeFile],
             'description' => 'nullable|string|max:191',
         ]);
 

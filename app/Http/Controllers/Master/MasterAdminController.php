@@ -71,10 +71,12 @@ class MasterAdminController extends Controller
             'email'              => $data['email'],
             'password'           => $data['password'],
             'role'               => 'super_admin',
-            'is_super_admin'     => true,
-            'master_permissions' => ['modules' => $data['modules']],
             'email_verified_at'  => now(),
         ]);
+        // is_super_admin + master_permissions não são mass-assignable (proteção contra escalação)
+        $user->is_super_admin     = true;
+        $user->master_permissions = ['modules' => $data['modules']];
+        $user->save();
 
         // Enviar email com credenciais
         try {
@@ -112,22 +114,20 @@ class MasterAdminController extends Controller
             'is_active' => 'sometimes|boolean',
         ]);
 
-        $update = [
-            'master_permissions' => ['modules' => $data['modules']],
-        ];
-
+        $update = [];
         if (isset($data['name']))  $update['name']  = $data['name'];
         if (isset($data['email'])) $update['email'] = $data['email'];
         if (!empty($data['password'])) $update['password'] = $data['password'];
-
-        // Desativar = remover is_super_admin
-        if (isset($data['is_active']) && !$data['is_active']) {
-            $update['is_super_admin'] = false;
-        } elseif (isset($data['is_active']) && $data['is_active']) {
-            $update['is_super_admin'] = true;
+        if ($update) {
+            $user->update($update);
         }
 
-        $user->update($update);
+        // Campos protegidos (não mass-assignable)
+        $user->master_permissions = ['modules' => $data['modules']];
+        if (isset($data['is_active'])) {
+            $user->is_super_admin = (bool) $data['is_active'];
+        }
+        $user->save();
 
         return response()->json([
             'success' => true,
@@ -147,7 +147,9 @@ class MasterAdminController extends Controller
             return response()->json(['success' => false, 'message' => 'Você não pode excluir a si mesmo.'], 422);
         }
 
-        $user->update(['is_super_admin' => false, 'master_permissions' => null]);
+        $user->is_super_admin     = false;
+        $user->master_permissions = null;
+        $user->save();
 
         return response()->json([
             'success' => true,

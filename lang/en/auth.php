@@ -86,6 +86,7 @@ return [
         'invalid_credentials'     => 'Incorrect email or password.',
         'email_not_verified'      => 'Please verify your email before continuing. Check your inbox.',
         'account_suspended'       => 'Your account is suspended. Contact support.',
+        'account_locked'          => 'Account locked for security after multiple failed attempts. Try again in :minutes minutes or reset your password.',
         'tenant_name_required'    => 'Please enter the company name.',
         'tenant_name_max'         => 'The company name cannot exceed 255 characters.',
         'name_required'           => 'Please enter your name.',

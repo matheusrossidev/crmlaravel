@@ -64,15 +64,34 @@ class FormPublicController extends Controller
             );
 
             if ($request->expectsJson()) {
+                // Se type=redirect, só devolve confirmation_value se URL passar no safety check.
+                // Senão, degrada pra mensagem de thanks pra não botar scheme malicioso no JS.
+                $confirmationValue = $form->confirmation_value ?? __('forms.default_thanks');
+                $confirmationType  = $form->confirmation_type;
+                if ($confirmationType === 'redirect'
+                    && $form->confirmation_value
+                    && ! \App\Support\UrlSafety::isSafeRedirect($form->confirmation_value)) {
+                    $confirmationType  = 'message';
+                    $confirmationValue = __('forms.default_thanks');
+                    \Log::warning('FormPublicController: confirmation_value inseguro no AJAX', [
+                        'form_id' => $form->id,
+                    ]);
+                }
                 return $this->corsJson([
                     'success'            => true,
-                    'confirmation_type'  => $form->confirmation_type,
-                    'confirmation_value' => $form->confirmation_value ?? __('forms.default_thanks'),
+                    'confirmation_type'  => $confirmationType,
+                    'confirmation_value' => $confirmationValue,
                 ]);
             }
 
             if ($form->confirmation_type === 'redirect' && $form->confirmation_value) {
-                return redirect()->away($form->confirmation_value);
+                if (\App\Support\UrlSafety::isSafeRedirect($form->confirmation_value)) {
+                    return redirect()->away($form->confirmation_value);
+                }
+                // URL configurada é insegura (javascript:, data:, etc) — cai no thanks
+                \Log::warning('FormPublicController: confirmation_value rejeitado por unsafe redirect', [
+                    'form_id' => $form->id,
+                ]);
             }
 
             return view('forms.thanks', [
@@ -186,7 +205,9 @@ class FormPublicController extends Controller
             ->header('Access-Control-Allow-Origin', '*')
             ->header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
             ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, X-Requested-With')
-            ->header('Access-Control-Max-Age', '86400');
+            ->header('Access-Control-Allow-Credentials', 'false')
+            ->header('Access-Control-Max-Age', '86400')
+            ->header('Vary', 'Origin');
     }
 
     /**
@@ -221,10 +242,15 @@ class FormPublicController extends Controller
 
     private function corsJson(array $data, int $status = 200): JsonResponse
     {
+        // CORS liberado pra qualquer origem (SDK público pra embed em sites de clientes).
+        // SEM Allow-Credentials (nunca devolver `true` aqui) — sem cookies cross-origin,
+        // `*` origin é seguro. Vary: Origin pra caches proxy não servirem respostas cruzadas.
         return response()->json($data, $status, [
-            'Access-Control-Allow-Origin'  => '*',
-            'Access-Control-Allow-Methods' => 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers' => 'Content-Type, Accept, X-Requested-With',
+            'Access-Control-Allow-Origin'      => '*',
+            'Access-Control-Allow-Methods'     => 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers'     => 'Content-Type, Accept, X-Requested-With',
+            'Access-Control-Allow-Credentials' => 'false',
+            'Vary'                             => 'Origin',
         ]);
     }
 

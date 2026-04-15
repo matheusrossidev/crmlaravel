@@ -53,8 +53,28 @@ class AuthController extends Controller
             ])->onlyInput('email');
         }
 
+        // Account lockout persistente (F-13): checa ANTES do attempt pra não revelar
+        // existência do email via timing. Se user existe e está locked, rejeita.
+        $preCheckUser = \App\Models\User::where('email', Str::lower($request->input('email')))->first();
+        if ($preCheckUser && $preCheckUser->locked_until && $preCheckUser->locked_until->isFuture()) {
+            \Log::warning('Login blocked: account locked', ['user_id' => $preCheckUser->id]);
+            return back()->withErrors([
+                'email' => __('auth.validation.account_locked', ['minutes' => ceil($preCheckUser->locked_until->diffInSeconds(now()) / 60)]),
+            ])->onlyInput('email');
+        }
+
         if (!Auth::attempt($credentials, $request->boolean('remember'))) {
             RateLimiter::hit($throttleKey, 60);
+
+            // Incrementa failed_login_attempts + aplica lockout se ≥10
+            if ($preCheckUser) {
+                $preCheckUser->failed_login_attempts = ($preCheckUser->failed_login_attempts ?? 0) + 1;
+                if ($preCheckUser->failed_login_attempts >= 10) {
+                    $preCheckUser->locked_until = now()->addMinutes(30);
+                    \Log::warning('Account locked após 10 falhas', ['user_id' => $preCheckUser->id]);
+                }
+                $preCheckUser->save();
+            }
 
             return back()->withErrors([
                 'email' => __('auth.validation.invalid_credentials'),
@@ -62,6 +82,13 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
+
+        // Zera contador ao logar com sucesso
+        if ($user->failed_login_attempts > 0 || $user->locked_until !== null) {
+            $user->failed_login_attempts = 0;
+            $user->locked_until = null;
+            $user->save();
+        }
 
         // Bloqueia login se email não foi confirmado
         if (!$user->isSuperAdmin() && $user->email_verified_at === null) {
@@ -83,8 +110,8 @@ class AuthController extends Controller
 
         RateLimiter::clear($throttleKey);
 
-        // 2FA check for super admin
-        if ($user->isSuperAdmin() && $user->totp_enabled) {
+        // 2FA check — qualquer usuário com totp_enabled (F-06: opt-in pra admins de tenant)
+        if ($user->totp_enabled) {
             Auth::logout();
             $request->session()->regenerate();
             session([
@@ -347,7 +374,11 @@ class AuthController extends Controller
             ]);
         }
 
-        return view('auth.reset-password', compact('token', 'email'));
+        // F-18: Referrer-Policy forte pra não vazar token em nav subsequente.
+        // (no-referrer bloqueia totalmente; same-origin só envia pra mesmo domínio.)
+        return response()
+            ->view('auth.reset-password', compact('token', 'email'))
+            ->header('Referrer-Policy', 'no-referrer');
     }
 
     public function resetPassword(Request $request): RedirectResponse

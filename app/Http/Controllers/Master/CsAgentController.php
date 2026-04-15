@@ -29,15 +29,17 @@ class CsAgentController extends Controller
             'tenant_id' => 'nullable|exists:tenants,id',
         ]);
 
-        User::create([
+        $user = User::create([
             'name'              => $data['name'],
             'email'             => $data['email'],
             'password'          => $data['password'],
             'role'              => 'viewer',
-            'is_cs_agent'       => true,
             'tenant_id'         => $data['tenant_id'] ?? null,
             'email_verified_at' => now(),
         ]);
+        // is_cs_agent não é mass-assignable (proteção contra escalação)
+        $user->is_cs_agent = true;
+        $user->save();
 
         return response()->json(['success' => true, 'message' => "Agente CS {$data['name']} criado."]);
     }
@@ -70,7 +72,8 @@ class CsAgentController extends Controller
         if (!$user->is_cs_agent) {
             return response()->json(['success' => false, 'message' => 'Usuário não é agente CS.'], 422);
         }
-        $user->update(['is_cs_agent' => false]);
+        $user->is_cs_agent = false;
+        $user->save();
         return response()->json(['success' => true, 'message' => "Acesso CS removido de {$user->name}."]);
     }
 }
