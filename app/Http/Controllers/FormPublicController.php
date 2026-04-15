@@ -405,11 +405,10 @@ class FormPublicController extends Controller
             scope + ' .sfx-success { text-align:center; padding:20px; }',
             scope + ' .sfx-success-icon { width:52px; height:52px; border-radius:50%; background:#ecfdf5; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; color:#059669; font-size:26px; font-weight:700; }',
             scope + ' .sfx-honey { position:absolute; left:-9999px; }',
-            // intl-tel-input overrides pra seguir o look do form
+            // intl-tel-input v25 — ajustes pra combinar com look do form
             scope + ' .iti { width:100%; display:block; }',
-            scope + ' .iti__tel-input { width:100%; padding-left:100px !important; }',
-            scope + ' .iti__selected-flag { background:transparent; }',
-            scope + ' .iti__country-list { font-size:13px; }',
+            scope + ' .iti__tel-input { border-radius:' + r + 'px; }',
+            scope + ' .iti__country-list { font-size:13.5px; max-height:280px; }',
             // Popup overlay
             '.syncro-form-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:2147483600; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .25s; padding:16px; }',
             '.syncro-form-overlay.visible { opacity:1; }',
@@ -471,19 +470,14 @@ class FormPublicController extends Controller
     }
 
     function ensurePhoneLibs() {
-        if (window.intlTelInput && window.IMask) return Promise.resolve();
+        if (window.intlTelInput) return Promise.resolve();
         if (_phoneLibsLoading) return _phoneLibsLoading;
 
-        loadStyle('https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/23.0.12/css/intlTelInput.min.css');
+        loadStyle('https://cdn.jsdelivr.net/npm/intl-tel-input@25.2.0/build/css/intlTelInput.min.css');
 
-        var promises = [];
-        if (!window.intlTelInput) {
-            promises.push(loadScript('https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/23.0.12/js/intlTelInput.min.js'));
-        }
-        if (!window.IMask) {
-            promises.push(loadScript('https://unpkg.com/imask@7.6.1/dist/imask.min.js'));
-        }
-        _phoneLibsLoading = Promise.all(promises);
+        // v25 com WithUtils inclui libphonenumber embutido — formatAsYouType nativo
+        // elimina necessidade do imask externo. Máscara adapta automaticamente ao país.
+        _phoneLibsLoading = loadScript('https://cdn.jsdelivr.net/npm/intl-tel-input@25.2.0/build/js/intlTelInputWithUtils.min.js');
         return _phoneLibsLoading;
     }
 
@@ -501,36 +495,20 @@ class FormPublicController extends Controller
     function applyPhoneInput(inp, cfg) {
         var phone = cfg.phone || {};
         var opts = {
-            initialCountry:     phone.default_country || 'br',
-            separateDialCode:   true,
-            nationalMode:       true,
-            autoPlaceholder:    'aggressive',
-            utilsScript:        'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/23.0.12/js/utils.js',
+            initialCountry:      phone.default_country || 'br',
+            separateDialCode:    true,
+            nationalMode:        true,
+            autoPlaceholder:     'aggressive',
+            formatAsYouType:     true,
+            strictMode:          true,
+            countryOrder:        ['br', 'us', 'pt'],   // populares no topo
         };
         var allowed = phone.allowed_countries || [];
         if (allowed.length > 0) opts.onlyCountries = allowed;
 
         var iti = window.intlTelInput(inp, opts);
         inp._iti = iti;
-
-        var applyMask = function() {
-            if (!window.IMask) return;
-            try {
-                var country = iti.getSelectedCountryData().iso2;
-                if (!country || typeof window.intlTelInputUtils === 'undefined') return;
-                var example = window.intlTelInputUtils.getExampleNumber(
-                    country, true, window.intlTelInputUtils.numberFormat.NATIONAL
-                );
-                // Converte "(11) 91234-5678" em mask IMask ("(00) 00000-0000")
-                var maskStr = (example || '').replace(/\d/g, '0');
-                if (inp._imask) { inp._imask.destroy(); inp._imask = null; }
-                if (maskStr) inp._imask = window.IMask(inp, { mask: maskStr });
-            } catch(e){}
-        };
-
-        // Aguarda utils.js carregar antes de aplicar a máscara (ele é assíncrono)
-        setTimeout(applyMask, 200);
-        inp.addEventListener('countrychange', applyMask);
+        // formatAsYouType da v25 cuida da máscara nativamente — reage a countrychange automático.
     }
 
     function renderField(f) {
