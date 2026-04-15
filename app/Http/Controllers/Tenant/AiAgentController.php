@@ -577,6 +577,8 @@ class AiAgentController extends Controller
             'followup_max_count'         => 'nullable|integer|min:1|max:10',
             'followup_hour_start'        => 'nullable|integer|min:0|max:23',
             'followup_hour_end'          => 'nullable|integer|min:1|max:23',
+            'followup_strategy'          => 'nullable|in:smart,template,off',
+            'followup_template_id'       => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('whatsapp_templates', 'id')->where('tenant_id', activeTenantId())->where('status', 'APPROVED')],
             'enable_calendar_tool'       => 'nullable|boolean',
             'calendar_tool_instructions'  => 'nullable|string|max:2000',
             'calendar_id'                => 'nullable|string|max:191',

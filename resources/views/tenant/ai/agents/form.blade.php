@@ -1227,9 +1227,100 @@
                             <div style="font-size:11px;color:#9ca3af;margin-top:4px;">{{ __('ai_agents.s8_hour_end_hint') }}</div>
                         </div>
                     </div>
+
+                    {{-- Estratégia de follow-up fora da janela 24h (Cloud API) --}}
+                    @php
+                        $currentStrategy = old('followup_strategy', $agent->followup_strategy ?? 'smart');
+                        $approvedTemplates = \App\Models\WhatsappTemplate::query()
+                            ->where('status', 'APPROVED')
+                            ->orderBy('name')
+                            ->get();
+                    @endphp
+
+                    <div style="margin-top:20px;padding:16px;background:#f8fafc;border:1px solid #e8eaf0;border-radius:12px;">
+                        <div style="font-size:13px;font-weight:700;color:#1a1d23;margin-bottom:4px;">
+                            <i class="bi bi-shield-check" style="color:#0085f3;"></i>
+                            Estratégia de follow-up (WhatsApp Cloud API)
+                        </div>
+                        <div style="font-size:12px;color:#6b7280;margin-bottom:14px;line-height:1.4;">
+                            A Meta cobra por envio fora da janela de 24h. Essa configuração protege seu bolso e mantém a comunicação.
+                        </div>
+
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            <label style="display:flex;gap:10px;padding:10px 12px;border:1.5px solid {{ $currentStrategy==='smart'?'#0085f3':'#e8eaf0' }};border-radius:9px;background:{{ $currentStrategy==='smart'?'#eff6ff':'#fff' }};cursor:pointer;">
+                                <input type="radio" name="followup_strategy" value="smart" {{ $currentStrategy==='smart'?'checked':'' }} onchange="updateFollowupStrategy()">
+                                <div style="flex:1;">
+                                    <div style="font-size:13px;font-weight:700;color:#1a1d23;">Smart (recomendado)</div>
+                                    <div style="font-size:11.5px;color:#6b7280;line-height:1.4;">
+                                        Dentro da janela 24h envia texto livre normal. Se a janela fechou e você escolheu um template abaixo, envia via template. Sem template → pula o follow-up pra evitar cobrança.
+                                    </div>
+                                </div>
+                            </label>
+
+                            <label style="display:flex;gap:10px;padding:10px 12px;border:1.5px solid {{ $currentStrategy==='template'?'#0085f3':'#e8eaf0' }};border-radius:9px;background:{{ $currentStrategy==='template'?'#eff6ff':'#fff' }};cursor:pointer;">
+                                <input type="radio" name="followup_strategy" value="template" {{ $currentStrategy==='template'?'checked':'' }} onchange="updateFollowupStrategy()">
+                                <div style="flex:1;">
+                                    <div style="font-size:13px;font-weight:700;color:#1a1d23;">Sempre template</div>
+                                    <div style="font-size:11.5px;color:#6b7280;line-height:1.4;">
+                                        Todo follow-up sai via template aprovado, mesmo dentro da janela. Útil pra comunicação muito formal. <strong style="color:#b45309;">Paga por envio Meta.</strong>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <label style="display:flex;gap:10px;padding:10px 12px;border:1.5px solid {{ $currentStrategy==='off'?'#0085f3':'#e8eaf0' }};border-radius:9px;background:{{ $currentStrategy==='off'?'#eff6ff':'#fff' }};cursor:pointer;">
+                                <input type="radio" name="followup_strategy" value="off" {{ $currentStrategy==='off'?'checked':'' }} onchange="updateFollowupStrategy()">
+                                <div style="flex:1;">
+                                    <div style="font-size:13px;font-weight:700;color:#1a1d23;">Desativado</div>
+                                    <div style="font-size:11.5px;color:#6b7280;line-height:1.4;">
+                                        Nunca envia follow-up automático.
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+
+                        {{-- Template dropdown — visível em smart e template --}}
+                        <div id="followupTemplateRow" style="margin-top:14px;{{ $currentStrategy==='off'?'display:none;':'' }}">
+                            <label class="form-label" style="font-weight:600;">
+                                Template de fallback
+                                <span id="followupTemplateRequired" style="color:#dc2626;{{ $currentStrategy==='template'?'':'display:none;' }}">*</span>
+                            </label>
+                            <select name="followup_template_id" class="form-control">
+                                <option value="">— Nenhum (modo smart pula o envio fora da janela) —</option>
+                                @foreach($approvedTemplates as $tpl)
+                                    <option value="{{ $tpl->id }}" {{ old('followup_template_id', $agent->followup_template_id ?? '') == $tpl->id ? 'selected' : '' }}>
+                                        {{ $tpl->name }} ({{ $tpl->language }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">
+                                @if($approvedTemplates->isEmpty())
+                                    <i class="bi bi-exclamation-triangle" style="color:#d97706;"></i>
+                                    Nenhum template aprovado. <a href="{{ route('settings.whatsapp-templates.index') }}" style="color:#0085f3;">Criar template</a>.
+                                @else
+                                    Lista apenas templates APPROVED pela Meta.
+                                @endif
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <script>
+            function updateFollowupStrategy() {
+                const val = document.querySelector('input[name="followup_strategy"]:checked')?.value;
+                document.querySelectorAll('input[name="followup_strategy"]').forEach(r => {
+                    const lbl = r.closest('label');
+                    if (!lbl) return;
+                    lbl.style.borderColor = r.checked ? '#0085f3' : '#e8eaf0';
+                    lbl.style.background  = r.checked ? '#eff6ff' : '#fff';
+                });
+                const row = document.getElementById('followupTemplateRow');
+                const req = document.getElementById('followupTemplateRequired');
+                if (row) row.style.display = val === 'off' ? 'none' : '';
+                if (req) req.style.display = val === 'template' ? '' : 'none';
+            }
+        </script>
 
         {{-- 9. Widget do Chat (só para web_chat) --}}
         @php

@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Http\Controllers\Tenant\AiConfigurationController;
+use App\Models\Lead;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappMessage;
 use App\Services\AiAgentService;
+use App\Services\Whatsapp\ConversationWindowChecker;
+use App\Services\Whatsapp\WhatsappTemplateService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -68,19 +71,33 @@ class AiFollowUpCommand extends Command
         $this->info("Conversas candidatas: {$conversations->count()}");
 
         $skipReasons = [
-            'max_count'        => 0,
-            'business_hours'   => 0,
-            'inside_window'    => 0,
-            'recent_followup'  => 0,
-            'last_msg_inbound' => 0,
-            'no_last_msg'      => 0,
-            'lock_collision'   => 0,
-            'empty_history'    => 0,
+            'max_count'            => 0,
+            'business_hours'       => 0,
+            'inside_window'        => 0,
+            'recent_followup'      => 0,
+            'last_msg_inbound'     => 0,
+            'no_last_msg'          => 0,
+            'lock_collision'       => 0,
+            'empty_history'        => 0,
+            'strategy_off'         => 0,
+            'window_closed_no_template' => 0,  // smart sem template fallback → skip
+            'template_not_approved' => 0,
         ];
-        $sentCount = 0;
+        $sentCount         = 0;
+        $sentAsTemplate    = 0;
+        $windowChecker     = app(ConversationWindowChecker::class);
 
         foreach ($conversations as $conv) {
             $agent = $conv->aiAgent;
+
+            // Estratégia de follow-up (B2 fix — ajuda a evitar custo Meta fora da janela 24h)
+            $strategy = $agent->followup_strategy ?? 'smart';
+
+            if ($strategy === 'off') {
+                $skipReasons['strategy_off']++;
+                if ($debug) $this->line("  Skip conv #{$conv->id}: strategy=off no agente");
+                continue;
+            }
 
             // Filtro de limite de tentativas (em PHP — evita JOIN cross-column)
             if ($conv->followup_count >= ($agent->followup_max_count ?? 3)) {
@@ -206,8 +223,43 @@ class AiFollowUpCommand extends Command
                 continue;
             }
 
-            // ── Enviar e atualizar contadores ─────────────────────────────────
-            $service->sendWhatsappReply($conv, $followupText);
+            // ── Decisão texto livre vs template (B2) ─────────────────────────
+            // Carrega relação instance pro windowChecker funcionar.
+            $conv->loadMissing('instance');
+            $windowOpen   = $windowChecker->isOpen($conv);
+            $needsTemplate = $strategy === 'template' || (! $windowOpen && $strategy === 'smart');
+
+            if ($needsTemplate) {
+                $template = $agent->followupTemplate()->first();
+
+                if (! $template) {
+                    $skipReasons['window_closed_no_template']++;
+                    Log::channel('whatsapp')->info('AI follow-up pulado: janela fechada e sem template fallback', [
+                        'conversation_id' => $conv->id,
+                        'strategy'        => $strategy,
+                    ]);
+                    if ($debug) $this->line("  Skip conv #{$conv->id}: janela fechada + smart sem template → poupa custo Meta");
+                    Cache::forget($lockKey);
+                    continue;
+                }
+
+                if (! $template->isApproved()) {
+                    $skipReasons['template_not_approved']++;
+                    Log::channel('whatsapp')->warning('AI follow-up: template não aprovado pelo Meta', [
+                        'conversation_id' => $conv->id,
+                        'template_id'     => $template->id,
+                        'status'          => $template->status,
+                    ]);
+                    Cache::forget($lockKey);
+                    continue;
+                }
+
+                $this->sendFollowUpAsTemplate($conv, $template);
+                $sentAsTemplate++;
+            } else {
+                // Janela aberta (ou WAHA sem restrição) → texto livre natural
+                $service->sendWhatsappReply($conv, $followupText);
+            }
 
             WhatsappConversation::withoutGlobalScope('tenant')
                 ->where('id', $conv->id)
@@ -220,18 +272,89 @@ class AiFollowUpCommand extends Command
                 'conversation_id' => $conv->id,
                 'attempt'         => $conv->followup_count + 1,
                 'max'             => $agent->followup_max_count,
+                'mode'            => $needsTemplate ? 'template' : 'text',
+                'strategy'        => $strategy,
             ]);
 
             $sentCount++;
-            $this->line("  ✓ Conv #{$conv->id} — follow-up " . ($conv->followup_count + 1) . "/{$agent->followup_max_count}");
+            $this->line("  ✓ Conv #{$conv->id} — follow-up " . ($conv->followup_count + 1) . "/{$agent->followup_max_count}" . ($needsTemplate ? ' [TEMPLATE]' : ''));
         }
 
         $this->info('Follow-up concluído.');
         $this->newLine();
-        $this->info("Resumo: {$sentCount} " . ($dryRun ? 'elegíveis (dry-run)' : 'enviados'));
+        $this->info("Resumo: {$sentCount} " . ($dryRun ? 'elegíveis (dry-run)' : 'enviados') . " (sendo {$sentAsTemplate} via template)");
         if ($debug || $dryRun) {
             $this->table(['Motivo do skip', 'Total'], collect($skipReasons)->map(fn($v, $k) => [$k, $v])->values()->all());
         }
+    }
+
+    /**
+     * Envia follow-up via Message Template HSM — usado quando a janela 24h fechou
+     * (strategy=smart com template fallback) ou estratégia é 'template' forçada.
+     *
+     * Extrai variables do lead (name, email, etc) mapeando posicionalmente pras
+     * variáveis {{N}} do template. Se template tem 3 vars e lead só tem nome,
+     * preenche as outras com string vazia (Meta valida no envio, retorna erro
+     * que é logado pelo próprio WhatsappTemplateService).
+     */
+    private function sendFollowUpAsTemplate(WhatsappConversation $conv, \App\Models\WhatsappTemplate $template): void
+    {
+        $instance = $conv->instance;
+        if (! $instance) {
+            return;
+        }
+
+        $lead = $conv->lead_id
+            ? Lead::withoutGlobalScope('tenant')->find($conv->lead_id)
+            : null;
+
+        // Mapeamento simples: {{1}} → nome, {{2}} → empresa, {{3}} → email.
+        // Futuro: UI pro user configurar mapping custom por template. Por ora o
+        // padrão cobre 90% dos casos (template de follow-up tipicamente só usa nome).
+        $variables = [
+            '1' => $lead?->name    ?? ($conv->contact_name ?? ''),
+            '2' => $lead?->company ?? '',
+            '3' => $lead?->email   ?? '',
+        ];
+
+        $service = app(WhatsappTemplateService::class);
+        $result  = $service->send($instance, (string) $conv->phone, $template, $variables);
+
+        if (isset($result['error'])) {
+            Log::channel('whatsapp')->error('AI follow-up: envio de template falhou', [
+                'conversation_id' => $conv->id,
+                'template'        => $template->name,
+                'error'           => $result['error'],
+            ]);
+            return;
+        }
+
+        // Persiste a mensagem local — o Cloud não manda echo e o WhatsappTemplateService
+        // já cria WhatsappMessage via controller, mas como aqui chamamos direto o service
+        // a persistência é responsabilidade nossa. Usar OutboundMessagePersister.
+        $preview = $this->buildTemplatePreview($template, $variables);
+        app(\App\Services\Whatsapp\OutboundMessagePersister::class)->persist(
+            conv: $conv,
+            type: 'template',
+            body: $preview,
+            sendResult: $result,
+            sentBy: 'followup',
+            sentByAgentId: $conv->ai_agent_id,
+        );
+    }
+
+    private function buildTemplatePreview(\App\Models\WhatsappTemplate $template, array $variables): string
+    {
+        $body = '';
+        foreach ((array) $template->components as $c) {
+            if (strtoupper((string) ($c['type'] ?? '')) === 'BODY') {
+                $body = (string) ($c['text'] ?? '');
+                break;
+            }
+        }
+        return preg_replace_callback('/\{\{\s*(\d+)\s*\}\}/', function ($m) use ($variables) {
+            return (string) ($variables[$m[1]] ?? $m[0]);
+        }, $body);
     }
 
     private function buildFollowUpPrompt(\App\Models\AiAgent $agent): string

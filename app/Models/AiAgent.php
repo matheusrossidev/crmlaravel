@@ -33,6 +33,7 @@ class AiAgent extends Model
         'enable_voice_reply', 'elevenlabs_voice_id',
         'followup_enabled', 'followup_delay_minutes', 'followup_max_count',
         'followup_hour_start', 'followup_hour_end',
+        'followup_strategy', 'followup_template_id',
         'transfer_to_user_id', 'transfer_to_department_id',
         'use_agno',
     ];
@@ -82,6 +83,17 @@ class AiAgent extends Model
     public function transferDepartment(): BelongsTo
     {
         return $this->belongsTo(Department::class, 'transfer_to_department_id');
+    }
+
+    /**
+     * Template HSM usado pelo follow-up quando a janela 24h do Cloud API fecha.
+     * - followup_strategy='smart'    → usado como FALLBACK (só se janela fechada)
+     * - followup_strategy='template' → usado SEMPRE (mesmo dentro da janela)
+     * NULL = sem template configurado → smart pula o envio pra poupar custo Meta.
+     */
+    public function followupTemplate(): BelongsTo
+    {
+        return $this->belongsTo(WhatsappTemplate::class, 'followup_template_id');
     }
 
     public function whatsappInstances(): BelongsToMany

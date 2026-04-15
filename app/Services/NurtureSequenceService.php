@@ -204,6 +204,67 @@ class NurtureSequenceService
             return; // Sem instancia conectada — nao tem como enviar
         }
 
+        // B2 fix: se conversa existe e é Cloud API com janela 24h fechada, Meta
+        // vai rejeitar texto livre. Checar antes e aplicar fallback:
+        //   - Se step tem `fallback_template_id` → envia template (paga por disparo)
+        //   - Senão → pula o step (poupa custo) e loga pra UI mostrar
+        if ($conv) {
+            $conv->loadMissing('instance');
+            $checker = app(\App\Services\Whatsapp\ConversationWindowChecker::class);
+
+            if ($checker->isCloudApi($conv) && ! $checker->isOpen($conv)) {
+                $fallbackId = (int) ($config['fallback_template_id'] ?? 0);
+
+                if (! $fallbackId) {
+                    \Illuminate\Support\Facades\Log::channel('whatsapp')->info(
+                        'NurtureSequence step pulado: janela 24h fechada e sem template fallback',
+                        [
+                            'lead_id'     => $lead->id,
+                            'step_id'     => $step->id,
+                            'sequence_id' => $step->sequence_id,
+                        ],
+                    );
+                    return;
+                }
+
+                $template = \App\Models\WhatsappTemplate::withoutGlobalScope('tenant')
+                    ->where('id', $fallbackId)
+                    ->where('status', 'APPROVED')
+                    ->first();
+
+                if (! $template) {
+                    \Illuminate\Support\Facades\Log::channel('whatsapp')->warning(
+                        'NurtureSequence: fallback_template_id aponta pra template inexistente ou não aprovado',
+                        ['lead_id' => $lead->id, 'template_id' => $fallbackId],
+                    );
+                    return;
+                }
+
+                // Dispara template direto (não vai pra fila do ScheduledMessage — template
+                // é sempre síncrono porque depende da lógica do WhatsappTemplateService).
+                $instance = \App\Models\WhatsappInstance::withoutGlobalScope('tenant')->find($instanceId);
+                $variables = [
+                    '1' => $lead->name    ?? '',
+                    '2' => $lead->company ?? '',
+                    '3' => $lead->email   ?? '',
+                ];
+                $result = app(\App\Services\Whatsapp\WhatsappTemplateService::class)
+                    ->send($instance, (string) $lead->phone, $template, $variables);
+
+                if (! isset($result['error'])) {
+                    app(\App\Services\Whatsapp\OutboundMessagePersister::class)->persist(
+                        conv: $conv,
+                        type: 'template',
+                        body: null,
+                        sendResult: $result,
+                        sentBy: 'automation',  // sequence usa 'automation' no sent_by
+                    );
+                }
+
+                return; // não agenda ScheduledMessage de texto livre
+            }
+        }
+
         ScheduledMessage::withoutGlobalScope('tenant')->create([
             'tenant_id'       => $lead->tenant_id,
             'lead_id'         => $lead->id,
