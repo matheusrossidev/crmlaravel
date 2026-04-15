@@ -6,7 +6,7 @@ files:
   - app/Services/WhatsappCloudService.php
   - app/Jobs/ProcessWhatsappCloudWebhook.php
   - app/Http/Controllers/WhatsappCloudWebhookController.php
-last_review: 2026-04-09
+last_review: 2026-04-17
 tags: [module, whatsapp, cloud-api, meta]
 ---
 
@@ -16,10 +16,14 @@ tags: [module, whatsapp, cloud-api, meta]
 WhatsApp **oficial Meta** via Cloud API. Modo **Coexistence** — cliente conecta o app do celular via QR scan no Embedded Signup, fica vinculado à Cloud API mantendo o WhatsApp Business app funcionando (echoes espelhados).
 
 ## Status
-- ✅ Inbound + outbound + media + lista interativa
+- ✅ Inbound + outbound + media + lista interativa + buttons interativos (até 3)
 - ✅ Embedded Signup (Coexistence) + fallback OAuth velho
 - ✅ Webhook HMAC SHA256 com `WHATSAPP_CLOUD_APP_SECRET`
 - ✅ Coexiste com WAHA via [[WhatsappServiceFactory]]
+- ✅ **System User Token permanente** — chain de fallback (instance.system_user_token → config global → access_token user)
+- ✅ **Templates HSM** completo — ver [[WhatsApp Templates (HSM)]]
+- ✅ **Foundation SOLID** (2026-04-14) — ChatIdResolver, InstanceSelector, ConversationWindowChecker, OutboundMessagePersister em `app/Services/Whatsapp/`. Ver [[WhatsApp Foundation SOLID]]
+- ✅ **Reverb broadcast fixed** (2026-04-14 `96c2dac` + `41b7efa`) — antes mensagens não apareciam em tempo real. Agora usa `::dispatch` igual WAHA + dispara `WhatsappConversationUpdated` junto
 - ⚠️ Gated por feature flag `whatsapp_cloud_api` ([[Feature Flags]]) — lançou primeiro só pro tenant 12
 
 ## Fluxo de conexão (Embedded Signup)

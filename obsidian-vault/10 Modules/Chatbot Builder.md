@@ -6,7 +6,7 @@ files:
   - resources/js/chatbot-builder.jsx
   - app/Jobs/ProcessChatbotStep.php
   - app/Models/ChatbotFlow.php
-last_review: 2026-04-09
+last_review: 2026-04-17
 tags: [module, chatbot, react]
 ---
 
@@ -22,6 +22,8 @@ Builder visual drag-drop (React Flow) para criar fluxos de chatbot multi-canal (
 - ✅ Variables de sessão (interpolação `{{nome}}`)
 - ✅ Tracking de `completions_count`
 - ✅ Cards (carousel website) + audio (WhatsApp only)
+- ✅ **`chatbot_flows.whatsapp_instance_id`** (2026-04-14 `f0896e8`) — flow roda só na instância específica (NULL = todas). Permite "flow comercial no A" + "flow suporte no B" sem colisão de keyword. UI: select "Aplicar em qual número?" no form (com badges de capability: WAHA / Cloud API Oficial / templates / buttons)
+- ✅ **Persist sync no Cloud API** (2026-04-14 `392a623`) — antes chatbot no Cloud perdia mensagens (dependia do echo WAHA que Cloud não manda). Agora `ProcessChatbotStep` chama `OutboundMessagePersister::persist` sync quando `$instance->isCloudApi()` logo após `sendText/Image/List` retornar OK
 
 ## Node types
 | Tipo | Função |

@@ -8,7 +8,7 @@ files:
   - app/Services/AiAgentService.php
   - app/Services/AgnoService.php
   - agno-service/main.py
-last_review: 2026-04-09
+last_review: 2026-04-17
 tags: [module, ai, agent, rag]
 ---
 
@@ -21,6 +21,11 @@ Agentes IA configuráveis (objetivo, persona, tools, memória) que respondem men
 - ✅ Atribuição manual ou auto-assign por canal/instance
 - ✅ Tools: pipeline (`set_stage`), tags, intent_notify, calendar (Google), voice reply (ElevenLabs)
 - ✅ Follow-up automático ([[Follow-up de IA]]) — só WhatsApp
+- ✅ **Follow-up Strategy** (2026-04-14 `c73edd6`) — `ai_agents.followup_strategy` ENUM:
+  - `smart` (default): texto livre dentro da janela 24h; fora manda template fallback se configurado, senão skip (poupa custo Meta)
+  - `template`: sempre via template HSM (paga por envio)
+  - `off`: sem follow-up
+  - UI: aba "Follow-up" do form com radio cards + dropdown de `WhatsappTemplate` APPROVED
 - ✅ Sistema de quota de tokens por tenant + upsell modal
 - ✅ Memória persistente via Agno + pgvector (resumos de conversa)
 - ✅ **RAG real via pgvector** (commit `9c1b7fb`) — upload de PDF/DOCX/TXT/imagem chega na IA via cosine similarity. Ver [[2026-04-09 RAG real implementado]]
@@ -28,6 +33,8 @@ Agentes IA configuráveis (objetivo, persona, tools, memória) que respondem men
 - ✅ **Formatter dinâmico** (commit `bd32135`) — `MAX_BLOCK` agora vem do `max_message_length` do agent, não mais hardcoded 150
 - ✅ **Contexto temporal** (commit `bd32135`) — PHP envia data/hora/período/saudação correta no `/chat`, agent injeta no system prompt com regras explícitas
 - ✅ **Sent_by tracking** (commit `3f0f816`) — toda mensagem outbound marca `sent_by` (humano, IA, chatbot, automation, etc) + `sent_by_agent_id`. Frontend mostra badge no chat. Ver [[2026-04-09 Marcacao de autoria sent_by]]
+- ✅ **Split duplo eliminado** (2026-04-15 `5a7ea54`) — `ProcessAiResponse` não re-splita mais os `reply_blocks` do Agno. Respostas deixam de picotar lista numerada em bolhas desordenadas. `cleanFormatting` preserva bullets/numeração. `sleep` entre msgs respeita `response_delay_seconds`.
+- ✅ **Cloud API compat** — `sendWhatsappReply` + `sendMediaReply` usam `ChatIdResolver` + `OutboundMessagePersister` (Foundation SOLID) — sem `@c.us` hardcoded
 - ⚠️ Calendar tool: telefone agora forçado no description (commit `f8e6513`) — depende de instrução pro LLM + fallback PHP
 - ⚠️ Follow-up + lembretes só WhatsApp, não Instagram
 

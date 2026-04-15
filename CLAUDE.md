@@ -1,7 +1,7 @@
 # Syncro CRM — Guia Completo da Plataforma
 
 > Este documento é a referência definitiva para qualquer dev ou IA que trabalhe neste codebase.
-> Última atualização: 2026-04-14 (módulo Formulários completo Fase 1+2+3 — CRUD + conversational/multistep + SDK nativo + distribution analytics; fix permanente de permissão storage/logs via setgid 2775 + umask 002 no entrypoint)
+> Última atualização: **2026-04-17** — atualização geral: billing Stripe (principal) + Asaas (legacy subs + token PIX + partner transfers), Foundation SOLID WhatsApp (ChatIdResolver/InstanceSelector/WindowChecker/MessagePersister), Templates HSM Cloud API, Follow-up Strategy (smart/template/off), Chatbot multi-instância, Actions Cloud-only em automação, phone mask internacional em Forms, fix split duplo nas respostas do Agente IA.
 
 ---
 
@@ -10,13 +10,15 @@
 **Syncro** é uma plataforma 360 de marketing e CRM multi-tenant com:
 - Pipeline de vendas (Kanban)
 - Chat inbox para WhatsApp WAHA + WhatsApp Cloud API oficial Meta + Instagram + Website (UI unificada via `tenant/whatsapp/index.blade.php`; backend ainda fragmentado em 3 models, mas há `ConversationContract` + `ConversationResolver` pra abstração polimórfica)
-- Agentes de IA com memória e tools (via microsserviço Agno)
+- Agentes de IA com memória, tools, follow-up smart/template/off (via microsserviço Agno)
+- Templates HSM WhatsApp Cloud API — criação, aprovação Meta, envio manual (chat) e automático (automação/follow-up)
 - Sophia — assistente IA interna com execução de actions no CRM
-- Chatbot builder visual multi-canal (React Flow)
-- Automações por trigger + send_webhook + extract_lead_data via IA
-- Campanhas com rastreamento UTM
+- Chatbot builder visual multi-canal (React Flow), com suporte a instância WhatsApp específica
+- Automações por trigger + send_webhook + extract_lead_data via IA + actions Cloud-only (send_template, send_buttons, send_list)
+- Formulários nativos (classic/conversational/multistep) com SDK sem iframe + phone mask internacional (intl-tel-input)
+- Relatórios UTM (não há módulo Campanhas — removido abr/2026)
 - Facebook Lead Ads — captura automática via webhook + form mapping
-- Billing via Asaas (PIX, cartão) e Stripe (internacional)
+- **Billing: Stripe (novo default, BRL/USD) + Asaas (subscriptions legadas forever-locked, Token Increments PIX, Partner Transfers PIX)**
 - Programa de parceiros com comissões e cursos
 - Tasks, produtos, lead scoring, nurture sequences, NPS, metas de vendas
 - Feature Flags — gating de features por tenant via painel master
@@ -30,12 +32,12 @@
 | Backend | Laravel 11, PHP 8.2 (dev) / 8.3 (prod) |
 | Banco | MySQL 8.0 |
 | Cache/Queue/Session | Redis 7 |
-| Frontend | AdminLTE 4.0.0-rc6, Bootstrap 5, jQuery, Chart.js, Toastr, DataTables, React (chatbot builder only) |
+| Frontend | AdminLTE 4.0.0-rc6, Bootstrap 5, jQuery, Chart.js, Toastr, DataTables, React (chatbot builder only), intl-tel-input 25 (CDN jsDelivr) |
 | Build | Vite |
 | Real-time | Laravel Reverb (WebSocket) |
 | WhatsApp | WAHA Plus (GOWS engine) **+** WhatsApp Cloud API oficial Meta (Coexistence via Embedded Signup) |
 | Lead Ads | Facebook Lead Ads (webhook + Business Login + form mapping) |
-| Pagamentos | Asaas (Brasil), Stripe (internacional) |
+| Pagamentos | **Stripe (principal: subscriptions BRL+USD, recurring invoices), Asaas (legacy subs forever-locked, PIX pros Token Increments, PIX Transfers pros Partner Withdrawals)** |
 | IA | Agno (FastAPI + pgvector), OpenAI/Anthropic/Gemini |
 | Tour | Driver.js v1 (onboarding interativo) |
 | Email | Laravel Mail + layout shared bilingual (pt_BR / en) |
@@ -43,7 +45,7 @@
 | CI/CD | GitHub Actions → Docker Hub → Portainer |
 
 ### Stats
-~94 models (+Tag), ~43 services (+ConversationResolver), ~14 jobs, ~23 commands (+BackfillTags), 6 events, 11 notifications, ~50 controllers, 100+ migrations, 2 contracts (WhatsappServiceContract + ConversationContract)
+~93 models (+Tag, WhatsappTemplate), ~46 services (+ChatIdResolver/InstanceSelector/ConversationWindowChecker/OutboundMessagePersister/WhatsappTemplateService em `app/Services/Whatsapp/`), ~13 jobs, ~31 commands (+BackfillTags, ReconfigureAgnoAgents, ReindexAgnoKnowledge, CheckWhatsappCloudTokens, SyncWhatsappTemplates, GoalAlerts, ProcessGoalRecurrence, BackfillMessageAuthorship), 6 events, 11 notifications, ~89 controllers (Tenant=53, Master=23, Api=4, Auth=2, Webhooks=6, Cs=1), 110+ migrations, 4 contracts (WhatsappServiceContract, ConversationContract, SupportsMessageTemplates, SupportsInteractiveMessages)
 
 ### URLs
 - **Dev**: `http://localhost/crm/public`
@@ -147,9 +149,10 @@ web → auth → tenant → role:admin → plan.limit:leads
 - **SalesGoalSnapshot** — goal_id, user_id, type, period, target_value, achieved_value, percentage
 
 ### WhatsApp (WAHA + Cloud API dual-provider)
-- **WhatsappInstance** — `provider` ('waha' ou 'cloud_api'), `session_name` (WAHA), `phone_number`, `phone_number_id` (Cloud API), `waba_id`, `business_account_id`, `access_token` (cast `encrypted`, Cloud API), `token_expires_at`, `history_imported` flag, `display_name`, `label`. Helpers: `isWaha()`, `isCloudApi()`
+- **WhatsappInstance** — `provider` ('waha' ou 'cloud_api'), `session_name` (WAHA), `phone_number`, `phone_number_id` (Cloud API), `waba_id`, `business_account_id`, `access_token` (cast `encrypted`, Cloud API), `system_user_token` (cast encrypted, permanente), `token_expires_at`, `token_status` (valid/expiring/expired/invalid), `token_last_checked_at`, `history_imported`, `display_name`, `label`, `is_primary`. Helpers: `isWaha()`, `isCloudApi()`, `supportsTemplates()`, `supportsInteractiveButtons()`, `supportsInteractiveList()`, `hasWindowRestriction()`, `resolvePrimary($tenantId)`.
 - **WhatsappConversation** — `instance_id` (FK!), phone, lid (interno), status (open/closed/expired), tags (coluna JSON legada + trait `HasTags`), assigned_user_id, department_id, ai_agent_id, chatbot_flow_id/node_id/variables, followup counters, response_time_seconds. Implementa `ConversationContract` (`getChannelName(): 'whatsapp'`).
-- **WhatsappMessage** — `waha_message_id` (UNIQUE) **OU** `cloud_message_id` (índice) — provider determina qual coluna popular. direction, type, body, media_url, ack, sent_at
+- **WhatsappMessage** — `waha_message_id` (UNIQUE) **OU** `cloud_message_id` (índice) — provider determina qual coluna popular. direction, type, body, media_url, ack, sent_at, `sent_by` (human/human_phone/chatbot/ai_agent/automation/scheduled/followup/event), `sent_by_agent_id` (FK ai_agents).
+- **WhatsappTemplate** — `tenant_id`, `whatsapp_instance_id`, `name` (snake_case), `language`, `category` (MARKETING/UTILITY/AUTHENTICATION), `components` (JSON formato Meta), `sample_variables` (exemplos), `status` (PENDING/APPROVED/REJECTED/PAUSED/DISABLED), `meta_template_id`, `rejected_reason`, `quality_rating`, `last_synced_at`. Único por WABA (name+language). Ver seção 11.7.
 
 ### Instagram
 - **InstagramInstance** — ig_business_account_id, username, access_token (encrypted), status
@@ -726,6 +729,33 @@ E envia no payload do `/chat`. `agent_factory._build_instructions` injeta um blo
 - Controller: `HelpChatController` — system prompt com docs + actions, forceJson
 - Frontend: card de confirmação com lista de ações + botões Confirmar/Cancelar
 
+### Follow-up Strategy (smart/template/off)
+Regra Meta pro Cloud API: texto livre fora da janela 24h é rejeitado — só template HSM (paga por envio).
+
+Coluna `ai_agents.followup_strategy` (ENUM) define o comportamento do `AiFollowUpCommand`:
+- **`smart`** (default, grátis) — Se janela 24h aberta, envia texto livre normal. Se fechou:
+  - Com `ai_agents.followup_template_id` preenchido → envia template fallback (cobra).
+  - Sem template → **skip** (poupa custo Meta; registra `skip_reasons.window_closed_no_template`).
+- **`template`** — Sempre via template HSM, mesmo dentro da janela. Garante formato pré-aprovado.
+- **`off`** — Sem follow-up.
+
+WAHA não tem janela 24h → `ConversationWindowChecker::isOpen` sempre true → fluxo antigo (texto livre) vale.
+
+UI: aba "Follow-up" do form do agente (`resources/views/tenant/ai/agents/form.blade.php`) tem radio cards + dropdown de template APPROVED + alerta laranja quando `template` selecionado.
+
+Mesmo padrão em `NurtureSequenceService::executeMessage`: step com `fallback_template_id` usa template quando janela fecha; sem → skip + log.
+
+### Fix da formatação "picotada" das respostas (2026-04-15)
+Bug histórico: Agno retornava `reply_blocks` estruturados, PHP juntava com `\n\n` e re-splittava via `splitIntoMessages` com heurística diferente → lista numerada 1-11 vinha quebrada em 2 bolhas desordenadas.
+
+Fix em `ProcessAiResponse.php`: quando `use_agno=true` e `count($replyBlocks) >= 2` OR `1 bloco ≤ max_length`, usa os blocks **direto** como array de mensagens (sem re-splitar).
+
+`AiAgentService::cleanFormatting` agora **preserva** `- item` e `1. item` (WA renderiza como bullet/numeração visual). Só remove markdown pesado (`**bold**`, `__underline__`, headers `#`, code blocks).
+
+`sendWhatsappReplies` respeita `$agent->response_delay_seconds` (antes era `sleep(3)` hardcoded).
+
+Prompt Agno em `agno-service/agent_factory.py` tem regra explícita: lista curta (≤5) num bloco só; lista longa em blocos de 5 com mini-cabeçalho recontextualizando ("Continuando:").
+
 ---
 
 ## 8. Chatbot
@@ -766,6 +796,7 @@ E envia no payload do `/chat`. `agent_factory._build_instructions` injeta um blo
 - **Lista interativa sem texto**: se o nó input tem branches mas `text` vazio, gera default "Escolha uma opção:" pra não silenciar
 - **`is_catch_all`**: checkbox no form de configurações do fluxo. Funciona como fallback: dispara pra qualquer mensagem se nenhum outro flow com keyword bateu
 - **Cache de chatbotFlows**: invalidado automaticamente ao salvar/criar flow (`TenantCache::forget`). TTL reduzido de 30min pra 10min
+- **`chatbot_flows.whatsapp_instance_id`** (FK nullable, 2026-04-16): quando preenchido, flow só dispara pra mensagens vindas daquela instância específica. `NULL` = roda em todas as instâncias do tenant (backward compat). Permite "flow comercial no número A" + "flow suporte no número B" com triggers conflitantes sem colisão. UI: form do chatbot com `channel=whatsapp` mostra select "Aplicar em qual número?" (inclui badges de capability: WAHA / Cloud API Oficial / templates / buttons).
 
 ---
 
@@ -786,35 +817,67 @@ Não há relacionamento `Lead → Campaign` (a tabela e a coluna foram dropadas)
 
 ---
 
-## 10. Pagamentos (Asaas + Stripe)
+## 10. Pagamentos (Stripe principal + Asaas legacy/Token/Transfers)
 
-### Asaas (Brasil — PIX, boleto, cartão)
+### ⚠️ IMPORTANTE — Realidade atual do billing
 
-#### Webhooks Asaas
+**Stripe é o principal** pra subscriptions novas. **Asaas é LEGACY** (tenants antigos forever-locked) + papéis específicos (Token Increments PIX + Partner Transfers PIX).
+
+Novos tenants criados hoje caem em Stripe por default (`billing_provider='stripe'`). Tenants antigos que já tinham `asaas_subscription_id` continuam com Asaas até alguém cancelar manualmente — aí a próxima assinatura vai pro Stripe.
+
+### Stripe (principal — subscriptions BRL + USD)
+
+**Fluxo de assinatura** (`BillingController::stripeSubscribe` → `StripeService::createSubscriptionCheckout`):
+- User escolhe plano em `/configuracoes/cobranca`
+- Sistema resolve `price_id` via `PlanDefinition::stripePriceIdFor($currency)` — `stripe_price_id_brl` ou `stripe_price_id_usd` (fallback pro legacy `stripe_price_id`)
+- Redirect pro Stripe Checkout
+- Tenant ganha `stripe_customer_id` + `stripe_subscription_id`
+
+**Webhooks Stripe** (`StripeWebhookController`):
 | Evento | Ação |
 |--------|------|
-| `PAYMENT_RECEIVED` / `PAYMENT_CONFIRMED` | Ativa subscription, limpa ai_tokens_exhausted |
-| `PAYMENT_OVERDUE` | Marca overdue, envia email |
-| `SUBSCRIPTION_INACTIVATED` | Suspende tenant |
+| `checkout.session.completed` | Ativa subscription, popula `stripe_subscription_id`, cria `PaymentLog`, dispara comissão de parceiro (se aplicável) |
+| `invoice.payment_succeeded` | Registra pagamento recorrente em `PaymentLog`, comissão |
+| `invoice.payment_failed` | Marca `subscription_status=overdue`, notifica tenant |
+| `customer.subscription.deleted` | Limpa `stripe_subscription_id`, marca `subscription_status=cancelled` |
 
-#### Token Increments
-- `externalReference = "token_increment:{id}"` identifica pagamento de tokens
-- Ao pagar: TenantTokenIncrement.status = 'paid', tenant.ai_tokens_exhausted = false
+Stripe Portal: `BillingController::stripePortal` gera link pro Customer Portal (user muda cartão, cancela, etc).
 
-### Stripe (Internacional — cartão)
+**Alterar preço de plano existente**: Stripe Prices são imutáveis. Fluxo correto é criar Price novo no Stripe Dashboard + colar o ID novo em `plan_definitions.stripe_price_id_brl/usd`. Quem já paga **continua no Price antigo** (forever) — não há código hoje que sincronize upgrade automático.
 
-#### Webhooks Stripe
+### Asaas (3 papéis específicos — NÃO é principal)
+
+**1. Subscriptions legadas** (`BillingController::subscribe`):
+- Tenants que JÁ tinham `asaas_subscription_id` ficam **forever-locked** em Asaas (comentário em código)
+- Checkout direto com cartão (sem Checkout redirect, coleta dados no form) — [BillingController.php:179-330](app/Http/Controllers/Tenant/BillingController.php#L179)
+- Novos tenants NÃO passam por aqui (default é Stripe)
+
+**2. Token Increments** (compra de tokens IA):
+- `TokenIncrementController::purchase` cria Payment PIX via Asaas (sem alternativa Stripe no controller)
+- `externalReference = "token_increment:{id}"` identifica no webhook
+- Webhook Asaas confirma → `TenantTokenIncrement.status='paid'`, `tenant.ai_tokens_exhausted=false`
+
+**3. Partner Withdrawals** (saque de comissões):
+- `PartnerWithdrawalController` cria Transfer PIX via Asaas Transfers API
+- Webhook `TRANSFER_DONE` marca `PartnerWithdrawal.status='paid'`
+- Ver `obsidian-vault/reference_asaas_transfers.md` pra setup de permissões
+
+**Webhooks Asaas** (`AsaasWebhookController`):
 | Evento | Ação |
 |--------|------|
-| `checkout.session.completed` | Ativa subscription |
-| `invoice.paid` | Confirma pagamento recorrente |
-| `invoice.payment_failed` | Marca falha, notifica tenant |
-| `customer.subscription.deleted` | Suspende tenant |
+| `PAYMENT_RECEIVED` / `PAYMENT_CONFIRMED` | Ativa subscription LEGACY (se tenant é Asaas), confirma token increment, gera `PaymentLog` |
+| `PAYMENT_OVERDUE` | Marca subscription overdue (só tenants legacy) |
+| `SUBSCRIPTION_INACTIVATED` | Cancela subscription legacy |
+| `TRANSFER_DONE` / `TRANSFER_FAILED` | Marca `PartnerWithdrawal` como paid/failed |
+| `PAYMENT_REFUNDED` / `PAYMENT_CHARGEBACK_REQUESTED` | Estorna pagamento + comissão do parceiro |
 
-### Dual Billing
-- Asaas para clientes Brasil (PIX, boleto, cartão)
-- Stripe para clientes internacionais (cartão)
-- `PaymentLog` registra todos os pagamentos independente do gateway
+### PaymentLog — fonte única
+
+`PaymentLog` registra TODOS os pagamentos (Asaas + Stripe) — cada row tem `asaas_payment_id` OU `stripe_session_id`/`stripe_invoice_id`. Page `/configuracoes/cobranca` unifica histórico buscando de ambos.
+
+### Partner Commissions — agnóstico
+
+Ambos webhooks (Asaas + Stripe) chamam `PartnerCommissionService::generateCommission()` quando `PAYMENT_RECEIVED`/`invoice.payment_succeeded` rola. 30 dias de carência → comando `partners:release-commissions` marca como `available` → parceiro saca via PIX Asaas.
 
 ---
 
@@ -942,6 +1005,8 @@ mappings JSON            — field_id => 'name'|'phone'|'email'|'company'|'value
 conditional_logic JSON   — [{target_field_id, field_id, operator, value}] — 5 operators: equals/not_equals/contains/not_empty/is_empty
 steps JSON               — [{id, title}] para multistep; fields.step_id aponta pra cada
 pipeline_id, stage_id, assigned_user_id, source_utm, confirmation_type, confirmation_value, notify_emails JSON
+default_country VARCHAR(2) DEFAULT 'BR'     — bandeira inicial dos campos type=tel (intl-tel-input v25)
+allowed_countries JSON NULLABLE              — ISO-2 permitidos; NULL = todos ~250 países
 logo_url, logo_alignment, background_image_url, enable_logo, enable_background_image, color_preset
 brand_color, background_color, card_color, button_color, button_text_color, label_color,
 input_border_color, input_bg_color, input_text_color, font_family, border_radius, layout
@@ -1036,6 +1101,78 @@ Todo o server-side funciona igual pros 3 caminhos (hosted/inline/popup) — só 
         async></script>
 ```
 
+### Phone mask internacional (intl-tel-input v25)
+Fields do tipo `tel` nos formulários usam [intl-tel-input v25](https://github.com/jackocnr/intl-tel-input) via CDN jsDelivr (bundle `intlTelInputWithUtils` inclui libphonenumber).
+- Bandeiras via emoji nativo do SO (sem sprite/PNG)
+- `formatAsYouType: true` — máscara adapta ao país automaticamente
+- `strictMode: true` — bloqueia caractere inválido enquanto digita
+- Validação client-side: bloqueia submit se número inválido
+- Valor enviado ao backend em E.164 (+5511912345678) — `PhoneNormalizer::toE164` normaliza
+
+**Config por formulário** (em `/formularios/{id}/editar` → Avançado):
+- `forms.default_country` (VARCHAR(2), default BR) — qual bandeira abre selecionada
+- `forms.allowed_countries` (JSON nullable) — ISO-2 de países permitidos; `null` = todos (~250 países)
+- UI com radio "Todas / Só os que eu marcar" + checkboxes pra 18 países populares (BR, US, PT, AR, ES, MX, GB, FR, DE, IT, CL, CO, PE, UY, PY, CA, AU, JP)
+
+**Cobertura**: tanto no SDK embed (`FormPublicController::buildSdkJs`) quanto nas views hospedadas via partial shared [resources/views/forms/_phone-lib.blade.php](resources/views/forms/_phone-lib.blade.php).
+
+---
+
+## 11.7 WhatsApp Templates HSM (Cloud API oficial)
+
+Regra Meta: fora da janela 24h **só Message Template HSM** (pré-aprovado). Syncro suporta criação, aprovação Meta, envio manual (chat) e automático (automação/follow-up).
+
+### Tabela `whatsapp_templates`
+- `name` (snake_case, único por WABA), `language` (pt_BR, en_US, es_ES...), `category` (MARKETING/UTILITY/AUTHENTICATION)
+- `components` (JSON — formato Meta: header+body+footer+buttons), `sample_variables` (exemplos pra revisão Meta)
+- `status` ENUM (PENDING/APPROVED/REJECTED/PAUSED/DISABLED), `meta_template_id`, `rejected_reason`, `quality_rating`
+
+### Criação (admin)
+`/configuracoes/whatsapp-templates/criar` — wizard 70/30 com preview iPhone clay:
+- Botões de variáveis (Nome do cliente / Data / Hora / Empresa / Valor / Código / Link / Outro) inserem `{{N}}` no cursor + registram label amigável
+- Upload de mídia de exemplo via dropzone (padrão da plataforma), sobe em `storage/app/public/whatsapp-templates/samples/`
+- Ao submeter: [WhatsappTemplateService::create](app/Services/Whatsapp/WhatsappTemplateService.php) valida + chama [WhatsappCloudService::uploadToMetaResumable](app/Services/WhatsappCloudService.php) (Meta exige handle `h:4:...` não URL) + cria template via Graph API
+
+**IMPORTANTE**: Meta pode **reclassificar categoria automaticamente** (UTILITY→MARKETING) se conteúdo tiver cara promocional. Isso é documentado ([doc Meta](https://developers.facebook.com/docs/whatsapp/updates-to-pricing/new-template-guidelines#template-category-changes)) e o `syncFromMeta` loga a mudança. Info box no `/show` explica pro user que é comportamento Meta, não bug nosso.
+
+### Envio
+- **Manual** — Modal no chat Cloud (`/chats`) ao clicar "+" → "Template". Detecta janela 24h: se fechada, input de texto desabilita + notice "Use um template pra retomar".
+- **Automático** — Actions de automação `send_whatsapp_template`, `send_whatsapp_buttons`, `send_whatsapp_list` (só aparecem na UI se tenant tem instância Cloud).
+- **Follow-up IA** — Agent com `followup_strategy='template'` ou `smart` (ver seção 7).
+
+### Sync
+`whatsapp:sync-templates` (cron diário 04:00) puxa status atual do Meta e atualiza status local (APPROVED / REJECTED / etc).
+
+---
+
+## 11.8 Foundation SOLID WhatsApp (`app/Services/Whatsapp/`)
+
+Consolidada em 2026-04-14 pra compatibilidade Cloud API sem espalhar `if provider='cloud_api'` pela codebase.
+
+### Shared services (cada um com SRP)
+- **`ChatIdResolver::for($instance, $phone, $isGroup, $conv)`** — formato de chatId por provider. Cloud → número puro; WAHA → `@c.us`/`@g.us`/`@lid` preservando LID do histórico GOWS. Usado por chatbot, agente IA, automação, scheduled, event-reminders, nurture.
+- **`InstanceSelector::selectFor($tenantId, $ctx)`** — resolve instance priorizando: explicit `instance_id` do config → conversation.instance → entity.instance (agent/flow/sequence) → `WhatsappInstance::resolvePrimary`.
+- **`ConversationWindowChecker`** — janela 24h Meta. `isOpen()`, `hoursUntilClose()`, `isCloudApi()`. Única fonte de verdade. WAHA sempre retorna true.
+- **`OutboundMessagePersister::persist(...)`** — cria `WhatsappMessage` sync + `broadcast(WhatsappMessageCreated)` via Reverb. Popula `waha_message_id` OU `cloud_message_id` conforme provider. Usado por chatbot/agente IA/automação/nurture/scheduled.
+
+### Contratos segregados (ISP)
+- **`App\Contracts\WhatsappServiceContract`** — base (sendText, sendImage, sendList, sendReaction, etc). Tanto `WahaService` quanto `WhatsappCloudService` implementam.
+- **`App\Contracts\SupportsMessageTemplates`** — só `WhatsappCloudService` implementa (`sendTemplate`). WAHA não suporta HSM.
+- **`App\Contracts\SupportsInteractiveMessages`** — só `WhatsappCloudService` (`sendInteractiveButtons` até 3 reply buttons).
+
+Caller faz `if ($service instanceof SupportsMessageTemplates)` antes de chamar.
+
+### Capabilities no model `WhatsappInstance`
+- `supportsTemplates()` → isCloudApi
+- `supportsInteractiveButtons()` → isCloudApi
+- `supportsInteractiveList()` → true (ambos)
+- `hasWindowRestriction()` → isCloudApi
+
+UI consulta esses helpers — zero `if provider === 'cloud_api'` espalhado em Blade/JS.
+
+### Fix chatbot Cloud API
+Antes, chatbot no Cloud perdia mensagem — dependia do "echo" webhook do WAHA (`fromMe=true`) pra salvar em `WhatsappMessage`. Cloud não manda echo de outbound. **Fix** (2026-04-14): `ProcessChatbotStep` persiste **sync** via `OutboundMessagePersister` logo após `sendText/Image/List` retornar OK no Cloud. No WAHA o echo ainda chega e é deduped via `waha_message_id` unique.
+
 ---
 
 ## 12. Deploy e CI/CD
@@ -1120,11 +1257,24 @@ find /var/www/storage /var/www/bootstrap/cache -type f -exec chmod 664 {} +
 - **Cmd+K**: shortcut global pra busca via `GET /busca?q=...` (controller `GlobalSearchController`)
 - **Tour interativo**: Driver.js v1, definir steps em `_tour.blade.php`, marca completion via `POST /tour/complete`
 
-### WhatsApp (WAHA + Cloud API)
-- **NUNCA** usar `WhatsappInstance::first()` pra resolver instance ao enviar mensagem — sempre via `$conversation->instance_id`. Helper de referência: `WhatsappMessageController::resolveInstance($conversation)`. Bug histórico: commit `9daa89d`.
-- **NUNCA** instanciar `new WahaService(...)` direto em código novo se a operação for envio outbound. Use o factory: `\App\Services\WhatsappServiceFactory::for($instance)` — devolve o service correto baseado no `provider`.
-- Operações **WAHA-specific** (createSession, QR, history import, group ops, master toolbox) podem continuar chamando `WahaService` direto.
-- Listagens da página de Integrações: SEMPRE filtrar por `provider='waha'` OR `NULL` no card WAHA, e `provider='cloud_api'` no card Cloud API. Bug histórico: commit `2535d46`.
+### WhatsApp (WAHA + Cloud API) — SOLID enforcement
+
+**Regra de ouro**: use a Foundation SOLID (`app/Services/Whatsapp/`) em qualquer código novo. Nunca espalhe `if ($instance->provider === 'cloud_api') {...}` por Blade/controller/job — delegue pros services compartilhados.
+
+- **NUNCA** usar `WhatsappInstance::first()` pra resolver instance. Use `InstanceSelector::selectFor($tenantId, $context)` que prioriza explicit → conversation → entity → primary.
+- **NUNCA** instanciar `new WahaService(...)` direto em código novo. Use `\App\Services\WhatsappServiceFactory::for($instance)` — devolve o service correto por provider.
+- **NUNCA** construir chatId com `$phone . '@c.us'` hardcoded. Use `ChatIdResolver::for($instance, $phone, $isGroup, $conv)` — WAHA ganha sufixo apropriado (`@c.us`/`@g.us`/`@lid` do histórico GOWS), Cloud recebe número puro.
+- **NUNCA** chamar `WhatsappMessage::create(...)` direto pra mensagem outbound. Use `OutboundMessagePersister::persist($conv, $type, $body, $sendResult, $sentBy, ...)` — popula `waha_message_id`/`cloud_message_id` conforme provider, atualiza `last_message_at`, broadcasta Reverb.
+- **NUNCA** checar janela 24h com `diffInHours` inline. Use `ConversationWindowChecker::isOpen($conv)` — single source of truth.
+- **Capabilities** (UI + actions): use `$instance->supportsTemplates()`, `->supportsInteractiveButtons()`, `->supportsInteractiveList()`, `->hasWindowRestriction()` em vez de `provider === 'cloud_api'` em tudo.
+- **Contratos segregados** (ISP): antes de chamar método exclusivo Cloud, type-check:
+  ```php
+  if ($service instanceof \App\Contracts\SupportsMessageTemplates) {
+      $service->sendTemplate(...);
+  }
+  ```
+- Operações **WAHA-specific** (createSession, QR, history import, group ops, master toolbox) podem chamar `WahaService` direto — sem equivalente no Cloud.
+- Listagens da página de Integrações: filtrar por `provider='waha'` OR `NULL` no card WAHA, e `provider='cloud_api'` no card Cloud API. Bug histórico: commit `2535d46`.
 
 ### Mensagens outbound (sent_by)
 - **TODA** criação direta de `WhatsappMessage::create(['direction' => 'outbound', ...])` (e equivalentes IG/Website) DEVE setar `sent_by` (e `sent_by_agent_id` quando aplicável). Spots já cobertos: ver seção 5 → "Autoria de mensagens".
@@ -1224,6 +1374,8 @@ find /var/www/storage /var/www/bootstrap/cache -type f -exec chmod 664 {} +
 | `upsell:evaluate` | A cada 6 horas | Avalia triggers de upsell por tenant |
 | `leads:detect-duplicates` | Diário 03:30 | Detecta duplicatas de leads por phone/email |
 | `users:send-reengagement` | Diário 10:00 | Envia emails/WA de reengajamento (7d/14d/30d) pra usuários inativos |
+| `whatsapp:cloud-token-health` | Diário 09:30 | Checa debug_token Cloud API, atualiza `whatsapp_instances.token_status`, dispara notification pro admin se expirando/expirado/invalid |
+| `whatsapp:sync-templates` | Diário 04:00 | Sync Message Templates HSM da Meta pra `whatsapp_templates` (status, quality_rating, rejected_reason). Log quando Meta reclassifica categoria (UTILITY→MARKETING). |
 
 ---
 
@@ -1232,28 +1384,37 @@ find /var/www/storage /var/www/bootstrap/cache -type f -exec chmod 664 {} +
 ```
 app/
   Http/Controllers/
-    Tenant/          — ~50 controllers (dashboard, CRM, leads, chats, chatbot, IA, tasks, products, scoring, sequences, NPS, goals, settings)
+    Tenant/          — ~53 controllers (dashboard, CRM, leads, chats, chatbot, IA, tasks, products, scoring, sequences, NPS, goals, settings, forms)
+    Tenant/Forms/    — subdir (FormController, FormBuilderController, FormMappingController, FormSubmissionController)
     Tenant/LeadMergeController.php
     Tenant/GlobalSearchController.php   — Busca global Cmd+K
     Tenant/TourController.php           — Tour interativo (complete/reset)
-    Master/          — ~16 controllers (tenants, plans, toolbox, logs, system, partners)
+    Tenant/WhatsappTemplateController.php — CRUD Templates HSM + sync + upload sample + envio pelo chat
+    Master/          — ~23 controllers (tenants, plans, toolbox, logs, system, partners, features, reengagement, etc)
     Master/FeatureController.php        — Painel de feature flags
     Master/ReengagementController.php   — Templates de reengajamento
     Auth/            — 2 controllers (login, register, agency register)
-    Api/             — ~7 controllers (leads API, widget, agno tools, stripe webhook)
+    Api/             — 4 controllers (leads API, widget, agno tools, stripe webhook)
+    Cs/              — 1 controller (Customer Success)
     WhatsappWebhookController.php       — Webhook WAHA
     WhatsappCloudWebhookController.php  — Webhook WhatsApp Cloud API (Meta)
     InstagramWebhookController.php
     FacebookLeadgenWebhookController.php — Webhook Facebook Lead Ads
-    AsaasWebhookController.php
-    StripeWebhookController.php
-  Console/Commands/  — ~23 commands (billing, whatsapp, ai, scoring, sequences, goals, partners, upsell, master, reengagement, tags backfill)
+    AsaasWebhookController.php          — Asaas: token increments + partner transfers + legacy subs
+    StripeWebhookController.php         — Stripe: subscriptions + recurring invoices
+    FormPublicController.php            — Público: render formulário, submit, SDK JS embed (inline/popup)
+  Console/Commands/  — 31 commands (billing, whatsapp, ai, scoring, sequences, goals, partners, upsell, master, reengagement, tags backfill, cloud token health, template sync)
     DetectDuplicateLeads.php        — Scan diário de duplicatas
     SendReengagement.php            — Envio de emails/WA de reengajamento
     BackfillTags.php                — Migra whatsapp_tags + colunas JSON `tags` pra estrutura polimórfica `tags`+`taggables`. Idempotente. `--dry-run` e `--tenant=N`.
     ReconfigureAgnoAgents.php       — `agno:reconfigure-all`: itera todos agents `use_agno=true is_active=true` e reconfigura no Agno (POST /configure). Roda no entrypoint do app pra repopular cache in-memory perdido em restart.
-    ReindexAgnoKnowledge.php        — `agno:reindex-knowledge --agent= --file= --missing`: reindexa knowledge files no Agno (chunkifica + embeda + salva no pgvector). Idempotente. Roda no entrypoint com `--missing` pra cobrir arquivos uploaded antes do RAG.
-    BackfillMessageAuthorship.php   — `messages:backfill-authorship --dry-run --tenant=N`: preenche `sent_by` retroativo via heurística (`user_id != null` → human, eventos da IA → event).
+    ReindexAgnoKnowledge.php        — `agno:reindex-knowledge --agent= --file= --missing`: reindexa knowledge files no Agno.
+    BackfillMessageAuthorship.php   — `messages:backfill-authorship --dry-run --tenant=N`: preenche `sent_by` retroativo via heurística.
+    CheckWhatsappCloudTokens.php    — `whatsapp:cloud-token-health`: verifica debug_token de cada WABA via Graph API, atualiza `token_status`, dispara notification.
+    SyncWhatsappTemplates.php       — `whatsapp:sync-templates`: sync status dos templates HSM com a Meta.
+    GoalAlerts.php                  — `goals:check-alerts`: dispara notifs de alerta de performance.
+    ProcessGoalRecurrence.php       — `goals:process-recurrence`: snapshots diários + renovação de metas recorrentes.
+    AiFollowUpCommand.php           — `ai:followup`: respeita `followup_strategy` (smart/template/off) + `ConversationWindowChecker` pra Cloud API.
   Jobs/
     ProcessWahaWebhook.php             — Webhook WhatsApp WAHA (core)
     ProcessWhatsappCloudWebhook.php    — Webhook WhatsApp Cloud API (Meta)
@@ -1303,9 +1464,18 @@ app/
     LeadMergeService.php            — Merge atômico de leads (21 relações)
     SophiaActionExecutor.php        — Executor de ações da Sophia (whitelist + rate limit)
     ConversationResolver.php        — Mapeia channel string ('whatsapp'|'instagram'|'website') + ID -> ConversationContract concreto. Usado pelo endpoint genérico do inbox.
+    Forms/                          — subdir: FormSubmissionService, FormLeadCreator, FormNotifier
+    Whatsapp/                       — subdir: Foundation SOLID pra compatibilidade Cloud API (ver seção 11.8)
+      ChatIdResolver.php            — chat_id por provider (SRP)
+      InstanceSelector.php          — resolução de WhatsappInstance (SRP)
+      ConversationWindowChecker.php — janela 24h Meta (single source of truth)
+      OutboundMessagePersister.php  — persiste WhatsappMessage sync + broadcast Reverb (usado por chatbot/agente/automação/nurture/scheduled)
+      WhatsappTemplateService.php   — CRUD local + sync Meta + send de Message Templates HSM
   Contracts/
-    WhatsappServiceContract.php     — Interface comum WAHA + Cloud API
-    ConversationContract.php        — Interface comum dos 3 conversation models (getChannelName, getContactName, getContactPhone, getContactPictureUrl, getDisplayLabel)
+    WhatsappServiceContract.php      — Interface comum WAHA + Cloud API (sendText, sendImage, sendList, sendReaction, sendVoice, etc)
+    SupportsMessageTemplates.php     — ISP: só Cloud implementa (sendTemplate)
+    SupportsInteractiveMessages.php  — ISP: só Cloud implementa (sendInteractiveButtons até 3)
+    ConversationContract.php         — Interface comum dos 3 conversation models
   Mail/
     ReengagementEmail.php           — Email de reengajamento (usa _layout shared)
   Rules/

@@ -21,6 +21,7 @@ tags: [moc, index]
 - [[Chat Inbox]]
 - [[WhatsApp WAHA]]
 - [[WhatsApp Cloud API]]
+- [[WhatsApp Templates (HSM)]]
 - [[Instagram]]
 - [[Website Chat]]
 
@@ -35,10 +36,13 @@ tags: [moc, index]
 - [[Facebook Lead Ads]]
 
 ### Comercial
-- [[Billing (Asaas + Stripe)]]
+- [[Billing (Stripe + Asaas)]] — Stripe principal, Asaas = legacy subs + PIX token + PIX transfers
 - [[Partner Program]]
 - [[Feature Flags]]
 - [[Reengagement]]
+
+### Forms
+- [[Forms module]] — classic/conversational/multistep + SDK embed + phone mask internacional
 
 ## 🏗️ Arquitetura
 
@@ -49,6 +53,7 @@ tags: [moc, index]
 - [[Database Schema]]
 - [[Tags polimorficas (refactor)]]
 - [[Conversation Resolver (refactor)]]
+- [[WhatsApp Foundation SOLID]] — ChatIdResolver, InstanceSelector, WindowChecker, MessagePersister + contratos ISP (2026-04-14)
 
 ## 🗂 Modelos chave
 
