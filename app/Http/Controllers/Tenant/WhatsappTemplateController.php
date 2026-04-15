@@ -61,6 +61,8 @@ class WhatsappTemplateController extends Controller
             'header.sample_handle' => ['nullable', 'string', 'max:500'],
             'samples'              => ['nullable', 'array'],
             'samples.*'            => ['string', 'max:200'],
+            'sample_labels'        => ['nullable', 'array'],
+            'sample_labels.*'      => ['string', 'max:40'],
             'buttons'              => ['nullable', 'array', 'max:10'],
         ]);
 

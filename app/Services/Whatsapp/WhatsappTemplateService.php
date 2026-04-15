@@ -85,6 +85,17 @@ class WhatsappTemplateService
                 ->first();
 
             if ($existing) {
+                // Meta pode re-classificar categoria automaticamente (UTILITY → MARKETING etc).
+                // Logar pra admin entender mudança aparentemente "sem motivo" no painel.
+                if ($existing->category !== $payload['category']) {
+                    Log::channel('whatsapp')->info('WhatsappTemplate: categoria re-classificada pela Meta', [
+                        'template'  => $existing->name,
+                        'language'  => $existing->language,
+                        'from'      => $existing->category,
+                        'to'        => $payload['category'],
+                        'tenant_id' => $existing->tenant_id,
+                    ]);
+                }
                 $existing->update($payload);
                 $updated++;
             } else {
@@ -230,6 +241,14 @@ class WhatsappTemplateService
             throw ValidationException::withMessages(['meta' => (string) $msg]);
         }
 
+        // sample_variables: salva valores + labels amigáveis (se vieram da UI).
+        // Formato antigo era array simples de strings; novo é ['values' => [...], 'labels' => [...]].
+        // Compat: se 'sample_labels' não veio, mantém array simples.
+        $sampleLabels = (array) ($data['sample_labels'] ?? []);
+        $sampleVariables = ! empty($sampleLabels)
+            ? ['values' => $samples, 'labels' => $sampleLabels]
+            : $samples;
+
         return WhatsappTemplate::create([
             'tenant_id'            => $instance->tenant_id,
             'whatsapp_instance_id' => $instance->id,
@@ -237,7 +256,7 @@ class WhatsappTemplateService
             'language'             => $language,
             'category'             => $category,
             'components'           => $components,
-            'sample_variables'     => $samples,
+            'sample_variables'     => $sampleVariables,
             'status'               => (string) ($metaResp['status'] ?? 'PENDING'),
             'meta_template_id'     => isset($metaResp['id']) ? (string) $metaResp['id'] : null,
             'last_synced_at'       => now(),

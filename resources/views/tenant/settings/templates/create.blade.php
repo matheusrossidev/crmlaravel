@@ -96,7 +96,36 @@
     }
     .sample-table { width: 100%; border-collapse: collapse; }
     .sample-table td { padding: 5px 0; }
-    .sample-table .vlabel { font-family: monospace; font-size: 12px; color: #6b7280; width: 50px; }
+    .sample-table .vlabel {
+        font-size: 12px; color: #1a1d23; font-weight: 600;
+        width: 150px; padding-right: 12px;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .sample-table .vlabel i { color: #0085f3; font-size: 14px; }
+
+    /* Botões de variáveis */
+    .var-btn {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: #eff6ff; color: #0085f3;
+        border: 1.5px solid #bfdbfe;
+        padding: 6px 12px; border-radius: 8px;
+        font-size: 12px; font-weight: 600;
+        cursor: pointer; transition: all .15s;
+        font-family: inherit;
+    }
+    .var-btn:hover { background: #dbeafe; border-color: #93c5fd; }
+    .var-btn i { font-size: 13px; }
+    .var-btn-custom { background: #f3f4f6; color: #374151; border-color: #d1d5db; }
+    .var-btn-custom:hover { background: #e5e7eb; }
+
+    /* Destaque visual das variáveis no preview */
+    .wa-var {
+        background: #fef08a;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-weight: 600;
+        color: #713f12;
+    }
 
     .btn-item {
         background: #f9fafb;
@@ -387,20 +416,59 @@
                 <div class="card">
                     <div class="card-head">3. {{ __('wa_templates.form_body') }}</div>
                     <div class="card-body">
+                        {{-- Botões de variáveis predefinidas: clica e insere no cursor --}}
+                        <div style="margin-bottom:10px;">
+                            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">
+                                <i class="bi bi-plus-circle" style="color:#0085f3;"></i>
+                                Inserir dado dinâmico no texto
+                            </label>
+                            <div id="varButtons" style="display:flex;flex-wrap:wrap;gap:6px;">
+                                <button type="button" class="var-btn" data-label="Nome do cliente" onclick="insertVariable('Nome do cliente')">
+                                    <i class="bi bi-person"></i> Nome do cliente
+                                </button>
+                                <button type="button" class="var-btn" data-label="Data" onclick="insertVariable('Data')">
+                                    <i class="bi bi-calendar3"></i> Data
+                                </button>
+                                <button type="button" class="var-btn" data-label="Hora" onclick="insertVariable('Hora')">
+                                    <i class="bi bi-clock"></i> Hora
+                                </button>
+                                <button type="button" class="var-btn" data-label="Empresa" onclick="insertVariable('Empresa')">
+                                    <i class="bi bi-building"></i> Empresa
+                                </button>
+                                <button type="button" class="var-btn" data-label="Valor" onclick="insertVariable('Valor')">
+                                    <i class="bi bi-currency-dollar"></i> Valor
+                                </button>
+                                <button type="button" class="var-btn" data-label="Código" onclick="insertVariable('Código')">
+                                    <i class="bi bi-hash"></i> Código
+                                </button>
+                                <button type="button" class="var-btn" data-label="Link" onclick="insertVariable('Link')">
+                                    <i class="bi bi-link-45deg"></i> Link
+                                </button>
+                                <button type="button" class="var-btn var-btn-custom" onclick="insertCustomVariable()">
+                                    <i class="bi bi-plus"></i> Outro
+                                </button>
+                            </div>
+                            <div style="font-size:11px;color:#9ca3af;margin-top:6px;line-height:1.4;">
+                                Clique num botão pra inserir o dado no texto. Depois preencha um exemplo do que vai no lugar (é pra Meta entender seu template).
+                            </div>
+                        </div>
+
                         <div class="form-row">
                             <label>
                                 Corpo
                                 <span class="char-counter"><span id="bodyLen">0</span>/1024</span>
                             </label>
                             <textarea name="body" id="inputBody" required maxlength="1024"
-                                      placeholder="Olá @{{1}}, sua consulta é dia @{{2}}.">{{ old('body') }}</textarea>
-                            <div class="hint">{{ __('wa_templates.form_body_hint') }}</div>
+                                      placeholder="Ex: Olá [Nome do cliente], sua consulta é dia [Data] às [Hora].">{{ old('body') }}</textarea>
+                            <div class="hint">Os dados em colchetes [Nome do cliente] são substituídos pelo valor real quando você enviar a mensagem.</div>
                         </div>
 
                         <div class="form-row" id="samplesRow" style="display:none;">
-                            <label>{{ __('wa_templates.form_samples') }}</label>
+                            <label>Exemplos do que vai em cada dado dinâmico</label>
+                            <div style="font-size:11.5px;color:#6b7280;margin-bottom:8px;line-height:1.45;">
+                                Pra Meta aprovar o template, preencha um exemplo real de cada dado dinâmico.
+                            </div>
                             <table class="sample-table" id="samplesTable"></table>
-                            <div class="hint">{{ __('wa_templates.form_samples_hint') }}</div>
                         </div>
                     </div>
                 </div>
@@ -557,11 +625,65 @@
     const samplesRow  = document.getElementById('samplesRow');
     const samplesTbl  = document.getElementById('samplesTable');
 
+    // Mapping id → label amigável. Popula ao clicar em "Inserir dado dinâmico".
+    // Persiste em hidden input pra survive submit (Meta só precisa do {{N}} no body,
+    // mas nós queremos mostrar "Nome do cliente" em vez de {{1}} na UI).
+    const varLabels = {};  // { 1: 'Nome do cliente', 2: 'Data', ... }
+
+    // Ícone por tipo de label
+    const labelIcons = {
+        'Nome do cliente': 'bi-person',
+        'Data': 'bi-calendar3',
+        'Hora': 'bi-clock',
+        'Empresa': 'bi-building',
+        'Valor': 'bi-currency-dollar',
+        'Código': 'bi-hash',
+        'Link': 'bi-link-45deg',
+    };
+
+    function insertVariable(label) {
+        // Próximo ID disponível (1, 2, 3...)
+        const ids = extractVars(bodyEl.value);
+        const nextId = ids.length === 0 ? 1 : Math.max(...ids) + 1;
+        varLabels[nextId] = label;
+
+        // Insere no cursor (ou no fim se nenhum foco)
+        const placeholder = '[' + label + ']';
+        insertAtCursor(bodyEl, placeholder);
+
+        // Troca o placeholder pelo {{N}} "real" — user vê [Nome do cliente] mas
+        // no submit vai {{N}} (o que Meta aceita). Usa data-attribute pra manter
+        // o mapping visual.
+        bodyEl.value = bodyEl.value.replace(placeholder, '{' + '{' + nextId + '}' + '}');
+
+        bodyLen.textContent = bodyEl.value.length;
+        updateSamples();
+        updatePreview();
+    }
+
+    function insertCustomVariable() {
+        const custom = prompt('Nome do dado (ex: "Número do pedido", "Descrição"):');
+        if (!custom || !custom.trim()) return;
+        insertVariable(custom.trim().substring(0, 30));
+    }
+
+    function insertAtCursor(el, text) {
+        el.focus();
+        const start = el.selectionStart;
+        const end   = el.selectionEnd;
+        el.value = el.value.substring(0, start) + text + el.value.substring(end);
+        el.selectionStart = el.selectionEnd = start + text.length;
+    }
+
     function extractVars(txt) {
         const m = txt.matchAll(/\{\{\s*(\d+)\s*\}\}/g);
         const set = new Set();
         for (const mm of m) set.add(parseInt(mm[1], 10));
         return [...set].sort((a, b) => a - b);
+    }
+
+    function labelFor(id) {
+        return varLabels[id] || 'Dado ' + id;
     }
 
     function updateSamples() {
@@ -572,24 +694,43 @@
             return;
         }
         samplesRow.style.display = 'block';
+
         // Preserva valores já digitados
         const existing = {};
-        samplesTbl.querySelectorAll('input').forEach(inp => {
+        samplesTbl.querySelectorAll('input[type=text]').forEach(inp => {
             const k = inp.dataset.vid;
             if (k) existing[k] = inp.value;
         });
+
         samplesTbl.innerHTML = '';
         ids.forEach(id => {
+            const label = labelFor(id);
+            const icon  = labelIcons[label] || 'bi-braces';
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td class="vlabel">${'{' + '{'}${id}${'}' + '}'}</td>
-                <td><input type="text" name="samples[${id}]" data-vid="${id}"
+                <td class="vlabel"><i class="bi ${icon}"></i> ${label}</td>
+                <td>
+                    <input type="text" name="samples[${id}]" data-vid="${id}"
                            value="${(existing[id] || '').replace(/"/g, '&quot;')}"
-                           placeholder="Exemplo pra variável ${id}"
-                           style="width:100%;padding:7px 10px;border:1.5px solid #e8eaf0;border-radius:7px;font-size:13px;"></td>
+                           placeholder="Ex: ${exampleFor(label)}"
+                           style="width:100%;padding:7px 10px;border:1.5px solid #e8eaf0;border-radius:7px;font-size:13px;">
+                    <input type="hidden" name="sample_labels[${id}]" value="${label.replace(/"/g, '&quot;')}">
+                </td>
             `;
             samplesTbl.appendChild(tr);
         });
+    }
+
+    function exampleFor(label) {
+        return {
+            'Nome do cliente': 'Maria Silva',
+            'Data':            '22/04/2026',
+            'Hora':            '14h30',
+            'Empresa':         'Acme Ltda',
+            'Valor':           'R$ 150,00',
+            'Código':          'ABC123',
+            'Link':            'https://seusite.com/confirmar',
+        }[label] || 'Exemplo real';
     }
 
     bodyEl.addEventListener('input', () => {
@@ -637,7 +778,12 @@
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
-        return escaped.replace(/\{\{\s*(\d+)\s*\}\}/g, '<span class="wa-var">' + '{' + '{$1}' + '}' + '</span>');
+        // Usa labels amigáveis em vez do {{N}} técnico.
+        return escaped.replace(/\{\{\s*(\d+)\s*\}\}/g, (_, id) => {
+            const lbl = labelFor(parseInt(id, 10));
+            const sample = exampleFor(lbl);
+            return `<span class="wa-var">${sample}</span>`;
+        });
     }
 
     function updatePreview() {
