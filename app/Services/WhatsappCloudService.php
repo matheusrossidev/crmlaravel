@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Contracts\SupportsInteractiveMessages;
+use App\Contracts\SupportsMessageTemplates;
 use App\Contracts\WhatsappServiceContract;
 use App\Models\WhatsappInstance;
 use Illuminate\Http\Client\Response;
@@ -22,7 +24,7 @@ use Illuminate\Support\Facades\Log;
  *  - Lista interativa tem schema diferente (sections + rows com id/title/description)
  *  - Reaction tem schema próprio (sem PUT)
  */
-class WhatsappCloudService implements WhatsappServiceContract
+class WhatsappCloudService implements WhatsappServiceContract, SupportsMessageTemplates, SupportsInteractiveMessages
 {
     private string $baseUrl;
     private string $phoneNumberId;
@@ -212,6 +214,47 @@ class WhatsappCloudService implements WhatsappServiceContract
         }
         if ($title) {
             $interactive['header'] = ['type' => 'text', 'text' => mb_substr($title, 0, 60)];
+        }
+
+        return $this->sendMessage([
+            'messaging_product' => 'whatsapp',
+            'recipient_type'    => 'individual',
+            'to'                => $this->normalizeChatId($chatId),
+            'type'              => 'interactive',
+            'interactive'       => $interactive,
+        ]);
+    }
+
+    public function sendInteractiveButtons(
+        string $chatId,
+        string $body,
+        array $buttons,
+        ?string $footer = null,
+        ?string $header = null,
+    ): array {
+        // Schema Meta: até 3 reply buttons, title máx 20 chars, id único máx 256 chars.
+        // Doc: https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#interactive-reply-buttons
+        $cleanButtons = array_slice(array_values(array_map(function ($b, $i) {
+            return [
+                'type'  => 'reply',
+                'reply' => [
+                    'id'    => (string) ($b['id']    ?? 'btn_' . $i),
+                    'title' => mb_substr((string) ($b['title'] ?? ''), 0, 20),
+                ],
+            ];
+        }, $buttons, array_keys($buttons))), 0, 3);
+
+        $interactive = [
+            'type' => 'button',
+            'body' => ['text' => mb_substr($body, 0, 1024)],
+            'action' => ['buttons' => $cleanButtons],
+        ];
+
+        if ($header) {
+            $interactive['header'] = ['type' => 'text', 'text' => mb_substr($header, 0, 60)];
+        }
+        if ($footer) {
+            $interactive['footer'] = ['text' => mb_substr($footer, 0, 60)];
         }
 
         return $this->sendMessage([

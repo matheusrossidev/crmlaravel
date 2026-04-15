@@ -54,6 +54,39 @@ class WhatsappInstance extends Model
         return $this->provider === 'cloud_api';
     }
 
+    // ── Capabilities (OCP) ────────────────────────────────────────────────
+    // UI e services consultam esses helpers pra decidir quais features mostrar/habilitar.
+    // NÃO adicionar `if ($instance->provider === 'cloud_api')` em outros lugares — usar
+    // esses métodos. Isso mantém Open/Closed: se amanhã Evolution API entrar como 3º
+    // provider com suas capabilities, mudamos aqui e o resto do código nem precisa saber.
+
+    /** Suporta Message Template HSM (pré-aprovado Meta)? Exclusivo Cloud API. */
+    public function supportsTemplates(): bool
+    {
+        return $this->isCloudApi();
+    }
+
+    /** Suporta interactive reply buttons (até 3 botões)? Exclusivo Cloud API. */
+    public function supportsInteractiveButtons(): bool
+    {
+        return $this->isCloudApi();
+    }
+
+    /** Suporta lista interativa (menu de seções/rows)? Ambos providers. */
+    public function supportsInteractiveList(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Tem janela de 24h aplicável (regra Meta)? Só Cloud API.
+     * Usado pelo ConversationWindowChecker + UI do follow-up.
+     */
+    public function hasWindowRestriction(): bool
+    {
+        return $this->isCloudApi();
+    }
+
     /**
      * True se o token user (access_token) está próximo de expirar ou já expirou.
      * Usado pelo banner de alerta e notification de "reconectar".
