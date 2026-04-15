@@ -29,6 +29,7 @@ class Form extends Model
         'layout', 'background_image_url', 'enable_logo', 'enable_background_image', 'color_preset',
         'widget_trigger', 'widget_delay', 'widget_scroll_pct', 'widget_show_once', 'widget_position',
         'views_count_hosted', 'views_count_inline', 'views_count_popup',
+        'default_country', 'allowed_countries',
     ];
 
     protected $casts = [
@@ -53,6 +54,7 @@ class Form extends Model
         'views_count_hosted'     => 'integer',
         'views_count_inline'     => 'integer',
         'views_count_popup'      => 'integer',
+        'allowed_countries'      => 'array',
     ];
 
     // ── Relations ────────────────────────────────────────────────────

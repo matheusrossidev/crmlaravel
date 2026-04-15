@@ -135,6 +135,10 @@ class FormPublicController extends Controller
                 'show_once'  => (bool) ($form->widget_show_once ?? true),
                 'position'   => $form->widget_position ?? 'center',
             ],
+            'phone' => [
+                'default_country'   => strtolower($form->default_country ?? 'br'),
+                'allowed_countries' => array_map('strtolower', (array) ($form->allowed_countries ?? [])),
+            ],
             'submit_url' => url('/api/form/' . $form->slug . '/submit'),
             'labels' => [
                 'submit' => __('forms.submit_button'),
@@ -401,6 +405,11 @@ class FormPublicController extends Controller
             scope + ' .sfx-success { text-align:center; padding:20px; }',
             scope + ' .sfx-success-icon { width:52px; height:52px; border-radius:50%; background:#ecfdf5; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; color:#059669; font-size:26px; font-weight:700; }',
             scope + ' .sfx-honey { position:absolute; left:-9999px; }',
+            // intl-tel-input overrides pra seguir o look do form
+            scope + ' .iti { width:100%; display:block; }',
+            scope + ' .iti__tel-input { width:100%; padding-left:100px !important; }',
+            scope + ' .iti__selected-flag { background:transparent; }',
+            scope + ' .iti__country-list { font-size:13px; }',
             // Popup overlay
             '.syncro-form-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:2147483600; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .25s; padding:16px; }',
             '.syncro-form-overlay.visible { opacity:1; }',
@@ -437,6 +446,91 @@ class FormPublicController extends Controller
         form.addEventListener('input', function(){ applyConditions(cfg, container); });
         form.addEventListener('change', function(){ applyConditions(cfg, container); });
         applyConditions(cfg, container);
+
+        // Inicializa campos de telefone (intl-tel-input + imask lazy-loaded via CDN)
+        initPhoneFields(cfg, container);
+    }
+
+    // ── Phone fields (intl-tel-input + imask) ──────────────────────────────
+    var _phoneLibsLoading = null;
+
+    function loadScript(src) {
+        return new Promise(function(resolve, reject){
+            var s = document.createElement('script');
+            s.src = src; s.async = true;
+            s.onload = function(){ resolve(); };
+            s.onerror = function(){ reject(new Error('failed: ' + src)); };
+            document.head.appendChild(s);
+        });
+    }
+    function loadStyle(href) {
+        if (document.querySelector('link[href="' + href + '"]')) return;
+        var l = document.createElement('link');
+        l.rel = 'stylesheet'; l.href = href;
+        document.head.appendChild(l);
+    }
+
+    function ensurePhoneLibs() {
+        if (window.intlTelInput && window.IMask) return Promise.resolve();
+        if (_phoneLibsLoading) return _phoneLibsLoading;
+
+        loadStyle('https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/23.0.12/css/intlTelInput.min.css');
+
+        var promises = [];
+        if (!window.intlTelInput) {
+            promises.push(loadScript('https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/23.0.12/js/intlTelInput.min.js'));
+        }
+        if (!window.IMask) {
+            promises.push(loadScript('https://unpkg.com/imask@7.6.1/dist/imask.min.js'));
+        }
+        _phoneLibsLoading = Promise.all(promises);
+        return _phoneLibsLoading;
+    }
+
+    function initPhoneFields(cfg, container) {
+        var telInputs = container.querySelectorAll('input[type="tel"]');
+        if (!telInputs.length) return;
+
+        ensurePhoneLibs().then(function(){
+            telInputs.forEach(function(inp){ applyPhoneInput(inp, cfg); });
+        }).catch(function(err){
+            console.warn('[Syncro Form] libs de telefone falharam:', err);
+        });
+    }
+
+    function applyPhoneInput(inp, cfg) {
+        var phone = cfg.phone || {};
+        var opts = {
+            initialCountry:     phone.default_country || 'br',
+            separateDialCode:   true,
+            nationalMode:       true,
+            autoPlaceholder:    'aggressive',
+            utilsScript:        'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/23.0.12/js/utils.js',
+        };
+        var allowed = phone.allowed_countries || [];
+        if (allowed.length > 0) opts.onlyCountries = allowed;
+
+        var iti = window.intlTelInput(inp, opts);
+        inp._iti = iti;
+
+        var applyMask = function() {
+            if (!window.IMask) return;
+            try {
+                var country = iti.getSelectedCountryData().iso2;
+                if (!country || typeof window.intlTelInputUtils === 'undefined') return;
+                var example = window.intlTelInputUtils.getExampleNumber(
+                    country, true, window.intlTelInputUtils.numberFormat.NATIONAL
+                );
+                // Converte "(11) 91234-5678" em mask IMask ("(00) 00000-0000")
+                var maskStr = (example || '').replace(/\d/g, '0');
+                if (inp._imask) { inp._imask.destroy(); inp._imask = null; }
+                if (maskStr) inp._imask = window.IMask(inp, { mask: maskStr });
+            } catch(e){}
+        };
+
+        // Aguarda utils.js carregar antes de aplicar a máscara (ele é assíncrono)
+        setTimeout(applyMask, 200);
+        inp.addEventListener('countrychange', applyMask);
     }
 
     function renderField(f) {
@@ -509,6 +603,11 @@ class FormPublicController extends Controller
                 if (el.checked) data[key].push(el.value);
             } else if (el.type === 'radio') {
                 if (el.checked) data[el.name] = el.value;
+            } else if (el.type === 'tel' && el._iti && typeof el._iti.getNumber === 'function') {
+                // intl-tel-input retorna E.164 com + (ex: +5511999998888)
+                // Backend PhoneNormalizer normaliza de qualquer forma.
+                var e164 = el._iti.getNumber();
+                data[el.name] = e164 || el.value;
             } else {
                 data[el.name] = el.value;
             }
@@ -522,6 +621,21 @@ class FormPublicController extends Controller
         btn.disabled = true;
         alert.style.display = 'none';
         container.querySelectorAll('[data-sfx-err]').forEach(function(e){ e.textContent = ''; });
+
+        // Validação de telefone client-side: bloqueia submit se número é inválido
+        // pra o país selecionado. Melhor UX + menos spam no backend.
+        var telInputs = container.querySelectorAll('input[type="tel"]');
+        for (var ti = 0; ti < telInputs.length; ti++) {
+            var telEl = telInputs[ti];
+            if (!telEl._iti || !telEl.value.trim()) continue;
+            if (typeof telEl._iti.isValidNumber === 'function' && !telEl._iti.isValidNumber()) {
+                var errBox = container.querySelector('[data-sfx-err="' + telEl.name + '"]');
+                if (errBox) errBox.textContent = 'Número de telefone inválido pro país selecionado.';
+                telEl.focus();
+                btn.disabled = false;
+                return;
+            }
+        }
 
         var data = collectData(container);
         // UTMs

@@ -519,5 +519,10 @@
     <style>
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
+
+    @include('forms._phone-lib', [
+        'defaultCountry'  => $form->default_country ?? 'BR',
+        'allowedCountries' => $form->allowed_countries ?? [],
+    ])
 </body>
 </html>

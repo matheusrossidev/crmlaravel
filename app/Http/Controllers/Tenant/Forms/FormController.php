@@ -178,7 +178,20 @@ class FormController extends Controller
             'widget_scroll_pct'  => 'nullable|integer|min:0|max:100',
             'widget_show_once'   => 'nullable|boolean',
             'widget_position'    => 'nullable|string|in:center,bottom-right,bottom-left',
+            'default_country'    => 'nullable|string|size:2',
+            'allowed_countries'  => 'nullable|array',
+            'allowed_countries.*' => 'string|size:2',
         ]);
+
+        // Normaliza: default_country sempre uppercase, allowed_countries [] = null (sem restrição)
+        if (isset($data['default_country'])) {
+            $data['default_country'] = strtoupper($data['default_country']);
+        }
+        if (isset($data['allowed_countries'])) {
+            $data['allowed_countries'] = empty($data['allowed_countries'])
+                ? null
+                : array_values(array_unique(array_map('strtoupper', $data['allowed_countries'])));
+        }
 
         $form->update($data);
 

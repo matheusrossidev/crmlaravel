@@ -451,6 +451,75 @@
                         <div style="font-size:11.5px;color:#9ca3af;">{{ __('forms.form_active_desc') }}</div>
                     </div>
                 </div>
+
+                {{-- Campos de telefone --}}
+                @php
+                    $allCountries = [
+                        'BR' => ['Brasil', '🇧🇷'],
+                        'US' => ['Estados Unidos', '🇺🇸'],
+                        'PT' => ['Portugal', '🇵🇹'],
+                        'AR' => ['Argentina', '🇦🇷'],
+                        'ES' => ['Espanha', '🇪🇸'],
+                        'MX' => ['México', '🇲🇽'],
+                        'GB' => ['Reino Unido', '🇬🇧'],
+                        'FR' => ['França', '🇫🇷'],
+                        'DE' => ['Alemanha', '🇩🇪'],
+                        'IT' => ['Itália', '🇮🇹'],
+                        'CL' => ['Chile', '🇨🇱'],
+                        'CO' => ['Colômbia', '🇨🇴'],
+                        'PE' => ['Peru', '🇵🇪'],
+                        'UY' => ['Uruguai', '🇺🇾'],
+                        'PY' => ['Paraguai', '🇵🇾'],
+                        'CA' => ['Canadá', '🇨🇦'],
+                        'AU' => ['Austrália', '🇦🇺'],
+                        'JP' => ['Japão', '🇯🇵'],
+                    ];
+                    $defaultCountry = $form->default_country ?? 'BR';
+                    $allowedCountries = $form->allowed_countries ?? [];
+                    $restrictCountries = ! empty($allowedCountries);
+                @endphp
+                <div style="margin-top:24px;padding-top:20px;border-top:1px solid #f0f2f7;">
+                    <div style="font-size:13px;font-weight:700;color:#1a1d23;margin-bottom:4px;">
+                        <i class="bi bi-telephone" style="color:#0085f3;"></i> Campos de telefone
+                    </div>
+                    <div style="font-size:12px;color:#6b7280;line-height:1.45;margin-bottom:14px;">
+                        Configura máscara, bandeiras e validação dos campos do tipo "Telefone" deste formulário.
+                    </div>
+
+                    <label style="margin-top:0;">País que abre selecionado</label>
+                    <select id="e_defaultCountry" class="form-control" style="font-size:13px;">
+                        @foreach($allCountries as $iso => [$name, $flag])
+                            <option value="{{ $iso }}" {{ $defaultCountry === $iso ? 'selected' : '' }}>{{ $flag }} {{ $name }}</option>
+                        @endforeach
+                    </select>
+
+                    <label style="margin-top:14px;">Bandeiras disponíveis no seletor</label>
+                    <div style="display:flex;gap:16px;margin-top:4px;">
+                        <label style="display:flex;align-items:center;gap:6px;font-weight:500;cursor:pointer;">
+                            <input type="radio" name="e_restrict" value="0" {{ $restrictCountries ? '' : 'checked' }} onchange="toggleCountriesSelector()">
+                            Todas (~250 países)
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;font-weight:500;cursor:pointer;">
+                            <input type="radio" name="e_restrict" value="1" {{ $restrictCountries ? 'checked' : '' }} onchange="toggleCountriesSelector()">
+                            Só os que eu marcar
+                        </label>
+                    </div>
+
+                    <div id="e_countriesBox" style="{{ $restrictCountries ? '' : 'display:none;' }}margin-top:10px;padding:12px;background:#f9fafb;border:1px solid #e8eaf0;border-radius:10px;">
+                        <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:6px;">
+                            @foreach($allCountries as $iso => [$name, $flag])
+                                <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer;">
+                                    <input type="checkbox" class="e-country-cb" value="{{ $iso }}" {{ in_array($iso, $allowedCountries) ? 'checked' : '' }}>
+                                    {{ $flag }} {{ $name }}
+                                </label>
+                            @endforeach
+                        </div>
+                        <div style="font-size:11px;color:#9ca3af;margin-top:8px;">
+                            Marque pelo menos 1. Se desmarcar tudo, volta pro modo "Todas".
+                        </div>
+                    </div>
+                </div>
+
                 <div style="margin-top:24px;padding-top:20px;border-top:1px solid #f0f2f7;">
                     <button onclick="deleteForm()" style="padding:10px 20px;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;">
                         <i class="bi bi-trash3"></i> {{ __('common.delete') }}
@@ -652,6 +721,19 @@ function sendPreviewUpdate() {
 
 
 // ── Save ────────────────────────────────────────────────────
+function toggleCountriesSelector() {
+    const restrict = document.querySelector('input[name="e_restrict"]:checked')?.value === '1';
+    document.getElementById('e_countriesBox').style.display = restrict ? '' : 'none';
+}
+
+function collectAllowedCountries() {
+    const restrict = document.querySelector('input[name="e_restrict"]:checked')?.value === '1';
+    if (!restrict) return [];
+    const iso = [];
+    document.querySelectorAll('.e-country-cb:checked').forEach(cb => iso.push(cb.value));
+    return iso;
+}
+
 async function saveForm() {
     const notify = document.getElementById('e_notify').value.trim();
     const emails = notify ? notify.split(',').map(e => e.trim()).filter(Boolean) : [];
@@ -693,6 +775,8 @@ async function saveForm() {
         widget_scroll_pct: parseInt(document.getElementById('w_scroll')?.value || '50'),
         widget_position: document.getElementById('w_position')?.value || 'center',
         widget_show_once: editWidgetShowOnce,
+        default_country: document.getElementById('e_defaultCountry')?.value || 'BR',
+        allowed_countries: collectAllowedCountries(),
     };
 
     const res = await fetch('{{ route("forms.update", $form) }}', {
