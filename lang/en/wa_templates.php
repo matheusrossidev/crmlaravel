@@ -10,6 +10,8 @@ return [
     'create'      => 'Create template',
     'sync'        => 'Sync with Meta',
     'sync_running'=> 'Syncing...',
+    'open_meta'       => 'Open in Meta',
+    'open_meta_title' => 'Open templates panel in Meta Business Manager',
     'empty_title' => 'No templates yet',
     'empty_body'  => 'Create your first template to send messages outside the 24-hour window.',
 

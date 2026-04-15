@@ -125,7 +125,43 @@
                 <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#1a1d23;margin:0 0 4px;">{{ __('wa_templates.title') }}</h1>
                 <p style="font-size:13.5px;color:#677489;margin:0;">{{ __('wa_templates.subtitle') }}</p>
             </div>
-            <div style="display:flex;gap:8px;">
+            <div style="display:flex;gap:8px;align-items:center;">
+                @php
+                    $cloudWithWaba = $instances->filter(fn($i) => ! empty($i->waba_id));
+                @endphp
+                @if($cloudWithWaba->count() === 1)
+                    @php $inst = $cloudWithWaba->first(); @endphp
+                    <a href="https://business.facebook.com/latest/whatsapp_manager/message_templates?waba_id={{ $inst->waba_id }}"
+                       target="_blank" rel="noopener noreferrer"
+                       class="btn-secondary-sm"
+                       title="{{ __('wa_templates.open_meta_title') }}">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                        <span>{{ __('wa_templates.open_meta') }}</span>
+                    </a>
+                @elseif($cloudWithWaba->count() > 1)
+                    <div class="dropdown" style="position:relative;">
+                        <button type="button" class="btn-secondary-sm" onclick="toggleMetaDropdown(event)">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                            <span>{{ __('wa_templates.open_meta') }}</span>
+                            <i class="bi bi-chevron-down" style="font-size:10px;margin-left:4px;"></i>
+                        </button>
+                        <div id="metaDropdown" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1.5px solid #e8eaf0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.08);min-width:220px;z-index:50;overflow:hidden;">
+                            @foreach($cloudWithWaba as $inst)
+                                <a href="https://business.facebook.com/latest/whatsapp_manager/message_templates?waba_id={{ $inst->waba_id }}"
+                                   target="_blank" rel="noopener noreferrer"
+                                   style="display:flex;align-items:center;gap:8px;padding:10px 14px;font-size:13px;color:#1a1d23;text-decoration:none;border-bottom:1px solid #f0f2f7;">
+                                    <i class="bi bi-whatsapp" style="color:#25d366;"></i>
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="font-weight:600;">{{ $inst->label ?: $inst->display_name ?: $inst->phone_number }}</div>
+                                        <div style="font-size:11px;color:#9ca3af;">{{ $inst->phone_number }}</div>
+                                    </div>
+                                    <i class="bi bi-arrow-up-right" style="color:#9ca3af;font-size:11px;"></i>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
                 <button id="btnSync" class="btn-secondary-sm" onclick="syncTemplates()">
                     <i class="bi bi-arrow-clockwise"></i> <span>{{ __('wa_templates.sync') }}</span>
                 </button>
@@ -228,6 +264,17 @@
 </div>
 
 <script>
+function toggleMetaDropdown(ev) {
+    ev.stopPropagation();
+    const dd = document.getElementById('metaDropdown');
+    if (!dd) return;
+    dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+}
+document.addEventListener('click', () => {
+    const dd = document.getElementById('metaDropdown');
+    if (dd) dd.style.display = 'none';
+});
+
 async function syncTemplates() {
     const btn = document.getElementById('btnSync');
     const label = btn.querySelector('span');
