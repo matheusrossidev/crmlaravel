@@ -388,7 +388,7 @@
                     <div style="font-size:13px;font-weight:700;color:#1a1d23;margin-bottom:6px;"><i class="bi bi-code-slash" style="color:#0085f3;margin-right:4px;"></i> {{ __('forms.distribution_embed') }}</div>
                     <div style="font-size:12px;color:#6b7280;margin-bottom:10px;">{{ __('forms.distribution_hint_inline') }}</div>
                     @php
-                        $embedScript = '<script src="' . rtrim(config('app.url'), '/') . '/api/form/' . $form->slug . '.js" data-form-id="' . $form->id . '" data-mode="inline" async><' . '/script>';
+                        $embedScript = '<script src="' . rtrim(config('app.url'), '/') . '/api/form/' . $form->slug . '.js" data-form="' . $form->slug . '" data-mode="inline" async><' . '/script>';
                     @endphp
                     <textarea id="embedSnippet" readonly class="form-control" style="font-family:monospace;font-size:11.5px;min-height:70px;background:#f8fafc;resize:none;">{{ $embedScript }}</textarea>
                     <button type="button" onclick="copySnippet('embedSnippet')" class="btn-primary-sm" style="border:none;margin-top:6px;"><i class="bi bi-clipboard"></i> {{ __('forms.snippet_copy') }}</button>
@@ -755,7 +755,7 @@ function updatePopupSnippet() {
     if (pos !== 'center') attrs += ' data-position="' + pos + '"';
     if (!editWidgetShowOnce) attrs += ' data-show-once="false"';
 
-    const snippet = '<' + 'script src="' + APP_URL + '/api/form/' + FORM_SLUG + '.js" data-form-id="' + FORM_ID + '" ' + attrs + ' async><' + '/script>';
+    const snippet = '<' + 'script src="' + APP_URL + '/api/form/' + FORM_SLUG + '.js" data-form="' + FORM_SLUG + '" ' + attrs + ' async><' + '/script>';
     document.getElementById('popupSnippet').value = snippet;
 }
 

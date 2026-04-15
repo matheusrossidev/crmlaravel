@@ -235,19 +235,19 @@ class FormPublicController extends Controller
         return <<<JS
 (function() {
     'use strict';
-    var FORM_ID    = {$formId};
     var SLUG       = '{$slug}';
     var CONFIG_URL = '{$configUrl}';
     var TRACK_URL  = '{$trackUrl}';
+    var FORM_ID    = {$formId};
     var ROOT_ID    = 'syncro-form-' + FORM_ID;
 
-    // Resolução da tag script em ordem de confiabilidade:
-    // 1) currentScript quando disponível (raro ser null mesmo com async em browsers modernos)
-    // 2) Script com data-form-id igual ao nosso ID (forma robusta — ID é imutável)
-    // 3) Legacy data-form="slug" (embeds antigos antes da mudança pra ID)
-    // 4) Fallback: último script com src contendo o slug atual
+    // Resolução da tag script:
+    // Usamos SLUG (random suffix de 6 chars gerado no store) em vez de ID sequencial
+    // pra evitar enumeration/IDOR — quem tiver o slug tem o token de acesso público.
+    // 1) currentScript quando disponível (raro ser null em browsers modernos mesmo com async)
+    // 2) data-form="slug" — forma robusta, slug é efetivamente imutável após criação
+    // 3) Fallback: último script com src contendo o mesmo slug
     var SCRIPT = document.currentScript
-        || document.querySelector('script[data-form-id="' + FORM_ID + '"]')
         || document.querySelector('script[data-form="' + SLUG + '"]')
         || (function(){
             var all = document.getElementsByTagName('script');
@@ -258,7 +258,7 @@ class FormPublicController extends Controller
         })();
 
     if (!SCRIPT) {
-        console.warn('[Syncro Form] ID ' + FORM_ID + ' não conseguiu localizar a tag script. Adicione data-form-id="' + FORM_ID + '" na tag.');
+        console.warn('[Syncro Form]', SLUG, 'não conseguiu localizar a tag script. Adicione data-form="' + SLUG + '" na tag.');
         return;
     }
 
