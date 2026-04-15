@@ -42,10 +42,11 @@ class WhatsappMessageCreated implements ShouldBroadcastNow
             $m->load('sentByAgent:id,name,display_avatar');
         }
         return [
-            'id'              => $m->id,
-            'conversation_id' => $m->conversation_id,
-            'waha_message_id' => $m->waha_message_id,
-            'direction'       => $m->direction,
+            'id'               => $m->id,
+            'conversation_id'  => $m->conversation_id,
+            'waha_message_id'  => $m->waha_message_id,
+            'cloud_message_id' => $m->cloud_message_id,   // Cloud API (Meta) — null no WAHA
+            'direction'        => $m->direction,
             'type'            => $m->type,
             'body'            => $m->body,
             'media_url'       => $m->media_url,

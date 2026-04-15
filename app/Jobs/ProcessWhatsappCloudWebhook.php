@@ -290,9 +290,12 @@ class ProcessWhatsappCloudWebhook implements ShouldQueue
             ]);
         }
 
-        // Broadcast Reverb pra atualizar UI em real-time
+        // Broadcast Reverb pra atualizar UI em real-time.
+        // Padrão ::dispatch igual ao WAHA (ProcessWahaWebhook:950). Não usar
+        // `broadcast(new X)->toOthers()` em job queue — o socket-id filter fica
+        // inconsistente sem HTTP request ativo e o broadcast não chega no front.
         try {
-            broadcast(new \App\Events\WhatsappMessageCreated($message, $instance->tenant_id))->toOthers();
+            \App\Events\WhatsappMessageCreated::dispatch($message, $instance->tenant_id);
         } catch (\Throwable $e) {
             Log::channel('whatsapp')->warning('WhatsappCloud: broadcast failed', ['error' => $e->getMessage()]);
         }

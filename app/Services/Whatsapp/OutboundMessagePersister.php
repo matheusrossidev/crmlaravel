@@ -78,8 +78,11 @@ class OutboundMessagePersister
 
         // Broadcast Reverb pra atualizar UI em tempo real.
         // tenant_id obrigatório — bug histórico 9f70fd3 que quebrou o broadcast no Cloud.
+        // Usa ::dispatch (não broadcast(new X)->toOthers) porque esse service roda
+        // tanto via HTTP (controller) quanto via job queue — só o ::dispatch funciona
+        // consistentemente nos dois contextos com Event que implementa ShouldBroadcastNow.
         try {
-            broadcast(new WhatsappMessageCreated($message, $conv->tenant_id))->toOthers();
+            WhatsappMessageCreated::dispatch($message, $conv->tenant_id);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::channel('whatsapp')->warning(
                 'OutboundMessagePersister: broadcast falhou (mensagem salva mesmo assim)',
