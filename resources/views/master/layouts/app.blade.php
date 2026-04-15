@@ -674,6 +674,10 @@
                 @endif
             </div>
 
+            <a href="{{ route('master.account') }}" class="m-go-tenant" title="Minha Conta">
+                <i class="bi bi-person-circle"></i>
+            </a>
+
             <a href="{{ route('master.2fa.setup') }}" class="m-go-tenant" title="Autenticação em Dois Fatores (2FA)" style="{{ auth()->user()->totp_enabled ? 'background:#d1fae5;border-color:#86efac;color:#065f46;' : 'background:#fef2f2;border-color:#fecaca;color:#ef4444;' }}">
                 <i class="bi bi-shield-lock"></i>
             </a>

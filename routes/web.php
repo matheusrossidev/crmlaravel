@@ -675,6 +675,10 @@ Route::middleware(['auth', 'cs_agent'])->prefix('cs')->name('cs.')->group(functi
 // ── Master Admin ─────────────────────────────────────────────────────────────
 Route::middleware(['auth', 'super_admin', '2fa'])->prefix('master')->name('master.')->group(function () {
 
+    // Minha Conta (super_admin troca senha + gerencia 2FA)
+    Route::get('minha-conta',            [\App\Http\Controllers\Master\AccountController::class, 'index'])->name('account');
+    Route::post('minha-conta/senha',     [\App\Http\Controllers\Master\AccountController::class, 'updatePassword'])->name('account.password');
+
     // 2FA Setup
     Route::get('2fa/setup',          [\App\Http\Controllers\Auth\TwoFactorController::class, 'showSetup'])->name('2fa.setup');
     Route::post('2fa/setup',         [\App\Http\Controllers\Auth\TwoFactorController::class, 'confirmSetup'])->name('2fa.confirm');
