@@ -135,6 +135,8 @@ return [
     'error_connection'     => 'Erro de conexão. Verifique sua internet.',
 
     // ── Loading page ──
+    'loading_badge'    => 'Finalizando',
+    'result_badge'     => 'Pronto',
     'loading_title'    => 'Preparando seu CRM...',
     'loading_subtitle' => 'Estamos configurando tudo com base nas suas respostas.',
 
