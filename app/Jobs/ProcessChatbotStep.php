@@ -776,15 +776,32 @@ class ProcessChatbotStep
                 return;
             }
 
-            // Registra intent ANTES de enviar — quando o webhook do WAHA voltar
-            // com fromMe=true (echo), ProcessWahaWebhook le esse cache e marca a
-            // mensagem como sent_by=chatbot. Sem isso, ela cairia em human_phone.
-            $this->cacheOutboundIntent($conv->id, $text, 'chatbot');
-
             $chatId = $this->resolveChatId($conv);
             $waha   = \App\Services\WhatsappServiceFactory::for($instance);
-            $waha->sendText($chatId, $text);
+
+            // Cache de intent continua pro WAHA (echo do webhook cruza com ele pra marcar sent_by).
+            // NÃO é usado no Cloud (não tem echo), mas não atrapalha — persistência sync abaixo
+            // garante que no Cloud a mensagem entra no banco direto, sem depender do cache.
+            if ($instance->isWaha()) {
+                $this->cacheOutboundIntent($conv->id, $text, 'chatbot');
+            }
+
+            $result = $waha->sendText($chatId, $text);
             sleep(self::DEFAULT_MESSAGE_DELAY);
+
+            // B1 fix: no Cloud API, webhook NÃO manda echo de outbound, então se não
+            // persistirmos aqui a mensagem do chatbot some do banco. Persistimos sync.
+            // No WAHA o echo ainda chega via ProcessWahaWebhook, que dedupa pelo
+            // waha_message_id único — sem duplicar.
+            if (! isset($result['error']) && $instance->isCloudApi()) {
+                app(\App\Services\Whatsapp\OutboundMessagePersister::class)->persist(
+                    conv: $conv,
+                    type: 'text',
+                    body: $text,
+                    sendResult: $result,
+                    sentBy: 'chatbot',
+                );
+            }
         } catch (\Throwable $e) {
             Log::channel('whatsapp')->error('Chatbot: erro ao enviar mensagem', [
                 'conversation_id' => $conv->id,
@@ -794,29 +811,29 @@ class ProcessChatbotStep
     }
 
     /**
-     * Cache de intent: registra "essa mensagem vai sair pelo {sent_by}" antes
-     * de pedir pro WAHA enviar. Quando o webhook voltar com fromMe=true (echo),
-     * ProcessWahaWebhook le essa chave pra atribuir a autoria correta.
+     * Cache de intent: usado APENAS no WAHA. Registra "essa mensagem vai sair pelo
+     * {sent_by}" antes do envio. Quando o webhook voltar com fromMe=true (echo),
+     * ProcessWahaWebhook lê essa chave pra atribuir autoria correta ao salvar a
+     * mensagem (já que o echo não traz contexto de quem mandou no CRM).
      *
-     * Chave inclui conversation_id pra evitar colisao entre conversas
-     * diferentes que mandam o mesmo texto. TTL de 120s e mais que suficiente
-     * pro echo do WAHA voltar (normalmente em 1-3s).
+     * Cloud API não manda echo de outbound — portanto esse cache não é usado lá.
+     * No Cloud, a persistência da mensagem é síncrona via OutboundMessagePersister
+     * logo após o sendX() retornar OK.
+     *
+     * Chave inclui conversation_id pra evitar colisão entre conversas.
+     * TTL 120s cobre o round-trip do echo (normalmente 1-3s).
      */
     private function cacheOutboundIntent(int $convId, string $body, string $sentBy, ?int $agentId = null): void
     {
         $intent = ['sent_by' => $sentBy, 'sent_by_agent_id' => $agentId];
 
-        // Intent por md5(body) — pra texto puro que bate exato com o echo
         \Illuminate\Support\Facades\Cache::put(
             "outbound_intent:{$convId}:" . md5(trim($body)),
             $intent,
             120
         );
 
-        // Intent genérico por conversa — fallback pra quando o echo do WAHA
-        // vem com body diferente (ex: lista interativa, imagem com caption
-        // reformatado). TTL curto de 15s pra não contaminar mensagens
-        // subsequentes de outros remetentes.
+        // Fallback genérico — útil quando echo vem com body reformatado (listas/mídia).
         \Illuminate\Support\Facades\Cache::put(
             "outbound_intent_conv:{$convId}",
             $intent,
@@ -833,8 +850,9 @@ class ProcessChatbotStep
                 return;
             }
 
-            // Registra intent ANTES de enviar (caption serve como body pro hash)
-            $this->cacheOutboundIntent($conv->id, $caption ?: $imageUrl, 'chatbot');
+            if ($instance->isWaha()) {
+                $this->cacheOutboundIntent($conv->id, $caption ?: $imageUrl, 'chatbot');
+            }
 
             $chatId    = $this->resolveChatId($conv);
             $waha      = \App\Services\WhatsappServiceFactory::for($instance);
@@ -842,12 +860,24 @@ class ProcessChatbotStep
 
             if ($localPath !== null && file_exists($localPath)) {
                 $mime = mime_content_type($localPath) ?: 'image/jpeg';
-                $waha->sendImageBase64($chatId, $localPath, $mime, $caption);
+                $result = $waha->sendImageBase64($chatId, $localPath, $mime, $caption);
             } else {
-                $waha->sendImage($chatId, $imageUrl, $caption);
+                $result = $waha->sendImage($chatId, $imageUrl, $caption);
             }
 
             sleep(self::DEFAULT_MESSAGE_DELAY);
+
+            // B1 fix: persist sync no Cloud (sem echo).
+            if (! isset($result['error']) && $instance->isCloudApi()) {
+                app(\App\Services\Whatsapp\OutboundMessagePersister::class)->persist(
+                    conv: $conv,
+                    type: 'image',
+                    body: $caption ?: null,
+                    sendResult: $result,
+                    sentBy: 'chatbot',
+                    extras: ['media_url' => $imageUrl],
+                );
+            }
         } catch (\Throwable $e) {
             Log::channel('whatsapp')->error('Chatbot: erro ao enviar imagem', [
                 'conversation_id' => $conv->id,
@@ -866,8 +896,9 @@ class ProcessChatbotStep
                 return;
             }
 
-            // Registra intent ANTES de enviar
-            $this->cacheOutboundIntent($conv->id, $description, 'chatbot');
+            if ($instance->isWaha()) {
+                $this->cacheOutboundIntent($conv->id, $description, 'chatbot');
+            }
 
             $chatId = $this->resolveChatId($conv);
             $waha   = \App\Services\WhatsappServiceFactory::for($instance);
@@ -886,6 +917,17 @@ class ProcessChatbotStep
             ]);
 
             sleep(self::DEFAULT_MESSAGE_DELAY);
+
+            // B1 fix: persist sync no Cloud.
+            if (! isset($result['error']) && $instance->isCloudApi()) {
+                app(\App\Services\Whatsapp\OutboundMessagePersister::class)->persist(
+                    conv: $conv,
+                    type: 'interactive',
+                    body: $description,
+                    sendResult: $result,
+                    sentBy: 'chatbot',
+                );
+            }
         } catch (\Throwable $e) {
             Log::channel('whatsapp')->error('Chatbot: erro ao enviar lista interativa', [
                 'conversation_id' => $conv->id,
@@ -949,24 +991,19 @@ class ProcessChatbotStep
             ->first();
     }
 
+    /**
+     * Delega pro ChatIdResolver (SRP): formato certo por provider + preserva @lid
+     * do histórico WAHA GOWS. Cloud API recebe número puro.
+     */
     private function resolveChatId(WhatsappConversation $conv): ?string
     {
-        $sampleId = WhatsappMessage::withoutGlobalScope('tenant')
-            ->where('conversation_id', $conv->id)
-            ->whereNotNull('waha_message_id')
-            ->where('direction', 'inbound')
-            ->latest('sent_at')
-            ->value('waha_message_id');
-
-        if ($sampleId && preg_match('/^(?:true|false)_(.+@[\w.]+)_/', $sampleId, $m)) {
-            $jid = $m[1];
-            return str_ends_with($jid, '@lid')
-                ? preg_replace('/[:@].+$/', '', $jid) . '@lid'
-                : preg_replace('/[:@].+$/', '', $jid) . '@c.us';
+        $instance = $conv->instance;
+        if (! $instance) {
+            return null;
         }
 
-        $rawPhone = ltrim((string) preg_replace('/[:@\s].+$/', '', $conv->phone), '+');
-        return $rawPhone . '@c.us';
+        return app(\App\Services\Whatsapp\ChatIdResolver::class)
+            ->for($instance, (string) $conv->phone, (bool) $conv->is_group, $conv);
     }
 
     private function resolveLocalImagePath(string $url): ?string
