@@ -177,6 +177,46 @@ class MasterWhatsappNotifier
         self::send($msg);
     }
 
+    /**
+     * Welcome WhatsApp message sent directly to the new user's phone.
+     * Uses PhoneNormalizer to handle any country (strips BR 9th digit automatically).
+     * Silent failure — must never block registration.
+     */
+    public static function welcomeUser(User $user, Tenant $tenant): void
+    {
+        $phone = $tenant->phone;
+        if (! $phone) {
+            return;
+        }
+
+        $chatId = \App\Support\PhoneNormalizer::toWahaChatId($phone);
+        if (! $chatId) {
+            Log::warning('MasterWhatsappNotifier::welcomeUser: phone inválido', [
+                'phone' => $phone, 'tenant_id' => $tenant->id,
+            ]);
+            return;
+        }
+
+        $name  = $user->name;
+        $email = $user->email;
+
+        $msg = "Olá, {$name}! 👋 Bem-vindo ao Syncro CRM!\n\n"
+             . "Sua conta foi criada com sucesso. Você tem 14 dias grátis pra explorar tudo: IA, chatbot, automações e muito mais.\n\n"
+             . "📧 *Verifique seu e-mail* pra ativar a conta — enviamos um link de ativação pra {$email}.\n\n"
+             . "💬 Este é o nosso WhatsApp de suporte — pode chamar a qualquer hora.\n\n"
+             . "Bora crescer juntos! 🚀\n"
+             . "_Syncro CRM — Plataforma 360 de Marketing e Vendas_";
+
+        try {
+            $waha = new WahaService(self::SESSION);
+            $waha->sendText($chatId, $msg);
+        } catch (\Throwable $e) {
+            Log::warning('MasterWhatsappNotifier::welcomeUser: falha ao enviar', [
+                'error' => $e->getMessage(), 'chatId' => $chatId,
+            ]);
+        }
+    }
+
     // ── Internal ──────────────────────────────────────────────────────────────
 
     private static function send(string $text): void

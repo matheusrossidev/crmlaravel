@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/css/intlTelInput.min.css">
     <style>
         *, *::before, *::after { box-sizing: border-box; }
         body { font-family: 'DM Sans', sans-serif; margin: 0; min-height: 100vh; display: flex; }
@@ -66,6 +67,19 @@
         .form-control:focus { border-color: #007DFF; box-shadow: 0 0 0 3px rgba(0,125,255,.12); }
         .form-control.is-invalid { border-color: #ef4444; }
         .invalid-feedback { font-size: 12px; color: #ef4444; margin-top: 5px; }
+        .iti { width: 100%; }
+        .iti__tel-input.form-control { padding-left: 80px !important; padding-right: 14px !important; }
+        .iti .iti__selected-dial-code { font-size: 13px; color: #374151; }
+        .iti__country-container { left: 8px !important; }
+        .iti__selected-country { padding: 0 6px 0 8px !important; gap: 4px !important; border-radius: 100px 0 0 100px; }
+        .iti__dropdown-content { border-radius: 12px !important; box-shadow: 0 12px 36px rgba(0,0,0,.15) !important; border: 1.5px solid #e5e7eb !important; margin-top: 6px !important; }
+        .iti__search-input { border-radius: 8px !important; border: 1.5px solid #e5e7eb !important; font-size: 13px !important; padding: 9px 12px !important; margin: 8px !important; width: calc(100% - 16px) !important; font-family: 'DM Sans', sans-serif !important; }
+        .iti__search-input::placeholder { color: #9ca3af; }
+        .iti__country { padding: 8px 12px !important; font-size: 13px !important; border-radius: 6px; margin: 0 4px; }
+        .iti__country:hover, .iti__country--highlight { background: #f0f6ff !important; }
+        .iti__country-name { color: #1a1d23; font-weight: 500; }
+        .iti__dial-code { color: #6b7280; font-size: 12px; }
+        .iti__flag { border-radius: 3px !important; box-shadow: 0 0 0 1px rgba(0,0,0,.08); }
 
         select.form-control { padding-right: 14px; cursor: pointer; appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239ca3af' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E") no-repeat right 14px center; }
 
@@ -206,9 +220,9 @@
                     </div>
                     <div class="form-group">
                         <label>WhatsApp *</label>
-                        <div class="input-wrap">
-                            <i class="bi bi-whatsapp" style="color:#25D366;"></i>
-                            <input type="tel" id="d-phone" class="form-control" placeholder="(11) 99999-9999" maxlength="20"
+                        <div>
+                            <input type="tel" id="d-phone" class="form-control iti__tel-input"
+                                autocomplete="tel"
                                 onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('d-segment').focus();}">
                         </div>
                     </div>
@@ -376,7 +390,7 @@ function saveStep(n) {
         document.getElementById('chip-tenant-4').textContent = v;
     } else if (n === 2) {
         document.getElementById('h-name').value = document.getElementById('d-name').value.trim();
-        document.getElementById('h-phone').value = document.getElementById('d-phone').value.trim();
+        document.getElementById('h-phone').value = window._iti ? window._iti.getNumber() : document.getElementById('d-phone').value.trim();
         document.getElementById('h-segment').value = document.getElementById('d-segment').value;
         document.getElementById('chip-name-3').textContent = document.getElementById('d-name').value.trim();
     } else if (n === 3) {
@@ -392,7 +406,8 @@ function validateStep(n) {
         if (!document.getElementById('d-tenant').value.trim()) { document.getElementById('d-tenant').focus(); return false; }
     } else if (n === 2) {
         if (!document.getElementById('d-name').value.trim()) { document.getElementById('d-name').focus(); return false; }
-        if (document.getElementById('d-phone').value.replace(/\D/g, '').length < 10) { document.getElementById('d-phone').focus(); return false; }
+        if (window._iti && !window._iti.isValidNumber()) { document.getElementById('d-phone').focus(); return false; }
+        if (!window._iti && document.getElementById('d-phone').value.replace(/\D/g, '').length < 10) { document.getElementById('d-phone').focus(); return false; }
         if (!document.getElementById('d-segment').value) { document.getElementById('d-segment').focus(); return false; }
     } else if (n === 3) {
         const email = document.getElementById('d-email').value.trim();
@@ -407,6 +422,28 @@ document.getElementById('regForm').addEventListener('submit', function(e) {
     document.getElementById('btnSubmit').disabled = true;
     document.getElementById('btnSubmit').innerHTML = '<i class="bi bi-arrow-clockwise spin"></i> Criando conta...';
 });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/intlTelInputWithUtils.min.js"></script>
+<script>
+(function() {
+    const phoneInput = document.getElementById('d-phone');
+    if (!phoneInput || typeof intlTelInput === 'undefined') return;
+    window._iti = intlTelInput(phoneInput, {
+        initialCountry: 'br',
+        nationalMode: false,
+        formatAsYouType: true,
+        strictMode: true,
+        countrySearch: true,
+        containerClass: 'iti--fullwidth',
+        i18n: { searchPlaceholder: 'Buscar pais...' },
+    });
+    const form = phoneInput.closest('form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            document.getElementById('h-phone').value = window._iti.getNumber();
+        });
+    }
+})();
 </script>
 </body>
 </html>

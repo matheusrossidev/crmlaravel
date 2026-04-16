@@ -23,6 +23,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/css/intlTelInput.min.css">
     <style>
         *, *::before, *::after { box-sizing: border-box; }
 
@@ -189,6 +190,28 @@
         }
 
         .form-control.is-invalid { border-color: #ef4444; }
+
+        /* intl-tel-input overrides */
+        .iti { width: 100%; }
+        .iti__tel-input.form-control {
+            padding-left: 80px !important;
+            padding-right: 14px !important;
+        }
+        .iti .iti__selected-dial-code { font-size: 13px; color: #374151; }
+        .iti__country-container { left: 8px !important; }
+        .iti__selected-country { padding: 0 6px 0 8px !important; gap: 4px !important; border-radius: 100px 0 0 100px; }
+
+        /* Dropdown */
+        .iti__dropdown-content { border-radius: 12px !important; box-shadow: 0 12px 36px rgba(0,0,0,.15) !important; border: 1.5px solid #e5e7eb !important; margin-top: 6px !important; }
+        .iti__search-input { border-radius: 8px !important; border: 1.5px solid #e5e7eb !important; font-size: 13px !important; padding: 9px 12px !important; margin: 8px !important; width: calc(100% - 16px) !important; font-family: 'DM Sans', sans-serif !important; }
+        .iti__search-input::placeholder { color: #9ca3af; }
+        .iti__country { padding: 8px 12px !important; font-size: 13px !important; border-radius: 6px; margin: 0 4px; }
+        .iti__country:hover, .iti__country--highlight { background: #f0f6ff !important; }
+        .iti__country-name { color: #1a1d23; font-weight: 500; }
+        .iti__dial-code { color: #6b7280; font-size: 12px; }
+
+        /* Bandeiras com cantos suaves */
+        .iti__flag { border-radius: 3px !important; box-shadow: 0 0 0 1px rgba(0,0,0,.08); }
 
         .invalid-feedback {
             font-size: 12px;
@@ -401,18 +424,15 @@
                     </div>
                     <div class="form-group">
                         <label for="d-phone">{{ __('auth.phone_label') ?? 'WhatsApp' }}</label>
-                        <div class="input-wrap">
-                            <i class="bi bi-whatsapp" style="color:#25D366;"></i>
+                        <div>
                             <input type="tel"
                                    id="d-phone"
-                                   class="form-control {{ $errors->has('phone') ? 'is-invalid' : '' }}"
-                                   placeholder="{{ __('auth.phone_placeholder') ?? '(11) 99999-9999' }}"
+                                   class="form-control iti__tel-input {{ $errors->has('phone') ? 'is-invalid' : '' }}"
                                    autocomplete="tel"
-                                   maxlength="20"
                                    onkeydown="if(event.key==='Enter'){event.preventDefault();goStep(3);}">
                         </div>
                         @error('phone')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback" style="display:block;">{{ $message }}</div>
                         @enderror
                     </div>
                     <button type="button" class="btn-submit" onclick="goStep(3)">
@@ -632,7 +652,7 @@
             const v = document.getElementById('d-name').value.trim();
             document.getElementById('h-name').value = v;
             document.getElementById('chip-name-3').textContent = v;
-            document.getElementById('h-phone').value = document.getElementById('d-phone').value.trim();
+            document.getElementById('h-phone').value = window._iti ? window._iti.getNumber() : document.getElementById('d-phone').value.trim();
         } else if (currentStep === 3) {
             const v = document.getElementById('d-email').value.trim();
             document.getElementById('h-email').value = v;
@@ -665,8 +685,8 @@
         } else if (n === 2) {
             const v = document.getElementById('d-name').value.trim();
             if (!v) { document.getElementById('d-name').focus(); return false; }
-            const ph = document.getElementById('d-phone').value.replace(/\D/g, '');
-            if (ph.length < 10) { document.getElementById('d-phone').focus(); return false; }
+            if (window._iti && !window._iti.isValidNumber()) { document.getElementById('d-phone').focus(); return false; }
+            if (!window._iti) { const ph = document.getElementById('d-phone').value.replace(/\D/g, ''); if (ph.length < 10) { document.getElementById('d-phone').focus(); return false; } }
         } else if (n === 3) {
             const v = document.getElementById('d-email').value.trim();
             if (!v || !v.includes('@')) { document.getElementById('d-email').focus(); return false; }
@@ -719,6 +739,31 @@
             document.getElementById('agency-code-field').style.display = 'block';
             document.getElementById('agency-toggle-icon').className = 'bi bi-x-circle';
             document.getElementById('agency-toggle-text').textContent = agencyRemoveText;
+        }
+    })();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/intlTelInputWithUtils.min.js"></script>
+<script>
+    (function() {
+        const phoneInput = document.getElementById('d-phone');
+        if (!phoneInput || typeof intlTelInput === 'undefined') return;
+        window._iti = intlTelInput(phoneInput, {
+            initialCountry: '{{ app()->getLocale() === "en" ? "us" : "br" }}',
+            nationalMode: false,
+            formatAsYouType: true,
+            strictMode: true,
+            countrySearch: true,
+            containerClass: 'iti--fullwidth',
+            i18n: {
+                searchPlaceholder: '{{ app()->getLocale() === "en" ? "Search country..." : "Buscar pais..." }}',
+            },
+        });
+        // Ao submeter o form, garante que h-phone recebe E.164
+        const form = phoneInput.closest('form');
+        if (form) {
+            form.addEventListener('submit', function() {
+                document.getElementById('h-phone').value = window._iti.getNumber();
+            });
         }
     })();
 </script>

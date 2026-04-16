@@ -277,6 +277,9 @@ class AuthController extends Controller
             : null;
         \App\Services\MasterWhatsappNotifier::newRegistration($tenant, $user, $agencyName);
 
+        // Envia boas-vindas no WhatsApp pessoal do usuário
+        \App\Services\MasterWhatsappNotifier::welcomeUser($user, $tenant);
+
         return redirect()->route('register.pending')
             ->with('email', $user->email);
     }

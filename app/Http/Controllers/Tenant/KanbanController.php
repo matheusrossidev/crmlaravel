@@ -332,42 +332,140 @@ class KanbanController extends Controller
     }
 
     // ── POST /crm/importar/preview ────────────────────────────────────────
+    // ── Step 1: Upload → headers + suggested mapping ────────────────────
     public function preview(Request $request): JsonResponse
     {
-        $request->validate([
-            'file'        => 'required|file|mimes:xlsx,xls,csv|max:5120',
-            'pipeline_id' => 'required|integer|exists:pipelines,id',
-        ]);
+        // Step 2: mapping confirmado → gera preview com dados
+        if ($request->filled('token') && $request->filled('mapping')) {
+            return $this->previewWithMapping($request);
+        }
 
-        $pipelineId   = (int) $request->pipeline_id;
-        $pipeline     = Pipeline::with('stages')->findOrFail($pipelineId);
-        $stagesByName = $pipeline->stages->sortBy('position')
-            ->mapWithKeys(fn ($s) => [mb_strtolower($s->name) => $s->id]);
+        // Step 1: upload inicial
+        try {
+            $request->validate([
+                'file'        => 'required|file|max:5120',
+                'pipeline_id' => 'required|integer|exists:pipelines,id',
+            ]);
 
-        $importer = new KanbanPreviewImport($stagesByName);
-        Excel::import($importer, $request->file('file'));
-        $rows = $importer->getRows();
+            $ext = strtolower($request->file('file')->getClientOriginalExtension());
+            if (! in_array($ext, ['xlsx', 'xls', 'csv'])) {
+                return response()->json(['success' => false, 'message' => 'Formato invalido. Use .xlsx, .xls ou .csv.'], 422);
+            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first() ?? 'Arquivo invalido.',
+            ], 422);
+        }
 
-        // Salvar arquivo temporário (expira em 30 min)
+        $pipelineId = (int) $request->pipeline_id;
+
         $tempDir = storage_path('app/private/imports');
-        if (!is_dir($tempDir)) {
+        if (! is_dir($tempDir)) {
             mkdir($tempDir, 0755, true);
         }
         $filename = uniqid('import_', true) . '.' . $request->file('file')->getClientOriginalExtension();
         $request->file('file')->move($tempDir, $filename);
+        $filePath = $tempDir . DIRECTORY_SEPARATOR . $filename;
+
+        try {
+            $headerReader = new \App\Imports\HeaderOnlyImport();
+            Excel::import($headerReader, $filePath);
+            $fileHeaders = $headerReader->getHeaders();
+        } catch (\Throwable $e) {
+            @unlink($filePath);
+            return response()->json(['success' => false, 'message' => 'Nao foi possivel ler a planilha.'], 422);
+        }
+
+        if (empty($fileHeaders)) {
+            @unlink($filePath);
+            return response()->json(['success' => false, 'message' => 'Planilha vazia ou sem cabecalho.'], 422);
+        }
+
+        $aliases = [
+            'nome'      => ['nome', 'name', 'nome_completo', 'full_name', 'contato', 'contact', 'cliente', 'razao_social'],
+            'telefone'  => ['telefone', 'phone', 'celular', 'mobile', 'whatsapp', 'tel', 'fone', 'numero'],
+            'email'     => ['email', 'e_mail', 'mail'],
+            'valor'     => ['valor', 'value', 'amount', 'total', 'preco', 'price'],
+            'etapa'     => ['etapa', 'stage', 'estagio', 'fase', 'status'],
+            'tags'      => ['tags', 'etiquetas', 'labels'],
+            'origem'    => ['origem', 'source', 'fonte', 'canal'],
+            'empresa'   => ['empresa', 'company', 'organizacao'],
+            'criado_em' => ['criado_em', 'created_at', 'data', 'date', 'data_criacao'],
+        ];
+
+        $suggested = [];
+        foreach ($aliases as $crmKey => $aliasList) {
+            $best = null;
+            foreach ($fileHeaders as $h) {
+                $norm = mb_strtolower(trim($h));
+                if (in_array($norm, $aliasList, true)) { $best = $h; break; }
+                foreach ($aliasList as $a) {
+                    $score = 0;
+                    similar_text($norm, $a, $score);
+                    if ($score >= 65 && ($best === null)) { $best = $h; }
+                }
+            }
+            $suggested[$crmKey] = $best;
+        }
+
+        $customFields = \App\Models\CustomFieldDefinition::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'name', 'field_type'])
+            ->map(fn ($cf) => ['key' => 'custom:' . $cf->id, 'label' => $cf->name, 'type' => $cf->field_type])
+            ->values()->toArray();
 
         $token = encrypt([
-            'path'        => $tempDir . DIRECTORY_SEPARATOR . $filename,
-            'pipeline_id' => $pipelineId,
-            'tenant_id'   => activeTenantId(),
-            'expires_at'  => now()->addMinutes(30)->timestamp,
+            'path' => $filePath, 'pipeline_id' => $pipelineId,
+            'tenant_id' => activeTenantId(), 'expires_at' => now()->addMinutes(30)->timestamp,
         ]);
 
         return response()->json([
+            'success'           => true,
+            'needs_mapping'     => true,
+            'file_headers'      => $fileHeaders,
+            'suggested_mapping' => $suggested,
+            'crm_fields'        => array_keys($aliases),
+            'custom_fields'     => $customFields,
+            'token'             => $token,
+        ]);
+    }
+
+    // ── Step 2: Mapping confirmado → preview com dados ───────────────────
+    private function previewWithMapping(Request $request): JsonResponse
+    {
+        try { $payload = decrypt($request->token); }
+        catch (\Exception) { return response()->json(['success' => false, 'message' => 'Token invalido.'], 422); }
+
+        if (($payload['tenant_id'] ?? null) !== activeTenantId()
+            || ($payload['expires_at'] ?? 0) < now()->timestamp
+            || ! file_exists($payload['path'] ?? '')) {
+            return response()->json(['success' => false, 'message' => 'Arquivo expirado. Envie novamente.'], 422);
+        }
+
+        $pipelineId   = (int) ($request->pipeline_id ?? $payload['pipeline_id']);
+        $pipeline     = Pipeline::with('stages')->findOrFail($pipelineId);
+        $stagesByName = $pipeline->stages->sortBy('position')
+            ->mapWithKeys(fn ($s) => [mb_strtolower($s->name) => $s->id]);
+
+        $mapping       = $request->input('mapping', []);
+        $headerToField = [];
+        foreach ($mapping as $crmKey => $fileHeader) {
+            if ($fileHeader !== null && $fileHeader !== '') {
+                $headerToField[$fileHeader] = $crmKey;
+            }
+        }
+
+        $importer = new KanbanPreviewImport($stagesByName, $headerToField);
+        Excel::import($importer, $payload['path']);
+
+        $token = encrypt(array_merge($payload, ['mapping' => $mapping, 'pipeline_id' => $pipelineId]));
+
+        return response()->json([
             'success' => true,
-            'rows'    => $rows,
-            'total'   => count($rows),
-            'skipped' => count(array_filter($rows, fn ($r) => $r['will_skip'])),
+            'rows'    => $importer->getRows(),
+            'total'   => count($importer->getRows()),
+            'skipped' => count(array_filter($importer->getRows(), fn ($r) => $r['will_skip'])),
             'token'   => $token,
         ]);
     }
@@ -376,11 +474,11 @@ class KanbanController extends Controller
     public function import(Request $request): JsonResponse
     {
         // Branch A: confirmar preview (token sem file)
-        if ($request->filled('token') && !$request->hasFile('file')) {
+        if ($request->filled('token') && ! $request->hasFile('file')) {
             return $this->importFromToken($request);
         }
 
-        // Branch B: upload direto (legado / inalterado)
+        // Branch B: upload direto (legado)
         $request->validate([
             'file'        => 'required|file|mimes:xlsx,xls,csv|max:5120',
             'pipeline_id' => 'required|integer|exists:pipelines,id',
@@ -388,59 +486,45 @@ class KanbanController extends Controller
 
         $pipelineId = (int) $request->pipeline_id;
         $pipeline   = Pipeline::with('stages')->findOrFail($pipelineId);
+        $stages     = $pipeline->stages->sortBy('position');
 
-        $stages       = $pipeline->stages->sortBy('position');
-        $firstStage   = $stages->first();
-        $stagesByName = $stages->mapWithKeys(
-            fn ($s) => [mb_strtolower($s->name) => $s->id]
-        );
-
-        $importer = new KanbanImport($pipelineId, $firstStage?->id ?? 0, $stagesByName, $pipeline);
+        $importer = new KanbanImport($pipelineId, $stages->first()?->id ?? 0, $stages->mapWithKeys(fn ($s) => [mb_strtolower($s->name) => $s->id]), $pipeline);
         Excel::import($importer, $request->file('file'));
 
-        return response()->json([
-            'success'  => true,
-            'imported' => $importer->getImported(),
-            'skipped'  => $importer->getSkipped(),
-        ]);
+        return response()->json(['success' => true, 'imported' => $importer->getImported(), 'skipped' => $importer->getSkipped()]);
     }
 
     private function importFromToken(Request $request): JsonResponse
     {
-        $request->validate([
-            'token'       => 'required|string',
-            'pipeline_id' => 'required|integer|exists:pipelines,id',
-        ]);
+        try { $payload = decrypt($request->token); }
+        catch (\Exception) { return response()->json(['success' => false, 'message' => 'Token invalido.'], 422); }
 
-        try {
-            $payload = decrypt($request->token);
-        } catch (\Exception) {
-            return response()->json(['success' => false, 'message' => 'Token inválido.'], 422);
+        if (($payload['tenant_id'] ?? null) !== activeTenantId()
+            || ($payload['expires_at'] ?? 0) < now()->timestamp
+            || ! file_exists($payload['path'] ?? '')) {
+            return response()->json(['success' => false, 'message' => 'Token expirado.'], 422);
         }
 
-        if (
-            ($payload['tenant_id'] ?? null) !== activeTenantId() ||
-            ($payload['pipeline_id'] ?? null) !== (int) $request->pipeline_id ||
-            ($payload['expires_at'] ?? 0) < now()->timestamp ||
-            !file_exists($payload['path'] ?? '')
-        ) {
-            return response()->json(['success' => false, 'message' => 'Token expirado ou inválido.'], 422);
-        }
-
-        $pipelineId   = (int) $request->pipeline_id;
+        $pipelineId   = (int) ($request->pipeline_id ?? $payload['pipeline_id']);
         $pipeline     = Pipeline::with('stages')->findOrFail($pipelineId);
         $stages       = $pipeline->stages->sortBy('position');
         $stagesByName = $stages->mapWithKeys(fn ($s) => [mb_strtolower($s->name) => $s->id]);
 
-        $importer = new KanbanImport($pipelineId, $stages->first()?->id ?? 0, $stagesByName, $pipeline);
+        $mapping       = $payload['mapping'] ?? [];
+        $headerToField = [];
+        foreach ($mapping as $crmKey => $fileHeader) {
+            if ($fileHeader !== null && $fileHeader !== '') {
+                $headerToField[$fileHeader] = $crmKey;
+            }
+        }
+
+        $overrides = $request->input('overrides', []);
+
+        $importer = new KanbanImport($pipelineId, $stages->first()?->id ?? 0, $stagesByName, $pipeline, $headerToField, $overrides);
         Excel::import($importer, $payload['path']);
         @unlink($payload['path']);
 
-        return response()->json([
-            'success'  => true,
-            'imported' => $importer->getImported(),
-            'skipped'  => $importer->getSkipped(),
-        ]);
+        return response()->json(['success' => true, 'imported' => $importer->getImported(), 'skipped' => $importer->getSkipped()]);
     }
 
     // ── GET /crm/template?pipeline_id=X ──────────────────────────────────

@@ -18,22 +18,60 @@ class KanbanPreviewImport implements ToCollection, WithHeadingRow, SkipsEmptyRow
     /**
      * @param Collection<string, int> $stagesByName  lowercase stage name => stage_id
      */
+    /**
+     * @param array<string, string> $headerToField  slug_header => campo_crm
+     */
     public function __construct(
         private readonly Collection $stagesByName,
+        private readonly array $headerToField = [],
     ) {}
+
+    private function field(mixed $row, string $crmField, array $defaults): string
+    {
+        if (! empty($this->headerToField)) {
+            foreach ($this->headerToField as $slug => $mapped) {
+                if ($mapped === $crmField && isset($row[$slug])) {
+                    return trim((string) $row[$slug]);
+                }
+            }
+            return '';
+        }
+        foreach ($defaults as $k) {
+            if (isset($row[$k]) && trim((string) $row[$k]) !== '') {
+                return trim((string) $row[$k]);
+            }
+        }
+        return '';
+    }
+
+    private function fieldRaw(mixed $row, string $crmField, array $defaults): mixed
+    {
+        if (! empty($this->headerToField)) {
+            foreach ($this->headerToField as $slug => $mapped) {
+                if ($mapped === $crmField && isset($row[$slug])) {
+                    return $row[$slug];
+                }
+            }
+            return null;
+        }
+        foreach ($defaults as $k) {
+            if (isset($row[$k])) return $row[$k];
+        }
+        return null;
+    }
 
     public function collection(Collection $rows): void
     {
         foreach ($rows as $row) {
-            $name = trim((string) ($row['nome'] ?? $row['name'] ?? ''));
+            $name = $this->field($row, 'nome', ['nome', 'name']);
 
             // Resolve stage
-            $stageRaw   = trim((string) ($row['etapa'] ?? $row['stage'] ?? ''));
+            $stageRaw   = $this->field($row, 'etapa', ['etapa', 'stage']);
             $stageLower = mb_strtolower($stageRaw);
             $stageFound = $stageLower !== '' && $this->stagesByName->has($stageLower);
 
             // Parse value
-            $valueRaw    = $row['valor'] ?? $row['value'] ?? null;
+            $valueRaw    = $this->fieldRaw($row, 'valor', ['valor', 'value']);
             $valueParsed = null;
             if ($valueRaw !== null && $valueRaw !== '') {
                 $clean = str_replace(['.', ','], ['', '.'], (string) $valueRaw);
@@ -41,14 +79,14 @@ class KanbanPreviewImport implements ToCollection, WithHeadingRow, SkipsEmptyRow
             }
 
             // Parse tags (comma-separated)
-            $tagsRaw = $row['tags'] ?? $row['etiquetas'] ?? '';
+            $tagsRaw = $this->field($row, 'tags', ['tags', 'etiquetas']);
             $tags    = [];
-            if (is_string($tagsRaw) && $tagsRaw !== '') {
+            if ($tagsRaw !== '') {
                 $tags = array_values(array_filter(array_map('trim', explode(',', $tagsRaw))));
             }
 
             // Parse created_at with Excel serial + dd/mm/yyyy support
-            $createdAtRaw = $row['criado_em'] ?? $row['created_at'] ?? null;
+            $createdAtRaw = $this->fieldRaw($row, 'criado_em', ['criado_em', 'created_at']);
             $createdAtFmt = null;
             if ($createdAtRaw !== null && $createdAtRaw !== '') {
                 try {
@@ -69,8 +107,8 @@ class KanbanPreviewImport implements ToCollection, WithHeadingRow, SkipsEmptyRow
 
             $this->rows[] = [
                 'name'        => $name,
-                'phone'       => trim((string) ($row['telefone'] ?? $row['phone'] ?? '')),
-                'email'       => strtolower(trim((string) ($row['email'] ?? ''))),
+                'phone'       => $this->field($row, 'telefone', ['telefone', 'phone']),
+                'email'       => strtolower($this->field($row, 'email', ['email'])),
                 'value'       => $valueParsed,
                 'value_fmt'   => $valueParsed !== null
                     ? 'R$ ' . number_format($valueParsed, 0, ',', '.')
@@ -78,7 +116,7 @@ class KanbanPreviewImport implements ToCollection, WithHeadingRow, SkipsEmptyRow
                 'stage_raw'   => $stageRaw,
                 'stage_found' => $stageFound,
                 'tags'        => $tags,
-                'source'      => trim((string) ($row['origem'] ?? $row['source'] ?? 'importado')),
+                'source'      => $this->field($row, 'origem', ['origem', 'source']) ?: 'importado',
                 'created_at'  => $createdAtFmt,
                 'will_skip'   => $name === '',
             ];
