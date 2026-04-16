@@ -3,10 +3,9 @@
     Aberto via openTemplateModal() do notice de janela fechada ou attach menu.
     JS encapsulado — usa var activeConvId (global do index via var).
 --}}
-<div id="tplModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1050;"
+<div id="tplModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;align-items:center;justify-content:center;"
      onclick="if(event.target===this) closeTemplateModal()">
-    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-                width:min(620px,94vw);max-height:88vh;background:#fff;border-radius:14px;
+    <div id="tplModalCard" style="width:620px;max-width:94vw;max-height:88vh;min-height:300px;background:#fff;border-radius:14px;
                 box-shadow:0 20px 60px rgba(0,0,0,.2);display:flex;flex-direction:column;overflow:hidden;">
 
         {{-- Header --}}
@@ -112,8 +111,9 @@
 
     async function openTemplateModal() {
         if (typeof closeAttachMenu === 'function') closeAttachMenu();
-        if (!activeConvId) return;
-        document.getElementById('tplModalOverlay').style.display = 'block';
+        var convId = window.activeConvId || (typeof activeConvId !== 'undefined' ? activeConvId : null);
+        if (!convId) return;
+        document.getElementById('tplModalOverlay').style.display = 'flex';
         backToTemplateList();
         await loadTemplatesForCurrentConv();
     }
@@ -242,14 +242,35 @@
         // Vars inputs
         var varsBox = document.getElementById('tplVarsBox');
         var ids = t.variables || [];
+        var cd = (window.__tplState && window.__tplState.contactData) || {};
+        var pills = [
+            { label: 'Nome', value: cd.nome || '' },
+            { label: 'Telefone', value: cd.telefone || '' },
+            { label: 'Email', value: cd.email || '' },
+            { label: 'Empresa', value: cd.empresa || '' },
+        ].filter(function(p) { return p.value; });
+
         if (ids.length === 0) {
             varsBox.innerHTML = '';
         } else {
+            var pillsHtml = pills.length > 0
+                ? '<div style="margin-bottom:10px;"><div style="font-size:11px;color:#6b7280;margin-bottom:6px;">Inserir dados do contato:</div><div style="display:flex;gap:5px;flex-wrap:wrap;">'
+                    + pills.map(function(p) {
+                        return '<button type="button" onclick="insertPillValue(\'' + escapeHtml(p.value) + '\')"'
+                            + ' style="padding:4px 10px;border-radius:100px;border:1.5px solid #e5e7eb;background:#fff;color:#374151;font-size:11.5px;font-weight:500;cursor:pointer;white-space:nowrap;"'
+                            + ' onmouseover="this.style.background=\'#f0f6ff\';this.style.borderColor=\'#0085f3\'"'
+                            + ' onmouseout="this.style.background=\'#fff\';this.style.borderColor=\'#e5e7eb\'">'
+                            + escapeHtml(p.label) + ': <strong>' + escapeHtml(p.value.length > 20 ? p.value.substring(0, 20) + '...' : p.value) + '</strong></button>';
+                    }).join('') + '</div></div>'
+                : '';
+
             varsBox.innerHTML = '<div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px;">{{ __("wa_templates.modal_variables") }}</div>'
+                + pillsHtml
                 + ids.map(function(vid) {
                     return '<div style="margin-bottom:8px;">'
                         + '<label style="font-family:monospace;font-size:11px;color:#6b7280;">{{' + vid + '}}</label>'
                         + '<input type="text" class="tpl-var-input" data-vid="' + vid + '" oninput="updateTemplatePreview()"'
+                        + ' onfocus="window.__tplState.lastFocusedInput = this"'
                         + ' placeholder="Valor pra {{' + vid + '}}"'
                         + ' style="width:100%;padding:8px 10px;border:1.5px solid #e8eaf0;border-radius:8px;font-size:13px;margin-top:3px;">'
                         + '</div>';
@@ -326,6 +347,19 @@
         }
     }
 
+    function insertPillValue(value) {
+        var input = window.__tplState.lastFocusedInput;
+        if (!input) {
+            var first = document.querySelector('.tpl-var-input');
+            if (first) input = first;
+        }
+        if (input) {
+            input.value = value;
+            input.dispatchEvent(new Event('input'));
+            input.focus();
+        }
+    }
+
     function backToTemplateList() {
         document.getElementById('tplSearchBox').style.display = 'block';
         document.getElementById('tplFillBox').style.display = 'none';
@@ -336,7 +370,8 @@
 
     async function submitTemplate() {
         var t = window.__tplState.selected;
-        if (!t || !activeConvId) return;
+        var convId = window.activeConvId || (typeof activeConvId !== 'undefined' ? activeConvId : null);
+        if (!t || !convId) return;
 
         var vars = {};
         document.querySelectorAll('.tpl-var-input').forEach(function(inp) {
@@ -351,7 +386,7 @@
         btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Enviando...';
 
         try {
-            var url = @json(url('/chats/conversations')) + '/' + activeConvId + '/send-template';
+            var url = @json(url('/chats/conversations')) + '/' + convId + '/send-template';
             var res = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -373,7 +408,7 @@
                 toastr.success(@json(__('wa_templates.toast_sent')));
                 closeTemplateModal();
                 if (typeof openConversation === 'function') {
-                    openConversation(activeConvId, activeConvChannel || 'whatsapp');
+                    openConversation(window.activeConvId, window.activeConvChannel || 'whatsapp');
                 }
             }
         } catch (e) {

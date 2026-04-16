@@ -1953,8 +1953,10 @@ $pageIcon = 'chat-dots';
         <img id="waImgLightboxImg" class="wa-img-lightbox-img" src="" alt="">
     </div>
 
-    @include('tenant.whatsapp._template-modal')
+
 </div>
+
+@include('tenant.whatsapp._template-modal')
 @endsection
 
 @push('scripts')
@@ -2313,7 +2315,9 @@ $pageIcon = 'chat-dots';
 
     async function openConversation(convId, el) {
         activeConvId = convId;
+        window.activeConvId = convId;
         activeConvChannel = el.dataset.channel || 'whatsapp';
+        window.activeConvChannel = activeConvChannel;
 
         document.getElementById('detailsPanel').classList.add('open');
         document.querySelectorAll('.wa-conv-item').forEach(i => i.classList.remove('active'));
@@ -2406,6 +2410,16 @@ $pageIcon = 'chat-dots';
         renderTags(data.tags || []);
         const cardEl = document.querySelector(`[data-conv-id="${convId}"]`);
         if (cardEl) cardEl.dataset.tags = JSON.stringify(data.tags || []);
+
+        // Dados do contato/lead pra pills no modal de template
+        if (window.__tplState) {
+            window.__tplState.contactData = {
+                nome: data.contact_name || (data.lead ? data.lead.name : '') || '',
+                telefone: data.phone || (data.lead ? data.lead.phone : '') || '',
+                email: (data.lead ? data.lead.email : '') || '',
+                empresa: (data.lead ? data.lead.company : '') || '',
+            };
+        }
 
         // WhatsApp Cloud API: detecta janela 24h + mostra botão de template
         if (typeof window.setConvCloudApiState === 'function' && channel === 'whatsapp') {
