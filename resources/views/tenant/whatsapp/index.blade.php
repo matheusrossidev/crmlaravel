@@ -1963,10 +1963,10 @@ $pageIcon = 'chat-dots';
     const LANG = @json(__('chat'));
 
     // ── Estado global ─────────────────────────────────────────────────────────────
-    let activeConvId = null;
-    let activeConvChannel = 'whatsapp'; // 'whatsapp' | 'instagram'
-    let activeConvStatus = 'open';
-    let activeConvLeadId = null;
+    var activeConvId = null;
+    var activeConvChannel = 'whatsapp'; // 'whatsapp' | 'instagram'
+    var activeConvStatus = 'open';
+    var activeConvLeadId = null;
     let activeLeadId = null; // lead vinculado à conversa ativa
 
     // ── Formatação de telefone brasileiro ─────────────────────────────────────
