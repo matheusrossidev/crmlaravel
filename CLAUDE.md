@@ -253,6 +253,11 @@ web → auth → tenant → role:admin → plan.limit:leads
 | GET/POST | `/reset-password/{token}` | Auth\AuthController |
 | GET/POST | `/cadastro-agencia` | Auth\AgencyRegisterController |
 
+**Registro — funcionalidades adicionais (abr/2026):**
+- **intl-tel-input v25** no campo de telefone (bandeiras, DDI, mascara, validacao E.164). Suporta numeros internacionais (EUA, Portugal, etc).
+- **WhatsApp de boas-vindas** via `MasterWhatsappNotifier::welcomeUser()` — envia msg WAHA direto no phone do user apos registro. `PhoneNormalizer::toWahaChatId()` resolve qualquer pais (strip nono digito BR automatico).
+- **Validacao DNS** no email (`email:rfc,dns`) — rejeita dominios sem MX.
+
 ### Dashboard (`auth`, `tenant`)
 | Método | URI | Nome |
 |--------|-----|------|
@@ -271,7 +276,8 @@ web → auth → tenant → role:admin → plan.limit:leads
 | GET | `/crm` | crm.index |
 | GET | `/crm/poll` | crm.poll |
 | GET | `/crm/exportar` | crm.export |
-| POST | `/crm/importar` | crm.import |
+| POST | `/crm/importar/preview` | crm.import.preview (step1: headers + step2: preview com mapping) |
+| POST | `/crm/importar` | crm.import (confirma com token + overrides) |
 | POST | `/crm/lead/{lead}/stage` | crm.updateStage |
 | GET | `/contatos/duplicatas` | leads.duplicates |
 | POST | `/contatos/{primary}/merge/{secondary}` | leads.merge |
@@ -1525,6 +1531,7 @@ resources/
     tenant/layouts/app.blade.php    — Layout principal
     tenant/layouts/_tour.blade.php  — Tour Driver.js (definição dos passos)
     tenant/crm/kanban.blade.php     — Kanban board
+    tenant/crm/_import-modal.blade.php — Import multistep (partial isolado com IIFE — Upload > Mapping > Review com acoes bulk/single)
     tenant/whatsapp/index.blade.php — Chat inbox
     tenant/chatbot/builder.blade.php — Chatbot builder (host React)
     tenant/tasks/index.blade.php    — Lista de tarefas

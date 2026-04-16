@@ -73,6 +73,22 @@ POST /contatos
 - [[2026-04-09 Auditoria leads — Onda 1 + Onda 2]]
 - [[ADR — Refactor de tags polimorficas (5 fases)]]
 
+## Import Multistep (abr/2026)
+
+Modal de importacao extraido pro partial `_import-modal.blade.php` com JS em IIFE (zero interferencia com kanban).
+
+**Fluxo**: Upload > Mapping (fuzzy auto-suggest) > Review com acoes bulk/single.
+
+- **Step 1** — Upload arquivo → `POST /crm/importar/preview` → backend le headers via `HeaderOnlyImport`, sugere mapping via `similar_text()`, retorna `file_headers` + `suggested_mapping` + `custom_fields` + `token`
+- **Step 2** — User faz mapping de colunas → `POST /crm/importar/preview` com `token` + `mapping` (JSON) → `KanbanPreviewImport` com `$headerToField` → retorna rows preview
+- **Step 3** — Review: tabela com checkboxes. Acoes bulk (definir etapa, tags, remover) + select de etapa inline + edit tags. User confirma → `POST /crm/importar` com `token` + `overrides` → `KanbanImport` com `$headerToField` + `$overrides` + salva custom fields via `CustomFieldValue`
+
+**Arquivos**:
+- `resources/views/tenant/crm/_import-modal.blade.php` — HTML + JS IIFE isolado
+- `app/Imports/HeaderOnlyImport.php` — le headers da planilha
+- `app/Imports/KanbanPreviewImport.php` — aceita `$headerToField`
+- `app/Imports/KanbanImport.php` — aceita `$headerToField` + `$overrides` + custom fields
+
 ## Fora de escopo (não atacar agora)
 - Quebrar `_drawer.blade.php` em partials (Onda 3)
 - Quebrar `show.blade.php` em partials por tab (Onda 3)
