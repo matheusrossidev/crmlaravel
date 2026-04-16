@@ -173,7 +173,7 @@ class AuthController extends Controller
             'name.required'        => __('auth.validation.name_required'),
             'name.max'             => __('auth.validation.name_max'),
             'email.required'       => __('auth.validation.email_required'),
-            'email.email'          => __('auth.validation.email_email'),
+            'email.email'          => __('auth.validation.email_dns'),
             'email.unique'         => __('auth.validation.email_unique'),
             'password.required'    => __('auth.validation.password_create'),
             'password.min'         => __('auth.validation.password_min'),

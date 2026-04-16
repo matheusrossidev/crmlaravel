@@ -36,6 +36,9 @@ class AgencyRegisterController extends Controller
             'state'        => 'nullable|string|max:2',
             'password'     => 'required|string|min:8|confirmed',
             'accept_terms' => 'accepted',
+        ], [
+            'email.email'  => __('auth.validation.email_dns'),
+            'email.unique' => __('auth.validation.email_unique'),
         ]);
 
         $token = Str::random(64);

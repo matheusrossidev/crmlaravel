@@ -81,6 +81,7 @@ return [
     'validation' => [
         'email_required'          => 'Informe seu e-mail.',
         'email_email'             => 'Informe um e-mail válido.',
+        'email_dns'               => 'Este e-mail não parece existir. Verifique o domínio e tente novamente.',
         'password_required'       => 'Informe sua senha.',
         'too_many_attempts'       => 'Muitas tentativas. Tente novamente em :seconds segundos.',
         'invalid_credentials'     => 'E-mail ou senha incorretos.',

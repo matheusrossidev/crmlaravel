@@ -1426,12 +1426,12 @@ document.addEventListener('click', function (e) {
 <div id="limitReachedModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
     <div style="background:#fff;border-radius:14px;padding:32px;width:420px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.18);text-align:center;">
         <i class="bi bi-lock" style="font-size:44px;color:#f59e0b;display:block;margin-bottom:8px;"></i>
-        <h3 style="font-size:17px;font-weight:700;color:#1a1d23;margin:0 0 8px;">Limite do plano atingido</h3>
-        <p id="limitReachedMessage" style="color:#6b7280;font-size:14px;margin:0 0 20px;line-height:1.5;"></p>
+        <h3 style="font-size:17px;font-weight:700;color:#1a1d23;margin:0 0 8px;">{{ __('settings.billing_limit_title') }}</h3>
+        <p id="limitReachedMessage" style="color:#6b7280;font-size:14px;margin:0 0 20px;line-height:1.5;">{{ __('settings.billing_limit_body') }}</p>
         <div style="display:flex;gap:10px;justify-content:center;">
-            <button onclick="closeLimitModal()" style="padding:9px 20px;border-radius:100px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;">Fechar</button>
+            <button onclick="closeLimitModal()" style="padding:9px 20px;border-radius:100px;border:1.5px solid #e8eaf0;background:#fff;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;">{{ __('common.close') }}</button>
             <a href="{{ route('settings.billing') }}" style="padding:9px 20px;border-radius:100px;border:none;background:#0085f3;color:#fff;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
-                <i class="bi bi-arrow-up-circle"></i> Fazer Upgrade
+                <i class="bi bi-arrow-up-circle"></i> {{ __('settings.billing_limit_upgrade') }}
             </a>
         </div>
     </div>

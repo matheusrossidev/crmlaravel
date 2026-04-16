@@ -81,6 +81,7 @@ return [
     'validation' => [
         'email_required'          => 'Please enter your email.',
         'email_email'             => 'Please enter a valid email.',
+        'email_dns'               => 'This email doesn\'t seem to exist. Please check the domain and try again.',
         'password_required'       => 'Please enter your password.',
         'too_many_attempts'       => 'Too many attempts. Try again in :seconds seconds.',
         'invalid_credentials'     => 'Incorrect email or password.',

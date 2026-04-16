@@ -456,7 +456,7 @@ class BillingController extends Controller
             \Log::error('BillingController::stripeSubscribe error', ['error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error creating checkout session. Please try again.',
+                'message' => __('settings.checkout_connection_error'),
             ], 500);
         }
     }
@@ -465,17 +465,17 @@ class BillingController extends Controller
     {
         $sessionId = $request->query('session_id');
         if (! $sessionId) {
-            return redirect()->route('settings.billing')->with('error', 'Invalid session.');
+            return redirect()->route('settings.billing')->with('error', __('settings.billing_invalid_session'));
         }
 
         // The webhook handles the actual activation.
         // This is just a redirect back to the billing page with a success message.
-        return redirect()->route('settings.billing')->with('success', __('billing.stripe_success') ?? 'Subscription activated! Welcome aboard.');
+        return redirect()->route('settings.billing')->with('success', __('settings.billing_stripe_success'));
     }
 
     public function stripeCancel(): RedirectResponse
     {
-        return redirect()->route('settings.billing')->with('info', __('billing.stripe_cancelled') ?? 'Checkout cancelled.');
+        return redirect()->route('settings.billing')->with('info', __('settings.billing_stripe_cancelled'));
     }
 
     public function stripePortal(): RedirectResponse
@@ -483,7 +483,7 @@ class BillingController extends Controller
         $tenant = activeTenant();
 
         if (! $tenant->stripe_customer_id) {
-            return redirect()->route('settings.billing')->with('error', 'No Stripe account found.');
+            return redirect()->route('settings.billing')->with('error', __('settings.billing_no_stripe'));
         }
 
         try {
@@ -496,7 +496,7 @@ class BillingController extends Controller
             return redirect($session->url);
         } catch (\Throwable $e) {
             \Log::error('BillingController::stripePortal error', ['error' => $e->getMessage()]);
-            return redirect()->route('settings.billing')->with('error', 'Error opening customer portal.');
+            return redirect()->route('settings.billing')->with('error', __('settings.checkout_connection_error'));
         }
     }
 
