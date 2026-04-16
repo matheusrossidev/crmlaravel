@@ -161,7 +161,7 @@ class AuthController extends Controller
         $data = $request->validate([
             'tenant_name'  => 'required|string|max:255',
             'name'         => 'required|string|max:255',
-            'email'        => 'required|email|unique:users,email',
+            'email'        => 'required|email:rfc,dns|unique:users,email',
             'password'     => ['required', 'string', Password::min(8)->mixedCase()->numbers(), 'confirmed'],
             'phone'        => 'required|string|min:10|max:20',
             'agency_code'  => 'nullable|string|max:20',

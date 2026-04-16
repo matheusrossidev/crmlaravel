@@ -30,6 +30,9 @@ tags: [model, auto]
 - `features_en_json`
 - `is_active`
 - `is_visible`
+- `billing_cycle` — `monthly` ou `yearly`
+- `group_slug` — vincula variantes mensal↔anual do mesmo tier (ex: `starter`)
+- `is_recommended` — 1 por ciclo, mostra badge "Mais popular" no checkout
 
 ## Casts
 | Coluna | Cast |
@@ -41,6 +44,15 @@ tags: [model, auto]
 | `features_en_json` | `array` |
 | `is_active` | `boolean` |
 | `is_visible` | `boolean` |
+| `is_recommended` | `boolean` |
+
+## Helpers (abr/2026)
+- `isYearly()` / `isMonthly()` — bool
+- `yearlyVariant()` / `monthlyVariant()` — busca row irmã no mesmo `group_slug`
+- `yearlyDiscountPctVs($monthly, $currency)` — `(1 - yearly / (monthly×12)) × 100`
+- `stripePriceIdFor($currency)` — resolve BRL/USD com fallback legacy
+- `priceFor($currency)` — retorna preço na moeda
 
 ## Links sugeridos
+- [[Billing (Stripe + Asaas)]] — módulo de billing completo
 - Notas escritas à mão sobre esse model: procure no vault por `[[PlanDefinition]]`

@@ -30,7 +30,7 @@ class AgencyRegisterController extends Controller
             'name'         => 'required|string|max:255',
             'phone'        => 'required|string|min:10|max:20',
             'segment'      => 'required|string|max:50',
-            'email'        => 'required|email|unique:users,email',
+            'email'        => 'required|email:rfc,dns|unique:users,email',
             'website'      => 'nullable|string|max:191',
             'city'         => 'nullable|string|max:100',
             'state'        => 'nullable|string|max:2',

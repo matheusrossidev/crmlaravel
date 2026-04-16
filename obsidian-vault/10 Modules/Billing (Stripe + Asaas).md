@@ -21,11 +21,15 @@ tags: [module, billing, payments, stripe, asaas]
 ## Papéis dos gateways
 
 ### Stripe (principal)
-- **Subscriptions novas** (BRL + USD) — `/configuracoes/cobranca` cai em Stripe Checkout por default
+- **Subscriptions novas** (BRL + USD, mensal + anual) — `/configuracoes/cobranca` cai em Stripe Checkout por default
+- **Planos anuais (abr/2026):** cada ciclo (monthly/yearly) é uma row separada em `plan_definitions`, vinculada por `group_slug`. Admin cria variante anual em `/master/planos` com seu próprio `stripe_price_id`. Tenant guarda `billing_cycle` (monthly/yearly).
 - `PlanDefinition.stripe_price_id_brl` / `stripe_price_id_usd` — resolvidos por `stripePriceIdFor($currency)`
+- `PlanDefinition.is_recommended` — marca 1 plano por ciclo como "Mais popular" no checkout. `ensureSingleRecommended()` garante constraint.
+- **Checkout redesenhado (abr/2026):** layout centralizado com tabs Mensal/Anual + grid cards agrupados por `group_slug`. Controller agrupa via `BillingController::buildPlanGroups()`. Badge "Economize X%" via `yearlyDiscountPctVs()`.
 - **Prices são IMUTÁVEIS** — pra mudar preço, criar Price novo no Dashboard + colar ID; quem já paga fica no Price antigo (forever)
+- **Downgrade anual → mensal mid-cycle:** bloqueado. User troca na renovação via Stripe Customer Portal.
 - Stripe Customer Portal pra self-service (trocar cartão, cancelar)
-- Webhook: `checkout.session.completed`, `invoice.payment_succeeded`, `invoice.payment_failed`, `customer.subscription.deleted`
+- Webhook: `checkout.session.completed` (grava `billing_cycle`), `invoice.payment_succeeded`, `invoice.payment_failed`, `customer.subscription.deleted`
 
 ### Asaas (3 papéis específicos)
 
@@ -60,7 +64,19 @@ Ambos webhooks disparam `PartnerCommissionService::generateCommission()` quando 
 - Tem `asaas_subscription_id`? → Asaas (legacy, forever-locked)
 - Sem nenhum dos dois? → Default Stripe Checkout (BRL ou USD por detecção de moeda)
 
+## Páginas de billing (estado abr/2026)
+
+**`/configuracoes/cobranca` (billing settings):**
+- **Não assinado:** tabs Mensal/Anual + grid de cards (mesmo estilo checkout). Clicar "Assinar" vai direto pro Stripe Checkout.
+- **Assinado:** hero card azul horizontal full-width (plano, ciclo, status, preço, botões) + histórico de cobranças.
+
+**`/cobranca/checkout` (checkout standalone):**
+- Página standalone (fora do layout app). Logo centralizada + tabs + 3 cards.
+- Plano `is_recommended` no meio com badge "Mais popular".
+- i18n: todas strings via `lang/{pt_BR,en}/settings.php` (chaves `checkout_*`).
+
 ## Decisões / RCAs
 - [[ADR — Stripe-first pra novos cadastros]]
 - [[ADR — is_usd vs is_stripe (separar moeda de gateway)]]
 - [[ADR — Asaas forever-locked pra tenants legacy]]
+- [[ADR — Planos anuais como rows separadas (não colunas extras)]]

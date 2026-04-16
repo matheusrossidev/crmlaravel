@@ -195,7 +195,7 @@ web → auth → tenant → role:admin → plan.limit:leads
 - **WhatsappButtonClick** — button_id, visitor_id, utm_source/medium/campaign/content/term, fbclid, gclid, page_url, tracking_code
 
 ### Billing
-- **PlanDefinition** — Planos disponíveis com features_json
+- **PlanDefinition** — Planos com `billing_cycle` (monthly/yearly), `group_slug` (vincula mensal↔anual do mesmo tier), `is_recommended` (1 por ciclo), `features_json`, `features_en_json`, `stripe_price_id_brl/usd`. Cada ciclo é uma row separada (espelha Product/Price do Stripe). Helpers: `yearlyVariant()`, `monthlyVariant()`, `yearlyDiscountPctVs($monthly, $currency)`
 - **TokenIncrementPlan** — Pacotes de tokens para compra
 - **TenantTokenIncrement** — Tokens comprados (asaas_payment_id, status, paid_at)
 - **PaymentLog** — tenant_id, type, description, amount, asaas_payment_id, status, paid_at
@@ -356,7 +356,7 @@ web → auth → tenant → role:admin → plan.limit:leads
 - **Automações IG**: `/configuracoes/instagram-automacoes`
 - **Automações**: `/configuracoes/automacoes` (com novas actions: `extract_lead_data`, `send_webhook`)
 - **Notificações**: `/configuracoes/notificacoes`
-- **Cobrança**: `/configuracoes/cobranca`
+- **Cobrança**: `/configuracoes/cobranca` (redesenhado abr/2026: não-assinado mostra tabs Mensal/Anual + grid cards; assinado mostra hero card horizontal + histórico)
 
 ### Integrações — sub-rotas (`/configuracoes/integracoes`)
 **WhatsApp Cloud API** (`whatsapp-cloud.*`, gated por feature flag `whatsapp_cloud_api`):
@@ -825,25 +825,34 @@ Não há relacionamento `Lead → Campaign` (a tabela e a coluna foram dropadas)
 
 Novos tenants criados hoje caem em Stripe por default (`billing_provider='stripe'`). Tenants antigos que já tinham `asaas_subscription_id` continuam com Asaas até alguém cancelar manualmente — aí a próxima assinatura vai pro Stripe.
 
-### Stripe (principal — subscriptions BRL + USD)
+### Stripe (principal — subscriptions BRL + USD, mensal + anual)
+
+**Planos anuais vinculados ao mensal (abr/2026):** Cada ciclo (monthly/yearly) é uma row separada em `plan_definitions`, vinculada pelo `group_slug`. Ex: `starter` (monthly) + `starter_anual` (yearly) compartilham `group_slug='starter'`. Admin cria cada variante em `/master/planos` com seu próprio `stripe_price_id`. `is_recommended` marca 1 plano por ciclo como "Mais popular" no checkout.
+
+**Tenant** guarda `billing_cycle` (monthly/yearly) — preenchido pelo webhook ao ativar subscription.
+
+**Checkout redesenhado (abr/2026):** `/cobranca/checkout` e `/configuracoes/cobranca` usam layout centralizado com tabs Mensal/Anual + grid de cards agrupados por `group_slug`. Controller agrupa via `BillingController::buildPlanGroups()`. Plano recomendado posicionado no meio. Badge "Economize X%" calculado via `PlanDefinition::yearlyDiscountPctVs()`.
 
 **Fluxo de assinatura** (`BillingController::stripeSubscribe` → `StripeService::createSubscriptionCheckout`):
-- User escolhe plano em `/configuracoes/cobranca`
-- Sistema resolve `price_id` via `PlanDefinition::stripePriceIdFor($currency)` — `stripe_price_id_brl` ou `stripe_price_id_usd` (fallback pro legacy `stripe_price_id`)
+- User escolhe plano (cada card já tem o `plan_name` do ciclo selecionado)
+- Sistema resolve `price_id` via `PlanDefinition::stripePriceIdFor($currency)` — cada row tem seu price_id
+- Metadata inclui `billing_cycle` pra o webhook gravar no tenant
 - Redirect pro Stripe Checkout
-- Tenant ganha `stripe_customer_id` + `stripe_subscription_id`
+- Tenant ganha `stripe_customer_id` + `stripe_subscription_id` + `billing_cycle`
 
 **Webhooks Stripe** (`StripeWebhookController`):
 | Evento | Ação |
 |--------|------|
-| `checkout.session.completed` | Ativa subscription, popula `stripe_subscription_id`, cria `PaymentLog`, dispara comissão de parceiro (se aplicável) |
+| `checkout.session.completed` | Ativa subscription, popula `stripe_subscription_id` + `billing_cycle`, cria `PaymentLog`, dispara comissão de parceiro |
 | `invoice.payment_succeeded` | Registra pagamento recorrente em `PaymentLog`, comissão |
 | `invoice.payment_failed` | Marca `subscription_status=overdue`, notifica tenant |
 | `customer.subscription.deleted` | Limpa `stripe_subscription_id`, marca `subscription_status=cancelled` |
 
 Stripe Portal: `BillingController::stripePortal` gera link pro Customer Portal (user muda cartão, cancela, etc).
 
-**Alterar preço de plano existente**: Stripe Prices são imutáveis. Fluxo correto é criar Price novo no Stripe Dashboard + colar o ID novo em `plan_definitions.stripe_price_id_brl/usd`. Quem já paga **continua no Price antigo** (forever) — não há código hoje que sincronize upgrade automático.
+**Alterar preço de plano existente**: Stripe Prices são imutáveis. Fluxo correto é criar Price novo no Stripe Dashboard + colar o ID novo em `plan_definitions.stripe_price_id_brl/usd`. Quem já paga **continua no Price antigo** (forever).
+
+**Downgrade anual → mensal mid-cycle**: Bloqueado. User termina o ciclo atual e troca na renovação via Stripe Customer Portal. Asaas legado NÃO tem plano anual (forever-locked MONTHLY).
 
 ### Asaas (3 papéis específicos — NÃO é principal)
 
