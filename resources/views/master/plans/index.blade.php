@@ -27,8 +27,9 @@
                 <tr>
                     <th>Nome</th>
                     <th>Exibição</th>
-                    <th>Preço/mês</th>
-                    <th>USD/mês</th>
+                    <th>Grupo / Ciclo</th>
+                    <th>Preço</th>
+                    <th>USD</th>
                     <th>Stripe</th>
                     <th>Trial</th>
                     <th>Usuários</th>
@@ -49,8 +50,25 @@
             <tbody>
                 @foreach($plans as $plan)
                 <tr id="plan-row-{{ $plan->id }}">
-                    <td><code style="font-size:12px;">{{ $plan->name }}</code></td>
+                    <td>
+                        <code style="font-size:12px;">{{ $plan->name }}</code>
+                        @if($plan->is_recommended)
+                            <br><span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-top:3px;display:inline-block;">★ Recomendado</span>
+                        @endif
+                    </td>
                     <td style="font-weight:600;">{{ $plan->display_name }}</td>
+                    <td style="font-size:12px;">
+                        @if($plan->group_slug)
+                            <code style="background:#eff6ff;color:#2563eb;padding:1px 6px;border-radius:4px;">{{ $plan->group_slug }}</code><br>
+                        @else
+                            <span style="color:#9ca3af;">—</span><br>
+                        @endif
+                        @if($plan->billing_cycle === 'yearly')
+                            <span style="background:#dcfce7;color:#15803d;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:600;">Anual</span>
+                        @else
+                            <span style="background:#f3f4f6;color:#374151;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:600;">Mensal</span>
+                        @endif
+                    </td>
                     <td>R$ {{ number_format($plan->price_monthly, 2, ',', '.') }}</td>
                     <td>
                         @if($plan->price_usd)
@@ -172,11 +190,28 @@
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
             <div>
-                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Preço mensal (R$)</label>
-                <input type="number" id="planPrice" min="0" step="0.01" class="form-control" placeholder="0.00" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;">
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Ciclo de cobrança</label>
+                <select id="planBillingCycle" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;background:#fff;">
+                    <option value="monthly">Mensal</option>
+                    <option value="yearly">Anual</option>
+                </select>
+                <div style="font-size:11px;color:#9ca3af;margin-top:3px;">Cada ciclo é uma row separada no banco (espelha Product/Price do Stripe).</div>
             </div>
             <div>
-                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Preço mensal (USD)</label>
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Slug do grupo</label>
+                <input type="text" id="planGroupSlug" placeholder="ex: starter" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;">
+                <div style="font-size:11px;color:#9ca3af;margin-top:3px;">Use o mesmo slug pra vincular mensal/anual do mesmo plano. Vazio = plano independente.</div>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div>
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Valor cobrado (R$)</label>
+                <input type="number" id="planPrice" min="0" step="0.01" class="form-control" placeholder="0.00" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;">
+                <div style="font-size:11px;color:#9ca3af;margin-top:3px;">Mensal: valor/mês. Anual: valor cobrado 1x no ano.</div>
+            </div>
+            <div>
+                <label style="font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Valor cobrado (USD)</label>
                 <input type="number" id="planPriceUsd" min="0" step="0.01" class="form-control" placeholder="0.00" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 11px;width:100%;font-size:13.5px;">
                 <div style="font-size:11px;color:#9ca3af;margin-top:3px;">Preço em dólar para cobrança via Stripe</div>
             </div>
@@ -258,6 +293,9 @@
             </label>
             <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
                 <input type="checkbox" id="fIsVisible"> Visível para usuários
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
+                <input type="checkbox" id="fIsRecommended"> ★ Destacar no checkout (Mais popular)
             </label>
         </div>
 
@@ -431,6 +469,9 @@ function openNewPlan() {
     document.querySelectorAll('.feature-enabled-cb').forEach(cb => { cb.checked = false; });
     document.getElementById('fIsActive').checked = true;
     document.getElementById('fIsVisible').checked = true;
+    document.getElementById('fIsRecommended').checked = false;
+    document.getElementById('planBillingCycle').value = 'monthly';
+    document.getElementById('planGroupSlug').value = '';
     document.getElementById('featureInput').value = '';
     document.getElementById('featureEnInput').value = '';
     renderFeaturesList();
@@ -472,6 +513,9 @@ function editPlan(id, plan) {
     });
     document.getElementById('fIsActive').checked   = !!plan.is_active;
     document.getElementById('fIsVisible').checked  = plan.is_visible !== false && plan.is_visible !== 0;
+    document.getElementById('fIsRecommended').checked = !!plan.is_recommended;
+    document.getElementById('planBillingCycle').value = plan.billing_cycle || 'monthly';
+    document.getElementById('planGroupSlug').value = plan.group_slug || '';
     document.getElementById('featureInput').value = '';
     document.getElementById('featureEnInput').value = '';
     renderFeaturesList();
@@ -493,6 +537,8 @@ async function savePlan() {
     const payload = {
         name:                 document.getElementById('planName').value,
         display_name:         document.getElementById('planDisplayName').value,
+        billing_cycle:        document.getElementById('planBillingCycle').value || 'monthly',
+        group_slug:           document.getElementById('planGroupSlug').value.trim() || null,
         price_monthly:        parseFloat(document.getElementById('planPrice').value) || 0,
         price_usd:            priceUsdRaw !== '' ? parseFloat(priceUsdRaw) : null,
         stripe_price_id:      stripePriceId || null,
@@ -501,6 +547,7 @@ async function savePlan() {
         trial_days:           trialRaw !== '' ? parseInt(trialRaw) : null,
         is_active:        document.getElementById('fIsActive').checked ? 1 : 0,
         is_visible:       document.getElementById('fIsVisible').checked ? 1 : 0,
+        is_recommended:   document.getElementById('fIsRecommended').checked ? 1 : 0,
         features_json: (() => {
             const out = {};
             document.querySelectorAll('#limitsGrid input[data-limit-column]').forEach(el => {

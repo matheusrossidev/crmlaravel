@@ -115,11 +115,74 @@ class BillingController extends Controller
             $charges = $charges->concat($stripeCharges)->sortByDesc('dateCreated')->values();
         }
 
+        // Se tenant nao tem subscription ativa, monta groups (igual showCheckout)
+        // pro layout mostrar tabs Mensal/Anual + cards no lugar da lista antiga.
+        $groups   = [];
+        $currency = strtoupper($tenant->billing_currency ?? 'BRL');
+
+        if (! $tenant->hasActiveSubscription()) {
+            $visiblePlans = $tenant->isPartner()
+                ? PlanDefinition::where('name', 'partner')->where('is_active', true)->get()
+                : PlanDefinition::where('is_active', true)
+                    ->where('is_visible', true)
+                    ->where('price_monthly', '>', 0)
+                    ->orderBy('price_monthly')
+                    ->get();
+
+            $groups = $this->buildPlanGroups($visiblePlans);
+        }
+
         return view('tenant.settings.billing', compact(
             'tenant', 'plan', 'plans',
             'tokenUsedMonth', 'tokenLimit', 'tokenExtra',
-            'tokenIncrementPlans', 'dailyUsage', 'charges'
+            'tokenIncrementPlans', 'dailyUsage', 'charges',
+            'groups', 'currency'
         ));
+    }
+
+    /**
+     * Agrupa planos por group_slug (mensal + anual viram 1 grupo).
+     * Se tem um plano marcado como is_recommended e pelo menos 3 grupos,
+     * posiciona ele no meio do array. Extraido em helper pra reusar entre
+     * index() e showCheckout().
+     */
+    private function buildPlanGroups($plans): array
+    {
+        $groups = [];
+        foreach ($plans as $p) {
+            $key = $p->group_slug ?: 'solo:' . $p->id;
+            if (! isset($groups[$key])) {
+                $groups[$key] = [
+                    'slug'           => $key,
+                    'display_name'   => $p->display_name,
+                    'is_recommended' => false,
+                    'monthly'        => null,
+                    'yearly'         => null,
+                ];
+            }
+            if ($p->billing_cycle === 'yearly') {
+                $groups[$key]['yearly'] = $p;
+            } else {
+                $groups[$key]['monthly'] = $p;
+            }
+            if ($p->is_recommended) {
+                $groups[$key]['is_recommended'] = true;
+            }
+        }
+
+        $groups      = array_values($groups);
+        $recommended = array_values(array_filter($groups, fn ($g) => $g['is_recommended']));
+
+        if (count($recommended) === 1 && count($groups) >= 3) {
+            $rec    = $recommended[0];
+            $others = array_values(array_filter($groups, fn ($g) => ! $g['is_recommended']));
+            $groups = array_values(array_filter([$others[0] ?? null, $rec, $others[1] ?? null]));
+            if (count($others) > 2) {
+                $groups = array_merge($groups, array_slice($others, 2));
+            }
+        }
+
+        return $groups;
     }
 
     public function showCheckout(Request $request): View|RedirectResponse
@@ -153,11 +216,9 @@ class BillingController extends Controller
                 ->get();
         }
 
-        // Pre-selected plan from billing page (skip plan selection step).
-        // Lookup tolerante a case e a planos que nao estao na lista visivel
-        // (ex: tenant em 'free' clica em "Trocar plano" passando plan=free —
-        // 'free' nao e visivel mas a gente quer pre-selecionar o primeiro
-        // plano pago disponivel pra disparar o checkout direto).
+        $groups = $this->buildPlanGroups($plans);
+
+        // Pre-selected plan (mantem compat com fluxo antigo de clicar "Trocar plano")
         $preSelectedPlan = null;
         $requestedPlan   = $request->query('plan');
 
@@ -165,15 +226,16 @@ class BillingController extends Controller
             $needle = strtolower(trim($requestedPlan));
             $preSelectedPlan = $plans->first(fn ($p) => strtolower($p->name) === $needle);
 
-            // Fallback: se o plan param nao bate com nada visivel (ex: 'free'
-            // ou 'trial'), pre-seleciona o primeiro plano pago disponivel.
-            // Garante que clicar "Trocar plano" sempre dispara o checkout direto.
             if (! $preSelectedPlan && $plans->isNotEmpty()) {
                 $preSelectedPlan = $plans->first();
             }
         }
 
-        return view('tenant.billing.checkout', compact('tenant', 'plan', 'plans', 'preSelectedPlan'));
+        $currency = strtoupper($tenant->billing_currency ?? 'BRL');
+
+        return view('tenant.billing.checkout', compact(
+            'tenant', 'plan', 'plans', 'preSelectedPlan', 'groups', 'currency'
+        ));
     }
 
     public function subscribe(Request $request): JsonResponse
@@ -379,9 +441,10 @@ class BillingController extends Controller
                 route('billing.stripe.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 route('billing.stripe.cancel'),
                 [
-                    'tenant_id' => (string) $tenant->id,
-                    'plan_name' => $plan->name,
-                    'currency'  => $currency,
+                    'tenant_id'     => (string) $tenant->id,
+                    'plan_name'     => $plan->name,
+                    'currency'      => $currency,
+                    'billing_cycle' => $plan->billing_cycle ?? 'monthly',
                 ],
             );
 

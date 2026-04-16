@@ -21,6 +21,9 @@ class PlanDefinition extends Model
         'features_en_json',
         'is_active',
         'is_visible',
+        'billing_cycle',
+        'group_slug',
+        'is_recommended',
     ];
 
     protected $casts = [
@@ -31,6 +34,7 @@ class PlanDefinition extends Model
         'features_en_json'=> 'array',
         'is_active'       => 'boolean',
         'is_visible'      => 'boolean',
+        'is_recommended'  => 'boolean',
     ];
 
     /**
@@ -64,5 +68,60 @@ class PlanDefinition extends Model
         return $currency === 'USD'
             ? (float) ($this->price_usd ?? 0)
             : (float) ($this->price_monthly ?? 0);
+    }
+
+    public function isYearly(): bool
+    {
+        return $this->billing_cycle === 'yearly';
+    }
+
+    public function isMonthly(): bool
+    {
+        return $this->billing_cycle !== 'yearly';
+    }
+
+    public function monthlyVariant(): ?self
+    {
+        if (! $this->group_slug) {
+            return $this->isMonthly() ? $this : null;
+        }
+
+        return self::where('group_slug', $this->group_slug)
+            ->where('billing_cycle', 'monthly')
+            ->where('is_active', true)
+            ->first();
+    }
+
+    public function yearlyVariant(): ?self
+    {
+        if (! $this->group_slug) {
+            return $this->isYearly() ? $this : null;
+        }
+
+        return self::where('group_slug', $this->group_slug)
+            ->where('billing_cycle', 'yearly')
+            ->where('is_active', true)
+            ->first();
+    }
+
+    /**
+     * Desconto percentual do anual vs 12× mensal. Retorna null se nao houver
+     * plano anual vinculado ou se o valor anual for >= 12× mensal.
+     */
+    public function yearlyDiscountPctVs(self $monthly, string $currency): ?int
+    {
+        $yearly  = $this->priceFor($currency);
+        $monthlyPrice = $monthly->priceFor($currency);
+
+        if ($monthlyPrice <= 0 || $yearly <= 0) {
+            return null;
+        }
+
+        $baseline = $monthlyPrice * 12;
+        if ($yearly >= $baseline) {
+            return null;
+        }
+
+        return (int) round((1 - $yearly / $baseline) * 100);
     }
 }

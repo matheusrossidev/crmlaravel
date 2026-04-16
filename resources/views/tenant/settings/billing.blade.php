@@ -352,6 +352,291 @@
     color: #9ca3af;
     font-size: 13px;
 }
+
+/* ── Current plan (horizontal, full-width quando assinado) ── */
+.current-plan-hero {
+    background: linear-gradient(135deg, #0085f3 0%, #0070d1 100%);
+    border-radius: 16px;
+    padding: 28px 32px;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+}
+.cph-left { flex: 1; min-width: 260px; }
+.cph-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: rgba(255,255,255,.78);
+    margin-bottom: 6px;
+}
+.cph-name {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+}
+.cph-meta {
+    font-size: 13px;
+    color: rgba(255,255,255,.88);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 10px;
+}
+.cph-meta-item { display: flex; align-items: center; gap: 6px; }
+.cph-meta-item i { opacity: .85; }
+.cph-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    min-width: 220px;
+}
+.cph-price {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.cph-price .amount { font-size: 30px; font-weight: 800; line-height: 1; }
+.cph-price .period { font-size: 13px; color: rgba(255,255,255,.82); }
+.cph-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.cph-btn {
+    background: rgba(255,255,255,.18);
+    border: 1px solid rgba(255,255,255,.3);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+}
+.cph-btn:hover { background: rgba(255,255,255,.28); color: #fff; }
+.cph-btn.primary {
+    background: #fff;
+    color: #0085f3;
+    border-color: #fff;
+}
+.cph-btn.primary:hover { background: #f0f6ff; color: #0070d1; }
+.cph-btn.danger:hover { background: rgba(239,68,68,.2); border-color: rgba(255,255,255,.5); }
+
+/* ── Tabs + grid de planos (pro estado NOT subscribed) ── */
+.cycle-tabs-wrap { display: flex; justify-content: center; margin-bottom: 28px; }
+.cycle-tabs {
+    display: inline-flex;
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 999px;
+    padding: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+.cycle-tab {
+    padding: 9px 22px;
+    border-radius: 999px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all .18s;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+}
+.cycle-tab:hover { color: #1a1d23; }
+.cycle-tab.active {
+    background: #1a1d23;
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,.15);
+}
+
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 28px;
+    align-items: start;
+}
+.plan-card {
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 18px;
+    padding: 28px 26px;
+    display: flex;
+    flex-direction: column;
+    transition: all .2s;
+    position: relative;
+}
+.plan-card:hover {
+    border-color: #bfdbfe;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0,0,0,.06);
+}
+.plan-card.featured {
+    background: linear-gradient(180deg, #fff 0%, #f0f6ff 100%);
+    border-color: #0085f3;
+    box-shadow: 0 20px 50px rgba(0,133,243,.15);
+    transform: scale(1.03);
+}
+.featured-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0085f3;
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 5px 14px;
+    border-radius: 999px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    box-shadow: 0 4px 12px rgba(0,133,243,.3);
+}
+.plan-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 4px;
+    gap: 10px;
+}
+.plan-n {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a1d23;
+}
+.discount-badge {
+    display: none;
+    background: #dcfce7;
+    color: #15803d;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    align-items: center;
+    gap: 4px;
+}
+.cycle-yearly .discount-badge[data-has-discount="1"] { display: inline-flex; }
+
+.plan-price-block { margin: 16px 0 6px; }
+.plan-price-old {
+    font-size: 15px;
+    color: #9ca3af;
+    text-decoration: line-through;
+    margin-right: 8px;
+    display: none;
+}
+.cycle-yearly .plan-price-old[data-has="1"] { display: inline; }
+.plan-price-big {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 40px;
+    font-weight: 800;
+    color: #0a0f1a;
+    letter-spacing: -1px;
+}
+.plan-desc {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.5;
+    margin: 16px 0 22px;
+    min-height: 44px;
+}
+.plan-price-suffix {
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+    margin-left: 2px;
+}
+.plan-price-note {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+    min-height: 16px;
+}
+
+.plan-btn-pill {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    border: 1.5px solid #e5e7eb;
+    background: #fff;
+    color: #1a1d23;
+    cursor: pointer;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.plan-btn-pill:hover { border-color: #0085f3; color: #0085f3; }
+.plan-btn-pill:disabled { opacity: .6; cursor: not-allowed; }
+.plan-card.featured .plan-btn-pill {
+    background: #0085f3;
+    color: #fff;
+    border-color: #0085f3;
+}
+.plan-card.featured .plan-btn-pill:hover { background: #0070d1; border-color: #0070d1; }
+.plan-btn-pill .spin {
+    width: 13px; height: 13px;
+    border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    display: inline-block;
+}
+.plan-card:not(.featured) .plan-btn-pill .spin {
+    border: 2px solid rgba(0,0,0,.15);
+    border-top-color: #1a1d23;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.plan-feats {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid #f0f2f7;
+}
+.plan-feats-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+.plan-feats ul { list-style: none; display: flex; flex-direction: column; gap: 9px; margin: 0; padding: 0; }
+.plan-feats li {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    font-size: 13px;
+    color: #374151;
+    line-height: 1.4;
+}
+.plan-feats li i { color: #10b981; font-size: 12px; margin-top: 3px; flex-shrink: 0; }
+
+@media (max-width: 900px) {
+    .plans-grid { grid-template-columns: 1fr; gap: 16px; }
+    .plan-card.featured { transform: none; }
+    .current-plan-hero { flex-direction: column; align-items: flex-start; }
+    .cph-right { align-items: flex-start; width: 100%; }
+    .cph-actions { justify-content: flex-start; }
+}
 </style>
 @endpush
 
@@ -367,200 +652,229 @@
         </div>
     </div>
 
-    <div class="billing-layout">
+    @php
+        $isStripe    = ($tenant->billing_provider ?? 'asaas') === 'stripe';
+        $isUSD       = strtoupper($tenant->billing_currency ?? 'BRL') === 'USD';
+        $isEN        = $isUSD || app()->getLocale() === 'en';
+        $bCurrency   = $isUSD ? '$' : __('common.currency');
+        $bDecSep     = $isUSD ? '.' : __('common.decimal_sep');
+        $bThSep      = $isUSD ? ',' : __('common.thousands_sep');
+        $bPerMonth   = $isUSD ? '/mo' : __('settings.billing_per_month');
+        $bPerYear    = $isUSD ? '/yr' : '/ano';
+        $bPlanPrice  = $isUSD ? ($plan?->price_usd ?? $plan?->price_monthly ?? 0) : ($plan?->price_monthly ?? 0);
 
-        {{-- ── Coluna esquerda: plano atual ── --}}
-        <div class="billing-sidebar">
-            <div class="current-plan-card">
-                <div class="current-plan-header">
-                    <div class="current-plan-label">{{ __('settings.billing_current_plan') }}</div>
-                    <div class="current-plan-name">{{ $plan?->display_name ?? __('settings.billing_current_plan') }}</div>
-                    @php
-                        // $isStripe = qual gateway processa o pagamento (stripe/asaas)
-                        // $isUSD    = qual moeda/idioma o tenant ve (BRL ou USD)
-                        // Os DOIS sao independentes — Stripe trabalha com BRL E USD.
-                        // Toda decisao de UI (cifrao, separadores, lingua) e baseada em isUSD.
-                        $isStripe    = ($tenant->billing_provider ?? 'asaas') === 'stripe';
-                        $isUSD       = strtoupper($tenant->billing_currency ?? 'BRL') === 'USD';
-                        $bCurrency   = $isUSD ? '$' : __('common.currency');
-                        $bDecSep     = $isUSD ? '.' : __('common.decimal_sep');
-                        $bThSep      = $isUSD ? ',' : __('common.thousands_sep');
-                        $bPerMonth   = $isUSD ? '/mo' : __('settings.billing_per_month');
-                        $bPlanPrice  = $isUSD ? ($plan?->price_usd ?? $plan?->price_monthly ?? 0) : ($plan?->price_monthly ?? 0);
-                    @endphp
-                    <div class="current-plan-price">
-                        @if($plan && $bPlanPrice > 0)
-                            <span class="amount">{{ $bCurrency }} {{ number_format($bPlanPrice, 2, $bDecSep, $bThSep) }}</span>
-                            <span class="period">{{ $bPerMonth }}</span>
+        $fmtPrice = fn($v) => $isUSD
+            ? '$ ' . number_format((float) $v, 2, '.', ',')
+            : 'R$ ' . number_format((float) $v, 2, ',', '.');
+
+        $hasActiveSub = $tenant->hasActiveSubscription();
+        $isCycleYearly = ($tenant->billing_cycle ?? 'monthly') === 'yearly';
+
+        $statusLabel = match($tenant->subscription_status ?? $tenant->status) {
+            'active'    => [__('settings.billing_active'), 'active'],
+            'trial'     => [__('settings.billing_in_trial'), 'trial'],
+            'overdue'   => [__('settings.billing_overdue'), 'overdue'],
+            'inactive'  => [__('settings.billing_inactive'), 'inactive'],
+            'cancelled' => [__('settings.billing_cancelled'), 'cancelled'],
+            default     => [__('settings.billing_trial'), 'trial'],
+        };
+    @endphp
+
+    {{-- Banner overdue --}}
+    @if($tenant->subscription_status === 'overdue')
+    <div class="overdue-banner" style="margin-bottom:20px;">
+        <div class="overdue-text">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            {{ __('settings.billing_overdue_msg') }}
+        </div>
+        <a href="{{ route('billing.checkout') }}" class="btn-primary-sm">
+            {{ __('settings.billing_regularize') }}
+        </a>
+    </div>
+    @endif
+
+    @if($hasActiveSub && $plan)
+        {{-- ── Estado: ASSINADO. Card horizontal full-width ── --}}
+        <div class="current-plan-hero">
+            <div class="cph-left">
+                <div class="cph-label">{{ __('settings.billing_current_plan') }}</div>
+                <div class="cph-name">{{ $plan->display_name }}</div>
+
+                <div class="cph-meta">
+                    <div class="cph-meta-item">
+                        <i class="bi bi-circle-fill" style="font-size:7px;color:#10b981;"></i>
+                        {{ $statusLabel[0] }}
+                    </div>
+                    <div class="cph-meta-item">
+                        @if($isCycleYearly)
+                            <i class="bi bi-calendar-check"></i> {{ __('settings.billing_cycle_yearly') }}
                         @else
-                            <span class="amount" style="font-size:22px;">{{ __('settings.billing_free') }}</span>
-                            <span class="period">{{ __('settings.billing_trial') }}</span>
+                            <i class="bi bi-calendar-month"></i> {{ __('settings.billing_cycle_monthly') }}
                         @endif
                     </div>
+                    @if($tenant->subscription_status === 'active')
+                        <div class="cph-meta-item">
+                            <i class="bi bi-check2-circle"></i>
+                            {{ __('settings.billing_active_since', ['date' => $tenant->updated_at->format($isUSD ? 'M d, Y' : 'd/m/Y')]) }}
+                        </div>
+                    @endif
                 </div>
+            </div>
 
-                <div class="current-plan-body">
-                    {{-- Status --}}
-                    <div class="plan-status-row">
-                        <span style="font-size:12.5px;color:#6b7280;font-weight:500;">{{ __('settings.billing_col_status') }}</span>
-                        @php
-                            $statusLabel = match($tenant->subscription_status ?? $tenant->status) {
-                                'active'    => [__('settings.billing_active'), 'active'],
-                                'trial'     => [__('settings.billing_in_trial'), 'trial'],
-                                'overdue'   => [__('settings.billing_overdue'), 'overdue'],
-                                'inactive'  => [__('settings.billing_inactive'), 'inactive'],
-                                'cancelled' => [__('settings.billing_cancelled'), 'cancelled'],
-                                default     => [__('settings.billing_trial'), 'trial'],
-                            };
-                        @endphp
-                        <span class="status-badge {{ $statusLabel[1] }}">
-                            <i class="bi bi-circle-fill" style="font-size:7px;"></i>
-                            {{ $statusLabel[0] }}
+            <div class="cph-right">
+                <div class="cph-price">
+                    @if($bPlanPrice > 0)
+                        <span class="amount">{{ $bCurrency }} {{ number_format($bPlanPrice, 2, $bDecSep, $bThSep) }}</span>
+                        <span class="period">{{ $isCycleYearly ? $bPerYear : $bPerMonth }}</span>
+                    @else
+                        <span class="amount" style="font-size:22px;">{{ __('settings.billing_free') }}</span>
+                    @endif
+                </div>
+                <div class="cph-actions">
+                    @if($isStripe && $tenant->stripe_subscription_id)
+                        <a href="{{ route('billing.checkout', ['plan' => $tenant->plan]) }}" class="cph-btn primary">
+                            <i class="bi bi-arrow-left-right"></i> {{ __('settings.billing_change_plan') }}
+                        </a>
+                        <a href="{{ route('billing.stripe.portal') }}" class="cph-btn">
+                            <i class="bi bi-gear"></i> {{ $isUSD ? 'Manage' : __('settings.billing_manage_sub') }}
+                        </a>
+                        <button type="button" class="cph-btn danger" onclick="confirmCancel()">
+                            <i class="bi bi-x-circle"></i> {{ __('settings.billing_cancel_sub') }}
+                        </button>
+                    @elseif($tenant->asaas_subscription_id)
+                        <a href="{{ route('billing.checkout', ['plan' => $tenant->plan]) }}" class="cph-btn primary">
+                            <i class="bi bi-arrow-left-right"></i> {{ __('settings.billing_change_plan') }}
+                        </a>
+                        <button type="button" class="cph-btn danger" onclick="confirmCancel()">
+                            <i class="bi bi-x-circle"></i> {{ __('settings.billing_cancel_sub') }}
+                        </button>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @else
+        {{-- ── Estado: NÃO ASSINADO. Tabs + grid de planos (estilo checkout) ── --}}
+
+        @php
+            $hasAnyYearly = false;
+            foreach (($groups ?? []) as $g) {
+                if ($g['yearly'] && $g['yearly']->priceFor($currency ?? 'BRL') > 0) { $hasAnyYearly = true; break; }
+            }
+        @endphp
+
+        @if($hasAnyYearly)
+        <div class="cycle-tabs-wrap">
+            <div class="cycle-tabs" role="tablist">
+                <button type="button" class="cycle-tab active" data-cycle="monthly" onclick="setBillingCycle('monthly')">
+                    {{ __('settings.billing_cycle_monthly') }}
+                </button>
+                <button type="button" class="cycle-tab" data-cycle="yearly" onclick="setBillingCycle('yearly')">
+                    {{ __('settings.billing_cycle_yearly') }}
+                </button>
+            </div>
+        </div>
+        @endif
+
+        @if(!empty($groups))
+        <div class="plans-grid" id="billingPlansGrid">
+            @foreach($groups as $g)
+                @php
+                    $monthly = $g['monthly'];
+                    $yearly  = $g['yearly'];
+                    $display = ($monthly ?? $yearly)?->display_name ?? $g['display_name'];
+
+                    $langJson    = $isEN ? 'features_en_json' : 'features_json';
+                    $featureList = $monthly?->{$langJson}['features_list']
+                        ?? $yearly?->{$langJson}['features_list']
+                        ?? $monthly?->features_json['features_list']
+                        ?? $yearly?->features_json['features_list']
+                        ?? [];
+
+                    $priceMonthlyNum = $monthly ? $monthly->priceFor($currency ?? 'BRL') : null;
+                    $priceYearlyNum  = $yearly  ? $yearly->priceFor($currency ?? 'BRL')  : null;
+                    $hasMonthly      = $monthly && $priceMonthlyNum > 0;
+                    $hasYearly       = $yearly  && $priceYearlyNum  > 0;
+
+                    $priceMonthlyLabel = $hasMonthly ? $fmtPrice($priceMonthlyNum) : '—';
+                    $priceYearlyLabel  = $hasYearly  ? $fmtPrice($priceYearlyNum)  : '—';
+
+                    $oldPriceYearly = ($hasMonthly && $hasYearly && $priceYearlyNum < $priceMonthlyNum * 12)
+                        ? $fmtPrice($priceMonthlyNum * 12)
+                        : null;
+
+                    $discountPct = ($hasMonthly && $hasYearly && $yearly)
+                        ? $yearly->yearlyDiscountPctVs($monthly, $currency ?? 'BRL')
+                        : null;
+
+                    $noteMonthly = __('settings.checkout_billed_monthly');
+                    $noteYearly  = $hasYearly
+                        ? __('settings.checkout_billed_yearly', ['price' => $fmtPrice($priceYearlyNum / 12)])
+                        : '—';
+
+                    $defaultPlanName = $monthly?->name ?? $yearly?->name;
+                @endphp
+
+                <div class="plan-card {{ $g['is_recommended'] ? 'featured' : '' }}"
+                     data-group="{{ $g['slug'] }}"
+                     data-plan-monthly="{{ $monthly?->name }}"
+                     data-plan-yearly="{{ $yearly?->name }}">
+
+                    @if($g['is_recommended'])
+                        <div class="featured-badge">{{ __('settings.checkout_most_popular') }}</div>
+                    @endif
+
+                    <div class="plan-head">
+                        <span class="plan-n">{{ $display }}</span>
+                        <span class="discount-badge" data-has-discount="{{ $discountPct !== null ? '1' : '0' }}">
+                            @if($discountPct !== null)
+                                <i class="bi bi-tag-fill" style="font-size:10px;"></i>
+                                {{ __('settings.checkout_save_pct', ['pct' => $discountPct]) }}
+                            @endif
                         </span>
                     </div>
 
-                    {{-- Features list --}}
-                    @php
-                        $useEn = $isUSD || app()->getLocale() === 'en';
-                        $featuresList = $useEn
-                            ? (($plan?->features_en_json['features_list'] ?? null) ?: ($plan?->features_json['features_list'] ?? []))
-                            : ($plan?->features_json['features_list'] ?? []);
-                    @endphp
-                    @if(count($featuresList) > 0)
-                    <ul class="plan-features">
-                        @foreach($featuresList as $feat)
-                        <li>
-                            <span class="feat-check">✓</span>
-                            {{ $feat }}
-                        </li>
-                        @endforeach
-                    </ul>
-                    @else
-                    <p style="font-size:12.5px;color:#9ca3af;margin-bottom:20px;">
-                        {{ __('settings.billing_no_features') }}
-                    </p>
-                    @endif
-
-                    {{-- Meta info --}}
-                    <div class="plan-meta">
-                        @if($tenant->status === 'trial' && $tenant->trial_ends_at)
-                            {{ __('settings.billing_trial_expires', ['date' => $tenant->trial_ends_at->format($isUSD ? 'M d, Y' : 'd/m/Y')]) }}
-                            ({{ $tenant->trial_ends_at->diffForHumans() }})
-                        @elseif($tenant->subscription_status === 'active' && ($tenant->asaas_subscription_id || $tenant->stripe_subscription_id))
-                            {{ __('settings.billing_active_since', ['date' => $tenant->updated_at->format($isUSD ? 'M d, Y' : 'd/m/Y')]) }}
-                        @endif
-                        @if($tenant->asaas_subscription_id)
-                            <br>ID: <strong>{{ $tenant->asaas_subscription_id }}</strong>
-                        @elseif($tenant->stripe_subscription_id)
-                            <br>ID: <strong>{{ $tenant->stripe_subscription_id }}</strong>
-                        @endif
+                    <div class="plan-price-block">
+                        <span class="plan-price-old" data-has="{{ $oldPriceYearly ? '1' : '0' }}">{{ $oldPriceYearly }}</span>
+                        <span class="plan-price-big"
+                              data-monthly="{{ $priceMonthlyLabel }}"
+                              data-yearly="{{ $priceYearlyLabel }}">{{ $priceMonthlyLabel }}</span>
+                        <span class="plan-price-suffix"
+                              data-suffix-monthly="{{ __('settings.checkout_per_month') }}"
+                              data-suffix-yearly="{{ __('settings.checkout_per_year') }}">{{ __('settings.checkout_per_month') }}</span>
+                        <div class="plan-price-note"
+                             data-note-monthly="{{ $noteMonthly }}"
+                             data-note-yearly="{{ $noteYearly }}">{{ $noteMonthly }}</div>
                     </div>
 
-                    {{-- Ações --}}
-                    @if(!$tenant->hasActiveSubscription())
-                        <a href="{{ route('billing.checkout') }}" class="btn-subscribe">
-                            <i class="bi bi-lightning-charge-fill me-1"></i>
-                            {{ __('settings.billing_subscribe') }}
-                        </a>
-                    @elseif($tenant->subscription_status === 'active' && $isStripe && $tenant->stripe_subscription_id)
-                        <a href="{{ route('billing.checkout', ['plan' => $tenant->plan]) }}" class="btn-subscribe" style="margin-bottom:8px;">
-                            <i class="bi bi-arrow-left-right me-1"></i>
-                            {{ __('settings.billing_change_plan') }}
-                        </a>
-                        <a href="{{ route('billing.stripe.portal') }}" class="btn-subscribe" style="margin-bottom:8px;background:#f3f4f6;color:#374151;">
-                            <i class="bi bi-gear me-1"></i>
-                            {{ $isUSD ? 'Manage Subscription' : __('settings.billing_manage_sub') }}
-                        </a>
-                        <button class="btn-cancel-sub" onclick="confirmCancel()">
-                            <i class="bi bi-x-circle me-1"></i>
-                            {{ __('settings.billing_cancel_sub') }}
-                        </button>
-                    @elseif($tenant->subscription_status === 'active' && $tenant->asaas_subscription_id)
-                        <a href="{{ route('billing.checkout', ['plan' => $tenant->plan]) }}" class="btn-subscribe" style="margin-bottom:8px;">
-                            <i class="bi bi-arrow-left-right me-1"></i>
-                            {{ __('settings.billing_change_plan') }}
-                        </a>
-                        <button class="btn-cancel-sub" onclick="confirmCancel()">
-                            <i class="bi bi-x-circle me-1"></i>
-                            {{ __('settings.billing_cancel_sub') }}
-                        </button>
-                    @endif
-                </div>
-            </div>
-        </div>
+                    <p class="plan-desc">{{ __('settings.checkout_plan_desc', ['plan' => $display]) }}</p>
 
-        {{-- ── Coluna direita: outros planos ── --}}
-        <div class="billing-main">
+                    <button type="button" class="plan-btn-pill subscribe-card-btn"
+                            data-default-plan="{{ $defaultPlanName }}"
+                            onclick="subscribeFromCard(this)">
+                        <span class="btn-label">{{ __('settings.checkout_subscribe') }}</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
 
-            {{-- Banner overdue --}}
-            @if($tenant->subscription_status === 'overdue')
-            <div class="overdue-banner">
-                <div class="overdue-text">
-                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                    {{ __('settings.billing_overdue_msg') }}
-                </div>
-                <a href="{{ route('billing.checkout') }}" class="btn-primary-sm">
-                    {{ __('settings.billing_regularize') }}
-                </a>
-            </div>
-            @endif
-
-            <div class="section-header" style="margin-bottom:16px;">
-                <div>
-                    <div class="section-title" style="font-size:14px;">{{ __('settings.billing_other_plans') }}</div>
-                    <div class="section-subtitle">{{ __('settings.billing_other_sub') }}</div>
-                </div>
-            </div>
-
-            @php
-                $otherPlans = $plans->filter(fn($p) => $p->name !== $tenant->plan && ($isUSD ? ($p->price_usd ?? $p->price_monthly) : $p->price_monthly) > 0);
-            @endphp
-
-            @if($otherPlans->isNotEmpty())
-                @foreach($otherPlans as $p)
-                @php
-                    $opPrice    = $isUSD ? ($p->price_usd ?? $p->price_monthly) : $p->price_monthly;
-                    $pFeatures  = ($isUSD || app()->getLocale() === 'en')
-                        ? (($p->features_en_json['features_list'] ?? null) ?: ($p->features_json['features_list'] ?? []))
-                        : ($p->features_json['features_list'] ?? []);
-                @endphp
-                <div class="other-plan-card">
-                    <div class="other-plan-left">
-                        <div class="other-plan-name">{{ $p->display_name }}</div>
-                        <div class="other-plan-price">
-                            {{ $bCurrency }} {{ number_format($opPrice, 2, $bDecSep, $bThSep) }}
-                            <span>{{ $bPerMonth }}</span>
-                        </div>
-                        @if(count($pFeatures) > 0)
-                        <div class="other-plan-features">
-                            @foreach(array_slice($pFeatures, 0, 4) as $feat)
-                                <span class="other-plan-feat-tag">✓ {{ $feat }}</span>
+                    @if(count($featureList) > 0)
+                    <div class="plan-feats">
+                        <div class="plan-feats-title">{{ __('settings.checkout_included') }}</div>
+                        <ul>
+                            @foreach($featureList as $feat)
+                                <li><i class="bi bi-check-circle-fill"></i>{{ $feat }}</li>
                             @endforeach
-                            @if(count($pFeatures) > 4)
-                                <span class="other-plan-feat-tag" style="color:#9ca3af;">{{ __('settings.billing_more_features', ['count' => count($pFeatures) - 4]) }}</span>
-                            @endif
-                        </div>
-                        @endif
+                        </ul>
                     </div>
-                    <div class="other-plan-right">
-                        <button type="button"
-                                onclick="goStripeCheckout('{{ $p->name }}', this)"
-                                class="btn-upgrade">
-                            {{ $opPrice > $bPlanPrice ? __('settings.billing_upgrade') : __('settings.billing_select') }}
-                        </button>
-                    </div>
+                    @endif
                 </div>
-                @endforeach
-            @else
-                <div class="no-other-plans">
-                    <i class="bi bi-trophy-fill" style="font-size:32px;color:#fbbf24;display:block;margin-bottom:12px;"></i>
-                    <div style="font-weight:600;color:#374151;margin-bottom:4px;">{{ __('settings.billing_best_plan') }}</div>
-                    <div>{{ __('settings.billing_best_msg') }}</div>
-                </div>
-            @endif
+            @endforeach
         </div>
-
-    </div>
+        @else
+            <div class="no-other-plans">
+                <i class="bi bi-info-circle" style="font-size:32px;color:#9ca3af;display:block;margin-bottom:12px;"></i>
+                <div style="font-weight:600;color:#374151;margin-bottom:4px;">{{ __('settings.billing_no_features') }}</div>
+            </div>
+        @endif
+    @endif
 
     {{-- ── Histórico de cobranças ── --}}
     <div class="charges-card">
@@ -648,6 +962,47 @@
 <script>
 const SLANG = @json(__('settings'));
 const IS_STRIPE_BILLING = {{ $isStripe ? 'true' : 'false' }};
+const MSG_REDIRECTING = @json(__('settings.checkout_redirecting'));
+const MSG_CHECKOUT_ERR = @json(__('settings.checkout_checkout_error'));
+const MSG_CONN_ERR     = @json(__('settings.checkout_connection_error'));
+const MSG_UNAVAILABLE  = @json(__('settings.checkout_unavailable_cycle'));
+
+// Tabs mensal/anual no estado NOT subscribed — troca preço/nota/botao do card
+function setBillingCycle(cycle) {
+    document.querySelectorAll('.cycle-tab').forEach(t => t.classList.toggle('active', t.dataset.cycle === cycle));
+    const grid = document.getElementById('billingPlansGrid');
+    if (grid) grid.classList.toggle('cycle-yearly', cycle === 'yearly');
+
+    document.querySelectorAll('#billingPlansGrid .plan-card').forEach(card => {
+        const priceEl  = card.querySelector('.plan-price-big');
+        const suffixEl = card.querySelector('.plan-price-suffix');
+        const noteEl   = card.querySelector('.plan-price-note');
+        const btn      = card.querySelector('.subscribe-card-btn');
+        if (!priceEl) return;
+
+        priceEl.textContent  = priceEl.dataset[cycle] ?? priceEl.textContent;
+        suffixEl.textContent = suffixEl.dataset['suffix' + cycle.charAt(0).toUpperCase() + cycle.slice(1)] ?? suffixEl.textContent;
+        noteEl.textContent   = noteEl.dataset['note' + cycle.charAt(0).toUpperCase() + cycle.slice(1)] ?? noteEl.textContent;
+
+        const planForCycle = cycle === 'yearly'
+            ? (card.dataset.planYearly || card.dataset.planMonthly)
+            : (card.dataset.planMonthly || card.dataset.planYearly);
+
+        btn.dataset.resolvedPlan = planForCycle || card.dataset.defaultPlan || '';
+        btn.disabled = !planForCycle;
+    });
+}
+
+async function subscribeFromCard(btn) {
+    const planName = btn.dataset.resolvedPlan || btn.dataset.defaultPlan;
+    if (!planName) { toastr.error(MSG_UNAVAILABLE); return; }
+    return goStripeCheckout(planName, btn);
+}
+
+// Inicializa estado das tabs (se existirem) — resolve resolvedPlan default
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('billingPlansGrid')) setBillingCycle('monthly');
+});
 
 // ── Click no card de plano vai DIRETO pro Stripe Checkout (sem passar pela
 // pagina /cobranca/checkout). UX = 1 click do dashboard de cobranca pro Stripe.

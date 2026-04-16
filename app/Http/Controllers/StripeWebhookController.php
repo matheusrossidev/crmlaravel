@@ -92,6 +92,7 @@ class StripeWebhookController extends Controller
                 'stripe_subscription_id' => $subscriptionId,
                 'subscription_status'    => 'active',
                 'plan'                   => $planName,
+                'billing_cycle'          => $metadata['billing_cycle'] ?? ($plan?->billing_cycle ?? 'monthly'),
                 'status'                 => $tenant->isPartner() ? 'partner' : 'active',
             ];
 
