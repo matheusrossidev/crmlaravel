@@ -95,9 +95,9 @@ class PlanController extends Controller
     }
 
     /**
-     * Quando um plano e marcado como recomendado, desmarca os outros do mesmo grupo
-     * (mensal + anual do mesmo grupo podem estar marcados, mas apenas UM grupo
-     * ativo por vez — entao limpa grupos diferentes).
+     * Garante no maximo 1 plano recomendado POR CICLO (monthly e yearly).
+     * Isso permite ter "Pro mensal" e "Pro anual" ambos recomendados,
+     * mas nao "Pro mensal" e "Starter mensal" ao mesmo tempo.
      */
     private function ensureSingleRecommended(PlanDefinition $plan): void
     {
@@ -105,16 +105,10 @@ class PlanController extends Controller
             return;
         }
 
-        $query = PlanDefinition::where('is_recommended', true)
-            ->where('id', '!=', $plan->id);
-
-        if ($plan->group_slug) {
-            $query->where(function ($q) use ($plan) {
-                $q->whereNull('group_slug')->orWhere('group_slug', '!=', $plan->group_slug);
-            });
-        }
-
-        $query->update(['is_recommended' => false]);
+        PlanDefinition::where('is_recommended', true)
+            ->where('id', '!=', $plan->id)
+            ->where('billing_cycle', $plan->billing_cycle)
+            ->update(['is_recommended' => false]);
     }
 
     public function destroy(PlanDefinition $plan): JsonResponse
