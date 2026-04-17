@@ -1,7 +1,7 @@
 # Syncro CRM — Guia Completo da Plataforma
 
 > Este documento é a referência definitiva para qualquer dev ou IA que trabalhe neste codebase.
-> Última atualização: **2026-04-17** — atualização geral: billing Stripe (principal) + Asaas (legacy subs + token PIX + partner transfers), Foundation SOLID WhatsApp (ChatIdResolver/InstanceSelector/WindowChecker/MessagePersister), Templates HSM Cloud API, Follow-up Strategy (smart/template/off), Chatbot multi-instância, Actions Cloud-only em automação, phone mask internacional em Forms, fix split duplo nas respostas do Agente IA.
+> Última atualização: **2026-04-17** — atualização geral: billing Stripe (principal) + Asaas (legacy subs + token PIX + partner transfers), Foundation SOLID WhatsApp (ChatIdResolver/InstanceSelector/WindowChecker/MessagePersister), Templates HSM Cloud API, Follow-up Strategy (smart/template/off), Chatbot multi-instância, Actions Cloud-only em automação, phone mask internacional em Forms, fix split duplo nas respostas do Agente IA, **Tenant delete via auto-discovery** (commit 7bafec1), **Deploy section re-verificada contra `portainer-stack.yml` real** (WAHA é `waha.matheusrossi.com.br`, não `waha.syncro.chat`; Sentry + Web Push + Resend documentados).
 
 ---
 
@@ -1192,27 +1192,57 @@ Antes, chatbot no Cloud perdia mensagem — dependia do "echo" webhook do WAHA (
 
 ## 12. Deploy e CI/CD
 
-### Docker Image
-```
-Dockerfile: Node 20 (build) → PHP 8.3-FPM → Composer → entrypoint.sh
-Tag: matolado/crm:{commit_sha}
-```
+### Docker Images (3 imagens separadas, taguadas por commit SHA — sem `latest` em prod)
+- `matolado/crm:{commit_sha}` — PHP-FPM 8.3 + Laravel (usado por `app`/`queue`/`scheduler`/`reverb`)
+- `matolado/crm-nginx:{commit_sha}` — nginx + static files
+- `matolado/agno-service:{commit_sha}` — Python FastAPI Agno
+
+**Dockerfile**: Node 20 (Vite build) → PHP 8.3-FPM → Composer → `docker/entrypoint.sh` (migrate + cache + permissions setgid + agno reconfigure + agno reindex knowledge).
 
 ### GitHub Actions
-Push ao `main` → build image → push Docker Hub → Portainer puxa
+Push ao `main` → build 3 imagens → push Docker Hub. Deploy é **manual** no Portainer: edita `portainer-stack.yml` apontando pro SHA novo + "Update the stack". NÃO tem auto-pull webhook. Rollback = editar stack apontando pro SHA anterior.
 
-### Stack Swarm (Portainer)
-| Service | Replicas | Função |
-|---------|----------|--------|
-| nginx | 1 | Reverse proxy + static files |
-| app | 1 | PHP-FPM (web requests) |
-| queue | 1 | Worker: `--queue=ai,whatsapp,default` |
-| scheduler | 1 | `schedule:run` a cada 60s |
-| reverb | 1 | WebSocket server |
-| mysql | 1 | MySQL 8.0 |
-| redis | 1 | Cache + Queue + Session |
-| pgvector | 1 | PostgreSQL + pgvector (memória IA) |
-| agno | 1 | Python FastAPI (IA) |
+### Stack Swarm (Portainer) — `portainer-stack.yml`
+| Service | Image | Replicas | Função |
+|---------|-------|----------|--------|
+| `nginx` | `crm-nginx:{sha}` | 1 | Reverse proxy + static files (redes `serverossi`+`crm_private`) |
+| `app` | `crm:{sha}` | 1 | PHP-FPM 8.3 (web requests) |
+| `queue` | `crm:{sha}` | 1 | Worker `--queue=ai,whatsapp,default --timeout=900 --memory=512` |
+| `scheduler` | `crm:{sha}` | 1 | Loop `schedule:run` a cada 60s (memory 128M) |
+| `reverb` | `crm:{sha}` | 1 | WebSocket server porta 8080 (memory 256M) |
+| `mysql` | `mysql:8.0` | 1 | MySQL 8.0 (pinned `node.role=manager`) |
+| `pgvector` | `pgvector/pgvector:pg16` | 1 | PostgreSQL 16 + pgvector (memória/RAG Agno, pinned manager) |
+| `agno` | `agno-service:{sha}` | 1 | Python FastAPI (memory 128M-512M) |
+| `redis` | `redis:7-alpine` | 1 | Cache + Queue + Session (pinned manager) |
+
+- **Redes**: `crm_private` (overlay interno, todos services) + `serverossi` (overlay externo Traefik, SÓ nginx)
+- **Domínio**: `https://app.syncro.chat` (Traefik + Let's Encrypt SSL automático, label `letsencryptresolver`)
+- **Volumes persistentes**: `mysql_data`, `redis_data`, `pgvector_data`, `storage_data`, `logs_data`, `cache_data`, `public_shared`
+
+> ⚠️ **WAHA roda em stack Swarm SEPARADO** — em `https://waha.matheusrossi.com.br` (não faz parte do `portainer-stack.yml` do CRM). O CRM conecta via env `WAHA_BASE_URL`. O WAHA **NÃO** é `waha.syncro.chat` — é `waha.matheusrossi.com.br` por razão histórica. Qualquer doc ou código que referencie "waha.syncro.chat" está ERRADO e deve ser corrigido.
+
+### Env vars críticas (fonte única: `portainer-stack.yml` — sem `.env.example` tracked)
+
+| Categoria | Env vars |
+|-----------|----------|
+| **App** | `APP_URL=https://app.syncro.chat`, `APP_KEY`, `APP_ENV=production`, `APP_DEBUG=false`, `APP_TIMEZONE=America/Sao_Paulo`, `APP_LOCALE=pt_BR`, `LOG_CHANNEL=stack`, `LOG_LEVEL=warning`, `TRUSTED_PROXIES=10.0.0.0/8,172.16.0.0/12` |
+| **DB / Redis** | `DB_HOST=mysql`, `DB_DATABASE=plataforma360`, `DB_USERNAME=crm`, `DB_PASSWORD`, `REDIS_HOST=redis`, `REDIS_PORT=6379` |
+| **Queue / Cache / Session** | Todos em `redis`; `BROADCAST_CONNECTION=reverb` |
+| **Reverb** | `REVERB_APP_ID/KEY/SECRET`, `REVERB_HOST=app.syncro.chat`, `REVERB_PORT=443`, `REVERB_SCHEME=https`, `REVERB_SERVER_HOST=reverb`, `REVERB_SERVER_PORT=8080`, `REVERB_ALLOWED_ORIGINS=https://app.syncro.chat`, `VITE_REVERB_*` (injetado via blade, não via build) |
+| **Mail (Resend, não SMTP)** | `MAIL_MAILER=resend`, `MAIL_FROM_ADDRESS=noreply@syncro.chat`, `MAIL_FROM_NAME=Syncro`, `RESEND_API_KEY` |
+| **LLM / Agno** | `LLM_PROVIDER=openai`, `LLM_MODEL=gpt-4o-mini`, `LLM_API_KEY`, `AGNO_SERVICE_URL=http://agno:8000`, `AGNO_ENABLED=true`, `AGNO_INTERNAL_TOKEN` (== `LARAVEL_INTERNAL_TOKEN` do service agno), `PGVECTOR_URL` (no agno, aponta pra `pgvector:5432`) |
+| **WAHA** | `WAHA_BASE_URL=https://waha.matheusrossi.com.br`, `WAHA_API_KEY`, `WAHA_WEBHOOK_SECRET` |
+| **WhatsApp Cloud** | `WHATSAPP_CLOUD_APP_ID`, `WHATSAPP_CLOUD_APP_SECRET`, `WHATSAPP_CLOUD_CONFIG_ID` (Embedded Signup Coexistence), `WHATSAPP_CLOUD_VERIFY_TOKEN`, `WHATSAPP_CLOUD_API_VERSION=v22.0`, `WHATSAPP_CLOUD_REDIRECT`, `WHATSAPP_CLOUD_SYSTEM_USER_TOKEN` (permanente Graph API), `WHATSAPP_CLOUD_SYNCRO_BUSINESS_ID` |
+| **Facebook / Lead Ads** | `FACEBOOK_CLIENT_ID`, `FACEBOOK_CLIENT_SECRET` (mesmo App do WA Cloud), `FACEBOOK_REDIRECT_URI`, `FACEBOOK_LEADGEN_REDIRECT_URI`, `FACEBOOK_LEADGEN_WEBHOOK_VERIFY_TOKEN`, `FACEBOOK_API_VERSION=v21.0` (⚠️ diferente do WA Cloud v22.0) |
+| **Instagram** | `INSTAGRAM_CLIENT_ID`, `INSTAGRAM_CLIENT_SECRET`, `INSTAGRAM_REDIRECT_URI`, `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` |
+| **Stripe** | `STRIPE_KEY`, `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET` (prod — principal) |
+| **Asaas** | `ASAAS_API_URL`, `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN` (prod — legacy subs + token increments PIX + partner transfers) |
+| **Google** | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`. `GOOGLE_DEVELOPER_TOKEN`/`GOOGLE_ADS_API_VERSION=v16` existem mas NÃO são usados (legacy Campanhas removido abr/2026) |
+| **ElevenLabs** | `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`, `ELEVENLABS_MODEL_ID=eleven_multilingual_v2` |
+| **Web Push** | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT=mailto:admin@syncro.chat` |
+| **Sentry (APM + errors)** | `SENTRY_LARAVEL_DSN`, `SENTRY_ENVIRONMENT=production`, `SENTRY_TRACES_SAMPLE_RATE=0.1`, `SENTRY_PROFILES_SAMPLE_RATE=0.1`, `SENTRY_SEND_DEFAULT_PII=false` |
+
+Ao adicionar nova integração: **sempre acrescentar env var no `portainer-stack.yml`** + colar no Portainer UI.
 
 ### IMPORTANTE: VITE_* no Docker
 `npm run build` roda SEM build args. `VITE_*` do Portainer são RUNTIME only.

@@ -8,6 +8,7 @@ env_vars:
   - WAHA_BASE_URL
   - WAHA_API_KEY
   - WAHA_WEBHOOK_SECRET
+last_review: 2026-04-17
 tags: [integration, whatsapp, waha]
 ---
 
@@ -15,12 +16,17 @@ tags: [integration, whatsapp, waha]
 
 > WhatsApp HTTP API não-oficial. Engine GOWS (Go-WhatsApp-Web).
 
+## URL de produção
+**`https://waha.matheusrossi.com.br`** — WAHA roda em stack Swarm **separado** (não faz parte do `portainer-stack.yml` do CRM). O CRM conecta via env `WAHA_BASE_URL` apontando pra esse domínio.
+
+⚠️ **Atenção**: NÃO é `waha.syncro.chat` — o domínio do WAHA hoje é `waha.matheusrossi.com.br` por razões históricas.
+
 ## Auth
 - **API key** no header `X-Api-Key` (todas as chamadas pra WAHA)
 - **Webhook HMAC custom** validado em [`WhatsappWebhookController`](app/Http/Controllers/WhatsappWebhookController.php) — `WAHA_WEBHOOK_SECRET`
 
 ## Deploy
-WAHA roda como **service Docker separado** no mesmo Swarm (`syncro_waha`) ou em VPS dedicada. Multi-sessão por tenant — cada `WhatsappInstance.session_name` mapeia pra uma sessão WAHA.
+WAHA roda como **stack Swarm dedicado** (`syncro_waha` em `waha.matheusrossi.com.br`), fora do stack `syncro_*` do CRM. Multi-sessão por tenant — cada `WhatsappInstance.session_name` mapeia pra uma sessão WAHA. A rede `serverossi` (Traefik) compartilha tráfego entre os stacks.
 
 ## Endpoints principais
 | Método | Endpoint | Função |
