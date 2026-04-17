@@ -595,9 +595,18 @@ class ToolboxController extends Controller
                 }
 
                 if ($pic) {
+                    // Baixar pra storage local — URLs CDN do Meta expiram em horas.
+                    // Mesmo pattern usado no webhook/import (ProfilePictureDownloader).
+                    $localPic = \App\Support\ProfilePictureDownloader::download(
+                        $pic,
+                        'whatsapp',
+                        (int) $tenantId,
+                        $phone ?: (string) $conv->id,
+                    );
+
                     WhatsappConversation::withoutGlobalScope('tenant')
                         ->where('id', $conv->id)
-                        ->update(['contact_picture_url' => $pic]);
+                        ->update(['contact_picture_url' => $localPic ?: $pic]);
                     $updated++;
                 } else {
                     $noPhoto++;
