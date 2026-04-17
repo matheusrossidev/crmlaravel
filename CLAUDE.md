@@ -409,34 +409,43 @@ web → auth → tenant → role:admin → plan.limit:leads
 
 ## 5. WhatsApp (WAHA)
 
+> **Doc completa**: [`obsidian-vault/70 Integrations/WAHA/README.md`](obsidian-vault/70%20Integrations/WAHA/README.md) — 19 notas temáticas cobrindo todos os 80 endpoints OpenAPI, 25 webhook events, gotchas, source code. Esta seção é resumo executivo.
+>
+> **Doc técnica local**: [`docs/waha-api-docs.md`](docs/waha-api-docs.md)
+
+### URL + auth (produção)
+- Endpoint WAHA: `https://waha.matheusrossi.com.br` (**não** `waha.syncro.chat`) — stack Swarm **separado** do CRM
+- API auth: header `X-Api-Key` = `WAHA_API_KEY`
+- Webhook HMAC: header `X-Webhook-Hmac` com **SHA-512** do raw body, secret = `WAHA_WEBHOOK_SECRET`
+- Engine em prod: **GOWS** (Golang, sem browser)
+
 ### Fluxo de Mensagem Inbound
 ```
 WAHA → POST /api/webhook/waha
-  → WhatsappWebhookController::handle()
-    → Valida HMAC (WAHA_WEBHOOK_SECRET)
+  → WhatsappWebhookController::handle() [valida HMAC SHA-512]
     → ProcessWahaWebhook::dispatchSync($payload)
-      → Cache::add("waha:processing:{msgId}", 1, 10) — dedup atômico
+      → Cache::add("waha:processing:{msgId}", 1, 10) — dedup atômico (race message vs message.any)
       → Resolve phone do JID (limpa @c.us/@lid/@s.whatsapp.net)
-      → Se @lid: tenta resolver via WAHA /lids/{lid} → contacts API
-      → Se LID não resolvido: BLOQUEIA (não salva conversa)
-      → Cria/atualiza WhatsappConversation
+      → Se @lid: tenta resolver via /lids/{lid} → batch /lids → contacts
+      → Se LID não resolvido: BLOQUEIA (não salva conversa inútil)
+      → Cria/atualiza WhatsappConversation com contact_name (PushName em 3 variantes)
       → Auto-assign AI agent (se auto_assign ativo)
       → Salva WhatsappMessage (UNIQUE waha_message_id)
-      → Dispara chatbot OU IA (se atribuído)
+      → Dispara chatbot OU IA OU AutomationEngine
       → Broadcast via Reverb
 ```
 
-### Resolução de LID
-O WAHA GOWS engine pode enviar `from: XXX@lid` em vez de `@c.us`. O LID é um identificador interno do WhatsApp/Meta.
+### Regras críticas (fails silenciosos)
 
-**Regras:**
-1. Se `from` termina com `@lid` → `$fromIsLid = true`
-2. Tenta resolver via `WahaService::getPhoneByLid($lid)` → `GET /api/{session}/lids/{lid}`
-3. Se falhar: tenta `getAllLids()` para batch mapping
-4. Se o phone NÃO foi resolvido E `$fromIsLid = true` → **BLOQUEIA** a mensagem
-5. Se resolvido: salva phone resolvido + armazena lid original na coluna `lid`
-
-**IMPORTANTE**: Nunca usar `strlen($phone) > 13` para detectar LID — usar o flag `$fromIsLid` do sufixo `@lid`.
+1. **`WahaService::parse()` converte 4xx/5xx em `['error' => true, ...]`** — NÃO throw. Método novo DEVE checar `$result['error']` antes de acessar campos. ([19-gotchas-producao](obsidian-vault/70%20Integrations/WAHA/19-gotchas-producao.md))
+2. **HMAC é SHA-512** (não SHA-256).
+3. **`getChatPicture` sempre retorna HTTP 200** com `{"url": null}` quando sem foto. **Nunca 404**.
+4. **URLs CDN Meta expiram em horas** — sempre baixar local via `ProfilePictureDownloader::download()`.
+5. **PushName checar 3 variantes**: `name || pushName || pushname` (última **lowercase**).
+6. **Timestamp inválido no import**: SKIP, não usar `now()` fallback (embaralha ordem cronológica).
+7. **LID**: usar flag `str_ends_with($from, '@lid')`, NUNCA `strlen($phone) > 13`.
+8. **`WhatsappInstance::first()` é ARMADILHA**: usar `InstanceSelector::selectFor($tenantId, $ctx)`.
+9. **ChatId**: sempre usar `ChatIdResolver::for($instance, $phone, $isGroup, $conv)` — nunca hardcode `$phone . '@c.us'`.
 
 ### Autoria de mensagens (`sent_by` tracking)
 
@@ -467,18 +476,18 @@ Frontend renderiza um badge na bolha de cada mensagem outbound: pra IA mostra av
 
 **Backfill** de mensagens antigas: `php artisan messages:backfill-authorship [--dry-run] [--tenant=N]`. Heurística: `outbound + user_id != null` → `human`; `outbound + type='event' + media_mime LIKE 'ai_%'` → `event`; resto fica null (sem badge).
 
-### WahaService — Métodos principais
-- `sendText($session, $chatId, $text)` — Envia texto
-- `sendImage($session, $chatId, $url, $caption)` — Envia imagem por URL
-- `sendList($session, $chatId, $title, $desc, $button, $sections, $footer)` — Lista interativa
-- `sendVoice($session, $chatId, $audioBase64)` — Envia áudio
-- `getChatPicture($session, $chatId)` — Foto de perfil (com fallback @lid)
-- `getPhoneByLid($session, $lid)` — Resolve LID→phone
-- `getAllLids($session)` — Batch mapping LID→phone
-- `getChatMessages($session, $chatId, $limit, $offset)` — Histórico
+### WahaService — 46 métodos
+Ver [[WAHA/18-nossa-implementacao]] pra lista completa com file:line. Grupos principais:
+- **Sessions**: `createSession`, `patchSession`, `startSession`, `stopSession`, `deleteSession`, `getQrResponse`
+- **Send**: `sendText`, `sendImage`, `sendImageBase64`, `sendVoice`, `sendVoiceBase64`, `sendFileBase64`, `sendList`, `sendReaction`
+- **Fetch**: `getChats`, `getChatMessages`, `getChatPicture`, `getContactInfo`, `getGroupInfo`
+- **LID**: `getPhoneByLid`, `getAllLids`
+- **Config**: `setWebhook`, `setPresence`
 
 ### Import de Histórico
-Job `ImportWhatsappHistory`: busca conversas e mensagens via WAHA API, cria WhatsappConversation + WhatsappMessage. Flag `history_imported` na instance.
+Job `ImportWhatsappHistory`: busca conversas e mensagens via WAHA API, cria WhatsappConversation + WhatsappMessage. Flag `history_imported` na instance. Timeout 900s.
+
+Fluxo (após fix commit `379a452`): fetch de mensagens ANTES de criar conv → extrai PushName das msgs → cria conv com nome correto. Skip msgs com timestamp inválido (preserva ordem cronológica).
 
 ### Provider Abstraction (WAHA + Cloud API)
 A partir de 2026-04-06, WhatsApp suporta 2 providers em paralelo via abstração:

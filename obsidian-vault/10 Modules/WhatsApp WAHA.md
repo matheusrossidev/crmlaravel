@@ -1,19 +1,21 @@
 ---
 type: module
 status: active
-related: ["[[Chat Inbox]]", "[[WhatsApp Cloud API]]", "[[WahaService]]"]
+related: ["[[Chat Inbox]]", "[[WhatsApp Cloud API]]", "[[WahaService]]", "[[70 Integrations/WAHA/README|WAHA Reference]]"]
 files:
   - app/Services/WahaService.php
   - app/Jobs/ProcessWahaWebhook.php
   - app/Http/Controllers/WhatsappWebhookController.php
-last_review: 2026-04-09
+last_review: 2026-04-17
 tags: [module, whatsapp, waha]
 ---
 
-# WhatsApp WAHA
+# WhatsApp WAHA (Módulo de Produto)
+
+> **Este arquivo = nosso módulo de produto.** Pra referência técnica completa da API WAHA (todos os 80 endpoints, 9 tags OpenAPI, 25 webhook events, gotchas), ver pasta dedicada **[[70 Integrations/WAHA/README]]**.
 
 ## O que é
-Integração com **WAHA Plus (engine GOWS)** — API não-oficial pra WhatsApp. Roda como serviço Docker separado em prod (`syncro_waha`). Suporta múltiplas sessões por tenant. Coexiste com [[WhatsApp Cloud API]] via [[WhatsappServiceFactory]].
+Integração com **WAHA Plus (engine GOWS)** — API não-oficial pra WhatsApp. Roda como stack Swarm **separado** em `waha.matheusrossi.com.br` (não `waha.syncro.chat`). Suporta múltiplas sessões por tenant. Coexiste com [[WhatsApp Cloud API]] via [[WhatsappServiceFactory]].
 
 ## Status
 - ✅ Inbound + outbound + grupos + media
