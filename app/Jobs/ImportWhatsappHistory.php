@@ -313,12 +313,18 @@ class ImportWhatsappHistory implements ShouldQueue
             return ['chats' => 0, 'messages' => 0, 'skipped' => 0];
         }
 
-        // Se 1:1 sem nome, tentar resolver via WAHA contacts API
+        // Se 1:1 sem nome, tentar resolver via WAHA contacts API.
+        // Checar as 3 variantes que o proprio WAHA usa na integracao com Chatwoot:
+        // name || pushName || pushname (camelCase + lowercase).
+        // Ref: github.com/devlikeapro/waha src/apps/chatwoot/contacts/WhatsAppContactInfo.ts
         if (empty($contactName) && ! $isGroup) {
             try {
                 $jid  = $phone . '@c.us';
                 $info = $waha->getContactInfo($jid);
-                $contactName = $info['name'] ?? $info['pushName'] ?? null;
+                $contactName = $info['name']
+                    ?? $info['pushName']
+                    ?? $info['pushname']
+                    ?? null;
             } catch (\Throwable) {
             }
             usleep(50_000);
@@ -333,13 +339,85 @@ class ImportWhatsappHistory implements ShouldQueue
             }
         }
 
-        // Busca ou cria conversa
+        // Busca conversa existente (antes de buscar msgs/criar — precisamos do conv->id
+        // pro loop de save se existir, mas mensagens precisam ser fetched antes de criar
+        // pra extrair pushName das msgs como ultimo fallback de nome).
         $conv = WhatsappConversation::withoutGlobalScope('tenant')
             ->where('tenant_id', $this->instance->tenant_id)
             ->where('phone', $phone)
             ->first();
 
-        $newChat = false;
+        // ── Buscar mensagens ANTES de criar conversa ──────────────────────────────
+        // Permite extrair pushName das mensagens como ultimo fallback de nome,
+        // evitando criar a conversa com placeholder (phone formatado) e depois
+        // fazer UPDATE — conversa nasce correta.
+        $importedMessages = 0;
+        $skipped          = 0;
+        $newChat          = false;
+
+        try {
+            $msgs = $waha->getChatMessages($chatId, 200, 0, false, $since);
+
+            // GOWS pode não suportar filter.timestamp.gte — retry sem filtro se retornou vazio
+            if ($since !== null && is_array($msgs) && empty($msgs)) {
+                Log::channel('whatsapp')->info('Import: getChatMessages vazio com filtro, retentando sem filtro', [
+                    'chatId' => $chatId,
+                    'since'  => $since,
+                ]);
+                usleep(50_000);
+                $msgs = $waha->getChatMessages($chatId, 200, 0, false, null);
+            }
+
+            Log::channel('whatsapp')->debug('Import: getChatMessages raw', [
+                'chatId'    => $chatId,
+                'count'     => is_array($msgs) ? count($msgs) : 'not_array',
+                'has_error' => isset($msgs['error']),
+                'sample'    => is_array($msgs) ? array_map(fn($m) => [
+                    'id'        => $m['id'] ?? null,
+                    'timestamp' => $m['timestamp'] ?? null,
+                    'fromMe'    => $m['fromMe'] ?? null,
+                    'hasBody'   => ! empty($m['body']),
+                ], array_slice($msgs, 0, 3)) : null,
+            ]);
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->warning('Import: error fetching messages', [
+                'chatId' => $chatId,
+                'error'  => $e->getMessage(),
+            ]);
+            $msgs = [];
+        }
+
+        usleep(50_000); // Rate limit: 50ms entre requests WAHA (Plus aguenta bem mais)
+
+        // Verificar se a resposta é válida
+        if (! is_array($msgs) || isset($msgs['error'])) {
+            Log::channel('whatsapp')->warning('Import: getChatMessages retornou erro', [
+                'chatId'   => $chatId,
+                'since'    => $since,
+                'response' => is_array($msgs) ? array_slice($msgs, 0, 3) : 'not_array',
+            ]);
+            $msgs = [];
+        }
+
+        // Ultimo fallback de nome: PushName/notifyName das mensagens inbound.
+        // Engine-specific (GOWS guarda em _data.Info.PushName). So aplica quando
+        // getContactInfo nao retornou nada — antes de criar a conversa.
+        if (empty($contactName) && ! $isGroup && ! empty($msgs)) {
+            foreach ($msgs as $m) {
+                if (! is_array($m) || ($m['fromMe'] ?? false)) {
+                    continue;
+                }
+                $contactName = $m['_data']['Info']['PushName']
+                    ?? $m['_data']['notifyName']
+                    ?? $m['notifyName']
+                    ?? null;
+                if ($contactName) {
+                    break;
+                }
+            }
+        }
+
+        // Agora sim: cria ou atualiza a conversa, com contact_name ja resolvido.
         if (! $conv) {
             // Buscar foto via endpoint correto: /api/{session}/chats/{chatId}/picture
             $pictureUrl = $waha->getChatPicture($chatId);
@@ -388,79 +466,12 @@ class ImportWhatsappHistory implements ShouldQueue
             }
         }
 
-        // ── Buscar mensagens (sem download de mídia, máx 200 por chat) ──────────
-        $importedMessages = 0;
-        $skipped          = 0;
-
-        try {
-            $msgs = $waha->getChatMessages($chatId, 200, 0, false, $since);
-
-            // GOWS pode não suportar filter.timestamp.gte — retry sem filtro se retornou vazio
-            if ($since !== null && is_array($msgs) && empty($msgs)) {
-                Log::channel('whatsapp')->info('Import: getChatMessages vazio com filtro, retentando sem filtro', [
-                    'chatId' => $chatId,
-                    'since'  => $since,
-                ]);
-                usleep(50_000);
-                $msgs = $waha->getChatMessages($chatId, 200, 0, false, null);
-            }
-
-            Log::channel('whatsapp')->debug('Import: getChatMessages raw', [
-                'chatId'    => $chatId,
-                'count'     => is_array($msgs) ? count($msgs) : 'not_array',
-                'has_error' => isset($msgs['error']),
-                'sample'    => is_array($msgs) ? array_map(fn($m) => [
-                    'id'        => $m['id'] ?? null,
-                    'timestamp' => $m['timestamp'] ?? null,
-                    'fromMe'    => $m['fromMe'] ?? null,
-                    'hasBody'   => ! empty($m['body']),
-                ], array_slice($msgs, 0, 3)) : null,
-            ]);
-        } catch (\Throwable $e) {
-            Log::channel('whatsapp')->warning('Import: error fetching messages', [
-                'chatId' => $chatId,
-                'error'  => $e->getMessage(),
-            ]);
-            return ['chats' => $newChat ? 1 : 0, 'messages' => 0, 'skipped' => 0];
-        }
-
-        usleep(50_000); // Rate limit: 50ms entre requests WAHA (Plus aguenta bem mais)
-
-        // Verificar se a resposta é válida
-        if (! is_array($msgs) || isset($msgs['error'])) {
-            Log::channel('whatsapp')->warning('Import: getChatMessages retornou erro', [
-                'chatId'   => $chatId,
-                'since'    => $since,
-                'response' => is_array($msgs) ? array_slice($msgs, 0, 3) : 'not_array',
-            ]);
-            return ['chats' => $newChat ? 1 : 0, 'messages' => 0, 'skipped' => 0];
-        }
-
         if (empty($msgs)) {
             Log::channel('whatsapp')->debug('Import: chat sem mensagens no período', [
                 'chatId' => $chatId,
                 'since'  => $since,
             ]);
-        }
-
-        // Tentar extrair nome do contato das mensagens inbound (pushName/notifyName)
-        if (empty($contactName) && ! $isGroup) {
-            foreach ($msgs as $m) {
-                if (! is_array($m) || ($m['fromMe'] ?? false)) {
-                    continue;
-                }
-                $contactName = $m['_data']['Info']['PushName']
-                    ?? $m['_data']['notifyName']
-                    ?? $m['notifyName']
-                    ?? null;
-                if ($contactName) {
-                    // Atualizar na conversa
-                    WhatsappConversation::withoutGlobalScope('tenant')
-                        ->where('id', $conv->id)
-                        ->update(['contact_name' => $contactName]);
-                    break;
-                }
-            }
+            return ['chats' => $newChat ? 1 : 0, 'messages' => 0, 'skipped' => 0];
         }
 
         // Ordenar mensagens cronologicamente (oldest → newest) antes de salvar.
@@ -498,10 +509,19 @@ class ImportWhatsappHistory implements ShouldQueue
             if ($ts > 9999999999) {
                 $ts = intdiv($ts, 1000);
             }
-            // Validar: timestamp deve ser > 2020-01-01 e < agora+1dia
-            $sentAt = ($ts > 1577836800 && $ts < time() + 86400)
-                ? Carbon::createFromTimestamp($ts, config('app.timezone', 'America/Sao_Paulo'))
-                : now();
+            // Validar: timestamp deve ser > 2020-01-01 e < agora+1dia.
+            // Se invalido, PULA a mensagem — usar now() como fallback embaralhava
+            // a ordem cronologica (mensagens antigas apareciam junto das recentes).
+            if ($ts <= 1577836800 || $ts >= time() + 86400) {
+                Log::channel('whatsapp')->info('Import: msg com timestamp invalido, pulando', [
+                    'conversation_id' => $conv->id,
+                    'waha_message_id' => $msgId,
+                    'raw_ts'          => $msg['timestamp'] ?? null,
+                ]);
+                $skipped++;
+                continue;
+            }
+            $sentAt = Carbon::createFromTimestamp($ts, config('app.timezone', 'America/Sao_Paulo'));
 
             try {
                 // Body: GOWS pode usar campo diferente

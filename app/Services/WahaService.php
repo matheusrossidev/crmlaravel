@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Contracts\WhatsappServiceContract;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class WahaService implements WhatsappServiceContract
 {
@@ -150,13 +151,32 @@ class WahaService implements WhatsappServiceContract
      */
     public function getChatPicture(string $chatId): ?string
     {
+        $encodedChatId = rawurlencode($chatId);
+
         try {
-            $encodedChatId = rawurlencode($chatId);
             $result = $this->get("/api/{$this->session}/chats/{$encodedChatId}/picture");
-            return $result['profilePictureURL'] ?? $result['url'] ?? $result['eurl'] ?? null;
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->warning('getChatPicture: exception ao chamar WAHA', [
+                'session' => $this->session, 'chat_id' => $chatId,
+                'exception' => $e::class, 'message' => $e->getMessage(),
+            ]);
             return null;
         }
+
+        // parse() converte HTTP 4xx/5xx em ['error' => true, 'status' => ..., 'body' => ...]
+        // ao inves de throw — entao precisa checar explicitamente.
+        if (($result['error'] ?? false) === true) {
+            Log::channel('whatsapp')->warning('getChatPicture: WAHA retornou erro HTTP', [
+                'session' => $this->session, 'chat_id' => $chatId,
+                'status' => $result['status'] ?? null,
+                'body' => substr((string) ($result['body'] ?? ''), 0, 300),
+            ]);
+            return null;
+        }
+
+        // Doc oficial WAHA: retorna {"url": "..."} ou {"url": null}.
+        // 'profilePictureURL' e 'eurl' eram chaves vestigiais — removidas.
+        return $result['url'] ?? null;
     }
 
     /** @deprecated Use getChatPicture() instead */

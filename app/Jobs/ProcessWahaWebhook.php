@@ -506,7 +506,12 @@ class ProcessWahaWebhook implements ShouldQueue
                         $phone ?: $from,
                     );
                 }
-            } catch (\Throwable) {}
+            } catch (\Throwable $e) {
+                Log::channel('whatsapp')->warning('ProcessWahaWebhook: falha ao buscar/baixar foto (create)', [
+                    'chat_id' => $from, 'phone' => $phone,
+                    'exception' => $e::class, 'message' => $e->getMessage(),
+                ]);
+            }
 
             $conversation = WhatsappConversation::withoutGlobalScope('tenant')->create([
                 'tenant_id'           => $instance->tenant_id,
@@ -605,7 +610,11 @@ class ProcessWahaWebhook implements ShouldQueue
                         }
                     }
                     Cache::put($picCacheKey, 1, 21600); // 6 horas
-                } catch (\Throwable) {
+                } catch (\Throwable $e) {
+                    Log::channel('whatsapp')->warning('ProcessWahaWebhook: falha ao buscar/baixar foto (refresh)', [
+                        'conversation_id' => $conversation->id, 'chat_id' => $from,
+                        'exception' => $e::class, 'message' => $e->getMessage(),
+                    ]);
                     Cache::put($picCacheKey, 1, 3600); // 1h se falhou
                 }
             }
