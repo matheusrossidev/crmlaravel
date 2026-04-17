@@ -147,7 +147,9 @@ class MasterWhatsappNotifier
         $growthSign  = $growthPct >= 0 ? '+' : '';
 
         // Revenue this month
-        $revenueMonth = \App\Models\PaymentLog::where('status', 'confirmed')
+        // Cast pra float: sum() do query builder nao aplica casts do Eloquent,
+        // e MySQL retorna SUM de DECIMAL como string. PHP 8+ rejeita string em number_format.
+        $revenueMonth = (float) \App\Models\PaymentLog::where('status', 'confirmed')
             ->where('type', 'subscription')
             ->where('paid_at', '>=', now()->startOfMonth())
             ->sum('amount');
