@@ -189,14 +189,6 @@ class MasterWhatsappNotifier
             return;
         }
 
-        $chatId = \App\Support\PhoneNormalizer::toWahaChatId($phone);
-        if (! $chatId) {
-            Log::warning('MasterWhatsappNotifier::welcomeUser: phone inválido', [
-                'phone' => $phone, 'tenant_id' => $tenant->id,
-            ]);
-            return;
-        }
-
         $name  = $user->name;
         $email = $user->email;
 
@@ -207,12 +199,51 @@ class MasterWhatsappNotifier
              . "Bora crescer juntos! 🚀\n"
              . "_Syncro CRM — Plataforma 360 de Marketing e Vendas_";
 
-        try {
-            $waha = new WahaService(self::SESSION);
-            $waha->sendText($chatId, $msg);
-        } catch (\Throwable $e) {
-            Log::warning('MasterWhatsappNotifier::welcomeUser: falha ao enviar', [
-                'error' => $e->getMessage(), 'chatId' => $chatId,
+        // Tenta formato original primeiro (WAHA pode aceitar com ou sem 9 dependendo do numero)
+        $digits = preg_replace('/\D/', '', $phone);
+        $candidates = [];
+
+        if (strlen($digits) === 13 && str_starts_with($digits, '55') && $digits[4] === '9') {
+            // BR com 9: tenta com 9 primeiro, depois sem
+            $candidates[] = $digits . '@c.us';
+            $candidates[] = (substr($digits, 0, 4) . substr($digits, 5)) . '@c.us';
+        } elseif (strlen($digits) === 12 && str_starts_with($digits, '55')) {
+            // BR sem 9: tenta como esta, depois adicionando 9
+            $candidates[] = $digits . '@c.us';
+            $candidates[] = (substr($digits, 0, 4) . '9' . substr($digits, 4)) . '@c.us';
+        } else {
+            // Internacional: usa PhoneNormalizer
+            $chatId = \App\Support\PhoneNormalizer::toWahaChatId($phone);
+            if ($chatId) $candidates[] = $chatId;
+        }
+
+        if (empty($candidates)) {
+            Log::warning('MasterWhatsappNotifier::welcomeUser: phone inválido', [
+                'phone' => $phone, 'tenant_id' => $tenant->id,
+            ]);
+            return;
+        }
+
+        $waha = new WahaService(self::SESSION);
+        $sent = false;
+        $lastError = null;
+
+        foreach ($candidates as $chatId) {
+            try {
+                $result = $waha->sendText($chatId, $msg);
+                if (! (isset($result['error']) && $result['error'])) {
+                    $sent = true;
+                    break;
+                }
+                $lastError = $result['body'] ?? 'unknown';
+            } catch (\Throwable $e) {
+                $lastError = $e->getMessage();
+            }
+        }
+
+        if (! $sent) {
+            Log::warning('MasterWhatsappNotifier::welcomeUser: todos candidatos falharam', [
+                'candidates' => $candidates, 'last_error' => $lastError,
             ]);
         }
     }
